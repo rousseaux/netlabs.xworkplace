@@ -86,6 +86,7 @@
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINSHELLDATA       // Prf* functions
+#define INCL_WINHOOKS
 #include <os2.h>
 
 // C library headers
@@ -1221,7 +1222,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
     // XFolderMethodDebug("XFolder","xf_wpObjectReady");
 
     #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
-        _Pmpf(("xfobj_wpObjectReady for %s (class %s), ulCode: %s",
+        _Pmpf(("XFolder::wpObjectReady for %s (class %s), ulCode: %s",
                 _wpQueryTitle(somSelf),
                 _somGetName(_somGetClass(somSelf)),
                 (ulCode == OR_AWAKE) ? "OR_AWAKE"
@@ -1521,7 +1522,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
     // XFolderMethodDebug("XFolder","xf_wpSaveState");
 
     #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
-        _Pmpf(("%s: wpSaveState", _wpQueryTitle(somSelf)));
+        _Pmpf(("XFolder::wpSaveState (%s)", _wpQueryTitle(somSelf)));
     #endif
 
     // we will now save all our instance data; in order
@@ -1686,7 +1687,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
 {
     BOOL brc = FALSE;
     // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpRestoreString");
+    // XFolderMethodDebug("XFolder","xf_wpRestoreString");
 
     brc = XFolder_parent_WPFolder_wpRestoreString(somSelf,
                                                   pszClass, ulKey,
@@ -2382,7 +2383,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     // XFolderMethodDebug("XFolder","xf_wpOpen");
 
     #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpOpen for %s: ulView = 0x%lX, param = 0x%lX",
+        _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
+                    somSelf,
                     _wpQueryTitle(somSelf),
                     ulView,
                     param));
@@ -2432,8 +2434,73 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
 }
 
 /*
+ *@@ wpRegisterView:
+ *      this WPObject method registers a new view for
+ *      an object. When this is called, the WPS subclasses
+ *      the hwndFrame window, which is assumed to be
+ *      a subclass of WC_FRAME.
+ *
+ *@@added V0.9.3 (2000-04-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpRegisterView(XFolder *somSelf,
+                                          HWND hwndFrame,
+                                          PSZ pszViewTitle)
+{
+    BOOL        brc = FALSE;
+    XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderMethodDebug("XFolder","xf_wpRegisterView");
+
+    #ifdef DEBUG_SOMMETHODS
+        _Pmpf(("XFolder::wpRegisterView for 0x%lX (%s): hwndFrame = 0x%lX, viewTitle = '%s'",
+                    somSelf,
+                    _wpQueryTitle(somSelf),
+                    hwndFrame,
+                    pszViewTitle));
+    #endif
+
+    brc = XFolder_parent_WPFolder_wpRegisterView(somSelf,
+                                                 hwndFrame,
+                                                 pszViewTitle);
+
+    /* if (brc)
+    {
+        HWND    hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+        ULONG   ulView = wpshQueryView(somSelf,
+                                       hwndFrame);
+
+        if (hwndCnr)
+        {
+            #if defined(DEBUG_SOMMETHODS)
+                _Pmpf(("    wpRegisterView hwndCnr: %d, ulView: %d", hwndCnr, ulView));
+            #endif
+
+        }
+    } */
+
+    #ifdef DEBUG_SOMMETHODS
+        _Pmpf(("End of wpRegisterView for %s", _wpQueryTitle(somSelf)));
+    #endif
+
+    return (brc);
+}
+
+/*
  *@@ wpPopulate:
- *      this instance method populates a folder.
+ *      this instance method populates a folder. This normally
+ *      runs on the Populate thread, of which I am unsure if it
+ *      recreated every time a folder is opened or if there's
+ *      only one Populate thread which is shared by all folders.
+ *      This may also run on thread 1 if populating occurs
+ *      synchronously (as with the XFolder folder content menus).
+ *
+ *      Interestingly, from my debugging, the Populate thread is
+ *      started right after WPFolder::wpOpen is called, even before
+ *      the folder window is created. Kinda sick, in my view. I
+ *      get the following order:
+ *
+ *      1)  wpPopulate;
+ *      2)
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf, ULONG ulReserved,
@@ -2459,6 +2526,13 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf, ULONG ulReserved,
 
         Then we have more calls on thread 1:
 
+        --  wpclsNew, creating an instance of WPFolderCV (whatever that
+                               class is good for);
+
+        --  then we get a WM_CREATE for the folder window;
+
+        --  then we get a wpRegisterView;
+
         --  wpSetFldrFlags      0x58408
                                     (0x0010000  FOI_CHANGEICONTEXTCOLOR
                                      0x0040000  FOI_CHANGESHADOWTEXTCOLOR (Warp 4 only)
@@ -2468,6 +2542,8 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf, ULONG ulReserved,
                                     )
         --  and some more, but always with FOI_POPULATEINPROGRESS set
 
+        --  then wpOpen returns.
+
         Then we have the Populate thread again
 
         --  wpclsMakeAwake, for all the objects in the folder,
@@ -2476,6 +2552,10 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf, ULONG ulReserved,
             --  WPObject::wpObjectReady (on the Populate thread! Obviously, the object
                                is created here)
         --  wpclsInitData, wpQueryStyle, wpRestoreState, ...
+
+        --  In between, we get wpQueryFldrFlags from thread 1 again, querying if
+            the populate is still in progress. I guess this is from my status bar
+            timers.
 
         --  wpSetFldrFlags      0x402
                                     (0x00000400  FOI_POPULATEINPROGRESS
@@ -3173,11 +3253,10 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
 
         if (pKernelGlobals->fXFolder == FALSE)
         {
+            // first call:
+
             // store the class object in KERNELGLOBALS
             pKernelGlobals->fXFolder = TRUE;
-
-            // first call:
-            fdrInitPSLI();
 
             // initialize other data
             G_pllFavoriteFolders = lstCreate(TRUE);       // items are freeable
@@ -3192,8 +3271,16 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
                              WNDCLASS_SUPPLOBJECT,    // class name
                              (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
                              0,       // class style
-                             4);      // extra window words for SUBCLASSEDLISTITEM
+                             4);      // extra window words for SUBCLASSEDFOLDERVIEW
                                       // pointer (see fdrSubclassFolderFrame)
+
+            // install local hook (fdrsubclass.c)
+            WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
+                       HMQ_CURRENT,
+                       HK_SENDMSG,
+                       (PFN)fdr_SendMsgHook,
+                       NULLHANDLE);  // module handle, can be 0 for local hook
+
         }
         krnUnlockGlobals();
     }

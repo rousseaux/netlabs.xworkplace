@@ -2614,15 +2614,15 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                     // if the object is a template, we create a new
                                     // object from it; do this in the supplementary
                                     // object window V0.9.2 (2000-02-26) [umoeller]
-                                    PSUBCLASSEDLISTITEM psli = fdrQueryPSLI(hwndFrame,
+                                    PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
                                                                             NULL);
-                                    if (psli)
+                                    if (psfv)
                                     {
                                         XFolderData     *somThis = XFolderGetData(somSelf);
                                         G_hwndTemplateFrame = hwndFrame;
                                         G_ptlTemplateMousePos.x = _MenuMousePosX;
                                         G_ptlTemplateMousePos.y = _MenuMousePosY;
-                                        WinPostMsg(psli->hwndSupplObject,
+                                        WinPostMsg(psfv->hwndSupplObject,
                                                    SOM_CREATEFROMTEMPLATE,
                                                    (MPARAM)pObject, // template
                                                    (MPARAM)somSelf); // folder

@@ -43,11 +43,11 @@ MODULESDIR = ..\..\bin\modules
 
 HLPINC = $(HELPERS_BASE)\include\helpers
 
-HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\winh.h
+HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h
 
 ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj $(OUTPUTDIR)\eah.obj $(OUTPUTDIR)\cnrh.obj \
            $(OUTPUTDIR)\gpih.obj $(OUTPUTDIR)\dosh.obj $(OUTPUTDIR)\stringh.obj \
-           $(OUTPUTDIR)\winh.obj
+           $(OUTPUTDIR)\winh.obj $(OUTPUTDIR)\xstring.obj
 
 # TARGETS
 # -------
@@ -74,6 +74,9 @@ $(OUTPUTDIR)\stringh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
           $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 $(OUTPUTDIR)\winh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
+          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
+
+$(OUTPUTDIR)\xstring.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
           $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 # build targets

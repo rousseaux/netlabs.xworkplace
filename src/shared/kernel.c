@@ -61,8 +61,10 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINTIMER
 #define INCL_WINSYS
 #define INCL_WINDIALOGS
@@ -90,6 +92,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -119,6 +122,9 @@
  *                                                                  *
  ********************************************************************/
 
+// global lock semaphore for krnLock etc.
+HMTX            G_hmtxCommonLock = NULLHANDLE;
+
 // "Quick open" dlg status (thread-1 object wnd)
 ULONG               ulQuickOpenNow = 0,
                     ulQuickOpenMax = 0;
@@ -134,6 +140,112 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mpNow, MPARAM mpMax);
 MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MPARAM mpMax);
+
+/* ******************************************************************
+ *                                                                  *
+ *   Resource protection (thread safety)                            *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ krnLock:
+ *      function to request the global
+ *      hmtxCommonLock semaphore to finally
+ *      make the kernel functions thread-safe.
+ *
+ *      Returns TRUE if the semaphore could be
+ *      accessed within the specified timeout.
+ *
+ *      Note: this requires the existence of a message
+ *      queue since we use WinRequestMutexSem.
+ *
+ *      Usage:
+ *
+ +      if (cmnLock(4000))
+ +      {
+ +          TRY_LOUD(excpt1, cmnOnKillDuringLock)
+ +          {
+ +                  // ... precious code here
+ +          }
+ +          CATCH(excpt1) { } END_CATCH();
+ +
+ +          cmnUnlock();        // NEVER FORGET THIS!!
+ +      }
+ +
+ *
+ *@@added V0.9.0 (99-11-14) [umoeller]
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ */
+
+BOOL krnLock(ULONG ulTimeout)
+{
+    if (G_hmtxCommonLock == NULLHANDLE)
+        DosCreateMutexSem(NULL,         // unnamed
+                          &G_hmtxCommonLock,
+                          0,            // unshared
+                          FALSE);       // unowned
+
+    if (WinRequestMutexSem(G_hmtxCommonLock, ulTimeout) == NO_ERROR)
+        return TRUE;
+    else
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "cmnLock mutex request failed");
+        return FALSE;
+    }
+}
+
+/*
+ *@@ krnUnlock:
+ *
+ *@@added V0.9.0 (99-11-14) [umoeller]
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ */
+
+VOID krnUnlock(VOID)
+{
+    DosReleaseMutexSem(G_hmtxCommonLock);
+}
+
+/*
+ *@@ krnQueryLock:
+ *      returns the thread ID which currently owns
+ *      the common lock semaphore or 0 if the semaphore
+ *      is not owned (not locked).
+ *
+ *@@added V0.9.1 (2000-01-30) [umoeller]
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ */
+
+ULONG krnQueryLock(VOID)
+{
+    PID     pid = 0;
+    TID     tid = 0;
+    ULONG   ulCount = 0;
+    if (DosQueryMutexSem(G_hmtxCommonLock,
+                         &pid,
+                         &tid,
+                         &ulCount)
+            == NO_ERROR)
+        return (tid);
+
+    return (0);
+}
+
+/*
+ *@@ krnOnKillDuringLock:
+ *      function to be used with the TRY_xxx
+ *      macros to release the mutex semaphore
+ *      on thread kills.
+ *
+ *@@added V0.9.0 (99-11-14) [umoeller]
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ */
+
+VOID APIENTRY krnOnKillDuringLock(VOID)
+{
+    DosReleaseMutexSem(G_hmtxCommonLock);
+}
 
 /********************************************************************
  *                                                                  *
@@ -158,7 +270,7 @@ PCKERNELGLOBALS krnQueryGlobals(VOID)
 
 PKERNELGLOBALS krnLockGlobals(ULONG ulTimeout)
 {
-    if (cmnLock(ulTimeout))
+    if (krnLock(ulTimeout))
         return (&KernelGlobals);
     else
         return (NULL);
@@ -171,7 +283,7 @@ PKERNELGLOBALS krnLockGlobals(ULONG ulTimeout)
 
 VOID krnUnlockGlobals(VOID)
 {
-    cmnUnlock();
+    krnUnlock();
 }
 
 /* ******************************************************************
@@ -309,7 +421,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     if (tid = thrQueryID(pKernelGlobals->ptiUpdateThread))
         fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid);
 
-    tid = cmnQueryLock();
+    tid = krnQueryLock();
     if (tid)
         fprintf(file, "\nGlobal lock semaphore is currently owned by thread 0x%lX (%u).\n", tid, tid);
     else
@@ -791,7 +903,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 {
                     // just report:
                     PSZ pszMsg = (PSZ)mp1;
-                    strhxcat(&pszMsg,
+                    xstrcat(&pszMsg,
                              "\n\nPlease post a bug report to "
                              "xworkplace-user@egroups.com and attach the the file "
                              "XFLDTRAP.LOG, which you will find in the root "

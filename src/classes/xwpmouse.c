@@ -146,6 +146,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
  *      Gets called by XWPMouse::wpAddMouseMappingsPage.
  *
  *@@added V0.9.1 [umoeller]
+ *@@changed V0.9.3 (2000-04-01) [umoeller]: page wasn't showing "page 2/2"; fixed
  */
 
 SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
@@ -170,6 +171,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XSD_MOUSEMAPPINGS2;
         pcnbp->usPageStyleFlags = BKA_MINOR;
+        pcnbp->fEnumerate = TRUE;
         pcnbp->pszName = pNLSStrings->pszMappingsPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
         pcnbp->ulPageID = SP_MOUSE_MAPPINGS2;

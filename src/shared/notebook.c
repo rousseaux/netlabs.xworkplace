@@ -1507,7 +1507,6 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
     PCREATENOTEBOOKPAGE pcnbp = NULL;
 
     while (pcnbp = ntbQueryOpenPages(pcnbp))
-        // ### this keeps allocating semaphores -- is this thread-safe?
     {
         if (pcnbp->fPageVisible)
         {

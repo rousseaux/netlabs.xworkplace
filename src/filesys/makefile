@@ -51,6 +51,8 @@ OUTPUTDIR = ..\..\bin
 OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\disk.obj \
        $(OUTPUTDIR)\fdrhotky.obj \
+       $(OUTPUTDIR)\fdrnotebooks.obj \
+       $(OUTPUTDIR)\fdrsubclass.obj \
        $(OUTPUTDIR)\fileops.obj \
        $(OUTPUTDIR)\filesys.obj \
        $(OUTPUTDIR)\filetype.obj \
@@ -154,19 +156,40 @@ $(OUTPUTDIR)\fdrhotky.obj: \
     $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(@B).c $(INC)\filesys\folder.h
 
+$(OUTPUTDIR)\fdrnotebooks.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\winh.h \
+    $(INC)\classes\xfldr.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\notebook.h \
+    $(INC)\filesys\xthreads.h \
+    $(@B).c $(INC)\filesys\folder.h
+
+$(OUTPUTDIR)\fdrsubclass.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\dosh.h $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+        $(HLPINC)\winh.h \
+    $(INC)\classes\xfldr.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h \
+        $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
+    $(@B).c $(INC)\filesys\folder.h
+
 $(OUTPUTDIR)\fileops.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
     $(INC)\filesys\trash.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\filesys.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfpgmf.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h \
@@ -183,7 +206,9 @@ $(OUTPUTDIR)\filetype.obj: \
 
 $(OUTPUTDIR)\folder.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\wphandle.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h \
+        $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\syssound.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -206,7 +231,8 @@ $(OUTPUTDIR)\menus.obj: \
 
 $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\except.h $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h \
+    $(HLPINC)\except.h $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -217,7 +243,8 @@ $(OUTPUTDIR)\object.obj: \
 
 $(OUTPUTDIR)\statbars.obj: \
      $(INC)\setup.h \
-     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfobj.ih \
      $(INC)\dlgids.h \
      $(INC)\shared\classes.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \

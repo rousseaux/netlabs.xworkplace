@@ -177,8 +177,8 @@ Last updated March 24, 2000
         the foreground.
 
     7)  PageMage is completely experimental at this point. There's no
-        configuration yet, and it moves windows around more than it
-        really should. Please don't complain.
+        configuration pages yet, and it moves windows around more than
+        it really should. Please don't complain.
 
     Please check the BUGS and FEATURES files in this package also
     before reporting bugs or suggesting features. Thank you.

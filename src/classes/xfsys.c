@@ -108,10 +108,11 @@
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page
  *@@changed V0.9.0 [umoeller]: added "Storage" page
+ *@@changed V0.9.3 (2000-04-01) [umoeller]: removed "HPFS" page
  */
 
 SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
-                                                    HWND hwndDlg)
+                                                     HWND hwndDlg)
 {
     PCREATENOTEBOOKPAGE pcnbp;
     PAGEINFO        pi;
@@ -188,13 +189,13 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = "~FAT";
     pcnbp->ulDlgID = ID_OSD_SETTINGS_FAT;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_HPFS;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_HPFS; // it's FAT really, just historical...
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
     pcnbp->ulPageID = SP_FAT;
     ntbInsertPage(pcnbp);
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    /* pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndDlg;
@@ -208,7 +209,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
     pcnbp->ulPageID = SP_HPFS;
-    ntbInsertPage(pcnbp);
+    ntbInsertPage(pcnbp); */
 
     // "Drivers drivers"
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -276,12 +277,13 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbInitPage    = cfgSyslevelInitPage;
     pcnbp->pfncbItemChanged = cfgSyslevelItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = "Syslevel";        // ###
+    pcnbp->pszName = pNLSStrings->pszSyslevelPage;
     pcnbp->ulDlgID = ID_OSD_SETTINGS_SYSLEVEL;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL1; // ###
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSLEVEL;
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
     pcnbp->ulPageID = SP_SYSLEVEL;
+
     return (ntbInsertPage(pcnbp));
 
 }

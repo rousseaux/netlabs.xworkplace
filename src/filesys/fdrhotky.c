@@ -587,7 +587,7 @@ VOID AddHotkeyToMenuItem(HWND hwndMenu,
         cmnDescribeKey(szDescription,
                        usFlags,
                        usKeyCode);
-        _Pmpf(("Found %s", szDescription));
+        // _Pmpf(("Found %s", szDescription));
         winhAppend2MenuItemText(hwndMenu,
                                 usMenuCommand,
                                 szDescription,

@@ -68,8 +68,8 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
-
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
@@ -222,32 +222,32 @@ VOID AddFolderView2Cnr(HWND hwndCnr,
     PSZ pszTemp = 0;
     ULONG ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
 
-    strhxcpy(&pszTemp, pszView);
-    strhxcat(&pszTemp, ": ");
+    xstrcpy(&pszTemp, pszView);
+    xstrcat(&pszTemp, ": ");
 
     if (ulViewAttrs & CV_ICON)
-        strhxcat(&pszTemp, "CV_ICON ");
+        xstrcat(&pszTemp, "CV_ICON ");
     if (ulViewAttrs & CV_NAME)
-        strhxcat(&pszTemp, "CV_NAME ");
+        xstrcat(&pszTemp, "CV_NAME ");
     if (ulViewAttrs & CV_TEXT)
-        strhxcat(&pszTemp, "CV_TEXT ");
+        xstrcat(&pszTemp, "CV_TEXT ");
     if (ulViewAttrs & CV_TREE)
-        strhxcat(&pszTemp, "CV_TREE ");
+        xstrcat(&pszTemp, "CV_TREE ");
     if (ulViewAttrs & CV_DETAIL)
-        strhxcat(&pszTemp, "CV_DETAIL ");
+        xstrcat(&pszTemp, "CV_DETAIL ");
     if (ulViewAttrs & CA_DETAILSVIEWTITLES)
-        strhxcat(&pszTemp, "CA_DETAILSVIEWTITLES ");
+        xstrcat(&pszTemp, "CA_DETAILSVIEWTITLES ");
 
     if (ulViewAttrs & CV_MINI)
-        strhxcat(&pszTemp, "CV_MINI ");
+        xstrcat(&pszTemp, "CV_MINI ");
     if (ulViewAttrs & CV_FLOW)
-        strhxcat(&pszTemp, "CV_FLOW ");
+        xstrcat(&pszTemp, "CV_FLOW ");
     if (ulViewAttrs & CA_DRAWICON)
-        strhxcat(&pszTemp, "CA_DRAWICON ");
+        xstrcat(&pszTemp, "CA_DRAWICON ");
     if (ulViewAttrs & CA_DRAWBITMAP)
-        strhxcat(&pszTemp, "CA_DRAWBITMAP ");
+        xstrcat(&pszTemp, "CA_DRAWBITMAP ");
     if (ulViewAttrs & CA_TREELINE)
-        strhxcat(&pszTemp, "CA_TREELINE ");
+        xstrcat(&pszTemp, "CA_TREELINE ");
 
     // owner...
 
@@ -503,10 +503,10 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 sprintf(szText, "%s (HWND: 0x%lX)",
                         szTemp1, pViewItem->handle);
             }
-            if (fdrQueryPSLI(pViewItem->handle, &ulSLIIndex))
+            /* if (fdrQueryPSLI(pViewItem->handle, &ulSLIIndex))
                 sprintf(szText + strlen(szText), "\nSubclassed: index %d in list", ulSLIIndex);
             else
-                sprintf(szText + strlen(szText), "\nNot subclassed");
+                sprintf(szText + strlen(szText), "\nNot subclassed"); */
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                                                  "Currently open views",
@@ -1394,11 +1394,11 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case CCVIEW_ON:
-            strhxcat(&pszTemp, "CCVIEW=YES;");
+            xstrcat(&pszTemp, "CCVIEW=YES;");
         break;
 
         case CCVIEW_OFF:
-            strhxcat(&pszTemp, "CCVIEW=NO;");
+            xstrcat(&pszTemp, "CCVIEW=NO;");
         break;
         // ignore CCVIEW_DEFAULT
     }
@@ -1413,19 +1413,19 @@ ULONG objQuerySetup(WPObject *somSelf,
             switch (_pWPObjectData->lDefaultView)
             {
                 case OPEN_SETTINGS:
-                    strhxcat(&pszTemp, "DEFAULTVIEW=SETTINGS;");
+                    xstrcat(&pszTemp, "DEFAULTVIEW=SETTINGS;");
                 break;
 
                 case OPEN_CONTENTS:
-                    strhxcat(&pszTemp, "DEFAULTVIEW=ICON;");
+                    xstrcat(&pszTemp, "DEFAULTVIEW=ICON;");
                 break;
 
                 case OPEN_TREE:
-                    strhxcat(&pszTemp, "DEFAULTVIEW=TREE;");
+                    xstrcat(&pszTemp, "DEFAULTVIEW=TREE;");
                 break;
 
                 case OPEN_DETAILS:
-                    strhxcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
+                    xstrcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
                 break;
 
                 case OPEN_DEFAULT:
@@ -1437,7 +1437,7 @@ ULONG objQuerySetup(WPObject *somSelf,
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
                     sprintf(szTemp, "DEFAULTVIEW=%d;", _pWPObjectData->lDefaultView);
-                    strhxcat(&pszTemp, szTemp);
+                    xstrcat(&pszTemp, szTemp);
                 break; }
             }
         }
@@ -1450,7 +1450,7 @@ ULONG objQuerySetup(WPObject *somSelf,
         {
             CHAR szTemp[40];
             sprintf(szTemp, "HELPPANEL=%d;", _pWPObjectData->ulHelpPanel);
-            strhxcat(&pszTemp, szTemp);
+            xstrcat(&pszTemp, szTemp);
         }
 
     // HIDEBUTTON
@@ -1458,11 +1458,11 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case HIDEBUTTON:
-            strhxcat(&pszTemp, "HIDEBUTTON=YES;");
+            xstrcat(&pszTemp, "HIDEBUTTON=YES;");
         break;
 
         case MINBUTTON:
-            strhxcat(&pszTemp, "HIDEBUTTON=NO;");
+            xstrcat(&pszTemp, "HIDEBUTTON=NO;");
         break;
 
         // ignore DEFAULTBUTTON
@@ -1482,15 +1482,15 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case MINWIN_HIDDEN:
-            strhxcat(&pszTemp, "MINWIN=HIDE;");
+            xstrcat(&pszTemp, "MINWIN=HIDE;");
         break;
 
         case MINWIN_VIEWER:
-            strhxcat(&pszTemp, "MINWIN=VIEWER;");
+            xstrcat(&pszTemp, "MINWIN=VIEWER;");
         break;
 
         case MINWIN_DESKTOP:
-            strhxcat(&pszTemp, "MINWIN=DESKTOP;");
+            xstrcat(&pszTemp, "MINWIN=DESKTOP;");
         break;
 
         // ignore MINWIN_DEFAULT
@@ -1510,14 +1510,14 @@ ULONG objQuerySetup(WPObject *somSelf,
     ulStyle = _wpQueryStyle(somSelf);
 
     if (ulStyle & OBJSTYLE_TEMPLATE)
-        strhxcat(&pszTemp, "TEMPLATE=YES;");
+        xstrcat(&pszTemp, "TEMPLATE=YES;");
 
     // TITLE
     /* pszValue = _wpQueryTitle(somSelf);
     {
-        strhxcat(&pszTemp, "TITLE=");
-            strhxcat(&pszTemp, pszValue);
-            strhxcat(&pszTemp, ";");
+        xstrcat(&pszTemp, "TITLE=");
+            xstrcat(&pszTemp, pszValue);
+            xstrcat(&pszTemp, ";");
     } */
 
     // OBJECTID: always append this LAST!
@@ -1525,9 +1525,9 @@ ULONG objQuerySetup(WPObject *somSelf,
     if (pszValue)
         if (strlen(pszValue))
         {
-            strhxcat(&pszTemp, "OBJECTID=");
-            strhxcat(&pszTemp, pszValue);
-            strhxcat(&pszTemp, ";");
+            xstrcat(&pszTemp, "OBJECTID=");
+            xstrcat(&pszTemp, pszValue);
+            xstrcat(&pszTemp, ";");
         }
 
     /*

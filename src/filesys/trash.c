@@ -1156,7 +1156,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
 {
     BOOL brc = FALSE;
 
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
         if (pabSupportedDrives)
         {
@@ -1209,7 +1209,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
 
         brc = TRUE;
 
-        cmnUnlock();
+        krnUnlock();
     }
 
     return (brc);

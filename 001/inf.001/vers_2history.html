@@ -17,7 +17,32 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.2 (March 24, 2000)</B>
+<P><B>XWorkplace 0.9.3 (March 24, 2000)</B>
+
+<H6>New features:
+<UL><LI>Added CMDREF.INF support to "Drivers" page in "OS/2 Kernel".
+
+</UL>Miscellaneous changes:
+<UL><LI>Removed "HPFS" page from "OS/2 Kernel" since we have a "Configure" dialog on the
+"Drivers" page also.
+<P><LI>Made "Syslevels" container a bit larger.
+
+</UL>Bugfixes:
+<UL><LI>Network drives refused to open if "Replace drive not ready" was enabled.
+Hope to have fixed that now.
+<P><LI>Mouse mappings page 2 wasn't showing "Page 2/2". Fixed.
+<P><LI>"WPS Class List" got confused with open windows and views so that folder views
+got closed when the class list view got closed. Fixed.
+<P><LI>Completely reworked folder subclassing management (see src/folder/fdrsubcl.c).
+After two years, I have finally come up with a new way of storing folder data, which
+replaces the old ugly routines which have been in XFolder/XWorkplace forever. I hope
+this doesn't conflict with Object Desktop.
+Hope that this fixes the "no folder close" problem which everybody experiences
+irregularily from time to time.
+<P><LI>"Dos window" replacement icon was missing a detail in 32x32 resolution. Thanks,
+Alfredo from Spain, for supplying a replacement.
+
+</UL></H6><B>XWorkplace 0.9.2 (March 24, 2000)</B>
 <H6>New features:
 <UL><LI>Incorporated "PageMage", virtual desktops.
 <P><LI>Automatic menu selection, even with configurable delay for submenus (as in Win95).

@@ -81,7 +81,7 @@ CATEGORY "General"
                  DRVF_CMDREF)
 
         DRIVER ( "DEVICE=", "POINTDD.SYS",
-                 "Pointer device driver",
+                 "Text-mode pointer support",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "RESERVE.SYS",
                  "Resource manager",
@@ -123,6 +123,9 @@ CATEGORY "Hard disk"
         DRIVER ( "BASEDEV=", "CHKDSK.SYS",
                  "Large partition support driver for CHKSDK32",
                  DRVF_NOPARAMS)
+        DRIVER ( "BASEDEV=", "N512DASD.FLT",
+                 "Large sector hard disk support",
+                 DRVF_NOPARAMS)
     }
 
 CATEGORY "CD-ROM"
@@ -138,15 +141,11 @@ CATEGORY "CD-ROM"
                  "ATAPI filter",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
-                 "CD-ROM filter",
+                 "IDE CD-ROM filter",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "DaniATAPI.FLT",
-                 "Enhanced CD-ROM filter (Daniela Engert)",
+                 "Enhanced ATAPI filter (Daniela Engert)",
                  0),
-
-        DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
-                 "CD-ROM filter",
-                 DRVF_CMDREF),
 
         DRIVER ( "BASEDEV=", "RSJIDECD.FLT",
                  "RSJ CD-ROM filter replacement",
@@ -232,15 +231,18 @@ CATEGORY "Installable File Systems"
         DRIVER ( "IFS=", "HPFS386.IFS",
                  "386 High Performance File System",
                  0),
+
         DRIVER ( "IFS=", "CDFS.IFS",
                  "CD-ROM file system",
                  DRVF_CMDREF)
+
         DRIVER ( "IFS=", "RAMFS.IFS",
                  "RAM disk file system",
                  0),
         DRIVER ( "IFS=", "RAMFS64.IFS",
                  "RAM disk file system (64 MB version)",
                  0),
+
         DRIVER ( "IFS=", "VFAT-OS2.IFS",
                  "Win95 VFAT file system",
                  0),
@@ -250,33 +252,38 @@ CATEGORY "Installable File Systems"
         DRIVER ( "BASEDEV=", "EXT2FLT.FLT",
                  "Linux ext2fs partition filter",
                  0),
+
         DRIVER ( "IFS=", "EXT2-OS2.IFS",
                  "Linux ext2fs file system",
                  0)
         DRIVER ( "RUN=", "EXT2_LW.EXE",
                  "Linux ext2fs cache daemon",
                  0)
+
         DRIVER ( "IFS=", "TVFS.IFS",
                  "Toronto Virtual File System",
                  0)
         DRIVER ( "RUN=", "TVCTL.EXE",
                  "Toronto Virtual File System control process",
                  0)
+
         DRIVER ( "IFS=", "FAT32.IFS",
                  "Henk Kelder's FAT32 File System",
                  0)
         DRIVER ( "RUN", "CACHEF32.EXE",
                  "Henk Kelder's FAT32 Cache daemon",
                  0)
+        DRIVER ( "BASEDEV=", "PARTFILT.FLT",
+                 "Partition type filter",
+                 0)
+
         DRIVER ( "IFS=", "HFS.IFS",
                  "Hierarchical File System Driver",
                  0)
         DRIVER ( "BASEDEV=", "HFS.FLT",
                  "Hierarchical File System support filter",
                  0)
-        DRIVER ( "BASEDEV=", "PARTFILT.FLT",
-                 "Partition Reordination Filter",
-                 0)
+
         DRIVER ( "IFS=", "NFS200.IFS",
                  "Network File System",
                  0)
@@ -339,13 +346,13 @@ CATEGORY "Other peripherals"
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "SIO.SYS",
                  "SIO enhanced serial (COM) port driver",
-                 DRVF_CMDREF)
+                 0)
         DRIVER ( "DEVICE=", "VCOM.SYS",
                  "Standard serial (COM) port vdriver for MVDM",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "VSIO.SYS",
                  "SIO enhanced serial (COM) port vdrier for MVDM",
-                 DRVF_CMDREF)
+                 0)
 
         DRIVER ( "DEVICE=", "USBCOM.SYS",
                  "USB modem",

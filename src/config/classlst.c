@@ -88,6 +88,7 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xclslist.ih"
@@ -1049,10 +1050,13 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *      a "class list" view of the XWPClassList object.
  *
  *      Upon WM_CREATE, this function creates all the
- *      class list subwindows, as listed below, and
- *      adds the frame to the class list object's
- *      in-use list. The view is removed again upon
- *      WM_CLOSE.
+ *      class list subwindows, as listed below. Since
+ *      the frame is created in cllCreateClassListView,
+ *      that function also adds the frame to the class
+ *      list object's in-use list and registers the view.
+ *      Apparently, this cannot be done during WM_CREATE
+ *      because the WPS loses track of the open windows then.
+ *      The view is removed in this function upon WM_CLOSE.
  *
  *      The main client window (with this window procedure)
  *      is created from cllCreateClassListView and gets passed
@@ -1097,7 +1101,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  +      |                         |   loaded from NLS resrcs)   |
  +      |                         |                             |
  +      |  ID_XLD_CLASSLIST       +-----------------------------+
- +      |  (fnwpClassTreeCnrDlg,      |                             |
+ +      |  (fnwpClassTreeCnrDlg,  |                             |
  +      |   loaded from NLS       |  ID_XLD_METHODINFO          |
  +      |   resources)            |  (fnwpMethodInfoDlg,        |
  +      |                         |   loaded from NLS rescrs)   |
@@ -1138,6 +1142,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *      controls' positions and sizes.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.3 (2000-04-02) [umoeller]: moved wpRegisterView etc. to cllCreateClassListView
  */
 
 MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1162,11 +1167,6 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
             HAB             hab = WinQueryAnchorBlock(hwndClient);
 
-            // register this view
-            _wpRegisterView(pCData->somSelf,
-                            hwndFrame,
-                            pNLSStrings->pszOpenClassList);
-
             // now add the view to the object's use list;
             // this use list is used by wpViewObject and
             // wpClose to check for existing open views.
@@ -1176,12 +1176,6 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                                             NULL);
             memset((PVOID)pClientData, 0, sizeof(CLASSLISTCLIENTDATA));
             pClientData->somSelf         = pCData->somSelf;
-            pClientData->clvi.UseItem.type    = USAGE_OPENVIEW;
-            pClientData->clvi.ViewItem.view   = pCData->ulView;
-            pClientData->clvi.ViewItem.handle = hwndFrame;
-
-            // add the use list item to the object's use list
-            _wpAddToObjUseList(pCData->somSelf, &(pClientData->clvi.UseItem));
 
             // initialize list of cnr items to be freed later
             lstInit(&pClientData->llCnrStrings, TRUE);
@@ -1310,7 +1304,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
         case WM_WINDOWPOSCHANGED:
         {
-            // this msg is passed two SWP structs:                    WM_SIZE
+            // this msg is passed two SWP structs:
             // one for the old, one for the new data
             // (from PM docs)
             PSWP pswpNew = PVOIDFROMMP(mp1);
@@ -2578,9 +2572,9 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                         {
                             if (preccThis->pszOverriddenBy)
                                 // not first class: append comma
-                                strhxcat(&preccThis->pszOverriddenBy, ", ");
+                                xstrcat(&preccThis->pszOverriddenBy, ", ");
 
-                            strhxcat(&preccThis->pszOverriddenBy, _somGetName(pClassObject));
+                            xstrcat(&preccThis->pszOverriddenBy, _somGetName(pClassObject));
                         }
 
                         pnodeOverride = pnodeOverride->pNext;
@@ -3023,6 +3017,8 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
  *      frame, using fnwpClassListClient as its client
  *      window procedure. In that procedure, upon WM_CREATE,
  *      the subwindows are created and linked.
+ *
+ *@@changed V0.9.3 (2000-04-02) [umoeller]: moved wpRegisterView etc. here
  */
 
 HWND cllCreateClassListView(WPObject *somSelf,
@@ -3080,6 +3076,12 @@ HWND cllCreateClassListView(WPObject *somSelf,
 
         if (hwndFrame)
         {
+            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // get client data window pointer; this has been allocated
+            // by WM_CREATE in fnwpClassListClient
+            PCLASSLISTCLIENTDATA pClientData
+                    = (PCLASSLISTCLIENTDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
+
             // now position the frame and the client:
             // 1) frame
             if (!winhRestoreWindowPos(hwndFrame,
@@ -3096,6 +3098,21 @@ HWND cllCreateClassListView(WPObject *somSelf,
 
             // finally, show window
             WinShowWindow(hwndFrame, TRUE);
+
+            // register this view; I've moved this here from WM_CREATE
+            // in cllCreateClassListView because apparently this doesn't
+            // work right if the window has not been fully created
+            _wpRegisterView(somSelf,
+                            hwndFrame,
+                            pNLSStrings->pszOpenClassList); // view title
+
+            // add the use list item to the object's use list
+            pClientData->clvi.UseItem.type    = USAGE_OPENVIEW;
+            pClientData->clvi.ViewItem.view   = ulView;
+            pClientData->clvi.ViewItem.handle = hwndFrame;
+            if (!_wpAddToObjUseList(somSelf, &(pClientData->clvi.UseItem)))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "_wpAddToObjUseList failed.");
         }
     }
     CATCH(excpt1) { } END_CATCH();

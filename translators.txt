@@ -1,5 +1,5 @@
 This is the list of people who have offered to translate XFolder
-(updated Dec. 14, 1998):
+(updated @@changed V0.9.3 (2000-04-08) [umoeller])
 
 Chinese:
 "Chun-Hung Chen" <u840201@oz.nthu.edu.tw>
@@ -16,11 +16,10 @@ Jean-Marc SPAGGIARI <jmspaggi@caramail.com>
 "Philippe Guerreiro" <guerfyld@yahoo.fr>
     (new with V0.9.0)
 
-Italian:
-"Andrea Penna" <apenna@dns.4net.it>
-"Glauco Ippolitoni" <glauco@mclink.it>
-"Riccardo Battistini" <rickb@gyral.com>
-"super keyby" <skeyby@usa.net>
+Italian (updated V0.9.3 (2000-04-08) [umoeller])
+Obelix <nbrion@box.seven.it>
+Gabriele Gamba <ggamba@tiscalinet.it>
+Loris Rinaldo <xloris@yahoo.com>
 
 Japanese:
 "ARAKAWA Atsushi" <arakaw@ibm.net>

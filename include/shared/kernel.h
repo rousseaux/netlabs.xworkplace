@@ -36,6 +36,20 @@
         #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
     #endif
 
+    /* ******************************************************************
+     *                                                                  *
+     *   Resource protection (thread safety)                            *
+     *                                                                  *
+     ********************************************************************/
+
+    BOOL krnLock(ULONG ulTimeout);
+
+    VOID krnUnlock(VOID);
+
+    ULONG krnQueryLock(VOID);
+
+    VOID APIENTRY krnOnKillDuringLock(VOID);
+
     /********************************************************************
      *                                                                  *
      *   KERNELGLOBALS structure                                        *

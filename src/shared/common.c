@@ -61,7 +61,6 @@
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR        // SC_CLOSE etc.
-#define INCL_WINMESSAGEMGR
 #define INCL_WININPUT
 #define INCL_WINDIALOGS
 #define INCL_WINMENUS
@@ -102,6 +101,7 @@
 #include <wpdesk.h>                     // WPDesktop
 
 // XWorkplace implementation headers
+#include "bldlevel.h"                   // XWorkplace build level definitions
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -117,8 +117,6 @@
  *   Global variables                                               *
  *                                                                  *
  ********************************************************************/
-
-HMTX            G_hmtxCommonLock = NULLHANDLE;
 
 CHAR            G_szHelpLibrary[CCHMAXPATH] = "";
 CHAR            G_szMessageFile[CCHMAXPATH] = "";
@@ -320,108 +318,6 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
 
 /* ******************************************************************
  *                                                                  *
- *   Resource protection (thread safety)                            *
- *                                                                  *
- ********************************************************************/
-
-/*
- *@@ cmnLock:
- *      function to request the global
- *      hmtxCommonLock semaphore to finally
- *      make the "cmn" functions thread-safe.
- *
- *      Returns TRUE if the semaphore could be
- *      accessed within the specified timeout.
- *
- *      Note: this requires the existence of a message
- *      queue since we use WinRequestMutexSem.
- *
- *      Usage:
- *
- +      if (cmnLock(4000))
- +      {
- +          TRY_LOUD(excpt1, cmnOnKillDuringLock)
- +          {
- +                  // ... precious code here
- +          }
- +          CATCH(excpt1) { } END_CATCH();
- +
- +          cmnUnlock();        // NEVER FORGET THIS!!
- +      }
- +
- *
- *@@added V0.9.0 (99-11-14) [umoeller]
- */
-
-BOOL cmnLock(ULONG ulTimeout)
-{
-    if (G_hmtxCommonLock == NULLHANDLE)
-        DosCreateMutexSem(NULL,         // unnamed
-                          &G_hmtxCommonLock,
-                          0,            // unshared
-                          FALSE);       // unowned
-
-    if (WinRequestMutexSem(G_hmtxCommonLock, ulTimeout) == NO_ERROR)
-        return TRUE;
-    else
-    {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "cmnLock mutex request failed");
-        return FALSE;
-    }
-}
-
-/*
- *@@ cmnUnlock:
- *
- *@@added V0.9.0 (99-11-14) [umoeller]
- */
-
-VOID cmnUnlock(VOID)
-{
-    DosReleaseMutexSem(G_hmtxCommonLock);
-}
-
-/*
- *@@ cmnQueryLock:
- *      returns the thread ID which currently owns
- *      the common lock semaphore or 0 if the semaphore
- *      is not owned (not locked).
- *
- *@@added V0.9.1 (2000-01-30) [umoeller]
- */
-
-ULONG cmnQueryLock(VOID)
-{
-    PID     pid = 0;
-    TID     tid = 0;
-    ULONG   ulCount = 0;
-    if (DosQueryMutexSem(G_hmtxCommonLock,
-                         &pid,
-                         &tid,
-                         &ulCount)
-            == NO_ERROR)
-        return (tid);
-
-    return (0);
-}
-
-/*
- *@@ cmnOnKillDuringLock:
- *      function to be used with the TRY_xxx
- *      macros to release the mutex semaphore
- *      on thread kills.
- *
- *@@added V0.9.0 (99-11-14) [umoeller]
- */
-
-VOID APIENTRY cmnOnKillDuringLock(VOID)
-{
-    DosReleaseMutexSem(G_hmtxCommonLock);
-}
-
-/* ******************************************************************
- *                                                                  *
  *   XWorkplace National Language Support (NLS)                     *
  *                                                                  *
  ********************************************************************/
@@ -477,9 +373,9 @@ BOOL cmnQueryXFolderBasePath(PSZ pszPath)
 
 const char* cmnQueryLanguageCode(VOID)
 {
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             if (G_szLanguageCode[0] == '\0')
                 PrfQueryProfileString(HINI_USERPROFILE,
@@ -495,8 +391,11 @@ const char* cmnQueryLanguageCode(VOID)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (G_szLanguageCode);
 }
@@ -514,9 +413,9 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
 {
     BOOL brc = FALSE;
 
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             strcpy(G_szLanguageCode, pszLanguage);
             G_szLanguageCode[3] = 0;
@@ -527,8 +426,11 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed.");
 
     return (brc);
 }
@@ -549,9 +451,9 @@ const char* cmnQueryHelpLibrary(VOID)
 {
     const char *rc = 0;
 
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             if (cmnQueryXFolderBasePath(G_szHelpLibrary))
             {
@@ -567,8 +469,11 @@ const char* cmnQueryHelpLibrary(VOID)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (rc);
 }
@@ -613,9 +518,9 @@ BOOL cmnDisplayHelp(WPObject *somSelf,
 const char* cmnQueryMessageFile(VOID)
 {
     const char *rc = 0;
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             if (cmnQueryXFolderBasePath(G_szMessageFile))
             {
@@ -631,8 +536,11 @@ const char* cmnQueryMessageFile(VOID)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (rc);
 }
@@ -657,9 +565,9 @@ const char* cmnQueryMessageFile(VOID)
 
 HMODULE cmnQueryIconsDLL(VOID)
 {
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             // first query?
             if (G_hmodIconsDLL == NULLHANDLE)
@@ -710,8 +618,11 @@ HMODULE cmnQueryIconsDLL(VOID)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (G_hmodIconsDLL);
 }
@@ -734,9 +645,9 @@ PSZ cmnQueryBootLogoFile(VOID)
 {
     PSZ pszReturn = 0;
 
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             pszReturn = prfhQueryProfileData(HINI_USER,
                                              INIAPP_XWORKPLACE,
@@ -754,8 +665,11 @@ PSZ cmnQueryBootLogoFile(VOID)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (pszReturn);
 }
@@ -1138,6 +1052,10 @@ VOID LoadNLSData(HAB habDesktop,
     // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_OPENPARTITIONS,
             &(pNLSStrings->pszOpenPartitions));
+
+    // "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_SYSLEVELPAGE,
+            &(pNLSStrings->pszSyslevelPage));
 }
 
 /*
@@ -1166,9 +1084,9 @@ VOID LoadNLSData(HAB habDesktop,
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 {
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             CHAR    szResourceModuleName[CCHMAXPATH];
             // ULONG   ulCopied;
@@ -1282,8 +1200,11 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     // return (new?) module handle
     return (G_hmodNLS);
@@ -1300,9 +1221,9 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
 PNLSSTRINGS cmnQueryNLSStrings(VOID)
 {
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             if (G_pNLSStringsGlobal == NULL)
             {
@@ -1312,8 +1233,12 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
+
     return (G_pNLSStringsGlobal);
 }
 
@@ -1447,9 +1372,9 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
 {
     const char *rc = 0;
 
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             switch (usSetting)
             {
@@ -1465,8 +1390,11 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (rc);
 }
@@ -1484,9 +1412,9 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 {
     BOOL    brc = FALSE;
 
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             HAB     habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
             HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
@@ -1548,8 +1476,11 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (brc);
 }
@@ -1589,9 +1520,9 @@ ULONG cmnQueryStatusBarHeight(VOID)
 
 PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 {
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             ULONG       ulCopied1;
 
@@ -1669,8 +1600,11 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 
     return (G_pGlobalSettings);
 }
@@ -1695,17 +1629,20 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 
 const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 {
-    if (cmnLock(5000))
+    if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, cmnOnKillDuringLock)
+        TRY_LOUD(excpt1, krnOnKillDuringLock)
         {
             if (G_pGlobalSettings == NULL)
                 cmnLoadGlobalSettings(FALSE);       // load from INI
         }
         CATCH(excpt1) { } END_CATCH();
 
-        cmnUnlock();
+        krnUnlock();
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
     return (G_pGlobalSettings);
 }
 
@@ -1726,10 +1663,14 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 
 GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
 {
-    if (cmnLock(ulTimeout))
+    if (krnLock(ulTimeout))
         return (G_pGlobalSettings);
     else
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
         return (NULL);
+    }
 }
 
 /*
@@ -1741,7 +1682,7 @@ GLOBALSETTINGS* cmnLockGlobalSettings(ULONG ulTimeout)
 
 VOID cmnUnlockGlobalSettings(VOID)
 {
-    cmnUnlock();
+    krnUnlock();
 }
 
 /*
@@ -1894,6 +1835,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
         case SP_SETUP_PARANOIA:   // all new with V0.9.0
             G_pGlobalSettings->VarMenuOffset   = 700;     // raised (V0.9.0)
+            G_pGlobalSettings->fNoFreakyMenus   = 0;
             G_pGlobalSettings->NoSubclassing   = 0;
             G_pGlobalSettings->NoWorkerThread  = 0;
             G_pGlobalSettings->fUse8HelvFont   = (!doshIsWarp4());
@@ -1944,6 +1886,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
                                NULL),
          hwndTextView;
 
+    // text view (GPL info)
     txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
     hwndTextView = txvReplaceWithTextView(hwndInfo,
                                           ID_XLDI_TEXT2,
@@ -1959,16 +1902,14 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
 
     xthrPlaySystemSound(ulSound);
 
-    // load GPL info message into prodinfo MLE
     cmnGetMessage(NULL, 0,
                   szGPLInfo, sizeof(szGPLInfo),
                   140);
     WinSendMsg(hwndTextView, TXM_NEWTEXT, (MPARAM)szGPLInfo, 0);
-    // WinSetDlgItemText(hwndInfo, ID_XLDI_TEXT2, szGPLInfo);
-    /* WinSendDlgItemMsg(hwndInfo, ID_XLDI_TEXT2,
-                      MLM_SETFIRSTCHAR,       // scroll MLE to top
-                      (MPARAM)0,
-                      MPNULL); */
+
+    // version string
+    sprintf(szGPLInfo, "XWorkkplace V%s built %s", BLDLEVEL_VERSION, __DATE__);
+    WinSetDlgItemText(hwndInfo, ID_XFDI_XFLDVERSION, szGPLInfo);
 
     cmnSetDlgHelpPanel(0);
     winhCenterWindow(hwndInfo);
@@ -2007,10 +1948,15 @@ VOID cmnSetControlsFont(HWND hwnd,
                         SHORT usIDMin,
                         SHORT usIDMax)
 {
-    cmnLock(5000);
-    winhSetControlsFont(hwnd, usIDMin, usIDMax,
-                        (PSZ)cmnQueryDefaultFont());
-    cmnUnlock();
+    if (krnLock(5000))
+    {
+        winhSetControlsFont(hwnd, usIDMin, usIDMax,
+                            (PSZ)cmnQueryDefaultFont());
+        krnUnlock();
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "krnLock failed");
 }
 
 PFNWP pfnwpOrigStatic = NULL;

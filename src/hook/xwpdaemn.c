@@ -1233,7 +1233,7 @@ int main(int argc, char *argv[])
                             DeinstallHook();
                         }
 
-                        WinDestroyObject(G_pDaemonShared->hwndDaemonObject);
+                        WinDestroyWindow(G_pDaemonShared->hwndDaemonObject);
                         G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
                     } // end if DosGetNamedSharedMem
                     else

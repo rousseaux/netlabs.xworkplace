@@ -160,14 +160,14 @@ VOID pgmwScanAllWindows(VOID)
         if (pgmwGetWinInfo(hwndTemp, &G_MainWindowList[G_usWindowCount]))
         {
             // window found:
-            _Pmpf(("Test %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
+            /* _Pmpf(("Test %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
                    G_usWindowCount,
                    G_MainWindowList[G_usWindowCount].hwnd,
                    G_MainWindowList[G_usWindowCount].szWindowName,
                    G_MainWindowList[G_usWindowCount].szClassName,
                    G_MainWindowList[G_usWindowCount].pid,
                    G_MainWindowList[G_usWindowCount].pid,
-                   G_MainWindowList[G_usWindowCount].bWindowType));
+                   G_MainWindowList[G_usWindowCount].bWindowType)); */
 
             // advance offset
             G_usWindowCount++;

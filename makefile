@@ -89,9 +89,9 @@ OBJS = bin\xdebug.obj \
     bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\hookintf.obj \
     bin\partitions.obj bin\sound.obj \
 # code from filesys\
-    bin\disk.obj bin\fdrhotky.obj bin\fileops.obj bin\filesys.obj bin\filetype.obj \
-    bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj bin\statbars.obj \
-    bin\trash.obj bin\xthreads.obj \
+    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fileops.obj bin\filesys.obj \
+    bin\filetype.obj bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
+    bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from startshut\
     bin\apm.obj bin\archives.obj bin\shutdown.obj
 
@@ -111,9 +111,10 @@ ANIOBJS =
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = bin\animate.obj bin\comctl.obj bin\cnrh.obj bin\datetime.obj \
     bin\debug.obj bin\dosh.obj bin\eah.obj bin\except.obj bin\gpih.obj \
-    bin\level.obj bin\linklist.obj bin\memdebug.obj bin\procstat.obj bin\prfh.obj bin\shapewin.obj \
-    bin\stringh.obj bin\syssound.obj bin\threads.obj bin\textview.obj bin\tmsgfile.obj \
-    bin\winh.obj bin\wphandle.obj bin\wpsh.obj
+    bin\level.obj bin\linklist.obj bin\memdebug.obj bin\procstat.obj \
+    bin\prfh.obj bin\shapewin.obj bin\stringh.obj bin\syssound.obj \
+    bin\threads.obj bin\textview.obj bin\tmsgfile.obj \
+    bin\winh.obj bin\wphandle.obj bin\wpsh.obj bin\xstring.obj
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
 DMNOBJS = bin\exes\xwpdaemn.obj \
@@ -474,6 +475,8 @@ release: really_all
     $(COPY) release\* $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLS)
     $(COPY) $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLS)
+    $(COPY) BUGS $(XWPRELEASE_MAIN)
+    $(COPY) FEATURES $(XWPRELEASE_MAIN)
 #
 # 2) bin
 #    a) kernel

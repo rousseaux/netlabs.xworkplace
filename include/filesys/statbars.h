@@ -66,7 +66,7 @@
         typedef struct _STATUSBARDATA
         {
             WPFolder   *somSelf;            // the folder of the status bar
-            PSUBCLASSEDLISTITEM psli;       // folder frame info struct (folder.h)
+            PSUBCLASSEDFOLDERVIEW psfv;       // folder frame info struct (folder.h)
             HAB        habStatusBar;        // status bar PM anchor block V0.9.2 (2000-02-22) [umoeller]
             ULONG      idTimer;             // update delay timer
             BOOL       fDontBroadcast;      // anti-recursion flag for presparams

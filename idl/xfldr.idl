@@ -370,6 +370,7 @@ interface XFolder : WPFolder
     wpMenuItemHelpSelected: override;
 
     wpOpen: override;
+    wpRegisterView: override;
     wpPopulate: override;
     wpRefresh: override;
 

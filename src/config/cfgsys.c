@@ -90,6 +90,7 @@
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfsys.ih"
@@ -2350,6 +2351,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
  *      we can properly free the items.
  *
  *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
+ *@@changed V0.9.3 (2000-04-01) [umoeller]: added DRVF_CMDREF support, finally
  */
 
 PLINKLIST InsertDriverCategories(HWND hwndCnr,
@@ -2437,7 +2439,12 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
                     else if (stricmp(pSpec->pszKeyword, "IFS=") == 0)
                         pSpec->ulFlags |= DRVF_IFS;
                     else
+                        // RUN=, CALL=, etc.
                         pSpec->ulFlags |= DRVF_OTHER;
+
+                    if (strstr(pszDriverSpec, "DRVF_CMDREF"))
+                        // DRVF_CMDREF specified:
+                        pSpec->ulFlags |= DRVF_CMDREF;
 
                     // the following routine sets up
                     // the driver configuration dialog
@@ -2502,6 +2509,10 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
 
 /*
  *@@ fntDriversThread:
+ *      "insert drivers" thread started by cfgDriversInitPage.
+ *      This fills the drivers tree view with drivers. Since
+ *      this may take several seconds, we rather not block
+ *      the user interface, but do this in a second thread.
  *
  *@@added V0.9.1 (2000-02-11) [umoeller]
  */
@@ -2511,6 +2522,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
     HAB     habDriversThread;
     HMQ     hmqDriversThread;
 
+    // create msg queue
     if (habDriversThread = WinInitialize(0))
     {
         if (hmqDriversThread = WinCreateMsgQueue(habDriversThread, 4000))
@@ -2523,15 +2535,17 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
             PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
+            // set wait pointer; this is handled by notebook.c
             G_pcnbpDrivers->fShowWaitPointer = TRUE;
 
+            // clear container
             WinSendMsg(hwndDriversCnr,
                        CM_REMOVERECORD,
                        (MPARAM)0,
                        MPFROM2SHORT(0, // all records
                                     CMA_FREE | CMA_INVALIDATE));
 
-            // root record; freed automatically
+            // create root record; freed automatically
             preccRoot = (PDRIVERRECORD)cnrhAllocRecords(hwndDriversCnr,
                                                         sizeof(DRIVERRECORD),
                                                         1);
@@ -2560,7 +2574,9 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
                         cmnQueryLanguageCode());
 
                 // load drivers.txt file; freed below
-                if (doshReadTextFile(szDriverSpecsFilename, &pszDriverSpecsFile) != NO_ERROR)
+                if (doshReadTextFile(szDriverSpecsFilename,
+                                     &pszDriverSpecsFile)
+                        != NO_ERROR)
                     DebugBox(HWND_DESKTOP,
                              szDriverSpecsFilename,
                              "XWorkplace was unable to open the driver specs file.");
@@ -2569,17 +2585,16 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
                     // drivers file successfully loaded:
                     // parse file
                     G_pcnbpDrivers->pUser = InsertDriverCategories(hwndDriversCnr,
-                                                                 preccRoot,
-                                                                 pszConfigSys,
-                                                                 pszDriverSpecsFile);
+                                                                   preccRoot,
+                                                                   pszConfigSys,
+                                                                   pszDriverSpecsFile);
                         // this returns a PLINKLIST containing LINKLIST's
-                        // containing DRIVERSPEC's
+                        // containing DRIVERSPEC's...
 
                     free(pszDriverSpecsFile);
                 }
 
                 free(pszConfigSys);
-
             }
 
             G_pcnbpDrivers->fShowWaitPointer = FALSE;
@@ -2640,6 +2655,8 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
+        // set data: create drivers thread, which inserts
+        // the drivers tree
         if (!thrQueryID(G_ptiDriversThread))
         {
             G_pcnbpDrivers = pcnbp;
@@ -2648,7 +2665,6 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                       fntDriversThread,
                       0);
         }
-            // WinSetPointer(HWND_DESKTOP, hptrOld);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -2759,27 +2775,27 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         if (precc->pDriverSpec)
                         {
                             // driver description
-                            strhxcpy(&pszText2MLE,
+                            xstrcpy(&pszText2MLE,
                                      precc->pDriverSpec->pszDescription);
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      "\n");
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      "File: ");
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      precc->szDriverNameFull);
 
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      "\n");
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      "Version: ");
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      precc->szVersion);
 
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      "\n");
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      "Vendor: ");
-                            strhxcat(&pszText2MLE,
+                            xstrcat(&pszText2MLE,
                                      precc->szVendor);
 
                             // enable "Configure" button if dialog defined
@@ -2851,7 +2867,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 case CN_CONTEXTMENU:
                 {
-                    HWND    hPopupMenu;
+                    HWND    hPopupMenu = NULLHANDLE;
 
                     // we store the container and recc.
                     // in the CREATENOTEBOOKPAGE structure
@@ -3057,7 +3073,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                  "XFolder was unable to open the CONFIG.SYS file.");
                     else
                     {
-                        strhxrpl(&pszConfigSys,
+                        xstrrpl(&pszConfigSys,
                                  0, // offset
                                  precc->szConfigSysLine,
                                  szNewLine,

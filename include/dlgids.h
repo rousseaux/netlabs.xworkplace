@@ -450,16 +450,17 @@
 // XWPSetup "Paranoia" page (V0.9.0)
 #define ID_XCD_PARANOIA                 1160
 #define ID_XCDI_VARMENUOFFSET           1161
-#define ID_XCDI_NOSUBCLASSING           1162
-#define ID_XCDI_NOWORKERTHREAD          1163
-#define ID_XCDI_USE8HELVFONT            1164
-#define ID_XCDI_NOEXCPTBEEPS            1165
-#define ID_XCDI_WORKERPRTY_SLIDER       1166
-#define ID_XCDI_WORKERPRTY_BEEP         1167
+#define ID_XCDI_NOFREAKYMENUS           1162
+#define ID_XCDI_NOSUBCLASSING           1163
+#define ID_XCDI_NOWORKERTHREAD          1164
+#define ID_XCDI_USE8HELVFONT            1165
+#define ID_XCDI_NOEXCPTBEEPS            1166
+#define ID_XCDI_WORKERPRTY_SLIDER       1167
+#define ID_XCDI_WORKERPRTY_BEEP         1168
 // the following two are for the descriptive texts;
 // they must have higher IDs, or the help panels won't work
-#define ID_XCDI_WORKERPRTY_TEXT1        1168
-#define ID_XCDI_WORKERPRTY_TEXT2        1169
+#define ID_XCDI_WORKERPRTY_TEXT1        1169
+#define ID_XCDI_WORKERPRTY_TEXT2        1170
 
 // XWPSetup "Objects" page (V0.9.0)
 #define ID_XCD_OBJECTS                  1180
@@ -1308,6 +1309,9 @@
 
 // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
 #define ID_XSSI_OPENPARTITIONS          5866
+
+// "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
+#define ID_XSSI_SYSLEVELPAGE            5867
 
 /******************************************
  *  Features on XWPSetup "Features" page  *

@@ -140,7 +140,7 @@ $(OUTPUTDIR)\common.obj: \
             $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\tmsgfile.h \
             $(HLPINC)\textview.h $(HLPINC)\undoc.h $(HLPINC)\winh.h \
      $(INC)\classes\xfldr.h \
-     $(INC)\dlgids.h \
+     $(INC)\bldlevel.h $(INC)\dlgids.h \
      $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
@@ -168,7 +168,7 @@ $(OUTPUTDIR)\kernel.obj: \
 $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\setup.h \
      $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\procstat.h \
-        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h $(HLPINC)\xstring.h \
      $(INC)\classes\xwpsetup.ih $(INC)\classes\xtrash.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \

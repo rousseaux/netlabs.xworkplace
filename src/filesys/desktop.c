@@ -124,21 +124,21 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
 
     // AUTOLOCKUP=YES/NO
     /* if (_wpQueryAutoLockup(somSelf))
-        strhxcat(&pszTemp, "AUTOLOCKUP=YES");
+        xstrcat(&pszTemp, "AUTOLOCKUP=YES");
 
     // LOCKUPAUTODIM=YES/NO
     if (_wpQueryLockupAutoDim(somSelf) == FALSE)
-        strhxcat(&pszTemp, "LOCKUPAUTODIM=NO");
+        xstrcat(&pszTemp, "LOCKUPAUTODIM=NO");
 
     // LOCKUPBACKGROUND
 
     // LOCKUPFULLSCREEN
     if (_wpQueryLockupFullScreen(somSelf) == FALSE)
-        strhxcat(&pszTemp, "LOCKUPFULLSCREEN=NO");
+        xstrcat(&pszTemp, "LOCKUPFULLSCREEN=NO");
 
     // LOCKUPONSTARTUP
     if (_wpQueryLockupOnStart(somSelf))
-        strhxcat(&pszTemp, "LOCKUPONSTARTUP=YES");
+        xstrcat(&pszTemp, "LOCKUPONSTARTUP=YES");
 
     _wpQueryLockupBackground();
 
@@ -148,7 +148,7 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
     {
         CHAR szTemp[300];
         sprintf(szTemp, "LOCKUPTIMEOUT=%d", ulValue);
-        strhxcat(&pszTemp, szTemp);
+        xstrcat(&pszTemp, szTemp);
     } */
 
     /*

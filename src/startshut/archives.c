@@ -90,6 +90,7 @@
 #include "helpers\prfh.h"
 #include "helpers\stringh.h"
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfdesk.ih"
@@ -583,11 +584,11 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 if (ArcSettings.fShowStatus)
                 {
                     sprintf(szTemp, "%d", lDaysPassed);
-                    strhxcpy(&pszMsg, szTemp);
-                    strhxcat(&pszMsg, " days passed since last backup\nLimit: ");
+                    xstrcpy(&pszMsg, szTemp);
+                    xstrcat(&pszMsg, " days passed since last backup\nLimit: ");
                     sprintf(szTemp, "%d", ArcSettings.ulEveryDays);
-                    strhxcat(&pszMsg, szTemp);
-                    strhxcat(&pszMsg, " days\n");
+                    xstrcat(&pszMsg, szTemp);
+                    xstrcat(&pszMsg, " days\n");
                 }
             }
 
@@ -613,12 +614,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 if (ArcSettings.fShowStatus)
                 {
                     sprintf(szTemp, "%f", dMaxDifferencePercent);
-                    strhxcpy(&pszMsg, "INI files checked\nChanged: ");
-                    strhxcat(&pszMsg, szTemp);
-                    strhxcat(&pszMsg, " %\nLimit: ");
+                    xstrcpy(&pszMsg, "INI files checked\nChanged: ");
+                    xstrcat(&pszMsg, szTemp);
+                    xstrcat(&pszMsg, " %\nLimit: ");
                     sprintf(szTemp, "%f", ArcSettings.dIniFilesPercent);
-                    strhxcat(&pszMsg, szTemp);
-                    strhxcat(&pszMsg, " %\n");
+                    xstrcat(&pszMsg, szTemp);
+                    xstrcat(&pszMsg, " %\n");
                 }
             }
         }
@@ -632,10 +633,10 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     // archiving to be turned on:
                     // save "last app" etc. data so we won't get this twice
                     arcSaveSettings();
-                    strhxcat(&pszMsg, "WPS archiving enabled");
+                    xstrcat(&pszMsg, "WPS archiving enabled");
                 }
                 else
-                    strhxcat(&pszMsg, "WPS archiving not necessary");
+                    xstrcat(&pszMsg, "WPS archiving not necessary");
 
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, pszMsg);
                 WinShowWindow(hwndStatus, TRUE);

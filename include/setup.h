@@ -60,7 +60,7 @@
         // each SOM method called from all the XWorkplace files and
         // slows down the system _very_ much if the PMPRINTF output
         // wnd is open.
-            // #define DEBUG_SOMMETHODS
+            #define DEBUG_SOMMETHODS
 
         // the following will show a dumb message box when XWPSetup
         // is opened to check whether all classes have properly

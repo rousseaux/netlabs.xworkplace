@@ -372,6 +372,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
  *      with folder views (see XFolder::wpOpen).
  *
  *@@changed V0.9.2 (2000-03-06) [umoeller]: drives were checked even if replacement dlg was disabled; fixed
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: adjusted for new folder subclassing
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
@@ -409,14 +410,17 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                                                  hwndCnr,
                                                                  ulView,
                                                                  param);
+                // else: hwndNewFrame is still NULLHANDLE
             }
             else
             {
+                // "drive not ready" replacement disabled:
                 hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
                                                              hwndCnr,
                                                              ulView,
                                                              param);
                 if (hwndNewFrame)
+                    // no error:
                     pRootFolder = _wpQueryRootFolder(somSelf);
             }
 
@@ -431,15 +435,20 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                         || (ulView == OPEN_DETAILS)
                        )
                     {
-                        PSUBCLASSEDLISTITEM psli;
+                        PSUBCLASSEDFOLDERVIEW psfv = NULL;
+
+                        hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
                         // subclass frame window; this is the same
                         // proc which is used for normal folder frames,
                         // we just use pRootFolder instead.
                         // However, we pass somSelf as the "real" object
                         // which will then be stored in *psli.
-                        psli = fdrSubclassFolderFrame(hwndNewFrame, pRootFolder, somSelf, ulView);
-
+                        psfv = fdrSubclassFolderView(hwndNewFrame,
+                                                     hwndCnr,
+                                                     pRootFolder, // folder
+                                                     somSelf);    // real object; for disks, this
+                                                                  // is the WPDisk object...
                         // add status bar, if allowed: as opposed to
                         // XFolder's, for XFldDisk's we only check the
                         // global setting, because there's no instance
@@ -450,7 +459,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                                         // bars visible per default?
                            )
                             // assert that subclassed list item is valid
-                            if (psli)
+                            if (psfv)
                                 // add status bar only if allowed for the current view type
                                 if (    (   (ulView == OPEN_CONTENTS)
                                          && (pGlobalSettings->SBForViews & SBV_ICON)
@@ -463,12 +472,11 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                         )
                                     )
                                     // this reformats the window with the status bar
-                                    fdrCreateStatusBar(pRootFolder, psli, TRUE);
+                                    fdrCreateStatusBar(pRootFolder, psfv, TRUE);
 
                         // extended sort functions
                         if (pGlobalSettings->ExtFolderSort)
                         {
-                            hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
                             if (hwndCnr)
                                 fdrSetFldrCnrSort(pRootFolder, hwndCnr, FALSE);    // xfldr.c
                         }

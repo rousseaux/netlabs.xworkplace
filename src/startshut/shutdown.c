@@ -1061,7 +1061,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     BOOL        fStore = FALSE;
     HWND        hwndConfirm = NULLHANDLE;
 
-    TRY_LOUD(excpt1, cmnOnKillDuringLock)
+    TRY_LOUD(excpt1, krnOnKillDuringLock)
     {
         HMODULE     hmodResource = cmnQueryNLSModuleHandle(FALSE);
         ULONG       ulKeyLength;

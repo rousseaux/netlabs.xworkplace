@@ -235,7 +235,7 @@
     #define ID_XSH_SETTINGS_XC_INFO          38     // V0.9.0: XWPSetup "Status" page
     #define ID_XSH_SETTINGS_XC_FEATURES      39     // V0.9.0: XWPSetup "Features" page
     #define ID_XSH_SETTINGS_FILEPAGE1        40     // V0.9.0: file-system objects "File" page replacment
-    #define ID_XSH_SETTINGS_FILEPAGE2        41     // ### V0.9.1 (2000-01-22) [umoeller]
+    #define ID_XSH_SETTINGS_FILEPAGE2        41     // V0.9.1 (2000-01-22) [umoeller]
     #define ID_XSH_SETTINGS_DISKDETAILS      42     // V0.9.0: disk "Details" replacement
     #define ID_XSH_SETTINGS_DTP_STARTUP      43     // V0.9.0: disk "Details" replacement
     #define ID_XSH_SETTINGS_DTP_ARCHIVES     44     // V0.9.0: disk "Details" replacement
@@ -256,6 +256,7 @@
     #define ID_XSH_XWPSCREEN                 59     // V0.9.2: default help for XWPScreen
     #define ID_XSH_MOUSE_CORNERS             60     // V0.9.2: XWPMouse "Movement" page 2
     #define ID_XSH_SETTINGS_TRASH_DRIVES     61     // V0.9.2: XWPTrashCan "Drives" page
+    #define ID_XSH_SETTINGS_SYSLEVEL         62     // V0.9.3: XFldSystem "Syslevel" page
 
     // "subpanels" for pages with context-sensitive help
     // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
@@ -738,6 +739,9 @@
         BYTE        fShowHotkeysInMenus;
                         // on XFldWPS "Hotkeys" page
 
+        BYTE        fNoFreakyMenus;
+                        // on XWPSetup "Paranoia" page
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -950,7 +954,10 @@
                 pszXWPScreenTitle,
 
                 // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
-                pszOpenPartitions;
+                pszOpenPartitions,
+
+                // "Syslevel" page title in "OS/2 kernel"
+                pszSyslevelPage;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1043,20 +1050,6 @@
                 const char *pcszFunction,
                 const char *pcszFormat,
                 ...);
-
-    /* ******************************************************************
-     *                                                                  *
-     *   Resource protection (thread safety)                            *
-     *                                                                  *
-     ********************************************************************/
-
-    BOOL cmnLock(ULONG ulTimeout);
-
-    VOID cmnUnlock(VOID);
-
-    ULONG cmnQueryLock(VOID);
-
-    VOID APIENTRY cmnOnKillDuringLock(VOID);
 
     /* ******************************************************************
      *                                                                  *

@@ -122,7 +122,7 @@ MYOWNINC = $(INC)\config
 $(OUTPUTDIR)\cfgsys.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\level.h $(HLPINC)\linklist.h $(HLPINC)\procstat.h \
-            $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+            $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfsys.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\classes.h $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
@@ -133,7 +133,7 @@ $(OUTPUTDIR)\cfgsys.obj: \
 $(OUTPUTDIR)\classlst.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
-            $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\threads.h \
+            $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\threads.h $(HLPINC)\xstring.h \
     $(INC)\dlgids.h \
     $(INC)\shared\classes.h $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \
     $(INC)\classes\xclslist.ih \
@@ -142,7 +142,7 @@ $(OUTPUTDIR)\classlst.obj: \
 $(OUTPUTDIR)\drivdlgs.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
-        $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\$(@B).h

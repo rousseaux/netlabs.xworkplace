@@ -286,7 +286,8 @@ LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers
 !ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /linenumbers /debug
 !else
-LINK =  $(LINK_BASE) /optfunc /exepack:2 /packcode /packdata
+LINK =  $(LINK_BASE) /exepack:2 /packcode /packdata
+# /optfunc
 !endif
 
 # Some LINK386 cmd line options

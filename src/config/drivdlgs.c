@@ -127,6 +127,7 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tmsgfile.h"           // "text message file" handling
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -804,45 +805,45 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
         if (pS506All->Units[ul].fRecoveryTime)
         {
             sprintf(szTemp, "/T:%d ", pS506All->Units[ul].ulRecoveryTime);
-            strhxcpy(&pszUnitParams[ul], szTemp);
+            xstrcpy(&pszUnitParams[ul], szTemp);
         }
 
         if (pS506All->Units[ul].fGeometry == TRUE)
         {
             sprintf(szTemp, "/GEO:%s ", pS506All->Units[ul].szGeometry);
-            strhxcat(&pszUnitParams[ul], szTemp);
+            xstrcat(&pszUnitParams[ul], szTemp);
         }
 
         if (pS506All->Units[ul].b3BusMaster == 0)
-            strhxcat(&pszUnitParams[ul], "/!BM ");
+            xstrcat(&pszUnitParams[ul], "/!BM ");
         else if (pS506All->Units[ul].b3BusMaster == 1)
-            strhxcat(&pszUnitParams[ul], "/BM ");
+            xstrcat(&pszUnitParams[ul], "/BM ");
 
         if (pS506All->Units[ul].b3SMS == 0)
-            strhxcat(&pszUnitParams[ul], "/!SMS ");
+            xstrcat(&pszUnitParams[ul], "/!SMS ");
         else if (pS506All->Units[ul].b3SMS == 1)
-            strhxcat(&pszUnitParams[ul], "/SMS ");
+            xstrcat(&pszUnitParams[ul], "/SMS ");
 
         if (pS506All->Units[ul].fLBA == TRUE)
-            strhxcat(&pszUnitParams[ul], "/LBA ");
+            xstrcat(&pszUnitParams[ul], "/LBA ");
 
         if (pS506All->Units[ul].b3DASD == 0)
-            strhxcat(&pszUnitParams[ul], "/!DM ");
+            xstrcat(&pszUnitParams[ul], "/!DM ");
         else if (pS506All->Units[ul].b3DASD == 1)
-            strhxcat(&pszUnitParams[ul], "/DM ");
+            xstrcat(&pszUnitParams[ul], "/DM ");
 
         if (pS506All->Units[ul].b3ATAPI == 0)
-            strhxcat(&pszUnitParams[ul], "/!ATAPI ");
+            xstrcat(&pszUnitParams[ul], "/!ATAPI ");
         else if (pS506All->Units[ul].b3ATAPI == 1)
-            strhxcat(&pszUnitParams[ul], "/ATAPI ");
+            xstrcat(&pszUnitParams[ul], "/ATAPI ");
 
         if (pS506All->Units[ul].fForce == TRUE)
-            strhxcat(&pszUnitParams[ul], "/FORCE ");
+            xstrcat(&pszUnitParams[ul], "/FORCE ");
 
         if (pS506All->Units[ul].fTimeout == TRUE)
         {
             sprintf(szTemp, "/IT:%d ", pS506All->Units[ul].ulTimeout);
-            strhxcat(&pszUnitParams[ul], szTemp);
+            xstrcat(&pszUnitParams[ul], szTemp);
         }
 
         if (pS506All->Units[ul].fLimitRate == TRUE)
@@ -851,13 +852,13 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
                     pS506All->Units[ul].bUDMA,
                     pS506All->Units[ul].bMWDMA,
                     pS506All->Units[ul].bPIO);
-            strhxcat(&pszUnitParams[ul], szTemp);
+            xstrcat(&pszUnitParams[ul], szTemp);
         }
 
         if (pS506All->Units[ul].b3Removeable == 0)
-            strhxcat(&pszUnitParams[ul], "/!RMV ");
+            xstrcat(&pszUnitParams[ul], "/!RMV ");
         else if (pS506All->Units[ul].b3Removeable == 1)
-            strhxcat(&pszUnitParams[ul], "/RMV ");
+            xstrcat(&pszUnitParams[ul], "/RMV ");
     }
 
     // go thru adapters and compose adapter strings array
@@ -866,41 +867,41 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
          ul++)
     {
         if (pS506All->Adapters[ul].fIgnore == TRUE)
-            strhxcat(&pszAdapterParams[ul], "/I ");
+            xstrcat(&pszAdapterParams[ul], "/I ");
         else
         {
             if (pS506All->Adapters[ul].b3AllowReset == 0)
-                strhxcat(&pszAdapterParams[ul], "/!R ");
+                xstrcat(&pszAdapterParams[ul], "/!R ");
             else if (pS506All->Adapters[ul].b3AllowReset == 1)
-                strhxcat(&pszAdapterParams[ul], "/R ");
+                xstrcat(&pszAdapterParams[ul], "/R ");
 
             if (pS506All->Adapters[ul].b3BusMaster == 0)
-                strhxcat(&pszAdapterParams[ul], "/!BM ");
+                xstrcat(&pszAdapterParams[ul], "/!BM ");
             else if (pS506All->Adapters[ul].b3BusMaster == 1)
-                strhxcat(&pszAdapterParams[ul], "/BM ");
+                xstrcat(&pszAdapterParams[ul], "/BM ");
 
             if (pS506All->Adapters[ul].fBaseAddress)
             {
                 sprintf(szTemp, "/P:%lX ", pS506All->Adapters[ul].ulBaseAddress);
-                strhxcat(&pszAdapterParams[ul], szTemp);
+                xstrcat(&pszAdapterParams[ul], szTemp);
             }
 
             if (pS506All->Adapters[ul].fIRQ)
             {
                 sprintf(szTemp, "/IRQ:%d ", pS506All->Adapters[ul].ulIRQ);
-                strhxcat(&pszAdapterParams[ul], szTemp);
+                xstrcat(&pszAdapterParams[ul], szTemp);
             }
 
             if (pS506All->Adapters[ul].fDMAChannel)
             {
                 sprintf(szTemp, "/DC:%d ", pS506All->Adapters[ul].ulDMAChannel);
-                strhxcat(&pszAdapterParams[ul], szTemp);
+                xstrcat(&pszAdapterParams[ul], szTemp);
             }
 
             if (pS506All->Adapters[ul].fDMAScatterGatherAddr)
             {
                 sprintf(szTemp, "/DSGP:%lX ", pS506All->Adapters[ul].ulDMAScatterGatherAddr);
-                strhxcat(&pszAdapterParams[ul], szTemp);
+                xstrcat(&pszAdapterParams[ul], szTemp);
             }
         }
     }
@@ -908,14 +909,14 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
     // now start composing the complete return string;
     // we'll start with the global parameters
     if (pS506All->bInit == 1)
-        strhxcpy(&pszParams, "/V ");
+        xstrcpy(&pszParams, "/V ");
     else if (pS506All->bInit == 2)
-        strhxcpy(&pszParams, "/W ");
+        xstrcpy(&pszParams, "/W ");
 
     if (pS506All->b3ScatterGather == 0)
-        strhxcat(&pszParams, "/!DSG ");
+        xstrcat(&pszParams, "/!DSG ");
     else if (pS506All->b3ScatterGather == 1)
-        strhxcat(&pszParams, "/DSG ");
+        xstrcat(&pszParams, "/DSG ");
 
     if (pS506All->fPCIClock == TRUE)
     {
@@ -926,17 +927,17 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
                 : (pS506All->ulPCIClock == 1) ? "33"
                 : (pS506All->ulPCIClock == 2) ? "37"
                 : "41");
-        strhxcat(&pszParams, szTemp);
+        xstrcat(&pszParams, szTemp);
     }
 
     if (pS506All->fGBM == TRUE)
-        strhxcat(&pszParams, "/GBM ");
+        xstrcat(&pszParams, "/GBM ");
 
     if (pS506All->fForceGBM == TRUE)
-        strhxcat(&pszParams, "/FORCEGBM ");
+        xstrcat(&pszParams, "/FORCEGBM ");
 
     if (pS506All->fMGAFix == TRUE)
-        strhxcat(&pszParams, "/MGAFIX ");
+        xstrcat(&pszParams, "/MGAFIX ");
 
     // go over the adapters:
     // adapter 0
@@ -945,11 +946,11 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
          || (pszUnitParams[1] != NULL)
        )
     {
-        strhxcat(&pszParams, "/A:0 ");
+        xstrcat(&pszParams, "/A:0 ");
         if (pszAdapterParams[0] != NULL)
         {
             // string for adapter 0:
-            strhxcat(&pszParams, pszAdapterParams[0]);
+            xstrcat(&pszParams, pszAdapterParams[0]);
             free(pszAdapterParams[0]);
         }
 
@@ -958,15 +959,15 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
             if (pszUnitParams[0] != NULL)
             {
                 // string for adapter 0, unit 0:
-                strhxcat(&pszParams, "/U:0 ");
-                strhxcat(&pszParams, pszUnitParams[0]);
+                xstrcat(&pszParams, "/U:0 ");
+                xstrcat(&pszParams, pszUnitParams[0]);
                 free(pszUnitParams[0]);
             }
             if (pszUnitParams[1] != NULL)
             {
                 // string for adapter 0, unit 1:
-                strhxcat(&pszParams, "/U:1 ");
-                strhxcat(&pszParams, pszUnitParams[1]);
+                xstrcat(&pszParams, "/U:1 ");
+                xstrcat(&pszParams, pszUnitParams[1]);
                 free(pszUnitParams[1]);
             }
         }
@@ -978,11 +979,11 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
          || (pszUnitParams[3] != NULL)
        )
     {
-        strhxcat(&pszParams, "/A:1 ");
+        xstrcat(&pszParams, "/A:1 ");
         if (pszAdapterParams[1] != NULL)
         {
             // string for adapter 1:
-            strhxcat(&pszParams, pszAdapterParams[1]);
+            xstrcat(&pszParams, pszAdapterParams[1]);
             free(pszAdapterParams[1]);
         }
 
@@ -991,15 +992,15 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
             if (pszUnitParams[2] != NULL)
             {
                 // string for adapter 1, unit 0:
-                strhxcat(&pszParams, "/U:0 ");      // /A:1 /U:0 == unit 2
-                strhxcat(&pszParams, pszUnitParams[2]);
+                xstrcat(&pszParams, "/U:0 ");      // /A:1 /U:0 == unit 2
+                xstrcat(&pszParams, pszUnitParams[2]);
                 free(pszUnitParams[2]);
             }
             if (pszUnitParams[3] != NULL)
             {
                 // string for adapter 1, unit 1:
-                strhxcat(&pszParams, "/U:1 ");      // /A:1 /U:1 == unit 3
-                strhxcat(&pszParams, pszUnitParams[3]);
+                xstrcat(&pszParams, "/U:1 ");      // /A:1 /U:1 == unit 3
+                xstrcat(&pszParams, pszUnitParams[3]);
                 free(pszUnitParams[3]);
             }
         }
@@ -1349,8 +1350,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         // unrecognized param:
                         // append to string, which will be
                         // displayed later with a warning
-                        strhxcat(&pszUnrecognized, pszToken);
-                        strhxcat(&pszUnrecognized, " ");
+                        xstrcat(&pszUnrecognized, pszToken);
+                        xstrcat(&pszUnrecognized, " ");
                     }
 
                     if (pszError)
@@ -1830,11 +1831,11 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         if (pS506All->pszTooltipString)
                             if (pS506All->pszTooltipString[strlen(pS506All->pszTooltipString)-1]
                                         != ':')
-                                strhxcat(&pS506All->pszTooltipString, ":\n");
+                                xstrcat(&pS506All->pszTooltipString, ":\n");
                             else
                                 // last char is already ":"
-                                strhxcat(&pS506All->pszTooltipString, "\n");
-                        strhxcat(&pS506All->pszTooltipString, szHelpString);
+                                xstrcat(&pS506All->pszTooltipString, "\n");
+                        xstrcat(&pS506All->pszTooltipString, szHelpString);
 
                         pttt->lpszText = pS506All->pszTooltipString;
                     }

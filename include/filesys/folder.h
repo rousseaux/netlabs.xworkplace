@@ -30,6 +30,14 @@
 
     /* ******************************************************************
      *                                                                  *
+     *   Global variables                                               *
+     *                                                                  *
+     ********************************************************************/
+
+    extern PFNWP G_pfnwpFolderContentMenuOriginal;
+
+    /* ******************************************************************
+     *                                                                  *
      *   Additional declarations for xfldr.c                            *
      *                                                                  *
      ********************************************************************/
@@ -168,12 +176,8 @@
 
     #ifdef SOM_WPFolder_h
 
-        VOID fdrManipulateNewView(WPFolder *somSelf,
-                                  HWND hwndNewFrame,
-                                  ULONG ulView);
-
         /*
-         *@@ SUBCLASSEDLISTITEM:
+         *@@ SUBCLASSEDFOLDERVIEW:
          *      linked list structure used with folder frame
          *      window subclassing. One of these structures
          *      is created for each folder view (window) which
@@ -197,7 +201,7 @@
          *@@changed V0.9.2 (2000-03-06) [umoeller]: removed ulView, because this might change
          */
 
-        typedef struct _SUBCLASSEDLISTITEM
+        typedef struct _SUBCLASSEDFOLDERVIEW
         {
             HWND        hwndFrame;          // folder view frame window
             WPFolder    *somSelf;           // folder object
@@ -227,28 +231,36 @@
             ULONG       ulSelection;        // SEL_* flags;
                                             // this field is valid only between
                                             // WM_INITMENU and WM_COMMAND
-        } SUBCLASSEDLISTITEM, *PSUBCLASSEDLISTITEM;
+        } SUBCLASSEDFOLDERVIEW, *PSUBCLASSEDFOLDERVIEW;
 
-        VOID fdrInitPSLI(VOID);
+        PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
+                                                    HWND hwndCnr,
+                                                    WPFolder *somSelf,
+                                                    WPObject *pRealObject);
 
-        PSUBCLASSEDLISTITEM fdrQueryPSLI(HWND hwndFrame,
-                                         PULONG pulIndex);
+        PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,
+                                          PULONG pulIndex);
 
-        PSUBCLASSEDLISTITEM fdrSubclassFolderFrame(HWND hwndFrame,
-                                                   WPFolder *somSelf,
-                                                   WPObject *pRealObject,
-                                                   ULONG ulView);
+        VOID fdrManipulateNewView(WPFolder *somSelf,
+                                  HWND hwndNewFrame,
+                                  ULONG ulView);
 
-        VOID fdrRemovePSLI(PSUBCLASSEDLISTITEM psli);
+        VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv);
 
-        MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+        MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd,
+                                                       ULONG msg,
+                                                       MPARAM mp1,
+                                                       MPARAM mp2);
 
         // Supplementary object window msgs (for each
         // subclassed folder frame, xfldr.c)
         #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)
         #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
 
-        MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+        MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject,
+                                                   ULONG msg,
+                                                   MPARAM mp1,
+                                                   MPARAM mp2);
 
         /* ******************************************************************
          *                                                                  *
@@ -278,7 +290,7 @@
          ********************************************************************/
 
         HWND fdrCreateStatusBar(WPFolder *somSelf,
-                                PSUBCLASSEDLISTITEM psli2,
+                                PSUBCLASSEDFOLDERVIEW psli2,
                                 BOOL fShow);
 
     #endif
@@ -417,6 +429,18 @@
                                               USHORT usItemID,
                                               USHORT usNotifyCode,
                                               ULONG ulExtra);
+    #endif
+
+    /********************************************************************
+     *                                                                  *
+     *   Folder messaging (fdrsubclass.c)                               *
+     *                                                                  *
+     ********************************************************************/
+
+    #ifdef INCL_WINHOOKS
+        VOID EXPENTRY fdr_SendMsgHook(HAB hab,
+                                      PSMHSTRUCT psmh,
+                                      BOOL fInterTask);
     #endif
 
 #endif

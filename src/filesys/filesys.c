@@ -64,6 +64,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfpgmf.ih"
@@ -634,57 +635,57 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                                 CHAR    szTemp[100];
                                 BOOL    fDumpBinary = TRUE;
 
-                                strhxcpy(&pszInfo, pszEAName);
+                                xstrcpy(&pszInfo, pszEAName);
 
                                 switch (usEAType)
                                 {
                                     case EAT_BINARY:
-                                        strhxcat(&pszInfo, " (EAT_BINARY");
+                                        xstrcat(&pszInfo, " (EAT_BINARY");
                                     break;
 
                                     case EAT_ASCII:
-                                        strhxcat(&pszInfo, " (EAT_ASCII");
+                                        xstrcat(&pszInfo, " (EAT_ASCII");
                                         pszContents = eaCreatePSZFromBinding(peab);
                                         fDumpBinary = FALSE;
                                     break;
 
                                     case EAT_BITMAP:
-                                        strhxcat(&pszInfo, " (EAT_BITMAP");
+                                        xstrcat(&pszInfo, " (EAT_BITMAP");
                                     break;
 
                                     case EAT_METAFILE:
-                                        strhxcat(&pszInfo, " (EAT_METAFILE");
+                                        xstrcat(&pszInfo, " (EAT_METAFILE");
                                     break;
 
                                     case EAT_ICON:
-                                        strhxcat(&pszInfo, " (EAT_ICON");
+                                        xstrcat(&pszInfo, " (EAT_ICON");
                                     break;
 
                                     case EAT_EA:
-                                        strhxcat(&pszInfo, " (EAT_EA");
+                                        xstrcat(&pszInfo, " (EAT_EA");
                                     break;
 
                                     case EAT_MVMT:
-                                        strhxcat(&pszInfo, " (EAT_MVMT");
+                                        xstrcat(&pszInfo, " (EAT_MVMT");
                                     break;
 
                                     case EAT_MVST:
-                                        strhxcat(&pszInfo, " (EAT_MVST");
+                                        xstrcat(&pszInfo, " (EAT_MVST");
                                     break;
 
                                     case EAT_ASN1:
-                                        strhxcat(&pszInfo, " (EAT_ASN1");
+                                        xstrcat(&pszInfo, " (EAT_ASN1");
                                     break;
 
                                     default:
                                     {
                                         sprintf(szTemp, " (type 0x%lX", usEAType);
-                                        strhxcat(&pszInfo, szTemp);
+                                        xstrcat(&pszInfo, szTemp);
                                     }
                                 }
 
                                 sprintf(szTemp, ", %d bytes)", peab->usValueLength);
-                                strhxcat(&pszInfo, szTemp);
+                                xstrcat(&pszInfo, szTemp);
 
                                 if (fDumpBinary)
                                 {

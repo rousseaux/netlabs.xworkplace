@@ -116,7 +116,8 @@ $(OUTPUTDIR)\apm.obj: \
 
 $(OUTPUTDIR)\archives.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\datetime.h $(HLPINC)\dosh.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\datetime.h $(HLPINC)\dosh.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfdesk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h \

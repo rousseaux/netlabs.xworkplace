@@ -59,6 +59,7 @@
  */
 
 #define INCL_DOSERRORS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_WINWINDOWMGR
@@ -89,6 +90,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
@@ -96,6 +98,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "filesys\fileops.h"            // file operations implementation
@@ -233,7 +236,7 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
         pGlobalSettings->fTrashDelete = FALSE;
         cmnUnlockGlobalSettings();
 
-        if (cmnQueryLock())
+        if (krnQueryLock())
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Global lock already requested.");
         else
@@ -767,6 +770,7 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
  *      description. The parameters are exactly the same.
  *
  *@@changed V0.9.1 (2000-01-30) [umoeller]: extracted some functions for clarity; this was a total mess
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: fixed "Create another" problem
  */
 
 ULONG fopsConfirmObjectTitle(WPObject *somSelf,
@@ -782,6 +786,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     // and only if we're not creating shadows
     if (    (_somIsA(somSelf, _WPFileSystem))
          && (menuID != 0x13C) // "create shadow" code
+         && (menuID != 0x0065) // "create another" code; V0.9.3 (2000-04-08) [umoeller]
        )
     {
         CHAR            szFolder[CCHMAXPATH],
@@ -852,8 +857,8 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                 // replace placeholders in introductory strings
                 pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
                                                               ID_XFDI_CLASH_TXT1));
-                strhxrpl(&pszTemp, 0, "%1", szRealNameFound, 0);
-                strhxrpl(&pszTemp, 0, "%2", szFolder, 0);
+                xstrrpl(&pszTemp, 0, "%1", szRealNameFound, 0);
+                xstrrpl(&pszTemp, 0, "%2", szFolder, 0);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
                                   pszTemp);
                 free(pszTemp);

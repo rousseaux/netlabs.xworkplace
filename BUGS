@@ -4,6 +4,12 @@ I keep adding bugs which are reported through xworkplace-user@egroups.com
 to this file and remove them when they are fixed. Please don't report
 bugs which are already mentioned in this file. Thanks.
 
+misc:
+    -- install: XWPScreen no work; probably the old DLL is still in use
+       when replaced (DosReplaceModule)
+    -- XShutdown and Launchpad no work: did I change "Shutdown" menu ID?
+    -- disabling sounds doesn't disable sounds. Check flags everywhere?
+
 folders:
     -- using WarpCenter moves icons upwards at each WPS startup
     -- noticed a problem with the replacement 'File exists' dialogue. If you
@@ -13,6 +19,10 @@ folders:
        name'. Change it to something else, for example 'anyfing', click
        'Create', and the 'File conflict' dialogue pops up identifying the
        object on which you used the rmb. I'm using WSeB, no fixpacks.
+    -- disabling snap2grid in XWPSetup doesn't disable
+
+status bars:
+    -- hidden records (Templates folder)
 
 trash can:
     -- close subfolders too when deleting parent folder
@@ -20,6 +30,7 @@ trash can:
     -- sorting doesn't work
     -- Drives page: multiple selections are not all moved
     -- working on trash can while folder sizes are collected crashes
+    -- "Replace" in trash can hangs the system
 
 archiving:
     -- after restoring backup, archiving is enabled because of the
@@ -38,10 +49,19 @@ file page:
        causes a WPS-hangup.
     -- Same with chkdsk.log. Apparently EA handling is buggy somewhere.
 
+OS/2 Kernel:
+    -- "Help" button does nothing in "Configure" dialogs
+    -- "Optimize" does nothing with CDFS.IFS
+
 other settings pages:
     -- XWPSetup: "Undo" and "Default" don't affect newer settings (trashcan)
     -- Clicking "Refresh" in the "object" strap of an object causes a WPS-Hangup.
-    -- System paths: scroll listbox to first visible
+    -- System paths:
+       -- scroll listbox to first visible
+       -- check resize controls; crashes on "Close" button
+    -- Mouse:
+       Under Sliding menu selection, Submenu delay started at "Text."  Once I moved it,
+       it became 0 ms, as it should be.  :)
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
@@ -53,22 +73,43 @@ icons:
 
 drive objects:
     -- network drives don't work. Check doshAssertDrive for error codes
-       other than 50.
+       other than 50 (apparently SYS3).
 
 create objects:
     -- check "Shift" with creating objects
     -- select editable title
 
+daemon:
+    -- >XWorkPlace was showing in the window list (looks like a Pacman ghost) before.
+       >Now that I've rebooted, it's not...
+
 hook:
+    -- auto-hide pointer:
+       -- mouse pointer gets lost sometimes
+       -- no work when typing in PM window
+       -- disappears while MB3-scrolling or Mb1-menus
+       -- above WarpCenter menus, the mouse disappears and never comes back. ?!?!?
+
+    -- MB3 scroll:
+       -- Netscape hangs
+       -- VIEW.EXE TOC not fully shown
+
     -- VIO copy conflicts with WM_CHORD; check window class
+
     -- WM_CHORD over Netscape/PMMail no work
-    -- function keys (F-keys, Del, Pos, ...) don't work as hotkeys in VIO sessions
-    -- sliding focus over MDI frames no work
+
+    -- function keys (F-keys, Del, Pos, ...) don't work as hotkeys when VIO has focus
+
+    -- sliding focus over MDI subframes no work (VIEW.EXE)
+
     -- sliding focus windows appear/disappear
+
     -- Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
        ignore WinOS/2 windows.
+
     -- The displaying window in keyboard object / hotkeys should be a bit wider,
        so you would not have to horizontally scroll all the time.
+
     -- I had problem with my second installation of XWp. I installed, but
        afterwards it was not possible to check "Enable global object hotkeys"
        unless (afaik) I temporarily turned sliding focus on. (the Hook etc was - of
@@ -76,5 +117,12 @@ hook:
        But I reinstalled XWorkplace on a new partition (with a new Warp4, FP12, DDFix,
        ..) and the same happened. I was not able to enable the global hotkeys - unless
        I temporarily turned the sliding focus on. So it is definetely reproducable.
+
     -- sliding focus closes drop-down box when mouse is above the box's scroll bar
 
+    -- I was still able to trigger the Window list as mouse cursor bug (not as easily,
+       though).  I think I did it from PMMail.
+
+
+PageMage:
+    -- maximized windows show border on adjacent screen

@@ -314,10 +314,10 @@ VOID AppendModuleInfo(PSZ *ppszCurrentInfo,
     pszTemp += sprintf(pszTemp, "32-bit module: %s\n", psz32Bits);
     pszTemp += sprintf(pszTemp, "Vendor: %s\n", pszVendor);
     pszTemp += sprintf(pszTemp, "Version: %s\n", pszVersion);
-    strhxcat(ppszCurrentInfo, szTemp);
+    xstrcat(ppszCurrentInfo, szTemp);
     pszTemp = szTemp;
     pszTemp += sprintf(pszTemp, "Description: %s\n", pszDescr);
-    strhxcat(ppszCurrentInfo, szTemp);
+    xstrcat(ppszCurrentInfo, szTemp);
 
     if (pExec)
         doshExecClose(pExec);
@@ -461,47 +461,6 @@ VOID InsertProcessList(HWND hwndCnr,
 }
 
 /*
- *@@ FindMsgQueue:
- *      returns the message queue which matches
- *      the given process and thread IDs.
- *
- *@@added V0.9.2 (2000-03-08) [umoeller]
- */
-
-HMQ FindMsgQueue(PID pid, TID tid)
-{
-    HWND    hwndThis = 0,
-            rc = 0;
-    HENUM   henum = WinBeginEnumWindows(HWND_OBJECT);
-    while (hwndThis = WinGetNextWindow(henum))
-    {
-        CHAR    szClass[200];
-        if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
-        {
-            if (strcmp(szClass, "#32767") == 0)
-            {
-                PID pidWin = 0;
-                TID tidWin = 0;
-                // message queue:
-                WinQueryWindowProcess(hwndThis,
-                                      &pidWin,
-                                      &tidWin);
-                if (    (pidWin == pid)
-                     && (tidWin == tid)
-                   )
-                {
-                    rc = WinQueryWindowULong(hwndThis, QWL_HMQ);
-                    break;
-                }
-            }
-        }
-    }
-    WinEndEnumWindows(henum);
-
-    return (rc);
-}
-
-/*
  *@@ ProcessSelected:
  *      gets called when a new process gets selected
  *      to compose the process information string
@@ -528,12 +487,12 @@ VOID ProcessSelected(VOID)
         pszTemp += sprintf(pszTemp, "Session ID: 0x%04lX\n", pProcess->sessid);
 
         pszTemp += sprintf(pszTemp, "\nModule: %s\n", ((PPROCRECORD)G_precSelected)->szModuleName);
-        strhxcpy(&pszCurrentInfo, szTemp);
+        xstrcpy(&pszCurrentInfo, szTemp);
 
         if (pProcess->pid == 1)
         {
             // sysinit:
-            strhxcat(&pszCurrentInfo, "\nKernel pseudo-process.\n");
+            xstrcat(&pszCurrentInfo, "\nKernel pseudo-process.\n");
         }
         else
         {
@@ -589,7 +548,7 @@ VOID ProcessSelected(VOID)
             pszTemp += sprintf(pszTemp, "\nThreads: %d\n", pProcess->usThreadCount);
             // header for the following
             pszTemp += sprintf(pszTemp, "  TID Slot SleepID    Prty   State HMQ\n");
-            strhxcat(&pszCurrentInfo, szTemp);
+            xstrcat(&pszCurrentInfo, szTemp);
 
             // dump threads
             pThread = pProcess->pThreads;
@@ -598,7 +557,7 @@ VOID ProcessSelected(VOID)
                  i++, pThread++)
             {
                 CHAR    szState[30] = "block";
-                HWND hwndMsgQueue = 0;
+                HMQ     hmq = 0;
 
                 switch(pThread->ucState)
                 {
@@ -615,15 +574,15 @@ VOID ProcessSelected(VOID)
                                    pThread->ulSleepID,
                                    pThread->ulPriority,
                                    szState);
-                if (hwndMsgQueue = FindMsgQueue(pProcess->pid,
-                                                pThread->usTID))
+                if (hmq = FindMsgQueue(pProcess->pid,
+                                       pThread->usTID))
                 {
-                    pszTemp += sprintf(pszTemp, "0x%lX", hwndMsgQueue);
+                    pszTemp += sprintf(pszTemp, "0x%lX", hmq);
                     cMsgQueues++;
                 }
 
                 pszTemp += sprintf(pszTemp, "\n");
-                strhxcat(&pszCurrentInfo, szTemp);
+                xstrcat(&pszCurrentInfo, szTemp);
             }
 
             // dump message queues
@@ -635,7 +594,7 @@ VOID ProcessSelected(VOID)
                 pszTemp += sprintf(pszTemp, "\nMessage queues: %d\n", cMsgQueues);
                 // header for the following
                 pszTemp += sprintf(pszTemp, "  HMQ        HWND       TID size pNext     TID\n");
-                strhxcat(&pszCurrentInfo, szTemp);
+                xstrcat(&pszCurrentInfo, szTemp);
 
                 while (hwndThis = WinGetNextWindow(henum))
                 {
@@ -678,7 +637,7 @@ VOID ProcessSelected(VOID)
                                 }
 
                                 pszTemp += sprintf(pszTemp, "\n");
-                                strhxcat(&pszCurrentInfo, szTemp);
+                                xstrcat(&pszCurrentInfo, szTemp);
                             }
                         }
                     }
@@ -688,7 +647,7 @@ VOID ProcessSelected(VOID)
 
             // dump 32-bit semaphores
             sprintf(szTemp, "\nPrivate 32-bit semaphores: 0x%lX\n", pProcess->ulPrivSem32Count);
-            strhxcat(&pszCurrentInfo, szTemp);
+            xstrcat(&pszCurrentInfo, szTemp);
             {
                 PQSEM32STRUC32 pSem32 = G_pInfo->pSem32Data;
                 if (pSem32)
@@ -697,7 +656,7 @@ VOID ProcessSelected(VOID)
                         sprintf(szTemp,
                                 "sem32: %s\n",
                                 pSem32->SmuxSem.pszName);
-                        strhxcat(&pszCurrentInfo, szTemp);
+                        xstrcat(&pszCurrentInfo, szTemp);
 
                         pSem32 = pSem32->pNext;
                     }
@@ -705,17 +664,17 @@ VOID ProcessSelected(VOID)
                 {
                     PQSEM16STRUC32  pSemData = G_pInfo->pSem16Data;
                     PQSEMA32        pSem16 = &pSemData->sema;
-                    strhxcat(&pszCurrentInfo, "  global pSem32Data is NULL\n");
+                    xstrcat(&pszCurrentInfo, "  global pSem32Data is NULL\n");
                 }
             }
 
             // dump 16-bit semaphores
             sprintf(szTemp, "\n16-bit semaphores: %d\n", pProcess->usSem16Count);
-            strhxcat(&pszCurrentInfo, szTemp);
+            xstrcat(&pszCurrentInfo, szTemp);
             if (pProcess->usSem16Count)
             {
                 sprintf(szTemp, "  indx semaID cRef flags cSys \"reserved\"\n", pProcess->usSem16Count);
-                strhxcat(&pszCurrentInfo, szTemp);
+                xstrcat(&pszCurrentInfo, szTemp);
                 for (i = 0;
                      i < pProcess->usSem16Count;
                      i++)
@@ -736,17 +695,17 @@ VOID ProcessSelected(VOID)
 
 
                     strcat(pszTemp, "\n");
-                    strhxcat(&pszCurrentInfo, szTemp);
+                    xstrcat(&pszCurrentInfo, szTemp);
                 }
             }
 
             // dump shared memory
             sprintf(szTemp, "\nShared mem: %d references\n", pProcess->usShrMemCount);
-            strhxcat(&pszCurrentInfo, szTemp);
+            xstrcat(&pszCurrentInfo, szTemp);
             if (pProcess->usShrMemCount)
             {
                 sprintf(szTemp, "  shrmID selector cRef\n");
-                strhxcat(&pszCurrentInfo, szTemp);
+                xstrcat(&pszCurrentInfo, szTemp);
                 for (i = 0;
                      i < pProcess->usShrMemCount;
                      i++)
@@ -761,13 +720,13 @@ VOID ProcessSelected(VOID)
                                            pShrThis->usRefCount,
                                            pShrThis->acName);
                     strcat(pszTemp, "\n");
-                    strhxcat(&pszCurrentInfo, szTemp);
+                    xstrcat(&pszCurrentInfo, szTemp);
                 }
             }
 
             // dump modules
             sprintf(szTemp, "\nModule references (imports): %d\n", pProcess->usModuleCount);
-            strhxcat(&pszCurrentInfo, szTemp);
+            xstrcat(&pszCurrentInfo, szTemp);
             if (pProcess->usModuleCount)
             {
                 for (i = 0;
@@ -780,16 +739,16 @@ VOID ProcessSelected(VOID)
                                        sizeof(szTemp),
                                        pszTemp);
                     strcat(pszTemp, "\n");
-                    strhxcat(&pszCurrentInfo, szTemp);
+                    xstrcat(&pszCurrentInfo, szTemp);
                 }
             }
 
             // dump open files
             sprintf(szTemp, "\nOpen files: %d\n", pProcess->usFdsCount);
-            strhxcat(&pszCurrentInfo, szTemp);
+            xstrcat(&pszCurrentInfo, szTemp);
             if (pProcess->usFdsCount)
             {
-                strhxcat(&pszCurrentInfo,
+                xstrcat(&pszCurrentInfo,
                          "  sfn  cOpn Flags    Accs  Size hVol attribs\n");
                 for (i = 0;
                      i < pProcess->usFdsCount;
@@ -846,14 +805,14 @@ VOID ProcessSelected(VOID)
                             strcat(szTemp, "\n");
                         }
                         if (fAppend)
-                            strhxcat(&pszCurrentInfo, szTemp);
+                            xstrcat(&pszCurrentInfo, szTemp);
                     }
                 }
             }
         }
     } // end if (G_precSelected)
 
-    strhxcat(&pszCurrentInfo, "End of dump\n");
+    xstrcat(&pszCurrentInfo, "End of dump\n");
 
     WinSendMsg(G_hwndProcView,
                TXM_NEWTEXT,
@@ -1148,13 +1107,13 @@ VOID ModuleSelected(VOID)
 
         pszTemp += sprintf(pszTemp, "Module name: %s\n", precSelected->szModuleName);
         pszTemp += sprintf(pszTemp, "Module handle: 0x%04lX\n", pModule->usHModule);
-        strhxcpy(&pszCurrentInfo, szTemp);
+        xstrcpy(&pszCurrentInfo, szTemp);
 
         // module flags
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "Module flags: 0x%04lX\n", pModule->type);
         pszTemp += sprintf(pszTemp, "Segments: %d\n\n", pModule->ulSegmentCount);
-        strhxcat(&pszCurrentInfo, szTemp);
+        xstrcat(&pszCurrentInfo, szTemp);
 
         // module info
         AppendModuleInfo(&pszCurrentInfo,
@@ -1163,7 +1122,7 @@ VOID ModuleSelected(VOID)
         // find processes using this module
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "\nProcesses using this module directly:\n");
-        strhxcat(&pszCurrentInfo, szTemp);
+        xstrcat(&pszCurrentInfo, szTemp);
 
         pProcess = G_pInfo->pProcessData;
         while ((pProcess) && (pProcess->rectype == 1))
@@ -1184,7 +1143,7 @@ VOID ModuleSelected(VOID)
                                            sizeof(szTemp) - 4,
                                            szTemp + 4);
                         strcat(szTemp, "\n");
-                        strhxcat(&pszCurrentInfo, szTemp);
+                        xstrcat(&pszCurrentInfo, szTemp);
                         cProcCount++;
                     }
                 }
@@ -1203,12 +1162,12 @@ VOID ModuleSelected(VOID)
             pszTemp += sprintf(pszTemp, "    none\n");
         else
             pszTemp += sprintf(pszTemp, "Total: %d processes\n", cProcCount);
-        strhxcat(&pszCurrentInfo, szTemp);
+        xstrcat(&pszCurrentInfo, szTemp);
 
         // other modules using this module
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "\nOther modules using this module:\n");
-        strhxcat(&pszCurrentInfo, szTemp);
+        xstrcat(&pszCurrentInfo, szTemp);
 
         cProcCount = 0;
         pModule2 = G_pInfo->pModuleData;
@@ -1229,7 +1188,7 @@ VOID ModuleSelected(VOID)
                         pszTemp += sprintf(pszTemp, "    0x%04lX: %s\n",
                                            pModule2->usHModule,
                                            szTemp2);
-                        strhxcat(&pszCurrentInfo, szTemp);
+                        xstrcat(&pszCurrentInfo, szTemp);
                         cProcCount++;
                     }
                 }
@@ -1243,12 +1202,12 @@ VOID ModuleSelected(VOID)
             pszTemp += sprintf(pszTemp, "    none\n");
         else
             pszTemp += sprintf(pszTemp, "Total: %d modules\n", cProcCount);
-        strhxcat(&pszCurrentInfo, szTemp);
+        xstrcat(&pszCurrentInfo, szTemp);
 
         // references
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "\nModule references (imports, inserted into tree): %d\n", pModule->ulRefCount);
-        strhxcat(&pszCurrentInfo, szTemp);
+        xstrcat(&pszCurrentInfo, szTemp);
 
         if (pModule->ulRefCount)
         {
@@ -1264,7 +1223,7 @@ VOID ModuleSelected(VOID)
                 pszTemp += sprintf(pszTemp, "    0x%04lX: %s\n",
                                    pModule->ausModRef[i],
                                    szTemp2);
-                strhxcat(&pszCurrentInfo, szTemp);
+                xstrcat(&pszCurrentInfo, szTemp);
 
                 if (    (!precSelected->fSubModulesInserted)
                      && (pModule->ausModRef[i] != pModule->usHModule)
@@ -1285,7 +1244,7 @@ VOID ModuleSelected(VOID)
         }
     } // end if (G_precSelected)
 
-    strhxcat(&pszCurrentInfo, "End of dump\n");
+    xstrcat(&pszCurrentInfo, "End of dump\n");
 
     WinSendMsg(G_hwndProcView,
                TXM_NEWTEXT,
