@@ -177,6 +177,9 @@
     MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView, ULONG ulActivate,
                                           MPARAM mpView, MPARAM mpFolder);
 
+    MRESULT EXPENTRY fncbStatusBarPost(HWND hwndView, ULONG msg,
+                                       MPARAM mpView, MPARAM mpFolder);
+
     /********************************************************************
      *
      *   Folder frame window subclassing

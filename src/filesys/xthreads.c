@@ -393,7 +393,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             {
                 // SmartGuide object not found (Warp 3):
                 // display simple dialog
-                // pKernelGlobals->ulWorkerFunc2 = 3000;
                 winhCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
                                    WinDefDlgProc,
                                    cmnQueryNLSModuleHandle(FALSE),
@@ -465,7 +464,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 _Pmpf(("Entering WOM_PROCESSORDEREDCONTENT..."));
             #endif
 
-            // pKernelGlobals->ulWorkerFunc2 = 5000;
             if (wpshCheckObject(pFolder))
             {
                 if (pPCI)
@@ -473,7 +471,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     if (pPCI->ulObjectNow == 0)
                     {
                         // first call: initialize structure
-                        // pKernelGlobals->ulWorkerFunc2 = 5010;
                         pPCI->ulObjectMax = 0;
                         wpshCheckIfPopulated(pFolder,
                                              FALSE);        // full populate
@@ -498,21 +495,16 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     else
                     {
                         // subsequent calls: get next object
-                        // pKernelGlobals->ulWorkerFunc2 = 5020;
                         pPCI->pObject = _xwpEnumNext(pFolder, pPCI->henum);
                     }
 
                     // now process that object
-                    // pKernelGlobals->ulWorkerFunc2 = 5029;
                     pPCI->ulObjectNow++;
-                    // pKernelGlobals->ulWorkerFunc2 = 5030;
                     if (pPCI->pObject)
                     {
                         // this is not the last object: start it
-                        // pKernelGlobals->ulWorkerFunc2 = 5040;
                         if (pPCI->pfnwpCallback)
                         {
-                            // pKernelGlobals->ulWorkerFunc2 = 5042;
                             if (wpshCheckObject(pPCI->pObject))
                             {
                                 #ifdef DEBUG_STARTUP
@@ -525,11 +517,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                                          MPNULL);
                             }
                         }
-                        // pKernelGlobals->ulWorkerFunc2 = 5043;
                         pPCI->ulFirstTime = dtGetULongTime();
 
                         // wait for next object
-                        // pKernelGlobals->ulWorkerFunc2 = 5044;
                         xthrPostWorkerMsg(WOM_WAITFORPROCESSNEXT,
                                           mp1, mp2);
                     }
@@ -537,20 +527,16 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     {
                         // pPCI->pObject == NULL:
                         // no more objects, call callback with NULL, clean up and stop
-                        // pKernelGlobals->ulWorkerFunc2 = 5050;
                         if (pPCI->pfnwpCallback)
                         {
-                            // pKernelGlobals->ulWorkerFunc2 = 5052;
                             #ifdef DEBUG_STARTUP
                                 _Pmpf(("  Sending T1M_POCCALLBACK, pObject == NULL"));
                             #endif
                             krnSendThread1ObjectMsg(T1M_POCCALLBACK,
                                                      (MPARAM)pPCI,  // pObject == NULL now
                                                      MPNULL);
-                            // pKernelGlobals->ulWorkerFunc2 = 5055;
                         }
 
-                        // pKernelGlobals->ulWorkerFunc2 = 5059;
                         _xwpEndEnumContent(pFolder, pPCI->henum);
                         free(pPCI);
                     }
@@ -567,7 +553,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO)mp2;
             BOOL                OKGetNext = FALSE;
 
-            // pKernelGlobals->ulWorkerFunc2 = 5100;
             if (pPCI)
             {
                 if (!pPCI->fCancelled)
@@ -575,7 +560,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     if (pPCI->ulTiming == 0)
                     {
                         // "wait for close" mode
-                        // pKernelGlobals->ulWorkerFunc2 = 5110;
                         if (_wpWaitForClose(pPCI->pObject,
                                             pPCI->hwndView,
                                             0,
@@ -628,7 +612,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     free(pPCI);
                 }
             }
-            // pKernelGlobals->ulWorkerFunc2 = 5139;
         break; }
 
         /*
@@ -654,14 +637,12 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // increment global count
             pKernelGlobals->lAwakeObjectsCount++;
 
-            // pKernelGlobals->ulWorkerFunc2 = 6000;
             // set the quiet exception handler, because
             // sometimes we get a message for an object too
             // late, i.e. it is not awake any more, and then
             // we'll trap
             TRY_QUIET(excpt2, NULL)
             {
-                // pKernelGlobals->ulWorkerFunc2 = 6010;
 
                 // only save awake abstract and folder objects;
                 // if we included all WPFileSystem objects, all
@@ -672,13 +653,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                      // || (_somIsA(pObj2Store, _WPFolder))
                    )
                 {
-                    // APIRET rc;
-                    // pKernelGlobals->ulWorkerFunc2 = 6020;
                     if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
                         pKernelGlobals->pAwakeWarpCenter = pObj2Store;
 
                     // get the mutex semaphore
-                    // pKernelGlobals->ulWorkerFunc2 = 6030;
                     G_fWorkerAwakeObjectsSemOwned
                           = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
                              == NO_ERROR);
@@ -708,8 +686,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                             else
                                 _Pmpf(("WT: Item is already on list"));
                         #endif
-
-                        // pKernelGlobals->ulWorkerFunc2 = 6090;
                     }
                 }
             }
@@ -758,7 +734,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             #endif
 
             // get the mutex semaphore
-            // pKernelGlobals->ulWorkerFunc2 = 7000;
             G_fWorkerAwakeObjectsSemOwned =
                     (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
                     == NO_ERROR);
@@ -771,7 +746,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         _Pmpf(("WT: Calling lstRemoveItem with poli = 0x%lX",
                                pObj));
                     #endif
-                    // pKernelGlobals->ulWorkerFunc2 = 7005;
                     #ifdef DEBUG_AWAKEOBJECTS
                         _Pmpf(("WT: lstRemoveItem rc: %d",
                                lstRemoveItem(pKernelGlobals->pllAwakeObjects,
@@ -861,7 +835,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             XFolder     *pFolder = (XFolder*)mp1;
             CHAR        szPath[CCHMAXPATH];
 
-            // pKernelGlobals->ulWorkerFunc2 = 9500;
             if (!wpshCheckObject(pFolder))
                 break;
 
@@ -1020,8 +993,6 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
     QMSG            qmsg;
     PSZ             pszErrMsg = NULL;
     BOOL            fTrapped = FALSE;
-
-    // pKernelGlobals->ulWorkerFunc2 = 599;
 
     // we will now create the mutex semaphore for access to
     // the linked list of awake objects; this is used in

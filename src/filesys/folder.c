@@ -1483,6 +1483,35 @@ MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView,        // folder frame
     return (mrc);
 }
 
+/*
+ * fncbStatusBarPost:
+ *      this posts a message to each view's status bar if it exists.
+ *      This is a callback to fdrForEachOpenInstanceView, which gets
+ *      called from XFolder::wpAddToContent and XFolder::wpDeleteFromContent.
+ *
+ *@@added V0.9.6 (2000-10-26) [pr]
+ */
+
+MRESULT EXPENTRY fncbStatusBarPost(HWND hwndView,        // folder frame
+                                   ULONG msg,            // message
+                                   MPARAM mpView,        // OPEN_xxx flag
+                                   MPARAM mpFolder)      // folder object
+{
+    PSUBCLASSEDFOLDERVIEW psfv;
+
+    if (   ((ULONG) mpView == OPEN_CONTENTS)
+        || ((ULONG) mpView == OPEN_DETAILS)
+        || ((ULONG) mpView == OPEN_TREE)
+       )
+    {
+        psfv = fdrQuerySFV(hwndView, NULL);
+        if (psfv && psfv->hwndStatusBar)
+            WinPostMsg (psfv->hwndStatusBar, msg, MPNULL, MPNULL);
+    }
+
+    return ((MPARAM) TRUE);
+}
+
 /* ******************************************************************
  *                                                                  *
  *   Folder linked lists                                            *

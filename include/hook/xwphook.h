@@ -281,6 +281,10 @@
                             // a "real" object handle, and a regular WPS
                             // object is to be opened.
 
+        // special treatment for conditional-cascade submenus when
+        // using sliding menus (V0.9.6 (2000-10-27) [umoeller])
+        BOOL            fConditionalCascadeSensitive;
+
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*

@@ -26,6 +26,7 @@ Changes for V0.9.6
 
     --  ID_XSD_FILETYPES modified.
     --  ID_XSD_NEWFILETYPE modified.
+    --  ID_XSD_MOUSE_MOVEMENT modified.
 
 
 Changes for V0.9.4/V0.9.5

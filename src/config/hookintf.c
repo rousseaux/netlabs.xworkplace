@@ -1883,6 +1883,8 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
  *      "Mouse hook" page in the "Mouse" settings object.
  *      Sets the controls on the page according to the
  *      Global Settings.
+ *
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  */
 
 VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1892,8 +1894,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
     {
         if (pcnbp->pUser == 0)
         {
-            // first call: create HOOKCONFIG
-            // structure;
+            // first call: create HOOKCONFIG structure;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
@@ -1932,7 +1933,6 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(9, 10),
                            6);
-
     }
 
     if (flFlags & CBI_SET)
@@ -1965,6 +1965,8 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                                  SMA_INCREMENTVALUE,
                                  // slider uses .1 seconds ticks
                                  pdc->ulSubmenuDelay / 100);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_CONDCASCADE,
+                              pdc->fConditionalCascadeSensitive);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
                               pdc->fMenuImmediateHilite);
 
@@ -2005,6 +2007,8 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                           pdc->fSlidingMenus);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT2,
                           pdc->fSlidingMenus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_CONDCASCADE,
+                          pdc->fSlidingMenus);
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
                           (pdc->fSlidingMenus) && (pdc->ulSubmenuDelay > 0));
 
@@ -2024,6 +2028,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2106,6 +2111,11 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break; }
 
+        case ID_XSDI_MOUSE_CONDCASCADE:
+            hifLoadHookConfig(pdc);
+            pdc->fConditionalCascadeSensitive = ulExtra;
+        break;
+
         case ID_XSDI_MOUSE_MENUHILITE:
             hifLoadHookConfig(pdc);
             pdc->fMenuImmediateHilite = ulExtra;
@@ -2148,6 +2158,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->ulSlidingFocusDelay = 0;
             pdc->fSlidingMenus = 0;
             pdc->ulSubmenuDelay = 0;
+            pdc->fConditionalCascadeSensitive = 0;
             pdc->fMenuImmediateHilite = 0;
             pdc->fAutoHideMouse = 0;
             pdc->ulAutoHideDelay = 0;
@@ -2174,6 +2185,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pdc->ulSlidingFocusDelay = pBackup->ulSlidingFocusDelay;
                 pdc->fSlidingMenus = pBackup->fSlidingMenus;
                 pdc->ulSubmenuDelay = pBackup->ulSubmenuDelay;
+                pdc->fConditionalCascadeSensitive = pBackup->fConditionalCascadeSensitive;
                 pdc->fMenuImmediateHilite = pBackup->fMenuImmediateHilite;
                 pdc->fAutoHideMouse = pBackup->fAutoHideMouse;
                 pdc->ulAutoHideDelay = pBackup->ulAutoHideDelay;

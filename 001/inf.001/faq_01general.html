@@ -57,6 +57,11 @@ a checkbox where you can force XWorkplace to use the "8.Helv" font in most place
 <P>You will need to install them first. See the
 <!-- V0.9.3: link changed -->
 <A HREF="mm_2sounds.html">corresponding page</A> for more.
+<!-- V0.9.6: added the following -->
+<P>Some people reported that after upgrading their sound cards, XWorkplace's system
+sounds no longer works. This turned out to be a problem with the multimedia setup.
+Open the standard "Multimedia Configuration" object, "Digital Audio" page, and make
+sure that the "WAV" file extension appears in the extensions associations list.
 
 <P><LI><B>Why do I keep getting crashes in SOM.DLL?</B>
 <P>If you're using <B>VisualAge C++</B> or any other software which installs
@@ -72,6 +77,11 @@ Put those directories behind <CITE>\OS2\DLL</CITE> in the <CITE>LIBPATH</CITE>.
 <P>I have no idea. Several people have reported very strange WPS behavior when a drive
 folder is opened after removeable media has been exchanged. After that, the WPS works
 fine again (until the media is exchanged again).
+<!-- V0.9.6: added this -->
+<P>Note that I do not have removeable drives, other than a CD-ROM drive and a CD writer.
+I therefore cannot reproduce these problems here. If somebody can take a look at
+XWorkplace's source code to find out what might cause this, this would be a great help.
+
 <P>IBM has introduced some new removeable media support with Warp 4 Fixpak 6, so maybe
 we have a problem there. Christian Hennecke &lt;christian.hennecke@ruhr-uni-bochum.de&gt;
 wrote in some newsgroup that replacing <CODE>PMWP.DLL</CODE> with a

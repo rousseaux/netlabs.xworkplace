@@ -16,5 +16,5 @@ Also, this holds the DEF files to link XFLDR.DLL
 together as well as the resources which go into
 XFLDR.DLL (and are thus independent of NLS).
 
-
+Ulrich M”ller (2000-10-29)
 

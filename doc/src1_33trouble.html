@@ -10,10 +10,10 @@ Troubleshooting
 <OL><LI>If you get errors from the <B>makefiles,</B> make sure you have set up the
 <A HREF="src1_32env.html">environment variables</A> right.
 
-<P><LI>Also, you need to check out the WarpIN source tree for the
-<A HREF="src1_5helpers.html">helpers</A> code. Make sure that the WarpIN source
+<P><LI>Also, you need to check out the "xwphelpers" CVS archive from Netlabs for the
+<A HREF="src1_5helpers.html">helpers</A> code. Make sure that this code
 is not outdated, and that the <CODE>HELPERS_BASE</CODE> environment variable points
-to the WarpIN sources root directory.
+to that archive's root directory.
 
 <P><LI>If you get something like <B>"File XWPDAEMN.EXE/XWPHOOK.DLL is in use",</B> the
 XWorkplace hook DLL is currently loaded and running. While all other executables
@@ -31,7 +31,7 @@ comes up otherwise).
 startup folder will get processed again after the WPS restart.
 
 <P><LI>If you get unknown definitions or unresolved externals during compiling/linking,
-make sure that the WarpIN and XWorkplace sources have the same code levels. I tend
+make sure that the "xwphelpers" and XWorkplace sources have the same code levels. I tend
 to change the <A HREF="src1_5helpers.html">helpers</A> code from time to time.
 
 <P><LI>If you get really strange compilation errors, VAC might have gotten confused

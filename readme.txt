@@ -1,4 +1,4 @@
-XWorkplace 0.9.5 README
+XWorkplace 0.9.6 README
 (W) Ulrich M”ller, July 2, 1999
 Last updated October 7, 2000, Ulrich M”ller
 

@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.5 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated October 22, 2000
+Last updated October 29, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -59,9 +59,6 @@ Last updated October 22, 2000
     unpacking the files. To extract the documentation only,
     see "2. INSTALLATION" below.
 
-    This version is planned to be the last developer's
-    release of XWorkplace before V1.0.0 comes out.
-
 
 2. INSTALLATION
 ===============
@@ -74,15 +71,12 @@ Last updated October 22, 2000
     from a previous version.
 
     If you are still unsure whether you should use XWorkplace at
-    this point, you can have WarpIN unpack the XWorkplace files
-    on your hard disk only without registering and replacing
-    Workplace Shell classes. This will not alter your system's
-    behavior yet.
+    this point, and if you have WarpIN V0.9.6 installed, you can
+    use WIC.EXE (from the WarpIN package) to unpack the files only
+    and read the documentation first.
 
-    To do this, disable the "Register WPS classes" flag on the
-    respective page which WarpIN will show you after you press
-    the "Next" button a few times. Until the WPS classes are
-    registered, XWorkplace will do NOTHING on your system.
+    Type "wic -x xwp-0-9-6.wpi" to extract all of the WarpIN
+    archive into the current directory.
 
     This way can then read through XWorkplace's documentation
     first and decide then whether to actually register
@@ -160,8 +154,8 @@ Last updated October 22, 2000
 6. KNOWN LIMITATIONS
 ====================
 
-    This version has known bugs, even though I have fixed dozens
-    with this release.
+    The following issues are known to cause problems with this
+    release.
 
     Please check the BUGS and FEATURES files in this package also
     before reporting bugs or suggesting features. Thank you.
@@ -190,16 +184,16 @@ Last updated October 22, 2000
         windows at times. PageMage 0.9.6 is essentially unchanged
         from 0.9.4.
 
-    4)  There are problems with WPS restarts and FP13/14. This has
-        little to do with XWorkplace.
+    4)  There are problems with WPS restarts and FP13/14. This is
+        an OS/2 kernel bug which IBM says has been fixed with kernel
+        build level 14.050, so this will probably be fixed with FP15
+        as well.
 
     5)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
         screen. Some people never get this, but I do from time to time.
-        I think I have found the problem, but solving it requires some
-        more debugging and a major redesign of my folder object
-        initialization. This problem has been reported for all XFolder
-        and XWorkplace versions.
+        This problem has been reported for all XFolder and XWorkplace
+        versions, and it's apparently a WPS bug.
 
         If you have never had problems with "Create another", don't
         worry, nothing has changed.

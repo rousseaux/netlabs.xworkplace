@@ -591,8 +591,8 @@ BEGIN
     DIALOG  "New File Type", ID_XSD_NEWFILETYPE, 15, 66, 145, 45, WS_VISIBLE,
             FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        LTEXT           "Enter the name of the new file type:", ID_XSDI_FT_TITLE,
-                        5, 30, 135, 11
+        LTEXT           "Enter the name of the new file type:",
+                        ID_XSDI_FT_TITLE, 5, 30, 135, 11
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ENTRYFIELD      "", ID_XSDI_FT_ENTRYFIELD, 7, 20, 131, 8, ES_MARGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
@@ -1670,58 +1670,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSE_MOVEMENT, 0, 0, 232, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Sliding focus", IDDLG_UNUSED, 6, 80, 194, 66
-        AUTOCHECKBOX    "~Enable", ID_XSDI_MOUSE_SLIDINGFOCUS, 14, 130, 96,
-                        8
-        LTEXT           "Activation de~lay:", ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
-                        24, 118, 72, 12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_FOCUSDELAY_SLIDER, 92, 118, 62, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 31, 0, 5, 0
-        CTEXT           "Text", ID_XSDI_MOUSE_FOCUSDELAY_TXT2, 156, 118, 30,
-                        12, DT_VCENTER | NOT WS_GROUP
-        AUTOCHECKBOX    "Bring windows to ~top", ID_XSDI_MOUSE_BRING2TOP, 24,
-                        108, 102, 8
-        AUTOCHECKBOX    "Ignore seamless ~Win-OS/2",
-                        ID_XSDI_MOUSE_IGNORESEAMLESS, 24, 100, 120, 8
-        AUTOCHECKBOX    "~Ignore Desktop", ID_XSDI_MOUSE_IGNOREDESKTOP, 24,
-                        92, 76, 8
-        AUTOCHECKBOX    "Ignore Pa~geMage", ID_XSDI_MOUSE_IGNOREPAGEMAGE, 24,
-                        84, 82, 8
-        GROUPBOX        "Sliding menu selection", IDDLG_UNUSED, 6, 40, 194,
-                        38
-        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_SLIDINGMENU, 12, 62, 132, 8
-        LTEXT           "Su~bmenu delay:", ID_XSDI_MOUSE_MENUDELAY_TXT1, 22,
-                        50, 68, 12, DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP
-        SLIDER          ID_XSDI_MOUSE_MENUDELAY_SLIDER, 92, 50, 62, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 31, 0, 5, 0
-        CTEXT           "Text", ID_XSDI_MOUSE_MENUDELAY_TXT2, 156, 50, 30,
-                        12, DT_VCENTER | NOT WS_GROUP
-        AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22,
-                        42, 164, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
-        GROUPBOX        "Auto-hide mouse pointer", IDDLG_UNUSED, 6, 18, 194,
-                        20
-        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 20, 46,
-                        12
-        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 68, 20, 28,
-                        12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 102, 20, 58, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 60, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 162, 20, 28, 12,
-                        DT_VCENTER | DT_MNEMONIC
-    END
-END
-
 DLGTEMPLATE ID_XSD_FILESPAGE2 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_FILESPAGE2, 0, 0, 265, 180, NOT FS_DLGBORDER |
@@ -2780,5 +2728,59 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_MOUSE_MOVEMENT, 0, 0, 232, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Sliding focus", IDDLG_UNUSED, 6, 88, 194, 66
+        AUTOCHECKBOX    "~Enable", ID_XSDI_MOUSE_SLIDINGFOCUS, 14, 138, 96,
+                        8
+        LTEXT           "Activation de~lay:", ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
+                        24, 126, 72, 12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_FOCUSDELAY_SLIDER, 92, 126, 62, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
+                        CTLDATA 12, 0, 31, 0, 5, 0
+        CTEXT           "Text", ID_XSDI_MOUSE_FOCUSDELAY_TXT2, 156, 126, 30,
+                        12, DT_VCENTER | NOT WS_GROUP
+        AUTOCHECKBOX    "Bring windows to ~top", ID_XSDI_MOUSE_BRING2TOP, 24,
+                        116, 102, 8
+        AUTOCHECKBOX    "Ignore seamless ~Win-OS/2",
+                        ID_XSDI_MOUSE_IGNORESEAMLESS, 24, 108, 120, 8
+        AUTOCHECKBOX    "~Ignore Desktop", ID_XSDI_MOUSE_IGNOREDESKTOP, 24,
+                        100, 76, 8
+        AUTOCHECKBOX    "Ignore Pa~geMage", ID_XSDI_MOUSE_IGNOREPAGEMAGE, 24,
+                        92, 82, 8
+        GROUPBOX        "Sliding menu selection", IDDLG_UNUSED, 6, 40, 194,
+                        46
+        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_SLIDINGMENU, 12, 70, 132, 8
+        LTEXT           "Su~bmenu delay:", ID_XSDI_MOUSE_MENUDELAY_TXT1, 22,
+                        58, 68, 12, DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP
+        SLIDER          ID_XSDI_MOUSE_MENUDELAY_SLIDER, 92, 58, 62, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
+                        CTLDATA 12, 0, 31, 0, 5, 0
+        CTEXT           "Text", ID_XSDI_MOUSE_MENUDELAY_TXT2, 156, 58, 30,
+                        12, DT_VCENTER | NOT WS_GROUP
+        AUTOCHECKBOX    "~Conditional cascade sensitivity", ID_XSDI_MOUSE_CONDCASCADE, 22, 50,
+                        164, 10
+        AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22,
+                        42, 164, 10
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
+        GROUPBOX        "Auto-hide mouse pointer", IDDLG_UNUSED, 6, 18, 194,
+                        20
+        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 20, 46,
+                        12
+        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 68, 20, 28,
+                        12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 102, 20, 58, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 60, 0, 1, 0
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 162, 20, 28, 12,
+                        DT_VCENTER | DT_MNEMONIC
     END
 END

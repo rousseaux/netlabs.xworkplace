@@ -73,15 +73,15 @@
  *
  */
 
-int utilSemRequest(PULONG pulMutex,
+/* int utilSemRequest(PULONG pulMutex,
                    ULONG ulTimeout)     // -1 for indefinite wait
 {
     int rc = NO_ERROR;
     rc = DevHlp32_SemRequestRam1(ulTimeout);
     return (rc);
-}
+} */
 
-/* int utilSemRequest(PULONG pulMutex,
+int utilSemRequest(PULONG pulMutex,
                    ULONG ulTimeout)     // -1 for indefinite wait
 {
     int rc = NO_ERROR;
@@ -118,7 +118,7 @@ int utilSemRequest(PULONG pulMutex,
     _enable();
 
     return (rc);
-} */
+}
 
 /*
  *@@ utilSemRelease:
@@ -127,10 +127,10 @@ int utilSemRequest(PULONG pulMutex,
 
 VOID utilSemRelease(PULONG pulMutex)
 {
-    /* *pulMutex--;
-    DevHlp32_ProcRun((ULONG)pulMutex); */
+    (*pulMutex)--;
+    DevHlp32_ProcRun((ULONG)pulMutex);
 
-    DevHlp32_SemClearRam1();
+    // DevHlp32_SemClearRam1();
 }
 
 

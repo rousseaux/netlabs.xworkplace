@@ -85,11 +85,13 @@ XWPSetup:
 sounds:
     -- "Enable system sounds" on "Sound" page has no immediate effect;
        however, this didn't work for old WPS page either
+    -- Do not use default device for WAV files. Instead, open the default
+       device and let it play the WAV files.
 
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
+            (probably a WPS bug)
     -- shadows missing if "always sort" and "folders first" are enabled
-    -- status bars: object counts not updated when items inserted/removed
 
 trash can:
     -- sorting doesn't work right
@@ -112,6 +114,10 @@ hook:
     >there is a little bug with the settings notebook of the mouse - movement 2.
     >I can drag and drop objects to the open object, but it doesn't work with
     >the pickup and drop feature of Warp. Than there is no object given.
+
+    When Sliding focus is On, in seamless WinOS2 programs like MS Excel
+    when you right-click and then move your mouse over the context menu
+    it immediately disappears, so you actually cannot use it.
 
     -- Mouse pointer doesn't reappear when clicking buttons if hide mouse
        pointer is enabled.

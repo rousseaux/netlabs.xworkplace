@@ -83,7 +83,7 @@
         // will be enabled by holding down SHIFT while selecting
         // "Shutdown..." from the desktop context menu. In addition,
         // you'll get some PMPRINTF info and beeps
-            // #define DEBUG_SHUTDOWN
+            #define DEBUG_SHUTDOWN
 
         // the following beeps when thread priorities change
             // #define DEBUG_PRIORITY

@@ -62,7 +62,7 @@
 # PROJECT_BASE_DIR is used by "setup.in"
 # subdirectories to identify the root of the source
 # tree. This is passed to the sub-makefiles.
-PROJECT_BASE_DIR = $(MAKEDIR)
+PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 
 # MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
 MODULESDIR=bin\modules
@@ -526,8 +526,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
-    $(COPY) tools\repclass.exe $(XWPRELEASE_MAIN)\bin
-    $(COPY) tools\wpsreset.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\repclass.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS
     $(COPY) bin\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
     $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin

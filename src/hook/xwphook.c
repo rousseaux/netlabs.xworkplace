@@ -428,17 +428,19 @@ HWND GetScrollBar(HWND hwndOwner,
 /*
  *@@ HiliteMenuItem:
  *      this un-hilites the currently hilited menu
- *      item in hwndMenu and hilites the specified
- *      one instead.
+ *      item in hwndMenu and optionally hilites the
+ *      specified one instead.
  *
  *      Used during delayed sliding menu processing.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
+ *@@changed V0.9.6 (2000-10-27) [pr]: fixed some un-hilite problems; changed prototype
  */
 
 VOID HiliteMenuItem(HWND hwndMenu,
                     SHORT sItemCount,   // in: item count in hwndMenu
-                    SHORT sItemIndex)   // in: item index to hilite
+                    SHORT sItemIndex,   // in: item index to hilite
+                    BOOL fHiLite)       // in: to hilite or not
 {
     SHORT       sItemIndex2;
     // first, un-hilite the item which currently
@@ -482,16 +484,17 @@ VOID HiliteMenuItem(HWND hwndMenu,
         }
     }
 
-    // now hilite the new item (the one under the mouse)
-    WinSendMsg(hwndMenu,
-               MM_SETITEMATTR,
-               MPFROM2SHORT(sItemIndex,
-                            FALSE), // no search submenus
-               MPFROM2SHORT(MIA_HILITED, MIA_HILITED));
+    if (fHiLite)
+        // now hilite the new item (the one under the mouse)
+        WinSendMsg(hwndMenu,
+                   MM_SETITEMATTR,
+                   MPFROM2SHORT(sItemIndex,
+                                FALSE), // no search submenus
+                   MPFROM2SHORT(MIA_HILITED, MIA_HILITED));
 }
 
 /*
- *@@ ProcessSlidingMenu:
+ *@@ SelectMenuItem:
  *      this gets called to implement the "sliding menu" feature.
  *
  *      Based on code from ProgramCommander (C) Roman Stangl.
@@ -1924,12 +1927,15 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
  *      Based on code from ProgramCommander (C) Roman Stangl.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
+ *@@changed V0.9.6 (2000-10-27) [pr]: fixed un-hilite problems
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  */
 
 BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse, from hookInputHook
                               MPARAM mp1,
                               MPARAM mp2)
 {
+    static SHORT sLastItemIdentity = MIT_NONE;
     BOOL        brc = FALSE;        // per default, don't swallow msg
 
     // check for special message which was posted from
@@ -1972,24 +1978,42 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                     if (WinIsWindowVisible(hwndCurrentMenu))
                     {
                         // OK:
-                        // select menu item under the mouse
-                        SelectMenuItem(hwndCurrentMenu,
-                                       G_HookData.sMenuItemUnderMouse);
-                                            // stored from last run
-                                            // when timer was started...
+                        brc = TRUE;
                     }
                 }
             }
         }
 
-        // this is our message only,
-        // so swallow this
-        brc = TRUE;
+        if (brc)
+        {
+            // select menu item under the mouse
+            SelectMenuItem(hwndCurrentMenu,
+                           G_HookData.sMenuItemUnderMouse);
+                           // stored from last run
+                           // when timer was started...
+        }
+        else
+        {
+            if (G_HookData.hwndMenuUnderMouse)
+            {
+                // Remove previously hilited but not selected entry, as it is
+                // unknown to PM
+                SHORT   sItemCount
+                    = (SHORT)WinSendMsg(G_HookData.hwndMenuUnderMouse,
+                                        MM_QUERYITEMCOUNT,
+                                        0, 0);
+                HiliteMenuItem(G_HookData.hwndMenuUnderMouse,
+                               sItemCount,
+                               G_HookData.sMenuItemUnderMouse,
+                               FALSE);
+                G_HookData.hwndMenuUnderMouse = 0;
+                sLastItemIdentity = MIT_NONE;
+            }
+        }
     }
     else
     {
         // no, regular WM_MOUSEMOVE:
-        static SHORT sLastItemIdentity = MIT_NONE;
         SHORT   sCurrentlySelectedItem
             = (SHORT)WinSendMsg(hwndCurrentMenu,
                                 MM_QUERYSELITEMID,
@@ -2011,6 +2035,8 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                  sItemIndex++)
             {
                 RECTL       rectlItem;
+                MENUITEM    menuitemCurrent;
+                LONG        rectLimit;
 
                 SHORT sCurrentItemIdentity = (SHORT)WinSendMsg(hwndCurrentMenu,
                                                                MM_ITEMIDFROMPOSITION,
@@ -2029,8 +2055,38 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                                         FALSE),
                            MPFROMP(&rectlItem));
 
-                // check if this item's rectangle covers the pointer position
-                if (    (G_ptsMousePosWin.x > rectlItem.xLeft)
+                // standard sensitivity area: entire menu item from the left
+                rectLimit = rectlItem.xLeft;
+
+                // if "conditional cascade sensitivity" is enabled:
+                // V0.9.6 (2000-10-27) [umoeller]
+                if (G_HookData.HookConfig.fConditionalCascadeSensitive)
+                {
+                    // check if the pointer position is within the item's
+                    // rectangle or just the right hand half if it is a popup
+                    // menu and has conditional cascade submenus
+                    if (WinSendMsg(hwndCurrentMenu,
+                                   MM_QUERYITEM,
+                                   MPFROM2SHORT(sCurrentItemIdentity, FALSE),
+                                   MPFROMP(&menuitemCurrent)))
+                    {
+                        if (   (menuitemCurrent.afStyle & MIS_SUBMENU)
+                            && (WinQueryWindow(hwndCurrentMenu, QW_PARENT) ==
+                                        G_HookData.hwndPMDesktop)
+                           )
+                        {
+                            ULONG ulStyle =
+                                WinQueryWindowULong(menuitemCurrent.hwndSubMenu,
+                                                    QWL_STYLE);
+                            if (ulStyle & MS_CONDITIONALCASCADE)
+                                // OK: only respect right half of menu
+                                rectLimit =
+                                    ((rectlItem.xLeft + rectlItem.xRight) / 2);
+                        }
+                    }
+                }
+
+                if (    (G_ptsMousePosWin.x > rectLimit)
                      && (G_ptsMousePosWin.x <= rectlItem.xRight)
                      && (G_ptsMousePosWin.y > rectlItem.yBottom)
                      && (G_ptsMousePosWin.y <= rectlItem.yTop)
@@ -2057,7 +2113,8 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                             if (G_HookData.HookConfig.fMenuImmediateHilite)
                                 HiliteMenuItem(hwndCurrentMenu,
                                                sItemCount,
-                                               sCurrentItemIdentity);
+                                               sCurrentItemIdentity,
+                                               TRUE);
 
                             // 2)  We then post the daemon a message to start
                             //     a timer. Before that, we store the menu item

@@ -5,4 +5,5 @@ PM hook. The hook code (XWPHOOK.DLL) is in src\hook.
 
 The daemon also has the PageMage window code.
 
+Ulrich M”ller (2000-10-29)
 

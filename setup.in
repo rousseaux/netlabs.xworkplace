@@ -115,25 +115,18 @@ XWPRELEASE_MAIN = $(XWPRELEASE)\kernel
 XWPRELEASE_NLS = $(XWPRELEASE)\$(XWP_LANG_CODE)
 XWPRELEASE_MAP = $(XWPRELEASE)\map
 
+
 # HELPERS DIRECTORIES
 # -------------------
 
 # XWorkplace uses lots of generic OS/2 helpers code, which
-# I have developed over time. Unfortunately, WarpIN uses
-# that code too. So to keep this code in sync, XWorkplace
-# incorporates that code from the WarpIN source tree
-# (since WarpIN was on the Netlabs CVS server first).
-
-# Specify the root of the WarpIN source tree here (the
-# directory where src\helpers and include\helpers can
-# be reached from. The XWorkplace and WarpIN makefiles
-# will take care of the rest (that is, the XWorkplace
-# makefile calls the makefile in src\helpers of the
-# WarpIN tree, which writes the OBJs into the XWorkplace
-# bin\ directory then).
+# I have developed over time. Since this code is shared with
+# WarpIN and other projects might want to use it too, this
+# has been extracted to a separate CVS archive. We assume
+# it's in the CVS tree also, so we derive this from $(CVS_WORK_ROOT).
 
 !ifndef HELPERS_BASE
-HELPERS_BASE = K:\projects\cvs\warpin
+HELPERS_BASE = $(CVS_WORK_ROOT)\xwphelpers
 !endif
 
 

@@ -212,6 +212,7 @@
             SOMClass        *pWPDesktop;
             WPObject        *pActiveDesktop;
             HWND            hwndActiveDesktop;
+            HWND            hwndOpenWarpCenter; // OPEN_RUNNING view of open WarpCenter
             PID             pidWPS;     // WinQueryWindowProcess(G_hwndMain, &G_pidWPS, NULL);
             PID             pidPM;      // WinQueryWindowProcess(HWND_DESKTOP, &G_pidPM, NULL);
         } SHUTDOWNCONSTS, *PSHUTDOWNCONSTS;

@@ -353,6 +353,19 @@ CATEGORY "Installable File Systems"
                  "RSJ CD-Writer File System daemon process",
                  0)
 
+        DRIVER ( "IFS=", "FTP.IFS",
+                 "File System Driver for FTP-IFS by Vit Timchshin",
+                 0)
+        DRIVER ( "RUN=", "R3COMM.EXE",
+                 "Control Program for FTP-IFS by Vit Timchshin",
+                 0)
+
+        DRIVER ( "IFS=", "NDFS.IFS",
+                 "File System Driver for Network Drive by Blueprint Software Works",
+                 0)
+        DRIVER ( "RUN=", "NDCTL.EXE",
+                 "Control Program for Network Drive by Blueprint Software Works",
+                 0)
     }
 
 CATEGORY "Video"

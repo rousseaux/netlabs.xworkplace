@@ -10,7 +10,5 @@ Note that many more settings pages are in the
 "src\filesys" directory, if they are related
 to the source code there.
 
-
-
-
+Ulrich M”ller (2000-10-29)
 

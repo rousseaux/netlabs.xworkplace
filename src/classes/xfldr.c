@@ -3065,11 +3065,15 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryFldrAttr(XFolder *somSelf,
  *      notification of the "Added an object to a folder"
  *      event for subclasses that define their own folder view.
  *      The parent must always be called.
+ *
+ *@@changed V0.9.6 (2000-10-26) [pr]: update status bars
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                                              WPObject* Object)
 {
+    BOOL rc;
+
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpAddToContent");
 
@@ -3079,7 +3083,13 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    return (XFolder_parent_WPFolder_wpAddToContent(somSelf, Object));
+    rc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
+    if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEINPROGRESS))
+        fdrForEachOpenInstanceView(somSelf,
+                                   STBM_UPDATESTATUSBAR,
+                                   fncbStatusBarPost);
+
+    return (rc);
 }
 
 /*
@@ -3088,11 +3098,15 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
  *      notification of the "Removed an object from a folder"
  *      event for subclasses that define their own folder view.
  *      The parent must always be called.
+ *
+ *@@changed V0.9.6 (2000-10-26) [pr]: update status bars
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
                                                WPObject* Object)
 {
+    BOOL rc;
+
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpDeleteFromContent");
 
@@ -3102,8 +3116,13 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    return (XFolder_parent_WPFolder_wpDeleteFromContent(somSelf,
-                                                        Object));
+    rc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
+    if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEINPROGRESS))
+        fdrForEachOpenInstanceView(somSelf,
+                                   STBM_UPDATESTATUSBAR,
+                                   fncbStatusBarPost);
+
+    return (rc);
 }
 
 /*

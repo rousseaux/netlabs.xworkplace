@@ -2663,6 +2663,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(VOID)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
  *@@changed V0.9.4 (2000-07-11) [umoeller]: fixed bug in window class detection
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: fixed WarpCenter detection
  */
 
 PSHUTLISTITEM xsdAppendShutListItem(PLINKLIST pList,    // in/out: linked list to work on
@@ -2749,6 +2750,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PLINKLIST pList,    // in/out: linked list t
  *@@ xsdGetShutdownConsts:
  *
  *@@added V0.9.4 (2000-07-15) [umoeller]
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: added WarpCenter detection
  */
 
 VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
@@ -2757,6 +2759,27 @@ VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
     pConsts->pWPDesktop = _WPDesktop;
     pConsts->pActiveDesktop = _wpclsQueryActiveDesktop(pConsts->pWPDesktop);
     pConsts->hwndActiveDesktop = _wpclsQueryActiveDesktopHWND(pConsts->pWPDesktop);
+    pConsts->hwndOpenWarpCenter = NULLHANDLE;
+
+    if (pConsts->pKernelGlobals->pAwakeWarpCenter)
+    {
+        // WarpCenter is awake: check if it's open
+        PUSEITEM pUseItem;
+        for (pUseItem = _wpFindUseItem(pConsts->pKernelGlobals->pAwakeWarpCenter,
+                                       USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(pConsts->pKernelGlobals->pAwakeWarpCenter, USAGE_OPENVIEW,
+                                       pUseItem))
+        {
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (pViewItem->view == OPEN_RUNNING)
+            {
+                pConsts->hwndOpenWarpCenter = pViewItem->handle;
+                break;
+            }
+        }
+    }
+
     WinQueryWindowProcess(pConsts->hwndActiveDesktop, &pConsts->pidWPS, NULL);
     WinQueryWindowProcess(HWND_DESKTOP, &pConsts->pidPM, NULL);
 }
@@ -2781,6 +2804,7 @@ VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
  *      -- XSD_WARPCENTER (2) for the WarpCenter.
  *
  *@@added V0.9.4 (2000-07-15) [umoeller]
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: fixed WarpCenter detection
  */
 
 LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
@@ -2809,7 +2833,14 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
     // includes a PMWORKPLACE cmd.exe:
     else if (pSwEntry->swctl.uchVisibility != SWL_VISIBLE)
         return (XSD_INVISIBLE);
-
+    // open WarpCenter (WarpCenter bar only):
+    else if (   (pSwEntry->swctl.hwnd == pConsts->hwndOpenWarpCenter)
+             && (pConsts->pKernelGlobals)
+            )
+    {
+        *ppObject = pConsts->pKernelGlobals->pAwakeWarpCenter;
+        return (XSD_WARPCENTER);
+    }
 #ifdef __DEBUG__
     // if we're in debug mode, skip the PMPRINTF window
     // because we want to see debug output
@@ -2860,44 +2891,6 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
 
             if (*ppObject == G_pActiveDesktop)
                 lrc = XSD_DESKTOP;
-            else if (*ppObject == pConsts->pKernelGlobals->pAwakeWarpCenter)
-                lrc = XSD_WARPCENTER;
-
-            // is WarpCenter?
-            /* if (*ppObject == pConsts->pKernelGlobals->pAwakeWarpCenter)
-            {
-                *ppObject = pConsts->pKernelGlobals->pAwakeWarpCenter;
-                lrc = XSD_WARPCENTER;
-            } */
-
-            // object not found?
-            /* if (!*ppObject)
-            {
-                // WarpCenter awake? (Worker thread)
-                if (pConsts->pKernelGlobals->pAwakeWarpCenter)
-                {
-                    // we must manually search the Desktop children
-                    // for a Button window (!!) which is called
-                    // "SmartCenter"
-                    HENUM henum = WinBeginEnumWindows(HWND_DESKTOP);
-                    HWND hwndThis = NULLHANDLE;
-                    while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
-                    {
-                        CHAR szClass[100];
-                        if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
-                            if (strcmp(szClass, "#3") == 0)
-                                // it's a button:
-                                if (WinQueryWindowText(hwndThis, sizeof(szClass), szClass))
-                                    if (strcmp(szClass, "SmartCenter") == 0)
-                                    {
-                                        *ppObject = pConsts->pKernelGlobals->pAwakeWarpCenter;
-                                        lrc = XSD_WARPCENTER;
-                                        break; // while WinGetNextWindow
-                                    }
-                    } // end while WinGetNextWindow()
-                    WinEndEnumWindows(henum);
-                }
-            } */
         }
     }
 
@@ -2963,7 +2956,7 @@ void xsdBuildShutList(PSHUTDOWNCONSTS pSDConsts,
             if (    (lrc == XSD_DESKTOP)
                  || (lrc == XSD_WARPCENTER)
                )
-                // Desktop needs special handling,
+                // Desktop and WarpCenter need special handling,
                 // will be closed last always
                 Append = FALSE;
 
@@ -3917,6 +3910,7 @@ VOID xsdCloseVIO(HWND hwndFrame)
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted VIO code to xsdCloseVIO
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added wpWaitForClose for Desktop
  *@@changed V0.9.4 (2000-07-15) [umoeller]: added special treatment for WarpCenter
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: fixed special treatment for WarpCenter
  */
 
 MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -4021,7 +4015,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                                              &fncbShutdown,
                                                              (ULONG)G_hwndShutdownStatus);
 
-                        xsdLog("    Done processing shutdown filesys\n");
+                        xsdLog("    Done processing shutdown folder.\n");
                     }
                     else
                         goto beginclosingitems;
@@ -4030,13 +4024,32 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 case ID_SDMI_BEGINCLOSINGITEMS:
                 beginclosingitems:
                 {
+                    SHUTDOWNCONSTS  SDConsts;
                     // this is posted after processing of the shutdown
                     // folder; shutdown actually begins now with closing
                     // all windows
                     xsdLog("  ID_SDMI_BEGINCLOSINGITEMS, hwnd: 0x%lX\n", hwndFrame);
 
+                    // close open WarpCenter first...
+                    xsdGetShutdownConsts(&SDConsts);
+                    if (SDConsts.hwndOpenWarpCenter)
+                    {
+                        xsdUpdateClosingStatus("WarpCenter");
+                        xsdLog("      Found open WarpCenter, posting WM_COMMAND 0x66F7\n");
+                        WinPostMsg(SDConsts.hwndOpenWarpCenter,
+                                   WM_COMMAND,
+                                   MPFROMSHORT(0x66F7),
+                                        // "Close" menu item in WarpCenter context menu...
+                                        // nothing else works right!
+                                   MPFROM2SHORT(CMDSRC_OTHER,
+                                                FALSE));     // keyboard?!?
+                        DosBeep(1000, 100);
+                        winhSleep(G_habShutdownThread, 400);
+                    }
+
                     G_fClosingApps = TRUE;
                     WinEnableControl(G_hwndMain, ID_SDDI_BEGINSHUTDOWN, FALSE);
+
                     WinPostMsg(G_hwndMain, WM_COMMAND,
                                MPFROM2SHORT(ID_SDMI_CLOSEITEM, 0),
                                MPNULL);
@@ -4089,26 +4102,10 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // now check what kind of action needs to be done
                         if (pItem->pObject)
                         {
-                            // we have a WPS window:
-                            // check if it's the WarpCenter
-                            /* if (pItem->lSpecial == XSD_WARPCENTER)
-                            {
-                                WinPostMsg(pItem->swctl.hwnd,
-                                           WM_COMMAND,
-                                           MPFROMSHORT(0x66F7),
-                                                // "Close" menu item in WarpCenter context menu...
-                                                // nothing else works right!
-                                           MPFROM2SHORT(CMDSRC_OTHER,
-                                                        FALSE));     // keyboard?!?
-                                xsdLog("      Open WarpCenter, posting WM_COMMAND 0x66F7\n");
-                            }
-                            else */
-                            {
-                                // otherwise use proper method
-                                // to ensure that window data is saved
-                                _wpClose(pItem->pObject);
-                                xsdLog("      Open WPS object, called wpClose(pObject)\n");
-                            }
+                            // we have a WPS window
+                            // (cannot be WarpCenter, cannot be Desktop):
+                            _wpClose(pItem->pObject);
+                            xsdLog("      Open WPS object, called wpClose(pObject)\n");
                         }
                         else if (pItem->swctl.hwnd)
                         {
@@ -4336,8 +4333,8 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         }
 
                     if (G_fClosingApps)
-                        /* if we're already in the process of shutting down, we will
-                           initiate closing the next item */
+                        // if we're already in the process of shutting down, we will
+                        // initiate closing the next item
                         WinPostMsg(G_hwndMain, WM_COMMAND,
                                    MPFROM2SHORT(ID_SDMI_CLOSEITEM, 0),
                                    MPNULL);
