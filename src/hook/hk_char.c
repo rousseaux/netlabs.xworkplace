@@ -42,6 +42,7 @@
 // If enabled, NEVER give the PMPRINTF window
 // the focus, or your system will hang solidly...
 #define DONTDEBUGATALL
+#define DONT_REPLACE_FOR_DBCS
 #define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"
 

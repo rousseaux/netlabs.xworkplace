@@ -190,6 +190,7 @@
 #include <setjmp.h>
 
 #define DONT_REPLACE_MALLOC         // in case mem debug is enabled
+#define DONT_REPLACE_FOR_DBCS
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\dosh.h"               // Control Program helper routines

@@ -465,7 +465,7 @@
     // NLS-aware replacements in the helpers.
     // V0.9.19 (2002-06-13) [umoeller]
 
-    #ifndef DONT_REPLACE_FOR_DBCS
+    /* #ifndef DONT_REPLACE_FOR_DBCS
         #include "helpers\nls.h"
 
         #ifdef strchr
@@ -477,7 +477,7 @@
             #undef strrchr
         #endif
         #define strrchr(p, c) nlsrchr(p, c)
-    #endif
+    #endif */
 
 #endif
 
