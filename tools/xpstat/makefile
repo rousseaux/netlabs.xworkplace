@@ -21,23 +21,21 @@
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
-PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
-
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exe_mt
-MODULESDIR = ..\..\bin\modules
+# FIXED MACROS
+# ------------
 
-# create output directory
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in.
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
+MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 !if [@md $(MODULESDIR) 2> NUL]
 !endif
-
-
-# FIXED MACROS
-# ------------
 
 .SUFFIXES: .c .obj .dll .h .ih .rc .res
 
@@ -47,18 +45,13 @@ HEADERS = $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\winh.h
 
 ALL_OBJ1 = $(OUTPUTDIR)\xpstat.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
 
-MYDIR = $(MAKEDIR)
+CURRENT_DIR = $(MAKEDIR)
 
 # TARGETS
 # -------
 
-all: helpers $(XWPRUNNING)\bin\xpstat.exe
+all: helpers_exe_mt $(XWPRUNNING)\bin\xpstat.exe
     @echo ----- Leaving $(MAKEDIR)
-
-helpers:
-    @cd ..\..
-    @nmake -nologo helpers
-    cd $(MYDIR)
 
 $(OUTPUTDIR)\xpstat.obj: $(@B).c $(@B).h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
@@ -66,6 +59,15 @@ $(OUTPUTDIR)\xpstat.obj: $(@B).c $(@B).h \
         $(HLPINC)\textview.h $(HLPINC)\winh.h \
     ..\..\include\dlgids.h
         $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+
+helpers_exe_mt:
+    @echo $(MAKEDIR)\makefile: Going for src\helpers (EXE MT version)
+    @cd $(HELPERS_BASE)\src\helpers
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
+"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
+    @cd $(CURRENT_DIR)
+
+$(OUTPUTDIR)\helpers.lib: helpers_exe_mt
 
 # build targets
 xpstat.def: ..\..\include\bldlevel.h

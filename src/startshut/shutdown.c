@@ -3115,16 +3115,19 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
     {
         // in this case, we need to find out what
         // type the program really has
-        PQPROCSTAT16 pps = prc16GetInfo(NULL);
-        PRCPROCESS prcp;
-        // default for errors
-        pSwEntry->swctl.bProgType = PROG_WINDOWABLEVIO;
-        if (prc16QueryProcessInfo(pps, pSwEntry->swctl.idProcess, &prcp))
-            // according to bsedos.h, the PROG_* types are identical
-            // to the SSF_TYPE_* types, so we can use the data from
-            // DosQProcStat
-            pSwEntry->swctl.bProgType = prcp.ulSessionType;
-        prc16FreeInfo(pps);
+        PQPROCSTAT16 pps;
+        if (!prc16GetInfo(&pps))
+        {
+            PRCPROCESS prcp;
+            // default for errors
+            pSwEntry->swctl.bProgType = PROG_WINDOWABLEVIO;
+            if (prc16QueryProcessInfo(pps, pSwEntry->swctl.idProcess, &prcp))
+                // according to bsedos.h, the PROG_* types are identical
+                // to the SSF_TYPE_* types, so we can use the data from
+                // DosQProcStat
+                pSwEntry->swctl.bProgType = prcp.ulSessionType;
+            prc16FreeInfo(pps);
+        }
     }
 
     if (pSwEntry->swctl.bProgType == PROG_WINDOWEDVDM)

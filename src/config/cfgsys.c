@@ -2053,16 +2053,19 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 case SP_SCHEDULER:
                 {
-                    PQPROCSTAT16 pps = prc16GetInfo(NULL);
-                    // THREADS=
-                    winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MAXTHREADS,
-                                           128, 4096,
-                                           // get current thread count, add 50% for safety,
-                                           // and round up to the next multiple of 128
-                                           (( (    (prc16QueryThreadCount(pps, 0)  // whole system
-                                                 * 3) / 2) + 127 ) / 128) * 128
-                                          );
-                    prc16FreeInfo(pps);
+                    PQPROCSTAT16 pps;
+                    if (!prc16GetInfo(&pps))
+                    {
+                        // THREADS=
+                        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MAXTHREADS,
+                                               128, 4096,
+                                               // get current thread count, add 50% for safety,
+                                               // and round up to the next multiple of 128
+                                               (( (    (prc16QueryThreadCount(pps, 0)  // whole system
+                                                     * 3) / 2) + 127 ) / 128) * 128
+                                              );
+                        prc16FreeInfo(pps);
+                    }
 
                     // MAXWAIT=2
                     winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MAXWAIT,
@@ -2320,10 +2323,13 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
     {
         case SP_SCHEDULER:
         {
-            PQPROCSTAT16 pps = prc16GetInfo(NULL);
-            sprintf(szTemp, "%d", prc16QueryThreadCount(pps, 0));
-            prc16FreeInfo(pps);
-            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_CURRENTTHREADS, szTemp);
+            PQPROCSTAT16 pps;
+            if (!prc16GetInfo(&pps))
+            {
+                sprintf(szTemp, "%d", prc16QueryThreadCount(pps, 0));
+                prc16FreeInfo(pps);
+                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_CURRENTTHREADS, szTemp);
+            }
         break; }
 
         case SP_MEMORY:

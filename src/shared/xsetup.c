@@ -2212,6 +2212,7 @@ VOID ClearThreads(HWND hwndCnr)
  *      Global Settings.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.10 (2001-04-08) [umoeller]: fixed memory leak
  */
 
 VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2269,73 +2270,77 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         ClearThreads(hwndCnr);
 
-        paThreadInfos = thrListThreads(&cThreadInfos);
-        if (paThreadInfos)
+        if (paThreadInfos = thrListThreads(&cThreadInfos))
         {
             // we got thread infos:
-            PQPROCSTAT16 pps = prc16GetInfo(NULL);
-            ULONG ul;
+            PQPROCSTAT16 pps;
 
-            for (ul = 0;
-                 ul < cThreadInfos;
-                 ul++)
+            if (!prc16GetInfo(&pps))
             {
-                PTHREADINFO pThis = &paThreadInfos[ul];
-                PTHREADRECORD prec = (PTHREADRECORD)cnrhAllocRecords(hwndCnr,
-                                                                     sizeof(THREADRECORD),
-                                                                     1);
-                if (prec)
+                ULONG ul;
+
+                for (ul = 0;
+                     ul < cThreadInfos;
+                     ul++)
                 {
-                    ULONG ulpri = prc16QueryThreadPriority(pps,
-                                                           doshMyPID(),
-                                                           pThis->tid);
-                    XSTRING str;
-                    prec->pszThreadName = strdup(pThis->pcszThreadName);
-                    sprintf(szTemp, "%d (%02lX)", pThis->tid, pThis->tid);
-                    prec->pszTID = strdup(szTemp);
-
-                    sprintf(szTemp, "0x%04lX (", ulpri);
-                    xstrInitCopy(&str, szTemp, 0);
-                    switch (ulpri & 0x0F00)
+                    PTHREADINFO pThis = &paThreadInfos[ul];
+                    PTHREADRECORD prec = (PTHREADRECORD)cnrhAllocRecords(hwndCnr,
+                                                                         sizeof(THREADRECORD),
+                                                                         1);
+                    if (prec)
                     {
-                        case 0x0100:
-                            xstrcat(&str, "Idle", 0);
-                        break;
+                        ULONG ulpri = prc16QueryThreadPriority(pps,
+                                                               doshMyPID(),
+                                                               pThis->tid);
+                        XSTRING str;
+                        prec->pszThreadName = strdup(pThis->pcszThreadName);
+                        sprintf(szTemp, "%d (%02lX)", pThis->tid, pThis->tid);
+                        prec->pszTID = strdup(szTemp);
 
-                        case 0x0200:
-                            xstrcat(&str, "Regular", 0);
-                        break;
+                        sprintf(szTemp, "0x%04lX (", ulpri);
+                        xstrInitCopy(&str, szTemp, 0);
+                        switch (ulpri & 0x0F00)
+                        {
+                            case 0x0100:
+                                xstrcat(&str, "Idle", 0);
+                            break;
 
-                        case 0x0300:
-                            xstrcat(&str, "Time-critical", 0);
-                        break;
+                            case 0x0200:
+                                xstrcat(&str, "Regular", 0);
+                            break;
 
-                        case 0x0400:
-                            xstrcat(&str, "Foreground server", 0);
-                        break;
+                            case 0x0300:
+                                xstrcat(&str, "Time-critical", 0);
+                            break;
+
+                            case 0x0400:
+                                xstrcat(&str, "Foreground server", 0);
+                            break;
+                        }
+
+                        sprintf(szTemp, " +%d)", ulpri & 0xFF);
+                        xstrcat(&str, szTemp, 0);
+
+                        prec->pszPriority = str.psz;
                     }
+                    else
+                        break;
 
-                    sprintf(szTemp, " +%d)", ulpri & 0xFF);
-                    xstrcat(&str, szTemp, 0);
-
-                    prec->pszPriority = str.psz;
+                    cnrhInsertRecords(hwndCnr,
+                                      NULL,
+                                      (PRECORDCORE)prec,
+                                      FALSE,        // invalidate?
+                                      NULL,
+                                      CRA_RECORDREADONLY,
+                                      1);
                 }
-                else
-                    break;
 
-                cnrhInsertRecords(hwndCnr,
-                                  NULL,
-                                  (PRECORDCORE)prec,
-                                  FALSE,        // invalidate?
-                                  NULL,
-                                  CRA_RECORDREADONLY,
-                                  1);
+                cnrhInvalidateAll(hwndCnr);
+
+                prc16FreeInfo(pps);
             }
 
-            cnrhInvalidateAll(hwndCnr);
-
-            free(paThreadInfos);
-            prc16FreeInfo(pps);
+            free(paThreadInfos);    // V0.9.10 (2001-04-08) [umoeller]
         }
     } // end if (flFlags & CBI_SET)
 
@@ -2655,14 +2660,18 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
     {
-        PQPROCSTAT16 pps = prc16GetInfo(NULL);
-        PRCPROCESS       prcp;
-        // WPS thread count
-        prc16QueryProcessInfo(pps, doshMyPID(), &prcp);
-        WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSTHREADS,
-                           prcp.usThreads,
-                           FALSE);  // unsigned
-        prc16FreeInfo(pps);
+        PQPROCSTAT16 pps;
+
+        if (!prc16GetInfo(&pps))
+        {
+            PRCPROCESS       prcp;
+            // WPS thread count
+            prc16QueryProcessInfo(pps, doshMyPID(), &prcp);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSTHREADS,
+                               prcp.usThreads,
+                               FALSE);  // unsigned
+            prc16FreeInfo(pps);
+        }
     }
 
     // XWPHook status
@@ -2683,7 +2692,6 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         }
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_HOOKSTATUS,
                           psz);
-
     }
 }
 

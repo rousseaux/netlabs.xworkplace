@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.9 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated March 31, 2001
+Last updated April 8, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -38,7 +38,7 @@ Last updated March 31, 2001
     ------------------
 
     This version has enhancements to pretty much all parts of
-    XWorkplace. Some major bugs have been removed, and PageMage,
+    XWorkplace. Some major bugs have been fixed, and PageMage,
     XCenter, and the hook functions were enhanced further.
 
     For details, refer to the "Version Notices" in the
@@ -71,9 +71,10 @@ Last updated March 31, 2001
     (which is most probably the case), WarpIN will show you
     confirmation dialogs about various files that are currently
     in use, most importantly, XFLDR.DLL. This is natural because
-    those modules are loaded by XWorkplace while the WPS is up.
+    those modules are locked while the WPS (and thus XWorkplace)
+    is running.
 
-    In those dialogs, you MUST select "Unlock (DosReplaceModule"),
+    In those dialogs, you MUST select "Unlock (DosReplaceModule)",
     or your installation will not be fully updated.
 
     If you get this message for a help file (.HLP extension), the

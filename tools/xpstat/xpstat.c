@@ -70,6 +70,8 @@
 HAB         G_hab;
 HMQ         G_hmq;
 
+HWND        G_hwndMain = NULLHANDLE;
+
 HMODULE     G_hmodNLS = NULLHANDLE;
 
 HWND        G_hwndProcListCnr = NULLHANDLE,
@@ -78,6 +80,9 @@ HWND        G_hwndProcListCnr = NULLHANDLE,
             G_hMainMenu = NULLHANDLE;
 
 const char  *pcszClientClass = "ProcInfoClient";
+
+const char  *INIAPP                 = "XWorkplace";
+const char  *INIKEY_MAINWINPOS      = "WndPosXpstat";
 
 ULONG       G_ulCurrentView = ID_XPSMI_PIDTREE;
 
@@ -125,9 +130,9 @@ SHORT EXPENTRY fnComparePID(PPROCRECORD p1, PPROCRECORD p2, PVOID pStorage)
 {
     if (p1->pProcess && p2->pProcess)
     {
-        if (p1->pProcess->pid < p2->pProcess->pid)
+        if (p1->pProcess->usPID < p2->pProcess->usPID)
             return (-1);
-        else if (p1->pProcess->pid > p2->pProcess->pid)
+        else if (p1->pProcess->usPID > p2->pProcess->usPID)
             return (1);
     }
 
@@ -143,9 +148,9 @@ SHORT EXPENTRY fnCompareSID(PPROCRECORD p1, PPROCRECORD p2, PVOID pStorage)
 {
     if (p1->pProcess && p2->pProcess)
     {
-        if (p1->pProcess->sessid < p2->pProcess->sessid)
+        if (p1->pProcess->ulScreenGroupID < p2->pProcess->ulScreenGroupID)
             return (-1);
-        else if (p1->pProcess->sessid > p2->pProcess->sessid)
+        else if (p1->pProcess->ulScreenGroupID > p2->pProcess->ulScreenGroupID)
             return (1);
     }
 
@@ -410,7 +415,7 @@ VOID InsertProcessList(HWND hwndCnr,
         ULONG cProcesses = 0;
 
         pProcess = G_pInfo->pProcessData;
-        while ((pProcess) && (pProcess->rectype == 1))
+        while ((pProcess) && (pProcess->ulRecType == 1))
         {
             PQTHREAD32 pThread = pProcess->pThreads;
             for (i = 0;
@@ -428,7 +433,7 @@ VOID InsertProcessList(HWND hwndCnr,
 
         pProcess = G_pInfo->pProcessData;
         precThis = precFirst;
-        while ((pProcess) && (pProcess->rectype == 1))
+        while ((pProcess) && (pProcess->ulRecType == 1))
         {
             PQTHREAD32 pThread = pProcess->pThreads;
             for (i = 0;
@@ -441,9 +446,9 @@ VOID InsertProcessList(HWND hwndCnr,
                                precThis->szModuleName);
 
             if (fSortBySID)
-                sprintf(precThis->szPID, "0x%04lX", pProcess->sessid);
+                sprintf(precThis->szPID, "0x%04lX", pProcess->ulScreenGroupID);
             else
-                sprintf(precThis->szPID, "0x%04lX", pProcess->pid);
+                sprintf(precThis->szPID, "0x%04lX", pProcess->usPID);
             precThis->pszPID = precThis->szPID;
             sprintf(precThis->szTitle, "%s: %s",
                     precThis->szPID,
@@ -474,6 +479,77 @@ VOID InsertProcessList(HWND hwndCnr,
 }
 
 /*
+ *@@ DescribeSem32:
+ *
+ *@@added V0.9.10 (2001-04-08) [umoeller]
+ */
+
+VOID DescribeSem32(PSZ pszTemp,
+                   PQS32SEM32 pSem32)
+{
+    pszTemp += sprintf(pszTemp,
+                       "  %06lX  %8lX %04d",
+                       pSem32->ulHandle,
+                       pSem32->ulBlockID,
+                       pSem32->fl);
+    if (pSem32->fl & QS32_DC_SEM_SHARED)
+        pszTemp += sprintf(pszTemp, " shared");
+    /* if (pSem32->fl & QS32_DC_SEM_PM)
+        pszTemp += sprintf(pszTemp, " PM"); */
+
+    if (pSem32->fl & QS32_DCM_MUTEX_SEM)
+        pszTemp += sprintf(pszTemp, " mutex");
+    if (pSem32->fl & QS32_DCE_EVENT_SEM)
+        pszTemp += sprintf(pszTemp, " event");
+    if (pSem32->fl & QS32_DCMW_MUX_SEM)
+        pszTemp += sprintf(pszTemp, " muxwait");
+
+    if (pSem32->fl & QS32_DCE_POSTONE)
+        pszTemp += sprintf(pszTemp, ", post-one");
+    if (pSem32->fl & QS32_DCE_AUTORESET)
+        pszTemp += sprintf(pszTemp, ", auto-reset");
+
+    if (pSem32->fl & QS32_DCMW_WAIT_ANY)
+        pszTemp += sprintf(pszTemp, ", waitAny");
+    if (pSem32->fl & QS32_DCMW_WAIT_ALL)
+        pszTemp += sprintf(pszTemp, ", waitAll");
+    if (pSem32->fl & QS32_DE_POSTED)
+        pszTemp += sprintf(pszTemp, ", %dx posted ", pSem32->usPostCount);
+    if (pSem32->fl & QS32_DM_OWNER_DIED)
+        pszTemp += sprintf(pszTemp, ", owner died");
+    if (pSem32->fl & QS32_DMW_MTX_MUX)
+        pszTemp += sprintf(pszTemp, ", contains mutexes");
+    if (pSem32->fl & QS32_DE_16BIT_MW)
+        pszTemp += sprintf(pszTemp, ", part of 16-bit muxwait");
+
+    if (pSem32->fl & QS32_DHO_SEM_OPEN)
+        pszTemp += sprintf(pszTemp, ", opened by device driver");
+
+    if (pSem32->pszName)
+        pszTemp += sprintf(pszTemp,
+                           "\n                        name: \"%s\"",
+                           pSem32->pszName);
+    if (pSem32->pvDeviceDriver)
+        pszTemp += sprintf(pszTemp,
+                           "\n                        ptr: %08lX",
+                           pSem32->pvDeviceDriver);
+
+    /* if (pSem32->us_)
+        pszTemp += sprintf(pszTemp,
+                           "\n                        strange us_: %04lX",
+                           pSem32->us_);
+    if (pSem32->ulElse)
+        pszTemp += sprintf(pszTemp,
+                           "\n                        else: %08lX",
+                           pSem32->ulElse);
+    if (pSem32->ulElse2)
+        pszTemp += sprintf(pszTemp,
+                           "\n                        else2: %08lX",
+                           pSem32->ulElse2); */
+    strcpy(pszTemp, "\n");
+}
+
+/*
  *@@ ProcessSelected:
  *      gets called when a new process gets selected
  *      to compose the process information string
@@ -482,8 +558,10 @@ VOID InsertProcessList(HWND hwndCnr,
 
 VOID ProcessSelected(VOID)
 {
-    XSTRING pszCurrentInfo;
-    xstrInit(&pszCurrentInfo, 40);
+    XSTRING strCurrentInfo;
+    xstrInit(&strCurrentInfo, 1000);
+
+    strCurrentInfo.ulDelta = 1000;
 
     if (G_precSelected)
     {
@@ -496,22 +574,22 @@ VOID ProcessSelected(VOID)
         ULONG       i,
                     cMsgQueues = 0;
 
-        pszTemp += sprintf(pszTemp, "PID: 0x%04lX\n", pProcess->pid);
-        pszTemp += sprintf(pszTemp, "Parent PID: 0x%04lX\n", pProcess->ppid);
-        pszTemp += sprintf(pszTemp, "Session ID: 0x%04lX\n", pProcess->sessid);
+        pszTemp += sprintf(pszTemp, "PID: 0x%04lX\n", pProcess->usPID);
+        pszTemp += sprintf(pszTemp, "Parent PID: 0x%04lX\n", pProcess->usPPID);
+        pszTemp += sprintf(pszTemp, "Screen Group ID: 0x%04lX\n", pProcess->ulScreenGroupID);
 
         pszTemp += sprintf(pszTemp, "\nModule: %s\n", ((PPROCRECORD)G_precSelected)->szModuleName);
-        xstrcpy(&pszCurrentInfo, szTemp, 0);
+        xstrcpy(&strCurrentInfo, szTemp, 0);
 
-        if (pProcess->pid == 1)
+        if (pProcess->usPID == 1)
         {
             // sysinit:
-            xstrcat(&pszCurrentInfo, "\nKernel pseudo-process.\n", 0);
+            xstrcat(&strCurrentInfo, "\nKernel pseudo-process.\n", 0);
         }
         else
         {
             // regular process:
-            AppendModuleInfo(&pszCurrentInfo,
+            AppendModuleInfo(&strCurrentInfo,
                              ((PPROCRECORD)G_precSelected)->szModuleName);
             // get process type
             switch (pProcess->ulProgType)
@@ -520,7 +598,7 @@ VOID ProcessSelected(VOID)
                     pszSessionType = "Full screen protected mode";
                 break;
                 case 1:
-                    pszSessionType = "Real mode (probably DOS or Windoze)";
+                    pszSessionType = "Real mode (probably VDM)";
                 break;
                 case 2:
                     pszSessionType = "VIO windowable protected mode";
@@ -553,7 +631,7 @@ VOID ProcessSelected(VOID)
             if (pProcess->ulState & STAT_EMBRYO)
                 strcat(szTemp2, "[embryo] ");
 
-            pszTemp += sprintf(pszTemp, "\nStatus: 0x%lX %s\n",
+            pszTemp += sprintf(pszTemp, "\nulState: 0x%lX %s\n",
                                pProcess->ulState,
                                szTemp2);
 
@@ -561,8 +639,8 @@ VOID ProcessSelected(VOID)
 
             pszTemp += sprintf(pszTemp, "\nThreads: %d\n", pProcess->usThreadCount);
             // header for the following
-            pszTemp += sprintf(pszTemp, "  TID Slot SleepID    Prty   State HMQ\n");
-            xstrcat(&pszCurrentInfo, szTemp, 0);
+            pszTemp += sprintf(pszTemp, "  TID Slot SleepID  Prty State HMQ==PMQ\n");
+            xstrcat(&strCurrentInfo, szTemp, 0);
 
             // dump threads
             pThread = pProcess->pThreads;
@@ -583,13 +661,13 @@ VOID ProcessSelected(VOID)
 
                 pszTemp = szTemp;
                 pszTemp += sprintf(pszTemp,
-                                   "  %02d  0x%02lX 0x%08lX 0x%04lX %s ",
+                                   "  %02d  %04lX %08lX %04lX %s ",
                                    pThread->usTID,
                                    pThread->usSlotID,
                                    pThread->ulSleepID,
                                    pThread->ulPriority,
                                    szState);
-                if (hmq = winhFindMsgQueue(pProcess->pid,
+                if (hmq = winhFindMsgQueue(pProcess->usPID,
                                            pThread->usTID,
                                            &habhmq))
                 {
@@ -598,7 +676,7 @@ VOID ProcessSelected(VOID)
                 }
 
                 pszTemp += sprintf(pszTemp, "\n");
-                xstrcat(&pszCurrentInfo, szTemp, 0);
+                xstrcat(&strCurrentInfo, szTemp, 0);
             }
 
             // dump message queues
@@ -609,8 +687,8 @@ VOID ProcessSelected(VOID)
                 pszTemp = szTemp;
                 pszTemp += sprintf(pszTemp, "\nMessage queues: %d\n", cMsgQueues);
                 // header for the following
-                pszTemp += sprintf(pszTemp, "  HMQ        HWND       TID size pNext     TID\n");
-                xstrcat(&pszCurrentInfo, szTemp, 0);
+                pszTemp += sprintf(pszTemp, "  PMQ        HWND       TID size\n");
+                xstrcat(&strCurrentInfo, szTemp, 0);
 
                 while (hwndThis = WinGetNextWindow(henum))
                 {
@@ -625,7 +703,7 @@ VOID ProcessSelected(VOID)
                             WinQueryWindowProcess(hwndThis,
                                                   &pidWin,
                                                   &tidWin);
-                            if (pidWin == pProcess->pid)
+                            if (pidWin == pProcess->usPID)
                             {
                                 // is our process:
                                 // get message queue for this
@@ -639,21 +717,8 @@ VOID ProcessSelected(VOID)
                                 pszTemp += sprintf(pszTemp, "  0x%08lX 0x%lX %02d  %d",
                                                    hmq, hwndThis, tidWin, mqi.cmsgs);
 
-                                DosQueryMem((PVOID)hmq, &cb, &fl);
-                                if (fl & PAG_SHARED)
-                                {
-                                    PMQ pmq = (PMQ)hmq;
-                                    /* PSZ pszDump = strhCreateDump((PVOID)pmq,
-                                                                 sizeof(MQ),
-                                                                 8); */
-
-                                    pszTemp += sprintf(pszTemp, " %02lX",
-                                                       *(PUSHORT)(((PBYTE)pmq) + 0xa4));
-                                    // free(pszDump);
-                                }
-
                                 pszTemp += sprintf(pszTemp, "\n");
-                                xstrcat(&pszCurrentInfo, szTemp, 0);
+                                xstrcat(&strCurrentInfo, szTemp, 0);
                             }
                         }
                     }
@@ -661,82 +726,93 @@ VOID ProcessSelected(VOID)
                 WinEndEnumWindows(henum);
             }
 
-            // dump 32-bit semaphores
-            sprintf(szTemp, "\nPrivate 32-bit semaphores: %d\n", pProcess->ulPrivSem32Count);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
-            sprintf(szTemp, "ofs in proc struct: %d\n", pProcess->ulPrivSem32s);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
-            sprintf(szTemp, "global pSem32Data: %d\n", G_pInfo->pSem32Data);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
-
+            // dump public 32-bit semaphores
+            sprintf(szTemp, "\nPublic 32-bit semaphores:\n");
+            xstrcat(&strCurrentInfo, szTemp, 0);
+            if (!G_pInfo->pSem32Data)
+                xstrcat(&strCurrentInfo, "  cannot get data\n", 0);
+            else
             {
-                // semaphore data is right after process structure
-                PQSEM32STRUC32 pSem32 = (PQSEM32STRUC32)((PBYTE)pProcess)
-                                                         + sizeof(*pProcess);
-                if (pSem32)
+                // semaphore data available:
+                PQS32SEM32 pFirst = G_pInfo->pSem32Data,
+                           pSem32 = pFirst;
+                ULONG ul;
+
+                xstrcat(&strCurrentInfo,
+                        "  handle  blockid  flags           name\n", 0);
+
+                while (pSem32)
                 {
-                    PSZ psz;
-
-                    sprintf(szTemp,
-                            "sem32.pNext: 0x%lX\n",
-                            pSem32->pNext);
-                    xstrcat(&pszCurrentInfo, szTemp, 0);
-
-                    psz = strhCreateDump((PBYTE)pProcess,
-                                         sizeof(QPROCESS32) + 100,
-                                         8);
-                    xstrcat(&pszCurrentInfo, "\n", 0);
-                    xstrcat(&pszCurrentInfo, psz, 0);
-                    free (psz);
+                    DescribeSem32(szTemp, pSem32);
+                    xstrcat(&strCurrentInfo, szTemp, 0);
 
                     pSem32 = pSem32->pNext;
                 }
-                else
+            }
+
+            // dump private 32-bit semaphores
+            sprintf(szTemp, "\nPrivate 32-bit semaphores: %d\n", pProcess->ulPrivSem32Count);
+            xstrcat(&strCurrentInfo, szTemp, 0);
+            if (!pProcess->pvPrivSem32s)
+                xstrcat(&strCurrentInfo, "  cannot get data\n", 0);
+            else
+            {
+                // semaphore data available:
+                PQS32SEM32 pFirst = (PQS32SEM32)pProcess->pvPrivSem32s,
+                           pSem32 = pFirst;
+                ULONG ul;
+
+                xstrcat(&strCurrentInfo,
+                        "  handle  blockid  flags           name\n", 0);
+
+                for (ul = 0;
+                     ul < pProcess->ulPrivSem32Count;
+                     ul++)
                 {
-                    PQSEM16STRUC32  pSemData = G_pInfo->pSem16Data;
-                    PQSEMA32        pSem16 = &pSemData->sema;
-                    xstrcat(&pszCurrentInfo, "  global pSem32Data is NULL\n", 0);
+                    DescribeSem32(szTemp, pSem32);
+                    xstrcat(&strCurrentInfo, szTemp, 0);
+
+                    pSem32 = pSem32->pNext;
                 }
             }
 
             // dump 16-bit semaphores
             sprintf(szTemp, "\n16-bit semaphores: %d\n", pProcess->usSem16Count);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
+            xstrcat(&strCurrentInfo, szTemp, 0);
             if (pProcess->usSem16Count)
             {
-                sprintf(szTemp, "  indx semaID cRef flags cSys \"reserved\"\n", pProcess->usSem16Count);
-                xstrcat(&pszCurrentInfo, szTemp, 0);
+                sprintf(szTemp, "  indx ownr flag cUse cReq \n", pProcess->usSem16Count);
+                xstrcat(&strCurrentInfo, szTemp, 0);
                 for (i = 0;
                      i < pProcess->usSem16Count;
                      i++)
                 {
                     USHORT usSemThis = pProcess->pausSem16[i];
-                    PQSEMA32 pSem16 = prc32FindSem16(G_pInfo, usSemThis);
+                    PQS32SEM16 pSem16 = prc32FindSem16(G_pInfo, usSemThis);
                     pszTemp = szTemp;
                     pszTemp += sprintf(pszTemp, "  %4d", usSemThis);
                     if (pSem16)
                         pszTemp += sprintf(pszTemp,
-                                           " 0x%04lX %4d  0x%02lX 0x%02lX 0x%08lX S%s",
-                                           pSem16->usIndex,
-                                           pSem16->usRefCount,
-                                           pSem16->ucSysFlags,
-                                           pSem16->ucSysProcCount,
-                                           pSem16->_reserved1_,
-                                           pSem16->acName);
+                                           " %04lX %04lX %04lX %04lX S%s",
+                                           pSem16->usSysSemOwner,
+                                           pSem16->fsSysSemFlags,
+                                           pSem16->usSysSemRefCnt,
+                                           pSem16->usSysSemProcCnt,
+                                           pSem16->szName);
 
 
                     strcat(pszTemp, "\n");
-                    xstrcat(&pszCurrentInfo, szTemp, 0);
+                    xstrcat(&strCurrentInfo, szTemp, 0);
                 }
             }
 
             // dump shared memory
             sprintf(szTemp, "\nShared mem: %d references\n", pProcess->usShrMemCount);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
+            xstrcat(&strCurrentInfo, szTemp, 0);
             if (pProcess->usShrMemCount)
             {
                 sprintf(szTemp, "  shrmID selector cRef\n");
-                xstrcat(&pszCurrentInfo, szTemp, 0);
+                xstrcat(&strCurrentInfo, szTemp, 0);
                 for (i = 0;
                      i < pProcess->usShrMemCount;
                      i++)
@@ -751,13 +827,13 @@ VOID ProcessSelected(VOID)
                                            pShrThis->usRefCount,
                                            pShrThis->acName);
                     strcat(pszTemp, "\n");
-                    xstrcat(&pszCurrentInfo, szTemp, 0);
+                    xstrcat(&strCurrentInfo, szTemp, 0);
                 }
             }
 
             // dump modules
             sprintf(szTemp, "\nModule references (imports): %d\n", pProcess->usModuleCount);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
+            xstrcat(&strCurrentInfo, szTemp, 0);
             if (pProcess->usModuleCount)
             {
                 for (i = 0;
@@ -770,83 +846,90 @@ VOID ProcessSelected(VOID)
                                        sizeof(szTemp),
                                        pszTemp);
                     strcat(pszTemp, "\n");
-                    xstrcat(&pszCurrentInfo, szTemp, 0);
+                    xstrcat(&strCurrentInfo, szTemp, 0);
                 }
             }
 
             // dump open files
             sprintf(szTemp, "\nOpen files: %d\n", pProcess->usFdsCount);
-            xstrcat(&pszCurrentInfo, szTemp, 0);
+            xstrcat(&strCurrentInfo, szTemp, 0);
             if (pProcess->usFdsCount)
             {
-                xstrcat(&pszCurrentInfo,
+                xstrcat(&strCurrentInfo,
                          "  sfn  cOpn Flags    Accs  Size hVol attribs\n", 0);
                 for (i = 0;
                      i < pProcess->usFdsCount;
                      i++)
                 {
                     USHORT usFileID = pProcess->pausFds[i];
+
+                    szTemp[0] = 0;
+                    pszTemp = szTemp;
+
+                    pszTemp += sprintf(pszTemp,
+                                       "  %04lX",
+                                       usFileID);
+
                     if (usFileID)       // rule out "0" file handles
                     {
                         PQFILEDATA32 pFile = prc32FindFileData(G_pInfo, usFileID);
-                        BOOL        fAppend = TRUE;
-
-                        szTemp[0] = 0;
-                        pszTemp = szTemp;
 
                         if (pFile)      // rule out pseudo-file handles
                         {
                             CHAR    szAttribs[] = "......";
                             PSZ     pszAccess = szAttribs;
                             CHAR    szSize[20];
-                            *pszAccess++ = (pFile->filedata->attrib & 0x20) ? 'A' : '-';
-                            *pszAccess++ = (pFile->filedata->attrib & 0x10) ? 'D' : '-';
-                            *pszAccess++ = (pFile->filedata->attrib & 0x08) ? 'L' : '-';
-                            *pszAccess++ = (pFile->filedata->attrib & 0x04) ? 'S' : '-';
-                            *pszAccess++ = (pFile->filedata->attrib & 0x02) ? 'H' : '-';
-                            *pszAccess++ = (pFile->filedata->attrib & 0x01) ? 'R' : '-';
+                            PQFDS32 pFileData = pFile->paFiles;
+                            USHORT  fsAttribs = pFileData->fsAttribs;
+                            *pszAccess++ = (fsAttribs & 0x20) ? 'A' : '-';
+                            *pszAccess++ = (fsAttribs & 0x10) ? 'D' : '-';
+                            *pszAccess++ = (fsAttribs & 0x08) ? 'L' : '-';
+                            *pszAccess++ = (fsAttribs & 0x04) ? 'S' : '-';
+                            *pszAccess++ = (fsAttribs & 0x02) ? 'H' : '-';
+                            *pszAccess++ = (fsAttribs & 0x01) ? 'R' : '-';
 
-                            if (pFile->filedata->ulFileSize > (8*1024*1024))
-                                sprintf(szSize, "%4dM", pFile->filedata->ulFileSize / (8*1024*1024));
-                            else if (pFile->filedata->ulFileSize > 1024)
-                                sprintf(szSize, "%4dK", pFile->filedata->ulFileSize / 1024);
+                            if (pFileData->ulFileSize > (8*1024*1024))
+                                sprintf(szSize, "%4dM", pFileData->ulFileSize / (8*1024*1024));
+                            else if (pFileData->ulFileSize > 1024)
+                                sprintf(szSize, "%4dK", pFileData->ulFileSize / 1024);
                             else
-                                sprintf(szSize, "%4db", pFile->filedata->ulFileSize);
+                                sprintf(szSize, "%4db", pFileData->ulFileSize);
 
                             pszTemp += sprintf(pszTemp,
-                                               "  %04lX %04d %08lx %04x %s %04lX %s ",
-                                               usFileID,
-                                               pFile->ulOpenCount,
-                                               pFile->filedata->flFlags,
-                                               pFile->filedata->flAccess,
+                                               " %04d %08lx %04x %s %04lX %s ",
+                                               pFile->ulCFiles,
+                                               pFileData->flFlags,
+                                               pFileData->flAccess,
                                                szSize,
-                                               pFile->filedata->hVolume,
+                                               pFileData->usHVolume,
                                                szAttribs);
 
-                            if ((pFile->filedata->flFlags & FSF_NO_SFT_HANDLE_ALLOCTD) == 0)
+                            if ((pFileData->flFlags & FSF_NO_SFT_HANDLE_ALLOCTD) == 0)
                                 // we do have a file handle:
                                 pszTemp += sprintf(pszTemp,
                                                    "%s",
-                                                   pFile->acFilename);
+                                                   pFile->szFilename);
                             else
-                                fAppend = FALSE;
                                 // no SFT file handle allocated:
-                                /* strcat(pszTemp, "[no SFT handle allocated]"); */
+                                strcat(szTemp, " [no SFT handle allocated]");
 
-                            strcat(szTemp, "\n");
-                        }
-                        if (fAppend)
-                            xstrcat(&pszCurrentInfo, szTemp, 0);
-                    }
+                        } // end if (pFile)      // rule out pseudo-file handles
+                        else
+                            strcat(szTemp, " [cannot find SFT entry]");
+
+                    } // end if (usFileID)       // rule out "0" file handles
+
+                    strcat(szTemp, "\n");
+                    xstrcat(&strCurrentInfo, szTemp, 0);
                 }
             }
         }
     } // end if (G_precSelected)
 
-    xstrcat(&pszCurrentInfo, "End of dump\n", 0);
+    xstrcat(&strCurrentInfo, "End of dump\n", 0);
 
-    WinSetWindowText(G_hwndProcView, pszCurrentInfo.psz);
-    xstrClear(&pszCurrentInfo);
+    WinSetWindowText(G_hwndProcView, strCurrentInfo.psz);
+    xstrClear(&strCurrentInfo);
 }
 
 /* ******************************************************************
@@ -867,7 +950,7 @@ PPROCRECORD InsertProcTreeRecord(HWND hwndCnr,
     PPROCRECORD prec = (PPROCRECORD)cnrhAllocRecords(hwndCnr,
                                                      sizeof(PROCRECORD),
                                                      1);
-    if (pProcess->pid != 1)
+    if (pProcess->usPID != 1)
         DosQueryModuleName(pProcess->usHModule,
                            sizeof(prec->szModuleName),
                            prec->szModuleName);
@@ -876,7 +959,7 @@ PPROCRECORD InsertProcTreeRecord(HWND hwndCnr,
     prec->pszModuleName = prec->szModuleName;
 
     sprintf(prec->szPID, "0x%04lX",
-                pProcess->pid);
+                pProcess->usPID);
 
     prec->pszPID = prec->szPID;
     sprintf(prec->szTitle, "%s: %s",
@@ -913,7 +996,7 @@ VOID InsertProcessesWithParent(HWND hwndCnr,
     PQPROCESS32 pProcess = G_pInfo->pProcessData;
     ULONG       i;
 
-    if (ulParentPID == 0)
+    /* if (ulParentPID == 0)
     {
         PPROCRECORD prec = InsertProcTreeRecord(hwndCnr,
                                                 NULL,
@@ -921,9 +1004,9 @@ VOID InsertProcessesWithParent(HWND hwndCnr,
         InsertProcessesWithParent(hwndCnr,
                                   1,    // pid of sysinit
                                   prec);     // preccParent
-    }
+    } */
 
-    while ( (pProcess) && (pProcess->rectype == 1) )
+    while ( (pProcess) && (pProcess->ulRecType == 1) )
     {
         PQTHREAD32 pThread = pProcess->pThreads;
         for (i = 0;
@@ -931,14 +1014,14 @@ VOID InsertProcessesWithParent(HWND hwndCnr,
              i++, pThread++)
             ;
 
-        if (pProcess->ppid == ulParentPID)
+        if (pProcess->usPPID == ulParentPID)
         {
             PPROCRECORD prec = InsertProcTreeRecord(hwndCnr,
                                                     precParent,
                                                     pProcess);
             // recurse for processes which have this proc as parent
             InsertProcessesWithParent(hwndCnr,
-                                      pProcess->pid,
+                                      pProcess->usPID,
                                       prec);     // preccParent
         }
 
@@ -989,7 +1072,7 @@ VOID InsertProcessTree(HWND hwndCnr)
         ULONG cProcesses = 0;
 
         pProcess = G_pInfo->pProcessData;
-        while ((pProcess) && (pProcess->rectype == 1))
+        while ((pProcess) && (pProcess->ulRecType == 1))
         {
             PQTHREAD32 pThread = pProcess->pThreads;
             for (i = 0;
@@ -1115,8 +1198,8 @@ VOID InsertModulesTree(HWND hwndCnr)
 
 VOID ModuleSelected(VOID)
 {
-    XSTRING pszCurrentInfo;
-    xstrInit(&pszCurrentInfo, 40);
+    XSTRING strCurrentInfo;
+    xstrInit(&strCurrentInfo, 40);
 
     if (G_precSelected)
     {
@@ -1134,25 +1217,25 @@ VOID ModuleSelected(VOID)
 
         pszTemp += sprintf(pszTemp, "Module name: %s\n", precSelected->szModuleName);
         pszTemp += sprintf(pszTemp, "Module handle: 0x%04lX\n", pModule->usHModule);
-        xstrcpy(&pszCurrentInfo, szTemp, 0);
+        xstrcpy(&strCurrentInfo, szTemp, 0);
 
         // module flags
         pszTemp = szTemp;
-        pszTemp += sprintf(pszTemp, "Module flags: 0x%04lX\n", pModule->type);
-        pszTemp += sprintf(pszTemp, "Segments: %d\n\n", pModule->ulSegmentCount);
-        xstrcat(&pszCurrentInfo, szTemp, 0);
+        pszTemp += sprintf(pszTemp, "Module flags: 0x%04lX\n", pModule->fFlat);
+        pszTemp += sprintf(pszTemp, "Segments: %d\n\n", pModule->cObjects);
+        xstrcat(&strCurrentInfo, szTemp, 0);
 
         // module info
-        AppendModuleInfo(&pszCurrentInfo,
+        AppendModuleInfo(&strCurrentInfo,
                          precSelected->szModuleName);
 
         // find processes using this module
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "\nProcesses using this module directly:\n");
-        xstrcat(&pszCurrentInfo, szTemp, 0);
+        xstrcat(&strCurrentInfo, szTemp, 0);
 
         pProcess = G_pInfo->pProcessData;
-        while ((pProcess) && (pProcess->rectype == 1))
+        while ((pProcess) && (pProcess->ulRecType == 1))
         {
             PQTHREAD32 pThread = pProcess->pThreads;
             if (pProcess->usModuleCount)
@@ -1170,7 +1253,7 @@ VOID ModuleSelected(VOID)
                                            sizeof(szTemp) - 4,
                                            szTemp + 4);
                         strcat(szTemp, "\n");
-                        xstrcat(&pszCurrentInfo, szTemp, 0);
+                        xstrcat(&strCurrentInfo, szTemp, 0);
                         cProcCount++;
                     }
                 }
@@ -1189,12 +1272,12 @@ VOID ModuleSelected(VOID)
             pszTemp += sprintf(pszTemp, "    none\n");
         else
             pszTemp += sprintf(pszTemp, "Total: %d processes\n", cProcCount);
-        xstrcat(&pszCurrentInfo, szTemp, 0);
+        xstrcat(&strCurrentInfo, szTemp, 0);
 
         // other modules using this module
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "\nOther modules using this module:\n");
-        xstrcat(&pszCurrentInfo, szTemp, 0);
+        xstrcat(&strCurrentInfo, szTemp, 0);
 
         cProcCount = 0;
         pModule2 = G_pInfo->pModuleData;
@@ -1215,7 +1298,7 @@ VOID ModuleSelected(VOID)
                         pszTemp += sprintf(pszTemp, "    0x%04lX: %s\n",
                                            pModule2->usHModule,
                                            szTemp2);
-                        xstrcat(&pszCurrentInfo, szTemp, 0);
+                        xstrcat(&strCurrentInfo, szTemp, 0);
                         cProcCount++;
                     }
                 }
@@ -1229,12 +1312,12 @@ VOID ModuleSelected(VOID)
             pszTemp += sprintf(pszTemp, "    none\n");
         else
             pszTemp += sprintf(pszTemp, "Total: %d modules\n", cProcCount);
-        xstrcat(&pszCurrentInfo, szTemp, 0);
+        xstrcat(&strCurrentInfo, szTemp, 0);
 
         // references
         pszTemp = szTemp;
         pszTemp += sprintf(pszTemp, "\nModule references (imports, inserted into tree): %d\n", pModule->ulRefCount);
-        xstrcat(&pszCurrentInfo, szTemp, 0);
+        xstrcat(&strCurrentInfo, szTemp, 0);
 
         if (pModule->ulRefCount)
         {
@@ -1250,7 +1333,7 @@ VOID ModuleSelected(VOID)
                 pszTemp += sprintf(pszTemp, "    0x%04lX: %s\n",
                                    pModule->ausModRef[i],
                                    szTemp2);
-                xstrcat(&pszCurrentInfo, szTemp, 0);
+                xstrcat(&strCurrentInfo, szTemp, 0);
 
                 if (    (!precSelected->fSubModulesInserted)
                      && (pModule->ausModRef[i] != pModule->usHModule)
@@ -1271,10 +1354,10 @@ VOID ModuleSelected(VOID)
         }
     } // end if (G_precSelected)
 
-    xstrcat(&pszCurrentInfo, "End of dump\n", 0);
+    xstrcat(&strCurrentInfo, "End of dump\n", 0);
 
-    WinSetWindowText(G_hwndProcView, pszCurrentInfo.psz);
-    xstrClear(&pszCurrentInfo);
+    WinSetWindowText(G_hwndProcView, strCurrentInfo.psz);
+    xstrClear(&strCurrentInfo);
 }
 
 /* ******************************************************************
@@ -1475,6 +1558,14 @@ MRESULT EXPENTRY fnwpProcInfoClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPAR
             mrc = (MPARAM)TRUE;
         break; }
 
+        case WM_CLOSE:
+            winhSaveWindowPos(G_hwndMain,
+                              HINI_USER,
+                              INIAPP,
+                              INIKEY_MAINWINPOS);
+            mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
+        break;
+
         default:
             mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
     }
@@ -1574,58 +1665,58 @@ int main(int argc, char *argv[])
         swpFrame.hwndInsertBehind = HWND_TOP;
         swpFrame.fl = SWP_MOVE | SWP_SIZE;
 
-        if (WinRegisterClass(G_hab,
-                             (PSZ)pcszClientClass,
-                             fnwpProcInfoClient,
-                             CS_SIZEREDRAW | CS_SYNCPAINT,
-                             sizeof(PVOID))
-            &&
-            txvRegisterTextView(G_hab)
+        if (    WinRegisterClass(G_hab,
+                                 (PSZ)pcszClientClass,
+                                 fnwpProcInfoClient,
+                                 CS_SIZEREDRAW | CS_SYNCPAINT,
+                                 sizeof(PVOID))
+             && txvRegisterTextView(G_hab)
             )
         {
             HPOINTER hptrMain = WinLoadPointer(HWND_DESKTOP,
                                                NULLHANDLE,
                                                1);
             HWND hwndClient;
-            HWND hwndMain = winhCreateStdWindow(HWND_DESKTOP,
-                                                &swpFrame,
-                                                FCF_SYSMENU
-                                                | FCF_SIZEBORDER
-                                                | FCF_TITLEBAR
-                                                | FCF_MINMAX
-                                                | FCF_NOBYTEALIGN | FCF_SHELLPOSITION,
-                                                WS_CLIPCHILDREN,
-                                                "xpstat",
-                                                0,
-                                                (PSZ)pcszClientClass,
-                                                WS_VISIBLE,
-                                                0,
-                                                NULL,
-                                                &hwndClient);
+            G_hwndMain = winhCreateStdWindow(HWND_DESKTOP,
+                                             &swpFrame,
+                                             FCF_SYSMENU
+                                             | FCF_SIZEBORDER
+                                             | FCF_TITLEBAR
+                                             | FCF_MINMAX
+                                             | FCF_NOBYTEALIGN,
+                                             WS_CLIPCHILDREN,
+                                             "xpstat",
+                                             0,
+                                             (PSZ)pcszClientClass,
+                                             WS_VISIBLE,
+                                             0,
+                                             NULL,
+                                             &hwndClient);
+            G_hMainMenu = WinLoadMenu(G_hwndMain,
+                                      NULLHANDLE,
+                                      ID_XPSM_MAIN);
+
             // now position the frame and the client:
             // 1) frame
-            if (!winhRestoreWindowPos(hwndMain,
+            if (!winhRestoreWindowPos(G_hwndMain,
                                       HINI_USER,
-                                      "XWorkplace",
-                                      "WndPosProcInfo",
+                                      INIAPP,
+                                      INIKEY_MAINWINPOS,
                                       SWP_MOVE | SWP_SIZE))
                 // INI data not found:
-                WinSetWindowPos(hwndMain,
+                WinSetWindowPos(G_hwndMain,
                                 HWND_TOP,
                                 100, 100,
                                 500, 500,
                                 SWP_MOVE | SWP_SIZE);
 
-            G_hMainMenu = WinLoadMenu(hwndMain,
-                                      NULLHANDLE,
-                                      ID_XPSM_MAIN);
             SetupMenu();
 
             // add to task list
-            winhAddToTasklist(hwndMain,
+            winhAddToTasklist(G_hwndMain,
                               hptrMain);
             // finally, show window
-            WinShowWindow(hwndMain, TRUE);
+            WinShowWindow(G_hwndMain, TRUE);
 
             while (WinGetMsg(G_hab, &qmsg, 0, 0, 0))
                 WinDispatchMsg(G_hab, &qmsg);

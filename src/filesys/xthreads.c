@@ -1535,6 +1535,7 @@ VOID CollectDoubleFiles(MPARAM mp1)
  *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
  *@@changed V0.9.3 (2000-04-25) [umoeller]: redid initial desktop open processing
  *@@changed V0.9.9 (2001-03-27) [umoeller]: earlier daemon notification of desktop open
+ *@@changed V0.9.10 (2001-04-08) [umoeller]: no earlier daemon notification of desktop open... sigh
  */
 
 MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1589,16 +1590,19 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                         cmnQueryActiveDesktopHWND()));
             #endif
 
-            // notify daemon of WPS desktop window handle
-            // V0.9.9 (2001-03-27) [umoeller]: moved this up,
-            // we don't have to wait here
-            krnPostDaemonMsg(XDM_DESKTOPREADY,
-                             (MPARAM)cmnQueryActiveDesktopHWND(),
-                             (MPARAM)0);
-
             // sleep a little while more
             // V0.9.4 (2000-08-02) [umoeller]
             winhSleep(pGlobalSettings->ulStartupInitialDelay);
+
+            // notify daemon of WPS desktop window handle
+            // V0.9.9 (2001-03-27) [umoeller]: moved this up,
+            // we don't have to wait here
+            // V0.9.9 (2001-04-08) [umoeller]: wrong, we do
+            // need to wait.. apparently, on some systems,
+            // this doesn't work otherwise
+            krnPostDaemonMsg(XDM_DESKTOPREADY,
+                             (MPARAM)cmnQueryActiveDesktopHWND(),
+                             (MPARAM)0);
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting FIM_STARTUP (1) to File thread",

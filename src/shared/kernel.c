@@ -2459,106 +2459,119 @@ VOID krnEnableReplaceRefresh(BOOL fEnable)
  *      the additional XWP threads are started.
  *
  *@@added V0.9.9 (2001-01-31) [umoeller]
+ *@@changed V0.9.10 (2001-04-08) [umoeller]: added exception handling
  */
 
 VOID krnReplaceWheelWatcher(FILE *DumpFile)
 {
     APIRET      arc = NO_ERROR;
-    HQUEUE      hqWheelWatcher = NULLHANDLE;
 
-    if (DumpFile)
+    TRY_LOUD(excpt1)        // V0.9.10 (2001-04-08) [umoeller]
     {
-        PQPROCSTAT16    pInfo = prc16GetInfo(&arc);
-
-        fprintf(DumpFile,
-                "\nEntering " __FUNCTION__":\n");
-
-        if (pInfo && arc == NO_ERROR)
-        {
-            // find WPS entry in process info
-            PQPROCESS16 pProcess = prc16FindProcessFromPID(pInfo,
-                                                           G_KernelGlobals.pidWPS);
-            if (pProcess)
-            {
-                // we now have the process info for the second PMSHELL.EXE...
-                ULONG       ul;
-                PQTHREAD16  pThread;
-
-                fprintf(DumpFile,
-                        "  Running WPS threads at this point:\n");
-
-                for (ul = 0, pThread = (PQTHREAD16)PTR(pProcess->ulThreadList, 0);
-                     ul < pProcess->usThreads;
-                     ul++, pThread++ )
-                {
-                    CHAR    sz[100];
-                    HENUM   henum;
-                    HWND    hwndThis;
-                    fprintf(DumpFile,
-                            "    Thread %02d has priority 0x%04lX\n",
-                            pThread->usTID,
-                            pThread->ulPriority);
-
-                    henum = WinBeginEnumWindows(HWND_OBJECT);
-                    while (hwndThis = WinGetNextWindow(henum))
-                    {
-                        PID pid;
-                        TID tid;
-                        if (WinQueryWindowProcess(hwndThis, &pid, &tid))
-                            if (    (pid == G_KernelGlobals.pidWPS)
-                                 && (tid == pThread->usTID)
-                               )
-                            {
-                                CHAR szClass[100];
-                                WinQueryClassName(hwndThis, sizeof(szClass), szClass);
-                                fprintf(DumpFile,
-                                        "        object wnd 0x%lX (%s)\n",
-                                        hwndThis,
-                                        szClass);
-                            }
-                    }
-                    WinEndEnumWindows(henum);
-                } // end for (ul = 0, pThread =...
-            }
-
-            free(pInfo);
-        }
-    }
-
-    // now lock out the WheelWatcher thread...
-    // that thread is started AFTER us, and it attempts to
-    // create a CP queue of the below name. If it cannot do
-    // that, it will simply exit. So... by creating a queue
-    // of the same name, the WheelWatcher will get an error
-    // later, and exit.
-    arc = DosCreateQueue(&hqWheelWatcher,
-                         QUE_FIFO,
-                         "\\QUEUES\\FILESYS\\NOTIFY");
-    if (DumpFile)
-        fprintf(DumpFile,
-                "  Created HQUEUE 0x%lX (DosCreateQueue returned %d)\n",
-                hqWheelWatcher,
-                arc);
-
-    if (arc == NO_ERROR)
-    {
-        // we got the queue: then our assumption was valid
-        // that we are indeed running _before_ WheelWatcher here...
-        // create our own thread instead
-        thrCreate(&G_tiSentinel,
-                  refr_fntSentinel,
-                  NULL,
-                  "NotifySentinel",
-                  THRF_WAIT,
-                  0);           // no data here
+        HQUEUE      hqWheelWatcher = NULLHANDLE;
 
         if (DumpFile)
-            fprintf(DumpFile,
-                    "  Started XWP Sentinel thread, TID: %d\n",
-                    G_tiSentinel.tid);
+        {
+            PQPROCSTAT16 pInfo;
 
-        G_KernelGlobals.fAutoRefreshReplaced = TRUE;
+            fprintf(DumpFile,
+                    "\nEntering " __FUNCTION__":\n");
+
+            if (!(arc = prc16GetInfo(&pInfo)))
+            {
+                // find WPS entry in process info
+                PQPROCESS16 pProcess = prc16FindProcessFromPID(pInfo,
+                                                               G_KernelGlobals.pidWPS);
+                if (pProcess)
+                {
+                    // we now have the process info for the second PMSHELL.EXE...
+                    ULONG       ul;
+                    PQTHREAD16  pThread;
+
+                    fprintf(DumpFile,
+                            "  Running WPS threads at this point:\n");
+
+                    for (ul = 0, pThread = (PQTHREAD16)PTR(pProcess->ulThreadList, 0);
+                         ul < pProcess->usThreads;
+                         ul++, pThread++ )
+                    {
+                        CHAR    sz[100];
+                        HENUM   henum;
+                        HWND    hwndThis;
+                        fprintf(DumpFile,
+                                "    Thread %02d has priority 0x%04lX\n",
+                                pThread->usTID,
+                                pThread->ulPriority);
+
+                        henum = WinBeginEnumWindows(HWND_OBJECT);
+                        while (hwndThis = WinGetNextWindow(henum))
+                        {
+                            PID pid;
+                            TID tid;
+                            if (WinQueryWindowProcess(hwndThis, &pid, &tid))
+                                if (    (pid == G_KernelGlobals.pidWPS)
+                                     && (tid == pThread->usTID)
+                                   )
+                                {
+                                    CHAR szClass[100];
+                                    WinQueryClassName(hwndThis, sizeof(szClass), szClass);
+                                    fprintf(DumpFile,
+                                            "        object wnd 0x%lX (%s)\n",
+                                            hwndThis,
+                                            szClass);
+                                }
+                        }
+                        WinEndEnumWindows(henum);
+                    } // end for (ul = 0, pThread =...
+                }
+
+                prc16FreeInfo(pInfo);       // V0.9.10 (2001-04-08) [umoeller]
+            }
+            else
+            {
+                fprintf(DumpFile,
+                        "  !!! Cannot get WPS thread info, prc16GetInfo returned %d.\n", arc);
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "prc16GetInfo returned %d.", arc);
+            }
+        }
+
+        // now lock out the WheelWatcher thread...
+        // that thread is started AFTER us, and it attempts to
+        // create a CP queue of the below name. If it cannot do
+        // that, it will simply exit. So... by creating a queue
+        // of the same name, the WheelWatcher will get an error
+        // later, and exit.
+        arc = DosCreateQueue(&hqWheelWatcher,
+                             QUE_FIFO,
+                             "\\QUEUES\\FILESYS\\NOTIFY");
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "  Created HQUEUE 0x%lX (DosCreateQueue returned %d)\n",
+                    hqWheelWatcher,
+                    arc);
+
+        if (arc == NO_ERROR)
+        {
+            // we got the queue: then our assumption was valid
+            // that we are indeed running _before_ WheelWatcher here...
+            // create our own thread instead
+            thrCreate(&G_tiSentinel,
+                      refr_fntSentinel,
+                      NULL,
+                      "NotifySentinel",
+                      THRF_WAIT,
+                      0);           // no data here
+
+            if (DumpFile)
+                fprintf(DumpFile,
+                        "  Started XWP Sentinel thread, TID: %d\n",
+                        G_tiSentinel.tid);
+
+            G_KernelGlobals.fAutoRefreshReplaced = TRUE;
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
 }
 
 /*

@@ -732,8 +732,9 @@ void DumpSecurityContexts(VOID)
 APIRET CreateBaseSecurityContexts(VOID)
 {
     APIRET arc = NO_ERROR;
-    PQPROCSTAT16 p16Info = prc16GetInfo(&arc);
-    if (p16Info)
+    PQPROCSTAT16 p16Info;
+
+    if (!(arc = prc16GetInfo(&p16Info)))
     {
         PQPROCESS16 pProcess;
         for ( pProcess = (PQPROCESS16)PTR(p16Info->ulProcesses, 0);
@@ -772,8 +773,9 @@ APIRET CleanupSecurityContexts(VOID)
     PXWPSECURITYCONTEXT paContexts = NULL;
     ULONG               cContexts = 0;
     APIRET              arc = NO_ERROR;
-    PQPROCSTAT16 p16Info = prc16GetInfo(&arc);
-    if (p16Info)
+    PQPROCSTAT16        p16Info;
+
+    if (!(arc = prc16GetInfo(&p16Info)))
     {
         arc = scxtEnumSecurityContexts(0,
                                        &paContexts,

@@ -2987,6 +2987,7 @@ BOOL cmnTrashCanReady(VOID)
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.4 (2000-08-03) [umoeller]: moved this here from fileops.c
+ *@@changed V0.9.9 (2001-04-08) [umoeller]: wrong item ID
  */
 
 BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
@@ -3045,7 +3046,9 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
             if (NULLHANDLE == WinQueryObject((PSZ)XFOLDER_TRASHCANID))
             {
                 brc = setCreateStandardObject(hwndOwner,
-                                              213,        // XWPTrashCan
+                                              220,        // XWPTrashCan
+                                                    // yo, this needed to be updated
+                                                    // V0.9.9 (2001-04-08) [umoeller]
                                               FALSE);     // XWP object
             }
             else
