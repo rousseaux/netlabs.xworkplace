@@ -183,6 +183,10 @@
                                      MPARAM mpView,
                                      MPARAM mpFolder);
 
+    BOOL fdrSortViewOnce(WPFolder *somSelf,
+                         HWND hwndFrame,
+                         long lSort);
+
     VOID fdrSetFldrCnrSort(WPFolder *somSelf,
                            HWND hwndCnr,
                            BOOL fForce);
@@ -204,7 +208,7 @@
     #define BARPULL_HELP        4
 
     /*
-     *@@ SUBCLASSEDFOLDERVIEW:
+     *@@ SUBCLFOLDERVIEW:
      *      linked list structure used with folder frame
      *      window subclassing. One of these structures
      *      is created for each folder view (window) which
@@ -228,9 +232,10 @@
      *@@changed V0.9.2 (2000-03-06) [umoeller]: removed ulView, because this might change
      *@@changed V0.9.3 (2000-04-07) [umoeller]: renamed from SUBCLASSEDLISTITEM
      *@@changed V0.9.9 (2001-03-10) [umoeller]: added ulWindowWordOffset
+     *@@changed V0.9.19 (2002-04-17) [umoeller]: renamed from SUBCLASSEDFOLDERVIEW
      */
 
-    typedef struct _SUBCLASSEDFOLDERVIEW
+    typedef struct _SUBCLFOLDERVIEW
     {
         HWND        hwndFrame;          // folder view frame window
         WPFolder    *somSelf;           // folder object
@@ -261,27 +266,27 @@
         ULONG       ulSelection;        // SEL_* flags;
                                         // this field is valid only between
                                         // WM_INITMENU and WM_COMMAND
-    } SUBCLASSEDFOLDERVIEW, *PSUBCLASSEDFOLDERVIEW;
+    } SUBCLFOLDERVIEW, *PSUBCLFOLDERVIEW;
 
-    PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
-                                       HWND hwndCnr,
-                                       ULONG ulWindowWordOffset,
-                                       WPFolder *somSelf,
-                                       WPObject *pRealObject);
+    PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
+                                  HWND hwndCnr,
+                                  ULONG ulWindowWordOffset,
+                                  WPFolder *somSelf,
+                                  WPObject *pRealObject);
 
-    PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
-                                                HWND hwndCnr,
-                                                WPFolder *somSelf,
-                                                WPObject *pRealObject);
+    PSUBCLFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
+                                           HWND hwndCnr,
+                                           WPFolder *somSelf,
+                                           WPObject *pRealObject);
 
-    PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,
-                                      PULONG pulIndex);
+    PSUBCLFOLDERVIEW fdrQuerySFV(HWND hwndFrame,
+                                 PULONG pulIndex);
 
     VOID fdrManipulateNewView(WPFolder *somSelf,
                               HWND hwndNewFrame,
                               ULONG ulView);
 
-    VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv);
+    VOID fdrRemoveSFV(PSUBCLFOLDERVIEW psfv);
 
     BOOL fdrProcessObjectCommand(WPFolder *somSelf,
                                  USHORT usCommand,
@@ -293,7 +298,7 @@
                                  ULONG msg,
                                  MPARAM mp1,
                                  MPARAM mp2,
-                                 PSUBCLASSEDFOLDERVIEW psfv,
+                                 PSUBCLFOLDERVIEW psfv,
                                  PFNWP pfnwpOriginal);
 
     MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd,

@@ -29,6 +29,18 @@
 
     /* ******************************************************************
      *
+     *   Declarations
+     *
+     ********************************************************************/
+
+    // Toolkit 4 declarations
+
+    #ifndef OBJSTYLE_LOCKEDINPLACE
+        #define OBJSTYLE_LOCKEDINPLACE  0x00020000
+    #endif
+
+    /* ******************************************************************
+     *
      *   Object setup
      *
      ********************************************************************/
@@ -123,13 +135,20 @@
 
     #define OBJFL_WPFILESYSTEM              0x0001
     #define OBJFL_WPFOLDER                  0x0002
-    #define OBJFL_WPSHADOW                  0x0004
+    #define OBJFL_WPABSTRACT                0x0004  // V0.9.19 (2002-04-24) [umoeller]
+    #define OBJFL_WPSHADOW                  0x0008
 
     #define OBJFL_INITIALIZED               0x1000
 
     WPObject* objResolveIfShadow(WPObject *somSelf);
 
+    ULONG objQueryFlags(WPObject *somSelf);
+
+    BOOL objIsAnAbstract(WPObject *somSelf);
+
     BOOL objIsAFolder(WPObject *somSelf);
+
+    BOOL objIsObjectInitialized(WPObject *somSelf);
 
     BOOL objSetup(WPObject *somSelf,
                   PSZ pszSetupString);

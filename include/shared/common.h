@@ -507,10 +507,10 @@
     // Groups of settings pages:
     // 1) in "Workplace Shell"
     #define SP_1GENERIC             1
-    // #define SP_2REMOVEITEMS         2
-    #define SP_MENUS_COMMON         2       // replaced V0.9.19 (2002-04-17) [umoeller]
-    // #define SP_25ADDITEMS           3
-    #define SP_MENUS_FILE           3       // replaced V0.9.19 (2002-04-17) [umoeller]
+    // #define SP_2REMOVEITEMS         2    // removed V0.9.19 (2002-04-17) [umoeller]
+    // #define SP_25ADDITEMS           3    // removed V0.9.19 (2002-04-17) [umoeller]
+    #define SP_MENUSETTINGS         2       // added V0.9.19 (2002-04-17) [umoeller]
+    #define SP_MENUITEMS            3       // added V0.9.19 (2002-04-17) [umoeller]
     #define SP_26CONFIGITEMS        4
     #define SP_27STATUSBAR          5
     #define SP_3SNAPTOGRID          6
@@ -635,6 +635,14 @@
 
     /********************************************************************
      *
+     *   Global variables (read-only)
+     *
+     ********************************************************************/
+
+    extern BOOL G_fIsWarp4;
+
+    /********************************************************************
+     *
      *   Global structures
      *
      ********************************************************************/
@@ -691,17 +699,17 @@
 
     typedef enum _XWPSETTING
     {
+        NULLSETTING = 0,
+
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
 #endif
-#ifndef __NOMOVEREFRESHNOW__
-        sfMoveRefreshNow,
-#endif
+        // sfMoveRefreshNow,        removed V0.9.19 (2002-04-17) [umoeller]
 #ifndef __ALWAYSSUBCLASS__
         sfNoSubclassing,
 #endif
 #ifndef __NOFOLDERCONTENTS__
-        sfAddFolderContentItem,
+        // sfAddFolderContentItem,  removed V0.9.19 (2002-04-17) [umoeller]
         sfFolderContentShowIcons,
 #endif
 #ifndef __NOFDRDEFAULTDOCS__
@@ -821,6 +829,8 @@
             // variable menu offset, "Paranoia" page
 
         sfMenuCascadeMode,
+
+/* all removed V0.9.19 (2002-04-17) [umoeller]
         sflDefaultMenuItems,
             // ready-made CTXT_* flags for wpFilterPopupMenu
 
@@ -844,8 +854,17 @@
             // XFolder: enable "Select by name"
         sfExtendFldrViewMenu,
             // XFolder: extend Warp 4 "View" submenu
+*/
+
         sfFixLockInPlace,
             // "Workplace Shell" menus p3: submenu, checkmark
+
+/* all removed V0.9.19 (2002-04-17) [umoeller]
+
+#ifndef __NOXSHUTDOWN__
+        sfDTMShutdownMenu,
+#endif
+
         // Desktop menu items
         sfDTMSort,
         sfDTMArrange,
@@ -853,10 +872,10 @@
         sfDTMLockup,
 #ifndef __NOXSHUTDOWN__
         sfDTMShutdown,
-        sfDTMShutdownMenu,
 #endif
         sfDTMLogoffNetwork,
             // "Logoff network now" desktop menu item (XFldDesktop)
+*/
 
         // folder view settings
         sfFullPath,
@@ -968,6 +987,18 @@
             // -- OPEN_TREE (101): tree view
             // -- OPEN_DETAILS (102): details view
 
+        // the following are new with V0.9.19
+        sflMenuObjectWPS,         // CTXT_* flags, bit set means remove item
+        sflMenuObjectXWP,         // XWPCTXT_* flags, bit set means remove item
+        sflMenuFileWPS,         // CTXT_* flags, bit set means remove item
+        sflMenuFileXWP,         // XWPCTXT_* flags, bit set means remove item
+        sflMenuFolderWPS,         // CTXT_* flags, bit set means remove item
+        sflMenuFolderXWP,         // XWPCTXT_* flags, bit set means remove item
+        sflMenuDesktopWPS,         // CTXT_* flags, bit set means remove item
+        sflMenuDesktopXWP,         // XWPCTXT_* flags, bit set means remove item
+        sflMenuDiskWPS,         // CTXT_* flags, bit set means remove item
+        sflMenuDiskXWP,         // XWPCTXT_* flags, bit set means remove item
+
         ___LAST_SETTING
     } XWPSETTING;
 
@@ -1015,7 +1046,7 @@
 
     PCSZ XWPENTRY cmnQueryLanguageCode(VOID);
 
-    BOOL XWPENTRY cmnSetLanguageCode(PSZ pszLanguage);
+    BOOL XWPENTRY cmnSetLanguageCode(PCSZ pcszLanguage);
 
     PCSZ XWPENTRY cmnQueryHelpLibrary(VOID);
     typedef PCSZ XWPENTRY CMNQUERYHELPLIBRARY(VOID);
@@ -1041,6 +1072,10 @@
     HMODULE XWPENTRY cmnQueryNLSModuleHandle(BOOL fEnforceReload);
     typedef HMODULE XWPENTRY CMNQUERYNLSMODULEHANDLE(BOOL fEnforceReload);
     typedef CMNQUERYNLSMODULEHANDLE *PCMNQUERYNLSMODULEHANDLE;
+
+    HWND XWPENTRY cmnLoadDlg(HWND hwndOwner, PFNWP pfnwp, ULONG idResource, PVOID pvCreateParam);
+    typedef HWND XWPENTRY CMNLOADDLG(HWND hwndOwner, PFNWP pfnwp, ULONG idResource, PVOID pvCreateParam);
+    typedef CMNLOADDLG *PCMNLOADDLG;
 
     /* ******************************************************************
      *
@@ -1128,19 +1163,6 @@
     BOOL XWPENTRY cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting);
 
     ULONG XWPENTRY cmnQueryStatusBarHeight(VOID);
-
-    /* PCGLOBALSETTINGS XWPENTRY cmnLoadGlobalSettings(BOOL fResetDefaults);
-
-    const GLOBALSETTINGS* XWPENTRY cmnQueryGlobalSettings(VOID);
-
-    GLOBALSETTINGS* XWPENTRY cmnLockGlobalSettings(PCSZ pcszSourceFile,
-                                                   ULONG ulLine,
-                                                   PCSZ pcszFunction);
-
-    VOID XWPENTRY // cmnUnlockGlobalSettings(VOID);
-
-    BOOL XWPENTRY cmnStoreGlobalSettings(VOID);
-       */
 
     BOOL XWPENTRY cmnSetDefaultSettings(USHORT usSettingsPage);
 
@@ -1376,7 +1398,9 @@
      ********************************************************************/
 
     #ifndef __XWPLITE__
-        BOOL XWPENTRY cmnAddProductInfoMenuItem(HWND hwndMenu);
+    #ifdef SOM_WPFolder_h
+        BOOL XWPENTRY cmnAddProductInfoMenuItem(WPFolder *somSelf, HWND hwndMenu);
+    #endif
     #endif
 
     VOID XWPENTRY cmnShowProductInfo(HWND hwndOwner, ULONG ulSound);
@@ -1444,6 +1468,7 @@
     ULONG XWPENTRY cmnMessageBox(HWND hwndOwner,
                                  PCSZ pcszTitle,
                                  PCSZ pcszMessage,
+                                 ULONG ulHelpPanel,
                                  ULONG flStyle);
 
     #ifdef XSTRING_HEADER_INCLUDED
@@ -1461,17 +1486,20 @@
         #define cmnGetMessageExt #error xstring.h not included
     #endif
 
-    ULONG XWPENTRY cmnMessageBoxMsg(HWND hwndOwner,
+    ULONG cmnMessageBoxHelp(HWND hwndOwner,
+                            ULONG ulTitle,
+                            PCSZ *pTable,
+                            ULONG ulTable,
+                            ULONG ulMessage,
+                            ULONG ulHelpPanel,
+                            ULONG flStyle);
+
+    ULONG XWPENTRY cmnMessageBoxExt(HWND hwndOwner,
                                     ULONG ulTitle,
+                                    PCSZ *pTable,
+                                    ULONG ulTable,
                                     ULONG ulMessage,
                                     ULONG flStyle);
-
-    ULONG XWPENTRY cmnMessageBoxMsgExt(HWND hwndOwner,
-                                       ULONG ulTitle,
-                                       PCSZ *pTable,
-                                       ULONG ulTable,
-                                       ULONG ulMessage,
-                                       ULONG flStyle);
 
     ULONG XWPENTRY cmnErrorMsgBox(HWND hwndOwner,
                                   APIRET arc,
@@ -1512,6 +1540,14 @@
     VOID XWPENTRY cmnSetDlgHelpPanel(ULONG ulHelpPanel);
 
     MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    BOOL XWPENTRY cmnFileDlg2(HWND hwndOwner,
+                              PSZ pszFile,
+                              ULONG flFlags,
+                              HINI hini,
+                              PCSZ pcszApplication,
+                              PCSZ pcszKey,
+                              BOOL fUseNewFileDlg);
 
     BOOL XWPENTRY cmnFileDlg(HWND hwndOwner,
                              PSZ pszFile,

@@ -85,6 +85,8 @@
        #define BKA_MINOR                0x0080
     #endif
 
+    #pragma pack(1)
+
     /*
      *@@ INSERTNOTEBOOKPAGE:
      *      this structure must be passed to ntbInsertPage
@@ -113,10 +115,10 @@
                                     // set this to somSelf of _wpAddSettingsPages
         HMODULE     hmod;           // module of dlg resource
         ULONG       ulDlgID;        // ID of dlg resource (in hmod)
-        PCSZ        pcszName;        // title of page (in notebook tab)
+        PCSZ        pcszName;       // title of page (in notebook tab)
 
         // 2) OPTIONAL input to ntbInsertPage; all of these can be null
-        ULONG       ulPageID;       // the page identifier, which should be set to
+        USHORT      ulPageID;       // the page identifier, which should be set to
                                     // uniquely identify the notebook page (e.g. for
                                     // ntbQueryOpenPages); XWorkplace uses the SP_*
                                     // IDs def'd in common.h.
@@ -132,19 +134,11 @@
                                     // to "item changed" callback;
                                     // if FALSE: CN_HELP is processed like WM_HELP
                                     // V0.9.4 (2000-07-11) [umoeller]
-        ULONG       ulDefaultHelpPanel; // default help panel ID for the whole page
+        USHORT      ulDefaultHelpPanel; // default help panel ID for the whole page
                                     // in the XFolder help file;
                                     // this will be displayed when WM_HELP comes in
                                     // and if no subpanel could be found
-        // USHORT      usFirstControlID; // the first control ID and
-        // ULONG       ulFirstSubpanel; // the help panel ID of the first subpanel
-                                    // if the user presses "F1" while a dialog item
-                                    // on the page has the keyboard focus; see
-                                    // ntbDisplayFocusHelp for details how this works.
-                                    // Set this to 0 if you don't want subpanels.
-                                    // In that case, ulDefaultHelpPanel will always
-                                    // be displayed.
-        ULONG       ulTimer;        // if !=0, a timer will be started and pfncbTimer
+        USHORT      ulTimer;        // if !=0, a timer will be started and pfncbTimer
                                     // will be called with this frequency (in ms)
         MPARAM      *pampControlFlags; // if != NULL, winhAdjustControls will be
                                     // called when the notebook gets resized with
@@ -226,7 +220,13 @@
         //    _after_ the page has been initialized.
         ULONG       ulNotebookPageID; // the PM notebook page ID, as returned by
                                       // wpInsertSettingsPage
-        BOOL        fPageVisible;     // TRUE if the page is currently visible
+        ULONG       flPage;           // any combination of the following:
+                                      // V0.9.19 (2002-04-24) [umoeller]
+                          #define NBFL_PAGE_INITED          0x0001
+                                    // TRUE after the INIT callback has been called
+                          #define NBFL_PAGE_SHOWING         0x0002
+                                    // TRUE if the page is currently turned to
+                                    // in the notebook
         HWND        hwndDlgPage;      // hwnd of dlg page in notebook; this
                                       // is especially useful to get control HWND's:
                                       // use WinWindowFromID(pnbp->hwndDlgPage, YOUR_ID).
@@ -246,10 +246,6 @@
                                       // NULL means container whitespace.
         POINTL      ptlMenuMousePos;  // for CN_CONTEXTMENU, this has the
                                       // last mouse position (in Desktop coords).
-        BOOL        fPageInitialized; // TRUE only after the first call to the INIT
-                                      // callback with CBI_INIT set. Useful if you
-                                      // want to find out if a control should respond
-                                      // to something yet.
         BOOL        fShowWaitPointer; // while TRUE, fnwpPageCommon shows the "Wait" pointer;
                                       // only meaningful if another thread is preparing data
         HWND        hwndTooltip;      // if this is != NULL, this window gets destroyed
@@ -264,6 +260,8 @@
         PVOID       pxac;               // ptr to XADJUSTCTRLS if (pampControlFlags != NULL)
 
     } NOTEBOOKPAGE;
+
+    #pragma pack()
 
     /*
      *@@ NOTEBOOKPAGELISTITEM:

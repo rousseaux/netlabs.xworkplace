@@ -95,8 +95,8 @@
     #define ID_XMH_RESTARTWPS       18
 
     #define ID_XSH_SETTINGS1                 19
-    #define ID_XSH_SETTINGS_REMOVEMENUS      20
-    #define ID_XSH_SETTINGS_ADDMENUS         21
+    // #define ID_XSH_SETTINGS_REMOVEMENUS      20      removed V0.9.19 (2002-04-24) [umoeller]
+    // #define ID_XSH_SETTINGS_ADDMENUS         21      removed V0.9.19 (2002-04-24) [umoeller]
     #define ID_XSH_SETTINGS_STATUSBARS1      22
     #define ID_XSH_SETTINGS_SNAPTOGRID       23
     #define ID_XSH_SETTINGS_FOLDERHOTKEYS    24
@@ -260,6 +260,12 @@
 
     #define ID_XSH_FOLDER_MAIN              154     // V0.9.19 (2002-04-17) [umoeller]
     #define ID_XSH_FOLDER_VIEWS             155     // V0.9.19 (2002-04-17) [umoeller]
+
+    #define ID_XSH_SETTINGS_MENUITEMS       156     // V0.9.19 (2002-04-17) [umoeller]
+    #define ID_XSH_SETTINGS_MENUSETTINGS    157     // V0.9.19 (2002-04-17) [umoeller]
+
+    #define ID_XSH_CANNOT_FIND_TRASHCAN     158     // V0.9.19 (2002-04-17) [umoeller]
+    #define ID_XSH_TRASH_NODRIVESUPPORT     159     // V0.9.19 (2002-04-17) [umoeller]
 
 #endif
 

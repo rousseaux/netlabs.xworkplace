@@ -48,16 +48,122 @@
     #define CLIPBOARDKEY "%**C"        /* code in program object's parameter list for
                                           inserting clipboard data */
 
-    // Toolkit 4 definitions
     #ifndef MENUS_SHORT
-    #define MENUS_SHORT     0
-    #define MENUS_LONG      1
-    #define MENUS_DEFAULT   2
+        #define MENUS_SHORT     0
+        #define MENUS_LONG      1
+        #define MENUS_DEFAULT   2
 
-    #define MENUBAR_ON      1
-    #define MENUBAR_OFF     0
-    #define MENUBAR_DEFAULT 2
+        #define MENUBAR_ON      1
+        #define MENUBAR_OFF     0
+        #define MENUBAR_DEFAULT 2
     #endif
+
+    #ifndef WPMENUID_OPENPARENT
+        #define WPMENUID_OPENPARENT         714
+        #define WPMENUID_PASTE              715
+        #define WPMENUID_CHANGETOICON       716
+        #define WPMENUID_CHANGETOTREE       717
+        #define WPMENUID_CHANGETODETAILS    718
+
+        #define WPMENUID_VIEW               104
+
+        // items in arrange menu
+        #define WPMENUID_STANDARD           733
+        #define WPMENUID_ARRANGETOP         734
+        #define WPMENUID_ARRANGELEFT        735
+        #define WPMENUID_ARRANGERIGHT       736
+        #define WPMENUID_ARRANGEBOTTOM      737
+        #define WPMENUID_PERIMETER          739
+        #define WPMENUID_SELECTEDHORZ       740
+        #define WPMENUID_SELECTEDVERT       741
+        // end arrange
+
+        #define WPMENUID_LOGOFF             738         // logoff network now
+
+        #define WPMENUID_LOCKEDINPLACE      730
+    #endif
+
+    // non-standard declarations for folder hotkeys
+    // to allow for specifying sort criteria
+    #define ID_WPMI_SORTBYNAME             0x1770
+    // #define ID_WPMI_SORTBYEXTENSION        0x9D87    was NPSWPS, removed V0.9.19 (2002-04-17) [umoeller]
+    #define ID_WPMI_SORTBYTYPE             0x1771
+    // the following match only if folder sort class is WPFileSystem
+    #define ID_WPMI_SORTBYREALNAME         0x1777
+    #define ID_WPMI_SORTBYSIZE             0x1778
+    #define ID_WPMI_SORTBYWRITEDATE        0x1779
+    #define ID_WPMI_SORTBYACCESSDATE       0x177B
+    #define ID_WPMI_SORTBYCREATIONDATE     0x177D
+
+    /*
+        Warp 3 CTXT_* flags
+        #define CTXT_CRANOTHER     0x0001
+        #define CTXT_NEW           CTXT_CRANOTHER
+        #define CTXT_OPEN          0x0002
+        #define CTXT_WINDOW        0x0004
+        #define CTXT_SWITCHTO      CTXT_WINDOW
+        #define CTXT_CLOSE         0x0008
+        #define CTXT_SETTINGS      0x0010
+        #define CTXT_PRINT         0x0020
+        #define CTXT_HELP          0x0040
+        #define CTXT_DELETE        0x0080
+        #define CTXT_COPY          0x0100
+        #define CTXT_MOVE          0x0200
+        #define CTXT_SHADOW        0x0400
+        #define CTXT_LINK          CTXT_SHADOW
+        #define CTXT_PROGRAM       0x0800
+        #define CTXT_ICON        0x001000
+        #define CTXT_TREE        0x002000
+        #define CTXT_DETAILS     0x004000
+        #define CTXT_FIND        0x008000
+        #define CTXT_SELECT      0x010000
+        #define CTXT_ARRANGE     0x020000
+        #define CTXT_SORT        0x040000
+        #define CTXT_SHUTDOWN    0x080000
+        #define CTXT_LOCKUP      0x100000
+        #define CTXT_PALETTE     0x200000
+        #define CTXT_REFRESH     0x400000           // doesn't work on Warp 4
+        #define CTXT_PICKUP      0x800000
+        #define CTXT_PUTDOWN        0x1000000
+        #define CTXT_PUTDOWN_CANCEL 0x2000000
+    */
+
+    // some more Warp 4 wpFilterPopupMenu flags
+    #ifndef CTXT_PASTE
+        #define CTXT_CHANGETOICON       0x04000000
+        #define CTXT_CHANGETOTREE       0x08000000
+        #define CTXT_CHANGETODETAILS    0x10000000
+        #define CTXT_VIEW               0x20000000
+        #define CTXT_PASTE              0x40000000
+        // #define CTXT_UNDOARRANGE     0x80000000
+                // must not be used because MENUITEMWITHID uses the highest
+                // bit to tell CTXT_* flags from XWPCTXT_* flags
+    #endif
+
+    // additional XWP flags
+    #define XWPCTXT_LOCKEDINPLACE       0x00000001
+    #define XWPCTXT_LOGOFF              0x00000002      // logoff network now
+    #define XWPCTXT_SYSTEMSETUP         0x00000004
+    #define XWPCTXT_CHKDSK              0x00000008
+    #define XWPCTXT_FORMAT              0x00000010
+    #define XWPCTXT_COPYDSK             0x00000020
+    #define XWPCTXT_LOCKDISK            0x00000040
+    #define XWPCTXT_EJECTDISK           0x00000080
+    #define XWPCTXT_UNLOCKDISK          0x00000100
+    #define XWPCTXT_COPYFILENAME        0x00000200
+    #define XWPCTXT_ATTRIBUTESMENU      0x00000400
+
+    #define XWPCTXT_SELALL              0x00001000
+    #define XWPCTXT_DESELALL            0x00002000
+    #define XWPCTXT_SELECTSOME          0x00004000
+    #define XWPCTXT_LAYOUTITEMS         0x00008000
+    #define XWPCTXT_FOLDERCONTENTS      0x00010000
+    #define XWPCTXT_REFRESH_IN_VIEW     0x00020000
+#ifndef __NOMOVEREFRESHNOW__
+    #define XWPCTXT_REFRESH_IN_MAIN     0x00040000
+#endif
+
+    #define XWPCTXT_HIGHBIT             0x80000000
 
     /* ******************************************************************
      *
@@ -71,7 +177,7 @@
 
     /* ******************************************************************
      *
-     *   Miscellaneous
+     *   Global WPS menu settings
      *
      ********************************************************************/
 
@@ -79,11 +185,26 @@
 
     BOOL mnuSetDefaultMenuBarVisibility(BOOL fVisible);
 
+    BOOL mnuQueryShortMenuStyle(VOID);
+
+    BOOL mnuSetShortMenuStyle(BOOL fShort);
+
     /* ******************************************************************
      *
-     *   Functions for manipulating context menus
+     *   Menu manipulation
      *
      ********************************************************************/
+
+    #ifdef COMMON_HEADER_INCLUDED
+        XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf);
+
+        XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf);
+    #endif
+
+    VOID mnuRemoveMenuItems(WPObject *somSelf,
+                            HWND hwndMenu,
+                            const ULONG *aSuppressFlags,
+                            ULONG cSuppressFlags);
 
     VOID mnuCheckDefaultSortItem(HWND hwndSortMenu,
                                  ULONG ulDefaultSort);
@@ -101,36 +222,14 @@
                                   HWND hwndCnr,
                                   ULONG iPosition);
 
-    /* BOOL mnuHackFolderClose(WPFolder *somSelf,
-                            HWND hwndOwner,
-                            HWND hwndClient,
-                            PPOINTL pptlPopupPt,
-                            ULONG ulMenuType,
-                            HWND hwndMenu); */
-
-    #ifdef SOM_WPDataFile_h
-        BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
-                                        HWND hwndMenu,
-                                        HWND hwndCnr,
-                                        ULONG iPosition);
-    #endif
+    BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,
+                                    HWND hwndMenu,
+                                    HWND hwndCnr,
+                                    ULONG iPosition);
 
     /* ******************************************************************
      *
-     *   Functions for reacting to menu selections
-     *
-     ********************************************************************/
-
-    VOID mnuCreateFromTemplate(WPObject *pTemplate,
-                               WPFolder *pFolder);
-
-    BOOL mnuMenuItemSelected(WPFolder *somSelf, HWND hwndFrame, ULONG ulMenuId);
-
-    BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId);
-
-    /* ******************************************************************
-     *
-     *   "Selecting" menu items functions
+     *   "Selecting menu items" reaction
      *
      ********************************************************************/
 
@@ -152,6 +251,19 @@
 
     /* ******************************************************************
      *
+     *   "Menu item selected" reaction
+     *
+     ********************************************************************/
+
+    BOOL mnuMenuItemSelected(WPFolder *somSelf,
+                             HWND hwndFrame,
+                             ULONG ulMenuId);
+
+    BOOL mnuMenuItemHelpSelected(WPObject *somSelf,
+                                 ULONG MenuId);
+
+    /* ******************************************************************
+     *
      *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages
      *
      ********************************************************************/
@@ -159,31 +271,4 @@
     ULONG mnuAddWPSMenuPages(WPObject *somSelf,
                              HWND hwndDlg);
 
-    /*
-    #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY mnuAddMenusInitPage(PNOTEBOOKPAGE pnbp,
-                                          ULONG flFlags);
-
-        MRESULT XWPENTRY mnuAddMenusItemChanged(PNOTEBOOKPAGE pnbp,
-                                       ULONG ulItemID,
-                                       USHORT usNotifyCode,
-                                       ULONG ulExtra);
-
-        VOID XWPENTRY mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,
-                                                   ULONG flFlags);
-
-        MRESULT XWPENTRY mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
-                                                ULONG ulItemID,
-                                                USHORT usNotifyCode,
-                                                ULONG ulExtra);
-
-        VOID XWPENTRY mnuRemoveMenusInitPage(PNOTEBOOKPAGE pnbp,
-                                             ULONG flFlags);
-
-        MRESULT XWPENTRY mnuRemoveMenusItemChanged(PNOTEBOOKPAGE pnbp,
-                                          ULONG ulItemID,
-                                          USHORT usNotifyCode,
-                                          ULONG ulExtra);
-    #endif
-    */
 #endif

@@ -67,14 +67,6 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY dtpMenuItemsInitPage(PNOTEBOOKPAGE pnbp,
-                                           ULONG flFlags);
-
-        MRESULT XWPENTRY dtpMenuItemsItemChanged(PNOTEBOOKPAGE pnbp,
-                                        ULONG ulItemID,
-                                        USHORT usNotifyCode,
-                                        ULONG ulExtra);
-
         VOID XWPENTRY dtpStartupInitPage(PNOTEBOOKPAGE pnbp,
                                          ULONG flFlags);
 

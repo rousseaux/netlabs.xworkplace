@@ -171,7 +171,21 @@
 
     VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp);
 
-    ULONG xsdIsShutdownRunning(VOID);
+    // current shutdown status
+    #define XSD_IDLE                0       // not started yet
+    #define XSD_CONFIRMING          1       // confirmation window is open
+    #define XSD_INITIALIZING        3       // shutdown thread is init'ing
+    #define XSD_CLOSINGWINDOWS      4       // currently closing windows
+    #define XSD_CANCELLED           5       // user pressed cancel
+                                            // (only in a short time frame before
+                                            // the shutdown thread has cleaned
+                                            // up; we then reset to XSD_IDLE)
+    #define XSD_ALLCLOSED_SAVING    6       // all windows closed, saving WPS
+    #define XSD_SAVEDONE_FLUSHING   7       // WPS saved, preparing file-system
+                                            // flush or WPS restart, and then
+                                            // while system is halted
+
+    ULONG xsdQueryShutdownState(VOID);
 
     BOOL xsdInitiateShutdown(VOID);
 

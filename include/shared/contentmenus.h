@@ -88,7 +88,7 @@
         typedef struct _CONTENTLISTITEM
         {
             WPObject        *pObject;           // object pointer
-            CHAR            szTitle[100];       // object title (beautified)
+            CHAR            szTitle[100];        // object title (beautified)
             ULONG           ulObjectType;       // OC_* flags
             PLINKLIST       pllFolderContent;   // if != NULL, pObject is a folder
                                                 // and this is another list of CONTENTLISTITEMs

@@ -213,12 +213,13 @@
                         // ("real" object on which the operation was invoked).
                         // This is only valid if FOPSUPD_SOURCEOBJECT_CHANGED
                         // is set in the update flags.
-        PSZ         pszSubObject;
+        PCSZ        pcszSubObject;
                         // if pSourceObject is a folder, this contains a
                         // description (usually a file name) of a subobject
                         // that is being worked on.
                         // This is only valid if FOPSUPD_SUBOBJECT_CHANGED
-                        // is set in the update flags.
+                        // is set in the update flags and might be NULL if
+                        // the subobject is to be cleared.
 
         ULONG       ulProgressScalar;
                         // a scalar signalling the total progress of the operation;
@@ -352,13 +353,16 @@
      *      confirmation data passed with fopsStartTaskFromCnr.
      *
      *@@added V0.9.5 (2000-08-11) [umoeller]
+     *@@changed V0.9.19 (2002-04-24) [umoeller]: added ulHelpPanel
      */
 
     typedef struct _FOPSCONFIRM
     {
+        HWND        hwndOwner;          // in: owner window for msg box
         ULONG       ulMsgSingle,        // in: msg no. if single object
                     ulMsgMultiple;      // in: msg no. if multiple objects
-        HWND        hwndOwner;          // in: owner window for msg box
+        ULONG       ulHelpPanel;        // in: help panel or NULLHANDLE
+                                        // V0.9.19 (2002-04-24) [umoeller]
     } FOPSCONFIRM, *PFOPSCONFIRM;
 
      FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,

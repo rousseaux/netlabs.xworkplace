@@ -26,6 +26,7 @@
 
     BOOL setCreateStandardObject(HWND hwndOwner,
                                  USHORT usMenuID,
+                                 BOOL fConfirm,
                                  BOOL fXWPObject);
 
     /* ******************************************************************

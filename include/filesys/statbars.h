@@ -69,7 +69,7 @@
         typedef struct _STATUSBARDATA
         {
             WPFolder   *somSelf;            // the folder of the status bar
-            PSUBCLASSEDFOLDERVIEW psfv;       // folder frame info struct (folder.h)
+            PSUBCLFOLDERVIEW psfv;       // folder frame info struct (folder.h)
             HAB        habStatusBar;        // status bar PM anchor block V0.9.2 (2000-02-22) [umoeller]
             ULONG      idTimer;             // update delay timer
             BOOL       fDontBroadcast;      // anti-recursion flag for presparams
@@ -94,9 +94,9 @@
                               ULONG ulView);
 
     #ifdef FOLDER_HEADER_INCLUDED
-        HWND stbCreate(PSUBCLASSEDFOLDERVIEW psli2);
+        HWND stbCreate(PSUBCLFOLDERVIEW psli2);
 
-        VOID stbDestroy(PSUBCLASSEDFOLDERVIEW psli2);
+        VOID stbDestroy(PSUBCLFOLDERVIEW psli2);
     #endif
 
     MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,

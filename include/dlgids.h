@@ -279,9 +279,9 @@
 // #define ID_XFD_NOCONFIG                 270      removed V0.9.18 (2002-02-06) [umoeller]
 // #define ID_XFD_NOOBJECT                 271      removed V0.9.12 (2001-05-18) [umoeller]
 #define ID_XFD_LIMITREACHED             272
-#define ID_XFD_WRONGVERSION             273
+// #define ID_XFD_WRONGVERSION             273      removed V0.9.19 (2002-04-24) [umoeller]
 
-#define ID_XFD_NOTEXTCLIP               280
+// #define ID_XFD_NOTEXTCLIP               280      removed V0.9.19 (2002-04-24) [umoeller]
 // #define ID_XFD_NOICONVIEW               281      removed V0.9.2 (2000-03-04) [umoeller]
 
 // #define ID_XFD_WELCOME                  290      removed V0.9.16 (2001-11-10) [umoeller]
@@ -357,61 +357,77 @@
 
 /* ******************************************************************
  *
- *   XFldWPS                        >= 500
+ *   XFldWPS                        >= 450
  *
  ********************************************************************/
 
-// "Remove menu items" page
-#define ID_XSDI_MENUS_COMMON            500     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_MENUS_SPECIFIC          501     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_MENU_STYLE_GROUP        502     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_MENUS_BARS              503     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_MENUS_SHORT             504     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_MENUS_LONG              505     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_COMMON_GROUP            506     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_FOLDER_GROUP            507     // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_DISK_GROUP              508     // V0.9.19 (2002-04-17) [umoeller]
-// #define ID_XSD_SET2REMOVEMENUS          510  // V0.9.19 (2002-04-17) [umoeller]
-#define ID_XSDI_FIND                    511
-#define ID_XSDI_SORT                    512
-#define ID_XSDI_SELECT                  513
-#define ID_XSDI_WARP4DISPLAY            514
-#define ID_XSDI_ARRANGE                 515
-#define ID_XSDI_INSERT                  516
-#define ID_XSDI_CHECKDISK               517
-#define ID_XSDI_FORMATDISK              518
-#define ID_XSDI_HELP                    519
-#define ID_XSDI_CRANOTHER               520
-#define ID_XSDI_COPY                    521
-#define ID_XSDI_MOVE                    522
-#define ID_XSDI_SHADOW                  523
-#define ID_XSDI_DELETE                  524
-#define ID_XSDI_PICKUP                  525
-#define ID_XSDI_LOCKINPLACE             526
-#define ID_XSDI_PRINT                   527
-#define ID_XSDI_LOCKINPLACE_NOSUB       528 // V0.9.7 (2000-12-10) [umoeller]
+// all the following are new with V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_MENU_SETTINGS           450
+#define ID_XSDI_MENU_ITEMS              451
+
+#define ID_XSDI_MENU_STYLE_GROUP        452
+#define ID_XSDI_MENUS_BARS              453
+#define ID_XSDI_MENUS_SHORT             454
+#define ID_XSDI_MENUS_LONG              455
+#define ID_XSDI_LOCKINPLACE_NOSUB       456
+
+#define ID_XSDI_MENU_EDIT_GROUP         457
+#define ID_XSDI_MENU_EDIT_CNR           458
+#define ID_XSDI_MENU_EDIT_CAT_TXT       459
+#define ID_XSDI_MENU_EDIT_CAT_DROP      460
+
+#define ID_XSDI_MENU_EDIT_CAT_FOLDERS   461
+#define ID_XSDI_MENU_EDIT_CAT_DESKTOP   462
+#define ID_XSDI_MENU_EDIT_CAT_DISKS     463
+#define ID_XSDI_MENU_EDIT_CAT_FILES     464
+#define ID_XSDI_MENU_EDIT_CAT_OBJECTS   465
+
+#define ID_XSDI_MENU_MENUSTRING         467
+
+#define ID_XSDI_MENU_OPENAS             469
+#define ID_XSDI_MENU_PROPERTIES         470
+#define ID_XSDI_MENU_OPENPARENT         471
+#define ID_XSDI_MENU_CREATEANOTHER      472
+#define ID_XSDI_MENU_MOVE               473
+#define ID_XSDI_MENU_COPY               474
+#define ID_XSDI_MENU_PASTE              475
+#define ID_XSDI_MENU_CREATESHADOW       476
+#define ID_XSDI_MENU_DELETE             477
+#define ID_XSDI_MENU_PICKUP             478
+#define ID_XSDI_MENU_FIND               479
+#define ID_XSDI_MENU_VIEW               480
+#define ID_XSDI_MENU_ICONVIEW           481
+#define ID_XSDI_MENU_TREEVIEW           482
+#define ID_XSDI_MENU_DETAILSVIEW        483
+#define ID_XSDI_MENU_SORT               484
+#define ID_XSDI_MENU_ARRANGE            485
+#define ID_XSDI_MENU_PRINT              486
+#define ID_XSDI_MENU_LOCKUP             487
+#define ID_XSDI_MENU_LOGOFFNETWORKNOW   488
+#define ID_XSDI_MENU_SHUTDOWN           489
+#define ID_XSDI_MENU_SYSTEMSETUP        490
+#define ID_XSDI_MENU_CHKDSK             491
+#define ID_XSDI_MENU_FORMAT             492
+#define ID_XSDI_MENU_COPYDSK            493
+#define ID_XSDI_MENU_LOCKDISK           494
+#define ID_XSDI_MENU_EJECTDISK          495
+#define ID_XSDI_MENU_UNLOCKDISK         496
 
 // new menu items
 // #define ID_XSD_SET25ADDMENUS            530      // removed V0.9.16 (2001-09-29) [umoeller]
-#define ID_XSDI_FILEMENUS_GROUP         529     // added V0.9.16 (2001-09-29) [umoeller]
-#define ID_XSDI_FILEATTRIBS             531
-#define ID_XSDI_COPYFILENAME            532
-#ifndef __NOMOVEREFRESHNOW__
-#define ID_XSDI_MOVE4REFRESH            533
-#endif
-#define ID_XSDI_SELECTSOME              534
+// #define ID_XSDI_FILEMENUS_GROUP         529     // removed V0.9.19 (2002-04-17) [umoeller]
+// #define ID_XSDI_MOVE4REFRESH            533      // removed V0.9.19 (2002-04-17) [umoeller]
 #define ID_XSDI_FLDRVIEWS               535
 #ifndef __NOFOLDERCONTENTS__
-#define ID_XSDI_FOLDERCONTENT           536
 #define ID_XSDI_FC_SHOWICONS            537
 #endif
-#define ID_XSDI_EXTENDCLOSEMENU         538 // V0.9.12 (2001-05-22) [umoeller]
-#define ID_XSDI_FOLDERMENUS_GROUP       539 // added V0.9.16 (2001-09-29) [umoeller]
+// #define ID_XSDI_FOLDERMENUS_GROUP       539      // removed V0.9.19 (2002-04-17) [umoeller]
 
 // "XFolder Internals": removed with V0.9.0
 
 // "Config folder menu items" page
-#define ID_XSD_SET26CONFIGMENUS         540
+// #define ID_XSD_SET26CONFIGMENUS         540      removed V0.9.19 (2002-04-24) [umoeller]
+#define ID_XSDI_MENUS_CONFIGFDR_GROUP   540
 #define ID_XSDI_CASCADE                 541
 #define ID_XSDI_REMOVEX                 542
 #define ID_XSDI_APPDPARAM               543
@@ -420,6 +436,8 @@
 #define ID_XSDI_TPL_EDITTITLE           545
 #define ID_XSDI_TPL_OPENSETTINGS        546
 #define ID_XSDI_TPL_POSITION            547
+
+#define ID_XSDI_TPL_GROUP               548     // V0.9.19 (2002-04-24) [umoeller]
 
 // "snap to grid" page
 #ifndef __NOSNAPTOGRID__
@@ -442,7 +460,9 @@
 #define ID_XSDI_SETACCEL                567     // V0.9.9 (2001-04-04) [umoeller]
 
 // "status bars" page 1
-#define ID_XSD_SET27STATUSBARS          570
+// #define ID_XSD_SET27STATUSBARS          570  // removed V0.9.19 (2002-04-24) [umoeller]
+#define ID_XSDI_STYLE_GROUP             569     // added V0.9.19 (2002-04-24) [umoeller]
+#define ID_XSDI_VISIBLEIN_GROUP         570     // added V0.9.19 (2002-04-24) [umoeller]
 #define ID_XSDI_ENABLESTATUSBAR         571
 #define ID_XSDI_SBFORICONVIEWS          572
 #define ID_XSDI_SBFORTREEVIEWS          573
@@ -1015,16 +1035,17 @@
 
 // "Menu items" page (V0.9.0)
 // #define ID_XSD_DTP_MENUITEMS            2100     // removed V0.9.16 (2002-01-09) [umoeller]
-#define ID_XSDI_DTP_MENUITEMSGROUP      2100        // added V0.9.16 (2002-01-09) [umoeller]
-#define ID_XSDI_DTP_SORT                2101
-#define ID_XSDI_DTP_ARRANGE             2102
-#define ID_XSDI_DTP_SYSTEMSETUP         2103
-#define ID_XSDI_DTP_LOCKUP              2104
-#ifndef __NOXSHUTDOWN__
-#define ID_XSDI_DTP_SHUTDOWN            2105
-#define ID_XSDI_DTP_SHUTDOWNMENU        2106
-#endif
-#define ID_XSDI_DTP_LOGOFFNETWORKNOW    2107 // V0.9.7 (2000-12-13) [umoeller]
+// all removed V0.9.19 (2002-04-17) [umoeller]
+// #define ID_XSDI_DTP_MENUITEMSGROUP      2100        // added V0.9.16 (2002-01-09) [umoeller]
+// #define ID_XSDI_DTP_SORT                2101
+// #define ID_XSDI_DTP_ARRANGE             2102
+// #define ID_XSDI_DTP_SYSTEMSETUP         2103
+// #define ID_XSDI_DTP_LOCKUP              2104
+// #ifndef __NOXSHUTDOWN__
+// #define ID_XSDI_DTP_SHUTDOWN            2105
+// #define ID_XSDI_DTP_SHUTDOWNMENU        2106
+// #endif
+// #define ID_XSDI_DTP_LOGOFFNETWORKNOW    2107 // V0.9.7 (2000-12-13) [umoeller]
 
 // XFldDesktop "Startup" page  (V0.9.0)
 // #define ID_XSD_DTP_STARTUP              2110     // removed V0.9.16 (2001-10-08) [umoeller]
