@@ -1620,6 +1620,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.1 (2000-02-09) [umoeller]: fixed mutex hangs while dialogs were displayed
  *@@changed V0.9.2 (2000-03-19) [umoeller]: "Undo" and "Default" created duplicate records; fixed
  *@@changed V0.9.6 (2000-11-11) [umoeller]: removed extassocs warning
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed pagemage warning
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1638,7 +1639,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          fShowHookDeinstalled = FALSE,
          fShowClassesSetup = FALSE,
          // fShowWarnExtAssocs = FALSE,
-         fShowWarnPageMage = FALSE,
+         // fShowWarnPageMage = FALSE,
          fShowWarnXShutdown = FALSE,
          fUpdateMouseMovementPage = FALSE;
     signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
@@ -1741,8 +1742,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
 
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
-            if (ulExtra)
-                fShowWarnPageMage = TRUE;
+            /* if (ulExtra)
+                fShowWarnPageMage = TRUE; */
         break;
 
         /* case ID_XCSI_MONITORCDROMS:
@@ -1899,11 +1900,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         // "hook deinstalled" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
                          148, 158, MB_OK);
-    else if (fShowWarnPageMage)
+    /* else if (fShowWarnPageMage)
         cmnMessageBox(pcnbp->hwndFrame,
                       "XWorkplace",
                       "Warning: PageMage is still extremely unstable.",
-                      MB_OK);
+                      MB_OK); */
     else if (fShowWarnXShutdown)
         cmnMessageBoxMsg(pcnbp->hwndFrame,
                          148,       // "XWorkplace Setup"

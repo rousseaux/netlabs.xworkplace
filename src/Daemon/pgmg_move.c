@@ -403,7 +403,14 @@ BOOL pgmmZMoveIt(LONG lXDelta,
 
     if (lXDelta || lYDelta)
     {
+        // rescan all windows which might still have the "rescan" flag
+        // set... if we don't do this, we get sticky windows that aren't
+        // supposed to be sticky
+                // V0.9.7 (2001-01-18) [umoeller]
+        pgmwWindowListRescan();
+
         bReturn = pgmmMoveIt(lXDelta, lYDelta, FALSE);
+
         if (bReturn)
         {
             G_ptlCurrPos.x -= lXDelta;
@@ -542,7 +549,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             case PGOM_FOCUSCHANGE:
             {
                 SWP         swpActive;
-                // determine the middle coordinate of the active window
+                // get the new active window
                 HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
                 // test if this is a stick window;
@@ -558,33 +565,52 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                             break;
                 }
 
+                // check if the active window is valid
                 WinQueryWindowPos(hwndActive, &swpActive);
 
-                // make sure we pick up valid windows only
-                if (!(swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
+                // do not switch to hidden or minimized windows
+                if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
                 {
-                    // absolute coordinate (top left is (0,0)) of all desktops
-                    LONG lAbsX = swpActive.x + (swpActive.cx / 2);
-                    LONG lAbsY = swpActive.y + (swpActive.cy / 2);
-                    lAbsX += G_ptlCurrPos.x;
-                    lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
+                    // this was rewritten V0.9.7 (2001-01-18) [umoeller]
 
-                    // if we intend to move into a valid window
-                    if (    (lAbsX >= 0)
-                         && (lAbsX <= (pptlMaxDesktops->x
-                                       * G_szlEachDesktopReal.cx))
-                         && (lAbsY >= 0)
-                         && (lAbsY <= (pptlMaxDesktops->y
-                                       * G_szlEachDesktopReal.cy))
-                       )
+                    LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
+                    LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
+
+                    BOOL bVisible
+                            = !(    // is right edge too wide to the left?
+                                    ((swpActive.x + bx) >= G_szlEachDesktopReal.cx)
+                                 || ((swpActive.x + swpActive.cx - bx) <= 0)
+                                 || ((swpActive.y + by) >= G_szlEachDesktopReal.cy)
+                                 || ((swpActive.y + swpActive.cy - by) <= 0)
+                               );
+
+                    if (!bVisible)
                     {
-                        // put abs coord of desktop in lAbs
-                        lAbsX /= G_szlEachDesktopReal.cx;
-                        lAbsY /= G_szlEachDesktopReal.cy;
-                        lAbsX *= G_szlEachDesktopReal.cx;
-                        lAbsY *= G_szlEachDesktopReal.cy;
-                        lDeltaX = G_ptlCurrPos.x - lAbsX;
-                        lDeltaY = lAbsY - G_ptlCurrPos.y;
+                        // calculate the absolute coordinate (top left is (0,0))
+                        // of the active window relative to all desktops:
+                        LONG lAbsX = swpActive.x + (swpActive.cx / 2);
+                        LONG lAbsY = swpActive.y + (swpActive.cy / 2);
+                        lAbsX += G_ptlCurrPos.x;
+                        lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
+
+                        // if we intend to move into a valid window
+                        if (    (lAbsX >= 0)
+                             && (lAbsX <= (pptlMaxDesktops->x
+                                           * G_szlEachDesktopReal.cx))
+                             && (lAbsY >= 0)
+                             && (lAbsY <= (pptlMaxDesktops->y
+                                           * G_szlEachDesktopReal.cy))
+                           )
+                        {
+                            // put abs coord of desktop in lAbs
+                            lAbsX /= G_szlEachDesktopReal.cx;
+                            lAbsY /= G_szlEachDesktopReal.cy;
+                            lAbsX *= G_szlEachDesktopReal.cx;
+                            lAbsY *= G_szlEachDesktopReal.cy;
+
+                            lDeltaX = G_ptlCurrPos.x - lAbsX;
+                            lDeltaY = lAbsY - G_ptlCurrPos.y;
+                        }
                     }
                 }
             break; }

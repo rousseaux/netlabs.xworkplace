@@ -393,8 +393,6 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                                       pXCenterData);
                         fUpdateWorkArea = TRUE;
                     }
-                    else
-                        _Pmpf((__FUNCTION__ ": not on list, appending."));
                 } // if ((_fReduceDesktopWorkarea) && (!fForceRemove))
                 else
                 {

@@ -234,7 +234,7 @@ VOID pgmwWindowListAdd(HWND hwnd)
             _Pmpf((__FUNCTION__ ": got new window %s",
                         G_MainWindowList[usIdx].szClassName));
             if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
-            _Pmpf(("----> warning: has RESCAN set."));
+                _Pmpf(("----> warning: has RESCAN set."));
         } while (FALSE);
 
         /* if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
