@@ -1329,6 +1329,7 @@ VOID CheckClassOrder(VOID)
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed wrong pager settings after logoff
  *@@changed V0.9.19 (2002-05-01) [umoeller]: changed name of startup log file
  *@@changed V0.9.21 (2002-08-26) [umoeller]: added checks for proper class replacements ordering
+ *@@changed V0.9.21 (2002-09-17) [umoeller]: added daemon NLS init
  */
 
 VOID initMain(VOID)
@@ -1709,6 +1710,10 @@ VOID initMain(VOID)
         }
 
         G_KernelGlobals.pXwpGlobalShared = pXwpGlobalShared;
+
+        // in either case, load the strings for daemon NLS
+        // support V0.9.21 (2002-09-17) [umoeller]
+        cmnLoadDaemonNLSStrings();
     }
 
     /*

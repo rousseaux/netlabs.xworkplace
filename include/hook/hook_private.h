@@ -86,6 +86,9 @@
     #define TIMERID_PGR_FLASH           8
     #define TIMERID_PGR_REFRESHDIRTIES  9
 
+    // max # of NLS strings
+    #define MAX_NLS                     12
+
     /* ******************************************************************
      *
      *   Structures
@@ -137,6 +140,33 @@
                 // this enforces a SB_ENDSCROLL when WM_BUTTON3UP comes
                 // in later
     } SCROLLDATA, *PSCROLLDATA;
+
+    /*
+     *@@ NLSDATA:
+     *      substructure for storing NLS strings used by the hook.  One
+     *      instance of this exists in HOOKDATA.
+     *
+     *      This substructure is filled by the daemon when it receives
+     *      a NLS notification from XFLDR.DLL.
+     *
+     *      The substructure includes its own buffer, so that the
+     *      string resources are available for all processes.
+     *
+     *@@added V0.9.21 (2002-09-16) [lafaix]
+     */
+
+   typedef struct _NLSDATA
+   {
+       PSZ      apszNLSStrings[MAX_NLS];
+                // direct access to daemon-specific strings; the entries
+                // in apszNLSStrings points to the actual content in achBuf
+
+                #define NLS_STICKYTOGGLE            0
+
+       CHAR     achBuf[3072];
+                // the buffer containing the actual strings, not directly
+                // used except by LoadNLSResources in xwpdaemn.c
+   } NLSDATA, *PNLSDATA;
 
     /*
      *@@ HOOKDATA:
@@ -302,6 +332,8 @@
         // V0.9.16 (2001-12-08) [umoeller]
         BOOL        fHotkeysDisabledTemp;
 
+        // NLS strings V0.9.21 (2002-09-16) [lafaix]
+        NLSDATA     NLSData;
     } HOOKDATA, *PHOOKDATA;
 
     // special key for WM_MOUSEMOVE with delayed sliding menus
@@ -321,6 +353,9 @@
         #define PGRM_WRAPAROUND         (WM_USER + 305)
         #define PGRM_PAGERHOTKEY        (WM_USER + 306)
         #define PGRM_MOVEBYDELTA        (WM_USER + 307)
+
+        #define PGRIDM_TOGGLESEPARATOR  0x7ffe
+        #define PGRIDM_TOGGLEITEM       0x7fff
     #endif
 
     /* ******************************************************************

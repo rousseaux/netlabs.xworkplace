@@ -1444,6 +1444,8 @@ BEGIN
     ID_SCDI_PGR1_SHOWSTICKY            "Show stic~ky windows"
     ID_SCDI_PGR1_FOLLOWFOCUS           "Desktop follows active ~window"
     ID_SCDI_PGR1_SHOWWINICONS          "Show window ~icons"
+    /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
+    ID_SCDI_PGR1_STICKIESTOGGLE        "Include sticky ~toggle in system menus"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr; colors"
@@ -1679,6 +1681,9 @@ BEGIN
     ID_XSDI_HOTKEY_ACTION               "Action"
     ID_XSDI_HOTKEY_PARAM                "Parameter"
     ID_XSDI_HOTKEY_GROUP                "Definition"
+
+    /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
+    ID_DMSI_STICKYTOGGLE                "Sticky"
 END
 
 /* Treesize definitions; added V0.9.0 */

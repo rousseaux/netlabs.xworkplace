@@ -134,7 +134,11 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
 
 #ifndef __NOPAGER__
                 // add the sticky entry if it's a top-level window
-                if (WinQueryWindow(hwndFrame, QW_PARENT) == G_HookData.hwndPMDesktop)
+                // V0.9.21 (2002-09-14) [lafaix]
+                if (    (WinQueryWindow(hwndFrame, QW_PARENT) == G_HookData.hwndPMDesktop)
+                     && (G_HookData.PagerConfig.flPager & PGRFL_ADDSTICKYTOGGLE)
+                     && (G_HookData.hwndPagerFrame)
+                   )
                 {
                     mi.iPosition = MIT_END;
                     mi.afStyle = MIS_SEPARATOR;
@@ -155,11 +159,11 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
                         mi.afAttribute = MIA_CHECKED;
                     else
                         mi.afAttribute = 0;
-                    mi.id = 0x7FFF;
+                    mi.id = PGRIDM_TOGGLEITEM;
                     WinSendMsg(hNewMenu,
                                MM_INSERTITEM,
                                MPFROMP(&mi),
-                               "Sticky");           // @@todo localize
+                               G_HookData.NLSData.apszNLSStrings[NLS_STICKYTOGGLE]);
                 }
 #endif
 

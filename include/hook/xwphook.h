@@ -126,6 +126,15 @@
                                                | PGRFL_MINIWINDOWS    \
                                                | PGRFL_MINIWIN_TITLES \
                                                | PGRFL_MINIWIN_MOUSE)
+
+                // flags for "XPager" settings page 3
+                #define PGRFL_ADDSTICKYTOGGLE       0x2000
+                    // add "sticky" option to system menu?
+                            // V0.9.21 (2002-09-14) [lafaix]
+
+                #define PGRMASK_PAGE3 ( PGRFL_ADDSTICKYTOGGLE )
+                #define PGRFL_PAGE3_DEFAULTS        0
+
         ULONG       ulFlashDelay;
                 // "flash" delay in milliseconds, if PGRFL_FLASHTOTOP
         ULONG       flKeyShift;        // KC_* values
@@ -601,6 +610,7 @@
     #define XDM_ISTRANSIENTSTICKY   (WM_USER + 432)
 #endif
 
+    #define XDM_NLSCHANGED          (WM_USER + 433) // V0.9.21 (2002-09-15) [lafaix]
 #endif
 
 

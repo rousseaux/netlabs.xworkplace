@@ -98,6 +98,17 @@
  *             respective checkbox was checked), the XWorkplace
  *             startup folder is processed again.
  *
+ *          f) If the NLS DLL is changed, or when it is first loaded,
+ *             XFLDR.DLL fills the achNLSStrings array in the XWPGLOBALSHARED
+ *             structure with the daemon-specific NLS strings, and then
+ *             posts a XDM_NLSCHANGED message to the daemon object window.
+ *
+ *             [As of this writing, there is only support for at least
+ *              12 specific strings (the shared buffer is 3072 bytes long,
+ *              i.e., it can only contains up to 12 256-bytes-long strings).
+ *              Should the need arises, the XDM_NLSCHANGED message would
+ *              have to be updated, to for example proceeds incrementaly.]
+ *
  *          In short, at any time after the WPS is starting for
  *          the first time, at least one process is using the
  *          XWPGLOBALSHARED structure: either the WPS process (with
@@ -264,6 +275,7 @@ USHORT      G_pidDaemon = NULLHANDLE;
 // pointer to hook data in hook dll;
 // this includes HOOKCONFIG
 PHOOKDATA       G_pHookData = NULL;
+
 // pointer to shared-memory daemon globals
 PXWPGLOBALSHARED   G_pXwpGlobalShared = NULL;
 
@@ -776,6 +788,50 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
     }
 
     return brc;
+}
+
+/*
+ *@@ LoadNLSResources:
+ *      this queries the current NLS resources (menu item titles for
+ *      examples) and copies them to the NLSDATA structure in the
+ *      shared HOOKDATA area.
+ *
+ *      G_pXwpGlobalShared->achNLSStrings contains a 0-terminated list
+ *      of strings.
+ *
+ *@@added V0.9.21 (2002-09-15) [lafaix]
+ */
+
+BOOL LoadNLSResources(VOID)
+{
+    USHORT us, usLen;
+    PNLSDATA pNLSData = &(G_pHookData->NLSData);
+    PSZ pszSrc = G_pXwpGlobalShared->achNLSStrings;
+    PSZ pszDest = pNLSData->achBuf;
+
+    for (us = 0; us < MAX_NLS; us++)
+        pNLSData->apszNLSStrings[us] = NULL;
+
+    for (us = 0; us < MAX_NLS; us++)
+    {
+        usLen = strlen(pszSrc) + 1;
+        // stops processing if the storage buffer is too small
+        if ((pszDest + usLen) > (pNLSData->achBuf + sizeof(pNLSData->achBuf)))
+            break;
+
+        // strcpy(pszDest, pszSrc);
+        memcpy(pszDest, pszSrc, usLen + 1); // V0.9.21 (2002-09-17) [umoeller]
+
+        pNLSData->apszNLSStrings[us] = pszDest;
+        pszSrc += usLen;
+        pszDest += usLen;
+
+        // end of the source buffer
+        if (*pszSrc == 0)
+            break;
+    }
+
+    return TRUE;
 }
 
 /*
@@ -2405,6 +2461,20 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             break;
 
+            /*
+             *@@ XDM_NLSCHANGED:
+             *      this message is sent (!) from XFLDR.DLL when
+             *      the NLS DLL has changed.
+             *      This gives the daemon a chance to update its
+             *      NLS-dependant resources.
+             *
+             *@@added V0.9.21 (2002-09-15) [lafaix]
+             */
+
+            case XDM_NLSCHANGED:
+                mrc = (MRESULT)LoadNLSResources();
+            break;
+
 #ifndef __NOPAGER__
             /*
              *@@ XDM_STARTSTOPPAGER:
@@ -2490,9 +2560,6 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      -- HWND mp1: the top-level window to be made
              *          (un)sticky.
              *
-             *      -- BOOL mp2: if TRUE, mp1 is made sticky.  If
-             *          FALSE, mp1 is made unsticky.
-             *
              *@@added V0.9.20 (2002-07-25) [lafaix]
              */
 
@@ -2501,6 +2568,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             break;
 
             case XDM_ISTRANSIENTSTICKY:
+                // DosBeep(1000, 30);
+                _Pmpf(("IsTransientSticky called for HWND %08x", (HWND)mp1));
                 mrc = (MRESULT)pgrIsWindowTransientSticky((HWND)mp1);
             break;
 #endif

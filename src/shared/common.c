@@ -125,6 +125,7 @@
 // XWorkplace implementation headers
 #include "bldlevel.h"                   // XWorkplace build level definitions
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "xwpapi.h"                     // public XWorkplace definitions
 #define INCLUDE_COMMON_PRIVATE
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
@@ -136,6 +137,9 @@
 #include "filesys\icons.h"              // icons handling
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
+
+// headers in /hook
+#include "hook\xwphook.h"
 
 #include "media\media.h"                // XWorkplace multimedia support
 
@@ -225,6 +229,7 @@ int _CRT_init(void);
 void _CRT_term(void);
 
 VOID UnloadAllStrings(VOID);
+VOID LoadDaemonNLSStrings(VOID);
 
 /* ******************************************************************
  *
@@ -740,6 +745,7 @@ PSZ cmnQueryBootLogoFile(VOID)
  *@@changed V0.9.19 (2002-04-02) [umoeller]: msg file wasn't reloaded on NLS change, fixed
  *@@changed V0.9.19 (2002-04-24) [umoeller]: version checks never worked, fixed
  *@@changed V0.9.19 (2002-04-24) [umoeller]: reverting to 001 on errors now
+ *@@changed V0.9.21 (2002-09-15) [lafaix]: notify the daemon if fEnforceReload == TRUE
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
@@ -950,6 +956,10 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                 // after all this, unload the old resource module
                 DosFreeModule(hmodOld);
             }
+
+            // fill the shared buffer with the daemon-specific
+            // resources V0.9.21 (2002-09-15) [lafaix]
+            cmnLoadDaemonNLSStrings();
         }
     }
 
@@ -1185,6 +1195,7 @@ STATIC ULONG ReplaceEntities(PXSTRING pstr)
  *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added entities support
  *@@changed V0.9.16 (2002-01-26) [umoeller]: added pulLength param
+ *@@changed V0.9.21 (2002-09-17) [umoeller]: optimized
  */
 
 void cmnLoadString(HAB habDesktop,
@@ -1193,24 +1204,27 @@ void cmnLoadString(HAB habDesktop,
                    PSZ *ppsz,
                    PULONG pulLength)        // out: length of new string (ptr can be NULL)
 {
-    CHAR szBuf[500];
+    CHAR    szBuf[500];
     XSTRING str;
+    LONG    lLength;        // V0.9.21 (2002-09-17) [umoeller]
 
     if (*ppsz)
         free(*ppsz);
 
-    if (!WinLoadString(habDesktop,
-                       hmodResource,
-                       ulID,
-                       sizeof(szBuf),
-                       szBuf))
+    if (!(lLength = WinLoadString(habDesktop,
+                                  hmodResource,
+                                  ulID,
+                                  sizeof(szBuf),
+                                  szBuf)))
         // loading failed:
-        sprintf(szBuf,
-                "string resource %d not found in module 0x%lX",
-                ulID,
-                hmodResource);
+        lLength = sprintf(szBuf,
+                          "string resource %d not found in module 0x%lX",
+                          ulID,
+                          hmodResource);
 
-    xstrInitCopy(&str, szBuf, 0);
+    xstrInitCopy(&str,
+                 szBuf,
+                 lLength);      // V0.9.21 (2002-09-17) [umoeller]
     ReplaceEntities(&str);      // V0.9.16
     *ppsz = str.psz;
     if (pulLength)
@@ -1396,6 +1410,91 @@ PSZ cmnGetString(ULONG ulStringID)
         UnlockStrings();
 
     return pszReturn;
+}
+
+/*
+ *@@ cmnLoadDaemonNLSStrings:
+ *      loads all daemon-specific strings in the structure shared with
+ *      the daemon.
+ *
+ *      The NLS strings are packed in the XWPGLOBALSHARED.achNLSStrings
+ *      field, and the end of the array is denoted by a double null
+ *      sequence:
+ *
+ +          string 1\0string 2\0 ... string n\0\0
+ *
+ *      The daemon-specific strings have IDs between ID_DMSI_FIRST
+ *      and ID_DMSI_LAST, inclusive.
+ *
+ *      If the shared buffer is full, no more strings are added.
+ *
+ *@@added V0.9.21 (2002-09-15) [lafaix]
+ */
+
+VOID cmnLoadDaemonNLSStrings(VOID)
+{
+    PXWPGLOBALSHARED pXwpGlobalShared;
+    BOOL    fLocked = FALSE;
+
+    // check if this is != NULL, because on my system we
+    // get called from cmnQueryNLSModuleHandle when this
+    // pointer is still NULL
+    // V0.9.21 (2002-09-17) [umoeller]
+
+    TRY_LOUD(excpt1)
+    {
+        if (    (pXwpGlobalShared = (krnQueryGlobals())->pXwpGlobalShared)
+             && (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+           )
+        {
+            USHORT  us;
+            PSZ     pszBuf = pXwpGlobalShared->achNLSStrings;
+
+            PMPF_LANGCODES(("pXwpGlobalShared = 0x%lX, pszBuf = 0x%lX",
+                            pXwpGlobalShared,
+                            pszBuf));
+
+            for (us = ID_DMSI_FIRST;
+                 us < ID_DMSI_LAST + 1;
+                 us++)
+            {
+                LONG    lLength;
+
+                PMPF_LANGCODES(("loading id %d from module 0x%lX",
+                                us,
+                                G_hmodNLS));
+
+                if (!(lLength = WinLoadString(G_habThread1,
+                                              G_hmodNLS,
+                                              us,
+                                              256,
+                                              pszBuf)))
+                    // load failed
+                    lLength = sprintf(pszBuf,
+                                      "string resource %d not found in module 0x%lX",
+                                      us,
+                                      G_hmodNLS);
+
+                pszBuf += lLength + 1;
+
+                // check if there is still enough room for another string
+                if ((pszBuf - pXwpGlobalShared->achNLSStrings) > (3072+1-256))
+                    break;
+            }
+
+            *pszBuf = 0;
+
+            // made post a send V0.9.21 (2002-09-17) [umoeller]
+            krnSendDaemonMsg(XDM_NLSCHANGED, MPNULL, MPNULL);
+        }
+    }
+    CATCH(excpt1)
+    {
+    }
+    END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
 }
 
 /*

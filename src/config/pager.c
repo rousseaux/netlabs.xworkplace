@@ -1580,7 +1580,8 @@ static const CONTROLDEF
     StickiesCnr = CONTROLDEF_CONTAINER(
                             ID_SCDI_STICKY_CNR,
                             200,        // for now, will be resized
-                            100);       // for now, will be resized
+                            100),       // for now, will be resized
+    StickiesToggle = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_STICKIESTOGGLE);
 
 static const DLGHITEM G_dlgPagerStickies[] =
     {
@@ -1596,6 +1597,10 @@ static const DLGHITEM G_dlgPagerStickies[] =
                         CONTROL_DEF(&G_EditButton),
                         CONTROL_DEF(&G_RemoveButton),
                 END_TABLE,
+            // Martin, I moved this out of the group
+            // V0.9.21 (2002-09-17) [umoeller]
+            START_ROW(0),
+                CONTROL_DEF(&StickiesToggle),
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // common.c
                 CONTROL_DEF(&G_DefaultButton),      // common.c
@@ -1620,6 +1625,7 @@ MPARAM G_ampStickies[] =
  *@@added V0.9.4 (2000-07-10) [umoeller]
  *@@changed V0.9.19 (2002-04-14) [lafaix]: modified container view
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter
+ *@@changed V0.9.21 (2002-09-14) [lafaix]: added support for PGRFL_ADDSTICKYTOGGLE
  */
 
 STATIC VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1706,6 +1712,9 @@ STATIC VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                             FALSE);
             cnrhInvalidateAll(hwndCnr);
         }
+
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_STICKIESTOGGLE,
+                              !!(pPagerCfg->flPager & PGRFL_ADDSTICKYTOGGLE));
     }
 
     if (flFlags & CBI_ENABLE)
@@ -1744,6 +1753,7 @@ STATIC VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.11 (2001-04-25) [umoeller]: no longer listing invisible switchlist entries
  *@@changed V0.9.19 (2002-04-14) [lafaix]: using new sticky settings dialog
  *@@changed V0.9.19 (2002-04-16) [lafaix]: fixed popup menu font and DID_UNDO
+ *@@changed V0.9.21 (2002-09-14) [lafaix]: added support for PGRFL_ADDSTICKYTOGGLE
  */
 
 STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1943,6 +1953,22 @@ STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
         }
         break;
 
+        case ID_SCDI_PGR1_STICKIESTOGGLE:
+        {
+            PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
+            LoadPagerConfig(pnbp->pUser);
+            if (ulExtra)
+                pPagerCfg->flPager |= PGRFL_ADDSTICKYTOGGLE;
+            else
+                pPagerCfg->flPager &= ~PGRFL_ADDSTICKYTOGGLE;
+
+            // SavePagerConfig is cheaper than SaveStickies
+            SavePagerConfig(pPagerCfg, 0);
+
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        }
+        break;
+
         /*
          * DID_UNDO:
          *      "Undo" button.
@@ -1965,6 +1991,11 @@ STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                    sizeof(pPagerCfg->aulStickyFlags));
             // and count too
             pPagerCfg->cStickies = pBackup->cStickies;
+            // and now also flags
+            pPagerCfg->flPager =
+                (pPagerCfg->flPager
+                 & ~PGRMASK_PAGE3
+                ) | (pBackup->flPager & PGRMASK_PAGE3);
 
             // SavePagerConfig is cheaper that SaveStickies: we don't
             // have to update the container first
@@ -1978,17 +2009,38 @@ STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
         }
         break;
 
+        case ID_XSMI_STICKY_DELETEALL:
+            cnrhRemoveAll(hwndCnr);
+            SaveStickies(hwndCnr,
+                         (PAGERCONFIG*)pnbp->pUser);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        break;
+
         /*
          * DID_DEFAULT:
          *      "Clear" button.
          */
 
-        case ID_XSMI_STICKY_DELETEALL:
         case DID_DEFAULT:
+        {
+            PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
+
+            LoadPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
             cnrhRemoveAll(hwndCnr);
+
+            pPagerCfg->flPager =
+                (pPagerCfg->flPager
+                 & ~PGRMASK_PAGE3
+                 ) | PGRFL_PAGE3_DEFAULTS;
+
+            // calls SavePagerConfig first because SaveStickies reloads
+            // the config!
+            SavePagerConfig(pPagerCfg, 0);
+
             SaveStickies(hwndCnr,
                          (PAGERCONFIG*)pnbp->pUser);
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+        }
         break;
     }
 

@@ -1186,6 +1186,8 @@
     typedef PSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
     typedef CMNGETSTRING *PCMNGETSTRING;
 
+    VOID XWPENTRY cmnLoadDaemonNLSStrings(VOID);
+
     #ifdef DIALOG_HEADER_INCLUDED
         extern const CONTROLDEF
                           G_OKButton,

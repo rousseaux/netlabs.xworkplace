@@ -69,6 +69,15 @@
                 // XFLDR.DLL API object window, runs on thread-1 also, used
                 // with APIM_* messages for external processes
                 // V0.9.9 (2001-03-23) [umoeller]
+
+        CHAR        achNLSStrings[3072+1];
+                // Daemon-specific NLS strings temporary storage area.  This
+                // area is filled by XFLDR.DLL when the NLS DLL is loaded, and
+                // the content is read by the daemon when it receives a
+                // XDM_NLSCHANGED message.  Can safely handles up to 12 strings.
+                // Size is about 3K so that this structure still fits into
+                // a 386 memory page.
+                // V0.9.21 (2002-09-15) [lafaix]
     } XWPGLOBALSHARED, *PXWPGLOBALSHARED;
 
     #define APIM_FILEDLG            (WM_USER + 300)

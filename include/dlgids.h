@@ -64,6 +64,7 @@
    -    WP   for previously undocumented WPS ID's,
    -    TS   for Treesize;
    -    ND   for NetscapeDDE
+   -    DM   for Daemon
    then comes an abbreviation of the ID type:
    -    M    for a menu template,
    -    MI   for a menu item,
@@ -1577,6 +1578,7 @@
     #define ID_SCDI_PGR1_SHOWSECONDARY     4611    // added V0.9.19 (2002-04-11) [lafaix]
     #define ID_SCDI_PGR1_SHOWSTICKY        4612    // added V0.9.19 (2002-04-11) [lafaix]
     #define ID_SCDI_PGR1_SHOWWINICONS      4613     // added V0.9.19 (2002-06-13) [umoeller]
+    #define ID_SCDI_PGR1_STICKIESTOGGLE    4614    // added V0.9.21 (2002-09-14) [lafaix]
 #endif
 
 /* ******************************************************************
@@ -2394,6 +2396,23 @@
 #define ID_XSSI_SBMNC_500           7030         // "executable program file"
 #define ID_XSSI_SBMNC_510           7031         // "parameter list"
 #define ID_XSSI_SBMNC_520           7032         // "working directory"
+
+/* ******************************************************************
+ *
+ *   String IDs for daemon-specific resources       >= 8000
+ *   (all new with V0.9.21)
+ *
+ *   If there ever happens to be more than 12 daemon-specific
+ *   string resources, we will have to update the XDM_NLSCHANGED
+ *   mechanism (in src/shared/common.c and src/Daemon/xwpdaemn.h).
+ *
+ *   added V0.9.21 (2002-09-15) [lafaix]
+ *
+ ********************************************************************/
+
+#define ID_DMSI_FIRST               8000
+#define ID_DMSI_STICKYTOGGLE        8000         // "Sticky"
+#define ID_DMSI_LAST                8000
 
 /* ******************************************************************
  *

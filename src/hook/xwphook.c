@@ -854,6 +854,7 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
  *@@changed V0.9.19 (2002-04-04) [lafaix]: enabled AMF_ALWAYSMOVE for auto move feature
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed pager stay on top
  *@@changed V0.9.20 (2002-07-16) [lafaix]: AHF_IGNOREMENUS now recognize Mozilla menus too
+ *@@changed V0.9.21 (2002-09-14) [lafaix]: added support for stickyness toggle in system menus
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1055,62 +1056,78 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 #endif
 
 #ifndef __NOPAGER__
-    // adding/removing sticky menu item as needed
+    // adding/removing sticky menu item as needed.  This part is a bit
+    // tricky as we have to _send_ messages to add items to the menu.
+    // Even weirder, we have to send an inter process message to query
+    // the "sticky" state of the current window.
     // V0.9.21 (2002-09-12) [lafaix]
-    if (    (psmh->msg == WM_INITMENU)
+    if (    (G_HookData.PagerConfig.flPager & PGRFL_ADDSTICKYTOGGLE)
+             // don't do that if XPager is disabled
+         && (G_HookData.hwndPagerFrame)
+             // do the fast checks here to reduce overhead
          && (SHORT1FROMMP(psmh->mp1) == SC_SYSMENU)
          && (psmh->mp2)
-             // opening the SC_SYSMENU submenu
-         && (G_hwndStickyMenu == NULLHANDLE)
-             // item not already added
-         && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
-             // top level frames ony
        )
     {
-        MENUITEM mi = {0};
-
-        G_hwndStickyMenu = (HWND)psmh->mp2;
-
-        mi.iPosition = MIT_END;
-        mi.afStyle = MIS_SEPARATOR;
-        mi.afAttribute = 0;
-        mi.id = 0x7FFE;
-        mi.hwndSubMenu = 0;
-        mi.hItem = 0;
-        WinSendMsg(G_hwndStickyMenu,
-                   MM_INSERTITEM,
-                   MPFROMP(&mi),
-                   NULL);
-
-        mi.afStyle = MIS_TEXT|MIS_SYSCOMMAND;
-        mi.id = 0x7FFF;
-        if (WinSendMsg(G_HookData.hwndDaemonObject,
-                       XDM_ISTRANSIENTSTICKY,
-                       MPFROMHWND(psmh->hwnd),
-                       0)
+        if (    (psmh->msg == WM_INITMENU)
+                 // item not already added
+             && (G_hwndStickyMenu == NULLHANDLE)
+                 // top level frames ony
+             && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
            )
-            mi.afAttribute = MIA_CHECKED;
-        else
+        {
+            MENUITEM mi = {0};
+            HWND hwndFrame = WinQueryWindow(psmh->hwnd, QW_FRAMEOWNER);
+
+            G_hwndStickyMenu = (HWND)psmh->mp2;
+
+            mi.iPosition = MIT_END;
+            mi.afStyle = MIS_SEPARATOR;
             mi.afAttribute = 0;
-        WinSendMsg(G_hwndStickyMenu,
-                   MM_INSERTITEM,
-                   MPFROMP(&mi),
-                   "Sticky");
-    }
-    else if (    (psmh->msg == WM_MENUEND)
-              && (psmh->mp2)
-              && ((HWND)psmh->mp2 == G_hwndStickyMenu)
-            )
-    {
-        WinSendMsg(G_hwndStickyMenu,
-                   MM_DELETEITEM,
-                   MPFROM2SHORT(0x7FFE, FALSE),
-                   NULL);
-        WinSendMsg(G_hwndStickyMenu,
-                   MM_DELETEITEM,
-                   MPFROM2SHORT(0x7FFF, FALSE),
-                   NULL);
-        G_hwndStickyMenu = NULLHANDLE;
+            mi.id = PGRIDM_TOGGLESEPARATOR;
+            mi.hwndSubMenu = 0;
+            mi.hItem = 0;
+            WinSendMsg(G_hwndStickyMenu,
+                       MM_INSERTITEM,
+                       MPFROMP(&mi),
+                       NULL);
+
+            mi.afStyle = MIS_TEXT|MIS_SYSCOMMAND;
+            mi.id = PGRIDM_TOGGLEITEM;
+
+            if (WinSendMsg(G_HookData.hwndDaemonObject,
+                           XDM_ISTRANSIENTSTICKY,
+                           // the HWND to be tested is either the target
+                           // window (in case of a direct menu) or the
+                           // frame owner (in case of a submenu).  This
+                           // fixes the problem with folders not displaying
+                           // the checkmark.
+                           // V0.9.21 (2002-09-15) [lafaix]
+                           MPFROMHWND(hwndFrame ? hwndFrame : psmh->hwnd),
+                           0)
+               )
+                mi.afAttribute = MIA_CHECKED;
+            else
+                mi.afAttribute = 0;
+            WinSendMsg(G_hwndStickyMenu,
+                       MM_INSERTITEM,
+                       MPFROMP(&mi),
+                       G_HookData.NLSData.apszNLSStrings[NLS_STICKYTOGGLE]);
+        }
+        else if (    (psmh->msg == WM_MENUEND)
+                  && ((HWND)psmh->mp2 == G_hwndStickyMenu)
+                )
+        {
+            WinSendMsg(G_hwndStickyMenu,
+                       MM_DELETEITEM,
+                       MPFROM2SHORT(PGRIDM_TOGGLESEPARATOR, FALSE),
+                       NULL);
+            WinSendMsg(G_hwndStickyMenu,
+                       MM_DELETEITEM,
+                       MPFROM2SHORT(PGRIDM_TOGGLEITEM, FALSE),
+                       NULL);
+            G_hwndStickyMenu = NULLHANDLE;
+        }
     }
 #endif
 
@@ -1260,14 +1277,19 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
     // V0.9.21 (2002-09-05) [lafaix]
     if (    (pqmsg->msg == WM_SYSCOMMAND)
-         && (SHORT1FROMMP(pqmsg->mp1) == 0x7FFF)
+         && (SHORT1FROMMP(pqmsg->mp1) == PGRIDM_TOGGLEITEM)
+         && (G_HookData.PagerConfig.flPager & PGRFL_ADDSTICKYTOGGLE)
+         && (G_HookData.hwndPagerFrame)
        )
     {
         WinPostMsg(G_HookData.hwndDaemonObject,
                    XDM_TOGGLETRANSIENTSTICKY,
                    MPFROMHWND(pqmsg->hwnd),
                    0);
-//        brc = TRUE;
+
+        // Netscape 4.61 enters in an endless loop if we swallow the
+        // message.  V0.9.21 (2002-09-14) [lafaix]
+        // brc = TRUE;
     }
 #endif
 
