@@ -39,7 +39,9 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-OUTPUTDIR = ..\..\bin
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]

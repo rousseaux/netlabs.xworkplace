@@ -26,8 +26,11 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exe_mt
-MODULESDIR = ..\..\bin\modules
+BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
+MODULESDIR = $(BASE_OUTPUTDIR)\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]

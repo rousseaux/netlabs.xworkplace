@@ -37,7 +37,13 @@
 !error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
 !endif
 
-HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)\bin
+!ifndef XWP_OUTPUT_ROOT
+XWP_OUTPUT_ROOT = $(PROJECT_BASE_DIR)\bin
+!endif
+
+PROJECT_OUTPUT_DIR = $(XWP_OUTPUT_ROOT)
+
+HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 
 # DEBUG CODE
 # ----------

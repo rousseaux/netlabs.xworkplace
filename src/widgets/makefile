@@ -44,7 +44,10 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-OUTPUTDIR = ..\..\bin\widgets
+BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+OUTPUTDIR = $(BASE_OUTPUTDIR)\widgets
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
@@ -132,8 +135,8 @@ $(OUTPUTDIR)\w_monitors.obj: \
 
 $(OUTPUTDIR)\w_winlist.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
-        $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
+        $(HLPINC)\prfh.h $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 

@@ -128,6 +128,7 @@
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
 
 #define INCL_GPILOGCOLORTABLE
+#define INCL_GPILCIDS // [lafaix]
 #define INCL_GPIPRIMITIVES
 #define INCL_DEV
 #include <os2.h>
@@ -183,44 +184,42 @@
  ********************************************************************/
 
 // counts for providing unique menu id's (exported)
-ULONG               G_ulVarItemCount = 0;    // number of inserted menu items
-SHORT               G_sNextMenuId = 0;      // next menu item ID to use
+ULONG                   G_ulVarItemCount = 0;    // number of inserted menu items
+SHORT                   G_sNextMenuId = 0;      // next menu item ID to use
 
 // llContentMenuItems contains ONLY folder content menus
-static LINKLIST            G_llContentMenuItems; // changed V0.9.0
+static LINKLIST         G_llContentMenuItems; // changed V0.9.0
 
 // linked lists / counts for variable context menu items
 // llVarMenuItems contains ALL variable items ever inserted
 // (i.e. config folder items AND folder content items)
-static LINKLIST            G_llVarMenuItems;     // changed V0.9.0
+static LINKLIST         G_llVarMenuItems;     // changed V0.9.0
 
 // icon for drawing the little triangle in
 // folder content menus (subfolders)
-static HPOINTER            G_hMenuArrowIcon = NULLHANDLE;
+static HPOINTER         G_hMenuArrowIcon = NULLHANDLE;
 
 // original wnd proc for folder content menus,
 // which we must subclass
-static PFNWP               G_pfnwpFolderContentMenuOriginal = NULL;
+static PFNWP            G_pfnwpFolderContentMenuOriginal = NULL;
 
-// flags for fdr_fnwpSubclassedFolderFrame;
-// these are set by fdr_fnwpSubclFolderContentMenu.
-// We can afford using global variables here
-// because opening menus is a modal operation.
-/* BOOL                G_fFldrContentMenuMoved = FALSE,
-                    G_fFldrContentMenuButtonDown = FALSE; */
-
-static POINTL       G_ptlPositionBelow;         // in screen coords
-static BOOL         G_fPositionBelow = FALSE;
+static POINTL           G_ptlPositionBelow;         // in screen coords
+static BOOL             G_fPositionBelow = FALSE;
 
 #define CX_ARROW 21
 
 // global data for owner draw
-static ULONG   G_ulMiniIconSize = 0;
-static RECTL   G_rtlMenuItem;
-static LONG    G_lHiliteBackground,
-               G_lBackground,
-               G_lHiliteText,
-               G_lText;
+static ULONG            G_ulMiniIconSize = 0;
+static RECTL            G_rtlMenuItem;
+static LONG             G_lHiliteBackground,
+                        G_lBackground,
+                        G_lHiliteText,
+                        G_lBorderLight,  // [lafaix]
+                        G_lBorderDark,   // [lafaix]
+                        G_lText;
+
+static SIZEF            G_szfCharBox; // [lafaix]
+static LONG             G_lMaxDescender; // [lafaix]
 
 /* ******************************************************************
  *
@@ -701,6 +700,7 @@ SHORT EXPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ *@@changed V0.9.7 (2001-01-21) [lafaix]: using MIS_BREAKSEPARATOR instead of MIS_BREAK
  */
 
 VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
@@ -965,7 +965,8 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                    MM_QUERYITEM,
                    MPFROM2SHORT(sItemId, FALSE),
                    &mi);
-        mi.afStyle |= MIS_BREAK;
+        mi.afStyle |= MIS_BREAKSEPARATOR;
+                        // [lafaix] mi.afStyle |= MIS_BREAK;
         WinSendMsg(hwndMenu,
                    MM_SETITEM,
                    MPFROM2SHORT(sItemId, FALSE),
@@ -1116,7 +1117,13 @@ PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
  *      owner-drawing later.
  *
  *@@changed V0.9.0 [umoeller]: changed colors
+ *@@changed V0.9.7 (2001-01-21) [lafaix]: fixed nonrecursive queries
+ *@@changed V0.9.7 (2001-01-21) [lafaix]: added border colors and CharBox
  */
+
+#ifndef RGB_DARKGRAY // [lafaix]
+  #define RGB_DARKGRAY 0x00808080L
+#endif
 
 VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 submenu id
                           HWND hwndMenuMsg) // from WM_INITMENU: HWND  mp2 menu window handle
@@ -1136,14 +1143,44 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
     // query presentation parameters (colors and font) for menu (changed V0.9.0)
     G_lBackground     = winhQueryPresColor(hwndMenuMsg,
                                            PP_MENUBACKGROUNDCOLOR,
-                                           FALSE,       // no inherit
+                                           TRUE, // [lafaix] FALSE,       // no inherit
                                            SYSCLR_MENU);
     G_lText           = winhQueryPresColor(hwndMenuMsg,
-                                           PP_MENUFOREGROUNDCOLOR, FALSE, SYSCLR_MENUTEXT);
+                                           PP_MENUFOREGROUNDCOLOR,
+                                           TRUE /* FALSE */,
+                                           SYSCLR_MENUTEXT);
     G_lHiliteBackground = winhQueryPresColor(hwndMenuMsg,
-                                           PP_MENUHILITEBGNDCOLOR, FALSE, SYSCLR_MENUHILITEBGND);
+                                             PP_MENUHILITEBGNDCOLOR,
+                                             TRUE /* FALSE */,
+                                             SYSCLR_MENUHILITEBGND);
     G_lHiliteText     = winhQueryPresColor(hwndMenuMsg,
-                                           PP_MENUHILITEFGNDCOLOR, FALSE, SYSCLR_MENUHILITE);
+                                           PP_MENUHILITEFGNDCOLOR,
+                                           TRUE /* FALSE */,
+                                           SYSCLR_MENUHILITE);
+    // [lafaix] begin
+
+    #ifndef PP_BORDERLIGHTCOLOR
+        #define PP_BORDERLIGHTCOLOR   51L
+    #endif
+
+    G_lBorderLight = winhQueryPresColor(hwndMenuMsg,
+                                        PP_BORDERLIGHTCOLOR, TRUE, -1);
+    if (G_lBorderLight == -1)
+       G_lBorderLight = RGB_WHITE;
+
+    #ifndef PP_BORDERDARKCOLOR
+        #define PP_BORDERDARKCOLOR   52L
+    #endif
+
+    G_lBorderDark = winhQueryPresColor(hwndMenuMsg,
+                                       PP_BORDERDARKCOLOR, TRUE, -1);
+    if (G_lBorderDark == -1)
+       G_lBorderDark = RGB_DARKGRAY;
+
+    G_szfCharBox.cx = 0; G_szfCharBox.cy = 0;
+
+    G_lMaxDescender = 0;
+    // [lafaix] end
 }
 
 /*
@@ -1158,6 +1195,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
  *      the height of the menu bar only.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
+ *@@changed V0.9.7 (2001-01-21) [lafaix]: saving CharBox too
  */
 
 MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
@@ -1176,6 +1214,17 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
         // not queried yet?
         G_ulMiniIconSize = WinQuerySysValue(HWND_DESKTOP, SV_CYICON) / 2;
 
+    if (G_szfCharBox.cx == 0 && G_szfCharBox.cy == 0)
+        GpiQueryCharBox(poi->hps, &G_szfCharBox);
+
+    if (G_lMaxDescender == 0)
+    {
+        FONTMETRICS fm;
+
+        GpiQueryFontMetrics(poi->hps, sizeof(FONTMETRICS), &fm);
+        G_lMaxDescender = fm.lMaxDescender;
+    }
+
     if (pItem)
     {
         // find out the space required for drawing this item with
@@ -1187,8 +1236,8 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
                         pItem->szTitle,
                         TXTBOX_COUNT,
                         (PPOINTL)&aptlText);
-        poi->rclItem.xLeft = 0;
-        poi->rclItem.yBottom = 0;
+// [lafaix]        poi->rclItem.xLeft = 0;
+// [lafaix]        poi->rclItem.yBottom = 0;
         poi->rclItem.xRight = aptlText[TXTBOX_TOPRIGHT].x
                                 + G_ulMiniIconSize
                                 - 15
@@ -1213,6 +1262,8 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
  *      This must return TRUE if the item was drawn.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
+ *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked submenu arrow handling
+ *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked painting stuff
  */
 
 BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global settings
@@ -1237,81 +1288,84 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
 
     if (pItem)
     {
-        // get the item's (object's) icon;
-        // this call can take a while if the folder
-        // was just queried
-        hIcon = _wpQueryIcon(pItem->pObject);
-
-        // switch to RGB mode
-        GpiCreateLogColorTable(poi->hps, 0, LCOLF_RGB, 0, 0, NULL);
-
-        // find out the background color, which depends
-        // on whether the item is highlighted (= selected);
-        // these colors have been initialized by WM_INITMENU
-        // above
-        if (poi->fsAttribute & MIA_HILITED)
-            lColor = G_lHiliteBackground;
-            // lBmpBackground = lBackground;
-        else
-            lColor = G_lBackground;
-            // lBmpBackground = lHiliteBackground;
-
-        // draw rectangle in lColor, size of whole item
-        rcl = poi->rclItem;
-        WinFillRect(poi->hps, &rcl, lColor);
-
-        // print the item's text
-        ptl.x = poi->rclItem.xLeft+5+(G_ulMiniIconSize);
-        ptl.y = poi->rclItem.yBottom+4;
-        GpiMove(poi->hps, &ptl);
-        GpiSetColor(poi->hps,
-                    (poi->fsAttribute & MIA_HILITED)
-                        ? G_lHiliteText
-                        : G_lText);
-        GpiCharString(poi->hps, strlen(pItem->szTitle), pItem->szTitle);
-
-        // draw the item's icon
-        WinDrawPointer(poi->hps,
-                       poi->rclItem.xLeft+2,
-                       poi->rclItem.yBottom
-                         +( (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom - G_ulMiniIconSize) / 2 ),
-                       hIcon,
-                       DP_MINI);
-
-        if (poi->fsAttribute != poi->fsAttributeOld)
+        if (    (poi->fsAttribute != poi->fsAttributeOld)
+             && (pItem->ulObjType == OC_CONTENTFOLDER)
+           )
         {
-            // if the attribute has changed, i.e. item's
+            // if the attribute of a folder has changed, i.e. item's
             // hilite state has been altered: we then need
-            // to repaint the little "submenu" arrow, because
-            // this has been overpainted by the WinFilLRect
-            // above. We do this using icons from the XFLDR.DLL
-            // resources, because no system bitmap has been
-            // defined for the little Warp 4 triangle.
-            if (pItem->ulObjType == OC_CONTENTFOLDER)
-            {
-                if (G_hMenuArrowIcon == NULLHANDLE)
-                {
-                    G_hMenuArrowIcon = WinLoadPointer(HWND_DESKTOP,
-                                                      cmnQueryMainResModuleHandle(),
-                                                      doshIsWarp4()
-                                                          // on Warp 4, load the triangle
-                                                        ? ID_ICONMENUARROW4
-                                                          // on Warp 3, load the arrow
-                                                        : ID_ICONMENUARROW3);
-                }
-                // _Pmpf(("hIcon: 0x%lX", hMenuArrowIcon));
-                if (G_hMenuArrowIcon)
-                {
-                    WinDrawPointer(poi->hps,
-                                   poi->rclItem.xRight - CX_ARROW,
-                                   poi->rclItem.yBottom
-                                   +(
-                                       (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom - G_ulMiniIconSize) / 2
-                                   ),
-                                   G_hMenuArrowIcon,
-                                   DP_MINI);
-                }
-            }
+            // to handle the little "submenu" arrow, because
+            // this will be overpainted by the WinFilLRect
+            // below. We do this by sending a MM_SETITEMATTR
+            // to the menu.
+            // This will call cmnuDrawItem again to paint the item.
+            WinSendMsg(poi->hwnd,
+                       MM_SETITEMATTR,
+                       MPFROM2SHORT(poi->idItem,
+                                    FALSE), // no search submenus
+                       MPFROM2SHORT(MIA_HILITED, (poi->fsAttribute & MIA_HILITED)));
+        }
+        else
+        {
+
+            // get the item's (object's) icon;
+            // this call can take a while if the folder
+            // was just queried
+            hIcon = _wpQueryIcon(pItem->pObject);
+
+            // switch to RGB mode
+            GpiCreateLogColorTable(poi->hps, 0, LCOLF_RGB, 0, 0, NULL);
+
+            // find out the background color, which depends
+            // on whether the item is highlighted (= selected);
+            // these colors have been initialized by WM_INITMENU
+            // above
+            if (poi->fsAttribute & MIA_HILITED)
+                lColor = G_lHiliteBackground;
+                // lBmpBackground = lBackground;
+            else
+                lColor = G_lBackground;
+                // lBmpBackground = lHiliteBackground;
+
+            // draw rectangle in lColor, size of whole item
+            rcl = poi->rclItem;
+            rcl.xLeft += 4; // [lafaix]
+            rcl.xRight -= 2; // [lafaix]
+            WinFillRect(poi->hps, &rcl, lColor);
+
+            // [lafaix]
+            GpiSetColor(poi->hps,
+                        G_lBorderLight);
+            ptl.x = poi->rclItem.xLeft;
+            ptl.y = poi->rclItem.yBottom;
+            GpiMove(poi->hps, &ptl);
+            ptl.y = poi->rclItem.yTop;
+            GpiLine(poi->hps, &ptl);
+    /*        ptl.x = poi->rclItem.xRight;
+            GpiSetColor(poi->hps,
+                        G_lBorderDark);
+            GpiMove(poi->hps, &ptl);
+            ptl.y = poi->rclItem.yBottom;
+            GpiLine(poi->hps, &ptl); */
+
+            // print the item's text                          v-- [lafaix]
+            ptl.x = poi->rclItem.xLeft+5+(G_ulMiniIconSize) + 5;
+            ptl.y = poi->rclItem.yBottom+G_lMaxDescender+1; // [lafaix] was +4
+            GpiMove(poi->hps, &ptl);
+            GpiSetColor(poi->hps,
+                        (poi->fsAttribute & MIA_HILITED)
+                            ? G_lHiliteText
+                            : G_lText);
+            GpiSetCharBox(poi->hps, &G_szfCharBox); // [lafaix]
+            GpiCharString(poi->hps, strlen(pItem->szTitle), pItem->szTitle);
+
+            // draw the item's icon
+            WinDrawPointer(poi->hps,           //  v-- [lafaix]
+                           poi->rclItem.xLeft+2    + 5,
+                           poi->rclItem.yBottom
+                             +( (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom - G_ulMiniIconSize) / 2 ),
+                           hIcon,
+                           DP_MINI);
         }
 
         // now, this is funny: we need to ALWAYS delete the
@@ -1322,8 +1376,6 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
 
         brc = TRUE;
     }
-    else
-        brc = FALSE;
 
     return (brc);
 }

@@ -37,8 +37,10 @@
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-OUTPUTDIR = ..\..\bin\exe_st
-MODULESDIR = ..\..\bin\modules
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_st
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
+MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
 
 # create output directory
 !if [@md ..\..\bin 2> NUL]
@@ -84,3 +86,5 @@ $(OUTPUTDIR)\wpsreset.obj: $(@B).c
 # "wpsreset" executable
 $(MODULESDIR)\wpsreset.exe: $(OUTPUTDIR)\$(@B).obj makefile
           $(LINK) /OUT:$(MODULESDIR)\$(@B).exe /PMTYPE:VIO $(OUTPUTDIR)\$(@B).obj
+
+

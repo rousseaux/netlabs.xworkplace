@@ -40,6 +40,8 @@ leave the WarpCenter alone, if this lead to scroll bars on the desktop. Hope thi
 duplicate code... hope I didn't break anything.
 <P><LI>Optimized PageMage window procedure to use less PM resources. Also improved
 cache locality.
+<P><LI>Martin Lafaix contributed some patches for the display of the folder content
+menus to make them look more like standard menus. Thanks.
 
 </UL>Bugfixes:
 <UL><LI>Reworked mutex semaphore protection all over the place. Maybe the WPS
@@ -90,6 +92,8 @@ folder. Preventing template creation now.
 data was still being inserted by the background threads. Fixed.
 <P><LI>Dmitry Kubov fixed bugs in PageMage, most notably that switch list titles were
 never updated. Thanks very much, Dmitry.
+<P><LI>PageMage would sometimes hang when its internal window list was full. The entire
+window handling was rewritten to remove that limit; this can no longer overflow.
 <P><LI>PageMage would always make Odin windows sticky. Fixed.
 <P><LI>PageMage would sometimes not recognize new windows and make them sticky when
 switching desktops. Fixed.

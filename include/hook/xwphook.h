@@ -52,7 +52,7 @@
     // do not change the following, or this will break
     // binary compatibility of the PageMage OS2.INI data
     #define MAX_STICKYS         64
-    #define MAX_WINDOWS         256
+    // #define MAX_WINDOWS         256
     #define PGMG_TEXTLEN        30
 
     // flags for HOOKCONFIG.usScrollMode
@@ -448,7 +448,7 @@
 
     #define XDM_WMCHORDWINLIST      (WM_USER + 411)
 
-    #define XDM_PGMGWINLISTFULL     (WM_USER + 412)
+    // #define XDM_PGMGWINLISTFULL     (WM_USER + 412)
 
 #endif
 

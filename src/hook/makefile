@@ -39,7 +39,9 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-BASE_OUTPUTDIR = ..\..\bin
+BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+!if [@echo       BASE_OUTPUTDIR is $(BASE_OUTPUTDIR)]
+!endif
 EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 
 # create output directory

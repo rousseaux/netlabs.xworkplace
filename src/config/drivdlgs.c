@@ -2042,7 +2042,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                 // according to the usToolIDs array
                 TOOLINFO    ti = {0};
                 HWND        hwndCtl;
-                ti.ulFlags = TTF_CENTERBELOW | TTF_SUBCLASS;
+                ti.ulFlags = TTF_CENTER_X_ON_TOOL | TTF_POS_Y_BELOW_TOOL | TTF_SUBCLASS;
                 ti.hwndToolOwner = hwndDlg;
                 ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 for (ul = 0;

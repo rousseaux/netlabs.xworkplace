@@ -129,10 +129,6 @@ VOID pgmsSetDefaults(VOID)
                         + (.18 * G_pHookData->lCXScreen);
     G_swpPgmgFrame.cy = G_swpPgmgFrame.y
                         + pgmcCalcNewFrameCY(G_swpPgmgFrame.cx);
-
-    // Other
-    strcpy(G_szFacename, "2.System VIO");
-    // hps = WinGetPS(HWND_DESKTOP);
 }
 
 /*

@@ -36,8 +36,8 @@
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\except.h"
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\threads.h"
-// #include "helpers\winh.h"               // PM helper routines
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
@@ -82,224 +82,250 @@ BOOL pgmmMoveIt(LONG lXDelta,
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
             == NO_ERROR)
     {
-        HWND        ahwndMoveList[MAX_WINDOWS];
+        // HWND        ahwndMoveList[MAX_WINDOWS];
                     // here we build a second list of windows to be moved
-        SWP         swp[MAX_WINDOWS];
-        ULONG       ulMoveListCtr = 0;
-        ULONG       usIdx = 0;
+        // SWP         swp[MAX_WINDOWS];
+
+        // ULONG       ulMoveListCtr = 0;
+        // ULONG       usIdx = 0;
 
         LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
         LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
 
-        // now go thru all windows on the main list and copy them
-        // to the move list, if necessary
-        for (usIdx = 0;
-             usIdx < G_usWindowCount;
-             usIdx++)
+        PLISTNODE   pNode;
+
+        // allocate an array of SWP entries for moving all windows
+        // at once... we'll allocate one SWP entry for each item
+        // on the wininfo list, but we'll probably not use them
+        // all. cSwpNewUsed will be incremented for each item that's
+        // actually used
+        ULONG       cSwpNewUsed = 0;
+        ULONG       cbSwpNew = lstCountItems(&G_llWinInfos) * sizeof(SWP);
+        PSWP        paswpNew = (PSWP)malloc(cbSwpNew);
+        if (paswpNew)
         {
-            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
+            memset(paswpNew, 0, cbSwpNew);
 
-            BOOL fRescanThis = FALSE;
-                    // if TRUE, this gets rescanned
-
-            if (!WinIsWindow(G_habDaemon, pEntryThis->hwnd))
-                // window no longer valid:
-                // mark for rescan so it will be removed later
-                // pEntryThis->bWindowType = WINDOW_RESCAN;
-                                // V0.9.7 (2001-01-18) [umoeller]
-                fRescanThis = TRUE;
-            else
+            // now go thru all windows on the main list and copy them
+            // to the move list, if necessary
+            pNode = lstQueryFirstNode(&G_llWinInfos);
+            while (pNode)
             {
-                BOOL fMoveThis = FALSE;
+                PPGMGWININFO pEntryThis = (PPGMGWININFO)pNode->pItemData;
+                // PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
 
-                // update window pos in winlist's SWP
-                PSWP pswpThis = &pEntryThis->swp;
-                WinQueryWindowPos(pEntryThis->hwnd, pswpThis);
+                BOOL fRescanThis = FALSE;
+                        // if TRUE, this gets rescanned
 
-                // fix outdated minimize flags
-                if (    (pEntryThis->bWindowType == WINDOW_MINIMIZE)
-                     && ( (pswpThis->fl & SWP_MINIMIZE) == 0)
-                   )
-                    // no longer minimized:
+                if (!WinIsWindow(G_habDaemon, pEntryThis->hwnd))
+                    // window no longer valid:
+                    // mark for rescan so it will be removed later
+                    // pEntryThis->bWindowType = WINDOW_RESCAN;
+                                    // V0.9.7 (2001-01-18) [umoeller]
                     fRescanThis = TRUE;
-                else if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
-                          && ( (pswpThis->fl & SWP_MAXIMIZE) == 0)
-                        )
+                else
+                {
+                    BOOL fMoveThis = FALSE;
+
+                    // update window pos in winlist's SWP
+                    PSWP pswpThis = &pEntryThis->swp;
+                    WinQueryWindowPos(pEntryThis->hwnd, pswpThis);
+
+                    // fix outdated minimize flags
+                    if (    (pEntryThis->bWindowType == WINDOW_MINIMIZE)
+                         && ( (pswpThis->fl & SWP_MINIMIZE) == 0)
+                       )
                         // no longer minimized:
                         fRescanThis = TRUE;
-
-                if (pEntryThis->bWindowType == WINDOW_NORMAL)
-                {
-                    if (pswpThis->fl & SWP_MINIMIZE)
-                        // now minimized:
-                        pEntryThis->bWindowType = WINDOW_MINIMIZE;
-                    else if (pswpThis->fl & SWP_MAXIMIZE)
-                        // now maximized:
-                        pEntryThis->bWindowType = WINDOW_MAXIMIZE;
-                }
-
-                if (fRescanThis)
-                {
-                    if (pgmwGetWinInfo(pEntryThis->hwnd,
-                                       pEntryThis))
-                    {
-                        // window still valid:
-                        fMoveThis = TRUE;
-                    }
-                    else
-                        // window no longer valid:
-                        // remove from list during next paint
-                        pEntryThis->bWindowType = WINDOW_RESCAN;
-                }
-                else
-                    if (   (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
-                        // || (pEntryThis->bWindowType == WINDOW_MAX_OFF)
-                       )
-                        // may even be hidden
-                        fMoveThis = TRUE;
-                    else if (   (pEntryThis->bWindowType == WINDOW_NORMAL)
-                             && (!(pswpThis->fl & SWP_HIDE))
+                    else if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
+                              && ( (pswpThis->fl & SWP_MAXIMIZE) == 0)
                             )
-                        fMoveThis = TRUE;
+                            // no longer minimized:
+                            fRescanThis = TRUE;
 
-                if (fMoveThis)
-                {
-                    // OK, window to be moved:
-
-                    // default flags
-                    ULONG   fl = SWP_MOVE | SWP_NOADJUST;
-
-                    PSWP    pswpNewThis = &swp[ulMoveListCtr];
-
-                    ahwndMoveList[ulMoveListCtr] = pEntryThis->hwnd;
-
-                    WinQueryWindowPos(ahwndMoveList[ulMoveListCtr],
-                                      pswpNewThis);
-
-                    pswpNewThis->hwnd = ahwndMoveList[ulMoveListCtr];
-                    // add the delta for moving
-                    pswpNewThis->x += lXDelta;
-                    pswpNewThis->y += lYDelta;
-
-                    if (pswpNewThis->fl & SWP_MAXIMIZE)
+                    if (pEntryThis->bWindowType == WINDOW_NORMAL)
                     {
-                        // maximized:
+                        if (pswpThis->fl & SWP_MINIMIZE)
+                            // now minimized:
+                            pEntryThis->bWindowType = WINDOW_MINIMIZE;
+                        else if (pswpThis->fl & SWP_MAXIMIZE)
+                            // now maximized:
+                            pEntryThis->bWindowType = WINDOW_MAXIMIZE;
+                    }
 
-                        // V0.9.7 (2001-01-18) [dk]: check if visible
-                        /* BOOL bVisible
-                            = !(    ((pswpNewThis->x + bx) >= G_szlEachDesktopReal.cx)
-                                 || ((pswpNewThis->x + pswpNewThis->cx - bx) <= 0)
-                                 || ((pswpNewThis->y + by) >= G_szlEachDesktopReal.cy)
-                                 || ((pswpNewThis->y + pswpNewThis->cy - by) <= 0)
-                               );
-
-                        // currently maximized:
-                        // this can be one of two sorts:
-                        if (G_MainWindowList[usIdx].bWindowType == WINDOW_MAX_OFF)
+                    if (fRescanThis)
+                    {
+                        if (pgmwFillWinInfo(pEntryThis->hwnd,
+                                           pEntryThis))
                         {
-                            // this is a maximized window which has been hidden by
-                            // us previously: check if it's currently being shown
-                            if (bVisible)
-                            {
-                                // yes:
-                                // unhide
-                                fl |= SWP_SHOW;
-                                pEntryThis->bWindowType = WINDOW_MAXIMIZE;
-                            }
+                            // window still valid:
+                            fMoveThis = TRUE;
                         }
                         else
+                            // window no longer valid:
+                            // remove from list during next paint
+                            pEntryThis->bWindowType = WINDOW_RESCAN;
+                    }
+                    else
+                        if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
+                             || (    (pEntryThis->bWindowType == WINDOW_NORMAL)
+                                  && (!(pswpThis->fl & SWP_HIDE))
+                                )
+                           )
+                            fMoveThis = TRUE;
+
+                    if (fMoveThis)
+                    {
+                        // OK, window to be moved:
+
+                        // default flags
+                        ULONG   fl = SWP_MOVE | SWP_NOADJUST;
+
+                        PSWP    pswpNewThis = &paswpNew[cSwpNewUsed];
+
+                        // ahwndMoveList[ulMoveListCtr] = pEntryThis->hwnd;
+
+                        WinQueryWindowPos(pEntryThis->hwnd,
+                                          pswpNewThis);
+
+                        pswpNewThis->hwnd = pEntryThis->hwnd; // ahwndMoveList[ulMoveListCtr];
+                        // add the delta for moving
+                        pswpNewThis->x += lXDelta;
+                        pswpNewThis->y += lYDelta;
+
+                        pswpNewThis->fl = fl;
+
+                        // use next entry in SWP array
+                        cSwpNewUsed++;
+
+                        /* if (pswpNewThis->fl & SWP_MAXIMIZE)
                         {
-                            if (!bVisible)
+                            // maximized:
+
+                            // V0.9.7 (2001-01-18) [dk]: check if visible
+                            BOOL bVisible
+                                = !(    ((pswpNewThis->x + bx) >= G_szlEachDesktopReal.cx)
+                                     || ((pswpNewThis->x + pswpNewThis->cx - bx) <= 0)
+                                     || ((pswpNewThis->y + by) >= G_szlEachDesktopReal.cy)
+                                     || ((pswpNewThis->y + pswpNewThis->cy - by) <= 0)
+                                   );
+
+                            // currently maximized:
+                            // this can be one of two sorts:
+                            if (G_MainWindowList[usIdx].bWindowType == WINDOW_MAX_OFF)
+                            {
+                                // this is a maximized window which has been hidden by
+                                // us previously: check if it's currently being shown
+                                if (bVisible)
+                                {
+                                    // yes:
+                                    // unhide
+                                    fl |= SWP_SHOW;
+                                    pEntryThis->bWindowType = WINDOW_MAXIMIZE;
+                                }
+                            }
+                            else
+                            {
+                                if (!bVisible)
+                                {
+                                    // regular maximized window on current Desktop:
+                                    // hide to avoid the borders on the adjacent screen
+                                    fl = SWP_HIDE | SWP_MOVE | SWP_NOADJUST;
+                                    // and mark this as "hidden by us" in the window list
+                                    // so we can un-hide it later
+                                    G_MainWindowList[usIdx].bWindowType = WINDOW_MAX_OFF;
+                                }
+                             } */
+
+                            // check if this was hidden by us
+                            /* if (pEntryThis->bMaximizedAndHiddenByUs) //  == WINDOW_MAX_OFF)
+                            {
+                                // this is a maximized window which has been hidden by
+                                // us previously: check if it's currently being shown
+
+                                // if (    // is desktop left in window?
+                                        (pswpNewThis->x < 0)
+                                     && (pswpNewThis->x + pswpNewThis->cx > G_szlEachDesktopReal.cx)
+                                        // and desktop bottom in window?
+                                     && (pswpNewThis->y < 0)
+                                     && (pswpNewThis->y + pswpNewThis->cy > G_szlEachDesktopReal.cy)
+                                   )
+
+                                // check if the new center is on the current desktop
+                                        // V0.9.7 (2001-01-18) [umoeller]
+                                LONG lCenterX = (pswpNewThis->x + pswpNewThis->cx) / 2L;
+                                LONG lCenterY = (pswpNewThis->y + pswpNewThis->cy) / 2L;
+
+                                if (    (lCenterX > 0L)
+                                     && (lCenterX < G_szlEachDesktopReal.cx)
+                                     && (lCenterY > 0L)
+                                     && (lCenterY < G_szlEachDesktopReal.cy)
+                                   )
+                                {
+                                    // yes:
+                                    // unhide in addition to moving
+                                    fl |= SWP_SHOW;
+                                    // and mark this as maximized again
+                                    // pEntryThis->bWindowType = WINDOW_MAXIMIZE;
+                                    pEntryThis->bMaximizedAndHiddenByUs = FALSE;
+                                }
+                                // else: this is not on our desktop, so do not
+                                // unhide it
+                            }
+                            else
                             {
                                 // regular maximized window on current Desktop:
                                 // hide to avoid the borders on the adjacent screen
-                                fl = SWP_HIDE | SWP_MOVE | SWP_NOADJUST;
+                                fl |= SWP_HIDE;
                                 // and mark this as "hidden by us" in the window list
                                 // so we can un-hide it later
-                                G_MainWindowList[usIdx].bWindowType = WINDOW_MAX_OFF;
+                                // pEntryThis->bWindowType = WINDOW_MAX_OFF;
+                                pEntryThis->bMaximizedAndHiddenByUs = TRUE;
                             }
-                         } */
-
-                        // check if this was hidden by us
-                        /* if (pEntryThis->bMaximizedAndHiddenByUs) //  == WINDOW_MAX_OFF)
-                        {
-                            // this is a maximized window which has been hidden by
-                            // us previously: check if it's currently being shown
-
-                            // if (    // is desktop left in window?
-                                    (pswpNewThis->x < 0)
-                                 && (pswpNewThis->x + pswpNewThis->cx > G_szlEachDesktopReal.cx)
-                                    // and desktop bottom in window?
-                                 && (pswpNewThis->y < 0)
-                                 && (pswpNewThis->y + pswpNewThis->cy > G_szlEachDesktopReal.cy)
-                               )
-
-                            // check if the new center is on the current desktop
-                                    // V0.9.7 (2001-01-18) [umoeller]
-                            LONG lCenterX = (pswpNewThis->x + pswpNewThis->cx) / 2L;
-                            LONG lCenterY = (pswpNewThis->y + pswpNewThis->cy) / 2L;
-
-                            if (    (lCenterX > 0L)
-                                 && (lCenterX < G_szlEachDesktopReal.cx)
-                                 && (lCenterY > 0L)
-                                 && (lCenterY < G_szlEachDesktopReal.cy)
-                               )
-                            {
-                                // yes:
-                                // unhide in addition to moving
-                                fl |= SWP_SHOW;
-                                // and mark this as maximized again
-                                // pEntryThis->bWindowType = WINDOW_MAXIMIZE;
-                                pEntryThis->bMaximizedAndHiddenByUs = FALSE;
-                            }
-                            // else: this is not on our desktop, so do not
-                            // unhide it
-                        }
-                        else
-                        {
-                            // regular maximized window on current Desktop:
-                            // hide to avoid the borders on the adjacent screen
-                            fl |= SWP_HIDE;
-                            // and mark this as "hidden by us" in the window list
-                            // so we can un-hide it later
-                            // pEntryThis->bWindowType = WINDOW_MAX_OFF;
-                            pEntryThis->bMaximizedAndHiddenByUs = TRUE;
                         } */
-                    }
 
-                    pswpNewThis->fl = fl;
 
-                    ulMoveListCtr++;
-                } // end if (bResult)
-            } // end else if (!WinIsWindow(G_habDaemon, pEntryThis->hwnd))
-        } // end for for (usIdx = 0;...
-        DosReleaseMutexSem(G_hmtxWindowList);
 
-        {
-            // if window animations are enabled, turn them off for now.
-                    // V0.9.7 (2001-01-18) [umoeller]
-            BOOL fAnimation = FALSE;
-            if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
+                        // ulMoveListCtr++;
+                    } // end if (bResult)
+                } // end else if (!WinIsWindow(G_habDaemon, pEntryThis->hwnd))
+
+                pNode = pNode->pNext;
+            } // end while (pNode)
+
+            if (cSwpNewUsed)
             {
-                fAnimation = TRUE;
-                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
+                // if window animations are enabled, turn them off for now.
+                        // V0.9.7 (2001-01-18) [umoeller]
+                BOOL fAnimation = FALSE;
+                if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
+                {
+                    fAnimation = TRUE;
+                    WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
+                }
+
+                G_pHookData->fDisableSwitching = TRUE;
+
+                // now set all windows at once, this saves a lot of
+                // repainting...
+                fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
+                                                     (PSWP)paswpNew,
+                                                     cSwpNewUsed);
+
+                G_pHookData->fDisableSwitching = FALSE;
+
+                if (fAnimation)
+                    // turn animation back on
+                    WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE);
             }
 
-            G_pHookData->fDisableSwitching = TRUE;
+            // clean up SWP array
+            free(paswpNew);
 
-            // now set all windows at once, this saves a lot of
-            // repainting...
-            fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
-                                                 (PSWP)&swp,
-                                                 ulMoveListCtr);
+        } // end if (paswpNew)
 
-            G_pHookData->fDisableSwitching = FALSE;
-
-            if (fAnimation)
-                // turn animation back on
-                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE);
-        }
-    }
+        DosReleaseMutexSem(G_hmtxWindowList);
+    } // end if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST) ...
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, TRUE);
@@ -430,7 +456,7 @@ BOOL pgmmZMoveIt(LONG lXDelta,
 /*
  *@@ fnwpMoveThread:
  *      window procedure for the object window on the
- *      PageMage "Move" thread (fntMoveQueueThread).
+ *      PageMage "Move" thread (fntMoveThread).
  *      This receives PGOM_* messages and processes them.
  *      The object window handle is available in
  *      G_pHookData->hwndPageMageMoveThread.
@@ -554,7 +580,11 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             {
                 SWP         swpActive;
                 // get the new active window
-                HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+                HWND hwndActive;
+
+                DosSleep(100);
+
+                hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
                 _Pmpf((__FUNCTION__ ": PGOM_FOCUSCHANGE, hwndActive: 0x%lX", hwndActive));
 
@@ -676,12 +706,11 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 }
 
 /*
- *@@ fntMoveQueueThread:
+ *@@ fntMoveThread:
  *      this thread gets started when PageMage
  *      is started (dmnStartPageMage in xwpdaemn.c).
- *      It continually reads from a CP queue for
- *      commands, which are written into the queue
- *      mostly by fnwpPageMageClient.
+ *      It creates an object window which receives
+ *      notifications mostly from fnwpPageMageClient.
  *
  *      This thread is responsible for moving
  *      windows around and doing other stuff which
@@ -690,11 +719,19 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: renamed from fntMoveThread
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed flashing; now using a win timer
+ *@@changed V0.9.7 (2001-01-20) [umoeller]: now using higher priority
  */
 
-VOID _Optlink fntMoveQueueThread(PTHREADINFO pti)
+VOID _Optlink fntMoveThread(PTHREADINFO pti)
 {
     _Pmpf(("Move thread running..."));
+
+    // give ourselves higher priority...
+    // otherwise we can't compete with Netscape and Win-OS/2 windows.
+    DosSetPriority(PRTYS_THREAD,
+                   PRTYC_REGULAR,
+                   PRTYD_MAXIMUM,
+                   0);      // current thread
 
     WinRegisterClass(pti->hab,
                      WC_MOVETHREAD,
@@ -729,7 +766,11 @@ VOID _Optlink fntMoveQueueThread(PTHREADINFO pti)
 /*
  *@@ pgmmRecoverAllWindows:
  *      recovers all windows (hopefully).
+ *
  *      Gets called on WM_CLOSE in fnwpPageMageClient.
+ *      This makes sure that when PageMage terminates
+ *      for whatever reason, the user isn't left with
+ *      windows which are completely off the screen.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
@@ -739,6 +780,9 @@ VOID pgmmRecoverAllWindows(VOID)
     // shortcuts to global pagemage config
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
     PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
+    #define MAX_WINDOWS 1000        // yes, that's a lot... too lazy
+                                    // to build another linked list here ###
 
     HENUM       henum;
     HWND        hwndTemp[MAX_WINDOWS];
@@ -756,7 +800,7 @@ VOID pgmmRecoverAllWindows(VOID)
         WinQueryWindowPos(hwndTemp[usIdx], &swpHold);
 
         WinQueryClassName(hwndTemp[usIdx], PGMG_TEXTLEN, szClassName);
-        if (    (// (WinIsWindowVisible(hwndTemp[usIdx]))
+        if (    (
                     ((swpHold.fl & (SWP_HIDE | SWP_MAXIMIZE)) == (SWP_HIDE | SWP_MAXIMIZE))
                  || ((swpHold.fl & SWP_HIDE) == 0)
                 )
@@ -807,5 +851,5 @@ VOID pgmmRecoverAllWindows(VOID)
 
     bResult = WinSetMultWindowPos(NULLHANDLE, (PSWP) &swpTemp, usIdx);
 
-} // RecoverThread
+}
 

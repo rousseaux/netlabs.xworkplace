@@ -28,8 +28,10 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 
 MYDIR = $(MAKEDIR)
 
-OUTPUTDIR = ..\..\bin\exe_mt
-MODULESDIR = ..\..\bin\modules
+BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+
+OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
+MODULESDIR = $(BASE_OUTPUTDIR)\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
@@ -56,7 +58,7 @@ ALL_OBJ1 = \
     $(OUTPUTDIR)\userdb.obj \
     $(OUTPUTDIR)\subjects.obj \
     $(OUTPUTDIR)\xwpshell.obj \
-    ..\..\bin\exe_mt\helpers.lib
+    $(OUTPUTDIR)\helpers.lib
 
 # TARGETS
 # -------

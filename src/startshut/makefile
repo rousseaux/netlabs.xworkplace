@@ -37,7 +37,9 @@
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-OUTPUTDIR = ..\..\bin
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
 
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.

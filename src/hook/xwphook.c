@@ -277,6 +277,9 @@ VOID InitializeGlobalsForHooks(VOID)
     G_HookData.hwndPMDesktop = WinQueryDesktopWindow(G_HookData.habDaemonObject,
                                                      NULLHANDLE);
 
+    WinQueryWindowProcess(HWND_DESKTOP, &G_HookData.pidPM, NULL);
+            // V0.9.7 (2001-01-21) [umoeller]
+
     // enumerate desktop window to find the window list:
     // according to PMTREE, the window list has the following
     // window hierarchy:

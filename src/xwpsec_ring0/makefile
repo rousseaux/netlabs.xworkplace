@@ -45,7 +45,7 @@ ASFLAGS   = -Mb -Li
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-MAIN_OUTPUTDIR = ..\..\bin
+MAIN_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 OUTPUTDIR=$(MAIN_OUTPUTDIR)\xwpsec32.sys
 MODULESDIR=$(MAIN_OUTPUTDIR)\modules
 

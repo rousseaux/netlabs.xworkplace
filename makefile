@@ -60,21 +60,24 @@
 !endif
 
 # PROJECT_BASE_DIR is used by "setup.in"
-# subdirectories to identify the root of the source
+# to identify the root of the source
 # tree. This is passed to the sub-makefiles.
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 
+# include setup (compiler options etc.)
+!include setup.in
+
 # MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
-MODULESDIR=bin\modules
+# PROJECT_OUTPUT_DIR has been set by setup.in based on the environment.
+MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
+!if [@echo       MODULESDIR is $(MODULESDIR)]
+!endif
 
 # create output directory
-!if [@md $(bin) 2> NUL]
+!if [@md $(PROJECT_OUTPUT_DIR) 2> NUL]
 !endif
 !if [@md $(MODULESDIR) 2> NUL]
 !endif
-
-# include setup (compiler options etc.)
-!include setup.in
 
 # VARIABLES
 # ---------
@@ -83,39 +86,39 @@ MODULESDIR=bin\modules
 # created from the files in MAIN\.
 OBJS = \
 # code from classes\
-    bin\xcenter.obj bin\xfont.obj bin\xfontfile.obj bin\xfontobj.obj bin\xfobj.obj \
-    bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj bin\xfdisk.obj \
-    bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
-    bin\xmmcdplay.obj bin\xmmvolume.obj \
-    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpfsys.obj \
-    bin\xwpkeybd.obj bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
-    bin\xwpstring.obj \
+    $(XWP_OUTPUT_ROOT)\xcenter.obj $(XWP_OUTPUT_ROOT)\xfont.obj $(XWP_OUTPUT_ROOT)\xfontfile.obj $(XWP_OUTPUT_ROOT)\xfontobj.obj $(XWP_OUTPUT_ROOT)\xfobj.obj \
+    $(XWP_OUTPUT_ROOT)\xfldr.obj $(XWP_OUTPUT_ROOT)\xfdesk.obj $(XWP_OUTPUT_ROOT)\xfsys.obj $(XWP_OUTPUT_ROOT)\xfwps.obj $(XWP_OUTPUT_ROOT)\xfdisk.obj \
+    $(XWP_OUTPUT_ROOT)\xfdataf.obj $(XWP_OUTPUT_ROOT)\xfpgmf.obj $(XWP_OUTPUT_ROOT)\xfstart.obj \
+    $(XWP_OUTPUT_ROOT)\xmmcdplay.obj $(XWP_OUTPUT_ROOT)\xmmvolume.obj \
+    $(XWP_OUTPUT_ROOT)\xclslist.obj $(XWP_OUTPUT_ROOT)\xwpsound.obj $(XWP_OUTPUT_ROOT)\xtrash.obj $(XWP_OUTPUT_ROOT)\xtrashobj.obj $(XWP_OUTPUT_ROOT)\xwpfsys.obj \
+    $(XWP_OUTPUT_ROOT)\xwpkeybd.obj $(XWP_OUTPUT_ROOT)\xwpmedia.obj $(XWP_OUTPUT_ROOT)\xwpmouse.obj $(XWP_OUTPUT_ROOT)\xwpsetup.obj $(XWP_OUTPUT_ROOT)\xwpscreen.obj \
+    $(XWP_OUTPUT_ROOT)\xwpstring.obj \
 # code from shared \
-    bin\center.obj bin\classes.obj bin\cnrsort.obj bin\common.obj bin\contentmenus.obj \
-    bin\notebook.obj bin\kernel.obj bin\xsetup.obj bin\wpsh.obj \
+    $(XWP_OUTPUT_ROOT)\center.obj $(XWP_OUTPUT_ROOT)\classes.obj $(XWP_OUTPUT_ROOT)\cnrsort.obj $(XWP_OUTPUT_ROOT)\common.obj $(XWP_OUTPUT_ROOT)\contentmenus.obj \
+    $(XWP_OUTPUT_ROOT)\notebook.obj $(XWP_OUTPUT_ROOT)\kernel.obj $(XWP_OUTPUT_ROOT)\xsetup.obj $(XWP_OUTPUT_ROOT)\wpsh.obj \
 # code from config\
-    bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\fonts.obj \
-    bin\hookintf.obj bin\pagemage.obj bin\partitions.obj bin\sound.obj \
+    $(XWP_OUTPUT_ROOT)\cfgsys.obj $(XWP_OUTPUT_ROOT)\classlst.obj $(XWP_OUTPUT_ROOT)\drivdlgs.obj $(XWP_OUTPUT_ROOT)\drivers.obj $(XWP_OUTPUT_ROOT)\fonts.obj \
+    $(XWP_OUTPUT_ROOT)\hookintf.obj $(XWP_OUTPUT_ROOT)\pagemage.obj $(XWP_OUTPUT_ROOT)\partitions.obj $(XWP_OUTPUT_ROOT)\sound.obj \
 # code from filesys\
-    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fdrmenus.obj \
-    bin\fhandles.obj bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
-    bin\filetype.obj \
-    bin\folder.obj bin\object.obj bin\desktop.obj \
-    bin\program.obj bin\statbars.obj bin\trash.obj bin\xthreads.obj \
+    $(XWP_OUTPUT_ROOT)\disk.obj $(XWP_OUTPUT_ROOT)\fdrhotky.obj $(XWP_OUTPUT_ROOT)\fdrnotebooks.obj $(XWP_OUTPUT_ROOT)\fdrsubclass.obj $(XWP_OUTPUT_ROOT)\fdrmenus.obj \
+    $(XWP_OUTPUT_ROOT)\fhandles.obj $(XWP_OUTPUT_ROOT)\fileops.obj $(XWP_OUTPUT_ROOT)\filesys.obj $(XWP_OUTPUT_ROOT)\fops_bottom.obj $(XWP_OUTPUT_ROOT)\fops_top.obj \
+    $(XWP_OUTPUT_ROOT)\filetype.obj \
+    $(XWP_OUTPUT_ROOT)\folder.obj $(XWP_OUTPUT_ROOT)\object.obj $(XWP_OUTPUT_ROOT)\desktop.obj \
+    $(XWP_OUTPUT_ROOT)\program.obj $(XWP_OUTPUT_ROOT)\statbars.obj $(XWP_OUTPUT_ROOT)\trash.obj $(XWP_OUTPUT_ROOT)\xthreads.obj \
 # code from media\
-    bin\mmcdplay.obj bin\mmhelp.obj bin\mmthread.obj bin\mmvolume.obj \
+    $(XWP_OUTPUT_ROOT)\mmcdplay.obj $(XWP_OUTPUT_ROOT)\mmhelp.obj $(XWP_OUTPUT_ROOT)\mmthread.obj $(XWP_OUTPUT_ROOT)\mmvolume.obj \
 # code from startshut\
-    bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj \
+    $(XWP_OUTPUT_ROOT)\apm.obj $(XWP_OUTPUT_ROOT)\archives.obj $(XWP_OUTPUT_ROOT)\shutdown.obj $(XWP_OUTPUT_ROOT)\winlist.obj \
 # code from xcenter\
-    bin\ctr_engine.obj bin\ctr_notebook.obj bin\w_objbutton.obj bin\w_pulse.obj
+    $(XWP_OUTPUT_ROOT)\ctr_engine.obj $(XWP_OUTPUT_ROOT)\ctr_notebook.obj $(XWP_OUTPUT_ROOT)\w_objbutton.obj $(XWP_OUTPUT_ROOT)\w_pulse.obj
 
-OBJS_ANICLASSES = bin\anand.obj bin\anos2ptr.obj bin\anwani.obj bin\anwcur.obj
-OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj
-#bin\expire.obj
-OBJS_ANIDLL = bin\dll.obj bin\dllbin.obj
-OBJS_ANIANI = bin\mptranim.obj bin\mptrcnr.obj bin\mptredit.obj bin\mptrlset.obj \
-    bin\mptrpag1.obj bin\mptrppl.obj bin\mptrprop.obj bin\mptrptr.obj bin\mptrset.obj \
-    bin\mptrutil.obj bin\mptrfile.obj bin\wpamptr.obj
+OBJS_ANICLASSES = $(XWP_OUTPUT_ROOT)\anand.obj $(XWP_OUTPUT_ROOT)\anos2ptr.obj $(XWP_OUTPUT_ROOT)\anwani.obj $(XWP_OUTPUT_ROOT)\anwcur.obj
+OBJS_ANICONVERT = $(XWP_OUTPUT_ROOT)\cursor.obj $(XWP_OUTPUT_ROOT)\pointer.obj $(XWP_OUTPUT_ROOT)\script.obj
+#$(XWP_OUTPUT_ROOT)\expire.obj
+OBJS_ANIDLL = $(XWP_OUTPUT_ROOT)\dll.obj $(XWP_OUTPUT_ROOT)\dllbin.obj
+OBJS_ANIANI = $(XWP_OUTPUT_ROOT)\mptranim.obj $(XWP_OUTPUT_ROOT)\mptrcnr.obj $(XWP_OUTPUT_ROOT)\mptredit.obj $(XWP_OUTPUT_ROOT)\mptrlset.obj \
+    $(XWP_OUTPUT_ROOT)\mptrpag1.obj $(XWP_OUTPUT_ROOT)\mptrppl.obj $(XWP_OUTPUT_ROOT)\mptrprop.obj $(XWP_OUTPUT_ROOT)\mptrptr.obj $(XWP_OUTPUT_ROOT)\mptrset.obj \
+    $(XWP_OUTPUT_ROOT)\mptrutil.obj $(XWP_OUTPUT_ROOT)\mptrfile.obj $(XWP_OUTPUT_ROOT)\wpamptr.obj
 
 !ifdef ANIMATED_MOUSE_POINTERS
 ANIOBJS = $(OBJS_ANICLASSES) $(OBJS_ANICONVERT) $(OBJS_ANIANI) $(OBJS_ANIDLL)
@@ -125,7 +128,7 @@ ANIOBJS =
 
 # The HLPOBJS macro contains all the .OBJ files which have been
 # created from the files in HELPERS\. You probably won't have to change this.
-HLPOBJS = bin\helpers.lib
+HLPOBJS = $(XWP_OUTPUT_ROOT)\helpers.lib
 
 !ifdef XWP_DEBUG
 PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
@@ -134,27 +137,25 @@ PMPRINTF_LIB =
 !endif
 
 # The following macros contains the .OBJ files for the XCenter plugins.
-WINLISTOBJS = bin\widgets\w_winlist.obj $(PMPRINTF_LIB)
-MONITOROBJS = bin\widgets\w_monitors.obj $(PMPRINTF_LIB)
-SAMPLEOBJS = bin\widgets\____sample.obj $(PMPRINTF_LIB)
+WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
+MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
+SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
-!ifdef PAGEMAGE
-PGMGDMNOBJS = bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
-    bin\exe_mt\pgmg_winscan.obj
-!else
-PGMGDMNOBJS =
-!endif
+PGMGDMNOBJS = $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_control.obj $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_move.obj $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_settings.obj \
+    $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_winscan.obj
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
 DMNOBJS = \
-bin\exe_mt\xwpdaemn.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\xwpdaemn.obj \
 $(PGMGDMNOBJS) \
-bin\exe_mt\debug.obj bin\exe_mt\except.obj bin\exe_mt\dosh.obj bin\exe_mt\memdebug.obj \
-bin\exe_mt\stringh.obj bin\exe_mt\threads.obj bin\exe_mt\xstring.obj \
-bin\xwphook.lib
+$(XWP_OUTPUT_ROOT)\exe_mt\debug.obj $(XWP_OUTPUT_ROOT)\exe_mt\linklist.obj \
+  $(XWP_OUTPUT_ROOT)\exe_mt\except.obj $(XWP_OUTPUT_ROOT)\exe_mt\dosh.obj \
+  $(XWP_OUTPUT_ROOT)\exe_mt\memdebug.obj $(XWP_OUTPUT_ROOT)\exe_mt\stringh.obj \
+  $(XWP_OUTPUT_ROOT)\exe_mt\threads.obj $(XWP_OUTPUT_ROOT)\exe_mt\xstring.obj \
+$(XWP_OUTPUT_ROOT)\xwphook.lib
 
 # objects for XDEBUG.DLL (debugging only)
-DEBUG_OBJS = bin\xdebug.obj bin\xdebug_folder.obj
+DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
@@ -262,7 +263,7 @@ helpers:
     @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin" "CC_HELPERS=$(CC_HELPERS_DLL)"
+"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)" "CC_HELPERS=$(CC_HELPERS_DLL)"
 # according to VAC++ user guide, we need to use /ge+ for libs
 # even if the lib will be linked to a DLL
     @cd $(CURRENT_DIR)
@@ -273,7 +274,7 @@ helpers_exe_mt:
     @echo $(MAKEDIR)\makefile: Going for WarpIN subdir src\helpers (EXE MT version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
+"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(CURRENT_DIR)
 
 shared:
@@ -399,8 +400,14 @@ $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def makefi
         $(LINK) /OUT:$@ src\shared\xwp.def @<<link.tmp
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
         cmd.exe /c tools\raisebld.cmd include\build.h
 
@@ -418,11 +425,17 @@ $(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
 src\shared\xwpres.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace resources module"
 
-$(MODULESDIR)\xwpres.dll: bin\dummyfont.obj src\shared\xwpres.def bin\xwpres.res
+$(MODULESDIR)\xwpres.dll: $(XWP_OUTPUT_ROOT)\dummyfont.obj src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\xwpres.res
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK_ALWAYSPACK) /OUT:$@ src\shared\xwpres.def bin\dummyfont.obj
+        $(LINK_ALWAYSPACK) /OUT:$@ src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\dummyfont.obj
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         $(RC) ..\xwpres.res $(@B).dll
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -442,8 +455,14 @@ src\widgets\winlist.def: include\bldlevel.h
 $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def $(WINLISTOBJS)
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -465,8 +484,14 @@ $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
 $(MONITOROBJS)
 <<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -488,8 +513,14 @@ $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
 $(SAMPLEOBJS)
 <<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -504,15 +535,21 @@ src\Daemon\xwpdaemn.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace PM daemon"
 
 # create import library from XWPHOOK.DLL
-bin\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
-        implib /nologo bin\$(@B).lib $(MODULESDIR)\$(@B).dll
+$(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
+        implib /nologo $(XWP_OUTPUT_ROOT)\$(@B).lib $(MODULESDIR)\$(@B).dll
 
-$(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
+$(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) $(XWP_OUTPUT_ROOT)\exe_mt\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
         $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         $(RC) ..\exe_mt\$(@B).res $(@B).exe
         mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -537,11 +574,17 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 src\hook\xwphook.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace PM hook module"
 
-$(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
+$(MODULESDIR)\xwphook.dll: src\hook\$(@B).def $(XWP_OUTPUT_ROOT)\$(@B).obj
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
+        $(LINK) /OUT:$@ src\hook\$(@B).def $(XWP_OUTPUT_ROOT)\$(@B).obj $(PMPRINTF_LIB)
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -557,9 +600,9 @@ $(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
 src\shared\xwpfonts.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XWorkplace bitmap fonts"
 
-$(MODULESDIR)\xwpfonts.fon: bin\dummyfont.obj bin\$(@B).res makefile
+$(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\dummyfont.obj $(XWP_OUTPUT_ROOT)\$(@B).res makefile
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).fon
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def bin\dummyfont.obj
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(XWP_OUTPUT_ROOT)\dummyfont.obj
         @cd $(MODULESDIR)
 # rename manually because otherwise the linker warns
 #        cmd.exe /c del $(@B).fon
@@ -576,8 +619,8 @@ $(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
-$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) bin\wpsh.obj
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(LIBS) bin\wpsh.obj
+$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(XWP_OUTPUT_ROOT)\wpsh.obj
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(LIBS) $(XWP_OUTPUT_ROOT)\wpsh.obj
 
 #
 # Special target "dlgedit": this is not called by "all",

@@ -164,6 +164,8 @@
                 // WPS desktop frame window (this only gets set by the daemon later!!)
                     hwndWindowList;
                 // window list handle
+        ULONG       pidPM;
+                // process ID of first PMSHELL.EXE V0.9.7 (2001-01-21) [umoeller]
 
         HWND        hwndLockupFrame;
                 // current lockup window, if any

@@ -173,8 +173,8 @@
 
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\threads.h"
-// #include "helpers\winh.h"               // PM helper routines
 
 #include "hook\xwphook.h"               // hook and daemon definitions
 #include "hook\hook_private.h"          // private hook and daemon definitions
@@ -186,9 +186,9 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 ULONG           G_pidDaemon = NULLHANDLE;
@@ -218,21 +218,17 @@ MPARAM          G_SlidingMenuMp1Saved = 0;
 ULONG           G_ulMonitorTimer = 0;
 
 // PageMage
-PGMGLISTENTRY        G_MainWindowList[MAX_WINDOWS] = {0};
-            // array of window data managed by PageMage
-USHORT          G_usWindowCount = 0;
+LINKLIST        G_llWinInfos;
+            // linked list of PGMGWININFO structs; this is auto-free,
+            // but you must use pgmwFreeWinInfo to free each item
+// ULONG           G_ulWindowCount = 0;
             // count of array items currently in use
 HMTX            G_hmtxWindowList = 0;
             // mutex sem protecting that array
 
 HWND            G_hwndPageMageClient = NULLHANDLE;
 
-CHAR            G_szFacename[PGMG_TEXTLEN] = "";
-
 POINTL          G_ptlCurrPos = {0};
-
-// POINTL          G_ptlPgmgClientSize = {0};
-            // removed, this was only used in pgmg_control.c
 
 SIZEL           G_szlEachDesktopReal = {0};
             // "real" size of each desktop; this is faked by pagemage to be
@@ -242,9 +238,9 @@ SIZEL           G_szlEachDesktopInClient = {0};
             // size of each desktop's representation in the pagemage client,
             // recalculated on each WM_SIZE
 
-SWP             G_swpPgmgFrame = {0};
-
 BOOL            G_bConfigChanged = FALSE;
+
+SWP             G_swpPgmgFrame = {0};
 
 THREADINFO      G_tiMoveThread = {0};
 
@@ -434,7 +430,7 @@ VOID APIENTRY dmnExceptError(const char *pcszFile,
  *@@ dmnStartPageMage:
  *      starts PageMage by calling pgmwScanAllWindows
  *      and pgmcCreateMainControlWnd and starting
- *      fntMoveQueueThread.
+ *      fntMoveThread.
  *
  *      This gets called when XDM_STARTSTOPPAGEMAGE is
  *      received by fnwpDaemonObject.
@@ -473,7 +469,7 @@ BOOL dmnStartPageMage(VOID)
 
             // _Pmpf(("  starting Move thread"));
             thrCreate(&G_tiMoveThread,
-                      fntMoveQueueThread,
+                      fntMoveThread,
                       NULL, // running flag
                       THRF_WAIT | THRF_PMMSGQUEUE,    // PM msgq
                       0);
@@ -1133,7 +1129,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 // #ifdef __PAGEMAGE__
                     // give PageMage a chance to recognize the Desktop
                     // V0.9.4 (2000-08-08) [umoeller]
-                    pgmwWindowListAdd(G_pHookData->hwndWPSDesktop);
+                    pgmwAppendNewWinInfo(G_pHookData->hwndWPSDesktop);
 // #endif
                 }
             break;
@@ -1438,16 +1434,17 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             break; }
 
             /*
-             *@@ XDM_PGMGWINLISTFULL:
+             * XDM_PGMGWINLISTFULL:
              *
-             *@@added V0.9.4 (2000-08-09) [umoeller]
+             *added V0.9.4 (2000-08-09) [umoeller]
+             *removed V0.9.7 (2001-01-21) [umoeller]
              */
 
-            case XDM_PGMGWINLISTFULL:
-                /* winhDebugBox(NULLHANDLE,
+            /* case XDM_PGMGWINLISTFULL:
+                winhDebugBox(NULLHANDLE,
                              "XWorkplace Daemon",
-                             "The PageMage window list is full."); */
-            break;
+                             "The PageMage window list is full.");
+            break; */
 
             /*
              * WM_TIMER:
@@ -1580,6 +1577,8 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
  *      T1M_DAEMONREADY to pDaemonShared->hwndThread1Object only.
  *      To actually install the hook, XFLDR.DLL then posts
  *      XDM_HOOKINSTALL to the daemon object window.
+ *
+ *@@changed V0.9.7 (2001-01-20) [umoeller]: now using higher priority
  */
 
 int main(int argc, char *argv[])
@@ -1641,10 +1640,21 @@ int main(int argc, char *argv[])
                             DosExitList(EXLST_ADD,
                                         DaemonExitList);
 
+                            // give ourselves higher priority...
+                            // otherwise we can't compete with Netscape and Win-OS/2 windows.
+                            /* DosSetPriority(PRTYS_THREAD,
+                                           PRTYC_REGULAR,
+                                           PRTYD_MAXIMUM,
+                                           0);      // current thread
+                              */
+
                             arc = DosCreateMutexSem(IDMUTEX_PGMG_WINLIST,
                                                     &G_hmtxWindowList,
                                                     DC_SEM_SHARED, // unnamed, but shared
                                                     FALSE);
+
+                            lstInit(&G_llWinInfos, TRUE);
+                                    // V0.9.7 (2001-01-21) [umoeller]
 
                             /* arc = DosCreateEventSem(PAGEMAGE_WNDLSTEV,
                                                     &G_hevWindowList,

@@ -24,6 +24,16 @@
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in.
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
+
+# create output directory
+!if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+
 #
 # Now set up a few environment variables.
 #
@@ -63,21 +73,17 @@ all: $(COPYTO)\xfldr$(LANGUAGE).inf
 # executes what we specify here.
 #
 
-.html.ipf:
-        $(HTML2IPF) xfldr$(LANGUAGE).html
-
-.ipf.inf:
-        ipfc /inf $*.ipf $*.inf
-
 #
 # Now define inference rules for the different file types.
 #
 
-$(COPYTO)\xfldr$(LANGUAGE).inf: xfldr$(LANGUAGE).inf
-        cmd.exe /c copy $(@B).inf $(COPYTO)
+$(COPYTO)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
+        cmd.exe /c copy $(OUTPUTDIR)\$(@B).inf $(COPYTO)
 
-xfldr$(LANGUAGE).inf: $*.ipf
+xfldr$(LANGUAGE).ipf: *.html *.gif makefile
+        $(HTML2IPF) xfldr$(LANGUAGE).html
 
-xfldr$(LANGUAGE).ipf: *.html *.gif
+$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: xfldr$(LANGUAGE).ipf
+        ipfc xfldr001.ipf $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
 
 

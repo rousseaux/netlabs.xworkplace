@@ -204,6 +204,7 @@
     #define WGTF_UNIQUEPERXCENTER       0x0004
     #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
     #define WGTF_TOOLTIP                0x0010
+    #define WGTF_TOOLTIP_AT_MOUSE      (0x0020 + 0x0010)
 
     /*
      *@@ XCENTERWIDGETCLASS:
@@ -251,6 +252,10 @@
                 //    and will receive WM_CONTROL messages with the
                 //    TTN_NEEDTEXT notification code (see helpers\comctl.h).
                 //    The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
+                // -- WGTF_TOOLTIP_AT_MOUSE: like WGTF_TOOPTIP, but the
+                //    tooltip is not centered above the widget, but put
+                //    at the mouse position instead.
+                //    This includes WGTF_TOOLTIP.
 
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,

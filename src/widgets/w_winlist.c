@@ -83,6 +83,7 @@ ew */
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
@@ -137,7 +138,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[]
             0,
             "WindowList",
             "Window list",
-            WGTF_UNIQUEPERXCENTER,
+            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP_AT_MOUSE,
             WwgtShowSettingsDlg
           };
 
@@ -200,6 +201,7 @@ PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 
 PXSTRCAT pxstrcat = NULL;
+PXSTRCPY pxstrcpy = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
@@ -234,6 +236,7 @@ RESOLVEFUNCTION G_aImports[] =
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
         "xstrcat", (PFN*)&pxstrcat,
+        "xstrcpy", (PFN*)&pxstrcpy,
         "xstrClear", (PFN*)&pxstrClear,
         "xstrInit", (PFN*)&pxstrInit
     };
@@ -340,6 +343,9 @@ typedef struct _WINLISTPRIVATE
                 pCtrlMenu;
             // same as pCtrlSourceEmphasis; second field needed because WM_COMMAND
             // might come in after WM_MENUEND (for source emphasis)
+
+    XSTRING     strTooltip;
+            // tip for the tooltip control
 } WINLISTPRIVATE, *PWINLISTPRIVATE;
 
 VOID ScanSwitchList(PWINLISTPRIVATE pPrivate);
@@ -1666,6 +1672,8 @@ MRESULT WwgtCreate(HWND hwnd,
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
 
+    pxstrInit(&pPrivate->strTooltip, 0);
+
     // initialize binary setup structure from setup string
     WwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
@@ -1756,6 +1764,48 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         ScanSwitchList(pPrivate);
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                     break; }
+
+
+                }
+            } // if (usID == ID_XCENTER_CLIENT)
+            else
+            {
+                if (usID == ID_XCENTER_TOOLTIP)
+                {
+                    switch (usNotifyCode)
+                    {
+                        case TTN_NEEDTEXT:
+                        {
+                            PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                            RECTL       rclSubclient;
+                            POINTL      ptlPointer;
+                            PSWCNTRL    pCtrlClicked = 0;
+
+                            // find the winlist item under the mouse
+                            WinQueryPointerPos(HWND_DESKTOP,
+                                               &ptlPointer);
+                            WinMapWindowPoints(HWND_DESKTOP,    // from
+                                               hwnd,
+                                               &ptlPointer,
+                                               1);
+                            GetPaintableRect(pPrivate, &rclSubclient);
+                            pCtrlClicked = FindCtrlFromPoint(pPrivate,
+                                                             &ptlPointer,
+                                                             &rclSubclient);
+                            pxstrClear(&pPrivate->strTooltip);
+                            if (pCtrlClicked)
+                                pxstrcpy(&pPrivate->strTooltip,
+                                         pCtrlClicked->szSwtitle,
+                                         0);
+                            else
+                                pxstrcpy(&pPrivate->strTooltip,
+                                         "Window list",
+                                         0);
+
+                            pttt->pszText = pPrivate->strTooltip.psz;
+                            pttt->ulFormat = TTFMT_PSZ;
+                        break; }
+                    }
                 }
             }
         } // end if (pPrivate)
@@ -2432,6 +2482,8 @@ MRESULT WwgtDestroy(HWND hwnd)
         if (pPrivate)
         {
             WwgtClearSetup(&pPrivate->Setup);
+
+            pxstrClear(&pPrivate->strTooltip);
 
             if (pPrivate->hwndContextMenuHacked)
                 WinDestroyWindow(pPrivate->hwndContextMenuHacked);

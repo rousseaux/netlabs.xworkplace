@@ -4,10 +4,13 @@
  *      PageMage and daemon declarations.
  *      These are not visible to the hook nor
  *      to XFLDR.DLL.
+ *
  *      Requires xwphook.h to be included first.
  *
  *@@include #define INCL_DOSSEMAPHORES
  *@@include #include <os2.h>
+ *@@include #include "hook\xwphook.h"
+ *@@include #include "hook\xwpdaemn.h"
  */
 
 /*
@@ -57,25 +60,30 @@
     #define WINDOW_RESCAN       0x0008
 
     /*
-     *@@ PGMGLISTENTRY:
+     *@@ PGMGWININFO:
      *      one of these exists for every window
      *      which is currently handled by PageMage.
      *
-     *@@changed V0.9.7 (2001-01-18) [umoeller]: renamed from PGMGLISTENTRY
+     *      This was completely revamped with V0.9.7.
+     *      PageMage no longer uses a global fixed
+     *      array of these items, but maintains a
+     *      linked list now. I believe some of the
+     *      pagemage hangs we had previously were
+     *      due to an overflow of the global array.
+     *
+     *@@added V0.9.7 (2001-01-21) [umoeller]
      */
 
-    typedef struct _PGMGLISTENTRY
+    typedef struct _PGMGWININFO
     {
-        HWND    hwnd;
-        BYTE    bWindowType;
-        // BYTE    bMaximizedAndHiddenByUs;
-        // CHAR    szWindowName[30];
-        CHAR    szSwitchName[30];
-        CHAR    szClassName[30];
-        ULONG   pid;
-        ULONG   tid;
-        SWP     swp;
-    } PGMGLISTENTRY, *PPGMGLISTENTRY;
+        HWND        hwnd;           // window handle
+        BYTE        bWindowType;
+        CHAR        szSwitchName[30];
+        CHAR        szClassName[30];
+        ULONG       pid;
+        ULONG       tid;
+        SWP         swp;
+    } PGMGWININFO, *PPGMGWININFO;
 
     // xwpdaemn.c
     VOID                dmnKillPageMage(BOOL fNotifyKernel);
@@ -90,7 +98,7 @@
 
     // pgmg_move.c
     #ifdef THREADS_HEADER_INCLUDED
-        VOID _Optlink fntMoveQueueThread(PTHREADINFO pti);
+        VOID _Optlink fntMoveThread(PTHREADINFO pti);
     #endif
     BOOL pgmmMoveIt(LONG, LONG, BOOL);
     BOOL pgmmZMoveIt(LONG, LONG);
@@ -102,16 +110,29 @@
     BOOL pgmsSaveSettings(VOID);
 
     // pgmg_winscan.c
-    BOOL pgmwGetWinInfo(HWND hwnd,
-                        PGMGLISTENTRY *phl);
+
+    PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
+                                 PVOID *ppListNode);
+
+    BOOL pgmwFillWinInfo(HWND hwnd,
+                         PPGMGWININFO pWinInfo);
+
     VOID pgmwScanAllWindows(VOID);
-    VOID pgmwWindowListAdd(HWND hwnd);
-    VOID pgmwWindowListDelete(HWND hwnd);
-    VOID pgmwWindowListUpdate(HWND hwnd);
+
+    VOID pgmwAppendNewWinInfo(HWND hwnd);
+
+    VOID pgmwDeleteWinInfo(HWND hwnd);
+
+    VOID pgmwUpdateWinInfo(HWND hwnd);
+
     BOOL pgmwWindowListRescan(VOID);
-    BOOL pgmwStickyCheck(/* PCHAR, */ PCHAR);
-    BOOL pgmwSticky2Check(HWND);
-    HWND pgmwGetWindowFromClientPoint(ULONG, ULONG);
+
+    BOOL pgmwStickyCheck(const char *pcszSwitchName);
+
+    BOOL pgmwSticky2Check(HWND hwndText);
+
+    HWND pgmwGetWindowFromClientPoint(ULONG ulX,
+                                      ULONG ulY);
 
     /* ******************************************************************
      *                                                                  *
@@ -126,8 +147,11 @@
 
     extern HPOINTER     G_hptrDaemon;
 
-    extern PGMGLISTENTRY G_MainWindowList[MAX_WINDOWS];
-    extern USHORT       G_usWindowCount;
+    // extern PGMGLISTENTRY G_MainWindowList[MAX_WINDOWS];
+    #ifdef LINKLIST_HEADER_INCLUDED
+        extern LINKLIST     G_llWinInfos;
+    #endif
+    // extern ULONG        G_ulWindowCount;
 
     extern HMTX         G_hmtxWindowList;
     extern POINTL       G_ptlCurrPos;
@@ -135,6 +159,6 @@
     extern SIZEL        G_szlEachDesktopInClient;
     extern BOOL         G_bConfigChanged;
     extern SWP          G_swpPgmgFrame;
-    extern CHAR         G_szFacename[PGMG_TEXTLEN];
+    // extern CHAR         G_szFacename[PGMG_TEXTLEN];
 #endif
 

@@ -48,8 +48,12 @@ LANGUAGE = 001
 # Set up a few environment variables.
 #
 
-OUTPUTDIR = ..\..\bin
-MODULESDIR = ..\..\bin\modules
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in.
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
+!endif
+MODULESDIR = $(OUTPUTDIR)\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]

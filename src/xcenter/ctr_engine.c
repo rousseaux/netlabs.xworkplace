@@ -3104,8 +3104,8 @@ VOID ctrpLoadClasses(VOID)
                     // unload the module again
                     ctrFreeModule(hmod);
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "WgtInitModule call @1 failed for plugin DLL %s."
-                              "\nDLL error msg: %s",
+                           "InitModule call (export @1) failed for plugin DLL \"%s\"."
+                              "\n    DLL returned error msg: %s",
                            szDLL,
                            szErrorMsg);
                 }
@@ -3564,10 +3564,9 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, somSelf))
     {
-        PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
-        PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
-        PXCENTERWINDATA pXCenterData = NULL;
-        PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+        PLINKLIST   pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+        PLISTNODE   pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
+        HWND        hwndXCenterClient = NULLHANDLE;
 
         if (pSettingsNode)
         {
@@ -3579,7 +3578,13 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
             {
                 // XCenter view currently open:
                 PLISTNODE pViewNode;
-                pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+
+                // store XCenter client so we can update the client
+                // at the bottom
+                hwndXCenterClient = pGlobals->hwndClient;
+
                 pViewNode = lstNodeFromIndex(&pXCenterData->llWidgets,
                                              ulIndex);
                 if (pViewNode)
@@ -3615,10 +3620,10 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
 
         } // end if (pSettingsNode)
 
-        if (pXCenterData)
+        if (hwndXCenterClient)
         {
             // we found the open view above:
-            WinPostMsg(pGlobals->hwndClient,
+            WinPostMsg(hwndXCenterClient,
                        XCM_REFORMAT,
                        (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
                        0);
@@ -4431,10 +4436,13 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // according to the class flags
                         PLISTNODE pNode;
                         TOOLINFO    ti = {0};
+                        ULONG ulStdFlags = 0;
                         if (pGlobals->ulPosition == XCENTER_BOTTOM)
-                            ti.ulFlags = TTF_CENTERABOVE | TTF_SUBCLASS;
+                            ulStdFlags =   TTF_POS_Y_ABOVE_TOOL
+                                         | TTF_SUBCLASS;
                         else
-                            ti.ulFlags = TTF_CENTERBELOW | TTF_SUBCLASS;
+                            ulStdFlags =   TTF_POS_Y_BELOW_TOOL
+                                         | TTF_SUBCLASS;
                         ti.hwndToolOwner = pGlobals->hwndClient;
                         ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
 
@@ -4447,6 +4455,12 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                             {
                                 // add tool to tooltip control
                                 ti.hwndTool = pWidgetThis->Widget.hwndWidget;
+                                ti.ulFlags = ulStdFlags;
+                                if (  (0 == (  pWidgetThis->Widget.ulClassFlags
+                                             & WGTF_TOOLTIP_AT_MOUSE)
+                                   ))
+                                    ti.ulFlags |= TTF_CENTER_X_ON_TOOL;
+
                                 WinSendMsg(pXCenterData->hwndTooltip,
                                            TTM_ADDTOOL,
                                            (MPARAM)0,

@@ -117,6 +117,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\except.h"             // exception handling
+#include "helpers\linklist.h"           // linked list helper routines
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
@@ -147,7 +148,7 @@ ULONG       G_hUpdateTimer = NULLHANDLE;
  *
  */
 
-VOID DumpAllWindows(VOID)
+/* VOID DumpAllWindows(VOID)
 {
     ULONG  usIdx;
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
@@ -168,7 +169,7 @@ VOID DumpAllWindows(VOID)
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }
-}
+} */
 
 /* ******************************************************************
  *
@@ -311,8 +312,9 @@ LONG pgmcCalcNewFrameCY(LONG cx)
 
 VOID pgmcSetPgmgFramePos(HWND hwnd)
 {
-    RECTL   rcl;
+    // RECTL   rcl;
     ULONG   flOptions;
+
     ULONG   cb = sizeof(G_swpPgmgFrame);
 
     PrfQueryProfileData(HINI_USER,
@@ -322,18 +324,24 @@ VOID pgmcSetPgmgFramePos(HWND hwnd)
                         &cb);
             // might fail
 
-    rcl.xLeft   = G_swpPgmgFrame.x;
+    /* rcl.xLeft   = G_swpPgmgFrame.x;
     rcl.yBottom = G_swpPgmgFrame.y;
     rcl.xRight  = G_swpPgmgFrame.cx + G_swpPgmgFrame.x;
-    rcl.yTop    = G_swpPgmgFrame.cy + G_swpPgmgFrame.y;
+    rcl.yTop    = G_swpPgmgFrame.cy + G_swpPgmgFrame.y; */
 
     flOptions = SWP_MOVE | SWP_SIZE
                     | SWP_SHOW; // V0.9.4 (2000-07-10) [umoeller]
 
     WinSetWindowPos(hwnd,
                     NULLHANDLE,
-                    rcl.xLeft, rcl.yBottom,
-                    (rcl.xRight - rcl.xLeft), (rcl.yTop - rcl.yBottom),
+                    G_swpPgmgFrame.x,
+                    G_swpPgmgFrame.y,
+                    G_swpPgmgFrame.cx,
+                    G_swpPgmgFrame.cy,
+                    /* rcl.xLeft,
+                    rcl.yBottom,
+                    (rcl.xRight - rcl.xLeft),
+                    (rcl.yTop - rcl.yBottom), */
                     flOptions);
 
     if (G_pHookData->PageMageConfig.fFlash)
@@ -386,11 +394,34 @@ typedef struct _PAGEMAGECLIENTDATA
                 // if this is set to TRUE, hbmClient is invalidated
                 // on the next paint.
 
+    CHAR        szFaceName[PGMG_TEXTLEN];
+                // font face name
+
     // saved window handles for titlebar etc. changes:
     HWND        hwndSaveSysMenu,
                 hwndSaveTitlebar,
                 hwndSaveMinButton;
 } PAGEMAGECLIENTDATA, *PPAGEMAGECLIENTDATA;
+
+/*
+ *@@ MINIWINDOW:
+ *      representation of a WININFO entry in the
+ *      PageMage client. An array of these is built
+ *      in UpdateClientBitmap.
+ *
+ *@@added V0.9.7 (2001-01-21) [umoeller]
+ */
+
+typedef struct _MINIWINDOW
+{
+    HWND            hwnd;           // window handle
+
+    POINTL          ptlBegin,
+                    ptlEnd;         // calculated rectangle for mini window
+
+    PPGMGWININFO    pWinInfo;       // ptr to PGMGWININFO this item
+                                    // represents; always valid
+} MINIWINDOW, *PMINIWINDOW;
 
 /*
  *@@ UpdateClientBitmap:
@@ -410,6 +441,8 @@ typedef struct _PAGEMAGECLIENTDATA
  *@@changed V0.9.4 (2000-08-08) [umoeller]: added special maximized window handling
  *@@changed V0.9.7 (2001-01-18) [umoeller]: changed prototype
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed a serialization problem
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: now using linked list for wininfos
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: largely rewritten for speed
  */
 
 VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
@@ -420,10 +453,6 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
     SWP             swpClient;
 
     ULONG           usIdx;
-    SHORT           sIdx;
-    HWND            hwndLocalActive;
-    float           fScale_X,
-                    fScale_Y;
 
     // shortcuts to global pagemage config
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
@@ -436,7 +465,12 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
     G_szlEachDesktopInClient.cy = (pszlClient->cy - pptlMaxDesktops->y + 1)
                                    / pptlMaxDesktops->y;
 
-    // draw main box - all Desktops
+    /*
+     *   (1) entire-client painting
+     *
+     */
+
+    // draw main box - all Desktops:
     GpiSetColor(hpsMem, pPageMageConfig->lcNormal);
     ptlDest.x = ptlDest.y = 0;
     GpiMove(hpsMem, &ptlDest);
@@ -445,7 +479,7 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
     ptlDest.y = swpClient.cy;
     GpiBox(hpsMem, DRO_OUTLINEFILL, &ptlDest, (LONG) 0, (LONG) 0);
 
-    // paint "Current" Desktop
+    // paint "current" desktop in different color
     GpiSetColor(hpsMem, pPageMageConfig->lcCurrent);
     ptlDest.x = ( (float) G_ptlCurrPos.x / (float) G_szlEachDesktopReal.cx)
                 * ((float) G_szlEachDesktopInClient.cx + 1)
@@ -493,195 +527,247 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
         GpiLine(hpsMem, &ptlDest);
     }
 
-    // paint boxes - visible, standard windows
+    /*
+     *   (2) paint mini-windows
+     *
+     */
+
     if (pPageMageConfig->fMirrorWindows)
     {
-        HENUM           henum;
-        HWND            hwndThis;
-        RECTL           rclText;
-        BOOL            fNeedRescan = FALSE;
-
-        HWND            hwndPaint[MAX_WINDOWS] = {0};
-                // array of windows to be painted; this is filled here
-        POINTL          ptlBegin[MAX_WINDOWS],
-                        ptlFin[MAX_WINDOWS];
-        ULONG           usPaintCount = 0;
-
-        // set font to use; this font has been created on startup
-        GpiSetCharSet(hpsMem, LCID_PAGEMAGE_FONT);
-
-        usIdx = 0;
-        fScale_X = (float) ( pptlMaxDesktops->x
-                             * G_szlEachDesktopReal.cx
-                           ) / pszlClient->cx;
-        fScale_Y = (float) ( pptlMaxDesktops->y
-                             * G_szlEachDesktopReal.cy
-                           ) / pszlClient->cy;
-
-        hwndLocalActive = WinQueryActiveWindow(HWND_DESKTOP);
-
-        // enumerate Desktop windows; this is needed
-        // because our internal list doesn't have the
-        // Z-order right
-        henum = WinBeginEnumWindows(HWND_DESKTOP);
-        while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
+        // lock the window list all the while we're doing this
+        // V0.9.7 (2001-01-21) [umoeller]
+        if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+                == NO_ERROR)
         {
-            BOOL            fPaint = TRUE;
+            ULONG           cWinInfos = lstCountItems(&G_llWinInfos);
 
-            if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
-                    == NO_ERROR)
+            // PHWND           pahwndPaint[MAX_WINDOWS] =
+
+            _Pmpf(("Got %d wininfos.", cWinInfos));
+
+            if (cWinInfos)
             {
-                // go thru local list and find the
-                // current enumeration window
-                for (usIdx = 0;
-                     usIdx < G_usWindowCount;
-                     usIdx++)
+                // allocate array of windows to be painted...
+                // we fill this while enumerating Desktop windows,
+                // which is needed for two reasons:
+                // 1)   our internal list doesn't have the Z-order right;
+                // 2)   WinBeginEnumWindows enumerates the windows from top
+                //      to bottom, so we need to paint them in reverse order
+                //      because the topmost window must be painted last
+
+                // we use as many entries as are on the main
+                // WININFO list to be on the safe side, but
+                // not all will be used
+                PMINIWINDOW     paMiniWindows
+                    = (PMINIWINDOW)malloc(cWinInfos * sizeof(MINIWINDOW));
+                if (paMiniWindows)
                 {
-                    PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
-                    if (pEntryThis->hwnd == hwndThis)
+                    ULONG           cMiniWindowsUsed = 0;
+
+                    HENUM           henum;
+                    HWND            hwndThis;
+                    BOOL            fNeedRescan = FALSE;
+
+                    float           fScale_X,
+                                    fScale_Y;
+
+                    memset(paMiniWindows, 0, cWinInfos * sizeof(MINIWINDOW));
+
+                    // set font to use; this font has been created on startup
+                    GpiSetCharSet(hpsMem, LCID_PAGEMAGE_FONT);
+
+                    usIdx = 0;
+                    fScale_X = (float) ( pptlMaxDesktops->x
+                                         * G_szlEachDesktopReal.cx
+                                       ) / pszlClient->cx;
+                    fScale_Y = (float) ( pptlMaxDesktops->y
+                                         * G_szlEachDesktopReal.cy
+                                       ) / pszlClient->cy;
+
+                    // start enum
+                    henum = WinBeginEnumWindows(HWND_DESKTOP);
+                    while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
                     {
-                        SWP  swpBox;
-                        WinQueryWindowPos(pEntryThis->hwnd, &swpBox);
-                        // update window pos in window list
-                        WinQueryWindowPos(pEntryThis->hwnd,
-                                          &pEntryThis->swp);
+                        BOOL            fPaint = TRUE;
 
-                        fPaint = TRUE;
+                        // go thru local list and find the
+                        // current enumeration window
+                        PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwndThis,
+                                                                NULL);
 
-                        if (pEntryThis->bWindowType == WINDOW_RESCAN)
+                        if (pWinInfo)
                         {
-                            // window is not in switchlist:
-                            // rescan
-                            if (!pgmwGetWinInfo(pEntryThis->hwnd,
-                                                &G_MainWindowList[usIdx]))
-                                fNeedRescan = TRUE;
-                        }
-                        else
-                        {
-                            // paint window only if it's "normal" and visible
-                            if (    (pEntryThis->bWindowType != WINDOW_NORMAL)
-                                 && (pEntryThis->bWindowType != WINDOW_MAXIMIZE)
-                               )
-                                // window not visible or special window:
-                                // don't paint
-                                fPaint = FALSE;
-                        }
+                            // item is on list:
+                            // update window pos in window list
+                            WinQueryWindowPos(pWinInfo->hwnd,
+                                              &pWinInfo->swp);
 
-                        /* if (pEntryThis->bMaximizedAndHiddenByUs)
-                            // hidden and maximized by us:
                             fPaint = TRUE;
-                        else */ if (!WinIsWindowVisible(pEntryThis->hwnd))
-                            fPaint = FALSE;
 
-                        if (fPaint)
-                        {
-                            hwndPaint[usPaintCount] = pEntryThis->hwnd;
+                            if (pWinInfo->bWindowType == WINDOW_RESCAN)
+                            {
+                                // window wasn't fully scanned: rescan
+                                if (!pgmwFillWinInfo(pWinInfo->hwnd,
+                                                     pWinInfo))
+                                    fNeedRescan = TRUE;
+                            }
+                            else
+                            {
+                                // paint window only if it's "normal" and visible
+                                if (    (pWinInfo->bWindowType != WINDOW_NORMAL)
+                                     && (pWinInfo->bWindowType != WINDOW_MAXIMIZE)
+                                   )
+                                    // window not visible or special window:
+                                    // don't paint
+                                    fPaint = FALSE;
+                            }
 
-                            ptlBegin[usPaintCount].x = (swpBox.x + G_ptlCurrPos.x)
-                                                       / fScale_X;
-                            ptlBegin[usPaintCount].y = (  (pptlMaxDesktops->y - 1)
-                                                         * G_szlEachDesktopReal.cy
-                                                         - G_ptlCurrPos.y + swpBox.y
-                                                        )
-                                                        / fScale_Y;
-                            ptlFin[usPaintCount].x = (swpBox.x + swpBox.cx + G_ptlCurrPos.x)
-                                                      / fScale_X - 1;
-                            ptlFin[usPaintCount].y = (    (pptlMaxDesktops->y - 1)
-                                                          * G_szlEachDesktopReal.cy
-                                                          - G_ptlCurrPos.y + swpBox.y + swpBox.cy
-                                                       )
-                                                       / fScale_Y - 1;
-                            usPaintCount++;
-                        }
-                    }
-                }
+                            if (!WinIsWindowVisible(pWinInfo->hwnd))
+                                fPaint = FALSE;
 
-                // done collecting windows, we can release
-                // the list now
-                DosReleaseMutexSem(G_hmtxWindowList);
-            }
-        } // end while WinGetNextWindow()
-        WinEndEnumWindows(henum);
+                            if (fPaint)
+                            {
+                                // this window is to be painted:
+                                // use a new item on the MINIWINDOW
+                                // array then and calculate the
+                                // mapping of the mini window
 
-        // now paint
+                                PMINIWINDOW pMiniWindowThis
+                                    = &paMiniWindows[cMiniWindowsUsed++];
 
-        sIdx = usPaintCount - 1;
-        // _Pmpf(("Painting %d windows", usPaintCount));
-        while (sIdx >= 0)
-        {
-            if (hwndPaint[sIdx] == hwndLocalActive)
-                GpiSetColor(hpsMem, pPageMageConfig->lcCurrentApp);
-            else
-                GpiSetColor(hpsMem, pPageMageConfig->lcNormalApp);
+                                PSWP pswp = &pWinInfo->swp;
 
-            GpiMove(hpsMem, &(ptlBegin[sIdx]));
-            GpiBox(hpsMem, DRO_FILL, &(ptlFin[sIdx]), (LONG) 0, (LONG) 0);
-            GpiSetColor(hpsMem, pPageMageConfig->lcAppBorder);
-            GpiBox(hpsMem, DRO_OUTLINE, &(ptlFin[sIdx]), (LONG) 0, (LONG) 0);
-            rclText.xLeft = ptlBegin[sIdx].x + 1;
-            rclText.yBottom = ptlBegin[sIdx].y + 1;
-            rclText.xRight = ptlFin[sIdx].x - 1;
-            rclText.yTop = ptlFin[sIdx].y - 4;
+                                // store WININFO ptr; we hold the winlist
+                                // locked all the time, so this is safe
+                                pMiniWindowThis->pWinInfo = pWinInfo;
 
-            // draw window text too?
-            if (pPageMageConfig->fShowWindowText)
-            {
-                if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
-                        == NO_ERROR)
-                {
-                    PSZ     pszWindowName = NULL;
-                    LONG    lTextColor;
+                                pMiniWindowThis->hwnd = hwndThis;
 
-                    for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+                                pMiniWindowThis->ptlBegin.x
+                                    =   (pswp->x + G_ptlCurrPos.x)
+                                      / fScale_X;
+
+                                pMiniWindowThis->ptlBegin.y
+                                    = (   (pptlMaxDesktops->y - 1)
+                                        * G_szlEachDesktopReal.cy
+                                        - G_ptlCurrPos.y + pswp->y
+                                      )
+                                      / fScale_Y;
+
+                                pMiniWindowThis->ptlEnd.x
+                                    =   (pswp->x + pswp->cx + G_ptlCurrPos.x)
+                                      / fScale_X - 1;
+
+                                pMiniWindowThis->ptlEnd.y
+                                    = (    (pptlMaxDesktops->y - 1)
+                                         * G_szlEachDesktopReal.cy
+                                         - G_ptlCurrPos.y + pswp->y + pswp->cy
+                                      )
+                                      / fScale_Y - 1;
+
+                            } // end if (fPaint)
+                        } // end if (pEntryThis)
+                    } // end while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
+                    WinEndEnumWindows(henum);
+
+                    // now paint
+
+                    if (cMiniWindowsUsed)
                     {
-                        PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
+                        // we got something to paint:
+                        // paint the mini windows in reverse order then
+                        // (bottom to top)
 
-                        if (pEntryThis->hwnd == hwndPaint[sIdx])
+                        HWND hwndLocalActive = WinQueryActiveWindow(HWND_DESKTOP);
+
+                        // start with the last one
+                        LONG lIdx = cMiniWindowsUsed - 1;
+
+                        _Pmpf(("Got %d mini windows.", cMiniWindowsUsed));
+
+                        while (lIdx >= 0)
                         {
-                            if (pEntryThis->szSwitchName[0] != 0)
-                                pszWindowName = pEntryThis->szSwitchName;
+                            PMINIWINDOW pMiniWindowThis = &paMiniWindows[lIdx];
 
-                            break;
+                            _Pmpf(("Painting miniwin %d", lIdx));
+
+                            if (pMiniWindowThis->hwnd == hwndLocalActive)
+                                // this is the active window:
+                                GpiSetColor(hpsMem, pPageMageConfig->lcCurrentApp);
+                            else
+                                GpiSetColor(hpsMem, pPageMageConfig->lcNormalApp);
+
+                            GpiMove(hpsMem,
+                                    &pMiniWindowThis->ptlBegin);
+                            GpiBox(hpsMem,
+                                   DRO_FILL,
+                                   &(pMiniWindowThis->ptlEnd),
+                                   0, 0);
+                            GpiSetColor(hpsMem,
+                                        pPageMageConfig->lcAppBorder);
+                            GpiBox(hpsMem,
+                                   DRO_OUTLINE,
+                                   &pMiniWindowThis->ptlEnd,
+                                   0, 0);
+
+                            // draw window text too?
+                            if (    (pPageMageConfig->fShowWindowText)
+                                 && (pMiniWindowThis->pWinInfo)
+                               )
+                            {
+                                PSZ pszSwitchName
+                                    = pMiniWindowThis->pWinInfo->szSwitchName;
+                                RECTL   rclText;
+                                LONG    lTextColor;
+
+                                rclText.xLeft = pMiniWindowThis->ptlBegin.x + 1;
+                                rclText.yBottom = pMiniWindowThis->ptlBegin.y + 1;
+                                rclText.xRight = pMiniWindowThis->ptlEnd.x - 1;
+                                rclText.yTop = pMiniWindowThis->ptlEnd.y - 4;
+
+                                if (pMiniWindowThis->hwnd == hwndLocalActive)
+                                    // active:
+                                    lTextColor = pPageMageConfig->lcTxtCurrentApp;
+                                else
+                                    lTextColor = pPageMageConfig->lcTxtNormalApp;
+
+                                WinDrawText(hpsMem,
+                                            strlen(pszSwitchName),
+                                            pszSwitchName,
+                                            &rclText,
+                                            lTextColor,
+                                            (LONG)0,
+                                            DT_LEFT | DT_TOP /* | DT_WORDBREAK */);
+
+                            } // end if (    (pPageMageConfig->fShowWindowText) ...
+
+                            // go back in mini windows list
+                            lIdx--;
+                        } // end while (ulIdx >= 0)
+
+                        // if we've found any windows with WINDOW_RESCAN set,
+                        // go rescan all windows later
+                        if (fNeedRescan)
+                        {
+                            WinPostMsg(G_pHookData->hwndPageMageClient,
+                                       PGMG_WNDRESCAN,
+                                       MPVOID,
+                                       MPVOID);
                         }
-                    }
 
-                    // moved this inside the mutex block V0.9.7 (2001-01-18) [umoeller]
-                    if (pszWindowName)
-                    {
-                        if (hwndPaint[sIdx] == hwndLocalActive)
-                            // active:
-                            lTextColor = pPageMageConfig->lcTxtCurrentApp;
-                        else
-                            lTextColor = pPageMageConfig->lcTxtNormalApp;
+                    } // end if (cMiniWindowsUsed)
 
-                        WinDrawText(hpsMem,
-                                    strlen(pszWindowName),
-                                    pszWindowName,
-                                    &rclText,
-                                    lTextColor,
-                                    (LONG)0,
-                                    DT_LEFT | DT_TOP /* | DT_WORDBREAK */);
-                    }
-                    // end move V0.9.7 (2001-01-18) [umoeller]
+                    free(paMiniWindows);
 
-                    DosReleaseMutexSem(G_hmtxWindowList);
-                }
-            }
-            sIdx--;
-        }
+                } // end if (paMiniWindows)
+            } // if (cWinInfos)
+
+            DosReleaseMutexSem(G_hmtxWindowList);
+        } // end if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
 
         // unset font so we can delete it if it changes
         GpiSetCharSet(hpsMem, LCID_DEFAULT);
         // GpiDeleteSetId(hps, LCID_FONT); */
-
-        if (fNeedRescan)
-        {
-            // _Pmpf(("UpdateClientBitmap: posting rescan"));
-            WinPostMsg(G_pHookData->hwndPageMageClient,
-                       PGMG_WNDRESCAN,
-                       MPVOID,
-                       MPVOID);
-        }
     } // bShowWindows
 } // PaintProc
 
@@ -801,6 +887,9 @@ VOID ClientCreate(HWND hwnd,
                       - pPageMageConfig->ptlStartDesktop.y
                      ) * G_szlEachDesktopReal.cy;
 
+    strcpy(pClientData->szFaceName, "2.System VIO");
+                // ###
+
     WinPostMsg(hwnd,
                PGMG_ZAPPO,
                // frame initially has title bar; so if this is
@@ -874,10 +963,10 @@ VOID ClientPresParamChanged(HWND hwnd,
                           sizeof(szLocFacename), &szLocFacename,
                           0);
         _Pmpf(("New facename: %s", szLocFacename));
-        if (strcmp(G_szFacename, szLocFacename))
+        if (strcmp(pClientData->szFaceName, szLocFacename))
         {
             G_bConfigChanged = TRUE;
-            strcpy(G_szFacename, szLocFacename);
+            strcpy(pClientData->szFaceName, szLocFacename);
         }
 
         // get the font metrics of the current window
@@ -982,8 +1071,8 @@ VOID ClientSize(HWND hwnd,
 
             // set font; this creates a logical font in WM_PRESPARAMSCHANGED (below)
             WinSetPresParam(hwnd, PP_FONTNAMESIZE,
-                            strlen(G_szFacename) + 1,
-                            G_szFacename);
+                            strlen(pClientData->szFaceName) + 1,
+                            pClientData->szFaceName);
         }
         else
         {
@@ -1172,6 +1261,16 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                */
 
             /*
+             * WM_FOCUSCHANGE:
+             *      the default winproc forwards this to the
+             *      frame. This is not what we want. We never
+             *      want the focus, no matter what.
+             */
+
+            case WM_FOCUSCHANGE:
+            break;
+
+            /*
              * WM_PRESPARAMCHANGED:
              *
              */
@@ -1209,9 +1308,9 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 mrc = ClientButtonClick(hwnd, msg, mp1);
             break;
 
-            case WM_BUTTON2DBLCLK:
+            /* case WM_BUTTON2DBLCLK:
                 DumpAllWindows();
-            break;
+            break; */
 
             /*
              * WM_BUTTON2MOTIONSTART:
@@ -1302,7 +1401,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                         WinInvalidateRect(hwnd, NULL, TRUE);
                     break;
 
-                    case 2:     // flash timer started by fntMoveQueueThread
+                    case 2:     // flash timer started by fntMoveThread
                         WinShowWindow(G_pHookData->hwndPageMageFrame, FALSE);
                 }
             break; }
@@ -1353,15 +1452,18 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 switch (LONGFROMMP(mp2))
                 {
                     case WM_CREATE:
-                        pgmwWindowListAdd(hwndChanged);
-                        break;
+                        pgmwAppendNewWinInfo(hwndChanged);
+                    break;
+
                     case WM_DESTROY:
-                        pgmwWindowListDelete(hwndChanged);
-                        break;
+                        pgmwDeleteWinInfo(hwndChanged);
+                    break;
+
                     case WM_SETWINDOWPARAMS: // V0.9.7 (2001-01-15) [dk]
-                        pgmwWindowListUpdate(hwndChanged);
-                        break;
+                        pgmwUpdateWinInfo(hwndChanged);
+                    break;
                 }
+
                 // _Pmpf(("PGMG_WNDCHANGE, posting PGMG_REDRAW"));
                 WinPostMsg(hwnd,
                            PGMG_INVALIDATECLIENT,
@@ -1388,7 +1490,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
             /*
              *@@ PGMG_CHANGEACTIVE:
-             *      posted only by fntMoveQueueThread when
+             *      posted only by fntMoveThread when
              *      PGMGQ_CLICK2ACTIVATE was retrieved from
              *      the "move" queue. This happens as a
              *      response to mb1 or mb2 clicks.
@@ -1419,7 +1521,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
             /*
              *@@ PGMG_LOWERWINDOW:
-             *      posted only by fntMoveQueueThread when
+             *      posted only by fntMoveThread when
              *      PGMGQ_CLICK2LOWER was retrieved from
              *      the "move" queue.
              *
@@ -1491,8 +1593,26 @@ MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
             if (G_pHookData->PageMageConfig.fPreserveProportions)
                 pswp->cy = pgmcCalcNewFrameCY(pswp->cx);
 
+            // we never want to become active:
+            if (pswp->fl & SWP_ACTIVATE)
+            {
+                pswp->fl &= ~SWP_ACTIVATE;
+                pswp->fl |= SWP_DEACTIVATE;
+            }
+
             mrc = G_pfnOldFrameWndProc(hwnd, msg, mp1, mp2);
         break; }
+
+        /*
+         * WM_FOCUSCHANGE:
+         *      the standard frame window proc sends out a
+         *      flurry of WM_SETFOCUS and WM_ACTIVATE
+         *      messages. We never want to get the focus,
+         *      no matter what.
+         */
+
+        case WM_FOCUSCHANGE:
+        break;
 
         /*
          * WM_TRACKFRAME:

@@ -39,7 +39,9 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-BASE_OUTPUTDIR = ..\..\bin
+BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
+!if [@echo       BASE_OUTPUTDIR is $(BASE_OUTPUTDIR)]
+!endif
 EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 
 # create output directory
@@ -112,18 +114,18 @@ MYOWNINC = $(INC)\hook
 
 $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\threads.h \
+        $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
         $(INC)\shared\kernel.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_control.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h \
+        $(HLPINC)\except.h $(HLPINC)\linklist.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\threads.h \
+        $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
@@ -132,7 +134,7 @@ $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
 
 $(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\shapewin.h \
+        $(HLPINC)\linklist.h $(HLPINC)\shapewin.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico $(@B).rc

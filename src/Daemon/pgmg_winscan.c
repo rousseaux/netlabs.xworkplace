@@ -31,6 +31,7 @@
 
 #include "setup.h"                      // code generation and debugging options
 
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\shapewin.h"           // shaped windows;
                                         // only needed for the window class names
 
@@ -38,93 +39,209 @@
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
 
+/* ******************************************************************
+ *
+ *   PGMGWININFO list maintenance
+ *
+ ********************************************************************/
+
 /*
- *@@ pgmwGetHWNDInfo:
- *      analyzes the specified window and
- *      stores the result in *phl.
+ *@@ pgmwFindWinInfo:
+ *      returns the PGMGWININFO for hwndThis from
+ *      the global linked list or NULL if no item
+ *      exists for that window.
+ *
+ *      If ppListNode is != NULL, it receives a
+ *      pointer to the LISTNODE representing that
+ *      item (in case you want to quickly free it).
+ *
+ *      Preconditions:
+ *
+ *      --  The caller must lock the list first.
+ *
+ *@@added V0.9.7 (2001-01-21) [umoeller]
+ */
+
+PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
+                             PVOID *ppListNode)
+{
+    PPGMGWININFO pReturn = NULL;
+
+    PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
+    while (pNode)
+    {
+        PPGMGWININFO pWinInfo = (PPGMGWININFO)pNode->pItemData;
+        if (pWinInfo->hwnd == hwndThis)
+        {
+            pReturn = pWinInfo;
+            break;
+        }
+
+        pNode = pNode->pNext;
+    }
+
+    return (pReturn);
+}
+
+/*
+ *@@ pgmwClearWinInfos:
+ *      clears the global list of PGMGWININFO entries.
+ *
+ *      Preconditions:
+ *
+ *      --  The caller must lock the list first.
+ *
+ *@@added V0.9.7 (2001-01-21) [umoeller]
+ */
+
+VOID pgmwClearWinInfos(VOID)
+{
+    // now clear the list... it's in auto-free mode,
+    // so this will clear the WININFO structs as well
+    lstClear(&G_llWinInfos);
+}
+
+/* ******************************************************************
+ *
+ *   Window analysis, exported interfaces
+ *
+ ********************************************************************/
+
+/*
+ *@@ pgmwFillWinInfo:
+ *      analyzes the specified window and stores the
+ *      results in *pWinInfo.
+ *
+ *      This does not allocate a new PGMGWININFO.
+ *      Use pgmwAppendNewWinInfo for that, which
+ *      calls this function in turn.
  *
  *      Returns TRUE if the specified window data was
- *      returned.
+ *      returned and maybe memory was allocated.
+ *
+ *      If this returns FALSE, the window either
+ *      does not exist or is considered irrelevant
+ *      for PageMage. This function excludes a number
+ *      of window classes from the window list in
+ *      order not to pollute anything.
+ *      In that case, no memory was allocated.
+ *
+ *      Preconditions:
+ *
+ *      -- If pWinInfo is one of the items on the global
+ *         linked list, the caller must lock the list
+ *         before calling this.
+ *
+ *      -- If the pWinInfo has not been used before, the
+ *         caller must zero all fields, or this func will
+ *         attempt to free the strings in there.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-08-08) [umoeller]: removed "special" windows; now ignoring ShapeWin windows
  */
 
-BOOL pgmwGetWinInfo(HWND hwnd,          // in: window to test
-                    PGMGLISTENTRY *phl) // out: window info
+BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
+                     PPGMGWININFO pWinInfo)  // out: window info
 {
     BOOL    brc = FALSE;
 
+    memset(pWinInfo, 0, sizeof(PGMGWININFO));
+
     if (WinIsWindow(G_habDaemon, hwnd))
     {
-        HSWITCH     hswitch;
+        pWinInfo->hwnd = hwnd;
+        WinQueryWindowProcess(hwnd, &pWinInfo->pid, &pWinInfo->tid);
 
-        ULONG       pidPM;      // process ID of first PMSHELL.EXE process
-        WinQueryWindowProcess(HWND_DESKTOP, &pidPM, NULL);
+        // get PM winclass and create a copy string
+        WinQueryClassName(hwnd,
+                          sizeof(pWinInfo->szClassName),
+                          pWinInfo->szClassName);
 
-        phl->hwnd = hwnd;
-        WinQueryWindowProcess(hwnd, &phl->pid, &phl->tid);
-        WinQueryClassName(hwnd, sizeof(phl->szClassName), phl->szClassName);
+        WinQueryWindowPos(hwnd, &pWinInfo->swp);
 
-        WinQueryWindowPos(hwnd, &phl->swp);
-
-        phl->szSwitchName[0] = 0;
-
-        brc = TRUE;
+        brc = TRUE;     // can be changed again
 
         // excludes invisible "Alt-Tab" window (Warp 4):
-        if (phl->pid)
+        if (pWinInfo->pid)
         {
-            if (phl->pid == G_pidDaemon)
+            if (pWinInfo->pid == G_pidDaemon)
                 // belongs to PageMage:
-                phl->bWindowType = WINDOW_PAGEMAGE;
+                pWinInfo->bWindowType = WINDOW_PAGEMAGE;
             else if (hwnd == G_pHookData->hwndWPSDesktop)
                 // WPS Desktop window:
-                phl->bWindowType = WINDOW_WPSDESKTOP;
+                pWinInfo->bWindowType = WINDOW_WPSDESKTOP;
             else
+            {
+                const char *pcszClassName = pWinInfo->szClassName;
                 if (   // not PM Desktop child?
-                        (!WinIsChild(phl->hwnd, HWND_DESKTOP))
-                     || (strcmp(phl->szClassName, "#32765") == 0)
+                        (!WinIsChild(pWinInfo->hwnd, HWND_DESKTOP))
+                     || (strcmp(pcszClassName, "#32765") == 0)
                             // PM "Icon title" class
-                     || (strcmp(phl->szClassName, "AltTabWindow") == 0)
+                     || (strcmp(pcszClassName, "AltTabWindow") == 0)
                             // Warp 4 "Alt tab" window; this always exists,
                             // but is hidden most of the time
-                     || (strcmp(phl->szClassName, "#4") == 0)
+                     || (strcmp(pcszClassName, "#4") == 0)
                             // menu, always ignore those
-                     || (strcmp(phl->szClassName, WC_SHAPE_WINDOW) == 0)
-                     || (strcmp(phl->szClassName, WC_SHAPE_REGION) == 0)
+                     || (strcmp(pcszClassName, WC_SHAPE_WINDOW) == 0)
+                     || (strcmp(pcszClassName, WC_SHAPE_REGION) == 0)
                             // ignore shaped windows (src\helpers\shapewin.c)
                    )
                     brc = FALSE;
                 else
                 {
-                    phl->bWindowType = WINDOW_NORMAL;
+                    HSWITCH hswitch = WinQuerySwitchHandle(hwnd, 0);
 
-                    hswitch = WinQuerySwitchHandle(hwnd, 0);
+                    pWinInfo->bWindowType = WINDOW_NORMAL;
+
                     if (hswitch == NULLHANDLE)
                     {
-                        phl->bWindowType = WINDOW_RESCAN;
+                        pWinInfo->bWindowType = WINDOW_RESCAN;
                     }
                     else
                     {
                         SWCNTRL     swctl;
+
                         // window is in tasklist:
                         WinQuerySwitchEntry(hswitch, &swctl);
-                        strcpy(phl->szSwitchName, swctl.szSwtitle);
 
-                        if (phl->swp.fl & SWP_MINIMIZE)
-                            phl->bWindowType = WINDOW_MINIMIZE;
-                        else if (phl->swp.fl & SWP_MAXIMIZE)
-                            phl->bWindowType = WINDOW_MAXIMIZE;
-                        else if (pgmwStickyCheck(/* phl->szWindowName, */ phl->szSwitchName))
-                            phl->bWindowType = WINDOW_STICKY;
+                        if (swctl.szSwtitle[0])
+                            strncpy(pWinInfo->szSwitchName,
+                                    swctl.szSwtitle,
+                                    sizeof(pWinInfo->szSwitchName) - 1);
+                        // strcpy(pWinInfo->szSwitchName, swctl.szSwtitle);
 
-                        /* if (phl->bWindowType != WINDOW_MAXIMIZE)
-                            // V0.9.7 (2001-01-18) [umoeller]
-                            phl->bMaximizedAndHiddenByUs = FALSE; */
+                        if (pWinInfo->swp.fl & SWP_MINIMIZE)
+                            pWinInfo->bWindowType = WINDOW_MINIMIZE;
+                        else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
+                            pWinInfo->bWindowType = WINDOW_MAXIMIZE;
+                        else if (pgmwStickyCheck(swctl.szSwtitle))
+                            pWinInfo->bWindowType = WINDOW_STICKY;
                     }
                 }
+            }
         }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ pgmwWinInfosEqual:
+ *      compares two wininfos and returns TRUE
+ *      if they are about the same.
+ *
+ *@@added V0.9.7 (2001-01-21) [umoeller]
+ */
+
+BOOL pgmwWinInfosEqual(PPGMGWININFO pWinInfo1,
+                       PPGMGWININFO pWinInfo2)
+{
+    BOOL brc = FALSE;
+    if (    (pWinInfo1->bWindowType == pWinInfo2->bWindowType)
+         && (0 == memcmp(&pWinInfo1->swp, &pWinInfo2->swp, sizeof(SWP)))
+       )
+    {
+        brc = (0 == strcmp(pWinInfo2->szSwitchName, pWinInfo2->szSwitchName));
     }
 
     return (brc);
@@ -139,6 +256,7 @@ BOOL pgmwGetWinInfo(HWND hwnd,          // in: window to test
  *      time.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
  */
 
 VOID pgmwScanAllWindows(VOID)
@@ -151,35 +269,38 @@ VOID pgmwScanAllWindows(VOID)
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
             == NO_ERROR)
     {
-        G_usWindowCount = 0;
-        memset(G_MainWindowList, 0, sizeof(G_MainWindowList));
+        pgmwClearWinInfos();
+
         heScan = WinBeginEnumWindows(HWND_DESKTOP);
         while ((hwndTemp = WinGetNextWindow(heScan)) != NULLHANDLE)
         {
             // next window found:
-            // store in list
-            if (pgmwGetWinInfo(hwndTemp, &G_MainWindowList[G_usWindowCount]))
+            // create a temporary WININFO struct here... this will
+            // allocate the PSZ's in that struct, which we can
+            // then copy
+            PGMGWININFO WinInfoTemp;
+            memset(&WinInfoTemp, 0, sizeof(WinInfoTemp));
+            if (pgmwFillWinInfo(hwndTemp, &WinInfoTemp))
             {
-                // window found:
-                _Pmpf(("Test %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
+                // window found and strings allocated maybe:
+                // append this thing to the list
+
+                PPGMGWININFO pNew = (PPGMGWININFO)malloc(sizeof(PGMGWININFO));
+                if (pNew)
+                {
+                    memcpy(pNew, &WinInfoTemp, sizeof(PGMGWININFO));
+                    lstAppendItem(&G_llWinInfos, pNew);
+                }
+
+                /* _Pmpf(("Test %d: hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
                        G_usWindowCount,
                        G_MainWindowList[G_usWindowCount].hwnd,
                        G_MainWindowList[G_usWindowCount].szSwitchName,
                        G_MainWindowList[G_usWindowCount].szClassName,
                        G_MainWindowList[G_usWindowCount].pid,
                        G_MainWindowList[G_usWindowCount].pid,
-                       G_MainWindowList[G_usWindowCount].bWindowType));
+                       G_MainWindowList[G_usWindowCount].bWindowType)); */
 
-                // advance offset
-                G_usWindowCount++;
-                if (G_usWindowCount == MAX_WINDOWS)
-                {
-                    // array full:
-                    WinPostMsg(G_pHookData->hwndDaemonObject,
-                               XDM_PGMGWINLISTFULL,
-                               0, 0);
-                    break;
-                }
             }
         }
         WinEndEnumWindows(heScan);
@@ -196,76 +317,76 @@ VOID pgmwScanAllWindows(VOID)
 }
 
 /*
- *@@ pgmwWindowListAdd:
+ *@@ pgmwAppendNewWinInfo:
  *      adds a new window to our window list.
+ *
  *      Called upon PGMG_WNDCHANGE in fnwpPageMageClient.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
  */
 
-VOID pgmwWindowListAdd(HWND hwnd)
+VOID pgmwAppendNewWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
             == NO_ERROR)
     {
+        PPGMGWININFO pWinInfo = NULL;
+        BOOL fAppend = FALSE;
+
         // check if we have an entry for this window already
-        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
-            if (G_MainWindowList[usIdx].hwnd == hwnd)
-                break;
+        pWinInfo = pgmwFindWinInfo(hwnd, NULL);
 
-        do {
-            if (usIdx == G_usWindowCount)
-            {
-                // no, we need a new entry:
-                if (G_usWindowCount < MAX_WINDOWS)
-                    G_usWindowCount++;
-                else
-                {
-                    // window list is full:
-                    WinPostMsg(G_pHookData->hwndDaemonObject,
-                               XDM_PGMGWINLISTFULL,
-                               0, 0);
-                    break;
-                }
-            }
+        if (!pWinInfo)
+        {
+            // not yet in list: create a new one
+            pWinInfo = (PPGMGWININFO)malloc(sizeof(PGMGWININFO));
+            memset(pWinInfo, 0, sizeof(PGMGWININFO));
+            fAppend = TRUE;
+        }
+        // else already present: refresh that one then
 
-            pgmwGetWinInfo(hwnd, &G_MainWindowList[usIdx]);
-            _Pmpf((__FUNCTION__ ": got new window %s",
-                        G_MainWindowList[usIdx].szClassName));
-            if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
-                _Pmpf(("----> warning: has RESCAN set."));
-        } while (FALSE);
+        pgmwFillWinInfo(hwnd, pWinInfo);
 
-        /* if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
-            WinPostMsg(G_pHookData->hwndPageMageClient,
-                       PGMG_WNDCHANGE,
-                       MPFROMHWND(hwnd),
-                       MPFROMLONG(WM_CREATE)); */
+        if (fAppend)
+            lstAppendItem(&G_llWinInfos, pWinInfo);
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }
 }
 
 /*
- *@@ pgmwWindowListDelete:
+ *@@ pgmwDeleteWinInfo:
  *      removes a window from our window list which has
  *      been destroyed.
  *
  *      Called upon PGMG_WNDCHANGE in fnwpPageMageClient.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: now using linked list for wininfos
  */
 
-VOID pgmwWindowListDelete(HWND hwnd)
+VOID pgmwDeleteWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
             == NO_ERROR)
     {
-        for (usIdx = 0;
+        PLISTNODE       pNodeFound = NULL;
+        PPGMGWININFO    pWinInfo = pgmwFindWinInfo(hwnd,
+                                                   (PVOID*)&pNodeFound);
+
+        if (pWinInfo && pNodeFound)
+        {
+            // we have an item for this window:
+            // remove from list, which will also free pWinInfo
+            lstRemoveNode(&G_llWinInfos, pNodeFound);
+        }
+
+        /* for (usIdx = 0;
              usIdx < G_usWindowCount;
              usIdx++)
         {
@@ -281,21 +402,22 @@ VOID pgmwWindowListDelete(HWND hwnd)
                         // V0.9.7 (2001-01-18) [umoeller]
                 break;
             }
-        }
+        } */
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }
 }
 
 /*
- *@@ pgmwWindowListUpdate:
+ *@@ pgmwUpdateWinInfo:
  *      updates a window in our window list.
+ *
  *      Called upon PGMG_WNDCHANGE in fnwpPageMageClient.
  *
  *@@added V0.9.7 (2001-01-15) [dk]
  */
 
-VOID pgmwWindowListUpdate(HWND hwnd)
+VOID pgmwUpdateWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
@@ -303,7 +425,18 @@ VOID pgmwWindowListUpdate(HWND hwnd)
             == NO_ERROR)
     {
         // check if we have an entry for this window already
-        for (usIdx = 0;
+        PPGMGWININFO    pWinInfo = pgmwFindWinInfo(hwnd,
+                                                   NULL);
+
+        if (pWinInfo)
+            // we have an entry:
+            // mark it as dirty
+            pWinInfo->bWindowType = WINDOW_RESCAN;
+
+        // rescan all dirties
+        pgmwWindowListRescan();
+
+        /* for (usIdx = 0;
              usIdx < G_usWindowCount;
              usIdx++)
         {
@@ -312,9 +445,7 @@ VOID pgmwWindowListUpdate(HWND hwnd)
             if (    (pEntryThis->hwnd == hwnd)
                )
                 pEntryThis->bWindowType = WINDOW_RESCAN;
-        }
-
-        pgmwWindowListRescan();
+        } */
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }
@@ -329,6 +460,7 @@ VOID pgmwWindowListUpdate(HWND hwnd)
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.7 (2001-01-17) [dk]: this scanned, but never updated. Fixed.
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
  */
 
 BOOL pgmwWindowListRescan(VOID)
@@ -339,40 +471,55 @@ BOOL pgmwWindowListRescan(VOID)
     if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
             == NO_ERROR)
     {
-        for (usIdx = 0;
-             usIdx < G_usWindowCount;
-             usIdx++)
-        {
-            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
+        LINKLIST    llDeferredDelete;
+        PLISTNODE   pNode;
 
-            if (pEntryThis->bWindowType == WINDOW_RESCAN)
+        lstInit(&llDeferredDelete,
+                FALSE);        // no auto-free, this points to
+                               // existing list nodes
+
+        pNode = lstQueryFirstNode(&G_llWinInfos);
+        while (pNode)
+        {
+            PPGMGWININFO pWinInfo = (PPGMGWININFO)pNode->pItemData;
+            if (pWinInfo->bWindowType == WINDOW_RESCAN)
             {
                 // window needs rescan:
-                PGMGLISTENTRY hwndListTemp;
-                if (!pgmwGetWinInfo(pEntryThis->hwnd, &hwndListTemp))
-                {
-                    // window no longer valid:
-                    pgmwWindowListDelete(pEntryThis->hwnd);
-                    brc = TRUE;
-                }
+                // well, rescan then... this clears strings
+                // in the wininfo and only allocates new strings
+                // if TRUE is returned
+                PGMGWININFO WinInfoTemp;
+                memset(&WinInfoTemp, 0, sizeof(WinInfoTemp));
+                if (!pgmwFillWinInfo(pWinInfo->hwnd, &WinInfoTemp))
+                    // window is no longer valid:
+                    // remove it from the list then
+                    // (defer this, since we're iterating over the list)
+                    lstAppendItem(&llDeferredDelete, pWinInfo);
                 else
                 {
-                    // window still valid: check if it's changed
-
-                    if (memcmp(pEntryThis,
-                               &hwndListTemp,
-                               sizeof(hwndListTemp))
-                            != 0)
+                    // window is still valid:
+                    // check if it has changed
+                    if (!pgmwWinInfosEqual(&WinInfoTemp,
+                                           pWinInfo))
                     {
-                        // changed:
-                        brc = TRUE;
-                        // V0.9.7 (2001-01-17) [dk]
-                        memcpy(pEntryThis,
-                               &hwndListTemp,
-                               sizeof(hwndListTemp));
+                        // window changed:
+                        // copy new wininfo over that; we have new strings
+                        // in the new wininfo
+                        memcpy(pWinInfo, &WinInfoTemp, sizeof(WinInfoTemp));
                     }
                 }
-            }
+            } // end if (pWinInfo->bWindowType == WINDOW_RESCAN)
+
+            pNode = pNode->pNext;
+        } // end while (pNode)
+
+        // go thru "deferred delete" list
+        pNode = lstQueryFirstNode(&llDeferredDelete);
+        while (pNode)
+        {
+            PPGMGWININFO pWinInfo = (PPGMGWININFO)pNode->pItemData;
+            lstRemoveItem(&G_llWinInfos, pWinInfo);
+            pNode = pNode->pNext;
         }
 
         DosReleaseMutexSem(G_hmtxWindowList);
@@ -391,24 +538,27 @@ BOOL pgmwWindowListRescan(VOID)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-BOOL pgmwStickyCheck(// CHAR *pszWindowName,
-                     CHAR *pszSwitchName)
+BOOL pgmwStickyCheck(const char *pcszSwitchName)
 {
-    // shortcuts to global pagemage config
-    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
-
-    USHORT  usIdx;
     BOOL    bFound = FALSE;
 
-    for (usIdx = 0;
-         usIdx < pPageMageConfig->usStickyTextNum;
-         usIdx++)
+    // shortcuts to global pagemage config
+    if (pcszSwitchName)
     {
-        if (strstr(pszSwitchName,
-                   pPageMageConfig->aszSticky[usIdx]))
+        PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+
+        USHORT  usIdx;
+
+        for (usIdx = 0;
+             usIdx < pPageMageConfig->usStickyTextNum;
+             usIdx++)
         {
-            bFound = TRUE;
-            break;
+            if (strstr(pcszSwitchName,
+                       pPageMageConfig->aszSticky[usIdx]))
+            {
+                bFound = TRUE;
+                break;
+            }
         }
     }
 
