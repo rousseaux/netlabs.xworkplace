@@ -2670,7 +2670,7 @@ VOID krnInitializeXWorkplace(VOID)
         if (TRUE)           // @@todo
         {
             sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
-            DumpFile = fopen(szDumpFile, "a");
+            DumpFile = fopen(szDumpFile, "w");
 
             if (DumpFile)
             {

@@ -1,7 +1,7 @@
 
 XWorkplace Source README
 (W) Ulrich M”ller, July 2, 1999
-Last updated January 26, 2001, Ulrich M”ller
+Last updated April 17, 2001, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -10,9 +10,7 @@ Last updated January 26, 2001, Ulrich M”ller
     1. LICENSE, COPYRIGHT, DISCLAIMER
     2. INTRODUCTION
     3. COMPILATION/INSTALLATION
-    4. GETTING STARTED
-    5. KNOWN LIMITATIONS
-    6. CONTRIBUTORS
+    4. CONTRIBUTORS
 
 
 1. LICENSE, COPYRIGHT, DISCLAIMER
@@ -33,18 +31,18 @@ Last updated January 26, 2001, Ulrich M”ller
 2. INTRODUCTION
 ===============
 
-    Welcome to the XWorkplace source code. As this thing is complex,
-    I have tried to add plenty of documentation.
+    Welcome to the XWorkplace source code.
 
-    Plenty of programming information is contained in the PROGREF.INF
-    file in the main directory of the source tree.
+    Since XWorkplace is a fairly complex beast, I have tried to add
+    plenty of documentation, most of which is contained in the
+    PROGREF.INF file in the main directory of the source tree.
 
     In order to get to know XWorkplace's structure, you might first
     want to read the "XWorkplace Internals" section in the XWorkplace
     User Guide, which comes with the binary distribution already.
 
-    The README for the latest binary release is in the "001\readme"
-    file.
+    The README that came with the latest binary release is in the
+    "001\readme" file.
 
 
 3. COMPILATION/INSTALLATION
@@ -69,23 +67,7 @@ Last updated January 26, 2001, Ulrich M”ller
     Please see "cvs.txt" in this directory.
 
 
-4. GETTING STARTED
-==================
-
-    See "001\readme" for this, which is the readme that comes with
-    the binary release.
-
-    For instructions how to use CVS, see the separate cvs.txt file.
-
-
-5. KNOWN LIMITATIONS
-====================
-
-    See "001\readme" for this, which is the readme that comes with
-    the binary release.
-
-
-6. CONTRIBUTORS
+4. CONTRIBUTORS
 ===============
 
     Newer contributions (since about V0.9.1) are marked in xdoc

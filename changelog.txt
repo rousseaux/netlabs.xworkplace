@@ -1,4 +1,28 @@
 
+XWORKPLACE V0.9.9 AND ABOVE (2001-04-17)
+========================================
+
+This file is no longer being maintained.
+
+To get a change log for the source code, run "createchangelog.cmd"
+from the main source directory. This will call xdoc.exe (which is
+in the xwphelpers repository as a binary) to produce a CHANGELOG
+file directly from the sources.
+
+To find out what has changed in the NLS resources, get GNU diff
+from LEO or Hobbes. Then run it against the various resource
+files (xfldr001.rc, .dlg, etc.).
+
+Before you run diff against the .dlg file, you should use
+tools\sortdlg.cmd to sort the various dialog templates because
+their order keeps changing (due to the way IBM's DLGEDIT
+rewrites dialog files).
+
+
+OLDER CHANGE REMARKS
+====================
+
+
 General Notes
 =============
 

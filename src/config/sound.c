@@ -782,7 +782,7 @@ MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
  *      "Sounds" page notebook callback function (notebook.c).
  *      Sets the controls on the page.
  *
- *@@changed V0.9.10 (2001-04-08) [umoeller]: fixed fixed MMPM.INI path location
+ *@@changed V0.9.10 (2001-04-16) [umoeller]: fixed fixed MMPM.INI path location
  */
 
 VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info struct
