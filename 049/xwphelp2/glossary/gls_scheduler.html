@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: Processes And Threads
+        &xwp;: Prozesse und Threads
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.13
@@ -9,74 +9,72 @@
     V0.9.20: add &xwp; to title
 -->
 <BODY>
-Since you will normally have only one processor, but expect several tasks to
-run at the same time, &os2; switches between tasks
-several dozen times a second. As a result, these programs appear to run in
-parallel. This is called <B>multitasking.</B>
+Da Sie normalerweise nur einen Prozessor in Ihrem Rechner haben,
+dieser jedoch viele Aufgaben zugleich ausfÅhren soll, schaltet
+&os2; zwischen den laufenden Programmen viele Male pro Sekunde
+um. Dies erzeugt die Wirkung, da· die Programme tatsÑchlich
+parallel laufen, und wird <B>Multitasking</B> genannt.
 
-<P>But even if you have a multi-processor (SMP) system, there will
-always be more tasks than processors on your system, so switching is
-still required.
+<P>Aber auch wenn Sie ein Multiprozessor-System (SMP) haben, wird
+es in der Regel mehr Programme als Prozessoren auf Ihrem System
+geben, so da· auch dann noch umgeschaltet werden mu·.
 
-<P>A <B>thread</B> is &os2;'s unit for administrating task switches.
-A program can contain several threads, but per definition,
-it will have at least one. But since a program can have more than one
-thread, switching can take place even between threads in the same
-program. This is called <B>multithreading.</B> As opposed to many
-other operating systems, &os2; fully supports this, and it even does
-so in a very fancy and reliable way.
+<P>Dabei ist ein <B>Thread</B> die Einheit, mit
+der &os2; das Umschalten verwaltet. Per Definition hat jedes
+Programm wenigstens einen Thread. Da ein Programm aber optional
+weitere Threads starten kann, schaltet &os2; unter UmstÑnden
+sogar zwischen mehreren Threads desselben Programms um. Dies wird
+<B>Multithreading</B> genannt. Im Gegensatz zu vielen anderen
+Betriebssystemen wird dies von &os2; voll unterstÅtzt, und zwar
+leistungsfÑhig und stabil.
 
-<P>The part of the &os2; kernel which switches between threads is called
-the <B>"scheduler".</B>
+<P>Der Teil von &os2;, welcher das Umschalten verwaltet, wird
+<b>"Scheduler"</b> genannt.
 
-<P>The term "thread" was chosen because within one thread
-program instructions are executed sequentially, while between threads you
-may never be sure which instruction of one thread will be executed before
-or after an instruction of another thread. It is only &os2; which keeps
-switching between threads without the thread even knowing about it (or, on
-SMP systems, threads might actually run concurrently on several processors).
+<P>Der Begriff "Thread" (engl. "Faden") wurde gewÑhlt, weil innerhalb
+eines Threads die Befehle des Programms sequentiell hintereinander
+abgearbeitet werden, wÑhrend man zwischen mehreren Threads niemals
+sicher sein kann, welcher Befehl auf dem einen Thread vor oder nach
+dem eines anderen Threads ausgefÅhrt wird.
+&os2; schaltet zwischen den verschiedenen Threads um, ohne da·
+das Programm davon Kenntnis erhalten mu·. Auf SMP-Systemen werden
+Threads sogar tatsÑchlich gleichzeitig auf mehreren Prozessoren
+laufen.
 
-<P>Well-programmed
-<!-- V0.9.20: removed &os2; -->
-software uses several threads to ensure that the
-user gets a quick response to his input and mouse actions. For example, if
-you execute a command in a program which will take a long time, a
-program should start a secondary thread for this task. While this new thread
-is working in the background, the user interface (on the main thread of the
-program) is ready again for new input.
+<P>Gut programmierte Software benutzt mehrere Threads, um sicherzustellen,
+da· das System schnell auf Eingaben der Benutzer Åber Maus und Tastatur
+reagiert. Wenn ein Programm z.B. eine Aufgabe ausfÅhren mu·, die eine
+lÑngere Zeit dauern kann, sollte es hierfÅr einen zweiten Thread starten,
+der diese Aufgabe im Hintergrund Åbernehmen kann. WÑhrenddessen ist
+die BenutzeroberflÑche des Programms schon wieder bereit fÅr neue Eingaben.
 
-<P>Not-so-well-programmed
-<!-- V0.9.20: removed &os2; -->
-software uses only one thread for both the
-user interface and executing tasks. As a result, while executing a task, the
-user interface is blocked.
+<P>Nicht so gut programmierte Software benutzt denselben einen Thread
+sowohl fÅr die BenutzeroberflÑche als auch fÅr die Arbeit, die das Programm
+verrichtet. Folglich ist die BenutzeroberflÑche blockiert, wÑhrend das
+Programm arbeitet.
 
-<P>Threads can have different <B>priorities.</B>
-<!-- V0.9.20: moved all the text about prties to gls_sched_prty.html and
-replaced it with the link -->
-See <A HREF="glossary/gls_sched_prty.html">"Thread priorities"</A> for details.
+<P>Threads kînnen unter &os2; verschiedene <B>PrioritÑten</B> haben.
+Siehe <A HREF="glossary/gls_sched_prty.html">"Thread-PrioritÑten"</A> fÅr Details.
 
-<P>On the other hand side, a <B>process</B> is the &os2; term for an
-application which has been loaded into memory. Each process must have at
-least one thread.
+<P>Auf der anderen Seite bezeichnet der Begriff <b>"Proze·"</b> unter
+&os2; eine Anwendung, die in den Speicher geladen ist. Jeder Proze·
+hat per Definition wenigstens einen Thread.
 
-<P>Each process contains common data as well as controls access to system
-resources. Processes are protected against each other in that &os2; prohibits
-access to memory which does not belong to the process attempting to
-access it ("memory protection").
+<P>Mit Prozessen verwaltet &os2; gemeinsame Daten sowie den Zugriff auf
+Systemressourcen. Prozesse werden voreinander geschÅtzt, indem es &os2;
+verbietet, da· ein Proze· auf Speicher zugreift, der einem anderen Proze·
+gehîrt ("Speicherschutz").
 
-<P>By contrast, several threads within a
-process may all access the process's memory, because memory is
-administered on a per-process basis. The same applies to other system
-resources such as open files.
+<P>Mehrere Threads innerhalb des gleichen Prozesses greifen demgegenÅber
+alle auf den gleichen Speicher zu, da Speicher pro Proze· verwaltet wird.
+Gleiches gilt fÅr andere Ressourcen wie z.B. offene Dateien.
 
 <!-- V0.9.20: rewrote summary and added links -->
-<P>To summarize: A <B>thread</B> is the &os2; kernel concept for managing
-CPU ownership.
-By contrast, a <B>process</B> is the concept for owning everything else:
-files, devices, and memory.
+<P>Zusammengefa·t ist ein <B>Thread</B> das Konzept, mit dem &os2;
+Prozessorzeit verwaltet. DemgegenÅber ist ein <b>Proze·</b> das Konzept
+fÅr die Verwaltung von allem anderen: Dateien, GerÑte und Speicher.
 
-<P>For more information, select from the following list:
+<P>WÑhlen Sie aus der nachstehenden Liste fÅr weiter Informationen:
 
 <UL><LI><A HREF="glossary/gls_sessions.html">Session types</A>
 <LI><A HREF="glossary/gls_cmd.html">öber Befehlszeilen</A>

@@ -1,58 +1,62 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: About TCP/IP
+        &xwp;: öber TCP/IP
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.20 -->
 <BODY>
-<B>TCP/IP</B> (Transmission Control Protocol/Internet Protocol) is
-most well known for being used as the
-<A HREF="glossary/gls_protocols.html">networking protocol</A>
-of the &link_internet;.
-However, it can also be used as a protocol in a private network.
+<B>TCP/IP</B> (Transmission Control Protocol/Internet Protocol) ist
+hauptsÑchlich dafÅr bekannt,
+<A HREF="glossary/gls_protocols.html">Netzwerkprotokoll</A> des
+&link_internet; zu sein. Es kann jedoch auch als Protokoll in einem
+privaten Netzwerk benutzt werden.
 
-<P>TCP/IP in turn consists of two layers.
+<P>TCP/IP wiederum besteht selbst aus zwei Schichten.
 
-<UL><LI>The <B>higher layer, TCP,</B>
-breaks down any chunk of information (a message, or a file)
-into <B>packets</B> that are numbered and then transmitted separately.
-The TCP layer at the other end of the connection then reassembles the
-packets into the complete data.
+<UL><LI>Die <B>obere Schicht, TCP,</B>
+zerteilt jede Nachricht und jede Datei, die gesendet wird, in
+<B>Pakete,</B> die durchnumeriert und getrennt verschickt werden.
+Die TCP-Schicht am anderen Ende der Verbindung stellt diese
+Pakete wieder zu den vollstÑndigen Daten zusammen.
 
-<P><LI>The <B>lower layer, IP,</B> handles the delivery of the packets
-that were produced by TCP. For this to work, each computer in the
-network needs to have a unique address, the
-<A HREF="glossary/gls_prot_ipaddr.html">IP adress</A>.
+<P><LI>Die <B>untere Schicht, IP,</B> verwaltet die Liferung der
+Pakete, die von TCP erzeugt wurde. Damit dies funktioniert, mu·
+jeder Rechner im Netzwerk eine eindeutige Nummer haben, die
+<A HREF="glossary/gls_prot_ipaddr.html">IP-Adresse</A>.
 
-<P>Each packet receives the IP addresses of both the sender and the target
-computers before it is sent off, and every computer that receives the packet
-on the way checks this address to determine which computer it should forward
-the packet to next.
-As a result, every packet may be processed by many computers on the globe
-before it arrives at your computer. Packages from the same original data
-chunk may take different paths over the network, but will be reassembled
-correctly by TCP.
+<P>Jedes Paket enthÑlt die IP-Adressen sowohl des Absender- als auch
+des EmpfÑnger-Rechners, bevor es losgeschickt wird. Jeder Rechner,
+den das Paket auf seiner Reise durch das Netzwerk passiert, prÅft
+diese Adresse um festzustellen, an welchen nÑchsten Rechner das
+Paket weitergeleitet werden soll.
+Daher wird jedes Paket von mîglicherweise sehr vielen Rechnern bearbeitet,
+bevor es auf Ihrem Rechner ankommt. Pakete aus derselben ursprÅnglichen
+Datenmenge kînnen sogar unterschiedliche Wege Åber das Netzwerk nehmen,
+werden aber von TCP wieder korrekt zusammengesetzt.
 
-</UL>For each data chunk broken into packets, an individual connection
-between two computers is established. There is no permanent connection
-after the data has been received. This greatly reduces network traffic
-and makes global communication possible in the first place.
+</UL>FÅr jede Datenmenge, die in solche Pakete aufgebrochen wird, wird
+eine individuelle Verbindung zwischen zwei Rechnern aufgebaut. Nachdem
+die Daten empfangen sind, wird die Verbindung nicht aufrechterhalten.
+Dies vermindert den Verkehr im Netzwerk ganz erheblich und macht
+globale Kommunikation Åberhaupt erst mîglich.
 
-<P>Note that when you temporarily connect to your Internet Service Provider (ISP)
-to get access to the Internet, you will usually do so with the use
-of an additional protocol, the <B>Point-to-Point Protocol (PPP).</B>
-This encapsulates the IP packets so that they can be sent over a dial-up
-phone connection to an access provider's modem.
+<P>Beachten Sie, da· Sie normalerweise, wenn Sie mit Ihrem
+Internet Service Provider (ISP) Verbindung aufnehmen, um ins Internet
+zu kommen, ein weiteres Protokoll verwenden: das
+<B>Point-to-Point Protocol (PPP).</B>
+Dies kapselt die IP-Pakete, so da· diese Åber eine EinwÑhlverbindung,
+z.B. Åber Modem, verschickt werden kînnen.
 
-<P><A HREF="glossary/gls_internet_serv.html">Internet services</A> such
-as the World Wide Web (WWW) and e-mail are also implemented as additional
-protocol layers on top of TCP/IP. Those layers however are not integrated
-into the operating system's networking components, but rather provided by
-the individual Internet applications such as your Web browser. These
-protocols include the Hypertext Transfer Protocol (HTTP) used by the WWW,
-the File Transfer Protocol (FTP), Telnet (Telnet), and the
-Simple Mail Transfer Protocol (SMTP) for mail.
+<P>Die <A HREF="glossary/gls_internet_serv.html">Internet-Dienste</A>
+wie z.B. das World Wide Web (WWW) und E-Mail werden ebenfalls Åber
+zusÑtzliche Protokolle implementiert, die sich Åber den TCP/IP-Schichten
+befinden. Diese Schichten werden jedoch nicht ins Betriebssystem
+integriert, sondern sind Åblicherweise Bestandteil der jeweiligen
+Internet-Anwendungen wie z.B. Ihrem Web-Browser. Zu diesen Protokollen
+gehîren das Hypertext Transfer Protocol (HTTP), welches vom WWW benutzt
+wird, das File Transfer Protocol (FTP), Telnet (Telnet), und das
+Simple Mail Transfer Protocol (SMTP) fÅr E-Mail.
 
 <BR>
 </BODY>

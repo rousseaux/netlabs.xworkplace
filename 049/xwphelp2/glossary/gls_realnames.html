@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: Real Names
+        &xwp;: Echte Dateinamen
     </TITLE>
 </HEAD>
 <!-- this is all new with V0.9.16
@@ -9,79 +9,68 @@
     V0.9.20: add &xwp; to title
 -->
 <BODY>
-While, per definition, every WPS object has a title associated with it,
-only file-system objects (that is,
-<!-- V0.9.19: link added -->
-&link_folders;
-and
-<!-- V0.9.19: link added -->
-&link_datafiles;
-which physically reside in a
-<!-- V0.9.19: link added -->
-<A HREF="glossary/gls_fs.html">file system</A>)
-also carry a so-called "real name".
-<!-- V0.9.19 : added this -->
-This is the name of the file that the file-system object represents
-on disk, as visible with the <CODE>DIR</CODE> command on an &os2;
-command line.
+WÑhrend jedes Objekt per Definition einen Titel hat, besitzen nur
+Dateisystemobjekte (d.h.
+&link_folders; und
+&link_datafiles;, die physisch in einem
+<A HREF="glossary/gls_fs.html">Dateisystem</A> liegen)
+auch einen sogenannten <b>"echten Dateinamen".</b>
+Dies ist der Name der Datei auf dem Speichermedium, welche
+durch das Dateisystemobjekt reprÑsentiert wird, und welcher
+von dem Kommando <CODE>DIR</CODE> an einer Befehlszeile angezeigt wird.
 
-<P>In many cases, the real name is identical to the object title
-(as displayed on the "Icon" page); however, file-system names have
-certain limitations.
+<P>In vielen FÑllen ist der echte Dateiname mit dem Objekt-Titel
+(der auf der "Symbol"-Seite angezeigt wird) identisch. Jedoch
+gibt es fÅr Dateinamen einige zusÑtzliche BeschrÑnkungen.
 
-<P>For object <I>titles,</I> the only restriction is that they cannot
-be longer than 256 characters, and that the backslash (<CODE>\</CODE>)
-character is forbidden.
+<P>Objekt-<b>Titel</b> haben lediglich die BeschrÑnkung, da· sie nicht
+lÑnger als 256 Zeichen sein dÅrfen, und der SchrÑgstrich rÅckwÑrts
+(<CODE>\</CODE>) ist nicht erlaubt.
 
-<P>By contrast, depending on the object's <A HREF="glossary/gls_fs.html">file system</A>,
-the following restrictions apply to the object's <I>real name</I>:
+<P>Die BeschrÑnkungen fÅr <b>echte Dateinamen</b> hÑngen hingegen von
+dem <A HREF="glossary/gls_fs.html">Dateinamen</A> des Objekts ab:
 
-<UL><LI>With the FAT file system, file names are restricted to 8 characters,
-plus a 3-character file extension. In addition, the following characters
-are not allowed in FAT file names:
+<UL><LI>Mit dem FAT-Dateisystem sind Dateinamen auf acht Zeichen
+beschrÑnkt, plus 3 Zeichen fÅr die Dateinamenerweiterung. ZusÑtzlich
+sind die folgenden Zeichen in FAT-Dateinamen nicht erlaubt:
 
 <P><CODE>&lt; &gt; | + = : ; , " / [ ]</CODE>
 
-<P>In addition, the FAT file system is not case-preserving.
+<P>Au·erdem speichert das FAT-Dateisystem keine Gro·- oder Kleinschreibung.
 
-<P><LI>With installable file systems (IFS's) such as HPFS or JFS, the
-file name can be up to 254 characters in length, and there are no rules
-about file-name extensions. However, the following characters are still
-invalid:
+<P><LI>Mit installierbaren Dateisystemen (IFS) wie HPFS oder JFS kann
+ein Dateiname hingegen bis zu 254 Zeichen lang sein, und es gibt keine
+Regeln Åber Dateinamenerweiterungen. Trotzdem sind die folgenden
+Zeichen in Dateinamen nicht erlaubt:
 
 <P><CODE>&lt; &gt; | : " / </CODE>
 
-</UL>Naturally, the backslash character (<CODE>\</CODE>) is invalid
-with every file system because it is used as the
-<!-- V0.9.20: link added -->
-<A HREF="glossary/gls_path.html">path</A>
-separator in &os2;.
+</UL>Der SchrÑgstrich rÅckwÑrts (<CODE>\</CODE>) ist darÅberhinaus
+mit allen Dateisystemen nicht erlaubt, da er von &os2; als
+<A HREF="glossary/gls_path.html">Pfad</A>-Begrenzer benutzt wird.
 
-<P>If the title of the file-system object obeys these restrictions, the
-real name is identical to the title.
-However, <I>if not,</I> the WPS modifies the
-title to match these restrictions by truncating it to the allowed file-name
-length and replacing illegal characters with exclamation marks (<CODE>!</CODE>).
-The original title is then stored with the object in the <CODE>.LONGNAME</CODE>
-<!-- V0.9.20: link added -->
-<A HREF="glossary/gls_eas.html">extended attribute.</A>
+<P>Wenn der echte Dateinamen nun die obigen BeschrÑnkungen nicht verletzt,
+ist er identisch zum Objekt-Titel. <i>Falls nicht,</i> bearbeitet die WPS
+automatisch den Titel, so da· er die BeschrÑnkungen einhÑlt, indem er
+auf die erlaubte LÑnge gekÅrzt und ungÅltige Zeichen durch Ausrufezeichen
+(<code>!</code>) ersetzt werden.
+Der ursprÅngliche Titel geht nicht verloren, sondern wird in dem
+<A HREF="glossary/gls_eas.html">erweiterten Attribut</A> <CODE>.LONGNAME</CODE>
+gespeichert.
 
-<P>In that case, the "real name" that is displayed with the
-<CODE>DIR</CODE> command from the &os2; command line is different from the
-title displayed in the WPS folder.
+<P>In diesen FÑllen unterscheidet sich der echte Dateiname, welcher
+vom <CODE>DIR</CODE>-Kommando angezeigt wird, von dem Titel, der in
+einem WPS-Ordner erscheint.
 
-<P>Examples:
+<P><b>Beispiele:</b>
 
-<OL><LI>The folder title is <CITE>LongFolderTitle</CITE>,
-but the folder resides on a FAT drive, so the
-<!-- V0.9.20: link added -->
-<A HREF="glossary/gls_path.html">path</A>
-on the folder's "File"
-page will display <CITE>C:\LONGFOLD</CITE> only.
+<OL><LI>Ein Ordnertitel sei <CITE>LangerOrdnerTitel</CITE>, aber
+der Ordner liegt auf einem FAT-Laufwerk. Dann wird der Dateiname
+vermutlich auf auf <CITE>C:\LONGFOLD</CITE> gekÅrzt.
 
-<P><LI>The folder title is <CITE>Accounting/Taxes</CITE>, but the real name
-is  <CITE>Accounting!Taxes</CITE> (assuming the folder is on an HPFS or JFS
-drive).
+<P><LI>Ein Ordnertitel auf einem HPFS- oder JFS-Laufwerk sei
+<CITE>BuchfÅhrung/Steuern</CITE>. Dann wird der echte Name
+<CITE>BuchfÅhrung!Steuern</CITE> sein.
 </OL>
 
 </BODY>

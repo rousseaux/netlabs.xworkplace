@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: Regular Expressions
+        &xwp;: RegulÑre AusdrÅcke
     </TITLE>
 </HEAD>
 <!-- this is all new with V0.9.19
@@ -9,45 +9,47 @@
     V0.9.20: add &xwp; to title
 -->
 <BODY>
-Regular Expressions (REs) are commonly used used to determine
-if a character string of interest is matched somewhere in
-a set of character strings. They allow for specifying complex
-matching criteria and are thus much more flexible than regular
-search strings.
+RegulÑre AusdrÅcke (Regular Expressions, REs) werden Åblicherweise
+benutzt, um einen komplexen Suchbegriff auf eine Gruppe von
+Zeichenketten anzuwenden. Sie sind daher viel flexibler als das
+Suchen nach reinen Zeichenketten.
 
-<P>&xwp; uses a combination of many standards for RE syntaxes.
-The level of functionality is most closely modelled on extended
-regular expressions (EREs) as supported by the UNIX
-<CODE>egrep</CODE> and <CODE>awk</CODE> programs.
-Some enhancements introduced by POSIX, those typically found in UNIX
-<CODE>ex</CODE> and <CODE>vi</CODE>, and most found in GNU software
-are supported too.
+<P>&xwp; verwendet eine Kombination verschiedener Standards fÅr
+RE-Syntaxen.
+Benutzer der UNIX-Programme
+<CODE>egrep</CODE> und <CODE>awk</CODE> werden diese REs bekannt vorkommen.
+Eine Erweiterungen, die durch POSIX sowie die UNIX-Programme
+<CODE>ex</CODE> und <CODE>vi</CODE> und weitere GNU-Programme eingefÅhrt
+wurden, sind ebenfalls unterstÅtzt.
 
-<P>The following rules apply (see
-<A HREF="glossary/gls_regexps_bnf.html">BNF definition</A> for a formal definition):
+<P>Es gelten die folgenden Regeln (siehe die
+<A HREF="glossary/gls_regexps_bnf.html">BNF-Definition</A> fÅr eine
+formale Beschreibung):
 
-<P><B>Basic characters</B>
+<P><B>Einfache Zeichen</B>
 
 <UL>
-<LI>Most characters in an ERE can specified just by typing them.
-For example, <CODE>abc</CODE> matches <CODE>a</CODE>, then <CODE>b</CODE>,
-then <CODE>c</CODE>.
+<LI>Die meisten Zeichen in einer RE werden 1:1 umgesetzt.
+Beispielsweise findet <CODE>abc</CODE> die Zeichenkette <CODE>a</CODE>,
+dann <CODE>b</CODE>, dann <CODE>c</CODE>.
 
-<P><LI>Certain characters have special meanings, and will have to be escaped
-by preceding them with a backslash.
-This applies to the following characters:
+<P><LI>Einige Zeichen haben eine besondere Bedeutung und mÅssen,
+wenn nach ihnen ausdrÅcklich gesucht wird, durch das Escape-Zeichen
+"SchrÑgstrich rÅckwÑrts" (<code>\</code>) eingeleitet werden.
+Dies betrifft die folgenden Zeichen:
 
 <PRE>
     ~ . ^ $ ( ) { } [ ] ? + * |
 </PRE>
-For example, <CODE>1\*2</CODE> matches <CODE>1</CODE>, then <CODE>*</CODE>,
-then <CODE>2</CODE>.
+Beispielsweise findet <CODE>1\*2</CODE> die Zeichenkette
+<CODE>1</CODE>, dann <CODE>*</CODE>, dann <CODE>2</CODE>.
 
-<P><LI>To match the backslash itself, it must be escaped too. For example,
-<CODE>c:\\config\.sys</CODE> matches <CODE>c:\config.sys</CODE>.
+<P><LI>Um nach dem SchrÑgstrich rÅckwÑrts selbst zu suchen, geben
+Sie ihn zweimal ein. Beispielsweise findet
+<CODE>c:\\config\.sys</CODE> die Zeichenkette <CODE>c:\config.sys</CODE>.
 
-<P><LI>The backslash can be used to describe characters which are difficult to
-type:
+<P><LI>Der SchrÑgstrich rÅckwÑrts kann au·erdem benutzt werden, um
+nach Zeichen zu suchen, die sonst schwierig einzugeben wÑren:
 
 <PRE>
   \n    newline           ASCII 10
@@ -59,157 +61,159 @@ type:
   \x07  bel               ASCII  7
 </PRE>
 
-C and C++ programmers will find this notation familiar.
-Strictly speaking, according to POSIX, if <CODE>\x2e</CODE> was put in an ERE
-it should mean "any character" (ASCII character 0x2e is the dot, which means
-any character, see later), but this implementation treats it as
-"match a full stop".
+C- und C++-Programmierern wird diese Syntax bekannt vorkommen.
+Strenggenommen mÅ·te nach POSIX die Suchfolge <CODE>\x2e</CODE> jedes
+beliebige Zeichen finden, denn das ASCII-Zeichen 0x2e ist der Punkt (siehe
+unten), aber diese Implementierung behandelt es als "suche nach einem Punkt".
 
-<P><LI>Sometimes the backslash is used to introduce a special ERE feature.
-For example <CODE>\&lt;</CODE> means 'start of word' (see later).
-The character after the backslash is generally chosen to something that
-you would not need to escape, so this syntax should not cause any
-problems.
+<P><LI>Der SchrÑgstrich rÅckwÑrts kann au·erdem benutzt werden, um
+eine besondere RE-Funktion einzuleiten. Beispielsweise bedeutet
+<CODE>\&lt;</CODE> "Beginn eines Wortes" (siehe unten).
 
-</UL><B>Character sets</B>
+</UL><B>Zeichengruppen</B>
 
-<P>Character sets are specified in angle brackets and
-define a set of acceptable characters, or possibly a set of unacceptable
-characters.
+<P>Zeichengruppen werden in eckigen Klammern angegeben und bezeichnen
+eine Gruppe von Zeichen, die entweder an dieser Stelle mîglich sind
+oder nicht mîglich sein dÅrfen.
 
 <PRE>
-  [abc]   matches any one character which can be a, b, or c
-  [^abc]  matches any one character which is neither a, b, nor c
-  [a-z]   is the set of characters in the range 'a' to 'z'
-  [a-j-t] is the set of characters in the range 'a' to 't'
+  [abc]   findet ein Zeichen, das a, b oder c sein darf
+  [^abc]  findet jedes Zeichen, das nicht a, b oder c ist
+  [a-z]   findet jedes Zeichen im Bereich 'a' bis 'z'
+  [a-j-t] findet jedes Zeichen im Bereich 'a' bis 't'
 </PRE>
 
-To match a <CODE>-</CODE>, <CODE>^</CODE>, <CODE>]</CODE> character
-in a bracket element, escape it with a backslash. For example,
-  <CODE>[\])}]</CODE> matches <CODE>]</CODE>, or <CODE>)</CODE>, or <CODE>}</CODE>.
+Um in den eckigen Klammern auch die Zeichen <CODE>-</CODE>, <CODE>^</CODE> oder
+<CODE>]</CODE> angeben zu kînnen, setzen Sie wieder einen SchrÑgstrich rÅckwÑrts
+davor. Beispielsweise findet
+<CODE>[\])}]</CODE> die Zeichen <CODE>]</CODE> oder <CODE>)</CODE> oder <CODE>}</CODE>.
 
-You can also specify a complete POSIX character classes in an <I>additional</I>
-brackets pair with colons. In that context,
+<P>Sie kînnen auch eine komplette POSIX-Zeichenklasse in einem <i>zusÑtzlichen</i>
+Paar von eckigen Klammern mit Doppelpunkten angeben. In diesem Kontext bedeutet
 
 <PRE>
-  [:alnum:]   means all alphanumeric characters
-              (with ASCII, same as A-Za-z0-9)
-  [:lower:]   means all lowercase characters
+  [:alnum:]   alle alphanumerischen Zeichen
+              (bei ASCII: dasselbe wie A-Za-z0-9)
+  [:lower:]   alle Kleinbuchstaben
   ... etc.
 </PRE>
 
-For example, specifying <CODE>[[:alnum:] \t]</CODE> would
-allow all alphanumeric characters plus space plus tab.
+Geben Sie beispielsweise <CODE>[[:alnum:] \t]</CODE> an, um nach allen alphanumerischen
+Zeichen plus Leerzeichen plus Tab zu suchen.
 
-<P><B>Any character</B>
+<P><B>Beliebiges Zeichen</B>
 
-<P>The dot (<CODE>.</CODE>) character matches any single character, without
-caring what it actually is. For example, <CODE>t.e</CODE> matches
-<CODE>the</CODE>, but not <CODE>tree</CODE>.
+<P>Der Punkt (<CODE>.</CODE>) findet jedes beliebige einzelne Zeichen.
+Beispielsweise findet der AusdrÅck <CODE>k.nnen</CODE> das Wort
+<CODE>kennen</CODE> und <code>kînnen</code>, aber nicht <CODE>koennen</CODE>.
 
-<P><B>Word constituent characters</B>
+<P><B>Wortzeichen</B>
 
-<P>GNU EREs define the term "word constituent character" to
-include any alphanumeric character, or the underscore <CODE>_</CODE>
-character to save some typing.
+<P>Ein "Wortzeichen" wird definiert als ein Zeichen, das entweder alphanumerisch
+ist oder ein Unterstrich (<CODE>_</CODE>).
 
-<P><CODE>\w</CODE> is a shorthand for any word consitiuent character
-and is equivalent to <CODE>[[:alnum:]_]</CODE> or <CODE>[A-Za-z0-9_]</CODE>.
-<CODE>\W</CODE> for any non-word constituent character and is
-equivalent to <CODE>[^[:alnum:]_]</CODE> or <CODE>[^A-Za-z0-9_]</CODE>.
+<P><code>\w</code> kann benutzt werden,
+um ein Wortzeichen zu finden, um sich etwas Tipparbeit zu sparen. Dies entspricht
+dem Ausdruck <CODE>[[:alnum:]_]</CODE> oder <CODE>[A-Za-z0-9_]</CODE>.
+<CODE>\W</CODE> ist das Gegenteil und entspricht dem Ausdruck
+<CODE>[^[:alnum:]_]</CODE> oder <CODE>[^A-Za-z0-9_]</CODE>.
 
-<P>These shorthands are invalid within square bracket character sets.
+<P>Diese Kurzformen sind in Zeichengruppen (in eckigen Klammern) nicht erlaubt.
 
-<P><B>Not a character</B>
+<P><B>"Kein Zeichen"</B>
 
-<P>A Microsoft extension to EREs is to allow you to say
-"any character except this character" by preceeding it with a tilde
-<CODE>~</CODE>.
-This is simply shorter to type than the equivelent
-square bracket character set
-(<CODE>~a</CODE> is shorter to type than <CODE>[^a]</CODE>).
-For example, <CODE>t~he</CODE> matches
-<CODE>tie</CODE>, but not <CODE>the</CODE>.
+<P>Microsoft hat eine Erweiterung zu REs definiert, womit man mit einer
+vorangestellten
+Tilde (<CODE>~</CODE>) nach jedem Zeichen bis auf das nachstehende suchen
+kann. Dies ist eine AbkÅrzung fÅr die entsprechende Zeichengruppe in
+eckigen Klammern: <CODE>~a</CODE> ist kÅrzer als <CODE>[^a]</CODE>.
+Bespielsweise findet <CODE>k~ennen</CODE> die Kette
+<CODE>kînnen</CODE>, aber nicht <CODE>kennen</CODE>.
 
-<P><B>Anchors</B>
+<P><B>Anker</B>
 
-<P>Anchors specify conditions where an expression may occur:
-
-<PRE>
-  ^       matches if we are at the start of the string
-  $       matches if we are at the end of the string
-  \`      GNU alternative way of writing ^
-  \'      GNU alternative way of writing $
-  \&lt;      matches if we are at the start of a word (or the whole string)
-  \&gt;      matches if we are at the end of a word (or the whole string)
-  \B      matches if we are within a word
-  \y      matches if we are at the start or end of a word (or whole string)
-</PRE>
-
-Here "word" is according to the GNU definition as given above.
-
-<P>For example, <CODE>^xyz</CODE> matches <CODE>xyz</CODE> only if it is at
-the start of the line. <CODE>\&lt;fred</CODE> matches <CODE>fred</CODE>,
-<CODE>freddy</CODE>, but not <CODE>alfred</CODE>.
-
-<P><B>Repetitions</B>
-
-<P>By using <CODE>?</CODE>, <CODE>+</CODE>, <CODE>{M}</CODE>, or <CODE>{M,N}</CODE>
-you can search for repetitions:
+<P>Anker geben eine Bedingung an, wo ein Ausdruck stehen darf:
 
 <PRE>
-  ab?c      matches a, then zero or one occurrance of b, then c
-  ab+c      matches a, then one or more occurrances of b, then c
-  ab*c      matches a, then zero or more occurrances of b, then c
-  ab{M}c    matches a, then M occurrances of b, then c
-  ab{M,}c   matches a, then M or more occurrances of b, then c
-  ab{M,N}c  matches a, then between M and N occurrances of b, then c
+  ^       findet den Ausdruck, wenn er am Anfang steht
+  $       findet den Ausdruck, wenn er am Ende steht
+  \`      GNU-Alternative zu ^
+  \'      GNU-Alternative zu $
+  \&lt;      findet den Ausdruck, wenn er am Anfang eines Wortes steht
+  \&gt;      findet den Ausdruck, wenn er am Ende eines Wortes steht
+  \B      findet den Ausdruck, wenn er innerhalb eines Wortes steht
+  \y      findet den Ausdruck, wenn er am Anfang oder am Ende eines Wortes steht
 </PRE>
 
-<P>In the above, M and N are numbers given in decimal, where if both are
-given, M must be &lt;= N.
+Ein "Wort" fÑllt hier unter die gleiche Definition wie oben angegeben.
 
-<P>For example, <CODE>[A-Za-z_][A-Za-z0-9_]*</CODE>
-matches any legal C or C++ identifier. <CODE>\w{10,}</CODE> matches at least
-10 word constituent characters. <CODE>\&lt;[0-9]{5}\&gt;</CODE> matches a 5
-digit number.
+<P>Beispielsweise findet <CODE>^xyz</CODE> die Kette <CODE>xyz</CODE> nur, wenn
+sie am Anfang einer Zeile steht.
+<CODE>\&lt;fred</CODE> findet <CODE>fred</CODE> und
+<CODE>freddy</CODE>, aber nicht <CODE>alfred</CODE>.
 
-<P><B>Alternation</B>
+<P><B>Widerholungen</B>
 
-<P>You can search for one thing or another using the <CODE>|</CODE> symbol.
-For example, <CODE>fred|bill</CODE> matches <CODE>fred</CODE> or <CODE>bill</CODE>.
-<CODE>fred|bill|rob</CODE> matches any one of these 3 names.
+<P>Mit den Zeichen <CODE>?</CODE>, <CODE>+</CODE>, <CODE>{M}</CODE> oder <CODE>{M,N}</CODE>
+kînnen Sie nach Wiederholungen suchen.
 
-<P><B>Nested EREs</B>
+<PRE>
+  ab?c      a, dann keine oder eine Wiederholung von b, dann c
+  ab+c      a, dann eine oder mehrere Wiederholungen von b, dann c
+  ab*c      a, dann keine oder beliebige Wiederholungen von b, dann c
+  ab{M}c    a, dann M Wiederholungen von b, dann c
+  ab{M,}c   a, dann M oder mehr Wiederholungen von b, dann c
+  ab{M,N}c  a, dann zwischen M und N Wiederholungen von b, dann c
+</PRE>
 
-<P>Brackets may be used to group EREs into sub-EREs, so that operators
-such as the repetitions or alternation operator may be applied to them.
-For example, <CODE>(frog|toad)+</CODE> matches one or more occurence of
-<CODE>frog</CODE> or <CODE>toad</CODE>.
+M und N mÅssen dabei dezimale Ziffern sein, und wenn sowohl M als auch
+N angegeben ist, mu· M &lt;= N sein.
 
-<P>Nesting may be performed several levels deep.
+<P>Beispiel: <CODE>[A-Za-z_][A-Za-z0-9_]*</CODE> findet jeden erlaubten
+C- oder C++-Bezeichner. <CODE>\w{10,}</CODE> findet eine Zeichenkette,
+wenn diese aus wenigstens 10 Wortzeichen besteht.
+<CODE>\&lt;[0-9]{5}\&gt;</CODE> findet eine fÅnfstellige Zahl.
 
-<P><B>Backreferences</B>
+<P><B>Alternativen</B>
 
-<P>Every time a nested ERE is matched, what it matched is recorded.
-You can do a backreference later in the main ERE (which means that
-whatever was matched before must be matched again) by specifying
-the backslash with a single decimal number.
-Up to 9 nested EREs may thus be backreferenced.
+<P>Sie kînnen mit dem <code>|</code>-Zeichen nach etwas <i>oder</i> etwas anderem
+suchen. Beispielsweise findet <CODE>fred|bill</CODE> die Kette
+<CODE>fred</CODE> oder <CODE>bill</CODE>.
+<CODE>fred|bill|rob</CODE> findet jeden der drei Namen.
 
-<P>For example, <CODE>\2</CODE> says the second nested ERE must
-be matched again. As a result,
-<CODE>(a|b)(c|d)\2\1</CODE> will match <CODE>acca</CODE>,
-or <CODE>adda</CODE>, or <CODE>bcca</CODE>, or <CODE>bddb</CODE>.
+<P><B>Verschachtelte AusdrÅcke</B>
 
-<P>Note that the above example is <I>not</I> a shorthand for
-writing <CODE>(a|b)(c|d)(c|d)(a|b)</CODE>. Backreferences do
-not refer to the ERE, but to what was matched by it.
+<P>Mit runden Klammern kînnen Sie REs gruppieren, um Operatoren wie
+Wiederholungen oder Alternativen genau zu bezeichnen.
+Beispielsweise findet <CODE>(frosch|krîte)+</CODE> eine oder mehrere Wiederholungen
+von entweder
+<CODE>frosch</CODE> oder <CODE>krîte</CODE>.
 
-<P>Backreferences can be done within nested EREs to backreference
-nested EREs. For example, <CODE>frog|((a|bc)d\1)</CODE> matches
-<CODE>frog</CODE>, or <CODE>ada</CODE>, or <CODE>bcdbc</CODE>,
-but not <CODE>adbc</CODE>.
+<P>Klammern kînnen mehrfach geschachtelt werden.
+
+<P><B>RÅckbeziehung</B>
+
+<P>Jedesmal, wenn ein RE auf eine Zeichenkette pa·t, wird die
+gefundene Zeichenkette intern gespeichert. Sie kînnen sich
+auf diese gespeicherte Zeichenkette rÅckbeziehen, d.h. was vorher
+gepa·t hat, soll noch einmal passen, indem Sie einen SchrÑgstrich
+rÅckwÑrts mit einer Dezimalziffer eingeben.
+So kann auf bis zu 9 REs zugegriffen werden.
+
+<P>Beispielsweise besagt <CODE>\2</CODE>, da· der zweite Klammersatz
+noch einmal vorkommen mu·. So findet der Ausdruck
+<CODE>(a|b)(c|d)\2\1</CODE> die Zeichenkette <CODE>acca</CODE> oder
+<CODE>adda</CODE> oder <CODE>bcca</CODE> oder <CODE>bddb</CODE>.
+
+<P>Beachten Sie, da· das obige Beispiel <i>keine</i> AbkÅrzung fÅr
+<CODE>(a|b)(c|d)(c|d)(a|b)</CODE> ist. Die RÅckbeziehungen beziehen
+sich nicht auf den Ausdruck, sondern dasjenige, was von dem Ausdruck
+gefunden wurde.
+
+<P>RÅckbeziehungen kînnen ebenfalls geschachtelt werden.
+Beispielsweise findet <CODE>frosch|((a|bc)d\1)</CODE> die Zeichenketten
+<CODE>frosch</CODE> oder <CODE>ada</CODE> oder <CODE>bcdbc</CODE>, aber
+nicht <CODE>adbc</CODE>.
 
 <!--
 <P><B>Substitutions</B>
