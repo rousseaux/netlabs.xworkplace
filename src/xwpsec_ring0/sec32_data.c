@@ -22,16 +22,20 @@
 #define INCL_NOPMAPI
 #include <os2.h>
 
+#include "security\ring0api.h"
+
 #include "xwpsec32.sys\types.h"
-#include "xwpsec32.sys\xwpsec_types.h"
 
-int             _dllentry = 0;
+#include "xwpsec32.sys\xwpsec_callbacks.h"
 
-extern ULONG    G_pidShell = 0;
+int                     _dllentry = 0;
+
+extern ULONG            G_pidShell = 0;
                     // while this is null, the daemon is not running
                     // -> local security disabled
 
-extern CHAR     G_szScratchBuf[1000] = "";
+extern CHAR             G_szScratchBuf[1000] = "";
         // generic temporary buffer for composing strings etc.
 
-
+// extern EVENTBUFUNION    G_EventBuf = {0};
+        // union with the various event buffers

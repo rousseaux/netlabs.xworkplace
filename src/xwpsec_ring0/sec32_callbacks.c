@@ -30,13 +30,11 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-// #include <secure.h>
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\devhlp32.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 struct SecImp_s G_SecurityHooks =
@@ -83,7 +81,7 @@ struct SecImp_s G_SecurityHooks =
                         //      notifies ISS of DosWrite completion;
                         //      ISS can restore data
 
-   0, // CLOSE,               // VOID  (* CallType CLOSE)(ULONG SFN);
+   CLOSE,               // VOID  (* CallType CLOSE)(ULONG SFN);
                         //      notifies ISS of DosClose completion
 
    0,                   // VOID  (* CallType CHGFILEPTR)(ULONG SFN,
@@ -95,10 +93,10 @@ struct SecImp_s G_SecurityHooks =
                         //      ISS may modify values;
                         //      this way ISS may embed ACL data in the files
 
-   0, // DELETE_PRE,          // ULONG (* CallType DELETE_PRE) (PSZ pszPath);
+   DELETE_PRE,          // ULONG (* CallType DELETE_PRE) (PSZ pszPath);
                         //      lets ISS authorize DosDelete
 
-   0, // DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
+   DELETE_POST,         // VOID  (* CallType DELETE_POST)(PSZ pszPath,
                         //                                ULONG RC);
                         //      notifies ISS of DosDelete completion
 
@@ -113,17 +111,17 @@ struct SecImp_s G_SecurityHooks =
                         //                               ULONG RC);
                         //      notifies ISS of DosMove completion
 
-   0, // LOADEROPEN,          // ULONG (* CallType LOADEROPEN)(PSZ pszPath,
+   LOADEROPEN,          // ULONG (* CallType LOADEROPEN)(PSZ pszPath,
                         //                               ULONG SFN);
                         //      lets ISS authorize kernel loader open...
                         //      is this called after OPENPRE?
 
-   0, // GETMODULE,           // ULONG (* CallType GETMODULE) (PSZ pszPath);
+   GETMODULE,           // ULONG (* CallType GETMODULE) (PSZ pszPath);
                         //      called whenever a process tries to load a
                         //      DLL or EXE into its address space...
                         //      is this called after OPENPRE?
 
-   0, // EXECPGM,             // ULONG (* CallType EXECPGM)   (PSZ pszPath,
+   EXECPGM,             // ULONG (* CallType EXECPGM)   (PSZ pszPath,
                         //                               PCHAR pchArgs);
                         //      lets ISS authorize DosExecPgm;
                         //      all executables boil down to this function,
@@ -193,7 +191,7 @@ struct SecImp_s G_SecurityHooks =
 
    0,                   // ULONG (* CallType FINDCLOSE3X) (ULONG ulSrchHandle);              //DGE02
 
-   0, // EXECPGM_POST,        // VOID  (* CallType EXECPGM_POST) (PSZ pszPath,
+   EXECPGM_POST,        // VOID  (* CallType EXECPGM_POST) (PSZ pszPath,
                         //                                  PCHAR pchArgs,
                         //                                  ULONG NewPID);
                         //      notifies ISS of DosExecPgm completion

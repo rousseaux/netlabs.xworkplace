@@ -29,7 +29,6 @@
 #include "xwpsec32.sys\DevHlp32.h"
 #include "xwpsec32.sys\reqpkt32.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 #include "bldlevel.h"

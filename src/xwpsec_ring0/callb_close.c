@@ -32,23 +32,40 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
+
+/* ******************************************************************
+ *
+ *   Callouts
+ *
+ ********************************************************************/
 
 /*
  *@@ CLOSE:
  *      SES kernel hook for CLOSE.
- *      This gets called from the OS/2 kernel to notify
- *      the ISS of a close event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
- *
- *      Currently disabled. @@todo
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
  */
 
 VOID CallType CLOSE(ULONG SFN)
 {
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_CLOSE pBuf;
 
+            if (pBuf = ctxtLogEvent(EVENT_CLOSE,
+                                    sizeof(EVENTBUF_CLOSE)))
+            {
+                pBuf->SFN = SFN;
+            }
+        }
+    }
 }
 

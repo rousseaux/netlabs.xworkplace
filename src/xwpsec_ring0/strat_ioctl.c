@@ -35,7 +35,6 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 /* ******************************************************************
@@ -83,7 +82,10 @@ IOCTLRET ioctlRegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to req
            pplShell,
            pplShell->cbStruct);
 
-    // now get the caller's (shell's) PID  and store that,
+    // reset logging flag in case this is a reopen
+    G_bLog = LOG_INACTIVE;
+
+    // now get the caller's (shell's) PID and store that,
     // because we need that for extra privileges of the shell;
     // also once G_pidShell is != null,
     // ACCESS CONTROL IS ENABLED GLOBALLY
@@ -91,9 +93,6 @@ IOCTLRET ioctlRegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to req
                              &G_pLDT))
         // error:
         return ERROR_I24_GEN_FAILURE;
-
-    // reset logging flag in case this is a reopen
-    G_bLog = LOG_INACTIVE;
 
     // alright from now on we authenticate!
     G_pidShell = G_pLDT->LIS_CurProcID;

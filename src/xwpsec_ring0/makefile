@@ -150,20 +150,23 @@ $(DRIVERNAME).def
 <<
 # /NOD
 !ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
+    @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
-        @cd $(MODULESDIR)
-        mapsym $(DRIVERNAME).map
+    @cd $(MODULESDIR)
+    mapsym $(DRIVERNAME).map
 !ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
+    @$(CVS_WORK_ROOT_DRIVE)
 !endif
-        @cd $(MYDIR)
-        -copy $@             E:\os2
-        -copy $(@:.sys=.sym) E:\os2
-        -copy $@             F:\os2\boot
-        -copy $(@:.sys=.sym) F:\os2\boot
-        -copy $@             I:\os2\boot
-        -copy $(@:.sys=.sym) I:\os2\boot
+    @cd $(MYDIR)
+    -copy $@             E:\os2
+    -copy $(@:.sys=.sym) E:\os2
+    -copy $@             F:\os2\boot
+    -copy $(@:.sys=.sym) F:\os2\boot
+    -copy $@             I:\os2\boot
+    -copy $(@:.sys=.sym) I:\os2\boot
+!ifdef PMDFDIR
+    -copy $(@:.sys=.sym) $(PMDFDIR)
+!endif
 
 
 # The .OBJ-from-sources dependencies are now automatically

@@ -32,70 +32,234 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
+
+/* ******************************************************************
+ *
+ *   Callouts
+ *
+ ********************************************************************/
 
 /*
  *@@ LOADEROPEN:
  *      SES kernel hook for LOADEROPEN.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      This is a "pre" event. Required privileges:
+ *
+ *      --  XWPACCESS_EXEC on the executable.
+ *
+ *      LOADEROPEN always receives a fully qualified pathname.
+ *
+ *      --  For EXE files, we get this sequence on the EXE file:
+ *
+ *          1)  OPEN_PRE, OPEN_POST
+ *          2)  LOADEROPEN
+ *          3)  GETMODULE
+ *          4) EXEC_PRE, EXEC_POST
+ *
+ *      --  For unqualified DLL names that have not yet been loader,
+ *          we get:
+ *
+ *          1)  GETMODULE short name
+ *          2)  OPEN_PRE, OPEN_POST with the long name for every
+ *              directory along the LIBPATH
+ *          3)  LOADEROPEN
+ *
+ *      --  For unqualified DLL names that are already loaded, we get:
+ *
+ *          1)  GETMODULE
+ *
+ *      --  For fully qualified DLL names, we get:
+ *
+ *          1)  GETMODULE full name
+ *          2)  OPEN_PRE, OPEN_POST with the full name
+ *          3)  LOADEROPEN
  */
 
 ULONG LOADEROPEN(PSZ pszPath,
                  ULONG SFN)
 {
-    return NO_ERROR;
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        // authorize event if it is not from XWPShell
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+        }
+
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_LOADEROPEN pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_LOADEROPEN,
+                                    sizeof(EVENTBUF_LOADEROPEN) + ulPathLen))
+            {
+                pBuf->SFN = SFN;
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
+
+    return rc;
 }
 
 /*
  *@@ GETMODULE:
  *      SES kernel hook for GETMODULE.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      This is a "pre" event. Required privileges:
+ *
+ *      --  XWPACCESS_EXEC on the executable.
+ *
+ *      This can come in with "pure" (unqualified) module names.
+ *      See LOADEROPEN for details.
+ *
+ *      However if the module is already in memory, it is not
+ *      followed by any other callout. We should then check if
+ *      the current task is allowed to see the module. @@todo
+ *      How do we figure out the access rights if the module
+ *      name is _not_ fully qualified?
  */
 
 ULONG GETMODULE(PSZ pszPath)
 {
-    return NO_ERROR;
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        // authorize event if it is not from XWPShell
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+        }
+
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_GETMODULE,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
+
+    return rc;
 }
 
 /*
  *@@ EXECPGM:
  *      SES kernel hook for EXECPGM.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      Comes in for EXE files only.
+ *
+ *      Required privileges:
+ *
+ *      --  XWPACCESS_EXEC on the executable.
  */
 
 ULONG EXECPGM(PSZ pszPath,
               PCHAR pchArgs)
 {
-    return NO_ERROR;
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        // authorize event if it is not from XWPShell
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+        }
+
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_EXECPGM_PRE,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+
+                // log arguments in a second buffer because
+                // this can be up to 64K in itself @@todo
+                // EVENT_EXECPGM_ARGS
+            }
+        }
+    }
+
+    return rc;
 }
 
 /*
  *@@ EXECPGM_POST:
  *      SES kernel hook for EXECPGM_POST.
- *      This gets called from the OS/2 kernel to notify
- *      the ISS of this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
  */
 
 VOID EXECPGM_POST(PSZ pszPath,
                   PCHAR pchArgs,
                   ULONG NewPID)
 {
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_EXECPGM_POST,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = NewPID;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
 }
 
 

@@ -34,7 +34,6 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 /* ******************************************************************

@@ -32,41 +32,94 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
+
+/* ******************************************************************
+ *
+ *   Callouts
+ *
+ ********************************************************************/
 
 /*
  *@@ DELETE_PRE:
  *      SES kernel hook for DELETE_PRE.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      This is a "pre" event. Required privileges:
+ *
+ *      -- XWPACCESS_DELETE on the file.
  */
 
 ULONG DELETE_PRE(PSZ pszPath)
 {
-    return NO_ERROR;
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        // authorize event if it is not from XWPShell
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+        }
+
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_DELETE_PRE,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
+
+    return rc;
 }
 
 /*
  *@@ DELETE_POST:
  *      SES kernel hook for DELETE_POST.
- *      This gets called from the OS/2 kernel to notify
- *      the ISS of this event. We need this so entries
- *      in the ACL database can be deleted.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
- *
- *      Currently disabled. @@todo
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
  */
 
 VOID DELETE_POST(PSZ pszPath,
                  ULONG RC)
 {
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
 
+            if (pBuf = ctxtLogEvent(EVENT_DELETE_POST,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = RC;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
+    }
 }
 
 

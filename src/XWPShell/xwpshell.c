@@ -63,6 +63,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSQUEUES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINPOINTERS
@@ -678,11 +679,6 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
                     pQD->arc = ProcessQueueCommand(pQD,
                                                    // caller's pid
                                                    rq.pid);
-
-                    // free shared memory for this process... it was
-                    // given to us by the client, so we must lower
-                    // the resource count (client will still own it)
-                    DosFreeMem(pQD);
                 }
                 CATCH(excpt1)
                 {
@@ -691,6 +687,11 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
                 DosPostEventSem(hev);
                 DosCloseEventSem(hev);
             }
+
+            // free shared memory for this process... it was
+            // given to us by the client, so we must lower
+            // the resource count (client will still own it)
+            DosFreeMem(pQD);
         }
         else
             _PmpfF(("DosReadQueue returned %d", arc));
@@ -856,10 +857,26 @@ int main(int argc, char *argv[])
     ULONG       cbFile = 0;
 
     CHAR        szLog[500];
-    sprintf(szLog, "%c:\\xwpshell.log", doshQueryBootDrive());
+    CHAR        szBoot[] = "?:";
+    PSZ         pszLogDir;
+    if (DosScanEnv("LOGFILES",      // new eCS 1.1 setting
+                   &pszLogDir))
+    {
+        // variable not set:
+#ifdef __EWORKPLACE__
+        return FALSE;
+#else
+        szBoot[0] = doshQueryBootDrive();
+        pszLogDir = szBoot;
+#endif
+    }
+
+    sprintf(szLog,
+            "%s\\xwpshell.log",
+            pszLogDir);
 
     doshOpen(szLog,
-             XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
+             XOPEN_READWRITE_NEW, // XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
              &cbFile,
              &G_LogFile);
 

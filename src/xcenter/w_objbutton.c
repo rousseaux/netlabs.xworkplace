@@ -965,6 +965,7 @@ STATIC BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PAINT.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
+ *@@changed V1.0.1 (2003-01-13) [umoeller]: fixed trap in WinDrawPointer if obj pointer is broken
  */
 
 STATIC VOID OwgtPaintButton(HWND hwnd)
@@ -1022,7 +1023,10 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
                     // object not queried yet:
                     pPrivate->pobjButton = FindObject(pPrivate);
 
-                if (pPrivate->pobjButton)
+                if (!pPrivate->pobjButton)
+                    xbd.hptr = NULLHANDLE;      // otherwise we trap in WinDrawPointer later!
+                                                // V1.0.1 (2003-01-13) [umoeller]
+                else
                 {
                     PMINIRECORDCORE pmrc;
 

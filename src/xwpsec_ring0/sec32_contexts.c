@@ -33,127 +33,9 @@
 #include "xwpsec32.sys\DevHlp32.h"
 #include "xwpsec32.sys\reqpkt32.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 #include "security\ring0api.h"
-
-/* ******************************************************************
- *
- *   Private definitions
- *
- ********************************************************************/
-
-/*
- *@@ LOGBUF:
- *      ring 0 logging buffer.
- *
- *      Logging works as follows:
- *
- *      1)  After the driver has been opened successfully
- *          by the shell, it starts a logging thread,
- *          which calls DosDevIOCtl into the driver with
- *          an XWPSECIO_GETLOGBUF function code. The thread
- *          is then blocked in the driver until logging
- *          data becomes available.
- *
- *      2)  Whenever ctxtLogEvent is called (e.g. from the
- *          OPEN_PRE callout), it receives the size of the
- *          data that is to go into the log buffers.
- *
- *          If no log buffer has yet been allocated (first
- *          call), ctxtLogEvent allocates one.
- *
- *          If we have a log buffer already, this means that
- *          the logging thread is currently unblocked and
- *          busy in ring 3. We then check if there is still
- *          sufficient memory available in it to store a new
- *          EVENTLOGENTRY.
- *
- *          If not, we allocate a new LOGBUF and append
- *          it to the previously last one.
- *
- *          In any case, we then append a new EVENTLOGENTRY
- *          to the LOGBUF (either the old one or the new one).
- *
- *      3)  If the ring-3 logging thread is currently blocked
- *          in the driver, we detach all logging buffers that
- *          have piled up so far and make them visible to
- *          the shell by calling VMGlobalToProcess. The ring-3
- *          thread is then unblocked so it can process the
- *          buffers in ring 3.
- *
- *      Event flow:
- *
- +          ring 3 logging thread       ring 0 (task time           ring 0 (other task)
- +                                      of logging thread,
- +                                      GETLOGBUF implement'n)
- +
- +          XWPShell starts logging
- +          thread,
- +
- +          calls IOCtl with GETLOGBUF
- +
- +                                      ctxtFillLogBuf() sees
- +                                      we have no LOGBUF data,
- +                                      so ProcBlock() logging
- +                                      thread
- +
- +      (*) (blocked)                                               OPEN_PRE calls ctxtLogEvent
- +          ³
- +          ³                                                       1) append LOGBUF data
- +          ³
- +          ³                                                       2) see that log thread is blocked:
- +          ³                                                          ProcRun() logging thread,
- +          ÀÄ (unblocked)                                             return
- +
- +                                      ProcBlock() returns in
- +                                      ctxtFillLogBuf():
- +                                      memcpy to ring-3 LOGBUF
- +
- +                                      return from ioctl
- +
- +          process logbufs
- +          ³
- +          ³
- +          ³                                                       OPEN_PRE calls ctxtLogEvent
- +          ³
- +          ³                                                       1) append LOGBUF data
- +          ³
- +          ³                                                       2) see that log thread is busy:
- +          ³                                                          do nothing
- +          ³
- +          ³
- +          ³                                                       OPEN_PRE calls ctxtLogEvent
- +          ³
- +          ³                                                       1) append LOGBUF data
- +          ³
- +          ³                                                       2) see that log thread is busy:
- +          ³                                                          do nothing
- +          ³
- +          ³
- +          À call IOCtl with GETLOGBUF
- +
- +                                      ctxtFillLogBuf()
- +                                      sees that we have data:
- +                                      memcpy to ring-3 LOGBUF
- +
- +                                      return from ioctl
- +
- +          process logbufs                                         (no events this time)
- +          ³
- +          ³
- +          À call IOCtl with GETLOGBUF
- +
- +                                      ctxtFillLogBuf() sees
- +                                      we have no LOGBUF data,
- +                                      so ProcBlock() logging
- +                                      thread
- +
- +                                      go back to (*) above
- *
- *@@added V1.0.1 (2003-01-10) [umoeller]
- */
 
 /* ******************************************************************
  *
@@ -185,6 +67,119 @@ extern ULONG    G_idLogBlock = 0;       // if != 0, the blockid that the logging
  *   Audit logging
  *
  ********************************************************************/
+
+/*
+ *      Logging works as follows:
+ *
+ *      1)  After the driver has been opened successfully
+ *          by the shell, it starts a logging thread,
+ *          which calls DosDevIOCtl into the driver with
+ *          an XWPSECIO_GETLOGBUF function code. This
+ *          ends up in ctxtFillLogBuf() where the thread
+ *          is blocked until logging data becomes available.
+ *
+ *      2)  Whenever ctxtLogEvent is called (e.g. from the
+ *          OPEN_PRE callout), it receives the size of the
+ *          data that is to go into the log buffers.
+ *
+ *          If no log buffer has yet been allocated, or if
+ *          there's one, but there's not enough room left
+ *          for the new data, ctxtLogEvent allocates one.
+ *          The driver maintains a linked list of logging
+ *          buffers and always appends to the last one
+ *          (while the ring-3 thread always takes off the
+ *          first buffer from the list).
+ *
+ *          Otherwise we append to the current logging buffer.
+ *
+ *          In any case, we then append a new EVENTLOGENTRY
+ *          to the LOGBUF (either the old one or the new one).
+ *
+ *      3)  We then check if the ring-3 thread is currently
+ *          blocked. If so, we unblock it; otherwise it's
+ *          still busy processing previous data and we do
+ *          nothing.
+ *
+ *      Whenever the ring-3 thread gets unblocked,
+ *      ctxtFillLogBuf() takes the first buffer off the list
+ *      and copies it into ring-3 memory. The buffer from
+ *      the list is then freed again.
+ *
+ *      Sample event flow:
+ *
+ +          ring 3 logging thread     ³ ring 0 (task time          ³ ring 0 (other task)
+ +                                    ³ of logging thread,         ³
+ +                                    ³ GETLOGBUF implement'n)     ³
+ +                                    ³                            ³
+ +      ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ +                                    ³                            ³
+ +          XWPShell starts logging   ³                            ³
+ +          thread,                   ³                            ³
+ +                                    ³                            ³
+ +          calls GETLOGBUF ioctl     ³                            ³
+ +                                    ³                            ³
+ +                                    ³ ctxtFillLogBuf() sees      ³
+ +                                    ³ we have no LOGBUF data,    ³
+ +                                    ³ so ProcBlock() logging     ³
+ +                                    ³ thread                     ³
+ +                                    ³                            ³
+ +      (*) (blocked)                 ³                            ³ OPEN_PRE calls ctxtLogEvent
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ 1) append LOGBUF data
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ 2) see that log thread is blocked:
+ +          ³                         ³                            ³    ProcRun() logging thread,
+ +          ÀÄ (unblocked)            ³                            ³    return
+ +                                    ³                            ³
+ +                                    ³ ProcBlock() returns in     ³
+ +                                    ³ ctxtFillLogBuf():          ³
+ +                                    ³                            ³
+ +                                    ³ memcpy to ring-3 LOGBUF    ³
+ +                                    ³ return from ioctl          ³
+ +                                    ³                            ³
+ +          process logbufs           ³                            ³
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ OPEN_PRE calls ctxtLogEvent
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ 1) append LOGBUF data
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ 2) see that log thread is busy:
+ +          ³                         ³                            ³    do nothing
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ OPEN_PRE calls ctxtLogEvent
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ 1) append LOGBUF data
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³ 2) see that log thread is busy:
+ +          ³                         ³                            ³    do nothing
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³
+ +          À calls GETLOGBUF ioctl   ³                            ³
+ +                                    ³                            ³
+ +                                    ³ ctxtFillLogBuf()           ³
+ +                                    ³ sees that we have data:    ³
+ +                                    ³ do not block               ³
+ *                                    ³                            ³
+ +                                    ³ memcpy to ring-3 LOGBUF    ³
+ +                                    ³ return from ioctl          ³
+ +                                    ³                            ³
+ +          process logbufs           ³                            ³ (no events this time)
+ +          ³                         ³                            ³
+ +          ³                         ³                            ³
+ +          À calls GETLOGBUF ioctl   ³                            ³
+ +                                    ³                            ³
+ +                                    ³ ctxtFillLogBuf() sees      ³
+ +                                    ³ we have no LOGBUF data,    ³
+ +                                    ³ so ProcBlock() logging     ³
+ +                                    ³ thread                     ³
+ +                                    ³                            ³
+ +                                    ³ go back to (*) above       ³
+ +                                    ³                            ³
+ +      ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ *
+ */
 
 /*
  *@@ CreateLogBuffer:
@@ -234,14 +229,30 @@ VOID RunLoggerThread(VOID)
 
 /*
  *@@ ctxtLogEvent:
- *      appends a new log entry to the global logging
- *      data.
+ *      appends a new EVENTLOGENTRY to the global logging
+ *      data and returns a pointer to where event-specific
+ *      data can be copied.
  *
  *      Runs at task time of any thread in the system
  *      that calls a system API, including XWPShell
  *      itself. For example, we end up here whenever
  *      someone calls DosOpen through the OPEN_PRE
  *      callout.
+ *
+ *      Each log entry consists of a fixed-size
+ *      EVENTLOGENTRY struct with information like
+ *      date, time, pid, and tid of the event and
+ *      the event code. This data is filled in by
+ *      this function.
+ *
+ *      This function returns a pointer to the first
+ *      byte after that structure where the caller must
+ *      copy the event-specific data to. This is to avoid
+ *      multiple memcpy's so the logger can memcpy directly
+ *      into the buffer. However, the cbData passed in to
+ *      this function needs to be the size of the entire
+ *      _variable_ data so we can reserve memory correctly
+ *      in here.
  *
  *      Preconditions:
  *
@@ -252,12 +263,13 @@ VOID RunLoggerThread(VOID)
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-VOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
-                  PVOID pvData,           // in: event-specific data
-                  ULONG cbData)           // in: size of that buffer
+PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
+                   ULONG cbData)           // in: size of that buffer
 {
-    ULONG   cbLogEntry =   sizeof(EVENTLOGENTRY)
-                         + cbData;
+    PVOID   pvReturn = NULL;
+    // determine size we need:
+    ULONG   cbLogEntry =   sizeof(EVENTLOGENTRY)    // fixed-size struct first
+                         + cbData;                  // event-specific data next
 
     // do we have a log buffer allocated currently?
     if (!G_pLogLast)
@@ -289,32 +301,32 @@ VOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
         G_bLog = LOG_ERROR;
     else
     {
-        // determine where to copy stuff to in LOGBUF
+        // determine target address of new EVENTLOGENTRY in LOGBUF
         PEVENTLOGENTRY pEntry = (PEVENTLOGENTRY)((PBYTE)G_pLogLast + G_pLogLast->cbUsed);
         // event-specific data follows right after
         PBYTE pbCopyTo = (PBYTE)pEntry + sizeof(EVENTLOGENTRY);
+
+        // 1) fill fixed EVENTLOGENTRY struct
 
         pEntry->cbStruct = cbLogEntry;
         pEntry->ulEventCode = ulEventCode;
 
         // copy the first 16 bytes from local infoseg
-        // into log buffer (these match our CONTEXTINFO
+        // into log entry (these match our CONTEXTINFO
         // declaration in ring0api.h)
         memcpy(&pEntry->ctxt,
                G_pLDT,
                sizeof(CONTEXTINFO));
 
         // copy the first 20 bytes from global infoseg
-        // into log buffer (these match our TIMESTAMP
+        // into log entry (these match our TIMESTAMP
         // declaration in ring0api.h)
         memcpy(&pEntry->stamp,
                G_pGDT,
                sizeof(TIMESTAMP));
 
-        // copy event-specific data
-        memcpy(pbCopyTo,
-               pvData,
-               cbData);
+        // 2) return ptr to event-specific data
+        pvReturn = pbCopyTo;
 
         // update the current LOGBUF
         G_pLogLast->cbUsed += cbLogEntry;
@@ -322,16 +334,20 @@ VOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
 
         // update global ring-0 status
         ++(G_R0Status.cLogged);
-
-        // unblock ring-3 thread if necessary
-        RunLoggerThread();
     }
+
+    // unblock ring-3 thread if necessary
+    RunLoggerThread();
+
+    return pvReturn;
 }
 
 /*
  *@@ ctxtStopLogging:
  *      gets called from ioctlDeregisterDaemon to clean up
- *      when the driver is closed.
+ *      when the driver is closed. Aside from freeing all
+ *      remaining buffers, we must explicitly unblock the
+ *      ring-3 thread or we'll end up with a zombie shell.
  *
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
@@ -348,6 +364,10 @@ VOID ctxtStopLogging(VOID)
         --(G_R0Status.cLogBufs);
         pThis = pNext;
     }
+
+    G_pLogFirst
+    = G_pLogLast
+    = NULL;
 
     // stop logging until next open
     G_bLog = LOG_ERROR;
@@ -406,6 +426,9 @@ IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to r
     _disable();
     while (    (!G_pLogFirst)
             && (G_bLog == LOG_ACTIVE)
+                    // keep rechecking G_bLog too because we get unblocked
+                    // also when the driver is closed, and we'll end up
+                    // with a zombie XWPShell in that case otherwise
           )
     {
         // no logging data yet:
@@ -417,6 +440,7 @@ IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to r
         {
             // probably thread died or something
             rc = ERROR_I24_CHAR_CALL_INTERRUPTED;
+            break;
         }
 
         _disable();
@@ -427,46 +451,43 @@ IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to r
     // so reset global blockid
     G_idLogBlock = 0;
 
-    // the logging memory _might_ have been freed
-    // if the driver was closed from XWPShell via
-    // ctxtStopLogging(), so check again if we
-    // really have memory
-    if (    (!G_pLogFirst)
-         || (G_bLog != LOG_ACTIVE)
-       )
-        rc = ERROR_I24_CHAR_CALL_INTERRUPTED;
-    else if (!rc)
+    if (!rc)
     {
-        // we have logging data:
-        // backup "first" pointer
-        PLOGBUF pFirst = G_pLogFirst;
+        // the logging memory _might_ have been freed
+        // if the driver was closed from XWPShell via
+        // ctxtStopLogging(), so check again if we
+        // really have memory
+        if (    (!G_pLogFirst)
+             || (G_bLog != LOG_ACTIVE)
+           )
+            rc = ERROR_I24_CHAR_CALL_INTERRUPTED;
+        else
+        {
+            // we have logging data:
+            // backup "first" pointer
+            PLOGBUF pFirst = G_pLogFirst;
 
-        memcpy(pLogBufR3,
-               G_pLogFirst,
-               G_pLogFirst->cbUsed);
+            memcpy(pLogBufR3,
+                   G_pLogFirst,
+                   G_pLogFirst->cbUsed);
 
-        // unlink this record
-        if (G_pLogFirst == G_pLogLast)
-            // we only had one buffer: unset last
-            G_pLogLast = NULL;
+            // unlink this record
+            if (G_pLogFirst == G_pLogLast)
+                // we only had one buffer: unset last
+                G_pLogLast = NULL;
 
-        G_pLogFirst = G_pLogFirst->pNext;       // will be NULL if this was last
+            G_pLogFirst = G_pLogFirst->pNext;       // will be NULL if this was last
 
-        utilFreeFixed(pFirst,
-                      LOGBUFSIZE);     // 64K
-        --(G_R0Status.cLogBufs);
+            utilFreeFixed(pFirst,
+                          LOGBUFSIZE);     // 64K
+            --(G_R0Status.cLogBufs);
 
-        G_idLogBlock = 0;
+            G_idLogBlock = 0;
+        }
     }
 
     return rc;
 }
-
-/* ******************************************************************
- *
- *   Security contexts implementation
- *
- ********************************************************************/
 
 /* ******************************************************************
  *

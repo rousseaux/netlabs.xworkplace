@@ -32,17 +32,19 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 /*
  *@@ FINDFIRST:
  *      SES kernel hook for FINDFIRST.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      Required privileges:
+ *
+ *      --  XWPACCESS_READ on the directory.
  */
 
 ULONG FINDFIRST(PFINDPARMS pParms)

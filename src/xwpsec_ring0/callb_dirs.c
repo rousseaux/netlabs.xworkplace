@@ -32,17 +32,19 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 /*
  *@@ MAKEDIR:
  *      SES kernel hook for MAKEDIR.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      Required privileges:
+ *
+ *      --  XWPACCESS_CREATE on the directory.
  */
 
 ULONG MAKEDIR(PSZ pszPath)
@@ -53,11 +55,14 @@ ULONG MAKEDIR(PSZ pszPath)
 /*
  *@@ CHANGEDIR:
  *      SES kernel hook for CHANGEDIR.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      Required privileges:
+ *
+ *      --  XWPACCESS_EXEC on the directory.
  */
 
 ULONG CHANGEDIR(PSZ pszPath)
@@ -68,15 +73,14 @@ ULONG CHANGEDIR(PSZ pszPath)
 /*
  *@@ REMOVEDIR:
  *      SES kernel hook for REMOVEDIR.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      Um, we have a problem here. There is no POST call
- *      for REMOVEDIR so we cannot find out whether REMOVEDIR
- *      failed and if not, remove the ACLDB entry.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      Required privileges:
+ *
+ *      --  XWPACCESS_DELETE on the directory.
  */
 
 ULONG REMOVEDIR(PSZ pszPath)

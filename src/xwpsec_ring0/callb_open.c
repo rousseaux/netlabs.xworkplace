@@ -31,16 +31,7 @@
 
 #include "security\ring0api.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
-
-/* ******************************************************************
- *
- *   Global variables
- *
- ********************************************************************/
-
-extern EVENTBUF_OPEN_MAX    G_OpenBuf = {0};
 
 /* ******************************************************************
  *
@@ -52,9 +43,33 @@ extern EVENTBUF_OPEN_MAX    G_OpenBuf = {0};
  *@@ OPEN_PRE:
  *      SES kernel hook for OPEN_PRE.
  *
- *      Since this is stored in G_SecurityHooks (sec32_callbacks.c),
- *      this gets called from the OS/2 kernel to give us a chance
- *      to authorize this event.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
+ *
+ *      This is a "pre" event. Required privileges:
+ *
+ *      --  If (fsOpenFlags & OPEN_ACTION_CREATE_IF_NEW):
+ *          XWPACCESS_CREATE
+ *
+ *      --  If (fsOpenFlags & OPEN_ACTION_OPEN_IF_EXISTS):
+ *          XWPACCESS_READ
+ *
+ *      --  If (fsOpenFlags & OPEN_ACTION_REPLACE_IF_EXISTS):
+ *          XWPACCESS_CREATE
+ *
+ *      --  If (fsOpenMode & OPEN_FLAGS_DASD) (open drive):
+ *          XWPACCESS_WRITE and XWPACCESS_DELETE and XWPACCESS_CREATE
+ *          for the entire drive (root directory).
+ *
+ *      --  If (fsOpenMode & OPEN_ACCESS_READONLY):
+ *          XWPACCESS_READ
+ *
+ *      --  If (fsOpenMode & OPEN_ACCESS_WRITEONLY):
+ *          XWPACCESS_WRITE
+ *
+ *      --  If (fsOpenMode & OPEN_ACCESS_READWRITE):
+ *          XWPACCESS_READ and XWPACCESS_WRITE
  */
 
 ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
@@ -62,47 +77,49 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
                         ULONG fsOpenMode,   // in: open mode
                         ULONG SFN)          // in: system file number
 {
-    G_OpenBuf.buf.rc = NO_ERROR;
+    APIRET  rc = NO_ERROR;
 
     if (    (G_pidShell)
          && (!DevHlp32_GetInfoSegs(&G_pGDT,
                                    &G_pLDT))
        )
     {
-        G_OpenBuf.buf.fsOpenFlags = fsOpenFlags;
-        G_OpenBuf.buf.fsOpenMode = fsOpenMode;
-        G_OpenBuf.buf.SFN = SFN;
-
-        G_OpenBuf.buf.ulPathLen = strlen(pszPath);
-
-        memcpy(G_OpenBuf.buf.szPath,
-               pszPath,
-               G_OpenBuf.buf.ulPathLen + 1);
-
-        G_OpenBuf.buf.cbStruct =   sizeof(EVENTBUF_OPEN)
-                                 + G_OpenBuf.buf.ulPathLen;
-
         // authorize event if it is not from XWPShell
         if (G_pidShell != G_pLDT->LIS_CurProcID)
         {
         }
 
         if (G_bLog == LOG_ACTIVE)
-            ctxtLogEvent(EVENT_OPENPRE,
-                         &G_OpenBuf,
-                         G_OpenBuf.buf.cbStruct);
+        {
+            PEVENTBUF_OPEN pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_OPEN_PRE,
+                                    sizeof(EVENTBUF_OPEN) + ulPathLen))
+            {
+                pBuf->fsOpenFlags = fsOpenFlags;
+                pBuf->fsOpenMode = fsOpenMode;
+                pBuf->SFN = SFN;
+                pBuf->Action = 0;           // not used with OPEN_PRE
+                pBuf->rc = rc;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
     }
 
-    return G_OpenBuf.buf.rc;
+    return rc;
 }
 
 /*
  *@@ OPEN_POST:
  *      security callback for OPEN_POST.
  *
- *      Since this is stored in G_SecurityHooks (sec32_callbacks.c),
- *      this gets called from the OS/2 kernel to give us notification
- *      about this event.
+ *      As with all our hooks, this is stored in G_SecurityHooks
+ *      (sec32_callbacks.c) force the OS/2 kernel to call us for
+ *      each such event.
  */
 
 ULONG CallType OPEN_POST(PSZ pszPath,
@@ -117,31 +134,25 @@ ULONG CallType OPEN_POST(PSZ pszPath,
                                    &G_pLDT))
        )
     {
-        G_OpenBuf.buf.fsOpenFlags = fsOpenFlags;
-        G_OpenBuf.buf.fsOpenMode = fsOpenMode;
-        G_OpenBuf.buf.SFN = SFN;
-
-        G_OpenBuf.buf.rc = RC;
-        G_OpenBuf.buf.Action = Action;
-
-        G_OpenBuf.buf.ulPathLen = strlen(pszPath);
-
-        memcpy(G_OpenBuf.buf.szPath,
-               pszPath,
-               G_OpenBuf.buf.ulPathLen + 1);
-
-        G_OpenBuf.buf.cbStruct =   sizeof(EVENTBUF_OPEN)
-                                 + G_OpenBuf.buf.ulPathLen;
-
-        // authorize event if it is not from XWPShell
-        if (G_pidShell != G_pLDT->LIS_CurProcID)
-        {
-        }
-
         if (G_bLog == LOG_ACTIVE)
-            ctxtLogEvent(EVENT_OPENPOST,
-                         &G_OpenBuf,
-                         G_OpenBuf.buf.cbStruct);
+        {
+            PEVENTBUF_OPEN pBuf;
+            ULONG   ulPathLen = strlen(pszPath);
+
+            if (pBuf = ctxtLogEvent(EVENT_OPEN_POST,
+                                    sizeof(EVENTBUF_OPEN) + ulPathLen))
+            {
+                pBuf->fsOpenFlags = fsOpenFlags;
+                pBuf->fsOpenMode = fsOpenMode;
+                pBuf->SFN = SFN;
+                pBuf->Action = Action;
+                pBuf->rc = RC;
+                pBuf->ulPathLen = ulPathLen;
+                memcpy(pBuf->szPath,
+                       pszPath,
+                       ulPathLen + 1);
+            }
+        }
     }
 
     return NO_ERROR;

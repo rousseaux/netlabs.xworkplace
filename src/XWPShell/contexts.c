@@ -20,6 +20,8 @@
  *      GNU General Public License for more details.
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSDEVICES
 #define INCL_DOSERRORS
@@ -29,9 +31,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <io.h>
+#include <setjmp.h>
 
 #include "setup.h"
 
+#include "helpers\except.h"
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
 #include "helpers\nls.h"                // National Language Support helpers
@@ -278,6 +282,157 @@ APIRET LogEntry(PEVENTLOGENTRY pThis,
 }
 
 /*
+ *@@ LogLoop:
+ *
+ *@@added V1.0.1 (2003-01-13) [umoeller]
+ */
+
+VOID LogLoop(PTHREADINFO ptiMyself,
+             PLOGBUF pLogBuf)
+{
+    APIRET  arc;
+
+    while (!ptiMyself->fExit)
+    {
+        if (!(arc = SecIOCtl(XWPSECIO_GETLOGBUF,
+                             pLogBuf,
+                             LOGBUFSIZE)))
+        {
+            ULONG ul;
+            PEVENTLOGENTRY pThis = (PEVENTLOGENTRY)((PBYTE)pLogBuf + sizeof(LOGBUF));
+
+            for (ul = 0;
+                 ul < pLogBuf->cLogEntries;
+                 ++ul)
+            {
+                PBYTE   pbData = (PBYTE)pThis + sizeof(EVENTLOGENTRY);
+
+                switch (pThis->ulEventCode)
+                {
+                    case EVENT_OPEN_PRE:
+                    {
+                        PEVENTBUF_OPEN pOpen = (PEVENTBUF_OPEN)pbData;
+                        LogEntry(pThis,
+                                 "%04d: OPEN PRE  %04lX=\"%s\" %08lX %08lX -> rc %d",
+                                 ul,
+                                 pOpen->SFN,
+                                 pOpen->szPath,
+                                 pOpen->fsOpenFlags,
+                                 pOpen->fsOpenMode,
+                                 pOpen->rc);
+                    }
+                    break;
+
+                    case EVENT_OPEN_POST:
+                    {
+                        PEVENTBUF_OPEN pOpen = (PEVENTBUF_OPEN)pbData;
+                        LogEntry(pThis,
+                                 "%04d: OPEN POST %04lX=\"%s\" %08lX %08lX -> rc %d",
+                                 ul,
+                                 pOpen->SFN,
+                                 pOpen->szPath,
+                                 pOpen->fsOpenFlags,
+                                 pOpen->fsOpenMode,
+                                 pOpen->rc);
+                    }
+                    break;
+
+                    case EVENT_LOADEROPEN:
+                    {
+                        PEVENTBUF_LOADEROPEN pFile = (PEVENTBUF_LOADEROPEN)pbData;
+                        LogEntry(pThis,
+                                 "%04d: LOADROPEN %04lX=\"%s\" -> rc %d",
+                                 ul,
+                                 pFile->SFN,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_GETMODULE:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pThis,
+                                 "%04d: GETMODULE      \"%s\" -> rc %d",
+                                 ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_EXECPGM_PRE:
+                    {
+                        PEVENTBUF_FILENAME pExec = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pThis,
+                                 "%04d: EXEC PRE       \"%s\" -> rc %d",
+                                 ul,
+                                 pExec->szPath,
+                                 pExec->rc);
+                    }
+                    break;
+
+                    case EVENT_EXECPGM_ARGS:
+                        // @@todo
+                    break;
+
+                    case EVENT_EXECPGM_POST:
+                    {
+                        PEVENTBUF_FILENAME pExec = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pThis,
+                                 "%04d: EXEC POST      \"%s\" -> pid %lX",
+                                 ul,
+                                 pExec->szPath,
+                                 pExec->rc);
+                    }
+                    break;
+
+                    case EVENT_CLOSE:
+                    {
+                        PEVENTBUF_CLOSE pClose = (PEVENTBUF_CLOSE)pbData;
+                        LogEntry(pThis,
+                                 "%04d: CLOSE     %04lX",
+                                 ul,
+                                 pClose->SFN);
+                    }
+                    break;
+
+                    case EVENT_DELETE_PRE:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pThis,
+                                 "%04d: DEL  PRE       \"%s\" -> rc %d",
+                                 ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_DELETE_POST:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pThis,
+                                 "%04d: DEL  POST      \"%s\" -> rc %d",
+                                 ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+                }
+
+                pThis = (PEVENTLOGENTRY)((PBYTE)pThis + pThis->cbStruct);
+            }
+        }
+        else
+        {
+            doshWriteLogEntry(G_LogFile,
+                              "Error: XWPSECIO_GETLOGBUF returned %d",
+                              arc);
+            break;
+        }
+    }
+}
+
+/*
  *@@ fntLogger:
  *
  *@@added V1.0.1 (2003-01-10) [umoeller]
@@ -293,64 +448,22 @@ void _Optlink fntLogger(PTHREADINFO ptiMyself)
                             LOGBUFSIZE,
                             PAG_COMMIT | PAG_READ | PAG_WRITE | OBJ_TILE)))
     {
-        while (!ptiMyself->fExit)
+        TRY_LOUD(excpt1)
         {
-            if (!(arc = SecIOCtl(XWPSECIO_GETLOGBUF,
-                                 pLogBuf,
-                                 LOGBUFSIZE)))
-            {
-                ULONG ul;
-                PEVENTLOGENTRY pThis = (PEVENTLOGENTRY)((PBYTE)pLogBuf + sizeof(LOGBUF));
-
-                for (ul = 0;
-                     ul < pLogBuf->cLogEntries;
-                     ++ul)
-                {
-                    CHAR szTemp[CCHMAXPATH];
-                    switch (pThis->ulEventCode)
-                    {
-                        case EVENT_OPENPRE:
-                        case EVENT_OPENPOST:
-                        {
-                            PEVENTBUF_OPEN pOpen =
-                                    (PEVENTBUF_OPEN)((PBYTE)pThis + sizeof(EVENTLOGENTRY));
-                            memcpy(szTemp,
-                                   pOpen->szPath,
-                                   pOpen->ulPathLen + 1);
-
-                            if (pThis->ulEventCode == EVENT_OPENPRE)
-                                LogEntry(pThis,
-                                         "%04d: OPENPRE  \"%s\" -> %d",
-                                         ul,
-                                         szTemp,
-                                         pOpen->rc);
-                            else
-                                LogEntry(pThis,
-                                         "%04d: OPENPOST \"%s\" -> %d",
-                                         ul,
-                                         szTemp,
-                                         pOpen->rc);
-                        }
-                        break;
-                    }
-
-                    pThis = (PEVENTLOGENTRY)((PBYTE)pThis + pThis->cbStruct);
-                }
-            }
-            else
-            {
-                doshWriteLogEntry(G_LogFile,
-                                  "Error: XWPSECIO_GETLOGBUF returned %d",
-                                  arc);
-                break;
-            }
+            LogLoop(ptiMyself,
+                    pLogBuf);
         }
-
-        doshWriteLogEntry(G_LogFile,
-                          "Logger thread exiting");
+        CATCH(excpt1)
+        {
+            doshWriteLogEntry(G_LogFile,
+                              "Crash in " __FUNCTION__);
+        } END_CATCH();
 
         DosFreeMem(pLogBuf);
     }
+
+    doshWriteLogEntry(G_LogFile,
+                      "Logger thread exiting");
 }
 
 /* ******************************************************************
@@ -615,25 +728,25 @@ APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
  *
  *      Required input in XWPSUBJECINFO:
  *
- *      -- id: for a user subject: the user ID;
- *             for a group subject: the group ID
+ *      --  id: for a user subject: the user ID;
+ *              for a group subject: the group ID
  *
- *      -- bType: one of SUBJ_USER, SUBJ_GROUP, SUBJ_PROCESS
+ *      --  bType: one of SUBJ_USER, SUBJ_GROUP, SUBJ_PROCESS
  *
  *      This is NOT validated and better be valid.
  *
  *      Output in XWPSUBJECINFO, if NO_ERROR is returned:
  *
- *      -- hSubject: new or existing subject handle.
+ *      --  hSubject: new or existing subject handle.
  *
- *      -- cUsage: usage count.
+ *      --  cUsage: usage count.
  *
  *      Returns:
  *
- *      -- NO_ERROR
+ *      --  NO_ERROR
  *
- *      -- XWPSEC_HSUBJECT_EXISTS: SUBJ_USER only; user already
- *         has a subject handle.
+ *      --  XWPSEC_HSUBJECT_EXISTS: SUBJ_USER only; user already
+ *          has a subject handle.
  *
  *      Postconditions:
  *
@@ -642,7 +755,7 @@ APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
  *          This is not done here because the caller may create
  *          many subject handles and only refresh the table after
  *          all subject handles have been created. However, this
- *          operation _must_ be synchroneous, so you may not
+ *          operation _must_ be synchronous, so you may not
  *          defer it to a different thread.
  */
 

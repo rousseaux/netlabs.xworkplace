@@ -216,21 +216,139 @@ extern "C" {
 
     /* ******************************************************************
      *
-     *   Event logging
+     *   Event logging codes
      *
      ********************************************************************/
 
     /*
+     *@@ EVENT_OPEN_PRE:
+     *      uses EVENTBUF_OPEN.
+     */
+
+    #define EVENT_OPEN_PRE              1
+
+    /*
+     *@@ EVENT_OPEN_POST:
+     *      uses EVENTBUF_OPEN.
+     */
+
+    #define EVENT_OPEN_POST             2
+
+    /*
+     *@@ EVENT_LOADEROPEN:
+     *      uses EVENTBUF_LOADEROPEN.
+     */
+
+    #define EVENT_LOADEROPEN            3
+
+    /*
+     *@@ EVENT_GETMODULE:
+     *      uses EVENTBUF_FILENAME.
+     */
+
+    #define EVENT_GETMODULE             4
+
+    /*
+     *@@ EVENT_EXECPGM_PRE:
+     *      uses EVENTBUF_EXECPGM.
+     */
+
+    #define EVENT_EXECPGM_PRE           5
+
+    /*
+     *@@ EVENT_EXECPGM_ARGS:
+     *      @@todo
+     */
+
+    #define EVENT_EXECPGM_ARGS          6
+
+    /*
+     *@@ EVENT_EXECPGM_PRE:
+     *      uses EVENTBUF_EXECPGM.
+     */
+
+    #define EVENT_EXECPGM_POST          7
+
+    /*
+     *@@ EVENT_CLOSE:
+     *      uses EVENTBUF_CLOSE.
+     */
+
+    #define EVENT_CLOSE                 8
+
+    /*
+     *@@ EVENT_DELETE_PRE:
+     *      uses EVENTBUF_FILENAME.
+     */
+
+    #define EVENT_DELETE_PRE            9
+
+    /*
+     *@@ EVENT_DELETE_POST:
+     *      uses EVENTBUF_FILENAME.
+     */
+
+    #define EVENT_DELETE_POST           10
+
+    /* ******************************************************************
+     *
+     *   Event-specific logging structures
+     *
+     ********************************************************************/
+
+    /*
+     *@@ EVENTBUF_FILENAME:
+     *      event buffer used with EVENT_GETMODULE,
+     *      EVENT_DELETE_PRE, EVENT_DELETE_POST,
+     *      EVENT_EXECPGM_PRE, EVENT_EXECPGM_ARGS,
+     *      and EVENT_EXECPGM_POST.
+     *
+     *@@added V1.0.1 (2003-01-13) [umoeller]
+     */
+
+    typedef struct _EVENTBUF_FILENAME
+    {
+        ULONG   rc;             // -- EVENT_LOADEROPEN, EVENT_GETMODULE, EVENT_DELETE_PRE:
+                                //    authorization returned from callout,
+                                //    either NO_ERROR or ERROR_ACCESS_DENIED
+                                // -- EVENT_DELETE_POST: RC parameter passed in
+                                // -- EVENT_EXECPGM_PRE: authorization returned from callout,
+                                //    either NO_ERROR or ERROR_ACCESS_DENIED
+                                // -- EVENT_EXECPGM_ARGS: always 0
+                                // -- EXECPGM_POST: newly created process ID
+        ULONG   ulPathLen;      // length of szPath, excluding null terminator
+        CHAR    szPath[1];      // filename
+    } EVENTBUF_FILENAME, *PEVENTBUF_FILENAME;
+
+    /*
+     *@@ EVENTBUF_LOADEROPEN:
+     *      event buffer used with EVENT_LOADEROPEN.
+     *
+     *@@added V1.0.1 (2003-01-13) [umoeller]
+     */
+
+    typedef struct _EVENTBUF_LOADEROPEN
+    {
+        ULONG   SFN;            // -- EVENT_LOADEROPEN: system file number;
+                                // -- EVENT_GETMODULE, EVENT_DELETE_PRE, EVENT_DELETE_POST: not used
+        ULONG   rc;             // -- EVENT_LOADEROPEN, EVENT_GETMODULE, EVENT_DELETE_PRE:
+                                //    authorization returned from callout,
+                                //    either NO_ERROR or ERROR_ACCESS_DENIED
+                                // -- EVENT_DELETE_POST: RC parameter passed in
+        ULONG   ulPathLen;      // length of szPath, excluding null terminator
+        CHAR    szPath[1];      // filename
+    } EVENTBUF_LOADEROPEN, *PEVENTBUF_LOADEROPEN;
+
+    /*
      *@@ EVENTBUF_OPEN:
-     *      event buffer used with EVENT_OPENPRE
-     *      and EVENT_OPENPOST.
+     *      event buffer used with EVENT_OPEN_PRE
+     *      and EVENT_OPEN_POST.
      *
      *@@added V1.0.1 (2003-01-10) [umoeller]
      */
 
     typedef struct _EVENTBUF_OPEN
     {
-        ULONG   cbStruct;       // size of event buffer (must be present in all EVENTBUF_* structs)
         ULONG   fsOpenFlags;    // open flags
         ULONG   fsOpenMode;     // open mode
         ULONG   SFN;            // system file number
@@ -243,22 +361,16 @@ extern "C" {
     } EVENTBUF_OPEN, *PEVENTBUF_OPEN;
 
     /*
-     *@@ EVENTBUF_OPENPRE_MAX:
-     *      wrapper struct so we can create an
-     *      EVENTBUF_OPENPRE in global data.
+     *@@ EVENTBUF_CLOSE:
+     *      event buffer used with EVENT_CLOSE.
      *
      *@@added V1.0.1 (2003-01-10) [umoeller]
      */
 
-    typedef struct _EVENTBUF_OPEN_MAX
+    typedef struct _EVENTBUF_CLOSE
     {
-        EVENTBUF_OPEN       buf;
-        CHAR                szFill[CCHMAXPATH];
-    } EVENTBUF_OPEN_MAX;
-
-    #define EVENT_OPENPRE               1
-
-    #define EVENT_OPENPOST              2
+        ULONG   SFN;            // system file number
+    } EVENTBUF_CLOSE, *PEVENTBUF_CLOSE;
 
     #pragma pack()
 

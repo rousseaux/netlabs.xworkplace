@@ -266,10 +266,6 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\plugins\drvdlgs\d_cdfs.dll \
 !endif
-#      $(XWPRUNNING)\bin\xwphook.dll \
-#      $(XWPRUNNING)\bin\xwpdaemn.exe
-#      $(XWPRUNNING)\bin\xwpfonts.fon
-#      $(XWPRUNNING)\bin\xdebug.dll
 
 #
 # generic inference rules for copying and stuff

@@ -34,6 +34,6 @@ extern void *G_TKSSBase;
  * addresses to subroutines. It is A LOT faster than using VirtToLin
  * to do the conversion.
  */
-#define __StackToFlat(p) (void*)((unsigned long)p + *(unsigned long *)G_TKSSBase)
+#define __StackToFlat(p) (void*)((unsigned long)(p) + *(unsigned long *)G_TKSSBase)
 
 #endif

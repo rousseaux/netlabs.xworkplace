@@ -38,7 +38,6 @@
 #include "xwpsec32.sys\reqpkt32.h"
 #include "xwpsec32.sys\SecHlp.h"
 
-#include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
 #include "xwpsec32.sys\ctype.h"
