@@ -74,6 +74,7 @@
 #define INCL_WINPOINTERS
 #define INCL_WINSHELLDATA
 #define INCL_WINSTDCNR
+#define INCL_WININPUT
 #include <os2.h>
 
 // C library headers
@@ -1634,6 +1635,12 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                            CM_OPENEDIT,
                                            (MPARAM)&CnrEditData,
                                            MPNULL);
+                                // V1.0.4 (2005-02-23) [pr]: Select all text
+                                WinSendDlgItemMsg(hwndCnr,
+                                                  CID_MLE,
+                                                  WM_CHAR,
+                                                  MPFROM2SHORT(KC_VIRTUALKEY | KC_SHIFT,0),
+                                                  MPFROM2SHORT(0, VK_END));
                             }
                         } // end else if (usOpenSettings == 2)
                     }
