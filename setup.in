@@ -326,7 +326,8 @@ CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /W
 CC_SHARED    = icc $(ANIMATED_MOUSE_POINTERS_STRING) \
 $(REPLHANDLES_STRING) \
 $(XWPLITE_STRING) \
-/I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /g5
+/I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /g5 \
+# /DTCPV40HDRS
 # V0.9.9 (2001-01-29) [umoeller]: added /g5, finally
 
 !ifdef XWP_DEBUG

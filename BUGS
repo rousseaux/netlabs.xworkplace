@@ -88,6 +88,8 @@ CURRENT PROBLEMS
 
     --  pronews.exe shows default icon in program object
 
+    --  association icons disappear if source object goes dormant
+
 --  when you open the object properties of an application from the File
     Types tab of the Workplace Shell object, the icon disappears. Selecting
     something else and coming back, the icon will show up again.

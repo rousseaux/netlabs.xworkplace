@@ -976,6 +976,7 @@ BEGIN
     ID_CRSI_WIDGET_SENTINEL             "Wachposten (Speichermonitor)"
     ID_CRSI_WIDGET_WINDOWLIST           "Fensterliste"
     ID_CRSI_WIDGET_HEALTH               "Temperatur-Monitor"
+    ID_CRSI_WIDGET_IPMONITOR            "IP-Monitor"
 
     /* font sample view (all new with V0.9.19) */
     ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
@@ -1516,6 +1517,18 @@ BEGIN
     ID_XSDI_ACL_SKIP                    "S~itzung Åberspringen (nicht schlie·en)"
     ID_XSDI_ACL_WMCLOSE                 "PM-Fenster ~schlie·en"
     ID_XSDI_ACL_KILLSESSION             "Sitzung ~killen (DosKillProcess)"
+
+    /* strings formerly in ID_XSD_MOUSEMAPPINGS2 */
+    ID_XSDI_MOUSE_MAPPINGS2GROUP        "ZusÑtzliche Mauszuordnungen"
+    ID_XSDI_MOUSE_CHORDWINLIST          "An~zeigen der Fensterliste Åberall ermîglichen"
+    ID_XSDI_MOUSE_SYSMENUMB2            "~SystemmenÅ bei MB2-Klick auf Titelleiste"
+    ID_XSDI_MOUSE_MB3CLICK_TXT          "MB3-~Klick-Aktion:"
+    ID_XSDI_MOUSE_MB3SCROLL             "Scrollen bei ~MB3-Ziehen"
+    ID_XSDI_MOUSE_MB3PIXELS_TXT1        "Minimum an Pi~xeln:"
+    ID_XSDI_MOUSE_MB3LINEWISE           "Zei~lenweiser (fester) Modus"
+    ID_XSDI_MOUSE_MB3AMPLIFIED          "~VerstÑrkungsmodus"
+    ID_XSDI_MOUSE_MB3AMP_TXT1           "Ve~rstÑrkung:"
+    ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Umgekehrtes Scrollen"
 END
 
 

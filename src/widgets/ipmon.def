@@ -1,10 +1,13 @@
 
 ;
-; diskfree.def:
-;       module definition file for DISKFREE.DLL, an XCenter
+; sentinel.def:
+;       module definition file for SENTINEL.DLL, an XCenter
 ;       plug-in widget DLL.
 ;
-;       Copyright (C) 2000 fonz.
+;       Note that we better name the DLL XTHESEUS because
+;       we will run into name conflicts otherwise.
+;
+;       Copyright (C) 2001-2002 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -16,17 +19,19 @@
 ;       GNU General Public License for more details.
 ;
 
-LIBRARY DISKFREE INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.19#@ XWorkplace diskfree plugin DLL'
-PROTMODE
+LIBRARY SENTINEL INITGLOBAL TERMGLOBAL
+Description '@#Ulrich M”ller:0.9.19#@ XWorkplace IP monitor plugin DLL'
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
+
+SEGMENTS
+    CODE32 CLASS 'CODE'       NONSHARED LOADONCALL
+    CODE16 CLASS 'CODE'       NONSHARED LOADONCALL
 
 CODE              LOADONCALL
 
 EXPORTS
-    WgtInitModule       @1
-    WgtUnInitModule     @2
-    WgtQueryVersion     @3
-
+    TwgtInitModule      @1
+    TwgtUnInitModule    @2
+    TwgtQueryVersion    @3
 

@@ -70,6 +70,7 @@ OBJS = \
     $(OUTPUTDIR)\d_cdfs.obj \
     $(OUTPUTDIR)\miniwdgt.obj \
     $(OUTPUTDIR)\w_diskfree.obj \
+    $(OUTPUTDIR)\w_ipmon.obj \
     $(OUTPUTDIR)\w_monitors.obj \
     $(OUTPUTDIR)\w_sentinel.obj \
     $(OUTPUTDIR)\w_winlist.obj \

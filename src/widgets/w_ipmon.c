@@ -1,16 +1,16 @@
 
 /*
- *@@sourcefile w_sentinel.c:
- *      XCenter sentinel widget (memory monitor).
+ *@@sourcefile w_ipmon.c:
+ *      XCenter IP monitor widget.
  *
- *      This is all new with V0.9.9.
+ *      This is all new with V0.9.19.
  *
- *@@added V0.9.9 (2001-02-08) [umoeller]
+ *@@added V0.9.19 (2002-05-28) [umoeller]
  *@@header "shared\center.h"
  */
 
 /*
- *      Copyright (C) 2001-2002 Ulrich M”ller.
+ *      Copyright (C) 2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -80,10 +80,8 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
-#include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
@@ -95,11 +93,7 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
-#include "config\cfgsys.h"              // XFldSystem CONFIG.SYS pages implementation
 #include "config\drivdlgs.h"            // driver configuration dialogs
-
-// win32k.sys includes
-#include "win32k.h"
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -110,45 +104,105 @@
  ********************************************************************/
 
 /*
- *@@ SNAPSHOT:
+ *  Some TCP/IP definitions copied from the Warp 4.5 toolkit.
+ *  Since we are using the Warp 3 toolkit, we will have trouble
+ *  getting this stuff from elsewhere.
  *
- *@@changed V0.9.9 (2001-03-30) [umoeller]: converted all fields to KB to avoid overflows
+ *  Note that we use the 16-bit definitions.
  */
 
-typedef struct _SNAPSHOT
-{
-    ULONG   ulSwapperSizeKB,      // csysQuerySwapperSize
-            ulSwapperFreeKB,      // free space in swapper (win32k.sys only)
-            ulPhysFreeKB;         // Dos16MemAvail
+#ifndef IFMIB_ENTRIES
+#define IFMIB_ENTRIES 42
+#endif
 
-    // calculated values
-    ULONG   ulVirtTotalKB,        // (const) physical RAM plus swapper size
+typedef unsigned long   u_long;
 
-            ulVirtInUseKB,        //  = pThis->ulVirtTotal - pThis->ulPhysFree,
-            ulPhysInUseKB;        //  = ulVirtInUse - ulSwapper;
+#pragma pack(1) /* force on doubleword boundary */
+struct ifmib {
+  short ifNumber;  /* number of network interfaces */
+  struct iftable {
+    short  ifIndex;        /* index of this interface */
+    char   ifDescr[45];    /* description             */
+    short  ifType;         /* type of the interface   */
+    short  ifMtu;          /* MTU of the interface   */
+    char   ifPhysAddr[6];  /* MTU of the interface   */
+    short  ifOperStatus;
+    u_long ifSpeed;
+    u_long ifLastChange;
+    u_long ifInOctets;
+    u_long ifOutOctets;
+    u_long ifOutDiscards;
+    u_long ifInDiscards;
+    u_long ifInErrors;
+    u_long ifOutErrors;
+    u_long ifInUnknownProtos;
+    u_long ifInUcastPkts;
+    u_long ifOutUcastPkts;
+    u_long ifInNUcastPkts;
+    u_long ifOutNUcastPkts;
+  } iftable[IFMIB_ENTRIES];
+};
+#pragma pack()   /* reset to default packing */
 
-    /* ษอออออออออออออออออออป                  ฤฤฤฟ      ฤฤฤฟ
-       บ                   บ                     ณ         ณ
-       บ     ulPhysFree    บ                     ณ         ณ
-       บ                   บ                     ณ         ณ
-       ฬอออออออออออออออออออน ฤฤฤฟ            total phys    ณ
-       บ                   บ    ณ                ณ         ณ  total pages
-       บ     ulPhysInUse   บ    ณ                ณ         ณ  (ulVirtTotal)
-       บ                   บ    ณ                ณ         ณ
-       ฬอออออออออออออออออออน ulVirtInUse      ฤฤฤู         ณ
-       บ                   บ    ณ                          ณ
-       บ     ulSwapperSize บ    ณ                          ณ
-       บ                   บ    ณ                          ณ
-       ศอออออออออออออออออออผ ฤฤฤู                        ฤฤู
+typedef char *caddr_t;
 
-        There might be free pages in the swapper, but these are
-        not reported by Dos16MemAvail... so we won't report them
-        here either.
-    */
+int _System sock_init( void );
+int _System sock_errno( void );
+int _System socket( int, int, int );
+int _System soclose( int );
+int _System ioctl(int, int, char *, int);
 
-} SNAPSHOT, *PSNAPSHOT;
+#define ioc(x,y)       ((x<<8)|y)
+#define SIOSTATIF       ioc('n',48)
 
-APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
+#define SOCK_STREAM     1               /* stream socket */
+#define SOCK_DGRAM      2               /* datagram socket */
+#define SOCK_RAW        3               /* raw-protocol interface */
+#define SOCK_RDM        4               /* reliably-delivered message */
+#define SOCK_SEQPACKET  5               /* sequenced packet stream */
+
+#define AF_UNSPEC       0               /* unspecified */
+#define AF_UNIX         1               /* local to host (pipes, portals) */
+#define AF_INET         2               /* internetwork: UDP, TCP, etc. */
+#define AF_IMPLINK      3               /* arpanet imp addresses */
+#define AF_PUP          4               /* pup protocols: e.g. BSP */
+#define AF_CHAOS        5               /* mit CHAOS protocols */
+#define AF_NS           6               /* XEROX NS protocols */
+#define AF_ISO          7               /* ISO protocols */
+#define AF_OSI          AF_ISO          /* OSI is ISO */
+#define AF_ECMA         8               /* european computer manufacturers */
+#define AF_DATAKIT      9               /* datakit protocols */
+#define AF_CCITT        10              /* CCITT protocols, X.25 etc */
+#define AF_SNA          11              /* IBM SNA */
+#define AF_DECnet       12              /* DECnet */
+#define AF_DLI          13              /* Direct data link interface */
+#define AF_LAT          14              /* LAT */
+#define AF_HYLINK       15              /* NSC Hyperchannel */
+#define AF_APPLETALK    16              /* AppleTalk */
+#define AF_NETBIOS      17              /* NetBios-style addresses */
+
+#define AF_MAX          18
+
+#define PF_UNSPEC       AF_UNSPEC
+#define PF_UNIX         AF_UNIX
+#define PF_INET         AF_INET
+#define PF_IMPLINK      AF_IMPLINK
+#define PF_PUP          AF_PUP
+#define PF_CHAOS        AF_CHAOS
+#define PF_NS           AF_NS
+#define PF_ISO          AF_ISO
+#define PF_OSI          AF_OSI
+#define PF_ECMA         AF_ECMA
+#define PF_DATAKIT      AF_DATAKIT
+#define PF_CCITT        AF_CCITT
+#define PF_SNA          AF_SNA
+#define PF_DECnet       AF_DECnet
+#define PF_DLI          AF_DLI
+#define PF_LAT          AF_LAT
+#define PF_HYLINK       AF_HYLINK
+#define PF_APPLETALK    AF_APPLETALK
+
+#define PF_MAX          AF_MAX
 
 /* ******************************************************************
  *
@@ -168,18 +222,17 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
  *      class(es) in this DLL.
  */
 
-#define WNDCLASS_WIDGET_SENTINEL    "XWPCenterSentinelWidget"
+#define WNDCLASS_WIDGET_IPMON    "XWPCenterIPMonWidget"
 
 static const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
-            WNDCLASS_WIDGET_SENTINEL,
+            WNDCLASS_WIDGET_IPMON,
             0,
-            "Sentinel",
-           (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_SENTINEL),
+            "IPMonitor",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_IPMONITOR),
                                        // widget class name displayed to user
-                                       // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
-            WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
+            WGTF_SIZEABLE | WGTF_TOOLTIP,
             NULL        // no settings dlg
         },
     };
@@ -208,8 +261,6 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
  */
 
 // resolved function pointers from XFLDR.DLL
-PCSYSQUERYSWAPPERSIZE pcsysQuerySwapperSize = NULL;
-
 PCMNGETSTRING pcmnGetString = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
@@ -228,13 +279,12 @@ PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
 PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
-PNLSDATETIME pnlsDateTime = NULL;
-PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
-
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
 PWINHFREE pwinhFree = NULL;
+PWINHINSERTMENUITEM pwinhInsertMenuItem = NULL;
+PWINHINSERTSUBMENU pwinhInsertSubmenu = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
@@ -245,8 +295,6 @@ PXSTRINIT pxstrInit = NULL;
 
 static const RESOLVEFUNCTION G_aImports[] =
     {
-        "csysQuerySwapperSize", (PFN*)&pcsysQuerySwapperSize,
-
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
@@ -261,11 +309,11 @@ static const RESOLVEFUNCTION G_aImports[] =
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
-        "nlsDateTime", (PFN*)&pnlsDateTime,
-        "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhFree", (PFN*)&pwinhFree,
+        "winhInsertMenuItem", (PFN*)&pwinhInsertMenuItem,
+        "winhInsertSubmenu", (PFN*)&pwinhInsertSubmenu,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
@@ -300,10 +348,8 @@ typedef struct _MONITORSETUP
     LONG        lcolBackground,         // background color
                 lcolForeground;         // foreground color (for text)
 
-    LONG        lcolSwapFree,           // bottommost
-                lcolSwap,
-                lcolPhysInUse,
-                lcolPhysFree;           // topmost
+    LONG        lcolIn,
+                lcolOut;
 
     PSZ         pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
@@ -312,7 +358,21 @@ typedef struct _MONITORSETUP
     LONG        cx;
             // current width; we're sizeable, and we wanna
             // store this
+
+    ULONG       ulDevIndex;
+
 } MONITORSETUP, *PMONITORSETUP;
+
+/*
+ *@@ SNAPSHOT:
+ *
+ */
+
+typedef struct _SNAPSHOT
+{
+    ULONG       ulIn,
+                ulOut;
+} SNAPSHOT, *PSNAPSHOT;
 
 /*
  *@@ WIDGETPRIVATE:
@@ -324,7 +384,7 @@ typedef struct _MONITORSETUP
 
 typedef struct _WIDGETPRIVATE
 {
-    PXCENTERWIDGET pWidget;
+    PXCENTERWIDGET  pWidget;
             // reverse ptr to general widget data ptr; we need
             // that all the time and don't want to pass it on
             // the stack with each function call
@@ -332,32 +392,28 @@ typedef struct _WIDGETPRIVATE
     MONITORSETUP    Setup;
             // widget settings that correspond to a setup string
 
-    BOOL            fCreating;              // TRUE while in WM_CREATE (anti-recursion)
+    int             sock;
+    struct ifmib    statif;
+    ULONG           ulPrevTotalIn,
+                    ulPrevTotalOut,
+                    ulLastMilliseconds;
 
-    ULONG           ulTimerID;              // if != NULLHANDLE, update timer is running
+    BOOL            fCreating;      // TRUE while in WM_CREATE (anti-recursion)
+
+    BOOL            fContextMenuHacked;
+
+    ULONG           ulTimerID;      // if != NULLHANDLE, update timer is running
 
     PXBITMAP        pBitmap;        // bitmap for pulse graph; this contains only
                                     // the "client" (without the 3D frame)
 
     BOOL            fUpdateGraph;
 
-    ULONG           cyNeeded;       // returned for XN_QUERYSIZE... this is initialized
-                                    // to 10, but probably changed later if we need
-                                    // more space
-
-    ULONG           ulTextWidth,    // space to be left clear for digits on the left
-                    ulSpacing;      // spacing for current font
-
-    ULONG           ulTotPhysMemKB; // DosQuerySysinfo(QSV_TOTPHYSMEM) / 1024;
-
-    ULONG           ulMaxMemKBLast; // cache for scaling in bitmap
-
-    APIRET          arcWin32K;      // return code from win32k.sys; if NO_ERROR,
-                                    // we use win32k.sys for snapshots
-
     ULONG           cSnapshots;
     PSNAPSHOT       paSnapshots;
-            // array of memory snapshots
+
+    ULONG           ulMax;              // maximimum in or out value in array
+                                        // (for scaling)
 
     BOOL            fTooltipShowing;    // TRUE only while tooltip is currently
                                         // showing over this widget
@@ -407,7 +463,6 @@ VOID TwgtFreeSetup(PMONITORSETUP pSetup)
  *      NOTE: It is assumed that pSetup is zeroed
  *      out. We do not clean up previous data here.
  *
- *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed potential memory leak
  */
 
 VOID TwgtScanSetup(PCSZ pcszSetupString,
@@ -456,12 +511,17 @@ VOID TwgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->pszFont = strdup("4.System VIO");
+        pSetup->pszFont = strdup("9.WarpSans");
 
-    pSetup->lcolSwapFree = RGBCOL_RED;
-    pSetup->lcolSwap = RGBCOL_DARKPINK;
-    pSetup->lcolPhysInUse = RGBCOL_DARKBLUE;
-    pSetup->lcolPhysFree = RGBCOL_DARKGREEN;
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "SOURCE"))
+    {
+        pSetup->ulDevIndex = atoi(p);
+        pctrFreeSetupValue(p);
+    }
+
+    pSetup->lcolIn = RGBCOL_DARKGREEN;
+    pSetup->lcolOut = RGBCOL_RED;
 }
 
 /*
@@ -475,7 +535,6 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                    PMONITORSETUP pSetup)
 {
     CHAR    szTemp[100];
-    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
     pdrv_sprintf(szTemp, "WIDTH=%d;",
@@ -497,6 +556,32 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
+
+    pdrv_sprintf(szTemp, "SOURCE=%d;",
+                 pSetup->ulDevIndex);
+    pxstrcat(pstrSetup, szTemp, 0);
+}
+
+/*
+ *@@ TwgtSaveSetupAndSend:
+ *
+ */
+
+VOID TwgtSaveSetupAndSend(HWND hwnd,
+                          PMONITORSETUP pSetup)
+{
+    XSTRING strSetup;
+    TwgtSaveSetup(&strSetup,
+                  pSetup);
+    if (strSetup.ulLength)
+        // changed V0.9.13 (2001-06-21) [umoeller]:
+        // post it to parent instead of fixed XCenter client
+        // to make this trayable
+        WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
+                   XCM_SAVESETUP,
+                   (MPARAM)hwnd,
+                   (MPARAM)strSetup.psz);
+    pxstrClear(&strSetup);
 }
 
 /* ******************************************************************
@@ -519,36 +604,6 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  */
 
 /*
- *@@ CalcTextSpacing:
- *
- */
-
-VOID CalcTextSpacing(HWND hwnd, PWIDGETPRIVATE pPrivate)
-{
-    // calculate new spacing for text
-    HPS hps = WinGetPS(hwnd);
-    if (hps)
-    {
-        FONTMETRICS fm;
-        POINTL aptl[TXTBOX_COUNT];
-        GpiQueryTextBox(hps,
-                        3,
-                        "999",      // test string
-                        TXTBOX_COUNT,
-                        aptl);
-
-        GpiQueryFontMetrics(hps, sizeof(fm), &fm);
-
-        pPrivate->ulTextWidth = aptl[TXTBOX_TOPRIGHT].x + 3;
-        pPrivate->ulSpacing = fm.lMaxAscender - fm.lInternalLeading + 1;
-
-        pPrivate->cyNeeded = (pPrivate->ulSpacing * 3) + 1;
-
-        WinReleasePS(hwnd);
-    }
-}
-
-/*
  *@@ TwgtCreate:
  *      implementation for WM_CREATE.
  */
@@ -557,8 +612,6 @@ MRESULT TwgtCreate(HWND hwnd,
                    PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;        // continue window creation
-
-    // PSZ p;
 
     PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
     memset(pPrivate, 0, sizeof(WIDGETPRIVATE));
@@ -572,34 +625,54 @@ MRESULT TwgtCreate(HWND hwnd,
     TwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
 
+    sock_init();
+
+    pPrivate->ulMax = 1;        // avoid division by zero
+
+    // create socket for while the widget is running
+    pPrivate->sock = socket(PF_INET, SOCK_STREAM, 0);
+
+    if (pPrivate->sock > 0)
+    {
+        // socket created OK: get first shot of data
+        // so we can do calculations from now on
+        if (!ioctl(pPrivate->sock,
+                   SIOSTATIF,
+                   (caddr_t)&pPrivate->statif,
+                   sizeof(pPrivate->statif)))
+        {
+            // now update "latest" with the data of the
+            // selected device
+            ULONG i;
+            if (pPrivate->Setup.ulDevIndex >= IFMIB_ENTRIES)
+                pPrivate->Setup.ulDevIndex = 0;
+
+            i = pPrivate->Setup.ulDevIndex;
+
+            pPrivate->ulPrevTotalIn = pPrivate->statif.iftable[i].ifInOctets;
+            pPrivate->ulPrevTotalOut = pPrivate->statif.iftable[i].ifOutOctets;
+
+            DosQuerySysInfo(QSV_MS_COUNT,
+                            QSV_MS_COUNT,
+                            (PVOID)&pPrivate->ulLastMilliseconds,
+                            sizeof(pPrivate->ulLastMilliseconds));
+        }
+    }
+
     // set window font (this affects all the cached presentation
     // spaces we use)
     pwinhSetWindowFont(hwnd,
                        pPrivate->Setup.pszFont);
 
-    CalcTextSpacing(hwnd, pPrivate);
-
     // enable context menu help
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     pWidget->ulHelpPanelID = ID_XSH_WIDGET_SENTINEL_MAIN;
-
-    // get current RAM size
-    DosQuerySysInfo(QSV_TOTPHYSMEM,
-                    QSV_TOTPHYSMEM,
-                    &pPrivate->ulTotPhysMemKB,
-                    sizeof(pPrivate->ulTotPhysMemKB));
-    // convert to KB
-    pPrivate->ulTotPhysMemKB = (pPrivate->ulTotPhysMemKB + 512) / 1024;
-
-    // initialize win32k.sys; if this returns NO_ERROR,
-    // we'll use that driver, otherwise not
-    pPrivate->arcWin32K = libWin32kInit();
 
     // start update timer
     pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
                                          hwnd,
                                          1,
-                                         2000);
+                                         1000);
 
 
     pPrivate->fCreating = FALSE;
@@ -642,8 +715,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     {
                         PSIZEL pszl = (PSIZEL)mp2;
                         pszl->cx = pPrivate->Setup.cx;
-                        pszl->cy = pPrivate->cyNeeded;
-                                    // initially 10, possibly raised later
+                        pszl->cy = 10;
                         brc = TRUE;
                     }
                     break;
@@ -679,82 +751,6 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ PaintGraphLine:
- *      paints one of those funny lines in
- *      the memory graph.
- *
- *      Preconditions:
- *
- *      -- pPrivate->pBitmap must exist.
- */
-
-VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
-                    PSNAPSHOT pThis,
-                    ULONG ulMaxMemKB,
-                    LONG x,             // in: xpos to paint at
-                    LONG yTop,          // in: yTop of bitmap rect
-                    LONG lFillBkgnd)    // in: if != -1, bkgnd color
-{
-    if (pPrivate->pBitmap)
-    {
-        HPS hpsMem = pPrivate->pBitmap->hpsMem;
-        PMONITORSETUP pSetup = &pPrivate->Setup;
-        POINTL ptl;
-        ptl.x = x;
-
-        if (ulMaxMemKB)           // avoid division by zero
-        {
-            ptl.y = 0;
-            GpiMove(hpsMem, &ptl);
-
-            // win32k.sys available?
-            if (pThis->ulSwapperFreeKB)
-            {
-                // yes: paint "swapper free"
-                GpiSetColor(hpsMem,
-                            pSetup->lcolSwapFree);
-                ptl.y += yTop * pThis->ulSwapperFreeKB / ulMaxMemKB;
-                GpiLine(hpsMem, &ptl);
-
-                // paint "swapper used"
-                GpiSetColor(hpsMem,
-                            pSetup->lcolSwap);
-                ptl.y += yTop * (pThis->ulSwapperSizeKB - pThis->ulSwapperFreeKB) / ulMaxMemKB;
-                GpiLine(hpsMem, &ptl);
-            }
-            else
-            {
-                // win32.sys not available:
-                // paint "swapper size"
-                GpiSetColor(hpsMem,
-                            pSetup->lcolSwap);
-                ptl.y += yTop * pThis->ulSwapperSizeKB / ulMaxMemKB;
-                GpiLine(hpsMem, &ptl);
-            }
-
-            // paint "physically used mem"
-            GpiSetColor(hpsMem,
-                        pSetup->lcolPhysInUse);
-            ptl.y += yTop * pThis->ulPhysInUseKB / ulMaxMemKB;
-            GpiLine(hpsMem, &ptl);
-
-            // paint "free mem" in green
-            GpiSetColor(hpsMem,
-                        pSetup->lcolPhysFree);
-            ptl.y += yTop * pThis->ulPhysFreeKB / ulMaxMemKB;
-            GpiLine(hpsMem, &ptl);
-        }
-
-        if (lFillBkgnd != -1)
-        {
-            GpiSetColor(hpsMem, lFillBkgnd);
-            ptl.y = yTop;
-            GpiLine(hpsMem, &ptl);
-        }
-    } // end if (pPrivate->pBitmap)
-}
-
-/*
  *@@ TwgtUpdateGraph:
  *      updates the graph bitmap. This does not paint
  *      on the screen.
@@ -768,7 +764,6 @@ VOID TwgtUpdateGraph(HWND hwnd,
                      PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
-    ULONG   ul = 0;
     RECTL   rclBmp;
 
     // size for bitmap: same as widget, except
@@ -783,160 +778,66 @@ VOID TwgtUpdateGraph(HWND hwnd,
         pPrivate->pBitmap = pgpihCreateXBitmap(pWidget->habWidget,
                                                rclBmp.xRight,
                                                rclBmp.yTop);
-        // make sure we repaint below
-        pPrivate->ulMaxMemKBLast = 0;
     }
 
     if (pPrivate->pBitmap)
     {
-        HPS hpsMem = pPrivate->pBitmap->hpsMem;
+        HPS     hpsMem = pPrivate->pBitmap->hpsMem;
+        POINTL  ptl;
 
-        if (!pPrivate->paSnapshots)
+        GpiSetColor(hpsMem, pPrivate->Setup.lcolBackground);
+
+        pgpihBox(hpsMem,
+                 DRO_FILL,
+                 &rclBmp);
+
+        if (pPrivate->paSnapshots)
         {
-            // no snapshots yet:
-            // just fill the bitmap rectangle
-            GpiSetColor(hpsMem,
-                        pPrivate->Setup.lcolBackground);
-            pgpihBox(hpsMem,
-                     DRO_FILL,
-                     &rclBmp);
-        }
-        else
-        {
-            PSNAPSHOT pLatest
-                = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
-            CHAR    sz1[50],
-                    sz2[50],
-                    sz3[50];
-            PSZ     p;
-            PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
-            CHAR    cThousands = pCountrySettings->cThousands;
+            // paint input graph
+            GpiSetColor(hpsMem, pPrivate->Setup.lcolIn);
 
-            // find the max total RAM value first
-            ULONG ulMaxMemKB = 0;
-            for (ul = 0;
-                 ((ul < pPrivate->cSnapshots) && (ul < rclBmp.xRight));
-                 ul++)
+            ptl.x = 0;
+            ptl.y =    pPrivate->paSnapshots[0].ulIn
+                     * rclBmp.yTop
+                     / pPrivate->ulMax;
+            GpiMove(hpsMem,
+                    &ptl);
+
+            for (ptl.x = 1;
+                 ptl.x < pPrivate->cSnapshots;
+                 ++ptl.x)
             {
-                PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
-                ULONG ulThis = pThis->ulVirtTotalKB;
-                if (ulThis > ulMaxMemKB)
-                    ulMaxMemKB = ulThis;
+                ptl.y =    pPrivate->paSnapshots[ptl.x].ulIn
+                         * rclBmp.yTop
+                         / pPrivate->ulMax;
+                GpiLine(hpsMem,
+                        &ptl);
             }
 
-            if (ulMaxMemKB != pPrivate->ulMaxMemKBLast)
+            // paint output graph
+            GpiSetColor(hpsMem, pPrivate->Setup.lcolOut);
+
+            ptl.x = 0;
+            ptl.y =    pPrivate->paSnapshots[0].ulOut
+                     * rclBmp.yTop
+                     / pPrivate->ulMax;
+            GpiMove(hpsMem,
+                    &ptl);
+
+            for (ptl.x = 1;
+                 ptl.x < pPrivate->cSnapshots;
+                 ++ptl.x)
             {
-                // scaling has changed (or first call):
-                // well, then we need to repaint the entire
-                // damn bitmap
-                POINTL  ptl;
-                ptl.x = pPrivate->ulTextWidth;
-
-                // fill the bitmap rectangle
-                GpiSetColor(hpsMem,
-                            pPrivate->Setup.lcolBackground);
-                pgpihBox(hpsMem,
-                         DRO_FILL,
-                         &rclBmp);
-
-                for (ul = pPrivate->ulTextWidth;
-                     ((ul < pPrivate->cSnapshots) && (ul < rclBmp.xRight));
-                     ul++)
-                {
-                    PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
-
-                    PaintGraphLine(pPrivate,
-                                   pThis,
-                                   ulMaxMemKB,
-                                   ptl.x,
-                                   rclBmp.yTop,
-                                   -1);             // no bkgnd, we just filled that
-                    ptl.x++;
-                }
-
-                // store this for next time
-                pPrivate->ulMaxMemKBLast = ulMaxMemKB;
+                ptl.y =    pPrivate->paSnapshots[ptl.x].ulOut
+                         * rclBmp.yTop
+                         / pPrivate->ulMax;
+                GpiLine(hpsMem,
+                        &ptl);
             }
-            else
-            {
-                // scaling has not changed:
-                // we can then bitblt the bitmap one to the left
-                // and only paint the rightmost column
-                POINTL      ptlCopy[3];
-
-                // lower left of target
-                ptlCopy[0].x = pPrivate->ulTextWidth;
-                ptlCopy[0].y = 0;
-                // upper right of target (inclusive!)
-                ptlCopy[1].x = rclBmp.xRight - 1;
-                ptlCopy[1].y = rclBmp.yTop;
-                // lower left of source
-                ptlCopy[2].x = ptlCopy[0].x + 1;
-                ptlCopy[2].y = 0;
-                GpiBitBlt(hpsMem,
-                          hpsMem,
-                          (LONG)3,
-                          ptlCopy,
-                          ROP_SRCCOPY,
-                          BBO_IGNORE);
-
-                // add a new column to the right
-                PaintGraphLine(pPrivate,
-                               pLatest, // &pPrivate->paSnapshots[pPrivate->cSnapshots - 1],
-                               ulMaxMemKB,
-                               pPrivate->cSnapshots - 1,
-                               rclBmp.yTop,
-                               pPrivate->Setup.lcolBackground);
-            }
-
-            // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
-            p = pPrivate->szTooltipText;
-            p += pdrv_sprintf(p,
-                              pcmnGetString(ID_CRSI_SENTINELTOOLTIP),
-                              pnlsThousandsULong(sz1, pLatest->ulPhysFreeKB, cThousands),
-                              pnlsThousandsULong(sz2, pLatest->ulPhysInUseKB, cThousands),
-                              pnlsThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
-
-            if (pPrivate->arcWin32K == NO_ERROR)
-                pdrv_sprintf(p,
-                        "\nFree in swapper: %s KB ",
-                        pnlsThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
-
-            if (pPrivate->fTooltipShowing)
-                // tooltip currently showing:
-                // refresh its display
-                WinSendMsg(pWidget->pGlobals->hwndTooltip,
-                           TTM_UPDATETIPTEXT,
-                           (MPARAM)pPrivate->szTooltipText,
-                           0);
         }
     }
 
     pPrivate->fUpdateGraph = FALSE;
-}
-
-/*
- *@@ DrawNumber:
- *
- */
-
-VOID DrawNumber(HPS hps,
-                LONG y,
-                ULONG ulNumber,
-                LONG lColor)
-{
-    POINTL  ptl;
-    CHAR    szPaint[30] = "";
-    pdrv_sprintf(szPaint,
-            "%lu",
-            ulNumber);
-    ptl.x = 2;
-    ptl.y = y;
-    GpiSetColor(hps, lColor);
-    GpiCharStringAt(hps,
-                    &ptl,
-                    strlen(szPaint),
-                    szPaint);
 }
 
 /*
@@ -962,8 +863,7 @@ VOID TwgtPaint2(HWND hwnd,
     PMONITORSETUP pSetup = &pPrivate->Setup;
     RECTL       rclWin;
     ULONG       ulBorder = 1;
-    // CHAR        szPaint[100] = "";
-    // ULONG       ulPaintLen = 0;
+    CHAR        szTemp[200];
 
     // now paint button frame
     WinQueryWindowRect(hwnd,
@@ -1012,29 +912,28 @@ VOID TwgtPaint2(HWND hwnd,
                       &ptlBmpDest,
                       0, 0,
                       DBM_NORMAL);
-    }
 
-    if (pPrivate->paSnapshots)
-    {
-        PSNAPSHOT pLatest
-            = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+        if (pPrivate->paSnapshots)
+        {
+            ULONG       ulIn, ulOut, ul;
+            ulIn = pPrivate->paSnapshots[pPrivate->cSnapshots - 1].ulIn * 10 / 1024;
+            ulOut = pPrivate->paSnapshots[pPrivate->cSnapshots - 1].ulOut * 10 / 1024;
+            ul = pdrv_sprintf(szTemp,
+                              "%d.%d | %d.%d",
+                              ulIn / 10,
+                              ulIn % 10,
+                              ulOut / 10,
+                              ulOut % 10);
 
-        LONG    y = 1;
-
-        DrawNumber(hps,
-                   y,
-                   (pLatest->ulSwapperSizeKB + (1024 / 2)) / 1024,
-                   pSetup->lcolSwap);
-        y += pPrivate->ulSpacing;
-        DrawNumber(hps,
-                   y,
-                   (pLatest->ulPhysInUseKB + (1024 / 2)) / 1024,
-                   pSetup->lcolPhysInUse);
-        y += pPrivate->ulSpacing;
-        DrawNumber(hps,
-                   y,
-                   (pLatest->ulPhysFreeKB + (1024 / 2)) / 1024,
-                   pSetup->lcolPhysFree);
+            GpiSetColor(hps, RGBCOL_BLACK);
+            WinDrawText(hps,
+                        ul,
+                        szTemp,
+                        &rclWin,
+                        0,
+                        0,
+                        DT_CENTER | DT_VCENTER | DT_TEXTATTRS);
+        }
     }
 }
 
@@ -1045,8 +944,8 @@ VOID TwgtPaint2(HWND hwnd,
 
 VOID TwgtPaint(HWND hwnd)
 {
-    HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
-    if (hps)
+    HPS hps;
+    if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
     {
         // get widget data and its button data from QWL_USER
         PXCENTERWIDGET pWidget;
@@ -1069,53 +968,67 @@ VOID TwgtPaint(HWND hwnd)
 /*
  *@@ GetSnapshot:
  *      updates the newest entry in the snapshots
- *      array with the current memory values.
- *
- *      If win32k.sys was found, this uses that driver
- *      to update the values. Otherwise we use the slow
- *      and imprecise standard methods.
- *
- *@@added V0.9.9 (2001-03-30) [umoeller]
+ *      array with the current IP values.
  */
 
 VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
     PSNAPSHOT pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
-    memset(pLatest, 0, sizeof(SNAPSHOT));
 
-    if (pPrivate->arcWin32K == NO_ERROR)
+    if (pPrivate->sock > 0)
     {
-        K32SYSTEMMEMINFO MemInfo;
-
-        memset(&MemInfo, 0xFE, sizeof(MemInfo));
-        MemInfo.cb = sizeof(K32SYSTEMMEMINFO);
-        MemInfo.flFlags = K32_SYSMEMINFO_ALL;
-        pPrivate->arcWin32K = W32kQuerySystemMemInfo(&MemInfo);
-
-        if (pPrivate->arcWin32K == NO_ERROR)
+        if (!ioctl(pPrivate->sock,
+                   SIOSTATIF,
+                   (caddr_t)&pPrivate->statif,
+                   sizeof(pPrivate->statif)))
         {
-            pLatest->ulSwapperSizeKB = (MemInfo.cbSwapFileSize + 512) / 1024;
-            pLatest->ulSwapperFreeKB = (MemInfo.cbSwapFileAvail + 512) / 1024;
-            pLatest->ulPhysFreeKB = (MemInfo.cbPhysAvail + 512) / 1024;
-            pLatest->ulVirtTotalKB = pPrivate->ulTotPhysMemKB + pLatest->ulSwapperSizeKB;
+            ULONG ulMilliseconds;
+            ULONG ulDivisor;
+            ULONG i;
 
-            pLatest->ulVirtInUseKB = (pLatest->ulVirtTotalKB - pLatest->ulPhysFreeKB);
-            // pLatest->ulPhysInUseKB = (MemInfo.cbPhysUsed + 512) / 1024;
-            pLatest->ulPhysInUseKB = (pLatest->ulVirtInUseKB - pLatest->ulSwapperSizeKB);
+            DosQuerySysInfo(QSV_MS_COUNT,
+                            QSV_MS_COUNT,
+                            (PVOID)&ulMilliseconds,
+                            sizeof(ULONG));
+
+            if (!(ulDivisor = ulMilliseconds - pPrivate->ulLastMilliseconds))
+                // avoid div by zero
+                ulDivisor = 1;
+
+            pPrivate->ulLastMilliseconds = ulMilliseconds;
+
+            // do not crash the array
+            if (pPrivate->Setup.ulDevIndex >= IFMIB_ENTRIES)
+                pPrivate->Setup.ulDevIndex = 0;
+
+            i = pPrivate->Setup.ulDevIndex;
+
+            // now update "latest" with the data of the
+            // selected device; the point is, we get the
+            // current bandwidth by checking how much time
+            // has elapsed and then subtracting the old
+            // total bytes value from the new one
+
+            // 1) input bytes
+            pLatest->ulIn =   (   (double)pPrivate->statif.iftable[i].ifInOctets
+                                 - pPrivate->ulPrevTotalIn
+                               ) * 1000
+                               / ulDivisor;
+            if (pLatest->ulIn > pPrivate->ulMax)
+                pPrivate->ulMax = pLatest->ulIn;
+
+            pPrivate->ulPrevTotalIn = pPrivate->statif.iftable[i].ifInOctets;
+
+            // 2) output bytes
+            pLatest->ulOut =   (   (double)pPrivate->statif.iftable[i].ifOutOctets
+                                 - pPrivate->ulPrevTotalOut
+                               ) * 1000
+                               / ulDivisor;
+            if (pLatest->ulOut > pPrivate->ulMax)
+                pPrivate->ulMax = pLatest->ulOut;
+
+            pPrivate->ulPrevTotalOut = pPrivate->statif.iftable[i].ifOutOctets;
         }
-    }
-    else
-    {
-        // win32k.sys failed:
-        pLatest->ulSwapperSizeKB = (pcsysQuerySwapperSize() + 512) / 1024;
-        Dos16MemAvail(&pLatest->ulPhysFreeKB);
-        pLatest->ulPhysFreeKB = (pLatest->ulPhysFreeKB + 512) / 1024;
-        pLatest->ulVirtTotalKB = pPrivate->ulTotPhysMemKB + pLatest->ulSwapperSizeKB;
-
-        // now do calcs based on that... we don't wanna go thru
-        // this on every paint
-        pLatest->ulVirtInUseKB = (pLatest->ulVirtTotalKB - pLatest->ulPhysFreeKB);
-        pLatest->ulPhysInUseKB = (pLatest->ulVirtInUseKB - pLatest->ulSwapperSizeKB);
     }
 }
 
@@ -1145,8 +1058,7 @@ VOID TwgtTimer(HWND hwnd)
                 // create array of loads
                 ULONG cb = sizeof(SNAPSHOT) * ulGraphCX;
                 pPrivate->cSnapshots = ulGraphCX;
-                pPrivate->paSnapshots
-                    = (PSNAPSHOT)malloc(cb);
+                pPrivate->paSnapshots = (PSNAPSHOT)malloc(cb);
                 memset(pPrivate->paSnapshots, 0, cb);
             }
 
@@ -1179,8 +1091,6 @@ VOID TwgtTimer(HWND hwnd)
  *@@ TwgtWindowPosChanged:
  *      implementation for WM_WINDOWPOSCHANGED.
  *
- *@@added V0.9.7 (2000-12-02) [umoeller]
- *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1204,7 +1114,6 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
             if (pswpNew->cx != pswpOld->cx)
             {
-                XSTRING strSetup;
                 // width changed:
                 if (pPrivate->paSnapshots)
                 {
@@ -1246,17 +1155,7 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 } // end if (pPrivate->palLoads)
 
                 pPrivate->Setup.cx = pswpNew->cx;
-                TwgtSaveSetup(&strSetup,
-                              &pPrivate->Setup);
-                if (strSetup.ulLength)
-                    // changed V0.9.13 (2001-06-21) [umoeller]:
-                    // post it to parent instead of fixed XCenter client
-                    // to make this trayable
-                    WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
-                               XCM_SAVESETUP,
-                               (MPARAM)hwnd,
-                               (MPARAM)strSetup.psz);
-                pxstrClear(&strSetup);
+                TwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
             } // end if (pswpNew->cx != pswpOld->cx)
 
             // force recreation of bitmap
@@ -1270,7 +1169,6 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ TwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
  *
- *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID TwgtPresParamChanged(HWND hwnd,
@@ -1308,15 +1206,12 @@ VOID TwgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = NULL;
                 }
 
-                pszFont = pwinhQueryWindowFont(hwnd);
-                if (pszFont)
+                if (pszFont = pwinhQueryWindowFont(hwnd))
                 {
                     // we must use local malloc() for the font
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
-
-                CalcTextSpacing(hwnd, pPrivate);
 
                 // do not do this during WM_CREATE
                 if (!pPrivate->fCreating)
@@ -1354,33 +1249,63 @@ VOID TwgtPresParamChanged(HWND hwnd,
 }
 
 /*
- *@@ TwgtButton1DblClick:
- *      implementation for WM_BUTTON1DBLCLK.
+ *@@ HackContextMenu:
+ *
  */
 
-VOID TwgtButton1DblClick(HWND hwnd,
-                         PXCENTERWIDGET pWidget)
+VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
 {
-    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    HWND hwndSubmenu;
+    SHORT s = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
+                                MM_ITEMPOSITIONFROMID,
+                                MPFROM2SHORT(ID_CRMI_PROPERTIES,
+                                             FALSE),
+                                0);
+    if (hwndSubmenu = pwinhInsertSubmenu(pPrivate->pWidget->hwndContextMenu,
+                                         s + 2,
+                                         1999,
+                                         "Source",
+                                         MIS_TEXT,
+                                         0,
+                                         NULL,
+                                         0,
+                                         0))
     {
-        PCSZ pcszID = "<XWP_KERNEL>";
-        HOBJECT hobj = WinQueryObject((PSZ)pcszID);
-
-        if (hobj)
+        ULONG i;
+        for (i = 0; i < IFMIB_ENTRIES; i++)
         {
-            WinOpenObject(hobj,
-                          2, // OPEN_SETTINGS,
-                          TRUE);
+            _Pmpf(("pPrivate->statif.iftable[%d].ifDescr: %s",
+                    i,
+                    pPrivate->statif.iftable[i].ifDescr));
+
+            if (pPrivate->statif.iftable[i].ifDescr[0])
+            {
+                pwinhInsertMenuItem(hwndSubmenu,
+                                    MIT_END,
+                                    2000 + i,
+                                    pPrivate->statif.iftable[i].ifDescr,
+                                    MIS_TEXT,
+                                    (i == pPrivate->Setup.ulDevIndex)
+                                        ? MIA_CHECKED
+                                        : 0);
+            }
         }
-    } // end if (pPrivate)
+
+        pwinhInsertMenuItem(pPrivate->pWidget->hwndContextMenu,
+                            s + 3,
+                            0,
+                            "",
+                            MIS_SEPARATOR,
+                            0);
+
+        pPrivate->fContextMenuHacked = TRUE;
+    }
 }
 
 /*
  *@@ fnwpMonitorWidgets:
  *      window procedure for the "Sentinel".
  *
- *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed resource leak on destroy
  */
 
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1463,16 +1388,43 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 TwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
         break;
 
-        /*
-         *@@ WM_BUTTON1DBLCLK:
-         *      on double-click on clock, open
-         *      system clock settings.
-         */
+        case WM_CONTEXTMENU:
+        {
+            PWIDGETPRIVATE pPrivate;
+            if (    (pWidget)
+                 && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+               )
+            {
+                if (    (pWidget->hwndContextMenu)
+                     && (!pPrivate->fContextMenuHacked)
+                   )
+                {
+                    // first call for diskfree:
+                    // hack the context menu given to us
+                    HackContextMenu(pPrivate);
+                }
 
-        case WM_BUTTON1DBLCLK:
-            TwgtButton1DblClick(hwnd, pWidget);
-            mrc = (MPARAM)TRUE;     // message processed
+                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+            }
+        }
         break;
+
+        case WM_COMMAND:
+        {
+            PWIDGETPRIVATE pPrivate;
+            if (    (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+                 && ((SHORT)mp1) >= 2000
+                 && ((SHORT)mp1) < 2000 + IFMIB_ENTRIES
+               )
+            {
+                pPrivate->Setup.ulDevIndex = (SHORT)mp1 - 2000;
+                TwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
+            }
+            else
+                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+        }
+        break;
+
 
         /*
          * WM_DESTROY:
@@ -1487,10 +1439,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             {
                 if (pPrivate->ulTimerID)
                     ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
-                                  hwnd,
-                                  pPrivate->ulTimerID);
-
-                libWin32kTerm();
+                                   hwnd,
+                                   pPrivate->ulTimerID);
 
                 if (pPrivate->pBitmap)
                     pgpihDestroyXBitmap(&pPrivate->pBitmap);
@@ -1498,6 +1448,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
                 if (pPrivate->paSnapshots)
                     free(pPrivate->paSnapshots);
+
+                soclose(pPrivate->sock);
 
                 free(pPrivate);
             } // end if (pPrivate)
@@ -1603,7 +1555,7 @@ ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
     if (!fImportsFailed)
     {
         if (!WinRegisterClass(hab,
-                              WNDCLASS_WIDGET_SENTINEL,
+                              WNDCLASS_WIDGET_IPMON,
                               fnwpMonitorWidgets,
                               CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT,
                               sizeof(PWIDGETPRIVATE))

@@ -108,6 +108,7 @@ HLPOBJS = $(XWP_OUTPUT_ROOT)\helpers.lib
 # The following macros contains the .OBJ files for the XCenter plugins.
 DISKFREEOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_diskfree.obj $(PMPRINTF_LIB)
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
+IPMONOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_ipmon.obj $(PMPRINTF_LIB) libs\tcp32dll.lib libs\so32dll.lib
 MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
 SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_sentinel.obj $(PMPRINTF_LIB) libs\win32k.lib
 HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
@@ -258,6 +259,7 @@ nls: $(XWP_LANG_CODE)
 link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\diskfree.dll \
+      $(XWPRUNNING)\plugins\xcenter\ipmon.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
       $(XWPRUNNING)\plugins\xcenter\sentinel.dll \
@@ -411,6 +413,33 @@ $(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
         $(LINK) /OUT:$@ src\widgets\w_diskfree.def @<<
 $(DISKFREEOBJS)
 <<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
+
+#
+# Linking ipmon.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\ipmon.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        $(RUN_UNLOCK) $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+
+# update DEF file if buildlevel has changed
+src\widgets\ipmon.def: include\bldlevel.h makefile
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) IP monitor plugin DLL"
+
+$(MODULESDIR)\ipmon.dll: $(IPMONOBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile [$@]: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def $(IPMONOBJS)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -818,6 +847,8 @@ release: really_all
 !endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\ipmon.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\ipmon.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\monitors.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\monitors.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.dll $(XWPRELEASE_MAIN)\plugins\xcenter

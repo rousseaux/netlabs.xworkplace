@@ -53,6 +53,7 @@
  */
 
 #define INCL_DOSSEMAPHORES
+
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINWINDOWMGR
 #define INCL_WININPUT
@@ -63,6 +64,7 @@
 #define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
+#define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
 #include <os2.h>
@@ -1624,6 +1626,126 @@ MRESULT hifKeybdFunctionKeysItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
+SLDCDATA
+        MB3SliderCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     20,        // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,         // scale 2 increments
+                     0          // scale 2 spacing
+             };
+
+static const CONTROLDEF
+    MMap2Group = LOADDEF_GROUP(ID_XSDI_MOUSE_MAPPINGS2GROUP, SZL_AUTOSIZE),
+    MMap2ChordWinListCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_CHORDWINLIST),
+    MMap2SysmenuMB2CB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SYSMENUMB2),
+    MMap2MB3ClickTxt = LOADDEF_TEXT(ID_XSDI_MOUSE_MB3CLICK_TXT),
+    MMap2MB3ClickDrop = CONTROLDEF_DROPDOWNLIST(ID_XSDI_MOUSE_MB3CLICK_DROP, 91, 70),
+    MMap2MB3ScrollCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MB3SCROLL),
+    MMap2MB3PixelsTxt1 = LOADDEF_TEXT(ID_XSDI_MOUSE_MB3PIXELS_TXT1),
+    MMap2MB3PixelsSlider = CONTROLDEF_SLIDER(
+                                    ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
+                                    56,
+                                    14,
+                                    &MB3SliderCData),
+    MMap2MB3PixelsTxt2 = CONTROLDEF_TEXT_CENTER("", ID_XSDI_MOUSE_MB3PIXELS_TXT1, 12, SZL_AUTOSIZE),
+    MMap2MB3LinewiseRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_MOUSE_MB3LINEWISE),
+    MMap2MB3AmplifiedRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_MOUSE_MB3AMPLIFIED),
+    MMap2MB3AmpTxt1 = LOADDEF_TEXT(ID_XSDI_MOUSE_MB3AMP_TXT1),
+    MMap2MB3AmpSlider = CONTROLDEF_SLIDER(
+                                    ID_XSDI_MOUSE_MB3AMP_SLIDER,
+                                    56,
+                                    14,
+                                    &MB3SliderCData),
+    MMap2MB3AmpTxt2 = CONTROLDEF_TEXT_CENTER("", ID_XSDI_MOUSE_MB3AMP_TXT2, 12, SZL_AUTOSIZE),
+    MMap2MB3ScrollReverse = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MB3SCROLLREVERSE);
+
+static const DLGHITEM G_dlgMappings2[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&MMap2Group),
+                    START_ROW(0),
+                        CONTROL_DEF(&MMap2ChordWinListCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&MMap2SysmenuMB2CB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&MMap2MB3ClickTxt),
+                        CONTROL_DEF(&MMap2MB3ClickDrop),
+                    START_ROW(0),
+                        CONTROL_DEF(&MMap2MB3ScrollCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&MMap2MB3PixelsTxt1),
+                        CONTROL_DEF(&MMap2MB3PixelsSlider),
+                        CONTROL_DEF(&MMap2MB3PixelsTxt2),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&MMap2MB3LinewiseRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&MMap2MB3AmplifiedRadio),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&MMap2MB3AmpTxt1),
+                        CONTROL_DEF(&MMap2MB3AmpSlider),
+                        CONTROL_DEF(&MMap2MB3AmpTxt2),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&MMap2MB3ScrollReverse),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE,
+    };
+
+/* BEGIN
+    DIALOG  "", ID_XSD_MOUSEMAPPINGS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "XWorkplace Hook mouse mappings", -1, 6, 20, 172,
+                        112, NOT WS_GROUP
+        AUTOCHECKBOX    "Allo~w show window list everywhere",
+                        ID_XSDI_MOUSE_CHORDWINLIST, 10, 114, 164, 8
+        AUTOCHECKBOX    "~System menu on title-bar MB2 click",
+                        ID_XSDI_MOUSE_SYSMENUMB2, 10, 106, 158, 8
+        LTEXT           "MB3 ~click action:", -1, 10, 94, 72, 8, DT_MNEMONIC
+        CONTROL         "", ID_XSDI_MOUSE_MB3CLICK_DROP, 84, 34, 91, 70,
+                        WC_COMBOBOX, CBS_DROPDOWNLIST | WS_GROUP |
+                        WS_TABSTOP | WS_VISIBLE
+        AUTOCHECKBOX    "~MB3 drag scrolling", ID_XSDI_MOUSE_MB3SCROLL, 10,
+                        82, 102, 8
+        LTEXT           "Minimum pi~xels:", ID_XSDI_MOUSE_MB3PIXELS_TXT1, 20,
+                        68, 68, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_MB3PIXELS_SLIDER, 92, 68, 66, 14,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 20, 0, 1, 0
+        CTEXT           "0", ID_XSDI_MOUSE_MB3PIXELS_TXT2, 160, 68, 14, 14,
+                        DT_VCENTER
+        AUTORADIOBUTTON "~Line-wise (fixed) mode", ID_XSDI_MOUSE_MB3LINEWISE,
+                        20, 60, 110, 8, WS_TABSTOP
+        AUTORADIOBUTTON "~Amplified mode", ID_XSDI_MOUSE_MB3AMPLIFIED, 20,
+                        50, 80, 8, WS_TABSTOP
+        LTEXT           "Am~plification:", ID_XSDI_MOUSE_MB3AMP_TXT1, 30, 36,
+                        60, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_MB3AMP_SLIDER, 90, 36, 56, 14,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 20, 0, 1, 0
+        CTEXT           "0", ID_XSDI_MOUSE_MB3AMP_TXT2, 150, 36, 24, 14,
+                        DT_VCENTER
+        AUTOCHECKBOX    "~Reverse scrolling", ID_XSDI_MOUSE_MB3SCROLLREVERSE,
+                        20, 24, 84, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 64, 4, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 124, 4, 55, 12, BS_HELP
+    END
+END */
+
 /*
  *@@ hifMouseMappings2InitPage:
  *      notebook callback function (notebook.c) for the
@@ -1634,6 +1756,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.1 (99-12-10) [umoeller]
  *@@changed V0.9.4 (2000-06-12) [umoeller]: added mb3 clicks
  *@@changed V0.9.9 (2001-03-20) [lafaix]: added MB3 click mappings
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: now using dlg formatter
  */
 
 VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1641,9 +1764,6 @@ VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        HWND hwndDrop = WinWindowFromID(pnbp->hwndDlgPage,
-                                        ID_XSDI_MOUSE_MB3CLICK_DROP);
         // first call: create HOOKCONFIG
         // structure;
         // this memory will be freed automatically by the
@@ -1656,11 +1776,32 @@ VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         if (pnbp->pUser2 = malloc(sizeof(HOOKCONFIG)))
             memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
 
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-05-23) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgMappings2,
+                      ARRAYITEMCOUNT(G_dlgMappings2));
+
         // set MB3 mappings combo
-        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_AUTOSCROLL)) ; // pszMB3AutoScroll
-        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_DBLCLICK)) ; // pszMB3DblClick
-        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_NOCONVERSION)) ; // pszMB3NoConversion
-        WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_PUSHTOBOTTOM)) ; // pszMB3PushToBottom
+        {
+            static const ULONG aulIDs[] =
+                {
+                    ID_XSSI_MB3_AUTOSCROLL,
+                    ID_XSSI_MB3_DBLCLICK,
+                    ID_XSSI_MB3_NOCONVERSION,
+                    ID_XSSI_MB3_PUSHTOBOTTOM
+                };
+            ULONG ul;
+            HWND hwndDrop = WinWindowFromID(pnbp->hwndDlgPage,
+                                            ID_XSDI_MOUSE_MB3CLICK_DROP);
+
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aulIDs);
+                 ++ul)
+            {
+                WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(aulIDs[ul]));
+            }
+        }
 
         // set up sliders
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
@@ -1685,11 +1826,9 @@ VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // mb3 clicks mappings
         if (pdc->fMB3AutoScroll)
             winhSetLboxSelectedItem(hwndDrop, 0, TRUE);
-        else
-        if (pdc->fMB3Click2MB1DblClk)
+        else if (pdc->fMB3Click2MB1DblClk)
             winhSetLboxSelectedItem(hwndDrop, 1, TRUE);
-        else
-        if (pdc->fMB3Push2Bottom)
+        else if (pdc->fMB3Push2Bottom)
             winhSetLboxSelectedItem(hwndDrop, 3, TRUE);
         else
             winhSetLboxSelectedItem(hwndDrop, 2, TRUE);
@@ -1724,17 +1863,21 @@ VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         BOOL        fEnableAmp = (   (pdc->fMB3Scroll)
                                   && (pdc->usScrollMode == SM_AMPLIFIED)
                                  );
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT1,
-                          pdc->fMB3Scroll);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
-                          pdc->fMB3Scroll);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT2,
-                          pdc->fMB3Scroll);
 
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3LINEWISE,
-                          pdc->fMB3Scroll);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
-                          pdc->fMB3Scroll);
+        static const ULONG aidsScroll[] =
+            {
+                ID_XSDI_MOUSE_MB3PIXELS_TXT1,
+                ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
+                ID_XSDI_MOUSE_MB3PIXELS_TXT2,
+                ID_XSDI_MOUSE_MB3LINEWISE,
+                ID_XSDI_MOUSE_MB3AMPLIFIED,
+                ID_XSDI_MOUSE_MB3SCROLLREVERSE
+            };
+
+        winhEnableControls2(pnbp->hwndDlgPage,
+                            aidsScroll,
+                            ARRAYITEMCOUNT(aidsScroll),
+                            pdc->fMB3Scroll);
 
         WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT1,
                           fEnableAmp);
@@ -1742,9 +1885,6 @@ VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                           fEnableAmp);
         WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT2,
                           fEnableAmp);
-
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
-                          pdc->fMB3Scroll);
     }
 }
 

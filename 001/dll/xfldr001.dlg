@@ -1249,49 +1249,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_MOUSEMAPPINGS2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSEMAPPINGS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XWorkplace Hook mouse mappings", -1, 6, 20, 172,
-                        112, NOT WS_GROUP
-        AUTOCHECKBOX    "Allo~w show window list everywhere",
-                        ID_XSDI_MOUSE_CHORDWINLIST, 10, 114, 164, 8
-        AUTOCHECKBOX    "~System menu on title-bar MB2 click",
-                        ID_XSDI_MOUSE_SYSMENUMB2, 10, 106, 158, 8
-        LTEXT           "MB3 ~click action:", -1, 10, 94, 72, 8, DT_MNEMONIC
-        CONTROL         "", ID_XSDI_MOUSE_MB3CLICK_DROP, 84, 34, 91, 70,
-                        WC_COMBOBOX, CBS_DROPDOWNLIST | WS_GROUP |
-                        WS_TABSTOP | WS_VISIBLE
-        AUTOCHECKBOX    "~MB3 drag scrolling", ID_XSDI_MOUSE_MB3SCROLL, 10,
-                        82, 102, 8
-        LTEXT           "Minimum pi~xels:", ID_XSDI_MOUSE_MB3PIXELS_TXT1, 20,
-                        68, 68, 14, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_MB3PIXELS_SLIDER, 92, 68, 66, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 20, 0, 1, 0
-        CTEXT           "0", ID_XSDI_MOUSE_MB3PIXELS_TXT2, 160, 68, 14, 14,
-                        DT_VCENTER
-        AUTORADIOBUTTON "~Line-wise (fixed) mode", ID_XSDI_MOUSE_MB3LINEWISE,
-                        20, 60, 110, 8, WS_TABSTOP
-        AUTORADIOBUTTON "~Amplified mode", ID_XSDI_MOUSE_MB3AMPLIFIED, 20,
-                        50, 80, 8, WS_TABSTOP
-        LTEXT           "Am~plification:", ID_XSDI_MOUSE_MB3AMP_TXT1, 30, 36,
-                        60, 14, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_MB3AMP_SLIDER, 90, 36, 56, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 20, 0, 1, 0
-        CTEXT           "0", ID_XSDI_MOUSE_MB3AMP_TXT2, 150, 36, 24, 14,
-                        DT_VCENTER
-        AUTOCHECKBOX    "~Reverse scrolling", ID_XSDI_MOUSE_MB3SCROLLREVERSE,
-                        20, 24, 84, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 64, 4, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 124, 4, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_MOUSE_CORNERS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_MOUSE_CORNERS, 0, 0, 232, 180, NOT FS_DLGBORDER |

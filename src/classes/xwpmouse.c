@@ -192,7 +192,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndDlg;
         inbp.hmod = savehmod;
-        inbp.ulDlgID = ID_XSD_MOUSEMAPPINGS2;
+        inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_MOUSEMAPPINGS2;   V0.9.19 (2002-05-28) [umoeller]
         inbp.usPageStyleFlags = BKA_MINOR;
         inbp.fEnumerate = TRUE;
         // inbp.pcszName = cmnGetString(ID_XSSI_MAPPINGSPAGE);  // pszMappingsPage

@@ -983,6 +983,7 @@ BEGIN
     ID_CRSI_WIDGET_SENTINEL             "Sentinel memory watcher"
     ID_CRSI_WIDGET_WINDOWLIST           "Window list"
     ID_CRSI_WIDGET_HEALTH               "Health Monitor"
+    ID_CRSI_WIDGET_IPMONITOR            "IP Monitor"
 
     /* font sample view (all new with V0.9.19) */
     ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
@@ -1524,6 +1525,18 @@ BEGIN
     ID_XSDI_ACL_SKIP                    "Sk~ip session (do not close)"
     ID_XSDI_ACL_WMCLOSE                 "Clo~se PM window"
     ID_XSDI_ACL_KILLSESSION             "~Kill session (DosKillProcess)"
+
+    /* strings formerly in ID_XSD_MOUSEMAPPINGS2 */
+    ID_XSDI_MOUSE_MAPPINGS2GROUP        "Additional mappings"
+    ID_XSDI_MOUSE_CHORDWINLIST          "Allo~w show window list everywhere"
+    ID_XSDI_MOUSE_SYSMENUMB2            "~System menu on title-bar MB2 click"
+    ID_XSDI_MOUSE_MB3CLICK_TXT          "MB3 ~click action:"
+    ID_XSDI_MOUSE_MB3SCROLL             "~MB3 drag scrolling"
+    ID_XSDI_MOUSE_MB3PIXELS_TXT1        "Minimum pi~xels:"
+    ID_XSDI_MOUSE_MB3LINEWISE           "~Line-wise (fixed) mode"
+    ID_XSDI_MOUSE_MB3AMPLIFIED          "~Amplified mode"
+    ID_XSDI_MOUSE_MB3AMP_TXT1           "Am~plification:"
+    ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Reverse scrolling"
 END
 
 /* Treesize definitions; added V0.9.0 */
