@@ -129,8 +129,9 @@ APIRET LoadSedFile(PCSZ pcszSedFilename)
                 break;
             }
 
+            // V1.0.3 (2004-07-02) [pr]: Alfredo's change to allow / in replace string
             PCSZ pEndOfReplace;
-            if (!(pEndOfReplace = strchr(pEndOfFind + 1, '/')))
+            if (!(pEndOfReplace = strrchr(pEndOfFind + 1, '/')))
             {
                 printf("Error in line %d of \"%s\": Line has no '/' character after find expression.\n",
                        pcszSedFilename,
