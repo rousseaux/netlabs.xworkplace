@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -175,8 +175,8 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
-                                              CDATE* pcdateDeleted,
-                                              CTIME* pctimeDeleted)
+                                               CDATE* pcdateDeleted,
+                                               CTIME* pctimeDeleted)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     BOOL    brc = _fDeleted;
@@ -215,7 +215,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
 SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
                                             BOOL fSet)
 {
-    BOOL    brc = FALSE;
+    // BOOL    brc = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetDeletion");
 
@@ -362,7 +362,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
 
     TRY_LOUD(excpt1, NULL)
     {
-        // method pointer
+        // obtain "xwpQuerySetup2" method pointer
         somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2 = 0;
 
         pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)somResolveByName(somSelf,
@@ -393,7 +393,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *
  *      If you wish to override this method for subclasses,
  *      you must call the XFldObject implementation of this
- *      method _before_ your query-setup code for your subclass.
+ *      method.
  *
  *      Note that you cannot simply use _parent_xwpQuerySetup
  *      to call the parent method, because there's no C binding
@@ -411,6 +411,12 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  +          // now call that method
  +          if (pfn_xwpQuerySetup2)
  +              ulReturn = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
+ *
+ *      Important note: You must call the XFldObject method
+ *      _after_ your implementation, because the OBJECTID
+ *      setup string must be added at the very last position
+ *      in the complete setup string, and that string is implemented
+ *      by the XFldObject method.
  *
  *      See XFolder::xwpQuerySetup2 for a sample implementation
  *      which adds setup strings for a subclass of XFldObject.
@@ -447,6 +453,8 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     XFldObject_parent_WPObject_wpInitData(somSelf);
 
     _fDeleted = FALSE;
+    _pWPObjectData = NULL;
+    _cbWPObjectData = 0;
 }
 
 /*
@@ -588,6 +596,57 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
 }
 
 /*
+ *@@ wpRestoreData:
+ *      this instance method restores a 32-bit data
+ *      value for the object data upon object awakening.
+ *
+ *      We check the "ulKey" value after having called
+ *      the parent to be able to intercept the pointer
+ *      to certain WPS-internal object data, which
+ *      we cannot access otherwise. That's a real ugly
+ *      kludge, but there's no other way to get certain
+ *      object settings. ;-)
+ *
+ *      It is possible to override this method for WPObject
+ *      even though WPObject does not define the implementation
+ *      how object data is stored and restored. This works
+ *      because the implementation apparently sits in
+ *      wpRestoreState, which is overridden by the WPS
+ *      base storage classes (WPAbstract, WPTransient,
+ *      WPFileSystem). This method is _not_ overridden.
+ *
+ *@@added V0.9.1 (2000-01-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
+                                            PSZ pszClass, ULONG ulKey,
+                                            PBYTE pValue, PULONG pcbValue)
+{
+    BOOL    brc = FALSE;
+    XFldObjectMethodDebug("XFldObject","xfobj_wpRestoreData");
+
+    brc = XFldObject_parent_WPObject_wpRestoreData(somSelf,
+                                                   pszClass,
+                                                   ulKey, pValue,
+                                                   pcbValue);
+
+    if ( (brc) && (pValue) )
+    {
+        switch (ulKey)
+        {
+            case 11:        // IDKEY_OBJDATA, not defined
+            {
+                XFldObjectData *somThis = XFldObjectGetData(somSelf);
+                _pWPObjectData = (PVOID)pValue;
+                _cbWPObjectData = *pcbValue;
+            break; }
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ wpDisplayMenu:
  *      this WPObject instance method creates and displays
  *      an object's popup menu, which is returned.
@@ -623,7 +682,7 @@ SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
                                             ULONG ulMenuType,
                                             ULONG ulReserved)
 {
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     // XFldObjectMethodDebug("XFldObject","xfobj_wpDisplayMenu");
 
     #if defined DEBUG_MENUS || defined DEBUG_SOMMETHODS
@@ -651,7 +710,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
 {
     ULONG ulMenuFilter = 0;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpFilterPopupMenu");
 
     ulMenuFilter = XFldObject_parent_WPObject_wpFilterPopupMenu(somSelf,
@@ -662,6 +721,11 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
         _Pmpf(("XFldObject::wpFilterPopupMenu: ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
                 ulMenuFilter, ((ulMenuFilter) & CTXT_CRANOTHER)));
     #endif
+
+    // if object has been deleted already (ie. is in trashcan),
+    // remove delete
+    if (_fDeleted)
+        ulMenuFilter &~ CTXT_DELETE;
 
     // now suppress default menu items according to
     // Global Settings;
@@ -708,12 +772,26 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      process input when any menu item was selected.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the new menu items
+ *      we have inserted for our subclass.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
+ */
+
+/*
+ * wpAddSettingsPages: override;
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
-                                                   HWND hwndFrame,
-                                                   ULONG ulMenuId)
+                                                 HWND hwndFrame,
+                                                 ULONG ulMenuId)
 {
     BOOL                brc = FALSE;
 
@@ -721,76 +799,86 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpMenuItemSelected");
 
-    switch (ulMenuId) {
+    switch (ulMenuId)
+    {
         #ifdef DEBUG_CONTEXT
-        case ID_XFMI_RECORDCORE:
-        {
-            int                 i;
-            CHAR                szMsg[1024] = "No record core.",
-                                szTitle[1024],
-                                szBuf[20] = "0x00000000";
-            PMINIRECORDCORE     pMRC = _wpQueryCoreRecord(somSelf);
-            PCLASSFIELDINFO     pCFI, pCFI2;
-            ULONG               ulCFISize = 0, ulErr;
+            case ID_XFMI_RECORDCORE:
+            {
+                int                 i;
+                CHAR                szMsg[1024] = "No record core.",
+                                    szTitle[1024],
+                                    szBuf[20] = "0x00000000";
+                PMINIRECORDCORE     pMRC = _wpQueryCoreRecord(somSelf);
+                PCLASSFIELDINFO     pCFI, pCFI2;
+                ULONG               ulCFISize = 0, ulErr;
 
-            strcpy(szTitle, "Record core for ");
-            strcat(szTitle, _wpQueryTitle(somSelf));
+                strcpy(szTitle, "Record core for ");
+                strcat(szTitle, _wpQueryTitle(somSelf));
 
-            strcpy(szMsg, "Size of core record (cb): ");
-            UL2H(szBuf+2, pMRC->cb);
-            strcat(szMsg, szBuf);
+                strcpy(szMsg, "Size of core record (cb): ");
+                UL2H(szBuf+2, pMRC->cb);
+                strcat(szMsg, szBuf);
 
-            strcat(szMsg, "\nSize of MINIRECORDCORE:   ");
-            UL2H(szBuf+2, sizeof(MINIRECORDCORE));
-            strcat(szMsg, szBuf);
+                strcat(szMsg, "\nSize of MINIRECORDCORE:   ");
+                UL2H(szBuf+2, sizeof(MINIRECORDCORE));
+                strcat(szMsg, szBuf);
 
-            strcat(szMsg, "\nSize of RECORDCORE:       ");
-            UL2H(szBuf+2, sizeof(RECORDCORE));
-            strcat(szMsg, szBuf);
+                strcat(szMsg, "\nSize of RECORDCORE:       ");
+                UL2H(szBuf+2, sizeof(RECORDCORE));
+                strcat(szMsg, szBuf);
 
-            strcat(szMsg, "\nNext record:              ");
-            UL2H(szBuf+2, (ULONG)pMRC->preccNextRecord);
-            strcat(szMsg, szBuf);
+                strcat(szMsg, "\nNext record:              ");
+                UL2H(szBuf+2, (ULONG)pMRC->preccNextRecord);
+                strcat(szMsg, szBuf);
 
-            strcat(szMsg, "\nIcon X pos:               ");
-            UL2H(szBuf+2, pMRC->ptlIcon.x);
-            strcat(szMsg, szBuf);
+                strcat(szMsg, "\nIcon X pos:               ");
+                UL2H(szBuf+2, pMRC->ptlIcon.x);
+                strcat(szMsg, szBuf);
 
-            strcat(szMsg, "\nIcon Y pos:               ");
-            UL2H(szBuf+2, pMRC->ptlIcon.y);
-            strcat(szMsg, szBuf);
+                strcat(szMsg, "\nIcon Y pos:               ");
+                UL2H(szBuf+2, pMRC->ptlIcon.y);
+                strcat(szMsg, szBuf);
 
-            strcat(szMsg, "\n\nDetails CLASSFIELDINFO:");
+                strcat(szMsg, "\n\nDetails CLASSFIELDINFO:");
 
-            strcat(szMsg, "\nSize of structure:        ");
-            _wpQueryDetailsData(somSelf, NULL, &ulCFISize);
-            UL2H(szBuf+2, ulCFISize);
-            strcat(szMsg, szBuf);
+                strcat(szMsg, "\nSize of structure:        ");
+                _wpQueryDetailsData(somSelf, NULL, &ulCFISize);
+                UL2H(szBuf+2, ulCFISize);
+                strcat(szMsg, szBuf);
 
-            pCFI = (PCLASSFIELDINFO)_wpAllocMem(somSelf, ulCFISize, &ulErr);
-            pCFI2 = pCFI;
-            _wpQueryDetailsData(somSelf, (PVOID)&pCFI2, &ulCFISize);
+                pCFI = (PCLASSFIELDINFO)_wpAllocMem(somSelf, ulCFISize, &ulErr);
+                pCFI2 = pCFI;
+                _wpQueryDetailsData(somSelf, (PVOID)&pCFI2, &ulCFISize);
 
-            _wpFreeMem(somSelf, (PVOID)pCFI);
+                _wpFreeMem(somSelf, (PVOID)pCFI);
 
-            DebugBox(szTitle, szMsg);
+                DebugBox(szTitle, szMsg);
 
-            brc = TRUE;
-        break; }
+                brc = TRUE;
+            break; }
 
-        case ID_XFMI_SHOWFOLDERDATA:
-        {
-            xthrPostWorkerMsg(WM_SHOWFOLDERDATA,
-                (MPARAM)somSelf,
-                MPNULL);
-            brc = TRUE;
-        break; }
+            case ID_XFMI_SHOWFOLDERDATA:
+            {
+                xthrPostWorkerMsg(WM_SHOWFOLDERDATA,
+                                  (MPARAM)somSelf,
+                                  MPNULL);
+                brc = TRUE;
+            break; }
         #endif
+
+        case WPMENUID_DELETE:
+            /* _Pmpf(("Deleting object %s, hwndFrame: 0x%lX",
+                   _wpQueryTitle(somSelf),
+                   hwndFrame )); */
+            brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
+                                                                hwndFrame,
+                                                                ulMenuId);
+        break;
 
         default:
             brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
-                                                          hwndFrame,
-                                                          ulMenuId);
+                                                                hwndFrame,
+                                                                ulMenuId);
     }
 
     return (brc);
@@ -803,31 +891,59 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
  *      We will add the object's "Internals" page here.
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpAddSettingsPages(XFldObject *somSelf,
+/* SOM_Scope BOOL  SOMLINK xfobj_wpAddSettingsPages(XFldObject *somSelf,
                                                  HWND hwndNotebook)
 {
     PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpAddSettingsPages");
 
+    return (XFldObject_parent_WPObject_wpAddSettingsPages(somSelf,
+                                                          hwndNotebook));
+} */
+
+/*
+ *@@ wpAddObjectGeneralPage:
+ *      this WPObject instance method adds the "Icon"
+ *      page to an object's settings notebook.
+ *      We'll insert the object's "Internals" page here
+ *      (now called "Object" page).
+ *
+ *      Starting with V0.9.1, we override this method
+ *      instead of wpAddSettingsPages, because e.g.
+ *      the spooler doesn't call WPObject::wpAddSettingsPages.
+ *
+ *@@added V0.9.1 (2000-02-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
+                                                      HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpAddObjectGeneralPage");
+
     if (pGlobalSettings->AddObjectPage)
         _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
 
-    return (XFldObject_parent_WPObject_wpAddSettingsPages(somSelf,
-                                                          hwndNotebook));
+    return (XFldObject_parent_WPObject_wpAddObjectGeneralPage(somSelf,
+                                                              hwndNotebook));
 }
 
 /*
  *@@ wpConfirmObjectTitle:
  *      this instance method is called by the WPS during file
  *      operations (copy, move, rename etc.) for every single
- *      file that is being processed. This method must verify
+ *      object that is being processed. This method must verify
  *      that the operation is valid WRT name clashes and display
  *      a confirmation dialog in case it is not.
+ *
  *      Apparently, this method is not overridden by subclasses,
  *      not even WPFileSystem.
+ *
  *      XWorkplace implements its own "Object exists" dialog here,
  *      if the Global Settings allow it.
+ *
  *      Like most interesting methods in the WPS, this thing is
  *      barely documented, so this is what I found out.
  *
@@ -951,6 +1067,26 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
     return (ulrc);
 }
 
+/*
+ *@@ wpDelete:
+ *      this WPObject method deletes an object and
+ *      prompts for confirmations, if necessary.
+ *
+ *      We override this to move objects into the
+ *      trash can instead, if necessary.
+ *
+ *@@added V0.9.1 (2000-01-25) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
+                                        ULONG fConfirmations)
+{
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpDelete");
+
+    return (XFldObject_parent_WPObject_wpDelete(somSelf, fConfirmations));
+}
+
 /* ******************************************************************
  *                                                                  *
  *   here come the XFldObject class methods                         *
@@ -1001,6 +1137,7 @@ SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
 
 SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
 {
+    BOOL    fOpenFoldersFound = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                         // this will load the global settings from OS2.INI
 
@@ -1024,7 +1161,6 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         // method also gets called when the classes are installed
         // by WinRegisterObjectClass, unfortunately, and we don't
         // want to start threads etc. then.
-        BOOL    fOpenFoldersFound = FALSE;
         HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
         HWND    hwndThis;
         while (     (!fOpenFoldersFound)
@@ -1054,13 +1190,14 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         }
     }
 
-    // even if not first invocation (i.e. some class other
-    // than WPObject gets initialized): notify Quick thread
-    // of class initialization
-    if (pGlobalSettings->ShowBootupStatus)
-        xthrPostQuickMsg(QM_BOOTUPSTATUS,
-                         (MPARAM)somSelf,       // class object
-                         MPNULL);
+    if (!fOpenFoldersFound)
+        // even if not first invocation (i.e. some class other
+        // than WPObject gets initialized): notify Speedy thread
+        // of class initialization
+        if (pGlobalSettings->ShowBootupStatus)
+            xthrPostSpeedyMsg(QM_BOOTUPSTATUS,
+                             (MPARAM)somSelf,       // class object
+                             MPNULL);
 }
 
 /*
@@ -1069,7 +1206,8 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
  */
 
 SOM_Scope WPObject*  SOMLINK xfobjM_wpclsNew(M_XFldObject *somSelf,
-                                             PSZ pszTitle, PSZ pszSetupEnv,
+                                             PSZ pszTitle,
+                                             PSZ pszSetupEnv,
                                              WPFolder* Folder,
                                              BOOL fLock)
 {

@@ -94,27 +94,27 @@ BOOL    fDebugAll = FALSE;
  *      two macros, or the WPS will crash.
  */
 
+//         DosSysTrace(254, strlen(method), __LINE__, method);         \
+//         PSZ     __pszObjectTitle = NULL;                            \
+//             __pszObjectTitle = _wpQueryTitle(somSelf);              \
+/*             SOMClass *pClass = _somGetClass(somSelf);               \
+            PSZ __pszClassName = "?";                               \
+            if (pClass) __pszClassName = _somGetName(pClass);       \
+            */
+
 #define InstanceMethodDebug(class, method)                          \
     {                                                               \
         DbgDataFileData *pDbgDataFileData = DbgDataFileGetData(somSelf);  \
         PSZ __pszClass = class;                                     \
         PSZ __pszMethod = method;                                   \
         CHAR    __szIndent[300];                                    \
-        PSZ     __pszObjectTitle = NULL;                            \
-        DosSysTrace(254, strlen(method), __LINE__, method);         \
         if (    (pDbgDataFileData->fDebugThis) || (fDebugAll) )       \
         {                                                           \
-            SOMClass *pClass = _somGetClass(somSelf);               \
-            PSZ __pszClassName = "?";                               \
-            if (pClass) __pszClassName = _somGetName(pClass);       \
-            __pszObjectTitle = _wpQueryTitle(somSelf);              \
             memset(__szIndent, ' ', pDbgDataFileData->ulIndent);      \
-            strcpy(&(__szIndent[pDbgDataFileData->ulIndent]), "%s::%s (\"%s\" of %s)"); \
+            strcpy(&(__szIndent[pDbgDataFileData->ulIndent]), "%s::%s"); \
             _Pmpf((__szIndent,                                      \
                         class,                                      \
-                        method,                                     \
-                        (__pszObjectTitle) ? __pszObjectTitle : "NULL", \
-                        __pszClassName));                           \
+                        method));                                   \
             pDbgDataFileData->ulIndent += 4;                          \
         }
 
@@ -122,11 +122,10 @@ BOOL    fDebugAll = FALSE;
         if (    (pDbgDataFileData->fDebugThis) || (fDebugAll) )       \
         {                                                           \
             pDbgDataFileData->ulIndent -= 4;                          \
-            strcpy(&(__szIndent[pDbgDataFileData->ulIndent]), "End of %s::%s (\"%s\")"); \
+            strcpy(&(__szIndent[pDbgDataFileData->ulIndent]), "End of %s::%s"); \
             _Pmpf((__szIndent,                                      \
                         __pszClass,                                 \
-                        __pszMethod,                                \
-                        (__pszObjectTitle) ? __pszObjectTitle : "NULL")); \
+                        __pszMethod));                              \
         }                                                           \
     }
 
@@ -156,14 +155,16 @@ BOOL    fDebugAll = FALSE;
 SOM_Scope void  SOMLINK ddf_wpInitData(DbgDataFile *somSelf)
 {
     DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
-    DbgDataFileMethodDebug("DbgDataFile","ddf_wpInitData");
+    _Pmpf(("ddf_wpInitData"));
+    // DbgDataFileMethodDebug("DbgDataFile","ddf_wpInitData");
 
     DbgDataFile_parent_WPDataFile_wpInitData(somSelf);
 
-    _fDebugThis = FALSE;
+    _fDebugThis = TRUE;
     _ulIndent = 0;
 
-    EndInstanceMethodDebug();
+    _Pmpf(("End of ddf_wpInitData"));
+    // EndInstanceMethodDebug();
 }
 
 /*
@@ -219,7 +220,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetError(DbgDataFile *somSelf,
                                        ULONG ulErrorId)
 {
     BOOL rc = FALSE;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetError");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetError(somSelf,
@@ -231,7 +232,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetError(DbgDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK ddf_wpQueryError(DbgDataFile *somSelf)
 {
     ULONG rc = FALSE;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryError");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryError(somSelf));
@@ -245,7 +246,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryError(DbgDataFile *somSelf)
 
 SOM_Scope void  SOMLINK ddf_wpLockObject(DbgDataFile *somSelf)
 {
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpLockObject");
 
     DbgDataFile_parent_WPDataFile_wpLockObject(somSelf);
@@ -260,7 +261,7 @@ SOM_Scope void  SOMLINK ddf_wpLockObject(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpUnlockObject(DbgDataFile *somSelf)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpUnlockObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpUnlockObject(somSelf));
@@ -276,7 +277,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpUnlockObject(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpIsDeleteable(DbgDataFile *somSelf)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpIsDeleteable");
 
     rc = (DbgDataFile_parent_WPDataFile_wpIsDeleteable(somSelf));
@@ -292,7 +293,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpIsDeleteable(DbgDataFile *somSelf)
 SOM_Scope ULONG  SOMLINK ddf_wpDelete(DbgDataFile *somSelf, ULONG fConfirmations)
 {
     ULONG rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpDelete");
 
     rc = (DbgDataFile_parent_WPDataFile_wpDelete(somSelf, fConfirmations));
@@ -309,7 +310,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpConfirmDelete(DbgDataFile *somSelf,
                                             ULONG fConfirmations)
 {
     ULONG rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpConfirmDelete");
 
     rc = (DbgDataFile_parent_WPDataFile_wpConfirmDelete(somSelf,
@@ -326,7 +327,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpConfirmDelete(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpFree(DbgDataFile *somSelf)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpFree");
 
     rc = (DbgDataFile_parent_WPDataFile_wpFree(somSelf));
@@ -341,7 +342,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpFree(DbgDataFile *somSelf)
 
 SOM_Scope void  SOMLINK ddf_wpUnInitData(DbgDataFile *somSelf)
 {
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpUnInitData");
 
     DbgDataFile_parent_WPDataFile_wpUnInitData(somSelf);
@@ -356,7 +357,7 @@ SOM_Scope void  SOMLINK ddf_wpUnInitData(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpSetup(DbgDataFile *somSelf, PSZ pszSetupString)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetup");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetup(somSelf, pszSetupString));
@@ -369,7 +370,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetup(DbgDataFile *somSelf, PSZ pszSetupString)
 SOM_Scope BOOL  SOMLINK ddf_wpAssertObjectMutexSem(DbgDataFile *somSelf)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpAssertObjectMutexSem");
 
     rc = (DbgDataFile_parent_WPDataFile_wpAssertObjectMutexSem(somSelf));
@@ -381,7 +382,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpAssertObjectMutexSem(DbgDataFile *somSelf)
 SOM_Scope ULONG  SOMLINK ddf_wpReleaseObjectMutexSem(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpReleaseObjectMutexSem");
 
     rc = (DbgDataFile_parent_WPDataFile_wpReleaseObjectMutexSem(somSelf));
@@ -394,7 +395,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpRequestObjectMutexSem(DbgDataFile *somSelf,
                                                      ULONG ulTimeout)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpRequestObjectMutexSem");
 
     rc = (DbgDataFile_parent_WPDataFile_wpRequestObjectMutexSem(somSelf,
@@ -410,7 +411,7 @@ SOM_Scope PMINIRECORDCORE  SOMLINK ddf_wpCnrInsertObject(DbgDataFile *somSelf,
                                                          PRECORDINSERT pRecInsert)
 {
     PMINIRECORDCORE rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCnrInsertObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCnrInsertObject(somSelf,
@@ -426,7 +427,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpCnrRemoveObject(DbgDataFile *somSelf,
                                               HWND hwndCnr)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCnrRemoveObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCnrRemoveObject(somSelf,
@@ -440,7 +441,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpCnrSetEmphasis(DbgDataFile *somSelf,
                                              BOOL fTurnOn)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCnrSetEmphasis");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCnrSetEmphasis(somSelf,
@@ -453,7 +454,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpCnrSetEmphasis(DbgDataFile *somSelf,
 SOM_Scope void  SOMLINK ddf_wpCnrRefreshDetails(DbgDataFile *somSelf)
 {
 
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCnrRefreshDetails");
 
     DbgDataFile_parent_WPDataFile_wpCnrRefreshDetails(somSelf);
@@ -463,7 +464,7 @@ SOM_Scope void  SOMLINK ddf_wpCnrRefreshDetails(DbgDataFile *somSelf)
 SOM_Scope PULONG  SOMLINK ddf_wpQueryContainerFlagPtr(DbgDataFile *somSelf)
 {
     PULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryContainerFlagPtr");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryContainerFlagPtr(somSelf));
@@ -476,7 +477,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpIdentify(DbgDataFile *somSelf,
                                        PSZ pszIdentity)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpIdentify");
 
     rc = (DbgDataFile_parent_WPDataFile_wpIdentify(somSelf,
@@ -494,7 +495,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpConfirmObjectTitle(DbgDataFile *somSelf,
                                                   ULONG menuID)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpConfirmObjectTitle");
 
     rc = (DbgDataFile_parent_WPDataFile_wpConfirmObjectTitle(somSelf,
@@ -516,7 +517,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCreateFromTemplate(DbgDataFile *somSelf,
                                                      BOOL fLock)
 {
     WPObject *rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCreateFromTemplate");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCreateFromTemplate(somSelf,
@@ -533,7 +534,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCreateFromTemplate(DbgDataFile *somSelf,
 
 SOM_Scope void  SOMLINK ddf_wpCopiedFromTemplate(DbgDataFile *somSelf)
 {
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCopiedFromTemplate");
 
     DbgDataFile_parent_WPDataFile_wpCopiedFromTemplate(somSelf);
@@ -551,7 +552,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCreateAnother(DbgDataFile *somSelf,
                                                 WPFolder* Folder)
 {
     WPObject *rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCreateAnother");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCreateAnother(somSelf,
@@ -572,7 +573,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCreateShadowObject(DbgDataFile *somSelf,
                                                      BOOL fLock)
 {
     WPObject *rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCreateShadowObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCreateShadowObject(somSelf,
@@ -594,7 +595,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCreateShadowObjectExt(DbgDataFile *somSelf,
                                                         M_WPObject* shadowClass)
 {
     WPObject *rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCreateShadowObjectExt");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCreateShadowObjectExt(somSelf,
@@ -616,7 +617,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCopyObject(DbgDataFile *somSelf,
                                              BOOL fLock)
 {
     WPObject *rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCopyObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCopyObject(somSelf, Folder,
@@ -633,7 +634,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpCopyObject(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpMoveObject(DbgDataFile *somSelf, WPFolder* Folder)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpMoveObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpMoveObject(somSelf, Folder));
@@ -647,7 +648,7 @@ SOM_Scope BOOL32  SOMLINK ddf_wpReplaceObject(DbgDataFile *somSelf,
                                               BOOL32 fMove)
 {
     BOOL32 rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpReplaceObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpReplaceObject(somSelf,
@@ -661,7 +662,7 @@ SOM_Scope BOOL32  SOMLINK ddf_wpSetTaskRec(DbgDataFile *somSelf,
                                            PTASKREC pNew, PTASKREC pOld)
 {
     BOOL32 rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetTaskRec");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetTaskRec(somSelf,
@@ -674,7 +675,7 @@ SOM_Scope BOOL32  SOMLINK ddf_wpSetTaskRec(DbgDataFile *somSelf,
 SOM_Scope PTASKREC  SOMLINK ddf_wpFindTaskRec(DbgDataFile *somSelf)
 {
     PTASKREC rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpFindTaskRec");
 
     rc = (DbgDataFile_parent_WPDataFile_wpFindTaskRec(somSelf));
@@ -689,7 +690,7 @@ SOM_Scope PTASKREC  SOMLINK ddf_wpFindTaskRec(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpSetTitle(DbgDataFile *somSelf, PSZ pszNewTitle)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetTitle");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetTitle(somSelf, pszNewTitle));
@@ -705,7 +706,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetTitle(DbgDataFile *somSelf, PSZ pszNewTitle)
 SOM_Scope PSZ  SOMLINK ddf_wpQueryTitle(DbgDataFile *somSelf)
 {
     PSZ rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
 
     // do not debug this, since this macro calls wpQueryTitle again
     // DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryTitle");
@@ -723,7 +724,7 @@ SOM_Scope PSZ  SOMLINK ddf_wpQueryTitle(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpSetStyle(DbgDataFile *somSelf, ULONG ulNewStyle)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetStyle");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetStyle(somSelf, ulNewStyle));
@@ -739,7 +740,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetStyle(DbgDataFile *somSelf, ULONG ulNewStyle)
 SOM_Scope ULONG  SOMLINK ddf_wpQueryStyle(DbgDataFile *somSelf)
 {
     ULONG rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     // DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryStyle");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryStyle(somSelf));
@@ -753,7 +754,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpModifyStyle(DbgDataFile *somSelf,
                                           ULONG ulStyleMask)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpModifyStyle");
 
     rc = (DbgDataFile_parent_WPDataFile_wpModifyStyle(somSelf,
@@ -770,7 +771,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpModifyStyle(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpSetFolder(DbgDataFile *somSelf, WPObject* container)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetFolder");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetFolder(somSelf, container));
@@ -786,7 +787,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetFolder(DbgDataFile *somSelf, WPObject* containe
 SOM_Scope WPObject*  SOMLINK ddf_wpQueryFolder(DbgDataFile *somSelf)
 {
     WPObject *rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryFolder");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryFolder(somSelf));
@@ -803,7 +804,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetDefaultView(DbgDataFile *somSelf,
                                             ULONG ulView)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetDefaultView");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetDefaultView(somSelf,
@@ -819,7 +820,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetDefaultView(DbgDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK ddf_wpQueryDefaultView(DbgDataFile *somSelf)
 {
     ULONG rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryDefaultView");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryDefaultView(somSelf));
@@ -831,7 +832,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryDefaultView(DbgDataFile *somSelf)
 SOM_Scope ULONG  SOMLINK ddf_wpQueryConfirmations(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryConfirmations");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryConfirmations(somSelf));
@@ -843,7 +844,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryNameClashOptions(DbgDataFile *somSelf,
                                                      ULONG menuID)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryNameClashOptions");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryNameClashOptions(somSelf,
@@ -860,7 +861,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpFilterMenu(DbgDataFile *somSelf,
                                          ULONG ulReserved)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpFilterMenu");
 
     rc = (DbgDataFile_parent_WPDataFile_wpFilterMenu(somSelf,
@@ -880,7 +881,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpModifyMenu(DbgDataFile *somSelf,
                                          ULONG ulView, ULONG ulReserved)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpModifyMenu");
 
     rc = (DbgDataFile_parent_WPDataFile_wpModifyMenu(somSelf,
@@ -901,7 +902,7 @@ SOM_Scope HWND  SOMLINK ddf_wpDisplayMenu(DbgDataFile *somSelf,
                                          ULONG ulMenuType, ULONG ulReserved)
 {
     HWND rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpDisplayMenu");
 
     rc = (DbgDataFile_parent_WPDataFile_wpDisplayMenu(somSelf,
@@ -924,7 +925,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpFilterPopupMenu(DbgDataFile *somSelf,
                                               HWND hwndCnr, BOOL fMultiSelect)
 {
     ULONG rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpFilterPopupMenu");
 
     rc = (DbgDataFile_parent_WPDataFile_wpFilterPopupMenu(somSelf,
@@ -987,7 +988,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpInsertPopupMenuItems(DbgDataFile *somSelf,
                                                   ULONG SubMenuID)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpInsertPopupMenuItems");
 
     rc = (DbgDataFile_parent_WPDataFile_wpInsertPopupMenuItems(somSelf,
@@ -1044,7 +1045,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpMenuItemHelpSelected(DbgDataFile *somSelf,
                                                   ULONG MenuId)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpMenuItemHelpSelected");
 
     rc = (DbgDataFile_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
@@ -1062,7 +1063,7 @@ SOM_Scope HWND  SOMLINK ddf_wpViewObject(DbgDataFile *somSelf, HWND hwndCnr,
                                         ULONG ulView, ULONG param)
 {
     HWND rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpViewObject");
 
     rc = (DbgDataFile_parent_WPDataFile_wpViewObject(somSelf, hwndCnr,
@@ -1080,7 +1081,7 @@ SOM_Scope HWND  SOMLINK ddf_wpOpen(DbgDataFile *somSelf, HWND hwndCnr,
                                   ULONG ulView, ULONG param)
 {
     HWND rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpOpen");
 
     rc = (DbgDataFile_parent_WPDataFile_wpOpen(somSelf, hwndCnr,
@@ -1098,7 +1099,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpRegisterView(DbgDataFile *somSelf,
                                           HWND hwndFrame, PSZ pszViewTitle)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpRegisterView");
 
     rc = (DbgDataFile_parent_WPDataFile_wpRegisterView(somSelf,
@@ -1116,7 +1117,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpRegisterView(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpClose(DbgDataFile *somSelf)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpClose");
 
     rc = (DbgDataFile_parent_WPDataFile_wpClose(somSelf));
@@ -1132,7 +1133,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpClose(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpHide(DbgDataFile *somSelf)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpHide");
 
     rc = (DbgDataFile_parent_WPDataFile_wpHide(somSelf));
@@ -1148,7 +1149,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpHide(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpRestore(DbgDataFile *somSelf)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpRestore");
 
     rc = (DbgDataFile_parent_WPDataFile_wpRestore(somSelf));
@@ -1165,7 +1166,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpAddToObjUseList(DbgDataFile *somSelf,
                                              PUSEITEM pUseItem)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpAddToObjUseList");
 
     rc = (DbgDataFile_parent_WPDataFile_wpAddToObjUseList(somSelf,
@@ -1183,7 +1184,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpDeleteFromObjUseList(DbgDataFile *somSelf,
                                                   PUSEITEM pUseItem)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpDeleteFromObjUseList");
 
     rc = (DbgDataFile_parent_WPDataFile_wpDeleteFromObjUseList(somSelf,
@@ -1201,7 +1202,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpCnrDeleteUseItem(DbgDataFile *somSelf,
                                               HWND hwndCnr)
 {
     BOOL rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpCnrDeleteUseItem");
 
     rc = (DbgDataFile_parent_WPDataFile_wpCnrDeleteUseItem(somSelf,
@@ -1219,7 +1220,7 @@ SOM_Scope PUSEITEM  SOMLINK ddf_wpFindUseItem(DbgDataFile *somSelf,
                                              ULONG type, PUSEITEM pCurrentItem)
 {
     PUSEITEM rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpFindUseItem");
 
     rc = (DbgDataFile_parent_WPDataFile_wpFindUseItem(somSelf,
@@ -1238,7 +1239,7 @@ SOM_Scope PVIEWITEM  SOMLINK ddf_wpFindViewItem(DbgDataFile *somSelf,
                                                PVIEWITEM pCurrentItem)
 {
     PVIEWITEM rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpFindViewItem");
 
     rc = (DbgDataFile_parent_WPDataFile_wpFindViewItem(somSelf,
@@ -1256,7 +1257,7 @@ SOM_Scope PVIEWITEM  SOMLINK ddf_wpFindViewItem(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpSwitchTo(DbgDataFile *somSelf, ULONG View)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSwitchTo");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSwitchTo(somSelf, View));
@@ -1269,7 +1270,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpDoesObjectMatch(DbgDataFile *somSelf,
                                               PVOID pvoidExtendedCriteria)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpDoesObjectMatch");
 
     rc = (DbgDataFile_parent_WPDataFile_wpDoesObjectMatch(somSelf,
@@ -1285,7 +1286,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpDoesObjectMatch(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpSetIcon(DbgDataFile *somSelf, HPOINTER hptrNewIcon)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetIcon");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetIcon(somSelf, hptrNewIcon));
@@ -1301,7 +1302,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetIcon(DbgDataFile *somSelf, HPOINTER hptrNewIcon
 SOM_Scope HPOINTER  SOMLINK ddf_wpQueryIcon(DbgDataFile *somSelf)
 {
     HPOINTER rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryIcon");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryIcon(somSelf));
@@ -1318,7 +1319,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetIconData(DbgDataFile *somSelf,
                                          PICONINFO pIconInfo)
 {
     BOOL rc = FALSE;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetIconData");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetIconData(somSelf,
@@ -1336,7 +1337,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryIconData(DbgDataFile *somSelf,
                                             PICONINFO pIconInfo)
 {
     ULONG rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryIconData");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
@@ -1354,7 +1355,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetDefaultIconPos(DbgDataFile *somSelf,
                                                PPOINTL pPointl)
 {
     BOOL rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetDefaultIconPos");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetDefaultIconPos(somSelf,
@@ -1391,7 +1392,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpQueryDefaultIconPos(DbgDataFile *somSelf,
                                                  PPOINTL pPointl)
 {
     BOOL rc = 0;
-    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryDefaultIconPos");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryDefaultIconPos(somSelf,
@@ -1405,7 +1406,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetRealName(DbgDataFile *somSelf,
                                           PSZ pszName)
 {
     BOOL rc = 0;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetRealName");
 
     rc = DbgDataFile_parent_WPDataFile_wpSetRealName(somSelf,
@@ -1419,7 +1420,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetType(DbgDataFile *somSelf, PSZ pszTypes,
                                       PFEA2LIST pfeal)
 {
     BOOL rc = 0;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetType");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetType(somSelf,
@@ -1432,7 +1433,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetType(DbgDataFile *somSelf, PSZ pszTypes,
 SOM_Scope PSZ  SOMLINK ddf_wpQueryType(DbgDataFile *somSelf)
 {
     PSZ rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryType");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryType(somSelf));
@@ -1443,7 +1444,7 @@ SOM_Scope PSZ  SOMLINK ddf_wpQueryType(DbgDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK ddf_wpSetAttr(DbgDataFile *somSelf, ULONG attrFile)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetAttr");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetAttr(somSelf,
@@ -1455,7 +1456,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetAttr(DbgDataFile *somSelf, ULONG attrFile)
 SOM_Scope ULONG  SOMLINK ddf_wpQueryAttr(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryAttr");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryAttr(somSelf));
@@ -1467,7 +1468,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryCreation(DbgDataFile *somSelf,
                                              FDATE* fdate, FTIME* ftime)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryCreation");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryCreation(somSelf,
@@ -1482,7 +1483,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryLastAccess(DbgDataFile *somSelf,
                                                FTIME* ftime)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryLastAccess");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryLastAccess(somSelf,
@@ -1496,7 +1497,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryLastWrite(DbgDataFile *somSelf,
                                               FDATE* fdate, FTIME* ftime)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryLastWrite");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryLastWrite(somSelf,
@@ -1509,7 +1510,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryLastWrite(DbgDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK ddf_wpQueryFileSize(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryFileSize");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryFileSize(somSelf));
@@ -1520,7 +1521,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryFileSize(DbgDataFile *somSelf)
 SOM_Scope ULONG  SOMLINK ddf_wpQueryEASize(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryEASize");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryEASize(somSelf));
@@ -1532,7 +1533,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpSetDateInfo(DbgDataFile *somSelf,
                                            FILEFINDBUF4* pstFileFindBuf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetDateInfo");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetDateInfo(somSelf,
@@ -1546,7 +1547,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpSetFileSizeInfo(DbgDataFile *somSelf,
                                                ULONG cbEASize)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetFileSizeInfo");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetFileSizeInfo(somSelf,
@@ -1560,7 +1561,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpRefresh(DbgDataFile *somSelf, ULONG ulView,
                                       PVOID pReserved)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpRefresh");
 
     rc = (DbgDataFile_parent_WPDataFile_wpRefresh(somSelf,
@@ -1572,7 +1573,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpRefresh(DbgDataFile *somSelf, ULONG ulView,
 SOM_Scope ULONG  SOMLINK ddf_wpQueryRefreshFlags(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryRefreshFlags");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryRefreshFlags(somSelf));
@@ -1584,7 +1585,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetRefreshFlags(DbgDataFile *somSelf,
                                               ULONG ulRefreshFlags)
 {
     BOOL rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetRefreshFlags");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetRefreshFlags(somSelf,
@@ -1598,7 +1599,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetTitleAndRenameFile(DbgDataFile *somSelf,
                                                     ULONG fConfirmations)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetTitleAndRenameFile");
 
     rc = (DbgDataFile_parent_WPDataFile_wpSetTitleAndRenameFile(somSelf,
@@ -1611,7 +1612,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpSetTitleAndRenameFile(DbgDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK ddf_wpConfirmRenameFileWithExt(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpConfirmRenameFileWithExt");
 
     rc = (DbgDataFile_parent_WPDataFile_wpConfirmRenameFileWithExt(somSelf));
@@ -1626,7 +1627,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpConfirmRenameFileWithExt(DbgDataFile *somSelf)
 SOM_Scope ULONG  SOMLINK ddf_wpVerifyUpdateAccess(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpVerifyUpdateAccess");
 
     rc = (DbgDataFile_parent_WPDataFile_wpVerifyUpdateAccess(somSelf));
@@ -1640,7 +1641,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpAddUserItemsToPopupMenu(DbgDataFile *somSelf,
                                                       ULONG iPosition)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpAddUserItemsToPopupMenu");
 
     rc = (DbgDataFile_parent_WPDataFile_wpAddUserItemsToPopupMenu(somSelf,
@@ -1654,7 +1655,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpAddUserItemsToPopupMenu(DbgDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK ddf_wpIsDiskSwapped(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpIsDiskSwapped");
 
     rc = (DbgDataFile_parent_WPDataFile_wpIsDiskSwapped(somSelf));
@@ -1667,7 +1668,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpQueryRealName(DbgDataFile *somSelf,
                                             PULONG pcb, BOOL fQualified)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryRealName");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryRealName(somSelf,
@@ -1682,7 +1683,7 @@ SOM_Scope PSZ  SOMLINK ddf_wpQueryFilename(DbgDataFile *somSelf,
                                            PSZ pszFilename, BOOL fQualified)
 {
     PSZ rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryFilename");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryFilename(somSelf,
@@ -1695,7 +1696,7 @@ SOM_Scope PSZ  SOMLINK ddf_wpQueryFilename(DbgDataFile *somSelf,
 SOM_Scope WPFileSystem*  SOMLINK ddf_wpQueryDisk(DbgDataFile *somSelf)
 {
     WPFileSystem *rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryDisk");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryDisk(somSelf));
@@ -1707,7 +1708,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryDateInfo(DbgDataFile *somSelf,
                                              FILEFINDBUF4* pstFileFindBuf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryDateInfo");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryDateInfo(somSelf,
@@ -1740,7 +1741,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpQueryDateInfo(DbgDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK ddf_wpConfirmKeepAssoc(DbgDataFile *somSelf)
 {
     ULONG rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpConfirmKeepAssoc");
 
     rc = (DbgDataFile_parent_WPDataFile_wpConfirmKeepAssoc(somSelf));
@@ -1755,7 +1756,7 @@ SOM_Scope ULONG  SOMLINK ddf_wpConfirmKeepAssoc(DbgDataFile *somSelf)
 SOM_Scope HPOINTER  SOMLINK ddf_wpQueryAssociatedFileIcon(DbgDataFile *somSelf)
 {
     HPOINTER rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryAssociatedFileIcon");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf));
@@ -1775,7 +1776,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpQueryAssociatedProgram(DbgDataFile *somSelf,
                                                           PSZ pszDefaultType)
 {
     WPObject *rc;
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpQueryAssociatedProgram");
 
     rc = (DbgDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,
@@ -1794,7 +1795,7 @@ SOM_Scope WPObject*  SOMLINK ddf_wpQueryAssociatedProgram(DbgDataFile *somSelf,
 
 SOM_Scope void  SOMLINK ddf_wpSetAssociatedFileIcon(DbgDataFile *somSelf)
 {
-    DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
+    // DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpSetAssociatedFileIcon");
 
     DbgDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);

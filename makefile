@@ -14,13 +14,15 @@
 #
 #                       --  "all" (default): build XFLDR.DLL, SOUND.DLL,
 #                           XWPHOOK.DLL, XWPDAEMN.EXE.
-#                       --  "really_all": "all" plus NLS plus external EXEs
-#                           (Treesize et al).
+#                       --  "really_all": "all" plus external EXEs
+#                           (Treesize, Netscape DDE, et al) plus NLS
+#                           specified by the XWP_LANG_CODE variable,
+#                           which defaults to "001" (setup.in).
 #
 #                       The following subtargets exist (which get called
 #                       by the "all" target):
 #
-#                       --  nls: compile 001\ directory
+#                       --  nls: compile $(XWP_LANG_CODE)\ directory
 #                       --  tools: compile TOOLS\ directory
 #                       --  idl: update SOM headers (include\classes\*)
 #                       --  cpl_main: compile *.c files for DLLs, no link
@@ -35,8 +37,8 @@
 #
 #                       --  dlgedit: invoke dialog editor on NLS DLL
 #                       --  release: create/update release tree in directory
-#                           specified by XWPRELEASE
-#
+#                           specified by XWPRELEASE; this invokes "really_all"
+#                           in turn.
 #
 #       Output:         All XWorkplace Files code files. This calls the other
 #                       makefiles. Note that this does _not_ build the NLS
@@ -81,7 +83,8 @@ OBJS = bin\xdebug.obj \
     bin\fdrhotky.obj \
     bin\fileops.obj bin\filesys.obj bin\filetype.obj bin\folder.obj \
     bin\hookintf.obj bin\menus.obj \
-    bin\object.obj bin\desktop.obj bin\sound.obj bin\statbars.obj bin\shutdown.obj bin\xthreads.obj
+    bin\object.obj bin\desktop.obj bin\sound.obj bin\statbars.obj \
+    bin\shutdown.obj bin\trash.obj bin\xthreads.obj
 
 OBJS_ANISOM = bin\sominit.obj bin\wpwcur.obj
 # bin\wpwani.obj bin\wpand.obj bin\wpoptr.obj
@@ -97,10 +100,11 @@ ANIOBJS =
 
 # The HLPOBJS macro contains all the .OBJ files which have been
 # created from the files in HELPERS\. You probably won't have to change this.
-HLPOBJS = bin\animate.obj bin\comctl.obj bin\cnrh.obj bin\datetime.obj bin\debug.obj bin\dosh.obj \
-    bin\eah.obj bin\except.obj bin\gpih.obj bin\linklist.obj bin\procstat.obj bin\prfh.obj bin\shapewin.obj \
-    bin\stringh.obj bin\syssound.obj bin\threads.obj bin\tmsgfile.obj bin\winh.obj bin\wphandle.obj \
-    bin\wpsh.obj
+HLPOBJS = bin\animate.obj bin\comctl.obj bin\cnrh.obj bin\datetime.obj \
+    bin\debug.obj bin\dosh.obj bin\eah.obj bin\except.obj bin\gpih.obj \
+    bin\linklist.obj bin\memdebug.obj bin\procstat.obj bin\prfh.obj bin\shapewin.obj \
+    bin\stringh.obj bin\syssound.obj bin\threads.obj bin\textview.obj bin\tmsgfile.obj \
+    bin\winh.obj bin\wphandle.obj bin\wpsh.obj
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
 DMNOBJS = bin\exes\xwpdaemn.obj
@@ -225,16 +229,16 @@ netscdde:
     @cd ..\..
 
 nls:
-    @echo $(MAKEDIR)\makefile: Going for subdir 001\dll
-    @cd 001\dll
+    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\dll
+    @cd $(XWP_LANG_CODE)\dll
     @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir 001\inf.001
-    @cd inf.001
+    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)
+    @cd inf.$(XWP_LANG_CODE)
     @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir 001\help.001
-    @cd help.001
+    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\help.$(XWP_LANG_CODE)
+    @cd help.$(XWP_LANG_CODE)
     @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
     @cd ..\..
 
@@ -402,17 +406,17 @@ bin\xdebug.dll: src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS)
 dlgedit:
 # added (UM 99-10-24)
     @echo $(MAKEDIR)\makefile: Calling DLGEDIT.EXE
-    @cd 001\dll
+    @cd $(XWP_LANG_CODE)\dll
 # rebuild RES file in bin
     @nmake -nologo all "MAINMAKERUNNING=YES"
 # copy RES file to frontend.res so dlgedit finds it
-    @cmd.exe /c copy ..\..\bin\xfldr001.res
+    @cmd.exe /c copy ..\..\bin\xfldr$(XWP_LANG_CODE).res
     @cmd.exe /c copy ..\..\include\dlgids.h
 # invoke DLGEDIT
-    dlgedit xfldr001.res
+    dlgedit xfldr$(XWP_LANG_CODE).res
 # move newly created RES file back to \bin
-    @cmd.exe /c copy xfldr001.res ..\bin
-    @cmd.exe /c del xfldr001.res
+    @cmd.exe /c copy xfldr$(XWP_LANG_CODE).res ..\bin
+    @cmd.exe /c del xfldr$(XWP_LANG_CODE).res
     @cmd.exe /c del dlgids.h
     @nmake -nologo all "MAINMAKERUNNING=YES"
     @cd ..\..
@@ -442,48 +446,70 @@ dlgedit049:
 
 release: really_all
 # 1) main dir
+!ifndef XWPRELEASE
+!error XWPRELEASE must be set before calling "make release". Terminating.
+!endif
+# create directories
 !if [@md $(XWPRELEASE) 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_MAIN) 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_NLS) 2> NUL]
+!endif
     @echo $(MAKEDIR)\makefile: Now copying files to $(XWPRELEASE).
-    $(COPY) release\* $(XWPRELEASE)
-    $(COPY) 001\readme $(XWPRELEASE)
-    $(COPY) 001\readme $(XWPRELEASE)
-    $(COPY) 001\inf.001\xfldr001.inf $(XWPRELEASE)
+    $(COPY) release\* $(XWPRELEASE_MAIN)
+    $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLS)
+    $(COPY) $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLS)
+#
 # 2) bin
-!if [@md $(XWPRELEASE)\bin 2> NUL]
+#    a) kernel
+!if [@md $(XWPRELEASE_MAIN)\bin 2> NUL]
 !endif
-    $(COPY) release\bin\* $(XWPRELEASE)\bin
-    $(COPY) bin\*.dll $(XWPRELEASE)\bin
-    $(COPY) bin\exes\*.exe $(XWPRELEASE)\bin
-    $(COPY) tools\repclass.exe $(XWPRELEASE)\bin
-    $(COPY) tools\wpsreset.exe $(XWPRELEASE)\bin
-    $(COPY) 001\misc\*.sgs $(XWPRELEASE)\bin
+!if [@md $(XWPRELEASE_NLS)\bin 2> NUL]
+!endif
+    $(COPY) release\bin\* $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\sound.dll $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\sound.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\xfldr.dll $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\xfldr.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\xwphook.dll $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\xwphook.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\exes\*.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) bin\exes\*.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) tools\repclass.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) tools\wpsreset.exe $(XWPRELEASE_MAIN)\bin
+#    b) NLS
+    $(COPY) bin\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
+    $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
+#
 # 3) bootlogo
-!if [@md $(XWPRELEASE)\bootlogo 2> NUL]
+!if [@md $(XWPRELEASE_MAIN)\bootlogo 2> NUL]
 !endif
-    $(COPY) release\bootlogo\* $(XWPRELEASE)\bootlogo
+    $(COPY) release\bootlogo\* $(XWPRELEASE_MAIN)\bootlogo
+#
 # 4) help
-!if [@md $(XWPRELEASE)\help 2> NUL]
+!if [@md $(XWPRELEASE_NLS)\help 2> NUL]
 !endif
-#    $(COPY) release\help\* $(XWPRELEASE)\help
-    $(COPY) 001\misc\xfldr001.tmf $(XWPRELEASE)\help
-    $(COPY) 001\misc\drvrs001.txt $(XWPRELEASE)\help
-    $(COPY) 001\misc\xfcls001.txt $(XWPRELEASE)\help
-    $(COPY) 001\help.001\xfldr001.hlp $(XWPRELEASE)\help
+    $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWP_LANG_CODE)\help.$(XWP_LANG_CODE)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
 # 5) icons
-!if [@md $(XWPRELEASE)\icons 2> NUL]
+!if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
 !endif
-    $(COPY) release\icons\* $(XWPRELEASE)\icons
+    $(COPY) release\icons\* $(XWPRELEASE_MAIN)\icons
 # 6) install
-!if [@md $(XWPRELEASE)\install 2> NUL]
+!if [@md $(XWPRELEASE_MAIN)\install 2> NUL]
 !endif
-    $(COPY) release\install\* $(XWPRELEASE)\install
-    $(COPY) 001\misc\*.cmd $(XWPRELEASE)\install
-    $(COPY) 001\misc\*.msg $(XWPRELEASE)\install
+!if [@md $(XWPRELEASE_NLS)\install 2> NUL]
+!endif
+    $(COPY) release\install\* $(XWPRELEASE_MAIN)\install
+    $(COPY) $(XWP_LANG_CODE)\misc\*.cmd $(XWPRELEASE_NLS)\install
+    $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
 # 7) wav
-!if [@md $(XWPRELEASE)\wav 2> NUL]
+!if [@md $(XWPRELEASE_MAIN)\wav 2> NUL]
 !endif
-    $(COPY) release\wav\* $(XWPRELEASE)\wav
+    $(COPY) release\wav\* $(XWPRELEASE_MAIN)\wav
     @echo $(MAKEDIR)\makefile: Done copying files.
 
 

@@ -28,7 +28,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -179,8 +179,17 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      react to selection of "Process content"
- *      menu item.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the "Process content"
+ *      item we have inserted for the startup folder.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
@@ -193,17 +202,22 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
 
     if ( (ulMenuId - pGlobalSettings->VarMenuOffset) == ID_XFMI_OFS_PROCESSCONTENT )
     {
-        if (cmnMessageBoxMsg((hwndFrame) ? hwndFrame : HWND_DESKTOP,
-                            116, 138, MB_YESNO | MB_DEFBUTTON2)
-                        == MBID_YES)
+        if (cmnMessageBoxMsg((hwndFrame)
+                                ? hwndFrame
+                                : HWND_DESKTOP,
+                             116,
+                             138,
+                             MB_YESNO | MB_DEFBUTTON2)
+                == MBID_YES)
         {
             krnPostThread1ObjectMsg(T1M_BEGINSTARTUP, MPNULL, MPNULL);
         }
         return (TRUE);
-    } else
+    }
+    else
         return (XFldStartup_parent_XFolder_wpMenuItemSelected(somSelf,
-                                                          hwndFrame,
-                                                          ulMenuId));
+                                                              hwndFrame,
+                                                              ulMenuId));
 }
 
 /*

@@ -83,7 +83,7 @@
  */
 
 /*
- *      Copyright (C) 1998-99 Ulrich M”ller.
+ *      Copyright (C) 1998-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -125,17 +125,21 @@
  */
 
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
 #include <os2.h>
 
 // C library headers
+#include <stdio.h>
+#include <setjmp.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -306,8 +310,17 @@ SOM_Scope BOOL  SOMLINK xwlist_wpModifyPopupMenu(XWPClassList *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      react to selection of the "Class List View" in the
- *      "Open" submenu.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the "Process content"
+ *      item we have inserted for the class list view.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xwlist_wpMenuItemSelected(XWPClassList *somSelf,
@@ -385,22 +398,35 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
                                       ULONG param)
 {
     HWND    hwndNewView = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-    XWPClassListData *somThis = XWPClassListGetData(somSelf);
+    BOOL    fLocked = FALSE;
     XWPClassListMethodDebug("XWPClassList","xwlist_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+    TRY_LOUD(excpt1, NULL)
     {
-        hwndNewView = cllCreateClassListView(somSelf, hwndCnr, ulView);
-        _hwndOpenView = hwndNewView;
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        XWPClassListData *somThis = XWPClassListGetData(somSelf);
+
+        fLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fLocked)
+        {
+            if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+            {
+                hwndNewView = cllCreateClassListView(somSelf, hwndCnr, ulView);
+                _hwndOpenView = hwndNewView;
+            }
+            else
+                // other view (probably settings):
+                hwndNewView = XWPClassList_parent_WPAbstract_wpOpen(somSelf,
+                                                                    hwndCnr,
+                                                                    ulView,
+                                                                    param);
+        }
     }
-    else
-        // other view (probably settings):
-        hwndNewView = XWPClassList_parent_WPAbstract_wpOpen(somSelf,
-                                                            hwndCnr,
-                                                            ulView,
-                                                            param);
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
     return (hwndNewView);
 }
 

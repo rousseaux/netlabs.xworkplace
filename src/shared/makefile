@@ -137,7 +137,8 @@ $(OUTPUTDIR)\cnrsort.obj: \
 $(OUTPUTDIR)\common.obj: \
      $(INC)\setup.h \
      $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-            $(HLPINC)\prfh.h $(HLPINC)\tmsgfile.h $(HLPINC)\undoc.h $(HLPINC)\winh.h \
+            $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\tmsgfile.h \
+            $(HLPINC)\textview.h $(HLPINC)\undoc.h $(HLPINC)\winh.h \
      $(INC)\classes\xfldr.h \
      $(INC)\dlgids.h \
      $(INC)\shared\kernel.h \
@@ -166,13 +167,13 @@ $(OUTPUTDIR)\kernel.obj: \
 
 $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\setup.h \
-     $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\winh.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h \
-        $(HLPINC)\tmsgfile.h \
+     $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\except.h $(HLPINC)\procstat.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h \
      $(INC)\classes\xwpsetup.ih \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-     $(INC)\config\sound.h \
-     $(INC)\filesys\xthreads.h \
+     $(INC)\config\hookintf.h $(INC)\config\sound.h \
+     $(INC)\filesys\fileops.h $(INC)\filesys\xthreads.h \
      $(INC)\startshut\apm.h \
      $(INC)\hook\xwphook.h \
      $(@B).c $(MYOWNINC)\$(@B).h

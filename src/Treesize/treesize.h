@@ -7,11 +7,11 @@
  *      the ID's for Treesize's resources. These have been moved
  *      to include\dlgids.h to allow for NLS.
  *
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -47,10 +47,10 @@ typedef struct _SIZERECORDCORE {
     BOOL           fDisplayValid;        // TRUE only if display is valid
 } SIZERECORDCORE, *PSIZERECORDCORE;
 
-#define TSM_START            WM_USER
-#define TSM_BEGINDIRECTORY   WM_USER+1
-#define TSM_DONEDIRECTORY    WM_USER+2
-#define TSM_DONEWITHALL      WM_USER+3
+#define TSM_START            (WM_USER)
+#define TSM_BEGINDIRECTORY   (WM_USER+1)
+#define TSM_DONEDIRECTORY    (WM_USER+2)
+#define TSM_DONEWITHALL      (WM_USER+3)
 
 
 

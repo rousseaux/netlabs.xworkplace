@@ -3,14 +3,14 @@
  * xshutdwn.c:
  *      this is the XShutdown command-line interface. It does NOT
  *      contain any real shutdown code, but only posts a message
- *      to the XFolder Object window in XFLDR.DLL which will then
+ *      to the XWorkplace Object window in XFLDR.DLL which will then
  *      do the rest.
  *
  *      Copyright (C) 1997-98 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 {
     HAB         hab;
     HMQ         hmq;
-    HWND        hwndXFolderObject;
+    HWND        hwndXWorkplaceObject;
     CHAR        szBlah[1000];
     MRESULT     mrVersion = 0;
     PSHUTDOWNPARAMS psdp;
@@ -139,28 +139,28 @@ int main(int argc, char *argv[])
             if (!(hmq = WinCreateMsgQueue(hab, 0)))
                 return FALSE;
 
-            // find the XFolder object window
-            hwndXFolderObject = WinWindowFromID(HWND_OBJECT, ID_XFOLDEROBJECT);
+            // find the XWorkplace object window
+            hwndXWorkplaceObject = WinWindowFromID(HWND_OBJECT, ID_XFOLDEROBJECT);
 
             // check if this window understands the
             // "query version" message
-            if (hwndXFolderObject)
-                mrVersion = WinSendMsg(hwndXFolderObject, XOM_QUERYXFOLDERVERSION,
+            if (hwndXWorkplaceObject)
+                mrVersion = WinSendMsg(hwndXWorkplaceObject, XOM_QUERYXFOLDERVERSION,
                                 (MPARAM)NULL, (MPARAM)NULL);
 
             // error:
             if ( (ULONG)mrVersion < (ULONG)(MRFROM2SHORT(0, 80)) )
                 DebugBox("XShutdown: Error", "The external XShutdown interface could not be "
-                            "accessed. Either XFolder is not properly installed, "
+                            "accessed. Either XWorkplace is not properly installed, "
                             "or the WPS is not currently running, "
-                            "or the installed XFolder version is too old to support "
+                            "or the installed XWorkplace version is too old to support "
                             "calling XShutdown from the command line.");
             else
             {
-                // XFolder version supports command line: go on
-                if (!WinSendMsg(hwndXFolderObject, XOM_EXTERNALSHUTDOWN, (MPARAM)psdp, (MPARAM)NULL))
+                // XWorkplace version supports command line: go on
+                if (!WinSendMsg(hwndXWorkplaceObject, XOM_EXTERNALSHUTDOWN, (MPARAM)psdp, (MPARAM)NULL))
                     DebugBox("XShutdown: Error",
-                            "XFolder reported an error processing the "
+                            "XWorkplace reported an error processing the "
                             "external shutdown request. "
                             "XShutdown was not initiated. Please shut down using the Desktop's "
                             "context menu.");

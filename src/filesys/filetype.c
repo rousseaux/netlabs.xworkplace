@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1431,7 +1431,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_FT_CONTAINER);
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_CONTAINER);
 
     /*
      * CBI_INIT:
@@ -1471,8 +1471,8 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             // store container hwnd's
             pftpd->hwndTypesCnr = hwndCnr;
-            pftpd->hwndFiltersCnr = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_FT_FILTERSCNR);
-            pftpd->hwndAssocsCnr = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_FT_ASSOCSCNR);
+            pftpd->hwndFiltersCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
+            pftpd->hwndAssocsCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
 
             // setup file types container
             BEGIN_CNRINFO()
@@ -1960,8 +1960,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (pcnbp->preccSource)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage, cmnQueryNLSModuleHandle(FALSE),
-                                ID_XSM_FILETYPES_SEL);
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_FILETYPES_SEL);
 
                         // if lazy drag is currently in progress,
                         // disable "Pickup" item (we can handle only one)
@@ -1972,7 +1973,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     else
                     {
                         // on whitespace: different menu
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage, cmnQueryNLSModuleHandle(FALSE),
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
                                                  ID_XSM_FILETYPES_NOSEL);
 
                         if (pftpd->hwndWPSImportDlg)
@@ -1995,7 +1997,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     cnrhShowContextMenu(pcnbp->hwndControl,     // cnr
                                         (PRECORDCORE)pcnbp->preccSource,
                                         hPopupMenu,
-                                        pcnbp->hwndPage);    // owner
+                                        pcnbp->hwndDlgPage);    // owner
                 break; }
 
             } // end switch (usNotifyCode)
@@ -2037,7 +2039,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSMI_FILETYPES_NEW:
         {
             HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      pcnbp->hwndPage,  // owner
+                                      pcnbp->hwndFrame,  // owner
                                       WinDefDlgProc,
                                       cmnQueryNLSModuleHandle(FALSE),
                                       ID_XSD_NEWFILETYPE,   // "New File Type" dlg
@@ -2167,12 +2169,16 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (pcnbp->preccSource)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage, cmnQueryNLSModuleHandle(FALSE),
-                                ID_XSM_FILEFILTER_SEL);
-                    } else {
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_FILEFILTER_SEL);
+                    }
+                    else
+                    {
                         // no selection: different menu
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage, cmnQueryNLSModuleHandle(FALSE),
-                                ID_XSM_FILEFILTER_NOSEL);
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_FILEFILTER_NOSEL);
                         if (pftpd->hwndWPSImportDlg)
                             // already open: disable
                             WinEnableMenuItem(hPopupMenu,
@@ -2182,7 +2188,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     cnrhShowContextMenu(pcnbp->hwndControl,
                                            (PRECORDCORE)pcnbp->preccSource,
                                            hPopupMenu,
-                                           pcnbp->hwndPage);    // owner
+                                           pcnbp->hwndDlgPage);    // owner
                 break; }
 
             } // end switch (usNotifyCode)
@@ -2234,7 +2240,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSMI_FILEFILTER_NEW:
         {
             HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      pcnbp->hwndPage,  // owner
+                                      pcnbp->hwndFrame,  // owner
                                       WinDefDlgProc,
                                       cmnQueryNLSModuleHandle(FALSE),
                                       ID_XSD_NEWFILTER, // "New Filter" dlg
@@ -2269,7 +2275,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             pftpd->hwndWPSImportDlg = WinLoadDlg(
                            HWND_DESKTOP,     // parent
-                           pcnbp->hwndPage,  // owner
+                           pcnbp->hwndFrame,  // owner
                            fnwpImportWPSFilters,
                            cmnQueryNLSModuleHandle(FALSE),
                            ID_XSD_IMPORTWPS, // "Import WPS Filters" dlg
@@ -2519,7 +2525,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (ulExtra)
                     {
                         // popup menu on record core:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage, cmnQueryNLSModuleHandle(FALSE),
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
                                                  ID_XSM_FILEASSOC_SEL);
                         if (pcnbp->preccSource->flRecordAttr & CRA_DISABLED)
                             // association from parent file type:
@@ -2530,7 +2537,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     else
                     {
                         // on whitespace: different menu
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage, cmnQueryNLSModuleHandle(FALSE),
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
+                                                 cmnQueryNLSModuleHandle(FALSE),
                                                  ID_XSM_FILEASSOC_NOSEL);
 
                         if (pftpd->hwndWPSImportDlg)
@@ -2540,9 +2548,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
 
                     cnrhShowContextMenu(pcnbp->hwndControl,
-                                           (PRECORDCORE)pcnbp->preccSource,
-                                           hPopupMenu,
-                                           pcnbp->hwndPage);    // owner
+                                        (PRECORDCORE)pcnbp->preccSource,
+                                        hPopupMenu,
+                                        pcnbp->hwndDlgPage);    // owner
                 break; }
             } // end switch (usNotifyCode)
 

@@ -128,7 +128,7 @@ MYOWNINC = $(INC)\classes
 
 $(OUTPUTDIR)\xclslist.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\winh.h \
+            $(HLPINC)\except.h $(HLPINC)\winh.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\classlst.h \
@@ -202,7 +202,7 @@ $(OUTPUTDIR)\xfstart.obj: \
 $(OUTPUTDIR)\xfsys.obj: \
             $(INC)\setup.h \
             $(HLPINC)\dosh.h \
-            $(INC)\classes\xfobj.h \
+#            $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\cfgsys.h \
@@ -219,11 +219,11 @@ $(OUTPUTDIR)\xfwps.obj: \
 
 $(OUTPUTDIR)\xtrash.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\winh.h $(HLPINC)\stringh.h $(HLPINC)\undoc.h \
+            $(HLPINC)\winh.h $(HLPINC)\stringh.h \
             $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\xthreads.h \
+            $(INC)\filesys\trash.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpkeybd.obj: \
@@ -251,7 +251,7 @@ $(OUTPUTDIR)\xwpsetup.obj: \
 
 $(OUTPUTDIR)\xwpsound.obj: \
             $(INC)\setup.h \
-            $(INC)\classes\xfobj.h \
+#            $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\sound.h \

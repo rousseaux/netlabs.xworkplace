@@ -97,14 +97,16 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
     ULONG               ulrc = 0;
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
 
     // insert "Hotkeys" page if the hook has been enabled
-    if (hifXWPHookReady())
+    if (    (hifXWPHookReady())
+         && (hifObjectHotkeysEnabled())
+       )
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));

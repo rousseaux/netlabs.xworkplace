@@ -59,6 +59,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\object.obj \
        $(OUTPUTDIR)\statbars.obj \
        $(OUTPUTDIR)\sounddll.obj \
+       $(OUTPUTDIR)\trash.obj \
        $(OUTPUTDIR)\xthreads.obj
 
 # The main target:
@@ -132,7 +133,7 @@ $(OUTPUTDIR)\desktop.obj: \
     $(INC)\classes\xfdesk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-    $(INC)\filesys\menus.h \
+    $(INC)\filesys\menus.h $(INC)\filesys\xthreads.h \
     $(INC)\startshut\shutdown.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
@@ -155,10 +156,12 @@ $(OUTPUTDIR)\fdrhotky.obj: \
 
 $(OUTPUTDIR)\fileops.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
-    $(INC)\classes\xfobj.ih \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\wpsh.h \
+    $(INC)\shared\common.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
+    $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\filesys.obj: \
@@ -181,10 +184,11 @@ $(OUTPUTDIR)\filetype.obj: \
 $(OUTPUTDIR)\folder.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\wphandle.h \
-    $(INC)\classes\xfldr.ih \
+    $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
-    $(INC)\filesys\filesys.h $(INC)\filesys\menus.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\fileops.h $(INC)\filesys\filesys.h $(INC)\filesys\menus.h \
+        $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\menus.obj: \
@@ -219,17 +223,28 @@ $(OUTPUTDIR)\statbars.obj: \
      $(INC)\filesys\xthreads.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\trash.obj: \
+     $(INC)\setup.h \
+     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+            $(HLPINC)\undoc.h \
+     $(INC)\classes\xtrash.ih $(INC)\classes\xfobj.h \
+     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\shared\wpsh.h \
+     $(INC)\filesys\fileops.h  \
+     $(@B).c $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\xthreads.obj: \
     $(INC)\setup.h \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\datetime.h \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
             $(HLPINC)\syssound.h $(HLPINC)\winh.h \
-    $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h \
+    $(INC)\classes\xfldr.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\dlgids.h \
     $(INC)\hook\xwphook.h \
-    $(INC)\filesys\folder.h $(INC)\filesys\sounddll.h $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\fileops.h $(INC)\filesys\folder.h \
+        $(INC)\filesys\sounddll.h $(INC)\filesys\xthreads.h \
     $(INC)\config\hookintf.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

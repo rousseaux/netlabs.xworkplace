@@ -51,7 +51,7 @@ interface XWPTrashCan : WPFolder
      *
      */
 
-    ULONG xwpDeleteIntoTrashCan(in WPObject pObject);
+    BOOL xwpDeleteIntoTrashCan(in WPObject pObject);
 
     ULONG xwpAddTrashCanSettingsPage(in HWND hwndDlg);
     ULONG xwpAddTrashCanDrivesPage(in HWND hwndDlg);
@@ -59,10 +59,9 @@ interface XWPTrashCan : WPFolder
 
     ULONG xwpQueryTrashObjectsCount();
 
-    BOOL xwpSetCorrectTrashIcon();
+    BOOL xwpSetCorrectTrashIcon(in BOOL fForce);
 
-    ULONG xwpEmptyTrashCan(in PFNWP pfnwpCallback,
-                           in HWND hwndUser);
+    BOOL xwpEmptyTrashCan(in BOOL fConfirm);
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
@@ -98,12 +97,17 @@ interface XWPTrashCan : WPFolder
      *
      */
 
-    BOOL    fCorrectIconSet;        // TRUE after the first call to xwpSetCorrectTrashIcon
+    BOOL    fAlreadyPopulated;      // TRUE after the first call to wpPopulate
+    BOOL    fFilledIconSet;         // TRUE if "filled" icon has been set already
 
     ULONG   ulTrashObjectCount;     // no. of trash objects in trash can;
                                     // initialized to 0, updated by wpPopulate
 
     double  dTotalSize;             // size of all objects in trash can
+
+    CHAR    cCurrentDrivePopulating; // if this is != 0, a drive is currently
+                                    // being populated; set by wpPopulate and
+                                    // used for the status bar
 
     /*
      * WPFolder methods overridden by XWPTrashCan:
@@ -125,8 +129,12 @@ interface XWPTrashCan : WPFolder
 
     wpQueryDefaultHelp: override;
 
+    wpOpen: override;
     wpPopulate: override;
     wpRefresh: override;
+
+    wpAddToContent: override;
+    wpDeleteFromContent: override;
 
     wpDragOver: override;
     wpDrop: override;
@@ -134,6 +142,7 @@ interface XWPTrashCan : WPFolder
     wpAddObjectGeneralPage: override;
     wpAddObjectGeneralPage2: override;
     wpAddFolderIncludePage: override;
+    wpAddFolderView2Page: override;
 
     wpAddSettingsPages: override;
 
@@ -159,14 +168,14 @@ interface M_XWPTrashCan : M_WPFolder
      *
      */
 
-    ULONG xwpclsDeleteIntoTrashCan(in WPObject pObject);
+    XWPTrashCan xwpclsQueryDefaultTrashCan();
     BOOL xwpclsSetDrivesSupport(in PBYTE pabSupportedDrives);
     BOOL xwpclsQueryDrivesSupport(in PBYTE pabSupportedDrives);
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpclsDeleteIntoTrashCan,
+    releaseorder: xwpclsQueryDefaultTrashCan,
                   xwpclsSetDrivesSupport,
                   xwpclsQueryDrivesSupport;
 
@@ -189,14 +198,13 @@ interface M_XWPTrashCan : M_WPFolder
      *
      */
 
-    XWPTrashCan     pDefaultTrashCan;
-
     /*
      * M_WPFolder methods overridden by M_XWPTrashCan:
      *
      */
 
     wpclsInitData: override;
+    wpclsUnInitData: override;
     wpclsQueryTitle: override;
     wpclsQueryStyle: override;
 
@@ -229,96 +237,12 @@ interface XWPTrashObject : WPTransient
      */
 
     BOOL xwpSetRelatedObject(in WPObject pObject);
-        /*@@ xwpSetRelatedObject:
-           this instance method sets the object in the
-           "\Trash" directories which this trash object
-           should represent.
-
-           This method only gets called once while the
-           trash object is being initialized (from
-           XWPTrashObject::wpSetup) and should not be
-           called manually. */
-
     WPObject xwpQueryRelatedObject();
-        /*@@ xwpQueryRelatedObject:
-           this returns the object in the "\Trash"
-           directories which this trash object
-           represents. The result may be an instance
-           of any WPS class.
-
-           Returns NULL upon errors.
-
-           This may be called at any time. */
-
     PSZ xwpQueryRelatedPath();
-        /*@@ xwpQueryRelatedPath:
-           this returns a PSZ to the original path where
-           the related object was deleted from. This PSZ
-           points to the trash object's instance data,
-           so you better not modify it.
-
-           Note that this source directory might no longer
-           exist, if a whole folder tree was moved into
-           the trash can. */
-
     ULONG xwpQueryRelatedSize();
-        /* @@ xwpQueryRelatedSize:
-           returns the size of the related object. This
-           is 0 if the related object is not a file-system
-           object (WPFileSystem or subclasses). */
-
     APIRET xwpValidateTrashObject();
-        /*@@ xwpValidateTrashObject:
-           this performs all kinds of checks on the trash
-           object and its related object. If any errors
-           are found, a value != NO_ERROR is returned and
-           the trash object destroys itself by calling wpFree().
-
-           Return values:
-           --  ERROR_INVALID_HANDLE: internal pointer to related object
-                                      is NULL
-           --  ERROR_FILE_NOT_FOUND: related object no longer exists
-           */
-
     BOOL xwpDestroyTrashObject();
-        /*@@ xwpDestroyTrashObject:
-           this deletes the object which this trash
-           object represents from the "\Trash" directories
-           by calling wpFree upon it.
-
-           Note that no confirmation is displayed. Also,
-           all objects are destroyed, no matter whether
-           they have the "no delete" style or not, or even
-           if they are system or read-only files.
-
-           After that, if the delete was successful,
-           the trash object (somSelf) destroys itself by
-           calling wpFree (since it has no further
-           meaning) and returns TRUE.
-
-           As a consequence, the somSelf pointer to the trash
-           object is no longer valid if TRUE is returned here. */
-
-    BOOL xwpRestoreRelatedObject(in WPFolder pTargetFolder);
-        /*@@ xwpRestoreRelatedObject:
-           this restores the object which this trash
-           object represents from the "\Trash" directories.
-
-           If (pTargetFolder != NULL), the object will
-           be restored in the specified folder.
-
-           If (pTargetFolder == NULL), the object will
-           be restored in the folder where it was originally
-           deleted from. If that folder no longer exists,
-           it will be recreated as a standard folder.
-
-           After that, if the restore was successful,
-           the trash object (somSelf) destroys itself by
-           calling wpFree (since it has no further
-           meaning) and returns TRUE.
-
-           As a consequence, the somSelf pointer to the trash
-           object is no longer valid if TRUE is returned here. */
+    BOOL xwpRestoreFromTrashCan(in WPFolder pTargetFolder);
 
 #ifdef __SOMIDL__
   implementation {
@@ -330,7 +254,7 @@ interface XWPTrashObject : WPTransient
             xwpQueryRelatedSize,
             xwpValidateTrashObject,
             xwpDestroyTrashObject,
-            xwpRestoreRelatedObject;
+            xwpRestoreFromTrashCan;
 
     /*
      * Class Modifiers:
@@ -363,111 +287,24 @@ interface XWPTrashObject : WPTransient
      */
 
     wpInitData: override;
-        /*@@ wpInitData:
-           this instance method gets called when the object
-           is being initialized. We initialize our instance
-           data here. */
-
     wpSetup: override;
-        /*@@ wpSetup:
-           this instance method allows the object to set its
-           state based on a setup string. This gets called
-           whenever setup strings are set upon an object.
-
-           Most importantly to us, this method gets called
-           during the processing of wpInitData, which in
-           turn calls wpSetupOnce, which in turn calls this
-           method.
-
-           This is where we need to set the "related object"
-           which this trash object points to, because this
-           must be done while the object is being initialized.
-           For this, we use the RELATEDOBJECT setup string.
-           If we do this later, wpQueryDetailsData would return
-           garbage.
-
-           The syntax of RELATEDOBJECT is "RELATEDOBJECT=handle",
-           with "handle" being the string representation of
-           the hexadecimal, five-digit object handle of the
-           related object. */
-
     wpUnInitData: override;
-        /*@@ wpUnInitData:
-           this instance method is called to allow the object
-           to free allocated resources.
-           The parent method must be called after our own
-           processing. */
 
     wpQueryDetailsData: override;
-        /* wpQueryDetailsData:
-           this instance method must fill in the details
-           data which was abstractly defined by
-           M_XWPTrashObject::wpclsQueryDetailsInfo.
-           We'll fill in the trash object details here. */
 
     wpFilterPopupMenu: override;
-        /*@@ wpFilterPopupMenu:
-           this instance method allows the object to filter out
-           unwanted menu items from the context menu. */
-
     wpModifyPopupMenu: override;
-        /*@@ wpModifyPopupMenu:
-           this instance methods allows the object to manipulate
-           its context menu.
-           We add the trash object menu items here. */
-
     wpMenuItemSelected: override;
-        /*@@ wpMenuItemSelected:
-           this instance method gets called when a menu item
-           was selected in the object's context menu.
-           We need to react to our new menu items here. */
-
     wpMenuItemHelpSelected: override;
-        /*@@ wpMenuItemHelpSelected:
-           this instance method gets called when help is
-           requested for a menu item in the object's context menu.
-           We need to display help for our new menu items here. */
 
     wpQueryDefaultHelp: override;
-        /*@@ wpQueryDefaultHelp:
-           this instance method specifies the default
-           help panel for this instance; display some
-           help for the trash object. */
 
     wpMoveObject: override;
-        /*@@ wpMoveObject:
-           this instance method gets called by the WPS on an
-           object if it is to be moved.
-
-           Since we don't really want to move trash objects
-           out of a trash can, but rather restore the object
-           to the target folder instead, we will do this here.
-           This way we need not mess with the drag'n'drop
-           stuff, and the other move invocations will work
-           also.
-
-           So we call XWPTrashObject::xwpRestoreRelatedObject
-           here. */
 
     wpOpen: override;
-        /*@@ wpOpen:
-           this instance method opens a new view of an object.
-           Since trash objects have no views, we'll always
-           return NULLHANDLE. */
 
     wpDragOver: override;
-        /*@@ wpDragOver:
-           this instance method is called to inform the object
-           that other objects are being dragged over it.
-           We'll make sure that nothing can be dropped upon
-           a trash object. */
-
     wpDrop: override;
-        /*@@ wpDrop:
-           this instance method is called to inform an object that
-           another object has been dropped on it.
-           We'll make sure that nothing can be dropped upon
-           a trash object. */
 
 #ifdef __PRIVATE__
 
@@ -491,39 +328,11 @@ interface M_XWPTrashObject : M_WPTransient
      *
      */
 
-    XWPTrashObject xwpclsCreateTrashObject(in XWPTrashCan pTrashCan,
-                                           in WPObject pRelatedObject);
-        /*@@ xwpclsCreateTrashObject:
-            this creates a new transient "trash object" in the
-            given trashcan by invoking wpclsNew upon the XWPTrashObject
-            class object (somSelf of this method).
-
-            Arguments:
-            -- <B>pTrashCan:</B> the trashcan to create the object in.
-            -- <B>pRelatedObject:</B> the object which the new trash object
-               should be related to. We use a RELATEDOBJECT settings
-               string with wpclsNew to set the related object
-               (see XWPTrashObject::wpSetup).
-
-            This returns the new trash object. If NULL is returned,
-            either an error occured creating the trash object or
-            a trash object with the same pRelatedObject already
-            existed in the trash can.
-
-            <B>Note:</B> This does not move the related object to a trash can.
-            This method is only used internally by XWPTrashCan to
-            map the contents of the "\Trash" directories into the
-            open trashcan.
-
-            To move an object into a trashcan, call
-            XWPTrashCan::xwpDeleteIntoTrashCan, which automatically
-            determines whether this method needs to be called. */
-
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder:
-            xwpclsCreateTrashObject;
+    /* releaseorder:
+            xwpclsCreateTrashObject; */
 
     /*
      * Class Modifiers:
@@ -550,40 +359,10 @@ interface M_XWPTrashObject : M_WPTransient
      */
 
     wpclsInitData: override;
-        /*@@ wpclsInitData:
-           this class methods allows the class to
-           initialize itself. */
-
     wpclsCreateDefaultTemplates: override;
-        /*@@ wpclsCreateDefaultTemplates:
-           this is called by the system to allow a class to
-           create its default templates. The default WPS
-           behavior is to create new templates if the class
-           default title is different from the existing
-           templates, but since we never want templates for
-           trash objects, we'll have to suppress this
-           behavior. */
-
     wpclsQueryDetailsInfo: override;
-        /* wpclsQueryDetailsInfo:
-           this class method is called by the WPS to find out
-           what details info objects of this class can provide.
-           The "abstract" data returned by this function needs
-           to be filled with instance information by
-           XWPTrashObject::wpQueryDetailsData.
-           We'll define additional details for the trash objects
-           here. */
-
     wpclsQueryTitle: override;
-        /*@@ wpclsQueryTitle:
-           tell the WPS the new class default title:
-           "Trash object". */
-
     wpclsQueryStyle: override;
-        /*@@ wpclsQueryStyle:
-           we return lots of flags to make sure the user cannot
-           mess with the trash objects. */
-
   };
 #endif /* __SOMIDL__ */
 };

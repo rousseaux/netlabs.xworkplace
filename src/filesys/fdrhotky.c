@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -256,19 +256,14 @@ void fdrStoreFldrHotkeys(VOID)
  *      will call the proper wpMenuItemSelected method).
  *
  *@@changed V0.9.0 [umoeller]: moved this here from common.c
+ *@@changed V0.9.1 (2000-01-31) [umoeller]: changed prototype; this was using MPARAMS previously
  */
 
 BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
-                          MPARAM mp1,       // in: as in WM_CHAR
-                          MPARAM mp2)       // in: as in WM_CHAR
+                          USHORT usFlags,
+                          USHORT usch,
+                          USHORT usvk)
 {
-    USHORT  us;
-
-    USHORT usFlags    = SHORT1FROMMP(mp1);
-    USHORT usch       = SHORT1FROMMP(mp2);
-    USHORT usvk       = SHORT2FROMMP(mp2);
-    USHORT usKeyCode  = 0;
-
     // now check if the key is relevant: filter out KEY UP
     // messages and check if either a virtual key (such as F5)
     // or Ctrl or Alt was pressed
@@ -288,6 +283,8 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
             )
        )
     {
+        USHORT us = 0;
+        USHORT usKeyCode  = 0;
 
         if (usFlags & KC_VIRTUALKEY)
             usKeyCode = usvk;
@@ -296,7 +293,6 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
 
         // filter out unwanted flags
         usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
-        us = 0;
 
         #ifdef DEBUG_KEYS
             _Pmpf(("fdrProcessFldrHotkey: usKeyCode: 0x%lX, usFlags: 0x%lX", usKeyCode, usFlags));
@@ -674,14 +670,14 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    HWND    hwndEditField = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_DESCRIPTION);
-    HWND    hwndListbox = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_LISTBOX);
+    HWND    hwndEditField = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
+    HWND    hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX);
 
     SHORT i;
 
     if (flFlags & CBI_INIT)
     {
-        HAB     hab = WinQueryAnchorBlock(pcnbp->hwndPage);
+        HAB     hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
         HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
         PFNWP   OldEditProc;
 
@@ -709,7 +705,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               szLBEntries[i])
                      == 0)
             {
-                DebugBox("XFolder", "Unable to load strings.");
+                DebugBox(pcnbp->hwndFrame,
+                         "XFolder",
+                         "Unable to load strings.");
                 break;
             }
         }
@@ -720,7 +718,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ACCELERATORS, pGlobalSettings->fFolderHotkeysDefault);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, pGlobalSettings->fFolderHotkeysDefault);
 
         WinSendMsg(hwndListbox, LM_DELETEALL, 0, 0);
         WinSetWindowText(hwndEditField, "");
@@ -741,9 +739,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = !(pGlobalSettings->NoSubclassing);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ACCELERATORS, fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_LISTBOX, fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
     }
 }
 
@@ -780,13 +778,13 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 // update the Edit field with new
                 // key description, but do NOT save settings yet
-                pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndPage, NULL);
+                pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndDlgPage, NULL);
                 if ( (pHotkeyFound) && ((ULONG)pHotkeyFound != -1) )
                 {
                     cmnDescribeKey(szKeyName,
                                    pHotkeyFound->usFlags,
                                    pHotkeyFound->usKeyCode);
-                    WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, TRUE);
+                    WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, TRUE);
                 }
                 else
                 {
@@ -794,15 +792,15 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     strcpy(szKeyName,
                         (cmnQueryNLSStrings())->pszNotDefined);
 
-                    WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, FALSE);
+                    WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 }
 
                 // set edit field to description text
-                WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_DESCRIPTION,
+                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
                                   szKeyName);
                 // enable previously disabled items
-                WinEnableControl(pcnbp->hwndPage, ID_XSDI_DESCRIPTION, TRUE);
-                WinEnableControl(pcnbp->hwndPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
+                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION, TRUE);
+                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
             }
         break;
 
@@ -816,7 +814,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             USHORT      usCommand;
             PXFLDHOTKEY pHotkeyFound;
 
-            pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndPage, &usCommand);
+            pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndDlgPage, &usCommand);
 
             if ( (pHotkeyFound) && ((ULONG)pHotkeyFound != -1) )
             {
@@ -832,9 +830,9 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     pHotkey++;
                 }
 
-                WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_DESCRIPTION,
+                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
                             (cmnQueryNLSStrings())->pszNotDefined);
-                WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, FALSE);
+                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 fdrStoreFldrHotkeys();
             }
         break; }

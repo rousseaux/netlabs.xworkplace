@@ -67,9 +67,9 @@
  */
 
 #define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
-#define INCL_WIN
 #include <os2.h>
 
 // C library headers

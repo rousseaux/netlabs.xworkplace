@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -33,13 +33,21 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                              ULONG flFlags);
+        VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                               ULONG flFlags);
 
-        MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID,
-                                    USHORT usNotifyCode,
-                                    ULONG ulExtra);
+        MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                     USHORT usItemID,
+                                     USHORT usNotifyCode,
+                                     ULONG ulExtra);
+
+        VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                               ULONG flFlags);
+
+        MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                     USHORT usItemID,
+                                     USHORT usNotifyCode,
+                                     ULONG ulExtra);
 
     /* ******************************************************************
      *                                                                  *
@@ -49,8 +57,6 @@
 
         VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG flFlags);
-    #else
-        #error "shared\notebook.h needs to be included before including filesys.h".
     #endif
 
 #endif

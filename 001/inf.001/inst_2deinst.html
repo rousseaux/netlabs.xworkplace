@@ -11,12 +11,79 @@ it now uses WarpIN for de-installation also. Either double-click on the WarpIN
 program object and select the XWorkplace package(s) for de-installation, or
 double-click on the XWorkplace archive again, both of which will de-install
 XWorkplace.
-<P>
+
+<!-- the following (up to end note) was added with V0.9.1 -->
+
+<P>In case WarpIN is unable to de-install XWorkplace (or you don't trust WarpIN
+to do the job right), you can <B>manually de-install XWorkplace.</B>
+
+<UL><LI><B>The clean way.</B>
+
+<P>XWorkplace's installation is entirely based on WPS classes. If you deregister
+all of XWorkplace's classes, you'll get your regular OS/2 Workplace Shell back.
+You don't have to undo any CONFIG.SYS changes, because there are none.
+
+<P>However, before deregistering classes, you should undo all of XWorkplace's
+class replacements. So this is a two-step process (you can use the "WPS Class List"
+object for this):
+
+<BR><OL><LI><B>Undo</B> all the following class <B>replacements</B> (if present):
+
+<UL><LI>XFldObject, replacing WPObject
+<LI>XFolder, replacing WPFolder
+<LI>XFldDataFile, replacing WPDataFile
+<LI>XFldDisk, replacing WPDisk
+<LI>XFldDesktop, replacing WPDesktop
+<LI>XFldProgramFile , replacing WPProgramFile
+<LI>XWPSound, replacing WPSound
+<LI>XWPMouse, replacing WPMouse
+<LI>XWPKeyboard, replacing WPKeyboard
+</UL>
+
+<LI><B>Deregister</B> all the X* classes listed above.
+
+<P><LI>In addition, <B>deregister</B> the following (if present):
+
+<UL><LI>XFldSystem
+<LI>XFldWPS
+<LI>XFldStartup
+<LI>XFldShutdown
+<LI>XWPSetup
+<LI>XWPClassList
+<LI>XWPTrashCan
+<LI>XWPTrashObject
+</UL>
+
+<LI>Then <B>restart the WPS.</B> XWorkplace should be gone.
+
+<P><LI>XWorkplace has created a few sections in your OS2.INI file. You can safely
+delete all sections starting with "XWorkplace", but only do this if you're sure
+you don't want to re-install XWorkplace, because all your settings will get lost.
+</OL>
+
+<LI><B>The ugly way.</B> This is the "emergency exit" in case your computer isn't
+working at all any more. This is not recommended and only given as a last resort.
+
+<BR><OL><LI>Reboot your computer and press Alt-F1 while the little "OS/2" box is showing.
+Open a command line from the "Recovery choices" menu.
+
+<P><LI>From the command line, rename the XWorkplace directory (the parent directory
+of the <CODE>BIN</CODE> directory with <CODE>XFLDR.DLL</CODE>.
+
+<P><LI>Reboot. When the WPS starts up, it will not find the XWorkplace classes
+(in <CODE>XFLDR.DLL</CODE>), because the directory specified when registering
+the classes is now invalid. You should get a clean WPS this way too. Note however
+that this does not unreplace or deregister the XWorkplace classes!
+</OL>
+</UL>
+
+<!-- end of V0.9.1 addition -->
 If you wish to remove XWorkplace because you don't consider it to be of any use for you,
 that's fine.
-<P>
-However, if you remove it because it does not seem to be working right or messes up your
-system, please <A HREF="notices_3comments.html">contact me</A> so I can improve it.
+
+<P>However, if you remove it because it does not seem to be working right or messes up your
+system, please <A HREF="notices_3comments.html">contact the developer's
+team,</A> so we can improve it.
 <BR>
 </BODY>
 </HTML>

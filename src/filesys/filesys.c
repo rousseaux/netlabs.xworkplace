@@ -17,7 +17,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -46,6 +46,7 @@
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
+#define INCL_WINLISTBOXES
 #define INCL_WINMENUS
 #define INCL_WINMLE
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
@@ -101,8 +102,8 @@ typedef struct _FILEPAGEDATA
 } FILEPAGEDATA, *PFILEPAGEDATA;
 
 /*
- *@@ fsysFileInitPage:
- *      "File" page notebook callback function (notebook.c).
+ *@@ fsysFile1InitPage:
+ *      first "File" page notebook callback function (notebook.c).
  *      Sets the controls on the page according to a folder's
  *      instance settings.
  *
@@ -120,10 +121,12 @@ typedef struct _FILEPAGEDATA
  *          are put in one of those subvalues.
  *      --  The "Keyphrases" field corresponds to .KEYPHRASES.
  *          This is also EAT_MVMT and used like .COMMENTS.
+ *
+ *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFileInitPage
  */
 
-VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                      ULONG flFlags)                // CBI_* flags (notebook.h)
+VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                       ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
@@ -147,10 +150,10 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             if (doshIsFileOnFAT(szFilename))
             {
                 // on FAT: hide fields
-                winhShowDlgItem(pcnbp->hwndPage, ID_XSDI_FILES_CREATIONDATE,
-                              FALSE);
-                winhShowDlgItem(pcnbp->hwndPage, ID_XSDI_FILES_LASTACCESSDATE,
-                              FALSE);
+                winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
+                                FALSE);
+                winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
+                                FALSE);
             }
 
             if (!_somIsA(pcnbp->somSelf, _WPFolder))
@@ -158,19 +161,19 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 // this page is not for a folder, but
                 // a data file:
                 // hide "Work area" item
-                winhShowDlgItem(pcnbp->hwndPage, ID_XSDI_FILES_WORKAREA, FALSE);
+                winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA, FALSE);
             }
             else if (_somIsA(pcnbp->somSelf, _WPDesktop))
                 // for the Desktop, disable work area;
                 // this must not be changed
-                WinEnableControl(pcnbp->hwndPage, ID_XSDI_FILES_WORKAREA,
+                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
                                   FALSE);
         }
 
         // .SUBJECT EA is limited to 40 chars altogether (CPREF);
         // limit entry field to 36, because we need an extra 4 bytes
         // for the EA type
-        WinSendDlgItemMsg(pcnbp->hwndPage, ID_XSDI_FILES_SUBJECT,
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(36), MPNULL);
     }
@@ -197,12 +200,12 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                         &fs3, sizeof(fs3));
 
         // real name
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_REALNAME,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_REALNAME,
                         szFilename);
 
         // file size
         strhThousandsULong(szTemp, fs3.cbFile, cs.cThousands);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_FILESIZE,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE,
                         szTemp);
 
         // for folders: set work-area flag
@@ -210,45 +213,45 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             // this page is not for a folder, but
             // a data file:
             // hide "Work area" item
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FILES_WORKAREA,
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
                                   ((_wpQueryFldrFlags(pcnbp->somSelf) & FOI_WORKAREA) != 0));
 
         // creation date/time
         strhFileDate(szTemp, &(fs3.fdateCreation), cs.ulDateFormat, cs.cDateSep);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_CREATIONDATE,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
                         szTemp);
         strhFileTime(szTemp, &(fs3.ftimeCreation), cs.ulTimeFormat, cs.cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_CREATIONTIME,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONTIME,
                         szTemp);
 
         // last write date/time
         strhFileDate(szTemp, &(fs3.fdateLastWrite), cs.ulDateFormat, cs.cDateSep);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_LASTWRITEDATE,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITEDATE,
                         szTemp);
         strhFileTime(szTemp, &(fs3.ftimeLastWrite), cs.ulTimeFormat, cs.cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_LASTWRITETIME,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITETIME,
                         szTemp);
 
         // last access date/time
         strhFileDate(szTemp, &(fs3.fdateLastAccess), cs.ulDateFormat, cs.cDateSep);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_LASTACCESSDATE,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
                         szTemp);
         strhFileTime(szTemp, &(fs3.ftimeLastAccess), cs.ulTimeFormat, cs.cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_LASTACCESSTIME,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSTIME,
                         szTemp);
 
         // attributes
         ulAttr = _wpQueryAttr(pcnbp->somSelf);
-        winhSetDlgItemChecked(pcnbp->hwndPage,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_ARCHIVED,
                               ((ulAttr & FILE_ARCHIVED) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndPage,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_READONLY,
                               ((ulAttr & FILE_READONLY) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndPage,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_HIDDEN,
                               ((ulAttr & FILE_HIDDEN) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndPage,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_SYSTEM,
                               ((ulAttr & FILE_SYSTEM) != 0));
 
@@ -260,7 +263,7 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             pszString = eaCreatePSZFromBinding(peab);
             eaFreeBinding(peab);
         }
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_SUBJECT,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                           pszString);
         if (pszString)
             free(pszString);
@@ -278,7 +281,7 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                                  NULL);  // codepage (not needed)
             eaFreeBinding(peab);
         }
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_COMMENTS,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_COMMENTS,
                           pszString);
         if (pszString)
             free(pszString);
@@ -297,7 +300,7 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
             eaFreeBinding(peab);
         }
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_KEYPHRASES,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_KEYPHRASES,
                         pszString);
         if (pszString)
             free(pszString);
@@ -318,18 +321,20 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 }
 
 /*
- *@@ fsysFileItemChanged:
- *      "File" page notebook callback function (notebook.c).
+ *@@ fsysFile1ItemChanged:
+ *      first "File" page notebook callback function (notebook.c).
  *      Reacts to changes of any of the dialog controls.
  *
  *      This is also used by the XFolder class, since we replace
  *      the "File" pages there also.
+ *
+ *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFile1InitPage
  */
 
-MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                            USHORT usItemID,
-                            USHORT usNotifyCode,
-                            ULONG ulExtra)      // for checkboxes: contains new state
+MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                             USHORT usItemID,
+                             USHORT usNotifyCode,
+                             ULONG ulExtra)      // for checkboxes: contains new state
 {
     BOOL fUpdate = TRUE;
 
@@ -389,10 +394,10 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
         case ID_XSDI_FILES_SUBJECT:
             if (usNotifyCode == EN_KILLFOCUS)
             {
-                CHAR        szSubject[40];
+                CHAR        szSubject[40] = "";
                 PEABINDING  peab;
                 CHAR        szFilename[CCHMAXPATH];
-                WinQueryDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_SUBJECT,
+                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                                     sizeof(szSubject), szSubject);
                 _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
                 if (peab = eaCreateBindingFromPSZ(".SUBJECT", szSubject))
@@ -412,7 +417,7 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
         case ID_XSDI_FILES_COMMENTS:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndPage, usItemID);
+                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
                 if (pszText)
                 {
@@ -425,7 +430,7 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
                                                         "\r\n",     // separator
                                                         0))         // codepage
                     {
-                        cmnDumpMemoryBlock(peab->pszValue, peab->usValueLength, 4);
+                        // cmnDumpMemoryBlock(peab->pszValue, peab->usValueLength, 4);
                         eaPathWriteOne(szFilename, peab);
                         eaFreeBinding(peab);
                     }
@@ -443,7 +448,7 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
         case ID_XSDI_FILES_KEYPHRASES:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndPage, usItemID);
+                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
                 if (pszText)
                 {
@@ -456,7 +461,7 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
                                                         "\r\n",     // separator
                                                         0))         // codepage
                     {
-                        cmnDumpMemoryBlock(peab->pszValue, peab->usValueLength, 4);
+                        // cmnDumpMemoryBlock(peab->pszValue, peab->usValueLength, 4);
                         eaPathWriteOne(szFilename, peab);
                         eaFreeBinding(peab);
                     }
@@ -494,7 +499,7 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
                     eaPathDeleteOne(szFilename, ".KEYPHRASES");
 
                 // have the page updated by calling the callback above
-                fsysFileInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                fsysFile1InitPage(pcnbp, CBI_SET | CBI_ENABLE);
             }
         break;
 
@@ -515,7 +520,7 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
             eaPathDeleteOne(szFilename, ".COMMENTS");
             eaPathDeleteOne(szFilename, ".KEYPHRASES");
             // have the page updated by calling the callback above
-            fsysFileInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            fsysFile1InitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -527,6 +532,190 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
         _wpSaveDeferred(pcnbp->somSelf);
 
     return ((MPARAM)-1);
+}
+
+/*
+ *@@ fsysFile2InitPage:
+ *      second "File" page notebook callback function (notebook.c).
+ *      Sets the controls on the page according to a folder's
+ *      instance settings.
+ *
+ *      This is also used by the XFolder class, since we replace
+ *      the "File" pages there also.
+ *
+ *@@added V0.9.1 (2000-01-22) [umoeller]
+ */
+
+VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                       ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        HWND hwndContents = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FILES_EACONTENTS);
+        winhSetWindowFont(hwndContents, "8.Courier");
+        WinSendMsg(hwndContents, MLM_SETREADONLY, (MPARAM)TRUE, 0);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        CHAR szFilename[CCHMAXPATH];
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEALIST peal = eaPathReadAll(szFilename),
+                    pealThis = peal;
+            HWND hwndEAList = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
+            while (pealThis)
+            {
+                PEABINDING peabThis = pealThis->peab;
+                if (peabThis)
+                {
+                    WinInsertLboxItem(hwndEAList,
+                                      LIT_END,
+                                      peabThis->pszName);
+                }
+
+                pealThis = pealThis->next;
+            }
+
+            eaFreeList(peal);
+        }
+    }
+}
+
+/*
+ *@@ fsysFile2ItemChanged:
+ *      second "File" page notebook callback function (notebook.c).
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *      This is also used by the XFolder class, since we replace
+ *      the "File" pages there also.
+ *
+ *@@added V0.9.1 (2000-01-22) [umoeller]
+ */
+
+MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                             USHORT usItemID,
+                             USHORT usNotifyCode,
+                             ULONG ulExtra)      // for checkboxes: contains new state
+{
+    switch (usItemID)
+    {
+        /*
+         * ID_XSDI_FILES_EALIST:
+         *      EAs list box.
+         */
+
+        case ID_XSDI_FILES_EALIST:
+            if (usNotifyCode == LN_SELECT)
+            {
+                HWND hwndEAList = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
+                ULONG ulSelection = (ULONG)WinSendMsg(hwndEAList,
+                                                      LM_QUERYSELECTION,
+                                                      MPNULL,
+                                                      MPNULL);
+                if (ulSelection != LIT_NONE)
+                {
+                    CHAR szFilename[CCHMAXPATH];
+                    if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+                    {
+                        PSZ pszEAName = winhQueryLboxItemText(hwndEAList,
+                                                              ulSelection);
+                        if (pszEAName)
+                        {
+                            PEABINDING peab = eaPathReadOneByName(szFilename,
+                                                                  pszEAName);
+                            if (peab)
+                            {
+                                PSZ     pszInfo = NULL,
+                                        pszContents = NULL;
+                                USHORT  usEAType = eaQueryEAType(peab);
+                                CHAR    szTemp[100];
+                                BOOL    fDumpBinary = TRUE;
+
+                                strhxcpy(&pszInfo, pszEAName);
+
+                                switch (usEAType)
+                                {
+                                    case EAT_BINARY:
+                                        strhxcat(&pszInfo, " (EAT_BINARY");
+                                    break;
+
+                                    case EAT_ASCII:
+                                        strhxcat(&pszInfo, " (EAT_ASCII");
+                                        pszContents = eaCreatePSZFromBinding(peab);
+                                        fDumpBinary = FALSE;
+                                    break;
+
+                                    case EAT_BITMAP:
+                                        strhxcat(&pszInfo, " (EAT_BITMAP");
+                                    break;
+
+                                    case EAT_METAFILE:
+                                        strhxcat(&pszInfo, " (EAT_METAFILE");
+                                    break;
+
+                                    case EAT_ICON:
+                                        strhxcat(&pszInfo, " (EAT_ICON");
+                                    break;
+
+                                    case EAT_EA:
+                                        strhxcat(&pszInfo, " (EAT_EA");
+                                    break;
+
+                                    case EAT_MVMT:
+                                        strhxcat(&pszInfo, " (EAT_MVMT");
+                                    break;
+
+                                    case EAT_MVST:
+                                        strhxcat(&pszInfo, " (EAT_MVST");
+                                    break;
+
+                                    case EAT_ASN1:
+                                        strhxcat(&pszInfo, " (EAT_ASN1");
+                                    break;
+
+                                    default:
+                                    {
+                                        sprintf(szTemp, " (type 0x%lX", usEAType);
+                                        strhxcat(&pszInfo, szTemp);
+                                    }
+                                }
+
+                                sprintf(szTemp, ", %d bytes)", peab->usValueLength);
+                                strhxcat(&pszInfo, szTemp);
+
+                                if (fDumpBinary)
+                                {
+                                    pszContents = strhCreateDump(peab->pszValue,
+                                                                 peab->usValueLength,
+                                                                 0);
+                                }
+
+                                // set static above MLE
+                                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                                  ID_XSDI_FILES_EAINFO,
+                                                  pszInfo);
+
+                                // set MLE; this might be empty
+                                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                                  ID_XSDI_FILES_EACONTENTS,
+                                                  pszContents);
+
+                                eaFreeBinding(peab);
+                                if (pszInfo)
+                                    free(pszInfo);
+                                if (pszContents)
+                                    free(pszContents);
+                            }
+                            free(pszEAName);
+                        }
+                    }
+                }
+            }
+        break;
+    }
+
+    return (0);
 }
 
 /* ******************************************************************
@@ -565,7 +754,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         {
             PEXECUTABLE     pExec = NULL;
 
-            WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_PROG_FILENAME,
+            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_FILENAME,
                               szFilename);
 
             if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
@@ -592,7 +781,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 }
 
                 if (pszExeFormat)
-                    WinSetDlgItemText(pcnbp->hwndPage,
+                    WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_XSDI_PROG_EXEFORMAT,
                                       pszExeFormat);
 
@@ -624,7 +813,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 }
 
                 if (pszOS)
-                    WinSetDlgItemText(pcnbp->hwndPage,
+                    WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_XSDI_PROG_TARGETOS,
                                       pszOS);
 
@@ -634,19 +823,19 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                     if (pExec->pszVendor)
                     {
                         // has BLDLEVEL info:
-                        WinSetDlgItemText(pcnbp->hwndPage,
+                        WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_XSDI_PROG_VENDOR,
                                           pExec->pszVendor);
-                        WinSetDlgItemText(pcnbp->hwndPage,
+                        WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_XSDI_PROG_VERSION,
                                           pExec->pszVersion);
-                        WinSetDlgItemText(pcnbp->hwndPage,
+                        WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_XSDI_PROG_DESCRIPTION,
                                           pExec->pszInfo);
                     }
                     else
                         // no BLDLEVEL info:
-                        WinSetDlgItemText(pcnbp->hwndPage,
+                        WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_XSDI_PROG_DESCRIPTION,
                                           pExec->pszDescription);
                 }
@@ -663,10 +852,10 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 _wpQueryProgDetails(pcnbp->somSelf, pProgDetails, &cbProgDetails);
 
                 if (pProgDetails->pszParameters)
-                    WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_PROG_PARAMETERS,
+                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_PARAMETERS,
                                       pProgDetails->pszParameters);
                 if (pProgDetails->pszStartupDir)
-                    WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_PROG_WORKINGDIR,
+                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_WORKINGDIR,
                                       pProgDetails->pszStartupDir);
 
                 _wpFreeMem(pcnbp->somSelf, (PBYTE)pProgDetails);

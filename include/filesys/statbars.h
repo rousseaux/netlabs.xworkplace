@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -73,8 +73,8 @@
     #endif
 
     // msgs to status bar window (STBM_xxx)
-    #define STBM_UPDATESTATUSBAR        WM_USER+1000
-    #define STBM_PROHIBITBROADCASTING     WM_USER+1002
+    #define STBM_UPDATESTATUSBAR        (WM_USER+1000)
+    #define STBM_PROHIBITBROADCASTING     (WM_USER+1002)
 
     /********************************************************************
      *                                                                  *

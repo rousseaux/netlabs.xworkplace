@@ -1,10 +1,25 @@
 
+XWorkplace 0.9.1 README
+(W) Ulrich M”ller, Feb 7, 2000
 
-XWorkplace (w) (c) 1997-99 Ulrich M”ller **
+
+0. CONTENTS OF THIS FILE
+========================
+
+    1. INTRODUCTION
+    2. INSTALLATION
+    3. INSTALLATION
+    4. NATIONAL LANGUAGE SUPPORT
+    5. GETTING STARTED
+    6. KNOWN LIMITATIONS
+    7. LICENSE, COPYRIGHT, DISCLAIMER
+    8. CONTACT
 
 
-INTRODUCTION
-============
+1. INTRODUCTION
+===============
+
+    Welcome to XWorkplace V0.9.1.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell. It can add features to pretty much all
@@ -12,32 +27,145 @@ INTRODUCTION
     enhancements, replacement icons, CONFIG.SYS settings, and
     much, much more.
 
+    XWorkplace is the successor to XFolder V0.85.
+
     All parts of XWorkplace are fully configurable and can be
     selectively enabled.
 
     For an introduction to XWorkplace's many features, please
     open the "XWorkplace User Guide" (XFLDR001.INF).
 
+    Note that this is a developer's release. It is not guaranteed
+    to be stable in every environment. Lots of new things have
+    been added since the last public XFolder release (which was
+    V0.85), and even though these are working on my system, this
+    does not mean it will work on yours. So beware.
 
-INSTALLATION
-============
+    This README has additional information which is not included
+    in XFLDR001.INF. Please read through all of this before
+    installing.
 
-    This is described thoroughly in XFolder's Online Reference.
-
-    Please double-click on "XFLDR001.INF" in the XFolder directory and read
-    through the "Installation" subsection.
+    After installation, you can find this README in the main
+    install directory.
 
 
-LICENSE, COPYRIGHT, DISCLAIMER
-==============================
+2. INSTALLATION
+===============
 
-    Copyright (C) 1997-99 Ulrich M”ller.
+    XWorkplace is installed using WarpIN.
+
+    If you are still unsure whether you should use XWorkplace at
+    this point, you can have WarpIN unpack the XWorkplace files
+    on your hard disk only without registering and replacing
+    Workplace Shell classes. This will not alter your system's
+    behavior yet.
+
+    To do this, disable the "Register WPS classes" flag on the
+    respective page which WarpIN will show you after you press
+    the "Next" button a few times.
+
+    You then then read through XWorkplace's documentation first
+    and decide then whether to actually register XWorkplace's
+    classes. To do this later, simply open this WarpIN archive
+    again.
+
+    Note: Use WarpIN V0.9.1 or higher to install this archive.
+    Since WarpIN V0.9.0 will be unable to create the XWorkplace
+    objects on your Desktop, with that version, you'll have to
+    execute BIN\CROB001.CMD manually after installation (in the
+    XWorkplace target directory tree).
+
+
+3. UPGRADING FROM XFOLDER
+=========================
+
+    XWorkplace is the successor to XFolder (the latest XFolder
+    version was V0.85).
+
+    XWorkplace and XFolder cannot coexist, since XWorkplace
+    provides all the features of XFolder 0.85 plus many bugfixes
+    and even more features.
+
+    As a result, if XFolder is installed, XWorkplace will
+    disable your XFolder installation. You should install
+    XWorkplace to a directory OTHER than your existing XFolder
+    directory to make sure no file conflicts occur (I might
+    have forgotten something).
+
+
+4. NATIONAL LANGUAGE SUPPORT
+============================
+
+    This archive contains XWorkplace National Language Support
+    (NLS) for English only. Even though XWorkplace is prepared
+    for supporting additional languages, there are no other
+    NLS packages available yet. These will be added to a later
+    release.
+
+    XWorkplace will take over your existing XFolder 0.85 settings,
+    if present. However, many more settings have arrived, so many
+    will be initially disabled.
+
+    If you prefer to go back to your existing XFolder installation
+    later (after all, this is a developer's release), have WarpIN
+    de-install XWorkplace and install XFolder again, using
+    INSTALL.CMD in your XFolder directory. Your old XFolder
+    settings remain untouched by XWorkplace.
+
+
+5. GETTING STARTED
+==================
+
+    In any case, open the new "XWorkplace Setup" object first and
+    go to the "Features" page. This is the most central place to
+    enable XWorkplace features. Refer to the "Help" button there.
+
+
+6. KNOWN LIMITATIONS
+====================
+
+    This version has known bugs. I have it running on my system for
+    everyday work, but some things are a bit annoying, so be warned.
+
+    As opposed to what XFLDR001.INF might be saying, the following
+    does not work:
+
+    1)  Christian Langanke's Animated Mouse Pointers for OS/2 are
+        not yet included. This is currently in the works and will
+        be added in a later release.
+
+    2)  If "Extended associations" is enabled in XWPSetup, the new
+        "File types" page in "Workplace Shell" is working, but XFldDataFile
+        doesn't support the enhanced file type icons yet.
+        You'll see the proper icons and associations in the "Open"
+        submenu, but clicking on them will not open the proper
+        association.
+
+    3)  The new trash displays wrong info sometimes and cannot delete
+        objects which have the read-only attribute on.
+
+    4)  Trash can confirmations and auto-delete on startup and shutdown
+        don't work quite yet.
+
+    5)  Creating the trash can objects from the XWorkplace Setup
+        "Features" page fails. Go the to "Objects" page instead and
+        create the trash can from there.
+
+    6)  XSHUTDWN.EXE currently doesn't work at all.
+
+
+7. LICENSE, COPYRIGHT, DISCLAIMER
+=================================
+
+    Copyright (C) 1997-2000 Ulrich M”ller,
+                            Christian Langanke,
+                            and others.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in
-    the file COPYING in this directory.
+    the file COPYING in the installation directory.
 
-    The full source code is available from the author's homepage (see below).
+    The full source code is available. See XFLDR001.INF for details.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -46,8 +174,18 @@ LICENSE, COPYRIGHT, DISCLAIMER
     For details, refer to the "Notices" section in XFLDR001.INF.
 
 
-CONTACT
-=======
+8. CONTACT
+==========
 
-    See "Notices" --> "Contact" in XFLDR001.INF.
+    We have created two mailing lists at egroups.com for contact.
+    Please use these lists from now on for questions, suggestions,
+    and bug reports.
+
+    For XWorkplace users:
+        xworkplace-user@egroups.com
+
+    For XWorkplace developers and those who are interested:
+        xworkplace-dev@egroups.com
+
+    For details, see "Notices" --> "Contact" in XFLDR001.INF.
 

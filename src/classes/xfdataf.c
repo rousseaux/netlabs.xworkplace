@@ -29,7 +29,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -168,6 +168,7 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile1Page(XFldDataFile *somSelf,
 
     if (pGlobalSettings->fReplaceFilePage)
     {
+        // page 2
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -175,15 +176,33 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile1Page(XFldDataFile *somSelf,
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndNotebook;
         pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_FILESPAGE;
-        pcnbp->ulPageID = SP_FILE;
+        pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
+        pcnbp->ulPageID = SP_FILE2;
+        // pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = pNLSStrings->pszFilePage;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
+
+        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
+        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
+
+        ntbInsertPage(pcnbp);
+
+        // page 1
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
+        pcnbp->ulPageID = SP_FILE1;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszFilePage;
-        pcnbp->usFirstControlID = ID_XCDI_VARMENUOFFSET;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
 
-        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFileInitPage;
-        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFileItemChanged;
+        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
+        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
 
         return (ntbInsertPage(pcnbp));
     }
@@ -289,11 +308,12 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpFilterPopupMenu(XFldDataFile *somSelf,
 
 /*
  *@@ wpModifyPopupMenu:
- *      add datafile object popup menu entries. We don't
- *      need a wpMenuItemSelected method for data files,
- *      because the new menu items are completely handled
- *      by the subclassed folder frame window procedure
- *      by calling the functions in menus.c.
+ *      add datafile object popup menu entries.
+ *
+ *      We don't need a wpMenuItemSelected method override
+ *      for data  files, because the new menu items are
+ *      completely handled by the subclassed folder frame
+ *      window procedure by calling the functions in menus.c.
  */
 
 SOM_Scope BOOL  SOMLINK xfdataf_wpModifyPopupMenu(XFldDataFile *somSelf,
@@ -496,17 +516,17 @@ SOM_Scope WPObject*  SOMLINK xfdataf_wpQueryAssociatedProgram(XFldDataFile *somS
     // XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpQueryAssociatedProgram");
 
     #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
-    _Pmpf(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
-           "*pulHowMatched = 0x%lX, "
-           "pszMatchString = %s, pszDefaultType = %s",
-           _wpQueryTitle(somSelf),
-           ulView,
-           (    (pulHowMatched)
-                        ? (*pulHowMatched)
-                        : 0
-           ),
-           pszMatchString, pszDefaultType
-           ));
+        _Pmpf(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
+               "*pulHowMatched = 0x%lX, "
+               "pszMatchString = %s, pszDefaultType = %s",
+               _wpQueryTitle(somSelf),
+               ulView,
+               (    (pulHowMatched)
+                            ? (*pulHowMatched)
+                            : 0
+               ),
+               pszMatchString, pszDefaultType
+               ));
     #endif
 
     if (pGlobalSettings->fExtAssocs)

@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -44,6 +44,7 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 #define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WININPUT
 #define INCL_WINRECTANGLES
@@ -93,6 +94,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\menus.h"              // shared context menu logic
 #include "filesys\statbars.h"           // status bar translation logic
@@ -103,6 +105,8 @@
 
 #include <wpdesk.h>
 #include <wpshadow.h>           // WPShadow
+#include "xfdisk.h"
+#include <wprootf.h>
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -158,18 +162,18 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     PSZ     pszTemp = NULL,
             pszView = NULL;
     ULONG   ulReturn = 0;
-    ULONG   ulValue = 0,
-            ulDefaultValue = 0,
-            ulStyle = 0;
+    ULONG   ulValue = 0;
     PSZ     pszValue = 0,
             pszDefaultValue = 0;
     SOMClass *pClassObject = 0;
     BOOL    fTreeIconsInvisible = FALSE,
             fIconViewColumns = FALSE;
 
+    CHAR    szTemp[1000] = "";
+
     BOOL    fIsWarp4 = doshIsWarp4();
 
-    if (pszSetupString)
+    /* if (pszSetupString)
     {
         _Pmpf(("Dumping %s", _wpQueryTitle(somSelf)));
 
@@ -186,7 +190,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         cmnDumpMemoryBlock((PVOID)_pFldrBackground,
                            _cbFldrBackground,
                            8);
-    }
+    } */
 
     // WORKAREA
     if (_wpQueryFldrFlags(somSelf) & FOI_WORKAREA)
@@ -215,7 +219,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     pClassObject = _wpQueryFldrSortClass(somSelf);
     if (pClassObject != _WPFileSystem)
     {
-        CHAR szTemp[1000];
         sprintf(szTemp, "SORTCLASS=%s;", _somGetName(pClassObject));
         strhxcat(&pszTemp, szTemp);
     }
@@ -228,8 +231,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     // BACKGROUND
     if ((_pszFdrBkgndImageFile) && (_pFldrBackground))
     {
-        CHAR szTemp[1000];
-        CHAR cType;
+        CHAR cType = 'S';
 
         PBYTE pbRGB = ( (PBYTE)(&(_pFldrBackground->rgbColor)) );
 
@@ -267,7 +269,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     {
         if (strcmp(pszValue, pszDefaultValue) != 0)
         {
-            CHAR szTemp[1000];
             sprintf(szTemp, "ICONFONT=%s;", pszValue);
             strhxcat(&pszTemp, szTemp);
         }
@@ -312,7 +313,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
     if (pszView)
     {
-        CHAR szTemp[1000];
         sprintf(szTemp, "ICONVIEW=%s;", pszView);
         strhxcat(&pszTemp, szTemp);
         free(pszView);
@@ -324,8 +324,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     // ICONTEXTCOLOR
     if (_pFldrLongArray)
     {
-        CHAR szTemp[200];
-        BYTE bUseDefault;
+        BYTE bUseDefault = FALSE;
         PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbIconViewTextColAsPlaced)) );
         if (fIconViewColumns)
             // FLOWED or NONFLOWED: use different field then
@@ -348,7 +347,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         // only Warp 4 has these fields, so check size of array
         if (_cbFldrLongArray >= 84)
         {
-            CHAR szTemp[200];
             PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbIconViewShadowCol)) );
 
             BYTE bUseDefault = *(pbArrayField + 3);
@@ -377,7 +375,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     {
         if (strcmp(pszValue, pszDefaultValue) != 0)
         {
-            CHAR szTemp[1000];
             sprintf(szTemp, "TREEFONT=%s;", pszValue);
             strhxcat(&pszTemp, szTemp);
         }
@@ -432,7 +429,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
     if (pszView)
     {
-        CHAR szTemp[1000];
         sprintf(szTemp, "TREEVIEW=%s;", pszView);
         strhxcat(&pszTemp, szTemp);
         free(pszView);
@@ -442,8 +438,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     // TREETEXTCOLOR
     if (_pFldrLongArray)
     {
-        CHAR szTemp[200];
-        BYTE bUseDefault;
+        BYTE bUseDefault = FALSE;
         PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbTreeViewTextColIcons)) );
 
         if (fTreeIconsInvisible)
@@ -466,7 +461,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         // only Warp 4 has these fields, so check size of array
         if (_cbFldrLongArray >= 84)
         {
-            CHAR szTemp[200];
             PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbTreeViewShadowCol)) );
 
             BYTE bUseDefault = *(pbArrayField + 3);
@@ -495,7 +489,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     pClassObject = _wpQueryFldrDetailsClass(somSelf);
     if (pClassObject != _WPFileSystem)
     {
-        CHAR szTemp[1000];
         sprintf(szTemp, "DETAILSCLASS=%s;", _somGetName(pClassObject));
         strhxcat(&pszTemp, szTemp);
     }
@@ -509,7 +502,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     {
         if (strcmp(pszValue, pszDefaultValue) != 0)
         {
-            CHAR szTemp[1000];
             sprintf(szTemp, "DETAILSFONT=%s;", pszValue);
             strhxcat(&pszTemp, szTemp);
         }
@@ -523,8 +515,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
     // DETAILSTEXTCOLOR
     if (_pFldrLongArray)
     {
-        CHAR szTemp[200];
-        BYTE bUseDefault;
+        BYTE bUseDefault = FALSE;
         PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbDetlViewTextCol)) );
 
         bUseDefault = *(pbArrayField + 3);
@@ -544,7 +535,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         // only Warp 4 has these fields, so check size of array
         if (_cbFldrLongArray >= 84)
         {
-            CHAR szTemp[200];
             PBYTE pbArrayField = ( (PBYTE)(&(_pFldrLongArray->rgbDetlViewShadowCol)) );
 
             BYTE bUseDefault = *(pbArrayField + 3);
@@ -642,16 +632,128 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
 /* ******************************************************************
  *                                                                  *
+ *   Folder view helpers                                            *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ fdrForEachOpenViewInstance:
+ *      this instance method goes through all open views of a folder and calls
+ *      pfnwpCallback for each them (as opposed to fdrForEachOpenGlobalView,
+ *      which goes through all open folders on the system).
+ *
+ *      The following params are then passed to pfnwpCallback:
+ *      --   HWND       hwnd: the hwnd of the view frame window;
+ *      --   ULONG      mp1:  the view type (as def'd in wpOpen)
+ *      --   XFolder*   mp2:  somSelf.
+ *
+ *      This method does not return until all views have been processed.
+ *      You might want to call this method in a different thread if the task
+ *      will take long.
+ *
+ *      This method returns TRUE if the callback returned TRUE at least once.
+ *      Note on disk objects/root folders: the WPS does not maintain an open
+ *      view list for root folders, but only for the corresponding disk object.
+ *      xwpForEachOpenView will call open disk views also, but the callback
+ *      will still be passed the root folder in pFolder!#
+ *
+ *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be XFolder::xwpForEachOpenView
+ */
+
+BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
+                                ULONG ulMsg,
+                                PFNWP pfnwpCallback)
+{
+    BOOL brc = FALSE;
+    WPObject *somSelf2;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderMethodDebug("XFolder","xf_xwpForEachOpenView");
+
+    if (_somIsA(somSelf, _WPRootFolder))
+        // for disk/root folder views: root folders have no
+        // open view, instead the disk object is registered
+        // to have the open view. Duh. So we need to find
+        // the disk object first
+        somSelf2 = _xwpclsQueryDiskObject(_XFldDisk, somSelf);
+    else
+        somSelf2 = somSelf;
+
+    if (somSelf2)
+    {
+        if (_wpFindUseItem(somSelf2, USAGE_OPENVIEW, NULL))
+        {   // folder has an open view;
+            // now we go search the open views of the folder and get the
+            // frame handle of the desired view (ulView) */
+            PVIEWITEM   pViewItem;
+            for (pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, NULL);
+                 pViewItem;
+                 pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem))
+            {
+                if ((*pfnwpCallback)(pViewItem->handle,
+                                     ulMsg,
+                                     (MPARAM)pViewItem->view,
+                                     // but even if we have found a disk object
+                                     // above, we need to pass it the root folder
+                                     // pointer, because otherwise the callback
+                                     // might get into trouble
+                                     (MPARAM)somSelf)
+                            == (MPARAM)TRUE)
+                    brc = TRUE;
+            } // end for
+        } // end if
+    }
+    return (brc);
+}
+
+/*
+ *@@ fdrForEachOpenGlobalView:
+ *      this class method goes through all open folder windows and calls
+ *      pfnwpCallback for each open view of each open folder.
+ *      As opposed to fdrForEachOpenInstanceView, this goes thru really
+ *      all open folders views on the system.
+ *
+ *      The following params will be passed to pfnwpCallback:
+ *      -- HWND       hwnd: the hwnd of the view frame window;
+ *      -- ULONG      msg:  ulMsg, as passed to this method
+ *      -- ULONG      mp1:  the view type (as def'd in wpOpen)
+ *      -- XFolder*   mp2:  the currently open folder.
+ *
+ *      This method does not return until all views have been processed.
+ *      You might want to call this method in a different thread if the task
+ *      will take long.
+ *
+ *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be M_XFolder::xwpclsForEachOpenView
+ */
+
+BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
+                              PFNWP pfnwpCallback)
+{
+    M_WPFolder  *pWPFolderClass = _WPFolder;
+    XFolder     *pFolder;
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    // M_XFolderMethodDebug("M_XFolder","xfM_xwpclsForEachOpenView");
+
+    for ( pFolder = _wpclsQueryOpenFolders(pWPFolderClass, NULL, QC_FIRST, FALSE);
+          pFolder;
+          pFolder = _wpclsQueryOpenFolders(pWPFolderClass, pFolder, QC_NEXT, FALSE))
+    {
+        if (_somIsA(pFolder, pWPFolderClass))
+            fdrForEachOpenInstanceView(pFolder, ulMsg, pfnwpCallback);
+    }
+    return TRUE;
+}
+
+/* ******************************************************************
+ *                                                                  *
  *   Full path in title                                             *
  *                                                                  *
  ********************************************************************/
 
 /*
  *@@ fdrSetOneFrameWndTitle:
- *           this changes the window title of a given folder frame window
- *           to the full path of the folder; this method does NOT check
- *           the respective XFolder settings any more, so this has to be
- *           done by the caller.
+ *      this changes the window title of a given folder frame window
+ *      to the full path of the folder, according to the global and/or
+ *      folder settings.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
@@ -659,11 +761,13 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
                             HWND hwndFrame)
 {
-    PSZ                 pFirstSlash, pSrchSlash, pNextSlash;
-    CHAR                szTemp[CCHMAXPATH];
+    PSZ                 pFirstSlash = 0,
+                        pSrchSlash = 0,
+                        pNextSlash = 0;
+    CHAR                szTemp[CCHMAXPATH] = "";
     XFolderData         *somThis = XFolderGetData(somSelf);
     PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-    BOOL                brc;
+    BOOL                brc = FALSE;
 
     if (    (_bFullPathInstance == 1)
          || ((_bFullPathInstance == 2) && (pGlobalSettings->FullPath))
@@ -695,8 +799,9 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
         }
 
         // now either append the full path in brackets to or replace window title
-        if (pGlobalSettings->KeepTitle) {
-            CHAR szFullPathTitle[CCHMAXPATH*2];
+        if (pGlobalSettings->KeepTitle)
+        {
+            CHAR szFullPathTitle[CCHMAXPATH*2] = "";
             sprintf(szFullPathTitle, "%s (%s)",
                     _wpQueryTitle(somSelf),
                     szTemp);
@@ -719,22 +824,21 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
 
 /*
  *@@ fdrUpdateAllFrameWndTitles:
- *           this function sets the frame wnd titles for all currently
- *           open views of a given folder to the folder's full path.
+ *      this function sets the frame wnd titles for all currently
+ *      open views of a given folder to the folder's full path.
  *
- *           This gets called on the Worker thread after XFolder's
- *           replacements of wpMoveObject, wpSetTitle, or wpRefresh have
- *           been called.
+ *      This gets called on the Worker thread after XFolder's
+ *      replacements of wpMoveObject, wpSetTitle, or wpRefresh have
+ *      been called.
  *
- *           This function does check the GLOBALSETTINGS and folder instance
- *           settings.
+ *      This calls fdrSetOneFrameWndTitle in turn.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
 BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
 {
-    HWND        hwndFrame;
+    HWND        hwndFrame = NULLHANDLE;
     BOOL        brc = FALSE;
 
     if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS))
@@ -782,8 +886,9 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
     // WPObject            *obj;
     HWND                hwndFrame = 0,
                         hwndCnr = 0;
-    PMINIRECORDCORE     pmrc;
-    LONG                lNewX, lNewY;
+    PMINIRECORDCORE     pmrc = 0;
+    LONG                lNewX = 0,
+                        lNewY = 0;
     BOOL                brc = FALSE;
     // if Shift is pressed, move all the objects, otherwise
     // only the selected ones
@@ -1044,7 +1149,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                                        : NULL
                                    ;
 
-        CNRINFO         CnrInfo;
+        CNRINFO         CnrInfo = {0};
         BOOL            Update = FALSE;
 
         cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
@@ -1271,15 +1376,16 @@ MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView,        // folder frame
  *      in turn.
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.1 (2000-02-08) [umoeller]: status bars were added even if globally disabled; fixed.
  */
 
 VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
                           HWND hwndNewFrame,        // in: new view (frame) of folder
                           ULONG ulView)             // in: OPEN_CONTENTS, OPEN_TREE, or OPEN_DETAILS
 {
-    PSUBCLASSEDLISTITEM    psli;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XFolderData *somThis = XFolderGetData(somSelf);
+    PSUBCLASSEDLISTITEM psli = 0;
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    XFolderData         *somThis = XFolderGetData(somSelf);
 
     // subclass the new folder frame window
     psli = fdrSubclassFolderFrame(hwndNewFrame, somSelf, somSelf, ulView);
@@ -1292,10 +1398,12 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 
     // add status bar, if allowed:
     // 1) status bar only if allowed for the current folder
-    if (    (_bStatusBarInstance == STATUSBAR_ON)
-         || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
-             && (pGlobalSettings->fDefaultStatusBarVisibility)
-            )
+    if (   (pGlobalSettings->fEnableStatusBars)
+        && (    (_bStatusBarInstance == STATUSBAR_ON)
+             || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                 && (pGlobalSettings->fDefaultStatusBarVisibility)
+                )
+           )
        )
         // 2) no status bar for active Desktop
         if (somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
@@ -1384,6 +1492,7 @@ VOID fdrInitPSLI(VOID)
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: pulIndex added to function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from common.c
+ *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
  */
 
 PSUBCLASSEDLISTITEM fdrQueryPSLI(HWND hwndFrame,        // in: folder frame to find
@@ -1399,7 +1508,7 @@ PSUBCLASSEDLISTITEM fdrQueryPSLI(HWND hwndFrame,        // in: folder frame to f
     {
         if (hwndFrame)
         {
-            fSemOwned = (DosRequestMutexSem(hmtxSubclassed, 4000) == NO_ERROR);
+            fSemOwned = (WinRequestMutexSem(hmtxSubclassed, 4000) == NO_ERROR);
             if (fSemOwned)
             {
                 pNode = lstQueryFirstNode(&llSubclassed);
@@ -1489,7 +1598,7 @@ PSUBCLASSEDLISTITEM fdrSubclassFolderFrame(HWND hwndFrame,
                                                 // OPEN_CONTENTS et al.
 {
     BOOL                fSemOwned = FALSE;
-    PFNWP               pfnwpCurrent, pfnwpOriginal;
+    PFNWP               pfnwpCurrent;
     HWND                hwndCnr;
     PSUBCLASSEDLISTITEM psliNew = NULL;
     PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
@@ -1521,17 +1630,21 @@ PSUBCLASSEDLISTITEM fdrSubclassFolderFrame(HWND hwndFrame,
                     pfnwpCurrent = (PFNWP)WinQueryWindowPtr(hwndFrame, QWP_PFNWP);
                     if (pfnwpCurrent != (PFNWP)fdr_fnwpSubclassedFolderFrame)
                     {
-                        if (!(pfnwpOriginal = WinSubclassWindow(hwndFrame, (PFNWP)fdr_fnwpSubclassedFolderFrame)))
-                            // error occured subclassing:
-                            DebugBox("XFolder", "Folder subclassing failed.");
-                            // should never happen
-                        else
+                        psliNew = malloc(sizeof(SUBCLASSEDLISTITEM));
+                        if (psliNew)
                         {
-                            // subclassing succeeded: now remember the old wnd proc
-                            // and other data in the global linked list
-                            psliNew = malloc(sizeof(SUBCLASSEDLISTITEM));
                             memset(psliNew, 0, sizeof(SUBCLASSEDLISTITEM)); // V0.9.0
-                            psliNew->pfnwpOriginal = pfnwpOriginal;
+
+                            // append to global list
+                            fSemOwned = (WinRequestMutexSem(hmtxSubclassed, 4000) == NO_ERROR);
+                            if (fSemOwned)
+                            {
+                                lstAppendItem(&llSubclassed,
+                                              psliNew);
+                                DosReleaseMutexSem(hmtxSubclassed);
+                                fSemOwned = FALSE;
+                            }
+
                             // store various other data here
                             psliNew->hwndFrame = hwndFrame;
                             psliNew->somSelf = somSelf;
@@ -1556,15 +1669,11 @@ PSUBCLASSEDLISTITEM fdrSubclassFolderFrame(HWND hwndFrame,
                                            0,           // window id
                                            psliNew,    // pass the struct to WM_CREATE
                                            NULL);       // pres params
-                            // append to global list
-                            fSemOwned = (DosRequestMutexSem(hmtxSubclassed, 4000) == NO_ERROR);
-                            if (fSemOwned)
-                            {
-                                lstAppendItem(&llSubclassed,
-                                              psliNew);
-                                DosReleaseMutexSem(hmtxSubclassed);
-                                fSemOwned = FALSE;
-                            }
+
+                            // finally, subclass folder frame
+                            psliNew->pfnwpOriginal
+                                = WinSubclassWindow(hwndFrame,
+                                                    fdr_fnwpSubclassedFolderFrame);
                         }
                     }
                 }
@@ -1598,7 +1707,7 @@ VOID fdrRemovePSLI(PSUBCLASSEDLISTITEM psli)
 
     TRY_QUIET(excpt1, fdrSLIOnKill)
     {
-        fSemOwned = (DosRequestMutexSem(hmtxSubclassed, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxSubclassed, 4000) == NO_ERROR);
         if (fSemOwned)
         {
             lstRemoveItem(&llSubclassed,
@@ -1677,10 +1786,8 @@ VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  */
 
 VOID FormatFrame(PSUBCLASSEDLISTITEM psli, // in: frame information
-                 MPARAM mp1,            // in: mp1 from WM_FORMATFRAME
-                                        //     (points to SWP array)
-                 ULONG *pulCount)       // in/out: frame control count
-                                        //         from default wnd proc
+                 MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
+                 ULONG *pulCount)       // in/out: frame control count from default wnd proc
 {
     // access the SWP array that is passed to us
     // and search all the controls for the container child window,
@@ -1767,19 +1874,34 @@ PFNWP   pfnwpFolderContentMenuOriginal = NULL;
  *      when WM_INITMENU is received, _after_ the parent
  *      window proc has been given a chance to process this.
  *
+ *      WM_INITMENU is sent to a menu owner right before a
+ *      menu is about to be displayed. This applies to both
+ *      pulldown and context menus.
+ *
  *      This is needed for various menu features:
  *
- *      1)  for folder content menus, because these are
+ *      1)  for getting the object which currently has source
+ *          emphasis in the folder container, because at the
+ *          point WM_COMMAND comes in (and thus wpMenuItemSelected
+ *          gets called in response), source emphasis has already
+ *          been removed by the WPS.
+ *
+ *          This is needed for file operations on all selected
+ *          objects in the container. We call wpshQuerySourceObject
+ *          to find out more about this and store the result in
+ *          our SUBCLASSEDLISTITEM.
+ *
+ *      2)  for folder content menus, because these are
  *          inserted as empty stubs only in wpModifyPopupMenu
  *          and only filled after the user clicks on them.
  *          We will query a bunch of data first, which we need
  *          later for drawing our items, and then call
  *          mnuFillContentSubmenu, which populates the folder
- *          and fills the menu with the items therein;
+ *          and fills the menu with the items therein.
  *
- *      2)  for the menu system sounds;
+ *      3)  for the menu system sounds.
  *
- *      3)  for manipulating Warp 4 folder menu _bars_. We
+ *      4)  for manipulating Warp 4 folder menu _bars_. We
  *          cannot use the Warp 4 WPS methods defined for
  *          that because we want XWorkplace to run on Warp 3
  *          also.
@@ -1797,8 +1919,6 @@ VOID InitMenu(PSUBCLASSEDLISTITEM psli, // in: frame information
               HWND hwndMenuMsg)         // in: mp2 from WM_INITMENU
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-    // ULONG           *pulWorkplaceFunc2 = &(pKernelGlobals->ulWorkplaceFunc2);
 
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psli->somSelf);
@@ -1810,8 +1930,15 @@ VOID InitMenu(PSUBCLASSEDLISTITEM psli, // in: frame information
         _Pmpf(( "  psli->hwndCnr: 0x%lX", psli->hwndCnr));
     #endif
 
+    // store object with source emphasis for later use;
+    // this gets lost before WM_COMMAND otherwise
+    psli->pSourceObject = wpshQuerySourceObject(psli->somSelf,
+                                                psli->hwndCnr,
+                                                FALSE,      // menu mode
+                                                &psli->ulSelection);
+
     // store the container window handle in instance
-    // data for wpMofifyPopupMenu workaround;
+    // data for wpModifyPopupMenu workaround;
     // buggy Warp 3 keeps setting hwndCnr to NULLHANDLE in there
     _hwndCnrSaved = psli->hwndCnr;
 
@@ -1980,7 +2107,8 @@ VOID InitMenu(PSUBCLASSEDLISTITEM psli, // in: frame information
  */
 
 BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
-                MPARAM mp1, MPARAM mp2,   // in: mp1, mp2 from WM_MENUSELECT
+                MPARAM mp1,               // in: mp1 from WM_MENUSELECT
+                MPARAM mp2,               // in: mp2 from WM_MENUSELECT
                 BOOL *pfDismiss)          // out: dismissal flag
 {
     BOOL fHandled = FALSE;
@@ -2021,9 +2149,12 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
     }
     else
     {
-        if (    (SHORT2FROMMP(mp1) == TRUE)
-            && (    ((USHORT)mp1 <  0x8000) // avoid system menu
-                 || ((USHORT)mp1 == 0x8020) // include context menu
+        USHORT      usItem = SHORT1FROMMP(mp1),
+                    usPostCommand = SHORT2FROMMP(mp1);
+
+        if (    (usPostCommand)
+            && (    (usItem <  0x8000) // avoid system menu
+                 || (usItem == 0x8020) // include context menu
                )
            )
         {
@@ -2038,14 +2169,13 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
             if (hwndCnr)
             {
                 // first find out what kind of objects we have here
-
-                ULONG ulSelection = 0;
+                /* ULONG ulSelection = 0;
                 WPObject *pObject1 =
-                     mnuQuerySelectedObject(psli->somSelf,
-                                            hwndCnr,
-                                            &ulSelection);
+                     wpshQuerySourceObject(psli->somSelf,
+                                           hwndCnr,
+                                           &ulSelection); */
 
-                WPObject *pObject = pObject1;
+                WPObject *pObject = psli->pSourceObject;
 
                 #ifdef DEBUG_MENUS
                     _Pmpf(( "  Object selections: %d", ulSelection));
@@ -2064,28 +2194,29 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
                     if (_somIsA(pObject, _WPFileSystem))
                     {
                         fHandled = mnuFileSystemSelectingMenuItem(
-                                       pObject1,   // note that we're passing
-                                                   // pObject1 instead of pObject;
-                                                   // pObject1 might be a shadow!
-                                       SHORT1FROMMP(mp1),       // usItem
-                                       (BOOL)SHORT2FROMMP(mp1), // fPostCommand
+                                       psli->pSourceObject,
+                                            // note that we're passing
+                                            // psli->pSourceObject instead of pObject;
+                                            // psli->pSourceObject might be a shadow!
+                                       usItem,
+                                       (BOOL)usPostCommand,
                                        (HWND)mp2,               // hwndMenu
                                        hwndCnr,
-                                       ulSelection,             // SEL_* flags
+                                       psli->ulSelection,       // SEL_* flags
                                        pfDismiss);              // dismiss-menu flag
-                    }
 
-                    if (    (!fHandled)
-                         && (_somIsA(pObject, _WPFolder))
-                       )
-                    {
-                        fHandled = mnuFolderSelectingMenuItem(pObject,
-                                       SHORT1FROMMP(mp1),       // usItem
-                                       (BOOL)SHORT2FROMMP(mp1), // fPostCommand
-                                       (HWND)mp2,               // hwndMenu
-                                       hwndCnr,
-                                       ulSelection,             // SEL_* flags
-                                       pfDismiss);              // dismiss-menu flag
+                        if (    (!fHandled)
+                             && (_somIsA(pObject, _WPFolder))
+                           )
+                        {
+                            fHandled = mnuFolderSelectingMenuItem(pObject,
+                                           usItem,
+                                           (BOOL)usPostCommand, // fPostCommand
+                                           (HWND)mp2,               // hwndMenu
+                                           hwndCnr,
+                                           psli->ulSelection,       // SEL_* flags
+                                           pfDismiss);              // dismiss-menu flag
+                        }
                     }
 
                     if (    (fHandled)
@@ -2107,52 +2238,93 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
 }
 
 /*
+ *@@ WMChar_Delete:
+ *      this gets called if "delete into trash can"
+ *      is enabled and WM_CHAR has detected with the
+ *      "Delete" key.
+ *
+ *@@added V0.9.1 (2000-01-31) [umoeller]
+ */
+
+VOID WMChar_Delete(PSUBCLASSEDLISTITEM psli)
+{
+    ULONG   ulSelection = 0;
+    WPObject *pSelected = wpshQuerySourceObject(psli->somSelf,
+                                                psli->hwndCnr,
+                                                TRUE,       // keyboard mode
+                                                &ulSelection);
+    if (    (pSelected)
+         && (ulSelection != SEL_NONEATALL)
+       )
+    {
+        fopsStartCnrDelete2Trash(psli->somSelf, // source folder
+                                 pSelected,    // first selected object
+                                 ulSelection,  // can only be SEL_SINGLESEL
+                                                // or SEL_MULTISEL
+                                 psli->hwndCnr);
+    }
+}
+
+/*
  *@@ fdr_fnwpSubclassedFolderFrame:
- *          New window proc for subclassed folder frame windows.
- *          Folder frame windows are subclassed in fdrSubclassFolderFrame
- *          (which gets called from XFolder::wpOpen or XFldDisk::wpOpen
- *          for Disk views) with the address of this window procedure.
+ *      New window proc for subclassed folder frame windows.
+ *      Folder frame windows are subclassed in fdrSubclassFolderFrame
+ *      (which gets called from XFolder::wpOpen or XFldDisk::wpOpen
+ *      for Disk views) with the address of this window procedure.
  *
- *          This is maybe the most central part of XFolder. Since
- *          most WPS methods are really just reacting to messages
- *          in the default WPS frame window proc, but for some
- *          features methods are just not sufficient, basically we
- *          simulate what the WPS does here by intercepting _lots_
- *          of messages before the WPS gets them.
+ *      This is maybe the most central (and most complex) part of
+ *      XWorkplace. Since most WPS methods are really just reacting
+ *      to messages in the default WPS frame window proc, but for
+ *      some features methods are just not sufficient, basically we
+ *      simulate what the WPS does here by intercepting _lots_
+ *      of messages before the WPS gets them.
  *
- *          Things we do in this proc:
- *          --  frame control manipulation for status bars
- *          --  Warp 4 folder menu bar manipulation (WM_INITMENU)
- *          --  handling of certain menu items w/out dismissing
- *              the menu; this calls functions in menus.c
- *          --  menu owner draw (folder content menus w/ icons);
- *              this calls functions in menus.c also
- *          --  container control messages: tree view auto-scroll,
- *              updating status bars etc.
- *          --  playing the new system sounds for menus and such
- *              by calling xthrPostQuickMsg.
+ *      Unfortunately, this leads to quite a mess, but we have
+ *      no choice.
  *
- *          Note that this function calls lots of "external" functions
- *          spread across all over the XFolder code. This reduces the
- *          code size of this function, which gets called very often,
- *          to avoid excessive use of the processor caches.
+ *      Things we do in this proc:
+ *
+ *      --  frame control manipulation for status bars
+ *
+ *      --  Warp 4 folder menu bar manipulation (WM_INITMENU)
+ *
+ *      --  handling of certain menu items w/out dismissing
+ *          the menu; this calls functions in menus.c
+ *
+ *      --  menu owner draw (folder content menus w/ icons);
+ *          this calls functions in menus.c also
+ *
+ *      --  complete interception of file-operation menu items
+ *          such as "delete" for deleting all objects into the
+ *          XWorkplace trash can
+ *
+ *      --  container control messages: tree view auto-scroll,
+ *          updating status bars etc.
+ *
+ *      --  playing the new system sounds for menus and such.
+ *
+ *      Note that this function calls lots of "external" functions
+ *      spread across all over the XFolder code. I have tried to
+ *      reduce the size of this window procedure to an absolute
+ *      minimum because this function gets called very often (for
+ *      every single folder message) and large message procedures
+ *      may thrash the processor caches.
  *
  *@@changed V0.9.0 [umoeller]: moved cleanup code from WM_CLOSE to WM_DESTROY; un-subclassing removed
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: added WPMENUID_DELETE support
+ *@@changed V0.9.1 (2000-01-31) [umoeller]: added "Del" key support
  */
 
-MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
+                                               ULONG msg,
+                                               MPARAM mp1,
+                                               MPARAM mp2)
 {
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    // ULONG           *pulWorkplaceFunc2 = &(pKernelGlobals->ulWorkplaceFunc2);
-
     PSUBCLASSEDLISTITEM psli = NULL;
     PFNWP           pfnwpOriginal = NULL;
-
-    XFolder         *somSelf;
     MRESULT         mrc = MRFALSE;
     BOOL            fCallDefault = FALSE;
-
 
     TRY_LOUD(excpt1, NULL)
     {
@@ -2163,7 +2335,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
         if (psli)
         {
             pfnwpOriginal = psli->pfnwpOriginal;
-            somSelf = psli->somSelf;
+            // somSelf = psli->somSelf;
         }
 
         if (pfnwpOriginal)
@@ -2296,15 +2468,17 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
                     mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
 
                     InitMenu(psli,
-                            (ULONG)mp1,
-                            (HWND)mp2);
+                             (ULONG)mp1,
+                             (HWND)mp2);
                 break;
 
                 /*
                  * WM_MENUSELECT:
-                 *      this is SENT to a menu owner by the menu control to
-                 *      determine what to do right after a menu item has been
-                 *      selected. If we return TRUE, the menu will be dismissed.
+                 *      this is SENT to a menu owner by the menu
+                 *      control to determine what to do right after
+                 *      a menu item has been selected. If we return
+                 *      TRUE, the menu will be dismissed.
+                 *
                  *      See MenuSelect() above.
                  */
 
@@ -2326,6 +2500,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
                     // now handle our stuff; this might modify mrc to
                     // have the menu stay on the screen
                     if (MenuSelect(psli, mp1, mp2, &fDismiss))
+                        // processed: return the modified flag instead
                         mrc = (MRESULT)fDismiss;
                 break; }
 
@@ -2420,6 +2595,38 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
                         mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
                 break; }
 
+                /*
+                 * WM_COMMAND:
+                 *
+                 *
+                 */
+
+                case WM_COMMAND:
+                {
+                    USHORT usCommand = SHORT1FROMMP(mp1);
+
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("fdr_fnwpSubclassedFolderFrame WM_COMMAND 0x%lX", usCommand));
+                    #endif
+                    if (usCommand == WPMENUID_DELETE)
+                    {
+                        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                        if (pGlobalSettings->fTrashDelete)
+                        {
+                            fopsStartCnrDelete2Trash(psli->somSelf,        // source folder
+                                                     psli->pSourceObject,  // first source object
+                                                     psli->ulSelection,
+                                                     psli->hwndCnr);
+                            break;
+                        }
+                    }
+
+                    fCallDefault = TRUE;
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("    WM_COMMAND: calling default"));
+                    #endif
+                break; }
+
                 /* *************************
                  *                         *
                  * Miscellaneae:           *
@@ -2428,34 +2635,69 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
 
                 /*
                  * WM_CHAR:
-                 *      this is intercepted to provide for folder hotkeys.
+                 *      this is intercepted to provide folder hotkeys
+                 *      and "Del" key support if "delete into trashcan"
+                 *      is on.
                  */
 
                 case WM_CHAR:
                 {
-                    XFolderData         *somThis = XFolderGetData(somSelf);
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-                    // check whether folder hotkeys are allowed at all
-                    if (    (pGlobalSettings->fEnableFolderHotkeys)
-                        // yes: check folder and global settings
-                         && (   (_bFolderHotkeysInstance == 1)
-                            ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
-                                 && (pGlobalSettings->fFolderHotkeysDefault)
-                                )
-                            )
-                       )
+                    USHORT usFlags    = SHORT1FROMMP(mp1);
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("fdr_fnwpSubclassedFolderFrame WM_CHAR usFlags = 0x%lX", usFlags));
+                    #endif
+                    // whatever happens, we're only interested
+                    // in key-down messages
+                    if ((usFlags & KC_KEYUP) == 0)
                     {
-                        if (fdrProcessFldrHotkey(hwndFrame, mp1, mp2))
+                        XFolderData         *somThis = XFolderGetData(psli->somSelf);
+                        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+                        USHORT usch       = SHORT1FROMMP(mp2);
+                        USHORT usvk       = SHORT2FROMMP(mp2);
+
+                        // check whether "delete to trash can" is on
+                        if (pGlobalSettings->fTrashDelete)
                         {
-                            // was a hotkey:
-                            mrc = (MRESULT)TRUE;
-                            // swallow this key
-                            break;
+                            // yes: intercept "Del" key
+                            if (usFlags & KC_VIRTUALKEY)
+                                if (usvk == VK_DELETE)
+                                {
+                                    WMChar_Delete(psli);
+                                    // swallow this key,
+                                    // do not process default winproc
+                                    break;
+                                }
+                        }
+
+                        // check whether folder hotkeys are allowed at all
+                        if (    (pGlobalSettings->fEnableFolderHotkeys)
+                            // yes: check folder and global settings
+                             && (   (_bFolderHotkeysInstance == 1)
+                                ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
+                                     && (pGlobalSettings->fFolderHotkeysDefault)
+                                    )
+                                )
+                           )
+                        {
+                            if (fdrProcessFldrHotkey(hwndFrame,
+                                                     usFlags,
+                                                     usch,
+                                                     usvk))
+                            {
+                                // was a hotkey:
+                                mrc = (MRESULT)TRUE;
+                                // swallow this key,
+                                // do not process default winproc
+                                break;
+                            }
                         }
                     }
 
-                    mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("    WM_CHAR: calling default"));
+                    #endif
+                    fCallDefault = TRUE;
                 break; }
 
                 /*
@@ -2636,8 +2878,29 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
         {
             // original window procedure not found:
             // that's an error
-            DosBeep(10000, 10);
-            mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
+            fCallDefault = TRUE;
+        }
+
+        if (fCallDefault)
+        {
+            // this has only been set to TRUE for "default" in
+            // the switch statement above; we then call the
+            // default window procedure.
+            // This is either the original folder frame window proc
+            // of the WPS itself or maybe the one of other WPS enhancers
+            // which have subclassed folder windows (ObjectDesktop
+            // and the like).
+            // We do this outside the TRY/CATCH stuff above so that
+            // we don't get blamed for exceptions which we are not
+            // responsible for, which was the case with XFolder < 0.85
+            // (i.e. exceptions in PMWP.DLL or Object Desktop or whatever).
+            if (pfnwpOriginal)
+                mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+            else
+            {
+                _Pmpf(("WARNING fdr_fnwpSubclassedFolderFrame: pfnwpOriginal not found!!"));
+                mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
+            }
         }
     } // end TRY_LOUD
     CATCH(excpt1)
@@ -2645,22 +2908,6 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM
         // exception occured:
         return (0);
     } END_CATCH();
-
-    if (fCallDefault)
-    {
-        // this has only been set to TRUE for "default" in
-        // the switch statement above; we then call the
-        // default window procedure.
-        // This is either the original folder frame window proc
-        // of the WPS itself or maybe the one of other WPS enhancers
-        // which have subclassed folder windows (ObjectDesktop
-        // and the like).
-        // We do this outside the TRY/CATCH stuff above so that
-        // we don't get blamed for exceptions which we are not
-        // responsible for, which was the case with XFolder < 0.85
-        // (i.e. exceptions in PMWP.DLL or Object Desktop or whatever).
-        mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-    }
 
     return (mrc);
 }
@@ -2785,18 +3032,25 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
 
 /*
  *@@ fdrAddToList:
- *      appends the given folder to the given list
- *      of CONTENTMENULISTITEM's (if fInsert == TRUE)
- *      or removes it from that list (if fInsert == FALSE).
+ *      appends or removes the given folder to or from
+ *      the given folder list.
+ *
+ *      A "folder list" is an abstract concept of a list
+ *      of folders which is stored in OS2.INI (in the
+ *      "XWorkplace" section under the pcszIniKey key).
+ *
+ *      If fInsert == TRUE, somSelf is added to the list.
+ *      If fInsert == FALSE, somSelf is removed from the list.
  *
  *      Returns TRUE if the list was changed. In that case,
  *      the list is rewritten to the specified INI key.
  *
  *      The list is protected by a global mutex semaphore,
  *      so this is thread-safe.
+ *
  *      This is used from the XFolder methods for
  *      favorite and quick-open folders. The linked
- *      lists are stored in classes\xfldr.c.
+ *      list roots are stored in classes\xfldr.c.
  *
  *@@added V0.9.0 (99-11-16) [umoeller]
  */
@@ -2822,7 +3076,7 @@ BOOL fdrAddToList(WPFolder *somSelf,
 
     TRY_LOUD(excpt1, NULL)
     {
-        fSemOwned = (DosRequestMutexSem(hmtxFolderLists, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxFolderLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
 
@@ -2877,7 +3131,8 @@ BOOL fdrAddToList(WPFolder *somSelf,
                     {
                         pcmli = pNode->pItemData;
                         sprintf(szFavoriteFolders+strlen(szFavoriteFolders),
-                                "%lX ", _wpQueryHandle(pcmli->pFolder));
+                                "%lX ",
+                                _wpQueryHandle(pcmli->pFolder));
                         pNode = pNode->pNext;
                     }
 
@@ -2936,7 +3191,7 @@ BOOL fdrIsOnList(WPFolder *somSelf,
 
     TRY_LOUD(excpt1, NULL)
     {
-        fSemOwned = (DosRequestMutexSem(hmtxFolderLists, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxFolderLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
             PLISTNODE pNode = lstQueryFirstNode(pllFolders);
@@ -2999,7 +3254,7 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
 
     TRY_LOUD(excpt1, NULL)
     {
-        fSemOwned = (DosRequestMutexSem(hmtxFolderLists, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxFolderLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
             if (pNode == NULL)
@@ -3102,6 +3357,11 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
  *      the func was useless, because the status bar was already
  *      (de)activated.
  *
+ *      The status bar always has the ID 0x9001 so you can get the
+ *      status bar HWND later by calling
+ +          WinQueryWindow(hwndFrame, 0x9001)
+ *      If this returns NULLHANDLE, then there is no status bar.
+ *
  *      Note that this does _not_ change the folder's visibility
  *      settings, but only shows or hides the status bar "factually"
  *      by reformatting the folder frame's PM windows.
@@ -3139,10 +3399,9 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
         {
             // show status bar
 
-            if (psli2->hwndStatusBar) { // already activated: update only
+            if (psli2->hwndStatusBar) // already activated: update only
                 WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
                 // and quit
-            }
             // else create status bar as a static control
             // (which will be subclassed below)
             else if (psli2->hwndStatusBar
@@ -3773,25 +4032,11 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
 
             case WM_BUTTON1DBLCLK:
             {
-
-                /* TRY_LOUD(excpt1) {
-                    CRASH;
-                }
-                CATCH(excpt1) {
-                } END_CATCH(); */
-
-                #ifdef DEBUG_RESTOREDATA
-                    XFolderData     *somThis = XFolderGetData(psbd->somSelf);
-                    _Pmpf(("Dump for %s", _wpQueryTitle(psbd->somSelf) ));
-                    _Pmpf(("FDRLONGARRAY (%d bytes): ", _cbFldrLongArray));
-                    cmnDumpMemoryBlock((PBYTE)_pFldrLongArray, _cbFldrLongArray, 3);
-                #else
-                    WinPostMsg(psbd->psli->hwndFrame,
-                               WM_COMMAND,
-                               (MPARAM)WPMENUID_PROPERTIES,
-                               MPFROM2SHORT(CMDSRC_MENU,
-                                       FALSE) );     // results from keyboard operation
-                #endif
+                WinPostMsg(psbd->psli->hwndFrame,
+                           WM_COMMAND,
+                           (MPARAM)WPMENUID_PROPERTIES,
+                           MPFROM2SHORT(CMDSRC_MENU,
+                                   FALSE) );     // results from keyboard operation
             break; }
 
             /*
@@ -3858,7 +4103,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
 
 MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+    // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     // ULONG       *pulWorkplaceFunc2 = &(pKernelGlobals->ulWorkplaceFunc2);
     // ULONG       ulOldWorkplaceFunc2 = *pulWorkplaceFunc2;
     MRESULT     mrc = 0;
@@ -3879,12 +4124,14 @@ MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM
                     _Pmpf(("WM_ADJUSTWINDOWPOS"));
                 #endif
 
-                if ((pswp->fl & (SWP_MOVE)) == (SWP_MOVE)) {
+                if ((pswp->fl & (SWP_MOVE)) == (SWP_MOVE))
+                {
                     #ifdef DEBUG_MENUS
                         _Pmpf(("  SWP_MOVE set"));
                     #endif
 
-                    if (!fFldrContentMenuMoved) {
+                    if (!fFldrContentMenuMoved)
+                    {
                         #ifdef DEBUG_MENUS
                             _Pmpf(("    Checking bounds"));
                         #endif
@@ -4008,12 +4255,13 @@ MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM
  *
  *@@changed V0.9.0 [umoeller]: added drop-down box with history
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.1 (2000-02-01) [umoeller]: WinDestroyWindow was never called. Fixed.
  */
 
 MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
-    BOOL    fWriteBack = FALSE;
+    BOOL    fWriteAndClose = FALSE;
 
     switch (msg)
     {
@@ -4194,13 +4442,16 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     }
                 break; }
 
+                case DID_CANCEL:
+                    WinPostMsg(hwndDlg, WM_CLOSE, 0, 0);
+                break;
+
                 /*
                  * default:
-                 *      this includes "Close"
+                 *      this includes "Help"
                  */
 
                 default:
-                    fWriteBack = TRUE;
                     mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
                 break;
             }
@@ -4212,15 +4463,14 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
          */
 
         case WM_CLOSE:
-            fWriteBack = TRUE;
-            mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
+            fWriteAndClose = TRUE;
         break;
 
         default:
             mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
     }
 
-    if (fWriteBack)
+    if (fWriteAndClose)
     {
         // dialog closing:
         // write drop-down entries back to OS2.INI (V0.9.0)
@@ -4252,6 +4502,8 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                 INIKEY_LAST10SELECTSOME, // "SelectSome"
                                 pszToSave,
                                 cbToSave);
+
+        WinDestroyWindow(hwndDlg);
     }
 
     return (mrc);
@@ -4379,25 +4631,25 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        /* winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ADDINTERNALS,
+        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ADDINTERNALS,
                 pGlobalSettings->ShowInternals); */
-        /* winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_REPLICONS,
+        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_REPLICONS,
                 pGlobalSettings->ReplIcons); */
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FULLPATH,
-                pGlobalSettings->FullPath);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_KEEPTITLE,
-                pGlobalSettings->KeepTitle);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
+                              pGlobalSettings->FullPath);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_KEEPTITLE,
+                              pGlobalSettings->KeepTitle);
         // maximum path chars spin button
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_MAXPATHCHARS,
-                11, 200,        // limits
-                pGlobalSettings->MaxPathChars);  // data
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_TREEVIEWAUTOSCROLL,
-                pGlobalSettings->TreeViewAutoScroll);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_MAXPATHCHARS,
+                               11, 200,        // limits
+                               pGlobalSettings->MaxPathChars);  // data
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
+                              pGlobalSettings->TreeViewAutoScroll);
     }
 
     if (flFlags & CBI_ENABLE)
     {
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_TREEVIEWAUTOSCROLL,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                 (    (pGlobalSettings->NoWorkerThread == FALSE)
                   && (pGlobalSettings->NoSubclassing == FALSE)
                 ));
@@ -4534,11 +4786,20 @@ VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SNAPTOGRID, pGlobalSettings->fAddSnapToGridDefault);
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_GRID_X, 0, 500, pGlobalSettings->GridX);
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_GRID_Y, 0, 500, pGlobalSettings->GridY);
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_GRID_CX, 1, 500, pGlobalSettings->GridCX);
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_GRID_CY, 1, 500, pGlobalSettings->GridCY);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
+                              pGlobalSettings->fAddSnapToGridDefault);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_X,
+                               0, 500,
+                               pGlobalSettings->GridX);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_Y,
+                               0, 500,
+                               pGlobalSettings->GridY);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_CX,
+                               1, 500,
+                               pGlobalSettings->GridCX);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_CY,
+                               1, 500,
+                               pGlobalSettings->GridCY);
     }
 }
 
@@ -4658,25 +4919,25 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FAVORITEFOLDER,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FAVORITEFOLDER,
                 _xwpIsFavoriteFolder(pcnbp->somSelf));
 
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_QUICKOPEN,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_QUICKOPEN,
                 _xwpQueryQuickOpen(pcnbp->somSelf));
 
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SNAPTOGRID,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
                (MPARAM)( (_bSnapToGridInstance == 2)
                         ? pGlobalSettings->fAddSnapToGridDefault
                         : _bSnapToGridInstance ));
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FULLPATH,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
                (MPARAM)( (_bFullPathInstance == 2)
                         ? pGlobalSettings->FullPath
                         : _bFullPathInstance ));
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ACCELERATORS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                (MPARAM)( (_bFolderHotkeysInstance == 2)
                         ? pGlobalSettings->fFolderHotkeysDefault
                         : _bFolderHotkeysInstance ));
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ENABLESTATUSBAR,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
                (MPARAM)( ( (_bStatusBarInstance == STATUSBAR_DEFAULT)
                                     ? pGlobalSettings->fDefaultStatusBarVisibility
                                     : _bStatusBarInstance )
@@ -4688,17 +4949,17 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         // disable items
-        WinEnableControl(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndDlgPage,
                          ID_XSDI_ACCELERATORS,
                          (    !(pGlobalSettings->NoSubclassing)
                            && (pGlobalSettings->fEnableFolderHotkeys)
                          ));
 
-        WinEnableControl(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndDlgPage,
                          ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
                          (pGlobalSettings->fEnableSnap2Grid));
 
-        WinEnableControl(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndDlgPage,
                          ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
                          (   (pcnbp->somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
@@ -4814,7 +5075,7 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
 {
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND        hwndListbox = WinWindowFromID(pcnbp->hwndPage,
+    HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
                     ID_XSDI_SORTLISTBOX);
     XFolderData *somThis = NULL;
 
@@ -4838,7 +5099,7 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
             // hide the "Enable extended sort" checkbox, which is
             // only visible in the "Workplace Shell" object
-            // WinShowWindow(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_REPLACESORT), FALSE);
+            // WinShowWindow(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_REPLACESORT), FALSE);
                 // removed (V0.9.0)
         }
     }
@@ -4862,7 +5123,7 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // "folder" mode:
         if (flFlags & CBI_SET)
         {
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ALWAYSSORT,
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ALWAYSSORT,
                                   ALWAYS_SORT);
             WinSendMsg(hwndListbox,
                        LM_SELECTITEM,
@@ -4875,7 +5136,7 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // "global" mode:
         if (flFlags & CBI_SET)
         {
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ALWAYSSORT,
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ALWAYSSORT,
                                   pGlobalSettings->AlwaysSort);
 
             WinSendMsg(hwndListbox,
@@ -4896,6 +5157,7 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
  * fdrSortItemChanged:
  *      "Sort" page notebook callback function (notebook.c).
  *      Reacts to changes of any of the dialog controls.
+ *
  *      The "Sort" callbacks are used both for the folder settings notebook page
  *      AND the respective "Sort" page in the "Workplace Shell" object, so we
  *      need to keep instance data and the XFolder GLobal Settings apart.
@@ -4912,12 +5174,12 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     BOOL fUpdate = TRUE;
 
-    switch (usItemID) {
-
+    switch (usItemID)
+    {
         case ID_XSDI_ALWAYSSORT:
         case ID_XSDI_SORTLISTBOX:
         {
-            HWND        hwndListbox = WinWindowFromID(pcnbp->hwndPage,
+            HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
                                                       ID_XSDI_SORTLISTBOX);
 
             if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
@@ -4931,7 +5193,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                     (MPARAM)LIT_CURSOR,
                                                     MPNULL)),
                             // AlwaysSort:
-                                (USHORT)(winhIsDlgItemChecked(pcnbp->hwndPage,
+                                (USHORT)(winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                               ID_XSDI_ALWAYSSORT))
                             );
             }
@@ -4941,14 +5203,14 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 BOOL bTemp;
                 /* pGlobalSettings->ReplaceSort =
-                    winhIsDlgItemChecked(pcnbp->hwndPage, ID_XSDI_REPLACESORT); */
+                    winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_REPLACESORT); */
                     // removed (V0.9.0)
                 pGlobalSettings->DefaultSort =
                                       (BYTE)WinSendMsg(hwndListbox,
                                           LM_QUERYSELECTION,
                                           (MPARAM)LIT_CURSOR,
                                           MPNULL);
-                bTemp = winhIsDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ALWAYSSORT);
+                bTemp = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ALWAYSSORT);
                 if (bTemp)
                 {
                     USHORT usDefaultSort, usAlwaysSort;
@@ -4957,7 +5219,10 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (usAlwaysSort != 0)
                     {
                         // issue warning that this might also sort the Desktop
-                        if (cmnMessageBoxMsg(pcnbp->hwndPage, 116, 133, MB_YESNO) == MBID_YES)
+                        if (cmnMessageBoxMsg(pcnbp->hwndFrame,
+                                             116, 133,
+                                             MB_YESNO)
+                                       == MBID_YES)
                             _xwpSetFldrSort(_wpclsQueryActiveDesktop(_WPDesktop),
                                             usDefaultSort, 0);
                     }
@@ -5017,17 +5282,20 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
         {
+            // instance:
             _wpSaveDeferred(pcnbp->somSelf);
             // update our folder only
-            _xwpForEachOpenView(pcnbp->somSelf, 0,
-                    &fdrUpdateFolderSorts);
+            fdrForEachOpenInstanceView(pcnbp->somSelf,
+                                       0,
+                                       &fdrUpdateFolderSorts);
         }
         else
         {
+            // global:
             cmnStoreGlobalSettings();
             // update all open folders
-            _xwpclsForEachOpenView(_XFolder, 0,
-                    &fdrUpdateFolderSorts);
+            fdrForEachOpenGlobalView(0,
+                                     &fdrUpdateFolderSorts);
         }
     }
     return ((MPARAM)-1);
@@ -5059,9 +5327,11 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_SHOWSTARTUPPROGRESS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_SHOWSTARTUPPROGRESS,
                               pGlobalSettings->ShowStartupProgress);
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_SDDI_STARTUPDELAY, 500, 10000, pGlobalSettings->ulStartupDelay);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_SDDI_STARTUPDELAY,
+                               500, 10000,
+                               pGlobalSettings->ulStartupDelay);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -5097,7 +5367,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_SDDI_STARTUPDELAY:
-            pGlobalSettings->ulStartupDelay = winhAdjustDlgItemSpinData(pcnbp->hwndPage,
+            pGlobalSettings->ulStartupDelay = winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
                                                                         usItemID,
                                                                         250, usNotifyCode);
         break;

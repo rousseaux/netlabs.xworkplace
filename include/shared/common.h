@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -117,14 +117,8 @@
     // supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
     #define INIKEY_TRASHCANDRIVES   "TrashCan::Drives"
 
-    /*
-     * XWorkplace Hook:
-     *
-     */
-
-    #define INIAPP_XWPHOOK          "XWorkplace:Hook"   // added V0.9.0
-    #define INIKEY_HOOK_HOTKEYS     "Hotkeys"           // added V0.9.0
-    #define INIKEY_HOOK_CONFIG      "Config"            // added V0.9.0
+    // window pos of file operations status window V0.9.1 (2000-01-30) [umoeller]
+    #define INIKEY_FILEOPSPOS       "WndPosFileOpsStatus"
 
     /*
      * file type hierarchies:
@@ -182,7 +176,7 @@
     #define WNDCLASS_FILEOBJECT           "XWPFileObject"
 
     #define WNDCLASS_THREAD1OBJECT        "XWPThread1Object"
-    #define WNDCLASS_SUPPLOBJECT          "XWPFolderSupplObjWindow"
+    #define WNDCLASS_SUPPLOBJECT          "XWPSupplFolderObject"
 
     /********************************************************************
      *                                                                  *
@@ -229,25 +223,26 @@
     #define ID_XSH_SETTINGS_TRASHCAN         36     // V0.9.0: XWPTrashCan (two pages)
     #define ID_XSH_SETTINGS_XC_INFO          38     // V0.9.0: XWPSetup "Status" page
     #define ID_XSH_SETTINGS_XC_FEATURES      39     // V0.9.0: XWPSetup "Features" page
-    #define ID_XSH_SETTINGS_FILEPAGE         40     // V0.9.0: file-system objects "File" page replacment
-    #define ID_XSH_SETTINGS_DISKDETAILS      41     // V0.9.0: disk "Details" replacement
-    #define ID_XSH_SETTINGS_DTP_STARTUP      42     // V0.9.0: disk "Details" replacement
-    #define ID_XSH_SETTINGS_DTP_ARCHIVES     43     // V0.9.0: disk "Details" replacement
-    #define ID_XSH_SETTINGS_XFLDSTARTUP      44     // V0.9.0: startup folder settings page
-    #define ID_XSH_SETTINGS_PGMFILE_MODULE   45     // V0.9.0: progfile "Module" page
-    #define ID_XSH_SETTINGS_CLASSLIST        46     // V0.9.0: XWPClassList settings page
-    #define ID_XSH_XFLDWPS                   47     // V0.9.0: default help for XFldWPS
-    #define ID_XSH_XFLDSYSTEM                48     // V0.9.0: default help for XFldSystem
-    #define ID_XSH_XWPSETUP                  49     // V0.9.0: default help for XWPSetup
-    #define ID_XSH_SETTINGS_OBJECTS          50     // V0.9.0: XWPSetup "Objects" page
-    #define ID_XSH_SETTINGS_DRIVERS          51     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_DRIVER_HPFS               52     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_DRIVER_CDFS               53     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_DRIVER_S506               54     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_KEYB_OBJHOTKEYS           55     // V0.9.0: XWPKeyboard "Object hotkeys" page
-    #define ID_XSH_MOUSEHOOK                 56     // V0.9.0: XWPMouse "Mouse hook" page
-    #define ID_XSH_MOUSEMAPPINGS2            57     // V0.9.1: XWPMouse "Mappings" page 2
-    #define ID_XSH_KEYB_EXTMAPPINGS          58     // V0.9.1: XWPMouse "Mappings" page 2
+    #define ID_XSH_SETTINGS_FILEPAGE1        40     // V0.9.0: file-system objects "File" page replacment
+    #define ID_XSH_SETTINGS_FILEPAGE2        41     // ### V0.9.1 (2000-01-22) [umoeller]
+    #define ID_XSH_SETTINGS_DISKDETAILS      42     // V0.9.0: disk "Details" replacement
+    #define ID_XSH_SETTINGS_DTP_STARTUP      43     // V0.9.0: disk "Details" replacement
+    #define ID_XSH_SETTINGS_DTP_ARCHIVES     44     // V0.9.0: disk "Details" replacement
+    #define ID_XSH_SETTINGS_XFLDSTARTUP      45     // V0.9.0: startup folder settings page
+    #define ID_XSH_SETTINGS_PGMFILE_MODULE   46     // V0.9.0: progfile "Module" page
+    #define ID_XSH_SETTINGS_CLASSLIST        47     // V0.9.0: XWPClassList settings page
+    #define ID_XSH_XFLDWPS                   48     // V0.9.0: default help for XFldWPS
+    #define ID_XSH_XFLDSYSTEM                49     // V0.9.0: default help for XFldSystem
+    #define ID_XSH_XWPSETUP                  50     // V0.9.0: default help for XWPSetup
+    #define ID_XSH_SETTINGS_OBJECTS          51     // V0.9.0: XWPSetup "Objects" page
+    #define ID_XSH_SETTINGS_DRIVERS          52     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_DRIVER_HPFS               53     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_DRIVER_CDFS               54     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_DRIVER_S506               55     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_KEYB_OBJHOTKEYS           56     // V0.9.0: XWPKeyboard "Object hotkeys" page
+    #define ID_XSH_MOUSEHOOK                 57     // V0.9.0: XWPMouse "Mouse hook" page
+    #define ID_XSH_MOUSEMAPPINGS2            58     // V0.9.1: XWPMouse "Mappings" page 2
+    #define ID_XSH_KEYB_EXTMAPPINGS          59     // V0.9.1: XWPMouse "Mappings" page 2
 
     // "subpanels" for pages with context-sensitive help
     #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
@@ -259,7 +254,7 @@
     #define ID_XSH_SETTINGS_FILEOPS_SUB      142+19
 
     // help panel IDs for various dlg boxes
-    #define ID_XFH_BORED            73
+    #define ID_XFH_BORED            74
     #define ID_XFH_NOCONFIG         (ID_XFH_BORED+1)
     #define ID_XFH_NOOBJECT         (ID_XFH_BORED+2)
     #define ID_XFH_LIMITREACHED     (ID_XFH_BORED+3)
@@ -294,18 +289,17 @@
 
     // Supplementary object window msgs (for each
     // subclassed folder frame, xfldr.c)
-    #define SOM_ACTIVATESTATUSBAR       WM_USER+1200
+    #define SOM_ACTIVATESTATUSBAR       (WM_USER+1200)
 
     // common dlg msgs for settings notebook dlg funcs
-    #define WM_SETTINGS2DLG         WM_USER+200    // set controls
-    #define WM_DLG2SETTINGS         WM_USER+201    // read controls
-    #define WM_ENABLEITEMS          WM_USER+202    // enable/disable controls
-    #define WM_DEFAULT              WM_USER+203    // set default values
-    #define WM_OPTIMIZE             WM_USER+204    // propose better values (CONFIG.SYS)
+    #define XM_SETTINGS2DLG         (WM_USER+200)    // set controls
+    #define XM_DLG2SETTINGS         (WM_USER+201)    // read controls
+    #define XM_ENABLEITEMS          (WM_USER+202)    // enable/disable controls
 
     // misc
-    #define WM_UPDATE               WM_USER+1006 // in dlgs
-    #define WM_SETLONGTEXT          WM_USER+1007 // for cmnMessageBox
+    #define XM_UPDATE               (WM_USER+3006) // in dlgs
+    #define XM_SETLONGTEXT          (WM_USER+3007) // for cmnMessageBox
+    #define XM_CRASH                (WM_USER+3008) // test exception handlers
 
     // common value for indicating that a Global Setting
     // is to be used instead of an instance's one
@@ -339,7 +333,7 @@
 
     // default style used for XWorkplace tooltip controls
     #ifdef COMCTL_HEADER_INCLUDED
-        #define XWP_TOOLTIP_STYLE (TTS_SHADOW | TTS_ROUNDED | TTS_ALWAYSTIP)
+        #define XWP_TOOLTIP_STYLE (TTS_SHADOW /* | TTS_ROUNDED */ | TTF_SHYMOUSE | TTS_ALWAYSTIP)
     #endif
 
     /********************************************************************
@@ -401,7 +395,8 @@
     #define SP_STARTUPFOLDER        50      // new with V0.9.0
 
     // 7) "File" page in XFldDataFile/XFolder
-    #define SP_FILE                 60      // new with V0.9.0
+    #define SP_FILE1                60      // new with V0.9.0
+    #define SP_FILE2                61      // new with V0.9.1 (2000-01-22) [umoeller]
 
     // 8) "Sounds" page in XWPSound
     #define SP_SOUNDS               70
@@ -717,7 +712,7 @@
                         // XWPSetup: enable "animated mouse pointers" page in XWPMouse
 
         BYTE        fNumLockStartup;
-                        // XWPSetup: set NumLock to ON on WPS startup
+                        // XFldDesktop "Startup": set NumLock to ON on WPS startup
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -895,13 +890,19 @@
                 pszTrashCan,
                 pszTrashObject,
 
-                pszTrashSettings,
+                pszTrashSettingsPage,
+                pszTrashDrivesPage,
 
                 // trash can Details view columns
                 pszOrigFolder,
                 pszDelDate,
                 pszDelTime,
                 pszSize,
+                pszOrigClass,
+
+                // trash can status bar strings; V0.9.1 (2000-02-04) [umoeller]
+                pszStbPopulating,
+                pszStbObjCount,
 
                 // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
                 pszHotkeyTitle,
@@ -990,41 +991,6 @@
         } CONTENTMENULISTITEM, *PCONTENTMENULISTITEM;
     #endif
 
-    /********************************************************************
-     *                                                                  *
-     *   XFolder debugging helpers                                      *
-     *                                                                  *
-     ********************************************************************/
-
-    /*
-     *@@ cmnDumpMemoryBlock:
-     *      if _PMPRINTF_ has been #define'd in setup.h,
-     *      this will dump a block of memory to the PMPRINTF
-     *      output window. Useful for debugging internal,
-     *      unknown memory structures.
-     *      If _PMPRINTF_ has been NOT #define'd in setup.h,
-     *      no code will be produced. :-)
-     */
-
-    #ifdef _PMPRINTF_
-    void cmnDumpMemoryBlock(PBYTE pb,
-                            ULONG ulSize,
-                            ULONG ulIndent);
-    #else
-        // _PMPRINTF not #define'd: do nothing
-        #define cmnDumpMemoryBlock(pb, ulSize, ulIndent)
-    #endif
-
-    /* ******************************************************************
-     *                                                                  *
-     *   Heap debugging window                                          *
-     *                                                                  *
-     ********************************************************************/
-
-    MRESULT EXPENTRY cmn_fnwpMemDebug(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2);
-
-    VOID cmnCreateMemDebugWindow(VOID);
-
     /* ******************************************************************
      *                                                                  *
      *   Main module handling (XFLDR.DLL)                               *
@@ -1044,6 +1010,8 @@
     BOOL cmnLock(ULONG ulTimeout);
 
     VOID cmnUnlock(VOID);
+
+    ULONG cmnQueryLock(VOID);
 
     VOID APIENTRY cmnOnKillDuringLock(VOID);
 
@@ -1112,6 +1080,8 @@
      *                                                                  *
      ********************************************************************/
 
+    VOID cmnShowProductInfo(ULONG ulSound);
+
     const char* cmnQueryDefaultFont(VOID);
 
     VOID cmnSetControlsFont(HWND hwnd,
@@ -1140,6 +1110,12 @@
                               ULONG ulTable,
                               ULONG ulMessage,
                               ULONG flStyle);
+
+    ULONG cmnDosErrorMsgBox(HWND hwndOwner,
+                            CHAR cDrive,
+                            PSZ pszTitle,
+                            APIRET arc,
+                            ULONG ulFlags);
 
     VOID cmnSetHelpPanel(ULONG ulHelpPanel);
 

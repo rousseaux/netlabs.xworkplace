@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -276,7 +276,6 @@ SOM_Scope void  SOMLINK xfpgmf_wpObjectReady(XFldProgramFile *somSelf,
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpObjectReady");
 
-    // _Pmpf(("  %s: wpObjectReady", _wpQueryTitle(somSelf) ));
     // reset our app type flags, because when program files
     // are _copied_, wpSetProgIcon gets called one time too early
     // (between wpInitData and wpObjectReady; at this point,
@@ -292,7 +291,6 @@ SOM_Scope void  SOMLINK xfpgmf_wpObjectReady(XFldProgramFile *somSelf,
     XFldProgramFile_parent_WPProgramFile_wpObjectReady(somSelf,
                                                        ulCode,
                                                        refObject);
-    // _Pmpf(("  End of wpObjectReady"));
 }
 
 /*
@@ -584,7 +582,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
                                                         HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramSessionPage");
 
     if (pGlobalSettings->fReplaceFilePage)

@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -115,45 +115,32 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
 
         mbrc = MBID_OK;
 
-        WinSetPointer(HWND_DESKTOP, hptrOld);
         pRootFolder = wpshQueryRootFolder(somSelf,
                                           &arc);    // out: DOS error code
 
         if (pRootFolder == NULL)
         {
             // drive not ready:
-            CHAR    szError[1000],
-                    szTitle[400];
-            ULONG   ulLen = 0;
-            APIRET  arc2 = NO_ERROR;
+            CHAR    szTitle[400];
 
-            // get error message for APIRET
-            CHAR    szDrive[3] = "?:";
-            PSZ     pszTable = szDrive;
-            szDrive[0] = _wpQueryLogicalDrive(somSelf) + 'A' - 1;
+            // reset mouse pointer
+            WinSetPointer(HWND_DESKTOP, hptrOld);
 
-            arc2 = DosGetMessage(NULL, 0, // &pszTable, 1,
-                                 szError, sizeof(szError),
-                                 arc,
-                                 "OSO001.MSG",        // default OS/2 message file
-                                 &ulLen);
-            szError[ulLen] = 0;
-
-            if (arc2 != NO_ERROR)
-                sprintf(szError,
-                        "%s: DosGetMessage returned error %d",
-                        __FUNCTION__, arc2);
-
-            cmnGetMessage(NULL, 0, szTitle, sizeof(szTitle), 104);
-                            // "XFolder: Error"
+            cmnGetMessage(NULL, 0,
+                          szTitle, sizeof(szTitle),
+                          104);  // "XFolder: Error"
             sprintf(szTitle + strlen(szTitle),
                     " (\"%s\")", _wpQueryTitle(somSelf));
                             // append drive name in brackets
-            mbrc = cmnMessageBox(HWND_DESKTOP,
-                                 szTitle,
-                                 szError,
-                                 MB_RETRYCANCEL);
+
+            mbrc = cmnDosErrorMsgBox(HWND_DESKTOP,
+                                     _wpQueryLogicalDrive(somSelf) + 'A' - 1,
+                                     szTitle,
+                                     arc,
+                                     MB_RETRYCANCEL);
         }
+
+        WinSetPointer(HWND_DESKTOP, hptrOld);
     } while (mbrc == MBID_RETRY);
 
     return (pRootFolder);
@@ -183,14 +170,14 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     {
         // prepare chart control
         CHARTSTYLE  cs;
-        HWND        hwndChart = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_DISK_CHART);
+        HWND        hwndChart = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DISK_CHART);
         ctlChartFromStatic(hwndChart);
         cs.ulStyle = CHS_3D_DARKEN | CHS_DESCRIPTIONS_3D;
         cs.ulThickness = 20;
         WinSendMsg(hwndChart, WM_SETCHARTSTYLE, &cs, NULL);
 
         // set entry-field limit (drive labels can only have 11 chars)
-        winhSetEntryFieldLimit(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_DISK_LABEL),
+        winhSetEntryFieldLimit(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DISK_LABEL),
                                11);
     }
 
@@ -210,7 +197,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             if (doshQueryDiskLabel(ulLogicalDrive, &szVolumeLabel[0])
                     == NO_ERROR)
                 // label entry field
-                WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_DISK_LABEL,
+                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DISK_LABEL,
                                   szVolumeLabel);
 
             // file-system type (HPFS, ...)
@@ -219,7 +206,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                     sizeof(szTemp))
                         == NO_ERROR)
             {
-                WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_DISK_FILESYSTEM,
+                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DISK_FILESYSTEM,
                                   szTemp);
             }
 
@@ -240,14 +227,14 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                           };
 
                 // bytes per sector
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_SECTORSIZE,
                                   strhThousandsULong(szTemp,
                                                      fsa.cbSector,
                                                      cThousands));
 
                 // total size
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_TOTAL_SECTORS,
                                   strhThousandsULong(szTemp,
                                                      fsa.cSectorUnit * fsa.cUnit,
@@ -255,14 +242,14 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 dTotal = (double)fsa.cbSector
                               * fsa.cSectorUnit
                               * fsa.cUnit;
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_TOTAL_BYTES,
                                   strhThousandsDouble(szTemp,
                                                       dTotal,
                                                       cThousands));
 
                 // free space
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_AVAILABLE_SECTORS,
                                   strhThousandsULong(szTemp,
                                                      fsa.cSectorUnit * fsa.cUnitAvail,
@@ -270,21 +257,21 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 dAvailable = (double)fsa.cbSector
                                   * fsa.cSectorUnit
                                   * fsa.cUnitAvail,
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_AVAILABLE_BYTES,
                                   strhThousandsDouble(szTemp,
                                                       dAvailable,
                                                       cThousands));
 
                 // allocated space
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_ALLOCATED_SECTORS,
                                   strhThousandsULong(szTemp,
                                                      fsa.cSectorUnit
                                                         * (fsa.cUnit - fsa.cUnitAvail),
                                                      cThousands));
                 dAllocated = dTotal - dAvailable;  // allocated
-                WinSetDlgItemText(pcnbp->hwndPage,
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_ALLOCATED_BYTES,
                                   strhThousandsDouble(szTemp,
                                                       dAllocated,
@@ -313,7 +300,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 apszDescriptions[1] = szAvailable;
                 pcd.papszDescriptions = &apszDescriptions[0];
 
-                WinSendMsg(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_DISK_CHART),
+                WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DISK_CHART),
                            WM_SETCHARTDATA,
                            &pcd,
                            NULL);
@@ -347,7 +334,7 @@ MRESULT dskDetailsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_DISK_LABEL:
             if (usNotifyCode == EN_KILLFOCUS)
             {
-                HWND hwndEF = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_DISK_LABEL);
+                HWND hwndEF = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DISK_LABEL);
                 if (winhHasEntryFieldChanged(hwndEF))
                 {
                     PSZ pszNewLabel = winhQueryWindowText(hwndEF);

@@ -448,6 +448,9 @@ CATEGORY "System extensions"
         DRIVER ( "DEVICE=", "VWCAT.SYS",
                  "WatchCat process killer VDD",
                  0)
+        DRIVER ( "DEVICE=", "THESEUS5.SYS",
+                 "Theseus system analysis driver",
+                 0)
     }
 
 

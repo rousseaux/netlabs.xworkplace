@@ -40,7 +40,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -129,6 +129,8 @@ HMTX            hmtxNotebookLists = NULLHANDLE;
 
 /*
  *@@ ntbInitPage:
+ *      implementation for WM_INITDLG in
+ *      ntb_fnwpPageCommon.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  */
@@ -143,24 +145,24 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
     #endif
 
     // store the dlg hwnd in notebook structure
-    pcnbp->hwndPage = hwndDlg;
+    pcnbp->hwndDlgPage = hwndDlg;
 
     // store the WM_INITDLG parameter in the
     // window words; the CREATENOTEBOOKPAGE
     // structure is passed to us by ntbInsertPage
     // as a creation parameter in mp2
-    WinSetWindowULong(pcnbp->hwndPage, QWL_USER, (ULONG)pcnbp);
+    WinSetWindowULong(pcnbp->hwndDlgPage, QWL_USER, (ULONG)pcnbp);
     pcnbp->fPageInitialized = FALSE;
 
     // make Warp 4 notebook buttons and move controls
-    winhAssertWarp4Notebook(pcnbp->hwndPage,
+    winhAssertWarp4Notebook(pcnbp->hwndDlgPage,
                             100,         // ID threshold
                             14);
 
     // set controls font to 8.Helv, if global settings
     // want this (paranoia page, V0.9.0)
     if (pGlobalSettings->fUse8HelvFont)
-        winhSetControlsFont(pcnbp->hwndPage,
+        winhSetControlsFont(pcnbp->hwndDlgPage,
                             0,
                             8000,
                             "8.Helv");
@@ -191,6 +193,8 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
 /*
  *@@ ntbDestroyPage:
+ *      implementation for WM_DESTROY in
+ *      ntb_fnwpPageCommon.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  */
@@ -214,8 +218,8 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("  stopping timer"));
             #endif
-            WinStopTimer(WinQueryAnchorBlock(pcnbp->hwndPage),
-                         pcnbp->hwndPage,
+            WinStopTimer(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                         pcnbp->hwndDlgPage,
                          1);
         }
 
@@ -235,21 +239,23 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
         #endif
         if (pcnbp->pnbli)
         {
-            *pfSemOwned = (DosRequestMutexSem(hmtxNotebookLists,
+            *pfSemOwned = (WinRequestMutexSem(hmtxNotebookLists,
                                             4000)
                                  == NO_ERROR);
             if (*pfSemOwned)
             {
                 if (!lstRemoveItem(pllOpenPages,
                                    pcnbp->pnbli))
-                    DebugBox("XWorkplace: Error in ntb_fnwpPageCommon",
+                    DebugBox(HWND_DESKTOP,
+                             "XWorkplace: Error in ntb_fnwpPageCommon",
                              "WM_DESTROY: lstRemoveItem returned FALSE.");
                         // this free's the pnbli
                 DosReleaseMutexSem(hmtxNotebookLists);
                 *pfSemOwned = FALSE;
             }
             else
-                DebugBox("XWorkplace: Error in ntb_fnwpPageCommon",
+                DebugBox(HWND_DESKTOP,
+                         "XWorkplace: Error in ntb_fnwpPageCommon",
                          "WM_DESTROY: Error requesting mutex.");
         }
 
@@ -266,7 +272,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@ ntbPageWmControl:
  *      WM_CONTROL handler called from ntb_fnwpPageCommon.
  *      hwndDlg is not passed because this can be retrieved
- *      thru pcnbp->hwndPage.
+ *      thru pcnbp->hwndDlgPage.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  */
@@ -296,7 +302,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
     {
         ULONG   ulExtra = -1;
 
-        pcnbp->hwndControl = WinWindowFromID(pcnbp->hwndPage, usItemID);
+        pcnbp->hwndControl = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
 
         // we identify the control by querying its class.
         // The standard PM classes have those wicked "#xxxx" classnames;
@@ -484,15 +490,15 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                 case CN_EXPANDTREE:
                                 {
                                     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                                    mrc = WinDefDlgProc(pcnbp->hwndPage, msg, mp1, mp2);
+                                    mrc = WinDefDlgProc(pcnbp->hwndDlgPage, msg, mp1, mp2);
                                     if (pGlobalSettings->TreeViewAutoScroll)
                                     {
                                         // store record for WM_TIMER later
                                         pcnbp->preccExpanded = (PRECORDCORE)mp2;
                                         // and container also
                                         pcnbp->hwndExpandedCnr = pcnbp->hwndControl;
-                                        WinStartTimer(WinQueryAnchorBlock(pcnbp->hwndPage),
-                                                      pcnbp->hwndPage,
+                                        WinStartTimer(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                                                      pcnbp->hwndDlgPage,
                                                       999,      // ID
                                                       100);
                                     }
@@ -962,7 +968,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
     TRY_LOUD(excpt1, NULL)
     {
         // store new page in linked list
-        fSemOwned = (DosRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
             PLISTNODE   pNode = lstQueryFirstNode(pllSubclNotebooks);
@@ -1232,6 +1238,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
+ *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
  */
 
 ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
@@ -1269,6 +1276,9 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
         if (ulrc)
         {
             // successfully inserted:
+            HWND        hwndDesktop = NULLHANDLE,
+                        hwndCurrent = pcnbp->hwndNotebook;
+
             // create NOTEBOOKPAGELISTITEM to be stored in list
             PNOTEBOOKPAGELISTITEM pnbliNew = malloc(sizeof(NOTEBOOKPAGELISTITEM));
             pnbliNew->pcnbp = pcnbp;
@@ -1279,6 +1289,20 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
 
             // store PM notebook page ID
             pcnbp->ulNotebookPageID = ulrc;
+
+            // get frame to which this window belongs
+            hwndDesktop = WinQueryDesktopWindow(WinQueryAnchorBlock(HWND_DESKTOP),
+                                                NULLHANDLE);
+
+            // find frame window handle of "Workplace Shell" window
+            while ( (hwndCurrent) && (hwndCurrent != hwndDesktop))
+            {
+                pcnbp->hwndFrame = hwndCurrent;
+                hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
+            }
+
+            if (!hwndCurrent)
+                pcnbp->hwndFrame = NULLHANDLE;
 
             // on the very first call: create list of inserted pages
             if (hmtxNotebookLists == NULLHANDLE)
@@ -1297,7 +1321,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
             }
 
             // store new page in linked list
-            fSemOwned = (DosRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
+            fSemOwned = (WinRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
             if (fSemOwned)
             {
                 PLISTNODE   pNode;
@@ -1335,21 +1359,24 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                     PSUBCLNOTEBOOKLISTITEM pSubclNBLINew = (PSUBCLNOTEBOOKLISTITEM)malloc(sizeof(SUBCLNOTEBOOKLISTITEM));
                     if (pSubclNBLINew)
                     {
-                        pSubclNBLINew->pfnwpNotebookOrig = WinSubclassWindow(pcnbp->hwndNotebook,
-                                                                             ntb_fnwpSubclNotebook);
                         pSubclNBLINew->hwndNotebook = pcnbp->hwndNotebook;
                         lstAppendItem(pllSubclNotebooks,
                                       pSubclNBLINew);
+                        pSubclNBLINew->pfnwpNotebookOrig
+                            = WinSubclassWindow(pcnbp->hwndNotebook,
+                                                ntb_fnwpSubclNotebook);
                     }
                 }
-            }
+            } // end if (fSemOwned)
             else
-                DebugBox("XWorkplace: Error in ntbInsertPage",
+                DebugBox(HWND_DESKTOP,
+                         "XWorkplace: Error in ntbInsertPage",
                          "Error requesting mutex.");
         }
         else
-            DebugBox("XWorkplace: Error in ntbInsertPage",
-                     "Notebook page could not be inserted.");
+            DebugBox(HWND_DESKTOP,
+                     "XWorkplace: Error in ntbInsertPage",
+                     "Notebook page could not be inserted (wpInsertSettingsPage failed).");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1397,7 +1424,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 
     TRY_QUIET(excpt1, NULL)
     {
-        fSemOwned = (DosRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
             if (pllOpenPages)

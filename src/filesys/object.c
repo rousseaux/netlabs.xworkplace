@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -148,7 +148,7 @@ typedef struct _XFOBJWINDATA
     PRECORDCORE     preccExpanded;
 } XFOBJWINDATA, *PXFOBJWINDATA;
 
-#define WM_FILLCNR      WM_USER+1
+#define WM_FILLCNR      (WM_USER+1)
 
 /*
  *@@ AddObjectUsage2Cnr:
@@ -716,10 +716,6 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
             // subclass entry field for hotkeys
             ctlMakeHotkeyEntryField(hwndHotkeyEntryField);
-            /* pWinData->pfnwpOrigEntryField = WinSubclassWindow(hwndHotkeyEntryField,
-                                                              fnwpObjectHotkeyEntryField);
-            WinSetWindowPtr(hwndHotkeyEntryField, QWL_USER, pWinData); */
-
 
             // disable entry field if hotkeys are not working
             {
@@ -730,8 +726,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
             // make Warp 4 notebook buttons and move controls
             winhAssertWarp4Notebook(hwndDlg,
-                    100,         // ID threshold
-                    WARP4_NOTEBOOK_OFFSET);   // move other controls offset (common.h)
+                                    100,         // ID threshold
+                                    WARP4_NOTEBOOK_OFFSET);
+                                        // move other controls offset (common.h)
 
             // setup container
             pWinData->hwndCnr = WinWindowFromID(hwndDlg, ID_XSDI_DTL_CNR);
@@ -744,19 +741,19 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                     &CnrInfo,
                     (MPARAM)(CMA_PSORTRECORD | CMA_FLWINDOWATTR | CMA_CXTREEINDENT));
 
-            WinPostMsg(hwndDlg, WM_SETTINGS2DLG, 0, 0);
+            WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
 
         /*
-         * WM_SETTINGS2DLG:
+         * XM_SETTINGS2DLG:
          *      this user msg (common.h) gets posted when
          *      the dialog controls need to be set according
          *      to the current settings.
          */
 
-        case WM_SETTINGS2DLG:
+        case XM_SETTINGS2DLG:
         {
             HPOINTER hptrOld = winhSetWaitPointer();
 
@@ -964,6 +961,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                )
                             )
                         {
+                            DosBeep(10000, 100);
                             // store hotkey for object;
                             // we'll now pass the scan code, which is
                             // used by the hook
@@ -980,6 +978,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         }
                         else
                         {
+                            DosBeep(100, 100);
                             // invalid:
                             objSetObjectHotkey(pWinData->somSelf,
                                                0, 0, 0);
@@ -1105,7 +1104,7 @@ BOOL objQueryObjectHotkey(WPObject *somSelf,
     ULONG           cHotkeys = 0;
     BOOL            brc = FALSE;
 
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
     pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
     if (pHotkeys)
@@ -1143,7 +1142,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
     BOOL            brc = FALSE;
     HOBJECT         hobjSelf = _wpQueryHandle(somSelf);
 
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
     TRY_LOUD(excpt1, NULL)
     {
@@ -1381,10 +1380,14 @@ ULONG objQuerySetup(WPObject *somSelf,
     PSZ     pszTemp = NULL;
     ULONG   ulReturn = 0;
     ULONG   ulValue = 0,
-            ulDefaultValue = 0,
+            // ulDefaultValue = 0,
             ulStyle = 0;
     PSZ     pszValue = 0;
 
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
+    /* _Pmpf(("Dumping WPOBJECTDATA (%d bytes", _cbWPObjectData));
+    cmnDumpMemoryBlock((PVOID)_pWPObjectData, _cbWPObjectData, 8); */
 
     // CCVIEW
     ulValue = _wpQueryConcurrentView(somSelf);
@@ -1401,43 +1404,54 @@ ULONG objQuerySetup(WPObject *somSelf,
     }
 
     // DEFAULTVIEW
-    ulValue = _wpQueryDefaultView(somSelf);
-    ulDefaultValue = _wpclsQueryDefaultView(_somGetClass(somSelf));
-    if (ulValue != ulDefaultValue)
-        switch (ulValue)
+    if (_pWPObjectData)
+        if (    (_pWPObjectData->lDefaultView != 0x67)      // default view for folders
+             && (_pWPObjectData->lDefaultView != 0x1000)    // default view for data files
+             && (_pWPObjectData->lDefaultView != -1)        // OPEN_DEFAULT
+           )
         {
-            case OPEN_SETTINGS:
-                strhxcat(&pszTemp, "DEFAULTVIEW=SETTINGS;");
-            break;
-
-            case OPEN_CONTENTS:
-                strhxcat(&pszTemp, "DEFAULTVIEW=ICON;");
-            break;
-
-            case OPEN_TREE:
-                strhxcat(&pszTemp, "DEFAULTVIEW=TREE;");
-            break;
-
-            case OPEN_DETAILS:
-                strhxcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
-            break;
-
-            case OPEN_DEFAULT:
-                // ignore
-            break;
-
-            default:
+            switch (_pWPObjectData->lDefaultView)
             {
-                // any other: that's user defined, add decimal ID
-                CHAR szTemp[30];
-                sprintf(szTemp, "DEFAULTVIEW=%d;", ulValue);
-                strhxcat(&pszTemp, szTemp);
-            break; }
+                case OPEN_SETTINGS:
+                    strhxcat(&pszTemp, "DEFAULTVIEW=SETTINGS;");
+                break;
+
+                case OPEN_CONTENTS:
+                    strhxcat(&pszTemp, "DEFAULTVIEW=ICON;");
+                break;
+
+                case OPEN_TREE:
+                    strhxcat(&pszTemp, "DEFAULTVIEW=TREE;");
+                break;
+
+                case OPEN_DETAILS:
+                    strhxcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
+                break;
+
+                case OPEN_DEFAULT:
+                    // ignore
+                break;
+
+                default:
+                {
+                    // any other: that's user defined, add decimal ID
+                    CHAR szTemp[30];
+                    sprintf(szTemp, "DEFAULTVIEW=%d;", _pWPObjectData->lDefaultView);
+                    strhxcat(&pszTemp, szTemp);
+                break; }
+            }
         }
 
     // HELPLIBRARY
 
     // HELPPANEL
+    if (_pWPObjectData)
+        if (_pWPObjectData->ulHelpPanel)
+        {
+            CHAR szTemp[40];
+            sprintf(szTemp, "HELPPANEL=%d;", _pWPObjectData->ulHelpPanel);
+            strhxcat(&pszTemp, szTemp);
+        }
 
     // HIDEBUTTON
     ulValue = _wpQueryButtonAppearance(somSelf);

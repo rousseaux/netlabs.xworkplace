@@ -19,11 +19,11 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -88,7 +88,7 @@ void main(int argc, char *argv[])
     else
     {
         // neither three nor four parameters: explain ourselves.
-        printf("repclass V"BLDLEVEL_VERSION" ("__DATE__") (C) 1998-99 Ulrich M”ller\n");
+        printf("repclass V"BLDLEVEL_VERSION" ("__DATE__") (C) 1998-2000 Ulrich M”ller\n");
         printf("  Part of the XWorkplace package.\n");
         printf("  This is free software under the GNU General Public Licence (GPL).\n");
         printf("  Refer to the COPYING file in the XWorkplace installation dir for details.\n");

@@ -23,7 +23,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -126,7 +126,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopMenuItemsPage");
 
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -164,7 +164,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *som
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopStartupPage");
 
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -199,7 +199,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *so
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopArchivesPage");
 
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -236,7 +236,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopShutdownPage");
 
     // insert "XShutdown" page,
@@ -379,8 +379,17 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpModifyPopupMenu(XFldDesktop *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      process input when any menu item was selected;
- *      intercept Shutdown and such
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the new menu items
+ *      we have inserted for our subclass.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,

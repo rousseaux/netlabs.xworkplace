@@ -154,7 +154,7 @@
             // #define DEBUG_NOTEBOOKS
 
         // debug trashcan
-            // #define DEBUG_TRASHCAN
+            #define DEBUG_TRASHCAN
     #endif
 
     /********************************************************************

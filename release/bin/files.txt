@@ -5,7 +5,7 @@
     gets called by the corresponding folder context menu item;
     a program object for this exists in the Configuration folder.
  BOOTMGR.CMD
-    this script modifies the XFolder settings in OS2.INI so that
+    this script modifies the XWorkplace settings in OS2.INI so that
     XShutdown knows all your bootable partitions for the "Reboot
     to" feature.
  DEFDETLS.CMD
@@ -25,18 +25,12 @@
     WPS default icons. This can be recreated from the "ICONS.CMD"
     script in the /ICONS subdirectory. Note: Do not delete this
     file. If you don't want to replace icons, disable replacements
-    in the "Workplace Shell" object.
+    in the "XWorkplace Setup" object.
  ICOSMALL.CMD
     gets called by the corresponding folder context menu item;
     a program object for this exists in the Configuration folder.
- LASTPID
-    this file is created by the eXtended Shutdown procedure to
-    remember the process ID of the WPS between restarts/reboots.
-    You can delete this file, but then the XFolder Startup Folder
-    may not work. This file is recreated at each shutdown/WPS
-    restart.
  NETSCDDE.EXE
-    the Netscape DDE interface. See the XFolder Online Reference.
+    the Netscape DDE interface. See the XWorkplace User Guide.
  NEWOBJ.CMD
     no longer used.
  PACKTREE.CMD
@@ -44,13 +38,13 @@
     a program object for this exists in the Configuration folder.
  REPCLASS.EXE
     used by the install script to replace WPS classes.
-    See the XFolder Online Reference, "Related Files".
+    See the XWorkplace User Guide, "Related Files".
     Explains itself on the command line.
  SHOWALL.CMD
     gets called by the corresponding folder context menu item;
     a program object for this exists in the Configuration folder.
  SOUND.DLL
-    XFolder sound access DLL. If this file is not found, the new
+    XWorkplace sound access DLL. If this file is not found, the new
     system sounds will not work. Delete this file if you have
     problems with the new system sounds.
  SOUND.SYM
@@ -63,21 +57,28 @@
  WPSRESET.EXE
     used by the install script to restart the WPS.
  XFLDR.DLL
-    the main XFolder DLL. This has all the "intelligence".
+    the main XWorkplace DLL. This has all the "intelligence".
  XFLDR.SYM
     symbol file in case XFLDR.DLL crashes (for exception handlers).
     This is new with V0.84. If this is not found, the trap logs
     contain less meaningful information.
  XFLDRxxx.DLL
     (with "xxx" being your three-digit language code): National
-    Language support DLL for XFolder.
+    Language support DLL for XWorkplace.
  XFLDRxxx.SGS
     (with "xxx" being your three-digit language code): SmartGuide
-    script for OS/2 Warp 4 (XFolder introduction after installation).
+    script for OS/2 Warp 4 (XWorkplace introduction after installation).
  XHELP.CMD
     used by the install script only to display messages.
+ XWPDAEMN.EXE
+    XWorkplace PM daemon. This gets started while the WPS is starting
+    up and is required for the XWorkplace PM hook to work.
+ XWPHOOK.DLL
+    XWorkplace PM hook DLL. This implements all the hook features and
+    becomes part of every process once the hook is installed from
+    "XWorkplace Setup".
  XSHUTDWN.EXE
-    external XShutdown interface. See the XFolder Online Reference,
+    external XShutdown interface. See the XWorkplace User Guide,
     "Extended Shutdown".
 
 

@@ -1,15 +1,15 @@
 #
-# Makefile for XFolder National Language Support.
+# Makefile for XWorkplace National Language Support.
 #
 # For use with IBM NMAKE, which is part of IBM C-Set/2 and VisualAge C++.
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# Copyright (C) 1997-99 Ulrich M”ller.
+# Copyright (C) 1997-2000 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
-# file of the XFolder main distribution.
+# file of the XWorkplace main distribution.
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the

@@ -4,21 +4,21 @@
  *      this file contains all the XShutdown code, which
  *      was in xfdesk.c before V0.84.
  *
- *      With V0.9.0, this file has been renamed from xshutdwn.c
- *      because we want the files to start with "x" to contain
- *      SOM classes only.
+ *      XShutdown is a complete rewrite of what WinShutdownSystem
+ *      does.
+ *
+ *      XShutdown is started from XFldDesktop::wpMenuItemSelected
+ *      simply by creating the Shutdown thread in this file, which
+ *      will then take over.
+ *      See fntShutdownThread for a detailed description.
  *
  *      All the functions in this file have the xsd* prefix.
- *
- *      XShutdown is started from xfdesk.c simply by creating
- *      the Shutdown thread, which will then take over.
- *      See fntShutdownThread for a detailed description.
  *
  *@@header "startshut\shutdown.h"
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -436,7 +436,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
  */
 
 USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTITEM's to append to
-                            HWND hwndListbox)     // in: listbox to add items to or NULLHANDLE if none
+                             HWND hwndListbox)     // in: listbox to add items to or NULLHANDLE if none
 {
     USHORT      usItemCount = 0;
     ULONG       ulKeyLength;
@@ -585,7 +585,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         CHAR    szAPMVersion[30];
         CHAR    szAPMSysFile[CCHMAXPATH];
         sprintf(szAPMVersion, "APM %s", apmQueryVersion());
-        WinSetDlgItemText(pcnbp->hwndPage, ID_SDDI_APMVERSION, szAPMVersion);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);
         sprintf(szAPMSysFile,
                 "%c:\\OS2\\BOOT\\APM.SYS",
                 doshQueryBootDrive());
@@ -593,7 +593,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             _Pmpf(("Opening %s", szAPMSysFile));
         #endif
 
-        WinSetDlgItemText(pcnbp->hwndPage, ID_SDDI_APMSYS,
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
                           "Error");
 
         if ((arc = doshExecOpen(szAPMSysFile,
@@ -604,7 +604,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                             == NO_ERROR)
             {
                 if (pExec->pszVersion)
-                    WinSetDlgItemText(pcnbp->hwndPage, ID_SDDI_APMSYS,
+                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
                                       pExec->pszVersion);
 
             }
@@ -615,22 +615,22 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        /* winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_ENABLED,
+        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ENABLED,
             (pGlobalSettings->ulXShutdownFlags & XSD_ENABLED) != 0); */
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_REBOOT,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,
             (pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_ANIMATE,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE,
             (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_APMPOWEROFF,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
             (apmPowerOffSupported())
                 ? ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                 : FALSE
             );
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_CONFIRM,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM,
             (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_AUTOCLOSEVIO,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
             (pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_SDDI_LOG,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
             (pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
     }
 
@@ -648,22 +648,22 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  && (pGlobalSettings->NoWorkerThread == 0)
                 );
 
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_ENABLED, fXShutdownValid);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_ANIMATE, fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_APMPOWEROFF,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE, fXShutdownEnabled);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
                     ( fXShutdownEnabled && (apmPowerOffSupported()) )
                 );
 
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
-        WinEnableControl(pcnbp->hwndPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
         if (WinQueryObject(XFOLDER_SHUTDOWNID))
             // shutdown folder exists already: disable button
-            WinEnableControl(pcnbp->hwndPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
+            WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
     }
 }
 
@@ -721,7 +721,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_SDDI_REBOOTEXT:
             cmnSetHelpPanel(ID_XFH_REBOOTEXT);
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                      pcnbp->hwndPage,                  // owner
+                      pcnbp->hwndFrame,                  // owner
                       (PFNWP)fnwpUserRebootOptions,     // dialog procedure
                       cmnQueryNLSModuleHandle(FALSE),
                       ID_XSD_REBOOTEXT,        // dialog resource id
@@ -733,7 +733,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_SDDI_AUTOCLOSEDETAILS:
             cmnSetHelpPanel(ID_XFH_AUTOCLOSEDETAILS);
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                      pcnbp->hwndPage,             // owner
+                      pcnbp->hwndFrame,             // owner
                       (PFNWP)fnwpAutoCloseDetails,    // dialog procedure
                       cmnQueryNLSModuleHandle(FALSE),  // from resource file
                       ID_XSD_AUTOCLOSE,        // dialog resource id
@@ -754,9 +754,11 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        szSetup,
                                        "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))
-                WinEnableControl(pcnbp->hwndPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
+                WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
             else
-                cmnMessageBoxMsg(pcnbp->hwndPage, 104, 106, MB_OK);
+                cmnMessageBoxMsg(pcnbp->hwndFrame,
+                                 104, 106,
+                                 MB_OK);
             ulChange = 0;
         break; }
 
@@ -916,6 +918,9 @@ APIRET xsdFlushWPS2INI(VOID)
  *                                                                  *
  ********************************************************************/
 
+BOOL    G_fConfirmWindowExtended = TRUE;
+BOOL    G_fConfirmDialogReady = FALSE;
+
 /*
  *@@ ReformatConfirmWindow:
  *      depending on fExtended, the shutdown confirmation
@@ -923,40 +928,46 @@ APIRET xsdFlushWPS2INI(VOID)
  *      or not.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  */
 
 VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg window
                            BOOL fExtended)      // in: if TRUE, the list box will be shown
 {
-    HWND    hwndBootMgrListbox = WinWindowFromID(hwndDlg, ID_SDDI_BOOTMGR);
-    SWP     swpBootMgrListbox;
-    SWP     swpDlg;
+    // _Pmpf(("ReformatConfirmWindow: %d, ready: %d", fExtended, G_fConfirmDialogReady));
 
-    // _Pmpf(("ReformatConfirmWindow: %d", fExtended));
+    if (G_fConfirmDialogReady)
+        if (fExtended != G_fConfirmWindowExtended)
+        {
+            HWND    hwndBootMgrListbox = WinWindowFromID(hwndDlg, ID_SDDI_BOOTMGR);
+            SWP     swpBootMgrListbox;
+            SWP     swpDlg;
 
-    WinQueryWindowPos(hwndBootMgrListbox, &swpBootMgrListbox);
-    WinQueryWindowPos(hwndDlg, &swpDlg);
+            WinQueryWindowPos(hwndBootMgrListbox, &swpBootMgrListbox);
+            WinQueryWindowPos(hwndDlg, &swpDlg);
 
-    if (fExtended)
-        swpDlg.cx += swpBootMgrListbox.cx;
-    else
-        swpDlg.cx -= swpBootMgrListbox.cx;
+            if (fExtended)
+                swpDlg.cx += swpBootMgrListbox.cx;
+            else
+                swpDlg.cx -= swpBootMgrListbox.cx;
 
-    WinShowWindow(hwndBootMgrListbox, fExtended);
-    WinSetWindowPos(hwndDlg,
-                    NULLHANDLE,
-                    0, 0,
-                    swpDlg.cx, swpDlg.cy,
-                    SWP_SIZE);
+            WinShowWindow(hwndBootMgrListbox, fExtended);
+            WinSetWindowPos(hwndDlg,
+                            NULLHANDLE,
+                            0, 0,
+                            swpDlg.cx, swpDlg.cy,
+                            SWP_SIZE);
+
+            G_fConfirmWindowExtended = fExtended;
+        }
 }
-
-BOOL    fConfirmWindowExtended = FALSE;
 
 /*
  * fnwpConfirm:
  *      dlg proc for XShutdown confirmation windows.
  *
  *@@changed V0.9.0 [umoeller]: redesigned the whole confirmation window.
+ *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  */
 
 MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -975,19 +986,11 @@ MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 {
                     case ID_SDDI_SHUTDOWNONLY:
                     case ID_SDDI_STANDARDREBOOT:
-                        if (fConfirmWindowExtended)
-                        {
-                            ReformatConfirmWindow(hwndDlg, FALSE);
-                            fConfirmWindowExtended = FALSE;
-                        }
+                        ReformatConfirmWindow(hwndDlg, FALSE);
                     break;
 
                     case ID_SDDI_REBOOTTO:
-                        if (!fConfirmWindowExtended)
-                        {
-                            ReformatConfirmWindow(hwndDlg, TRUE);
-                            fConfirmWindowExtended = TRUE;
-                        }
+                        ReformatConfirmWindow(hwndDlg, TRUE);
                     break;
                 }
 
@@ -1006,24 +1009,31 @@ MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      confirmation box. Returns MBID_YES/NO.
  *
  *@@changed V0.9.0 [umoeller]: redesigned the whole confirmation window.
+ *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
+ *@@changed V0.9.1 (2000-01-30) [umoeller]: added exception handling.
  */
 
 ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 {
-    ULONG       ulReturn;
-    HWND        hwndConfirm;
-    HMODULE     hmodResource = cmnQueryNLSModuleHandle(FALSE);
-    // CHAR        szDefault[100];
-    ULONG       ulKeyLength;
-    PSZ         p, pINI = NULL;
-    ULONG       ulCheckRadioButtonID = ID_SDDI_SHUTDOWNONLY;
+    ULONG       ulReturn = MBID_NO;
+    BOOL        fStore = FALSE;
+    HWND        hwndConfirm = NULLHANDLE;
 
+    TRY_LOUD(excpt1, cmnOnKillDuringLock)
     {
-        PKERNELGLOBALS  pKernelGlobals = krnLockGlobals(5000);
-        HPOINTER        hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
-                                                 ID_SDICON);
+        HMODULE     hmodResource = cmnQueryNLSModuleHandle(FALSE);
+        ULONG       ulKeyLength;
+        PSZ         p = NULL,
+                    pINI = NULL;
+        ULONG       ulCheckRadioButtonID = ID_SDDI_SHUTDOWNONLY;
+
+        HPOINTER    hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
+                                                  ID_SDICON);
+
+        G_fConfirmWindowExtended = TRUE;
+        G_fConfirmDialogReady = FALSE;
+
         cmnSetHelpPanel(ID_XMH_XSHUTDOWN);
-        fConfirmWindowExtended = TRUE;
         hwndConfirm = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
                                  fnwpConfirm,
                                  hmodResource,
@@ -1034,136 +1044,151 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                    WM_SETICON,
                    (MPARAM)hptrShutdown,
                     NULL);
-        krnUnlockGlobals();
-    }
 
-    // prepare confirmation box items
-    winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
+        // prepare confirmation box items
+        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
 
-    if (psdParms->optReboot)
-        ulCheckRadioButtonID = ID_SDDI_STANDARDREBOOT;
+        if (psdParms->optReboot)
+            ulCheckRadioButtonID = ID_SDDI_STANDARDREBOOT;
 
-    // insert ext reboot items into combo box;
-    // check for reboot items in OS2.INI
-    if (PrfQueryProfileSize(HINI_USER,
-                            INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
-                            &ulKeyLength))
-    {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        // items exist: evaluate
-        pINI = malloc(ulKeyLength);
-        if (pINI)
-        {
-            PrfQueryProfileData(HINI_USER,
+        // insert ext reboot items into combo box;
+        // check for reboot items in OS2.INI
+        if (PrfQueryProfileSize(HINI_USER,
                                 INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
-                                pINI,
-                                &ulKeyLength);
-            p = pINI;
-            // _Pmpf(( "%s", p ));
-            while (strlen(p))
+                                &ulKeyLength))
+        {
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // items exist: evaluate
+            pINI = malloc(ulKeyLength);
+            if (pINI)
             {
-                WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                  LM_INSERTITEM,
-                                  (MPARAM)LIT_END,
-                                  (MPARAM)p);
-                 // skip description string
-                p += (strlen(p)+1);
-                // skip reboot command
-                p += (strlen(p)+1);
+                PrfQueryProfileData(HINI_USER,
+                                    INIAPP_XWORKPLACE, INIKEY_BOOTMGR,
+                                    pINI,
+                                    &ulKeyLength);
+                p = pINI;
+                while (strlen(p))
+                {
+                    WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                      LM_INSERTITEM,
+                                      (MPARAM)LIT_END,
+                                      (MPARAM)p);
+                     // skip description string
+                    p += (strlen(p)+1);
+                    // skip reboot command
+                    p += (strlen(p)+1);
+                }
             }
-        }
 
-        // select reboot item from last time
-        if (pGlobalSettings->usLastRebootExt != 0xFFFF)
-        {
-            WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                              LM_SELECTITEM,
-                              (MPARAM)pGlobalSettings->usLastRebootExt, // item index
-                              (MPARAM)TRUE); // select (not deselect)
-            if (ulCheckRadioButtonID == ID_SDDI_STANDARDREBOOT)
-                ulCheckRadioButtonID = ID_SDDI_REBOOTTO;
-        }
-    }
-    else
-        // no items found: disable
-        WinEnableControl(hwndConfirm, ID_SDDI_REBOOTTO, FALSE);
-
-    // check radio button
-    winhSetDlgItemChecked(hwndConfirm, ulCheckRadioButtonID, TRUE);
-    winhSetDlgItemFocus(hwndConfirm, ulCheckRadioButtonID);
-    if (ulCheckRadioButtonID == ID_SDDI_REBOOTTO)
-        ReformatConfirmWindow(hwndConfirm, TRUE);
-
-    cmnSetControlsFont(hwndConfirm, 1, 5000);
-    winhCenterWindow(hwndConfirm);
-
-    xsdLoadAnimation(&sdAnim);
-    ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
-                        XSD_ANIM_COUNT,
-                        &(sdAnim.ahptr[0]),
-                        150,    // delay
-                        TRUE);  // start now
-
-    // go!!
-    ulReturn = WinProcessDlg(hwndConfirm);
-
-    ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
-    xsdFreeAnimation(&sdAnim);
-
-    if (ulReturn == DID_OK)
-    {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-
-        // check "show this msg again"
-        if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
-            pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
-
-        // check reboot options
-        psdParms->optReboot = FALSE;
-        if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
-        {
-            USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                                          LM_QUERYSELECTION,
-                                                          (MPARAM)LIT_CURSOR,
-                                                          MPNULL);
-            USHORT us;
-            psdParms->optReboot = TRUE;
-
-            p = pINI;
-            for (us = 0; us < usSelected; us++)
+            // select reboot item from last time
+            if (pGlobalSettings->usLastRebootExt != 0xFFFF)
             {
-                // skip description string
-                p += (strlen(p)+1);
-                // skip reboot command
-                p += (strlen(p)+1);
-            }
-            // skip description string to get to reboot command
-            p += (strlen(p)+1);
-            strcpy(psdParms->szRebootCommand, p);
+                if (WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                      LM_SELECTITEM,
+                                      (MPARAM)pGlobalSettings->usLastRebootExt, // item index
+                                      (MPARAM)TRUE) // select (not deselect)
+                            == (MRESULT)FALSE)
+                    // error:
+                    // check first item then
+                    WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                      LM_SELECTITEM,
+                                      (MPARAM)0,
+                                      (MPARAM)TRUE); // select (not deselect)
 
-            pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
-            pGlobalSettings->usLastRebootExt = usSelected;
-        }
-        else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
-        {
-            psdParms->optReboot = TRUE;
-            // szRebootCommand is a zero-byte only, which will lead to
-            // the standard reboot in the Shutdown thread
-            pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
-            pGlobalSettings->usLastRebootExt = 0xFFFF;
+                if (ulCheckRadioButtonID == ID_SDDI_STANDARDREBOOT)
+                    ulCheckRadioButtonID = ID_SDDI_REBOOTTO;
+            }
         }
         else
-            // standard shutdown:
-            pGlobalSettings->ulXShutdownFlags &= ~XSD_REBOOT;
+            // no items found: disable
+            WinEnableControl(hwndConfirm, ID_SDDI_REBOOTTO, FALSE);
 
-        cmnUnlockGlobalSettings();
-        cmnStoreGlobalSettings();
+        // check radio button
+        winhSetDlgItemChecked(hwndConfirm, ulCheckRadioButtonID, TRUE);
+        winhSetDlgItemFocus(hwndConfirm, ulCheckRadioButtonID);
+        // make window smaller if we don't have "reboot to"
+        G_fConfirmDialogReady = TRUE;       // flag for ReformatConfirmWindow
+        if (ulCheckRadioButtonID != ID_SDDI_REBOOTTO)
+            ReformatConfirmWindow(hwndConfirm, FALSE);
+
+        cmnSetControlsFont(hwndConfirm, 1, 5000);
+        winhCenterWindow(hwndConfirm);      // still hidden
+
+        xsdLoadAnimation(&sdAnim);
+        ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
+                            XSD_ANIM_COUNT,
+                            &(sdAnim.ahptr[0]),
+                            150,    // delay
+                            TRUE);  // start now
+
+        // go!!
+        ulReturn = WinProcessDlg(hwndConfirm);
+
+        ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
+        xsdFreeAnimation(&sdAnim);
+
+        if (ulReturn == DID_OK)
+        {
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+
+            // check "show this msg again"
+            if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
+                pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
+
+            // check reboot options
+            psdParms->optReboot = FALSE;
+            if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
+            {
+                USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                                              LM_QUERYSELECTION,
+                                                              (MPARAM)LIT_CURSOR,
+                                                              MPNULL);
+                USHORT us;
+                psdParms->optReboot = TRUE;
+
+                p = pINI;
+                for (us = 0; us < usSelected; us++)
+                {
+                    // skip description string
+                    p += (strlen(p)+1);
+                    // skip reboot command
+                    p += (strlen(p)+1);
+                }
+                // skip description string to get to reboot command
+                p += (strlen(p)+1);
+                strcpy(psdParms->szRebootCommand, p);
+
+                pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
+                pGlobalSettings->usLastRebootExt = usSelected;
+            }
+            else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
+            {
+                psdParms->optReboot = TRUE;
+                // szRebootCommand is a zero-byte only, which will lead to
+                // the standard reboot in the Shutdown thread
+                pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
+                pGlobalSettings->usLastRebootExt = 0xFFFF;
+            }
+            else
+                // standard shutdown:
+                pGlobalSettings->ulXShutdownFlags &= ~XSD_REBOOT;
+
+            fStore = TRUE;
+        }
+
+        if (pINI)
+            free(pINI);
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 
-    if (pINI)
-        free(pINI);
+    cmnUnlockGlobalSettings();
+    if (fStore)
+        cmnStoreGlobalSettings();
 
-    WinDestroyWindow(hwndConfirm);
+    if (hwndConfirm)
+        WinDestroyWindow(hwndConfirm);
 
     return (ulReturn);
 }
@@ -1279,7 +1304,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
             WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pData);
 
-            WinPostMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+            WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
         break; }
 
         /*
@@ -1300,7 +1325,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 case ID_XSDI_XRB_LISTBOX:
                 {
                     if (SHORT2FROMMP(mp1) == LN_SELECT)
-                        WinSendMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                        WinSendMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                 break; }
 
                 /*
@@ -1362,7 +1387,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             }
         break; }
 
-        case WM_UPDATE:
+        case XM_UPDATE:
         {
             // posted from various locations to wholly update
             // the dlg items
@@ -1457,7 +1482,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                       (MPARAM)LIT_END,
                                       (MPARAM)pliNew->szItemName);
                     WinSendDlgItemMsg(hwndDlg, ID_XSDI_XRB_LISTBOX,
-                                      LM_SELECTITEM, // will cause WM_UPDATE
+                                      LM_SELECTITEM, // will cause XM_UPDATE
                                       (MPARAM)(lstCountItems(
                                               pData->pllAutoClose)),
                                       (MPARAM)TRUE);
@@ -1489,7 +1514,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                               (MPARAM)pData->sSelected,
                                               MPNULL);
                         }
-                        WinPostMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                        WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
                 break; }
@@ -1643,7 +1668,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                               // displayed
                               0, 0);
 
-            WinPostMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+            WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
         break; }
 
         /*
@@ -1662,7 +1687,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
                 case ID_XSDI_XRB_LISTBOX:
                     if (SHORT2FROMMP(mp1) == LN_SELECT)
-                        WinSendMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                        WinSendMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                 break;
 
                 /*
@@ -1719,12 +1744,12 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
         break; }
 
         /*
-         * WM_UPDATE:
+         * XM_UPDATE:
          *      updates the controls according to the
          *      currently selected list box item.
          */
 
-        case WM_UPDATE:
+        case XM_UPDATE:
         {
             PREBOOTWINDATA pData =
                     (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
@@ -1842,7 +1867,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                     (MPARAM)pData->sSelected,
                                     MPNULL);
                         }
-                        WinPostMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                        WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
                 break; }
@@ -1881,7 +1906,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                             (MPARAM)(pData->sSelected-1),
                                             (MPARAM)TRUE); // select flag
                         }
-                        WinPostMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                        WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
                 break; }
@@ -1921,7 +1946,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                             (MPARAM)(pData->sSelected+1),
                                             (MPARAM)TRUE); // select flag
                         }
-                        WinPostMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                        WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
                 break; }
@@ -2113,7 +2138,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                                           (MPARAM)pData->sSelected,
                                                           (MPARAM)(pData->pliSelected->szItemName));
                                         // update rest of dialog
-                                        WinSendMsg(hwndDlg, WM_UPDATE, MPNULL, MPNULL);
+                                        WinSendMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
 
                                         break; // while (ppi)
                                     }
@@ -2183,7 +2208,7 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     {
         if (hmtx)
         {
-            fSemOwned = (DosRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
+            fSemOwned = (WinRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
             fAccess = fSemOwned;
         } else
             fAccess = TRUE;
@@ -2232,7 +2257,7 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     TRY_QUIET(excpt1, NULL)
     {
         if (hmtx) {
-            fSemOwned = (DosRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
+            fSemOwned = (WinRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
             fAccess = fSemOwned;
         } else
             fAccess = TRUE;
@@ -2278,8 +2303,8 @@ ULONG xsdCountRemainingItems(VOID)
 
     TRY_QUIET(excpt1, NULL)
     {
-        fShutdownSemOwned = (DosRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
-        fSkippedSemOwned = (DosRequestMutexSem(hmtxSkipped, 4000) == NO_ERROR);
+        fShutdownSemOwned = (WinRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
+        fSkippedSemOwned = (WinRequestMutexSem(hmtxSkipped, 4000) == NO_ERROR);
         if ( (fShutdownSemOwned) && (fSkippedSemOwned) )
             ulrc = (
                         lstCountItems(pllShutdown)
@@ -2359,8 +2384,8 @@ PSHUTLISTITEM xsdQueryCurrentItem(VOID)
 
     TRY_QUIET(excpt1, NULL)
     {
-        fShutdownSemOwned = (DosRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
-        fSkippedSemOwned = (DosRequestMutexSem(hmtxSkipped, 4000) == NO_ERROR);
+        fShutdownSemOwned = (WinRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
+        fSkippedSemOwned = (WinRequestMutexSem(hmtxSkipped, 4000) == NO_ERROR);
 
         if ((fShutdownSemOwned) && (fSkippedSemOwned))
         {
@@ -2531,7 +2556,7 @@ void xsdBuildShutList(PSHUTDOWNPARAMS psdp,   // in: shutdown parameters
             PRCPROCESS prcp;
             // default for errors
             pSwBlock->aswentry[ul].swctl.bProgType = PROG_WINDOWABLEVIO;
-            if (prcQueryProcessInfo(pSwBlock->aswentry[ul].swctl.idProcess, &prcp))
+            if (prc16QueryProcessInfo(pSwBlock->aswentry[ul].swctl.idProcess, &prcp))
                 // according to bsedos.h, the PROG_* types are identical
                 // to the SSF_TYPE_* types, so we can use the data from
                 // DosQProcStat
@@ -2639,7 +2664,7 @@ void xsdUpdateListBox(PSHUTDOWNPARAMS psdp,   // in: shutdown parameters
 
     TRY_QUIET(excpt1, NULL)
     {
-        fSemOwned = (DosRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
         if (fSemOwned)
         {
             PLISTNODE pNode = 0;
@@ -3806,7 +3831,7 @@ MRESULT EXPENTRY fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                         pSkipItem = malloc(sizeof(SHUTLISTITEM));
                         *pSkipItem = *pItem;
 
-                        fSkippedSemOwned = (DosRequestMutexSem(hmtxSkipped, 4000) == NO_ERROR);
+                        fSkippedSemOwned = (WinRequestMutexSem(hmtxSkipped, 4000) == NO_ERROR);
                         if (fSkippedSemOwned)
                         {
                             lstAppendItem(pllSkipped,
@@ -4033,7 +4058,7 @@ MRESULT EXPENTRY fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                         // the WPS objects, which will prevent the
                         // Worker thread from messing with that
                         // list during that time
-                        fAwakeObjectsSemOwned = (DosRequestMutexSem(pKernelGlobals->hmtxAwakeObjects,
+                        fAwakeObjectsSemOwned = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects,
                                                                     4000)
                                                     == NO_ERROR);
                         if (fAwakeObjectsSemOwned)
@@ -4456,9 +4481,9 @@ VOID xsdFinishStandardReboot(VOID)
                0L)
         != NO_ERROR)
     {
-        DebugBox("XShutdown", "The DOS.SYS device driver could not be opened. "
-                "XShutdown will be unable to reboot your computer. "
-                "Please consult the XFolder Online Reference for a remedy of this problem.");
+        DebugBox(HWND_DESKTOP, "XShutdown", "The DOS.SYS device driver could not be opened. "
+                 "XShutdown will be unable to reboot your computer. "
+                 "Please consult the XFolder Online Reference for a remedy of this problem.");
     }
 
     if (fileShutdownLog)
@@ -4524,8 +4549,9 @@ VOID xsdFinishUserReboot(VOID)
                               TRUE,  // wait flag
                               &sid, &pid) != NO_ERROR)
     {
-        DebugBox("XShutdown", "The user-defined restart command failed. "
-            "We will now restart the WPS.");
+        DebugBox(HWND_DESKTOP, "XShutdown",
+                 "The user-defined restart command failed. "
+                 "We will now restart the WPS.");
         xsdRestartWPS();
     }
     else
@@ -4795,7 +4821,7 @@ void _Optlink xsd_fntUpdateThread(PVOID ptiMyself)
                         // count items in the list of the Shutdown thread;
                         // here we need a mutex semaphore, because the
                         // Shutdown thread might be working on this too
-                        fSemOwned = (DosRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
+                        fSemOwned = (WinRequestMutexSem(hmtxShutdown, 4000) == NO_ERROR);
                         if (fSemOwned)
                         {
                             ulShutItemCount = lstCountItems(pllShutdown);

@@ -40,7 +40,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -185,8 +185,6 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
 BOOL stbSetClassMnemonics(SOMClass *pClassObject,
                           PSZ pszText)
 {
-    BOOL brc = FALSE;
-
     if (_WPUrl == (SOMClass*)-1)
     {
         // WPUrl class object not queried yet: do it now
@@ -1377,38 +1375,38 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ENABLESTATUSBAR,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
                               pGlobalSettings->fDefaultStatusBarVisibility);
 
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBFORICONVIEWS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,
                               (pGlobalSettings->SBForViews & SBV_ICON) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBFORTREEVIEWS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,
                               (pGlobalSettings->SBForViews & SBV_TREE) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBFORDETAILSVIEWS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,
                               (pGlobalSettings->SBForViews & SBV_DETAILS) != 0);
 
         if (pGlobalSettings->SBStyle == SBSTYLE_WARP3RAISED)
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
         else if (pGlobalSettings->SBStyle == SBSTYLE_WARP3SUNKEN)
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
         else if (pGlobalSettings->SBStyle == SBSTYLE_WARP4RECT)
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
         else
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
     }
 
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = !(pGlobalSettings->NoSubclassing);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
 
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
     }
 }
 
@@ -1597,16 +1595,19 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // CHAR    szTemp[CCHMAXMNEMONICS];
 
         // current class
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
 
         // no-object mode
-        WinSendDlgItemMsg(pcnbp->hwndPage, ID_XSDI_SBTEXTNONESEL, EM_SETTEXTLIMIT,
-            (MPARAM)(CCHMAXMNEMONICS-1), MPNULL);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_SBTEXTNONESEL ,
-            (PSZ)cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTNONESEL,
+                          EM_SETTEXTLIMIT,
+                          (MPARAM)(CCHMAXMNEMONICS-1),
+                          MPNULL);
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XSDI_SBTEXTNONESEL ,
+                          (PSZ)cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
 
         // one-object mode
-        WinSendDlgItemMsg(pcnbp->hwndPage,
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage,
                           ID_XSDI_SBTEXT1SEL,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(CCHMAXMNEMONICS-1),
@@ -1620,22 +1621,22 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                        somidClassSelected, 0, 0);
         }
         if (pSBClassObjectSelected)
-            WinSetDlgItemText(pcnbp->hwndPage,
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_SBTEXT1SEL,
                               stbQueryClassMnemonics(pSBClassObjectSelected));
 
         // dereference shadows
-        winhSetDlgItemChecked(pcnbp->hwndPage,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_DEREFERENCESHADOWS,
                               pGlobalSettings->fDereferenceShadows);
 
         // multiple-objects mode
-        WinSendDlgItemMsg(pcnbp->hwndPage,
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage,
                           ID_XSDI_SBTEXTMULTISEL,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(CCHMAXMNEMONICS-1),
                           MPNULL);
-        WinSetDlgItemText(pcnbp->hwndPage,
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XSDI_SBTEXTMULTISEL,
                           (PSZ)cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
     }
@@ -1674,7 +1675,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_SBTEXTNONESEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
             {
-                WinQueryDlgItemText(pcnbp->hwndPage,
+                WinQueryDlgItemText(pcnbp->hwndDlgPage,
                                     ID_XSDI_SBTEXTNONESEL,
                                     sizeof(szDummy)-1, szDummy);
                 cmnSetStatusBarSetting(SBS_TEXTNONESEL, szDummy);
@@ -1696,7 +1697,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 if (pSBClassObjectSelected)
                 {
-                    WinQueryDlgItemText(pcnbp->hwndPage, ID_XSDI_SBTEXT1SEL,
+                    WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,
                                         sizeof(szDummy)-1, szDummy);
                     stbSetClassMnemonics(pSBClassObjectSelected,
                                          szDummy);
@@ -1714,7 +1715,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_SBTEXTMULTISEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
             {
-                WinQueryDlgItemText(pcnbp->hwndPage, ID_XSDI_SBTEXTMULTISEL,
+                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTMULTISEL,
                                     sizeof(szDummy)-1, szDummy);
                 cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
             }
@@ -1750,13 +1751,14 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             scd.ulHelpPanel = ID_XFH_SELECTCLASS;
 
             // classlst.c
-            if (clsSelectWpsClassDlg(pcnbp->hwndPage,
-                                     cmnQueryNLSModuleHandle(FALSE), ID_XLD_SELECTCLASS,
+            if (clsSelectWpsClassDlg(pcnbp->hwndFrame, // owner
+                                     cmnQueryNLSModuleHandle(FALSE),
+                                     ID_XLD_SELECTCLASS,
                                      &scd)
                           == DID_OK)
             {
                 strcpy(szSBClassSelected, scd.szClassSelected);
-                WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
+                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
                 PrfWriteProfileString(HINI_USER,
                                       INIAPP_XWORKPLACE, INIKEY_SB_LASTCLASS,
                                       szSBClassSelected);

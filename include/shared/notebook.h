@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -180,13 +180,16 @@
         ULONG       ulNotebookPageID; // the PM notebook page ID, as returned by
                                       // wpInsertSettingsPage
         BOOL        fPageVisible;     // TRUE if the page is currently visible
-        HWND        hwndPage;         // hwnd of dlg page in notebook; this
+        HWND        hwndDlgPage;      // hwnd of dlg page in notebook; this
                                       // is especially useful to get control HWND's:
-                                      // use WinWindowFromID(pcnbp->hwndPage, YOUR_ID).
+                                      // use WinWindowFromID(pcnbp->hwndDlgPage, YOUR_ID).
+        HWND        hwndFrame;        // frame window (to which hwndNotebook belongs);
+                                      // use this as the owner for subdialogs to lock
+                                      // the notebook
         HWND        hwndControl;      // this always has the current control window handle
                                       // when the "item changed" callback is called.
                                       // In the callback, this is equivalent to
-                                      // calling WinWindowFromID(pcnbp->hwndPage, usControlID).
+                                      // calling WinWindowFromID(pcnbp->hwndDlgPage, usControlID).
         HWND        hwndSourceCnr;    // see next
         PRECORDCORE preccSource;      // this can be set to a container record
                                       // core in hwndSourceCnr which will be removed

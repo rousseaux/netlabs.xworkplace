@@ -43,7 +43,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -93,16 +93,14 @@
 #include <stdio.h>              // needed for except.h
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
+#include <io.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
-#include "helpers\except.h"             // exception handling
-#include "helpers\linklist.h"           // linked list helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xtrash.ih"
@@ -114,13 +112,13 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
-#include "filesys\xthreads.h"           // extra XWorkplace threads
+#include "filesys\trash.h"              // trash can implementation
 
 // other SOM headers
 #pragma hdrstop
 #include "xfobj.h"
 #include <wprootf.h>
-#include "helpers\undoc.h"              // some undocumented stuff
+// #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
  *                                                                  *
@@ -128,10 +126,17 @@
  *                                                                  *
  ********************************************************************/
 
+// default trash can
+XWPTrashCan *G_pDefaultTrashCan = NULL;
+
+BOOL fDrivesInitialized = FALSE;
+
 /*
  *@@ XTRO_DETAILS:
  *      extended object details for XWPTrashObject
  *      (used in trash can Details view)
+ *
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: added pszOriginalClass
  */
 
 typedef struct _XTRO_DETAILS
@@ -139,609 +144,19 @@ typedef struct _XTRO_DETAILS
    PSZ     pszSourcePath;       // where object was deleted from
    CDATE   cdateDeleted;        // deletion date
    CTIME   ctimeDeleted;        // deletion date
-   ULONG   ulSize;              // size of object; we won't use a double here, because
-                                // this would require us to do container owner draw
+   ULONG   ulSize;              // size of related object; we won't use a double here,
+                                // because this would require us to do container owner
+                                // draw
+   PSZ     pszOriginalClass;    // class of related object
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
 // extra data fields for XWPTrashObject object details;
 // we add one field, which is the "Original path"
 // where the object was deleted from.
-#define XTRO_EXTRAFIELDS 4
+#define XTRO_EXTRAFIELDS 5
 CLASSFIELDINFO acfiTrashObject[XTRO_EXTRAFIELDS];
         // we add three fields
 // See XWPTrashObject::wpclsQueryDetailsInfo for details.
-
-#define XTRC_INVALID            0
-#define XTRC_SUPPORTED          1
-#define XTRC_UNSUPPORTED        2
-
-#define CB_SUPPORTED_DRIVES     23
-
-/*
- * abSupportedDrives:
- *      drives support for trash can.
- *      Index 0 is for drive C:, 1 is for D:, and so on.
- *      Each item can be one of the following:
- *      --  XTRC_SUPPORTED: drive is supported.
- *      --  XTRC_SUPPORTED: drive is not supported.
- *      --  XTRC_INVALID: drive letter doesn't exist.
- */
-
-BYTE abSupportedDrives[CB_SUPPORTED_DRIVES] = "";
-
-/* ******************************************************************
- *                                                                  *
- *   Helper functions                                               *
- *                                                                  *
- ********************************************************************/
-
-/*
- *@@ AddTrashObjectsForTrashDir:
- *      this routine gets called from XWPTrashCan::wpPopulate
- *      for each "?:\Trash" directory which exists on all
- *      drives. pTrashDir must be the corresponding WPFolder
- *      object for that directory.
- *
- *      We then query the folder's contents and create trash
- *      objects in pTrashCan accordingly. If another folder
- *      is found (which is probable), we recurse.
- *
- *      This returns the total number of trash objects that were
- *      created.
- */
-
-ULONG AddTrashObjectsForTrashDir(XWPTrashCan *pTrashCan,  // in: trashcan to add objects to
-                                 WPFolder *pTrashDir,     // in: trash directory to examine
-                                 double *pdTotalSize)     // in/out: total trash can size
-{
-    BOOL        fTrashDirSemOwned = FALSE;
-    WPObject    *pObject;
-    ULONG       ulObjectCount = 0;
-
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("  Entering AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
-    #endif
-
-    TRY_LOUD(excpt1, NULL)
-    {
-        wpshCheckIfPopulated(pTrashDir);
-
-        fTrashDirSemOwned = !_wpRequestObjectMutexSem(pTrashDir, SEM_INDEFINITE_WAIT);
-        if (fTrashDirSemOwned)
-        {
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("  wpPopulate: fTrashDirSemOwned = %d", fTrashDirSemOwned));
-            #endif
-
-            for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
-                    (pObject);
-                    pObject = _wpQueryContent(pTrashDir, pObject, (ULONG)QC_NEXT)
-                )
-            {
-                BOOL    fAddTrashObject = TRUE;
-                if (_somIsA(pObject, _WPFolder))
-                {
-                    // another folder found:
-                    // check the attributes if it's one of the
-                    // \TRASH subdirectories added by the trashcan
-                    // or maybe a "real" WPS folder that had been
-                    // deleted
-                    CHAR    szFolderPath[CCHMAXPATH] = "";
-                    ULONG   ulAttrs = 0;
-                    _wpQueryFilename(pObject, szFolderPath, TRUE);
-                    if (doshQueryPathAttr(szFolderPath, &ulAttrs) == NO_ERROR)
-                        if (ulAttrs & FILE_HIDDEN)
-                        {
-                            // hidden directory: this is a trash directory,
-                            // so recurse!
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
-                            #endif
-
-                            ulObjectCount += AddTrashObjectsForTrashDir(pTrashCan,
-                                                                        pObject, // new trash dir
-                                                                        pdTotalSize);
-                            // skip the following
-                            fAddTrashObject = FALSE;
-                        }
-                }
-
-                if (fAddTrashObject)
-                {
-                    // non-folder:
-                    // add to trashcan!
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("    Adding %s, _XWPTrashObject: 0x%lX",
-                                    _wpQueryTitle(pObject),
-                                    _XWPTrashObject));
-                    #endif
-
-                    if (_XWPTrashObject)
-                    {
-                        XWPTrashObject *pTrashObject = 0;
-                        // note that M_XWPTrashObject::xwpclsCreateTrashObject
-                        // will automatically check for whether a trash
-                        // object exists for a given related object
-                        if (pTrashObject = _xwpclsCreateTrashObject(_XWPTrashObject,
-                                                 pTrashCan,
-                                                 pObject))  // related object
-                        {
-                            // successfully created:
-                            ulObjectCount++;
-                            *pdTotalSize += _xwpQueryRelatedSize(pTrashObject);
-                        }
-                    }
-                }
-            } // end for (   pObject = _wpQueryContent(...
-        } // end if (fTrashDirSemOwned)
-        else
-            krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
-                                    (MPARAM)strdup("Couldn't request mutex semaphore"),
-                                    (MPARAM)FALSE);
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fTrashDirSemOwned)
-    {
-        _wpReleaseObjectMutexSem(pTrashDir);
-        fTrashDirSemOwned = FALSE;
-
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("  wpPopulate: fTrashDirSemOwned = %d", fTrashDirSemOwned));
-        #endif
-    }
-
-    if (ulObjectCount == 0)
-    {
-        // no objects found in this trash folder and
-        // subfolders (if any):
-        // delete this folder, it's useless
-        _wpFree(pTrashDir);
-    }
-
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("  End of AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
-    #endif
-
-    return (ulObjectCount);
-}
-
-/*
- *@@ CreateTrashObjectsList:
- *      this creates a new linked list (PLINKLIST, linklist.c,
- *      which is returned) containing all the trash objects in
- *      the specified trash can.
- *
- *      The list's item data pointers point to the XWPTrashObject*
- *      instances directly.
- *
- *      Note that the list is created in any case, even if the
- *      trash can is empty. lstFree must therefore always be
- *      used to free this list.
- */
-
-PLINKLIST CreateTrashObjectsList(XWPTrashCan* somSelf)
-{
-    PLINKLIST       pllTrashObjects = lstCreate(FALSE);
-                                // FALSE: since we store the XWPTrashObjects directly,
-                                // the list node items must not be free()'d
-    XWPTrashObject* pTrashObject = 0;
-
-    for (   pTrashObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
-            (pTrashObject);
-            pTrashObject = _wpQueryContent(somSelf, pTrashObject, (ULONG)QC_NEXT)
-        )
-    {
-        // pTrashObject now has the XWPTrashObject to delete
-        lstAppendItem(pllTrashObjects, pTrashObject);
-    }
-
-    return (pllTrashObjects);
-}
-
-/*
- *@@ fncbTrashCanSettingsInitPage:
- *      notebook callback function (notebook.c) for the
- *      "TrashCan" settings page.
- *      Sets the controls on the page according to the
- *      Global Settings.
- */
-
-VOID fncbTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
-                          ULONG flFlags)        // CBI_* flags (notebook.h)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-    if (flFlags & CBI_INIT)
-    {
-        if (pcnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-        }
-    }
-
-    if (flFlags & CBI_ENABLE)
-    {
-        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-        WinEnableControl(pcnbp->hwndPage, ID_XTDI_DELETE,
-                          (pKernelGlobals->fXFldObject));
-    }
-
-    if (flFlags & CBI_SET)
-    {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XTDI_DELETE,
-                              pGlobalSettings->fTrashDelete);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XTDI_EMPTYSTARTUP,
-                              pGlobalSettings->fTrashEmptyStartup);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XTDI_EMPTYSHUTDOWN,
-                              pGlobalSettings->fTrashEmptyShutdown);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XTDI_CONFIRMEMPTY,
-                              pGlobalSettings->fTrashConfirmEmpty);
-    }
-}
-
-/*
- *@@ fncbTrashCanSettingsItemChanged:
- *      notebook callback function (notebook.c) for the
- *      "TrashCan" settings page.
- *      Reacts to changes of any of the dialog controls.
- */
-
-MRESULT fncbTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                USHORT usItemID, USHORT usNotifyCode,
-                                ULONG ulExtra)      // for checkboxes: contains new state
-{
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-    MRESULT mrc = (MPARAM)0;
-    BOOL fSave = TRUE;
-
-    switch (usItemID)
-    {
-        case ID_XTDI_DELETE:
-            pGlobalSettings->fTrashDelete = ulExtra;
-        break;
-
-        case ID_XTDI_EMPTYSTARTUP:
-            pGlobalSettings->fTrashEmptyStartup = ulExtra;
-        break;
-
-        case ID_XTDI_EMPTYSHUTDOWN:
-            pGlobalSettings->fTrashEmptyShutdown = ulExtra;
-        break;
-
-        case ID_XTDI_CONFIRMEMPTY:
-            pGlobalSettings->fTrashConfirmEmpty = ulExtra;
-        break;
-
-        case DID_UNDO:
-        {
-            // "Undo" button: get pointer to backed-up Global Settings
-            GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
-
-            // and restore the settings for this page
-            pGlobalSettings->fTrashDelete = pGSBackup->fTrashDelete;
-            pGlobalSettings->fTrashEmptyStartup = pGSBackup->fTrashEmptyStartup;
-            pGlobalSettings->fTrashEmptyShutdown = pGSBackup->fTrashEmptyShutdown;
-            pGlobalSettings->fTrashConfirmEmpty = pGSBackup->fTrashConfirmEmpty;
-
-            // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
-
-        case DID_DEFAULT:
-        {
-            // set the default settings for this settings page
-            // (this is in common.c because it's also used at
-            // WPS startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
-            // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
-
-        default:
-            fSave = FALSE;
-    }
-
-    cmnUnlockGlobalSettings();
-
-    if (fSave)
-        cmnStoreGlobalSettings();
-
-    return (mrc);
-}
-
-/*
- *@@ fncbTrashCanDrivesInitPage:
- *      notebook callback function (notebook.c) for the
- *      trash can "Drives" settings page.
- *      Sets the controls on the page according to the
- *      Global Settings.
- */
-
-VOID fncbTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
-                                ULONG flFlags)        // CBI_* flags (notebook.h)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-    if (flFlags & CBI_INIT)
-    {
-        if (pcnbp->pUser == NULL)
-        {
-            // first call: backup drives array for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(abSupportedDrives));
-            memcpy(pcnbp->pUser, abSupportedDrives, sizeof(abSupportedDrives));
-        }
-    }
-
-    if (flFlags & CBI_ENABLE)
-    {
-        // enable "Add" button if items are selected
-        // in the "Unsupported" listbox
-        WinEnableControl(pcnbp->hwndPage, ID_XTDI_ADD_SUPPORTED,
-                          (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndPage,
-                                                                     ID_XTDI_UNSUPPORTED_LB),
-                                                     LIT_FIRST)
-                                != LIT_NONE));
-        // enable "Remove" button if items are selected
-        // in the "Supported" listbox
-        WinEnableControl(pcnbp->hwndPage, ID_XTDI_REMOVE_SUPPORTED,
-                          (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndPage,
-                                                                     ID_XTDI_SUPPORTED_LB),
-                                                     LIT_FIRST)
-                                != LIT_NONE));
-    }
-
-    if (flFlags & CBI_SET)
-    {
-        ULONG   bIndex = 0;
-        CHAR    szDriveName[3] = "C:";
-        HWND    hwndSupportedLB = WinWindowFromID(pcnbp->hwndPage, ID_XTDI_SUPPORTED_LB),
-                hwndUnsupportedLB = WinWindowFromID(pcnbp->hwndPage, ID_XTDI_UNSUPPORTED_LB);
-
-        winhDeleteAllItems(hwndSupportedLB);
-        winhDeleteAllItems(hwndUnsupportedLB);
-
-        for (bIndex = 0;
-             bIndex < CB_SUPPORTED_DRIVES;
-             bIndex++)
-        {
-            if (abSupportedDrives[bIndex] != XTRC_INVALID)
-            {
-                // if drive is supported, insert into "supported",
-                // otherwise into "unsupported"
-                HWND    hwndLbox = (abSupportedDrives[bIndex] == XTRC_SUPPORTED)
-                                        ? hwndSupportedLB
-                                        : hwndUnsupportedLB;
-                // insert
-                LONG lInserted = WinInsertLboxItem(hwndLbox,
-                                                   LIT_END,
-                                                   szDriveName);
-                // set item's handle to array index
-                winhSetLboxItemHandle(hwndLbox,
-                                      lInserted,
-                                      bIndex);
-            }
-
-            // raise drive letter
-            (szDriveName[0])++;
-        }
-    }
-}
-
-/*
- *@@ StoreSupportedDrives:
- *      this gets called from fncbTrashCanDrivesItemChanged
- *      to read the (un)supported drives from the listbox.
- *
- *@@added V0.9.1 (99-12-14) [umoeller]
- */
-
-BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supported drives
-                          HWND hwndUnsupportedLB) // in: list box with unsupported drives
-{
-    BOOL    brc = FALSE;
-
-    if ((hwndSupportedLB) && (hwndUnsupportedLB))
-    {
-        BYTE    abSupportedDrivesNew[CB_SUPPORTED_DRIVES];
-        SHORT   sIndexThis = 0;
-        SHORT   sItemCount;
-
-        // set all drives to "invalid"; only those
-        // items will be overwritten which are in the
-        // listboxes
-        memset(abSupportedDrivesNew, XTRC_INVALID, sizeof(abSupportedDrivesNew));
-
-        // go thru "supported" listbox
-        sItemCount = winhQueryLboxItemCount(hwndSupportedLB);
-        for (sIndexThis = 0;
-             sIndexThis < sItemCount;
-             sIndexThis++)
-        {
-            ULONG   ulIndexHandle = winhQueryLboxItemHandle(hwndSupportedLB,
-                                                            sIndexThis);
-            abSupportedDrivesNew[ulIndexHandle] = XTRC_SUPPORTED;
-        }
-
-        // go thru "unsupported" listbox
-        sItemCount = winhQueryLboxItemCount(hwndUnsupportedLB);
-        for (sIndexThis = 0;
-             sIndexThis < sItemCount;
-             sIndexThis++)
-        {
-            ULONG   ulIndexHandle = winhQueryLboxItemHandle(hwndUnsupportedLB,
-                                                            sIndexThis);
-            abSupportedDrivesNew[ulIndexHandle] = XTRC_UNSUPPORTED;
-        }
-
-        // update trash can with that data
-        _xwpclsSetDrivesSupport(_XWPTrashCan,
-                                abSupportedDrivesNew);
-    }
-
-    return (brc);
-}
-
-/*
- *@@ fncbTrashCanDrivesItemChanged:
- *      notebook callback function (notebook.c) for the
- *      trash can "Drives" settings page.
- *      Reacts to changes of any of the dialog controls.
- */
-
-MRESULT fncbTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
-                                      ULONG ulExtra)      // for checkboxes: contains new state
-{
-    MRESULT mrc = (MPARAM)0;
-    BOOL fSave = TRUE;
-
-    static BOOL fNoDeselection = FALSE;
-
-    switch (usItemID)
-    {
-        /*
-         * ID_XTDI_UNSUPPORTED_LB:
-         * ID_XTDI_SUPPORTED_LB:
-         *      if list box selections change,
-         *      re-enable "Add"/"Remove" buttons
-         */
-
-        case ID_XTDI_UNSUPPORTED_LB:
-        case ID_XTDI_SUPPORTED_LB:
-            if (usNotifyCode == LN_SELECT)
-            {
-                // deselect all items in the other listbox
-                if (!fNoDeselection)
-                {
-                    fNoDeselection = TRUE;
-                            // this recurses
-                    winhLboxSelectAll(WinWindowFromID(pcnbp->hwndPage,
-                                                      ((usItemID == ID_XTDI_UNSUPPORTED_LB)
-                                                        ? ID_XTDI_SUPPORTED_LB
-                                                        : ID_XTDI_UNSUPPORTED_LB)),
-                                      FALSE); // deselect
-                    fNoDeselection = FALSE;
-                }
-
-                // re-enable items
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
-            }
-        break;
-
-        /*
-         * ID_XTDI_ADD_SUPPORTED:
-         *      "Add" button: move item(s)
-         *      from "unsupported" to "supported"
-         *      list box
-         */
-
-        case ID_XTDI_ADD_SUPPORTED:
-        {
-            SHORT   sItemStart = LIT_FIRST;
-            HWND    hwndSupportedLB = WinWindowFromID(pcnbp->hwndPage, ID_XTDI_SUPPORTED_LB),
-                    hwndUnsupportedLB = WinWindowFromID(pcnbp->hwndPage, ID_XTDI_UNSUPPORTED_LB);
-            CHAR    szItemText[10];
-
-            fNoDeselection = TRUE;
-            while (TRUE)
-            {
-                sItemStart = winhQueryLboxSelectedItem(hwndUnsupportedLB,
-                                                       sItemStart);
-                if (sItemStart == LIT_NONE)
-                    break;
-
-                // move item
-                winhMoveLboxItem(hwndUnsupportedLB,
-                                 sItemStart,
-                                 hwndSupportedLB,
-                                 LIT_SORTASCENDING,
-                                 TRUE);         // select
-            }
-            fNoDeselection = FALSE;
-
-            // re-enable buttons
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
-
-            // update internal drives data
-            StoreSupportedDrives(hwndSupportedLB,
-                                 hwndUnsupportedLB);
-        break; }
-
-        /*
-         * ID_XTDI_REMOVE_SUPPORTED:
-         *      "Add" button: move item(s)
-         *      from "unsupported" to "supported"
-         *      list box
-         */
-
-        case ID_XTDI_REMOVE_SUPPORTED:
-        {
-            SHORT   sItemStart = LIT_FIRST;
-            HWND    hwndSupportedLB = WinWindowFromID(pcnbp->hwndPage, ID_XTDI_SUPPORTED_LB),
-                    hwndUnsupportedLB = WinWindowFromID(pcnbp->hwndPage, ID_XTDI_UNSUPPORTED_LB);
-            CHAR    szItemText[10];
-
-            fNoDeselection = TRUE;
-            while (TRUE)
-            {
-                sItemStart = winhQueryLboxSelectedItem(hwndSupportedLB,
-                                                       sItemStart);
-                if (sItemStart == LIT_NONE)
-                    break;
-
-                // move item
-                winhMoveLboxItem(hwndSupportedLB,
-                                 sItemStart,
-                                 hwndUnsupportedLB,
-                                 LIT_SORTASCENDING,
-                                 TRUE);         // select
-            }
-            fNoDeselection = FALSE;
-
-            // re-enable buttons
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
-
-            // update internal drives data
-            StoreSupportedDrives(hwndSupportedLB,
-                                 hwndUnsupportedLB);
-        break; }
-
-        case DID_UNDO:
-        {
-            // copy array back which was stored in init callback
-            _xwpclsSetDrivesSupport(_XWPTrashCan,
-                                    pcnbp->pUser);  // backup data
-            // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
-
-        case DID_DEFAULT:
-        {
-            // set defaults
-            _xwpclsSetDrivesSupport(_XWPTrashCan,
-                                    NULL);     // defaults
-            // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
-
-        default:
-            fSave = FALSE;
-    }
-
-    if (fSave)
-        cmnStoreGlobalSettings();
-
-    return (mrc);
-}
 
 /* ******************************************************************
  *                                                                  *
@@ -751,123 +166,47 @@ MRESULT fncbTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 /*
  *@@ xwpDeleteIntoTrashCan:
- *            this new instance method takes any WPS object and
- *            "deletes" it into the trash can (somSelf).
+ *      this new instance method takes any WPS object and
+ *      "deletes" it into the trash can (somSelf).
  *
- *            This gets called in two situations:
- *            1)  when XFldObject::wpMenuItemSelected reacts to
- *                the "Delete" context menu item;
- *            2)  from XWPTrashCan::wpDrop.
+ *      This gets called in two situations:
+ *      1)  when XFldObject::wpMenuItemSelected reacts to
+ *          the "Delete" context menu item;
+ *      2)  from XWPTrashCan::wpDrop.
  *
- *            When an object is thus "deleted" into the trashcan,
- *            this method does the following:
+ *      When an object is thus "deleted" into the trashcan,
+ *      this method does the following:
  *
- *            1)  create a hidden directory "\Trash" on the drive
- *                where the object resides, if that directory doesn't
- *                exist already;
+ *      1)  create a hidden directory "\Trash" on the drive
+ *          where the object resides, if that directory doesn't
+ *          exist already;
  *
- *            2)  create a path in "\Trash" according to the path of
- *                the object; i.e., if "F:\Tools\XFolder\xfldr.dll"
- *                is moved into the trash can, "F:\Trash\Tools\XFolder"
- *                will be created;
+ *      2)  create a path in "\Trash" according to the path of
+ *          the object; i.e., if "F:\Tools\XFolder\xfldr.dll"
+ *          is moved into the trash can, "F:\Trash\Tools\XFolder"
+ *          will be created;
  *
- *            3)  move the object which is being deleted into that
- *                directory (using wpMoveObject, so that all WPS
- *                shadows etc. remain valid);
+ *      3)  move the object which is being deleted into that
+ *          directory (using wpMoveObject, so that all WPS
+ *          shadows etc. remain valid);
  *
- *            4)  create a new instance of XWPTrashObject in the
- *                trash can (somSelf) which should represent the
- *                object by calling M_XWPTrashObject::xwpclsCreateTrashObject.
- *                However, this is only done if the trash can has
- *                already been populated (otherwise we'd get duplicate
- *                trash objects in the trash can when populating).
+ *      4)  create a new instance of XWPTrashObject in the
+ *          trash can (somSelf) which should represent the
+ *          object by calling M_XWPTrashObject::xwpclsCreateTrashObject.
+ *          However, this is only done if the trash can has
+ *          already been populated (otherwise we'd get duplicate
+ *          trash objects in the trash can when populating).
+ *
+ *      This returns FALSE upon errors.
  */
 
-SOM_Scope ULONG  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
-                                                    WPObject* pObject)
+SOM_Scope BOOL  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
+                                                   WPObject* pObject)
 {
-    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpDeleteIntoTrashCan");
 
-    if (pObject)
-    {
-        WPFolder *pFolder = _wpQueryFolder(pObject),
-                 *pFolderInTrash;
-        if (pFolder)
-        {
-            CHAR szFolder[CCHMAXPATH];
-            if (_wpQueryFilename(pFolder, szFolder, TRUE))
-            {
-                // now we have the directory name where pObject resides
-                // in szFolder;
-                // get the drive
-                CHAR szTrashDir[CCHMAXPATH];
-
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("Source folder: %s", szFolder));
-                #endif
-
-                sprintf(szTrashDir, "%c:\\Trash%s",
-                        szFolder[0],    // drive letter
-                        &(szFolder[2]));   // rest of path
-
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("Creating dir %s", szTrashDir));
-                #endif
-
-                doshCreatePath(szTrashDir,
-                               TRUE);   // hide that directory
-
-                pFolderInTrash = _wpclsQueryFolder(_WPFolder,
-                                                   szTrashDir,
-                                                   TRUE);       // lock object
-                if (pFolderInTrash)
-                {
-                    if (_wpMoveObject(pObject, pFolderInTrash))
-                    {
-                        // successfully moved:
-                        // set original object's deletion data
-                        // to current date/time
-                        _xwpSetDeletion(pObject, TRUE);
-
-                        // if the trash can has been populated
-                        // already, add a matching trash object;
-                        // otherwise wpPopulate will do this
-                        // later
-                        if (_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL)
-                        {
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("Trash can is populated: creating trash object"));
-                            #endif
-                            if (_xwpclsCreateTrashObject(_XWPTrashObject,
-                                                         somSelf,    // trash can
-                                                         pObject))
-                                #ifdef DEBUG_TRASHCAN
-                                    _Pmpf(("  Created trash object successfully"))
-                                #endif
-                                ;
-                        }
-                        else
-                        {
-                            // not populated yet:
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("Trash can not populated, skipping trash object"));
-                            #endif
-
-                            // just raise the number of trash items
-                            // and change the icon, wpPopulate will
-                            // later correct this number
-                            (_ulTrashObjectCount)++;
-                            _xwpSetCorrectTrashIcon(somSelf);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /* Return statement to be customized: */
-    return (0);
+    return (trshDeleteIntoTrashCan(somSelf,
+                                   pObject));
 }
 
 /*
@@ -893,11 +232,11 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
     pcnbp->ulDlgID = ID_XTD_SETTINGS;
     pcnbp->ulPageID = SP_TRASHCAN_SETTINGS;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszTrashSettings;
+    pcnbp->pszName = pNLSStrings->pszTrashSettingsPage;
     pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
 
-    pcnbp->pfncbInitPage    = fncbTrashCanSettingsInitPage;
-    pcnbp->pfncbItemChanged = fncbTrashCanSettingsItemChanged;
+    pcnbp->pfncbInitPage    = trshTrashCanSettingsInitPage;
+    pcnbp->pfncbItemChanged = trshTrashCanSettingsItemChanged;
 
     return (ntbInsertPage(pcnbp));
 }
@@ -926,11 +265,11 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
     pcnbp->ulDlgID = ID_XTD_DRIVES;
     pcnbp->ulPageID = SP_TRASHCAN_DRIVES;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = pNLSStrings->pszTrashSettings;
+    pcnbp->pszName = pNLSStrings->pszTrashDrivesPage;
     pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
 
-    pcnbp->pfncbInitPage    = fncbTrashCanDrivesInitPage;
-    pcnbp->pfncbItemChanged = fncbTrashCanDrivesItemChanged;
+    pcnbp->pfncbInitPage    = trshTrashCanDrivesInitPage;
+    pcnbp->pfncbItemChanged = trshTrashCanDrivesItemChanged;
 
     return (ntbInsertPage(pcnbp));
 }
@@ -960,7 +299,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
  *      Note that this information is only accurate if the
  *      trash can has been fully populated. Otherwise,
  *      you will get a number too, but this might not
- *      reflect the precise no.of objects, since that no.
+ *      reflect the precise no. of objects, since that no.
  *      is stored internally to be able to set the correct
  *      trash can icon even without populating.
  */
@@ -978,190 +317,144 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpQueryTrashObjectsCount(XWPTrashCan *somSelf)
  *      this sets the trash can's icon according
  *      to its current state by calling wpSetIcon
  *      with either the "empty" or "not empty" icon.
+ *
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: added fForce parameter
  */
 
-SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf)
+SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
+                                                    BOOL fForce)
 {
     HPOINTER hptr = NULLHANDLE;
     ULONG    ulIconID = 0;
     BOOL     brc = FALSE;
     BOOL     fTrashFilled = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpSetCorrectTrashIcon");
 
-    if (!_fCorrectIconSet)
-    {
-        // very first call (probably at system startup):
-        // get the last trash objects count from the global
-        // settings (we don't have to populate the trash can
-        // at this point)
-        _fCorrectIconSet = TRUE;
-    }
-
     if (_ulTrashObjectCount)
         fTrashFilled = TRUE;
 
-    /* if (pGlobalSettings->fReplaceIcons)
+    if (    (fForce)
+         || (fTrashFilled != _fFilledIconSet)
+       )
     {
-        // attempt to load user-defined replacement icon
-        // from ICONS.DLL
-        if (fTrashFilled)
-            ulIconID = 113;
-        else
-            ulIconID = 112;
+        // icon changed:
 
-        hptr = WinLoadPointer(HWND_DESKTOP,
-                              cmnQueryIconsDLL(),
-                              ulIconID);
-    } */
+        /* if (pGlobalSettings->fReplaceIcons)
+        {
+            // attempt to load user-defined replacement icon
+            // from ICONS.DLL
+            if (fTrashFilled)
+                ulIconID = 113;
+            else
+                ulIconID = 112;
 
-    if (hptr == NULLHANDLE)
-    {
-        // no user icons or user icon not found:
-        // then load the icon from XFLDR.DLL
-        if (fTrashFilled)
-            ulIconID = ID_ICONXWPTRASHFILLED;
-        else
-            ulIconID = ID_ICONXWPTRASHEMPTY;
+            hptr = WinLoadPointer(HWND_DESKTOP,
+                                  cmnQueryIconsDLL(),
+                                  ulIconID);
+        } */
 
-        hptr = WinLoadPointer(HWND_DESKTOP,
-                              cmnQueryMainModuleHandle(),
-                              ulIconID);
+        if (hptr == NULLHANDLE)
+        {
+            // no user icons or user icon not found:
+            // then load the icon from XFLDR.DLL
+            if (fTrashFilled)
+                ulIconID = ID_ICONXWPTRASHFILLED;
+            else
+                ulIconID = ID_ICONXWPTRASHEMPTY;
+
+            hptr = WinLoadPointer(HWND_DESKTOP,
+                                  cmnQueryMainModuleHandle(),
+                                  ulIconID);
+        }
+
+        if (hptr)
+        {
+            brc = _wpSetIcon(somSelf, hptr);
+            if (brc)
+                _wpSetStyle(somSelf,
+                            _wpQueryStyle(somSelf) | OBJSTYLE_CUSTOMICON);
+
+        }
+        _fFilledIconSet = fTrashFilled;
     }
-
-    if (hptr)
-        brc = _wpSetIcon(somSelf, hptr);
 
     return (brc);
 }
 
 /*
  *@@ xwpEmptyTrashCan:
- *      this will empty the trashcan.
+ *      this will empty the trashcan by invoking
+ *      XWPTrashObject::xwpDestroyTrashObject on
+ *      each trash object.
  *
- *      This should get called on a second thread, such
- *      as the XWorkplace File thread, in order
- *      not to block PM, because this will work synchronously
- *      (i.e. not return until the trash can is empty).
+ *      Note that this is done on the XWorkplace File
+ *      thread so this function returns BEFORE the
+ *      trash can is empty.
  *
- *      Normally, this method gets called from the
- *      XWorkplace file thread (fnwpFileObject, kernel.c)
- *      when XWPTrashCan::wpMenuItemSelected intercepts
- *      the "empty trash can" command.
+ *      If (fConfirm == TRUE), a confirmation box
+ *      is displayed before processing starts.
  *
- *      If (pfnwpCallback != NULL), this callback will
- *      get called to allow for displaying the progress
- *      of the delete operation.
- *
- *      This callback gets called for every object
- *      _before_ it gets deleted. You can therefore
- *      invoke all SOM methods on it.
- *
- *      Parameters passed to the callback:
- *
- *      -- HWND hwnd:        hwndUser passed to this func
- *      -- MPARAM mp1:       trash object (XWPTrashObject instance)
- *      -- MPARAM mp2:       related object ("real" object)
- *
- *      To display a status window, create that window
- *      before calling this function, pass that window to
- *      this function in hwndUser, and destroy it after
- *      this function is done. Again, this operates
- *      synchroneously.
- *
- *      This returns the no. of objects deleted or
- *      0 if the trash can was empty or -1 upon errors.
+ *      Returns TRUE if emptying the trash can has
+ *      started on the File thread.
  */
 
-SOM_Scope ULONG  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
-                                               PFNWP pfnwpCallback,
-                                               HWND hwndUser)
+SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
+                                              BOOL fConfirm)
 {
-    ULONG       ulrc = 0;
-    WPObject*   pTrashObject = 0;
-    BOOL        fTrashCanSemOwned = FALSE;
-
-    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpEmptyTrashCan");
 
-    TRY_LOUD(excpt1, NULL)
-    {
-        PLINKLIST pllTrashObjects;
-        PLISTNODE pNode = 0;
-
-        // make sure the trash objects are up-to-date
-        wpshCheckIfPopulated(somSelf);
-
-        // we must build a list of trash objects first,
-        // because if we deleted the trash objects in this
-        // loop already, the next items would not be found
-        fTrashCanSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-        if (fTrashCanSemOwned)
-        {
-            pllTrashObjects = CreateTrashObjectsList(somSelf);
-
-            // now delete the items
-            pNode = lstQueryFirstNode(pllTrashObjects);
-            while (pNode)
-            {
-                pTrashObject = (XWPTrashObject*)(pNode->pItemData);
-
-                if (_xwpDestroyTrashObject(pTrashObject))
-                    ulrc++;
-
-                // go for next
-                pNode = pNode->pNext;
-            }
-
-            lstFree(pllTrashObjects);
-
-            // now reconstruct the list and check whether
-            // we have successfully destroyed all objects
-            _ulTrashObjectCount = 0;
-            pllTrashObjects = CreateTrashObjectsList(somSelf);
-            _ulTrashObjectCount = lstCountItems(pllTrashObjects);
-            lstFree(pllTrashObjects);
-            _xwpSetCorrectTrashIcon(somSelf);
-        } // end if (fTrashCanSemOwned)
-        else
-            krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
-                                    (MPARAM)strdup("Couldn't request mutex semaphore"),
-                                    (MPARAM)FALSE);
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fTrashCanSemOwned)
-    {
-        _wpReleaseObjectMutexSem(somSelf);
-        fTrashCanSemOwned = FALSE;
-    }
-
-    return (ulrc);
+    return (trshEmptyTrashCan(somSelf, fConfirm));
 }
 
 /*
  *@@ xwpUpdateStatusBar:
  *      this XFolder instance method gets called when the status
- *      bar needs updating. This gets called using name-lookup
- *      resolution, so XFolder does not have to be installed
- *      for this to work. However, if it is, this method will
- *      be called. See xfldr.idl for details.
+ *      bar needs updating.
+ *
+ *      This always gets called using name-lookup resolution, so
+ *      XFolder does not have to be installed for this to work.
+ *      However, if it is, this method will be called. See
+ *      XFolder::xwpUpdateStatusBar for more on this.
+ *
+ *      Note that this gets also called from trshPopulateFirstTime
+ *      while the trash can is being populated to show the
+ *      "current drive" stuff. Before every call, _cCurrentDrivePopulating
+ *      is set to the drive letter currently being populated.
+ *
+ *      If (_cCurrentDrivePopulating == 0), we're not currently
+ *      populating.
+ *
+ *@@changed V0.9.1 (2000-02-04) [umoeller]: added "populating..." support
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
                                                 HWND hwndStatusBar,
                                                 HWND hwndCnr)
 {
-    CHAR        szText[1000] = "",
-                szNum[100];
+    CHAR        szText[1000] = "";
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpUpdateStatusBar");
 
-    sprintf(szText,
-            "Total size of all objects: %s bytes",
-            strhThousandsDouble(szNum, _dTotalSize, '.'));
+    if (_cCurrentDrivePopulating)
+        // populating drive:
+        sprintf(szText,
+                pNLSStrings->pszStbPopulating,  // "Populating drive %c:",
+                _cCurrentDrivePopulating);
+    else
+    {
+        CHAR    szNum1[100],
+                szNum2[100];
+        // not populating:
+        sprintf(szText,
+                pNLSStrings->pszStbObjCount, // "Total size of all objects: %s bytes",
+                strhThousandsDouble(szNum1, _ulTrashObjectCount, '.'),
+                strhThousandsDouble(szNum2, _dTotalSize, '.'));
+    }
 
     WinSetWindowText(hwndStatusBar, szText);
 
@@ -1182,9 +475,16 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 
     XWPTrashCan_parent_WPFolder_wpInitData(somSelf);
 
+    _fAlreadyPopulated = FALSE;
+    _fFilledIconSet = FALSE;
     _ulTrashObjectCount = 0;
-    _fCorrectIconSet = FALSE;
     _dTotalSize = 0;
+
+    _cCurrentDrivePopulating = 0;
+
+    if (G_pDefaultTrashCan == NULL)
+        // this is the first trash can to be initialized:
+        G_pDefaultTrashCan = somSelf;
 }
 
 /*
@@ -1209,7 +509,7 @@ SOM_Scope void  SOMLINK xtrc_wpObjectReady(XWPTrashCan *somSelf,
     XWPTrashCan_parent_WPFolder_wpObjectReady(somSelf, ulCode,
                                               refObject);
 
-    _xwpSetCorrectTrashIcon(somSelf);
+    _xwpSetCorrectTrashIcon(somSelf, TRUE);
 }
 
 /*
@@ -1224,6 +524,9 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
 {
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpUnInitData");
+
+    if (G_pDefaultTrashCan == somSelf)
+        G_pDefaultTrashCan = NULL;
 
     XWPTrashCan_parent_WPFolder_wpUnInitData(somSelf);
 }
@@ -1302,7 +605,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRestoreState(XWPTrashCan *somSelf,
  *      this instance method allows the object to filter out
  *      unwanted menu items from the context menu.
  *
- *      We remove the "Open tree view" item.
+ *      We remove the "Open tree view" and "Create another" items.
+ *
+ *@@changed V0.9.1 (2000-01-31) [umoeller]: now removing "Create another" also
  */
 
 SOM_Scope ULONG  SOMLINK xtrc_wpFilterPopupMenu(XWPTrashCan *somSelf,
@@ -1317,7 +622,7 @@ SOM_Scope ULONG  SOMLINK xtrc_wpFilterPopupMenu(XWPTrashCan *somSelf,
                                                           ulFlags,
                                                           hwndCnr,
                                                           fMultiSelect)
-                    &~ CTXT_TREE);
+                    &~ (CTXT_TREE | CTXT_NEW));
 }
 
 /*
@@ -1342,17 +647,25 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
                                                           hwndCnr,
                                                           iPosition);
 
-    if ((brc) && (_ulTrashObjectCount))
+    if (    (brc)
+         && (_ulTrashObjectCount)
+       )
     {
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        CHAR        szEmptyItem[200];
 
         winhInsertMenuSeparator(hwndMenu, MIT_END,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
+        // "empty trash can"
+        strcpy(szEmptyItem, pNLSStrings->pszTrashEmpty);
+        if (pGlobalSettings->fTrashConfirmEmpty)
+            // confirmations on:
+            strcat(szEmptyItem, "...");
         winhInsertMenuItem(hwndMenu, MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHEMPTY),
-                           pNLSStrings->pszTrashEmpty, MIS_TEXT, 0);
+                           szEmptyItem, MIS_TEXT, 0);
 
     }
 
@@ -1361,10 +674,17 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      this instance method gets called when a menu item
- *      was selected in the object's context menu.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the trash can
+ *      items.
  *
- *      We need to react to our new menu items here.
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
@@ -1381,18 +701,18 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
     // "empty trashcan"
     if (ulMenuId2 == ID_XFMI_OFS_TRASHEMPTY)
     {
-        xthrPostFileMsg(FIM_EMPTYTRASH,
-                       (MPARAM)somSelf,
-                       (MPARAM)NULL);
+        _xwpEmptyTrashCan(somSelf,
+                          pGlobalSettings->fTrashConfirmEmpty);
     }
     // swallow "open tree view"
     else if (ulMenuId == WPMENUID_TREE)
     {
         brc = FALSE;
     }
-    else brc = XWPTrashCan_parent_WPFolder_wpMenuItemSelected(somSelf,
-                                                              hwndFrame,
-                                                              ulMenuId);
+    else
+        brc = XWPTrashCan_parent_WPFolder_wpMenuItemSelected(somSelf,
+                                                             hwndFrame,
+                                                             ulMenuId);
 
     return (brc);
 }
@@ -1410,6 +730,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
 {
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemHelpSelected");
+
+    // ###
 
     return (XWPTrashCan_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
                                                                MenuId));
@@ -1439,6 +761,44 @@ SOM_Scope BOOL  SOMLINK xtrc_wpQueryDefaultHelp(XWPTrashCan *somSelf,
 }
 
 /*
+ *@@ wpOpen:
+ *      subclass the trash can folder frame.
+ *
+ *@@added V0.9.1 (2000-01-30) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
+                                    HWND hwndCnr,
+                                    ULONG ulView,
+                                    ULONG param)
+{
+    HWND hwndFrame = NULLHANDLE;
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpOpen");
+
+    if (    (ulView == OPEN_CONTENTS)
+         || (ulView == OPEN_DETAILS)
+         || (ulView == OPEN_SETTINGS)
+       )
+    {
+        hwndFrame = XWPTrashCan_parent_WPFolder_wpOpen(somSelf,
+                                                       hwndCnr,
+                                                       ulView,
+                                                       param);
+        if (    (ulView == OPEN_CONTENTS)
+             || (ulView == OPEN_DETAILS)
+           )
+        {
+            trshSubclassTrashCanFrame(hwndFrame,
+                                      somSelf,
+                                      ulView);
+        }
+    }
+
+    return (hwndFrame);
+}
+
+/*
  *@@ wpPopulate:
  *      this instance method populates a folder, in this
  *      case, the trash can object.
@@ -1457,8 +817,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpQueryDefaultHelp(XWPTrashCan *somSelf,
  *      in the trash can.
  *
  *      Note that when objects are deleted into the trash can,
- *      xwpDeleteIntoTrashCan will add trash objects only if
- *      the trash can has been populated already.
+ *      XWPTrashCan::xwpDeleteIntoTrashCan will add trash objects
+ *      only if the trash can has been populated already.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
@@ -1485,99 +845,17 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                         ulFldrFlags));
         #endif
 
-        _wpSetFldrFlags(somSelf, ulFldrFlags | FOI_POPULATEINPROGRESS);
-
         if (!fFoldersOnly)
         {
-            // populate with all:
-            if ((ulFldrFlags & FOI_POPULATEDWITHALL) == 0)
+            if (!_fAlreadyPopulated)
             {
-                CHAR        szTrashDir[30],
-                            cDrive;
-                BYTE        bIndex;     // into abSupportedDrives[]
-
-                // not yet populated: this does not necessarily mean
-                // that no trash objects currently reside in the
-                // trash can, because apparently, this method also
-                // gets called by wpRefresh (after FOI_POPULATEDWITHALL
-                // has been reset), so we better validate the objects
-                // in the trash can.
-
-                PLINKLIST   pllTrashObjects = CreateTrashObjectsList(somSelf);
-                PLISTNODE   pNode = lstQueryFirstNode(pllTrashObjects);
-
-                // reset trash objects count
+                // very first call:
                 _ulTrashObjectCount = 0;
                 _dTotalSize = 0;
 
-                // now go thru the list
-                while (pNode)
-                {
-                    XWPTrashObject* pTrashObject = (XWPTrashObject*)pNode->pItemData;
+                trshPopulateFirstTime(somSelf, ulFldrFlags);
 
-                    if (_xwpValidateTrashObject(pTrashObject) == NO_ERROR)
-                        _ulTrashObjectCount++;
-                    // else error: means that item has been destroyed
-
-                    // go for next
-                    pNode = pNode->pNext;
-                }
-                lstFree(pllTrashObjects);
-
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("  Checked all objects, found %d", _ulTrashObjectCount));
-                #endif
-
-                // now go over all drives and create
-                // trash objects for all the objects
-                // in the "\Trash" directories.
-                // Note that M_XWPTrashObject::xwpclsCreateTrashObject
-                // will automatically check for whether a trash
-                // object exists for a given related object.
-
-                cDrive = 'C';  // (bIndex == 0) = drive C:
-
-                for (bIndex = 0;
-                     bIndex < CB_SUPPORTED_DRIVES;
-                     bIndex++)
-                {
-                    if (abSupportedDrives[bIndex] == XTRC_SUPPORTED)
-                    {
-                        // drive supported:
-                        WPFolder    *pTrashDir;
-
-                        sprintf(szTrashDir, "%c:\\Trash",
-                                cDrive);
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("  Getting trash dir %s", szTrashDir));
-                        #endif
-
-                        pTrashDir = _wpclsQueryFolder(_WPFolder,
-                                                      szTrashDir,
-                                                      TRUE);       // lock object
-                        if (pTrashDir)
-                            // "\Trash" exists for this drive;
-                            _ulTrashObjectCount += AddTrashObjectsForTrashDir(
-                                                       somSelf,     // trashcan to add objects to
-                                                       pTrashDir,   // initial trash dir;
-                                                                    // this routine will recurse
-                                                       &_dTotalSize);
-                    }
-                    cDrive++;
-                }
-
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("  Added new trash objects, now %d", _ulTrashObjectCount));
-                #endif
-
-                ulFldrFlags |= (FOI_POPULATEDWITHFOLDERS
-                                  | FOI_POPULATEDWITHALL);
-                ulFldrFlags &= ~FOI_POPULATEINPROGRESS;
-
-                // save trash can's state; this will store
-                // the trash object count in .CLASSINFO
-                // (wpSaveState)
-                _wpSaveDeferred(somSelf);
+                _fAlreadyPopulated = TRUE;
             }
         }
 
@@ -1586,11 +864,17 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                         _wpQueryTitle(somSelf),
                         fFoldersOnly));
         #endif
-
-        _wpSetFldrFlags(somSelf, ulFldrFlags);
     }
 
-    _xwpSetCorrectTrashIcon(somSelf);
+    _xwpSetCorrectTrashIcon(somSelf,
+                            TRUE);      // always set icon, because wpPopulate gets
+                                        // called quite frequently and the WPS keeps
+                                        // resetting the icon then
+
+    // save trash can's state; this will store
+    // the trash object count in .CLASSINFO
+    // (wpSaveState)
+    _wpSaveDeferred(somSelf);
 
     return (brc);
 }
@@ -1614,7 +898,77 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRefresh(XWPTrashCan *somSelf,
 
     brc = XWPTrashCan_parent_WPFolder_wpRefresh(somSelf, ulView,
                                                 pReserved);
-    _xwpSetCorrectTrashIcon(somSelf);
+
+    trshRefresh(somSelf);
+
+    _xwpSetCorrectTrashIcon(somSelf, TRUE);
+
+    return (brc);
+}
+
+/*
+ *@@ wpAddToContent:
+ *      this WPFolder method is overridden to receive
+ *      notification when a trash object is added to
+ *      the trash can. We update the trash can's icon
+ *      and the total bytes count then.
+ *
+ *@@added V0.9.1 (2000-01-29) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrc_wpAddToContent(XWPTrashCan *somSelf,
+                                            WPObject* Object)
+{
+    BOOL brc = FALSE;
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddToContent");
+
+    if (XWPTrashCan_parent_WPFolder_wpAddToContent(somSelf,
+                                                   Object))
+    {
+        brc = TRUE;
+        if (_somIsA(Object, _XWPTrashObject))
+        {
+            XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+            // successfully created:
+            _ulTrashObjectCount++;
+            _dTotalSize += _xwpQueryRelatedSize(Object);
+            _xwpSetCorrectTrashIcon(somSelf, FALSE);
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ wpDeleteFromContent:
+ *      this WPFolder method is overridden to receive
+ *      notification when a trash object is deleted
+ *      from the trash can. We update the trash can's
+ *      icon and the total bytes count then.
+ *
+ *@@added V0.9.1 (2000-01-29) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
+                                                 WPObject* Object)
+{
+    BOOL brc = FALSE;
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDeleteFromContent");
+
+    if (XWPTrashCan_parent_WPFolder_wpDeleteFromContent(somSelf,
+                                                        Object))
+    {
+        brc = TRUE;
+        if (_somIsA(Object, _XWPTrashObject))
+        {
+            // successfully created:
+            XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+            _ulTrashObjectCount--;
+            _dTotalSize -= _xwpQueryRelatedSize(Object);
+            _xwpSetCorrectTrashIcon(somSelf, FALSE);
+        }
+    }
 
     return (brc);
 }
@@ -1628,16 +982,56 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRefresh(XWPTrashCan *somSelf,
  *
  *      We check whether the object(s) are deleteable and
  *      return flags accordingly.
+ *
+ *      This must return the return values of DM_DRAGOVER,
+ *      which is a MRFROM2SHORT.
+ *
+ *      -- USHORT 1 usDrop must be:
+ *
+ *          --  DOR_DROP (0x0001): Object can be dropped.
+ *
+ *          --  DOR_NODROP (0x0000): Object cannot be dropped at this time,
+ *              but type and format are supported. Send DM_DRAGOVER again.
+ *
+ *          --  DOR_NODROPOP (0x0002):  Object cannot be dropped at this time,
+ *              but only the current operation is not acceptable.
+ *
+ *          --  DOR_NEVERDROP (0x0003): Object cannot be dropped at all. Do
+ *              not send DM_DRAGOVER again.
+ *
+ *      -- USHORT 2 usDefaultOp must specify the default operation, which can be:
+ *
+ *          --  DO_COPY 0x0010:
+ *
+ *          --  DO_LINK 0x0018:
+ *
+ *          --  DO_MOVE 0x0020:
+ *
+ *          --  DO_CREATE 0x0040: create object from template
+ *
+ *          --  DO_NEW: from PMREF:
+ *              Default operation is create another.  Use create another to create
+ *              an object that has default settings and data.  The result of using
+ *              create another is identical to creating an object from a template.
+ *              This value should be defined as DO_UNKNOWN+3 if it is not
+ *              recognized in the current level of the toolkit.
+ *
+ *          --  Other: This value should be greater than or equal to (>=) DO_UNKNOWN
+ *              but not DO_NEW.
+ *
+ *@@changed V0.9.1 (2000-02-01) [umoeller]: re-implemented the damn thing; support for DRM_OS2FILE added
  */
 
 SOM_Scope MRESULT  SOMLINK xtrc_wpDragOver(XWPTrashCan *somSelf,
-                                           HWND hwndCnr, PDRAGINFO pdrgInfo)
+                                           HWND hwndCnr,
+                                           PDRAGINFO pdrgInfo)
 {
+    MRESULT     mrc;
+
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDragOver");
 
-    return (XWPTrashCan_parent_WPFolder_wpDragOver(somSelf, hwndCnr,
-                                                   pdrgInfo));
+    return (trshDragOver(somSelf, pdrgInfo));
 }
 
 /*
@@ -1649,64 +1043,46 @@ SOM_Scope MRESULT  SOMLINK xtrc_wpDragOver(XWPTrashCan *somSelf,
  *
  *      We delete the objects into the trash can by invoking
  *      XWPTrashCan::xwpDeleteIntoTrashCan.
+ *
+ *      This must return one of:
+ *
+ *      -- RC_DROP_DROPCOMPLETE 2: all objects processed; prohibit
+ *         further wpDrop calls
+ *
+ *      -- RC_DROP_ERROR -1: error occured, terminate drop
+ *
+ *      -- RC_DROP_ITEMCOMPLETE 1: one item processed, call wpDrop
+ *         again for subsequent items
+ *
+ *      -- RC_DROP_RENDERING 0: request source rendering for this
+ *         object, call wpDrop for next object.
+ *
+ *      We process all items at once here and return RC_DROP_DROPCOMPLETE
+ *      unless an error occurs.
+ *
+ *@@changed V0.9.1 (2000-02-01) [umoeller]: re-implemented the damn thing; support for DRM_OS2FILE added
  */
 
 SOM_Scope MRESULT  SOMLINK xtrc_wpDrop(XWPTrashCan *somSelf,
-                                       HWND hwndCnr, PDRAGINFO pdrgInfo,
+                                       HWND hwndCnr,
+                                       PDRAGINFO pdrgInfo,
                                        PDRAGITEM pdrgItem)
 {
     MRESULT     mrc = (MRESULT)RC_DROP_ERROR;
-    ULONG       ulItemNow = 0;
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDrop");
 
     #ifdef DEBUG_TRASHCAN
-        _Pmpf(("pdrgInfo->hwndSource: 0x%lX", pdrgInfo->hwndSource));
+        _Pmpf(("wpDrop: pdrgInfo->hwndSource: 0x%lX", pdrgInfo->hwndSource));
             // this always has the HWND of
             // the source container
-        _Pmpf(("pdrgInfo->cditem:     0x%lX", pdrgInfo->cditem));
+        _Pmpf(("wpDrop: pdrgInfo->cditem:     0x%lX", pdrgInfo->cditem));
             // this has the number of items that
             // are dropped; always >= 1
     #endif
 
-    for (ulItemNow = 0;
-         ulItemNow < pdrgInfo->cditem;
-         ulItemNow++)
-    {
-        DRAGITEM    drgItem;
-        if (DrgQueryDragitem(pdrgInfo,
-                             sizeof(drgItem),
-                             &drgItem,
-                             ulItemNow))
-            if (DrgVerifyRMF(&drgItem, "DRM_OBJECT", NULL))
-            {
-                // get the object pointer:
-                // the WPS stores the MINIRECORDCORE in drgItem.ulItemID
-                WPObject *pObject = OBJECT_FROM_PREC(drgItem.ulItemID);
-
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("Item %d:", ulItemNow));
-                    _Pmpf(("  drgItem.hwndItem:    0x%lX", drgItem.hwndItem));
-                        // == pdrgInfo->hwndSource
-
-                    _Pmpf(("  drgItem.ulItemID:    0x%lX", drgItem.ulItemID));
-                        // WPSGUIDE:
-                        // --  if (DRM_OBJECT), this is the
-                        //     PMINIRECORDCORE of the dropped object;
-                        //     use OBJECT_FROM_PREC
-                        // --  if (DRM_FILE), ulItemID is not used
-                #endif
-
-                if (pObject)
-                    _xwpDeleteIntoTrashCan(somSelf, pObject);
-            }
-
-        mrc = (MRESULT)RC_DROP_DROPCOMPLETE;
-                // means: _all_ items have been processed,
-                // and wpDrop should _not_ be called again
-                // by the WPS for the next items, if any
-    }
+    mrc = trshMoveDropped2TrashCan(somSelf, pdrgInfo);
 
     return (mrc);
 }
@@ -1764,6 +1140,25 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderIncludePage(XWPTrashCan *somSelf,
 }
 
 /*
+ *@@ wpAddFolderView2Page:
+ *      this WPFolder method adds the "Tree view" page
+ *      which we need to remove.
+ *
+ *@@added V0.9.1 (2000-01-29) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderView2Page(XWPTrashCan *somSelf,
+                                                   HWND hwndNotebook)
+{
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddFolderView2Page");
+
+    /* return (XWPTrashCan_parent_WPFolder_wpAddFolderView2Page(somSelf,
+                                                             hwndNotebook)); */
+    return (SETTINGS_PAGE_REMOVED);
+}
+
+/*
  *@@ wpAddSettingsPages:
  *      this instance method adds settings pages to
  *      an object's settings notebook, in this case.
@@ -1790,24 +1185,21 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddSettingsPages(XWPTrashCan *somSelf,
  ********************************************************************/
 
 /*
- *@@ xwpclsDeleteIntoTrashCan:
- *            this deletes an object into the default
- *            trash can (with the object ID &lt;XWORKPLACE_TRASHCAN&gt;
- *            by invoking XWPTrashCan::xwpDeleteIntoTrashCan upon it.
+ *@@ xwpclsQueryDefaultTrashCan:
+ *            this returns the default trash can (with the object ID
+ *            &lt;XWORKPLACE_TRASHCAN&gt;).
  *
- *            This allows you to simply delete an object without
- *            having to query the default trash can first: simply
- *            call _xwpclsDeleteIntoTrashCan(_XWPTrashCan, pObject).
+ *@@addded V0.9.1 (2000-01-31) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xtrcM_xwpclsDeleteIntoTrashCan(M_XWPTrashCan *somSelf,
-                                                        WPObject* pObject)
+SOM_Scope XWPTrashCan*  SOMLINK xtrcM_xwpclsQueryDefaultTrashCan(M_XWPTrashCan *somSelf)
 {
-    /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
-    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsDeleteIntoTrashCan");
+    XWPTrashCan *pDefaultTrashCan = NULL;
+    // M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
+    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsQueryDefaultTrashCan");
 
-    /* Return statement to be customized: */
-    return (0);
+    pDefaultTrashCan = G_pDefaultTrashCan; // wpshQueryObjectFromID(XFOLDER_TRASHCANID, NULL);
+    return (pDefaultTrashCan);
 }
 
 /*
@@ -1843,67 +1235,9 @@ SOM_Scope ULONG  SOMLINK xtrcM_xwpclsDeleteIntoTrashCan(M_XWPTrashCan *somSelf,
 SOM_Scope BOOL  SOMLINK xtrcM_xwpclsSetDrivesSupport(M_XWPTrashCan *somSelf,
                                                      PBYTE pabSupportedDrives)
 {
-    BOOL brc = FALSE;
-    // M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsSetDrivesSupport");
 
-    if (cmnLock(5000))
-    {
-        if (pabSupportedDrives)
-        {
-            // drives specified:
-            memcpy(abSupportedDrives, pabSupportedDrives, CB_SUPPORTED_DRIVES);
-            // write to INI
-            PrfWriteProfileData(HINI_USER,
-                                INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
-                                abSupportedDrives,
-                                sizeof(abSupportedDrives));
-        }
-        else
-        {
-            // pointer is NULL:
-            CHAR    szFSType[30];
-            ULONG   ulLogicalDrive = 3;     // start with drive C:
-            BYTE    bIndex = 0;             // index into abSupportedDrives
-
-            memset(abSupportedDrives, 0, sizeof(abSupportedDrives));
-
-            for (ulLogicalDrive = 3;
-                 ulLogicalDrive < CB_SUPPORTED_DRIVES + 3;
-                 ulLogicalDrive++)
-            {
-                APIRET  arc = doshAssertDrive(ulLogicalDrive);
-
-                switch (arc)
-                {
-                    case NO_ERROR:
-                        abSupportedDrives[bIndex] = XTRC_SUPPORTED;
-                    break;
-
-                    case ERROR_INVALID_DRIVE:
-                        abSupportedDrives[bIndex] = XTRC_INVALID;
-                    break;
-
-                    default:
-                        // this includes ERROR_NOT_READY, ERROR_NOT_SUPPORTED
-                        abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
-                }
-
-                bIndex++;
-            }
-
-            // delete INI key
-            PrfWriteProfileString(HINI_USER,
-                                  INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
-                                  NULL);        // delete
-        }
-
-        brc = TRUE;
-
-        cmnUnlock();
-    }
-
-    return (brc);
+    return (trshSetDrivesSupport(pabSupportedDrives));
 }
 
 /*
@@ -1931,35 +1265,41 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsSetDrivesSupport(M_XWPTrashCan *somSelf,
 SOM_Scope BOOL  SOMLINK xtrcM_xwpclsQueryDrivesSupport(M_XWPTrashCan *somSelf,
                                                        PBYTE pabSupportedDrives)
 {
-    M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsQueryDrivesSupport");
 
-    /* Return statement to be customized: */
-    return (FALSE);
+    return (trshQueryDrivesSupport(pabSupportedDrives));
 }
 
 /*
  *@@ wpclsInitData:
- *      this class methods allows the class to
- *      initialize itself.
+ *      this class method allows the class to
+ *      initialize itself. We set up some global
+ *      trash can data and also make sure that
+ *      the XWPTrashObject class gets initialized.
+ *
+ *@@changed V0.9.1 (2000-01-27) [umoeller]: finally fixed those strange crashes in some WPS background thread
  */
 
 SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
 {
-    M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
+    SOMClass *pTrashObjectClassObject;
+
+    // M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsInitData");
 
     M_XWPTrashCan_parent_M_WPFolder_wpclsInitData(somSelf);
 
-    // initialize class data
-    _pDefaultTrashCan = NULL;
+    // enforce initialization of XWPTrashObject class
+    pTrashObjectClassObject = XWPTrashObjectNewClass(XWPTrashObject_MajorVersion,
+                                                     XWPTrashObject_MinorVersion);
 
-    // enforce initialization of XWPTrashObject class by
-    // creating the class object
-    // SOMClass *pTrashObjectClassObject = pTrashObjectClassObject =
-            XWPTrashObjectNewClass(XWPTrashObject_MajorVersion,
-                                   XWPTrashObject_MinorVersion);
-
+    if (pTrashObjectClassObject)
+        // now increment the class's usage count by one to
+        // ensure that the class is never unloaded; if we
+        // didn't do this, we'd get WPS CRASHES in some
+        // background class because if no more trash objects
+        // exist, the class would get unloaded automatically -- sigh...
+        _wpclsIncUsage(pTrashObjectClassObject);
 
     {
         PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
@@ -1969,18 +1309,27 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
     }
 
     // initialize supported drives
-    if (abSupportedDrives[0] == 0)
+    if (!fDrivesInitialized)
     {
-        ULONG   cbSupportedDrives = sizeof(abSupportedDrives);
-        memset(abSupportedDrives, XTRC_INVALID, cbSupportedDrives);
-        if (!PrfQueryProfileData(HINI_USER,
-                                 INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
-                                 abSupportedDrives,
-                                 &cbSupportedDrives))
-            // data not found:
-            _xwpclsSetDrivesSupport(somSelf,
-                                    NULL);     // defaults
+        trshLoadDrivesSupport(somSelf);
+        fDrivesInitialized = TRUE;
     }
+}
+
+/*
+ *@@ wpclsUnInitData:
+ *
+ *@@added V0.9.1 (2000-01-29) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xtrcM_wpclsUnInitData(M_XWPTrashCan *somSelf)
+{
+    // M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
+    M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsUnInitData");
+
+    _wpclsDecUsage(_XWPTrashObject);
+
+    M_XWPTrashCan_parent_M_WPFolder_wpclsUnInitData(somSelf);
 }
 
 /*
@@ -2232,8 +1581,27 @@ SOM_Scope APIRET  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
         if (!wpshCheckObject(_pRelatedObject))
             // pointer invalid:
             arc = ERROR_FILE_NOT_FOUND;
+        else
+        {
+            // object seems to be valid:
+            // check if it's a file-system object and
+            // if the actual file still exists
+            if (_somIsA(_pRelatedObject, _WPFileSystem))
+            {
+                // yes:
+                CHAR szFilename[2*CCHMAXPATH];
+                if (_wpQueryFilename(_pRelatedObject, szFilename, TRUE))
+                    if (access(szFilename, 0) != 0)
+                    {
+                        // file doesn't exist any more:
+                        arc = ERROR_FILE_NOT_FOUND;
+                    }
+            }
+        }
 
     if (arc != NO_ERROR)
+        // any error found:
+        // destroy the object
         _wpFree(somSelf);
 
     return (arc);
@@ -2281,7 +1649,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
                 // unset "no delete" style flag
                 ULONG ulStyle = _wpQueryStyle(_pRelatedObject);
 
-                /* if (_somIsA(_pRelatedObject, _WPFileSystem))
+                /* if (_somIsA(_pRelatedObject, _WPFileSystem)) ###
                 {
                     // unset system, readonly, hidden attributes
                     CHAR    szFilename[CCHMAXPATH] = "";
@@ -2307,21 +1675,11 @@ SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
                     // successfully deleted:
                     // update the trashcan (folder of trash object)
                     // by killing ourselves
-                    XWPTrashCan* pTrashCan = _wpQueryFolder(somSelf);
-                    if (_wpFree(somSelf))
-                        if (pTrashCan)
-                            if (_somIsA(pTrashCan, _XWPTrashCan))
-                            {
-                                // decrease trash object count in trash can
-                                XWPTrashCanData *pTrashCanData = XWPTrashCanGetData(pTrashCan);
-                                pTrashCanData->ulTrashObjectCount--;
-                                pTrashCanData->dTotalSize -= _ulSize;
-                                _xwpSetCorrectTrashIcon(pTrashCan);
-                            }
+                    brc = _wpFree(somSelf);
 
                     // check if other objects still exist in
                     // the subdirectory of "\Trash" where the
-                    // related object was
+                    // related object was ###
                     /* while (pTrashDir)
                     {
                         WPFolder* pParent = _wpQueryFolder(pTrashDir);
@@ -2352,7 +1710,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
 }
 
 /*
- *@@ xwpRestoreRelatedObject:
+ *@@ xwpRestoreFromTrashCan:
  *      this restores the object which this trash
  *      object represents from the "\Trash" directories.
  *
@@ -2373,90 +1731,12 @@ SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
  *      object is no longer valid if TRUE is returned here.
  */
 
-SOM_Scope BOOL  SOMLINK xtro_xwpRestoreRelatedObject(XWPTrashObject *somSelf,
-                                                     WPFolder* pTargetFolder)
+SOM_Scope BOOL  SOMLINK xtro_xwpRestoreFromTrashCan(XWPTrashObject *somSelf,
+                                                    WPFolder* pTargetFolder)
 {
-    BOOL        brc = FALSE;
-    PSZ         pszOriginalPath = NULL;
-    WPFolder*   pTargetFolder2 = 0;
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpRestoreFromTrashCan");
 
-    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
-    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpRestoreRelatedObject");
-
-    if (_pRelatedObject)
-    {
-        if (pTargetFolder)
-        {
-            // target folder specified: use that one
-            pTargetFolder2 = pTargetFolder;
-        }
-        else
-        {
-            // target folder not specified: use the original dir
-            // where the object was deleted from
-            if (pszOriginalPath = _xwpQueryRelatedPath(somSelf))
-            {
-                // make sure that the original directory exists;
-                // it might not if a whole folder (tree) was
-                // moved into the trash can.
-                // If it does, this func will do nothing.
-                doshCreatePath(pszOriginalPath,
-                               FALSE);   // do not hide those directories
-
-                pTargetFolder2 = _wpclsQueryFolder(_WPFolder,
-                                                   pszOriginalPath,
-                                                   TRUE);       // lock object
-            }
-        }
-
-        if (pTargetFolder2)
-        {
-            // folder exists:
-            // check if object exists in that folder already
-            // (this might call the XFldObject replacement)
-            WPObject    *pReplaceThis = NULL;
-            CHAR        szNewTitle[CCHMAXPATH] = "";
-            BOOL        fMove = TRUE;
-            ULONG       ulAction;
-
-            strcpy(szNewTitle, _wpQueryTitle(_pRelatedObject));
-            ulAction = _wpConfirmObjectTitle(_pRelatedObject,      // object
-                                             pTargetFolder2,       // folder
-                                             &pReplaceThis,        // object to replace (if NAMECLASH_REPLACE)
-                                             szNewTitle,           // in/out: object title
-                                             sizeof(szNewTitle),
-                                             0x006B);              // move code
-
-            switch (ulAction)
-            {
-                case NAMECLASH_CANCEL:
-                    fMove = FALSE;
-                break;
-
-                case NAMECLASH_RENAME:
-                    _wpSetTitle(_pRelatedObject,
-                                szNewTitle);      // set by wpConfirmObjectTitle
-                break;
-
-                case NAMECLASH_REPLACE:
-                    _wpReplaceObject(_pRelatedObject,
-                                     pReplaceThis,       // set by wpConfirmObjectTitle
-                                     TRUE);              // move and replace
-                    fMove = FALSE;
-                break;
-
-                // NAMECLASH_NONE: just go on
-            }
-
-            if (fMove)
-                // move related object
-                if (_wpMoveObject(_pRelatedObject, pTargetFolder2))
-                    // successful: destroy the trash object
-                    brc = _wpFree(somSelf);
-        }
-    } // end if (_pRelatedObject)
-
-    return (brc);
+    return (trshRestoreFromTrashCan(somSelf, pTargetFolder));
 }
 
 /*
@@ -2580,6 +1860,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
                               &pDetails->cdateDeleted,
                               &pDetails->ctimeDeleted);
             pDetails->ulSize = _ulSize;
+            pDetails->pszOriginalClass = _somGetName(_somGetClass(_pRelatedObject));
         }
         // move the pointer past our details structure
         *ppDetailsData = ((PBYTE) (*ppDetailsData)) + sizeof(XTRO_DETAILS);
@@ -2600,12 +1881,6 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
  *      unwanted menu items from the context menu.
  *
  *@@changed V0.9.1 (2000-01-12) [umoeller]: now removing "Create another" as well
- */
-
-/*
- *@@ wpFilterPopupMenu:
- *           this instance method allows the object to filter out
- *           unwanted menu items from the context menu.
  */
 
 SOM_Scope ULONG  SOMLINK xtro_wpFilterPopupMenu(XWPTrashObject *somSelf,
@@ -2675,9 +1950,22 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      this instance method gets called when a menu item
- *      was selected in the object's context menu.
- *      We need to react to our new menu items here.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the trash object
+ *      items.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
+ *
+ *      Actually, this method doesn't get called any longer
+ *      for the operations which are checked for here
+ *      because the subclassed trash can frame procedure
+ *      (trsh_fnwpSubclassedTrashCanFrame) already handles this.
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
@@ -2692,7 +1980,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
     if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE))
     {
         // "Restore object":
-        brc = _xwpRestoreRelatedObject(somSelf,
+        brc = _xwpRestoreFromTrashCan(somSelf,
                                        NULL);       // use original folder
     }
     else if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
@@ -2703,8 +1991,8 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
     // none of our menu items: call default
     else
         brc = XWPTrashObject_parent_WPTransient_wpMenuItemSelected(somSelf,
-                                                                 hwndFrame,
-                                                                 ulMenuId);
+                                                                   hwndFrame,
+                                                                   ulMenuId);
 
     return (brc);
 }
@@ -2761,18 +2049,20 @@ SOM_Scope BOOL  SOMLINK xtro_wpQueryDefaultHelp(XWPTrashObject *somSelf,
  *      stuff, and the other move invocations will work
  *      also.
  *
- *      So we call XWPTrashObject::xwpRestoreRelatedObject
+ *      So we call XWPTrashObject::xwpRestoreFromTrashCan
  *      here.
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpMoveObject(XWPTrashObject *somSelf,
                                           WPFolder* Folder)
 {
+    PTASKREC pTaskRec;
+
     // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMoveObject");
 
-    return (_xwpRestoreRelatedObject(somSelf,
-                                     Folder));  // move-target folder to recreate object in
+    return (_xwpRestoreFromTrashCan(somSelf,
+                                    Folder));  // move-target folder to recreate object in
         // this destroys somSelf
 }
 
@@ -2837,125 +2127,6 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDrop(XWPTrashObject *somSelf,
  *   XWPTrashObject class methods                                   *
  *                                                                  *
  ********************************************************************/
-
-/*
- *@@ xwpclsCreateTrashObject:
- *            this creates a new transient "trash object" in the
- *            given trashcan by invoking wpclsNew upon the XWPTrashObject
- *            class object (somSelf of this method).
- *
- *            Arguments:
- *            -- <B>pTrashCan:</B> the trashcan to create the object in.
- *            -- <B>pRelatedObject:</B> the object which the new trash object
- *               should be related to. We use a RELATEDOBJECT settings
- *               string with wpclsNew to set the related object
- *               (see XWPTrashObject::wpSetup).
- *
- *            This returns the new trash object. If NULL is returned,
- *            either an error occured creating the trash object or
- *            a trash object with the same pRelatedObject already
- *            existed in the trash can.
- *
- *            <B>Note:</B> This does not move the related object to a trash can.
- *            This method is only used internally by XWPTrashCan to
- *            map the contents of the "\Trash" directories into the
- *            open trashcan.
- *
- *            To move an object into a trashcan, call
- *            XWPTrashCan::xwpDeleteIntoTrashCan, which automatically
- *            determines whether this method needs to be called.
- */
-
-SOM_Scope XWPTrashObject*  SOMLINK xtroM_xwpclsCreateTrashObject(M_XWPTrashObject *somSelf,
-                                                                 XWPTrashCan* pTrashCan,
-                                                                 WPObject* pRelatedObject)
-{
-    XWPTrashObject *pTrashObject = NULL;
-
-    /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
-    M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_xwpclsCreateTrashObject");
-
-    if ( (pTrashCan) && (pRelatedObject) )
-    {
-        CHAR        szSetupString[100];
-        // PLINKLIST   pllTrashObjects;
-        // PLISTNODE   pNode = 0;
-        BOOL        fRelatedExistsAlready = FALSE,
-                    fTrashCanSemOwned = FALSE;
-
-        TRY_LOUD(excpt1, NULL)
-        {
-            PLINKLIST pllTrashObjects;
-            PLISTNODE pNode = 0;
-
-            // check if the object already exists in the
-            // trash can; we must do this because wpPopulate
-            // gets called from wpRefresh also.
-            // If the trash can has not been populated yet,
-            // we need not worry, because then we definitely
-            // have no trash objects in the trash can.
-            fTrashCanSemOwned = !_wpRequestObjectMutexSem(pTrashCan, SEM_INDEFINITE_WAIT);
-            if (fTrashCanSemOwned)
-            {
-                pllTrashObjects = CreateTrashObjectsList(pTrashCan);
-
-                // now delete the items
-                pNode = lstQueryFirstNode(pllTrashObjects);
-                while (pNode)
-                {
-                    WPObject *pTestRelatedObject = _xwpQueryRelatedObject(
-                                (XWPTrashObject*)pNode->pItemData); // item data is trash object
-
-                    if (pTestRelatedObject == pRelatedObject)
-                    {
-                        // exists already: set flag and break
-                        fRelatedExistsAlready = TRUE;
-                        break; // while (pNode)
-                    }
-
-                    // go for next
-                    pNode = pNode->pNext;
-                } // end while (pNode)
-
-                lstFree(pllTrashObjects);
-            } // end if (fTrashCanSemOwned)
-            else
-                krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
-                                        (MPARAM)strdup("Couldn't request mutex semaphore"),
-                                        (MPARAM)FALSE);
-        }
-        CATCH(excpt1) { } END_CATCH();
-
-        if (fTrashCanSemOwned)
-        {
-            _wpReleaseObjectMutexSem(pTrashCan);
-            fTrashCanSemOwned = FALSE;
-        }
-
-        if (!fRelatedExistsAlready)
-        {
-            // related object not found above: go!
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("        Creating trash object \"%s\" in \"%s\"",
-                        _wpQueryTitle(pRelatedObject),
-                        _wpQueryTitle(pTrashCan)));
-            #endif
-
-            // we must pass the related object as a setup string,
-            // because otherwise the Details data (which is initialized
-            // at object creation only) will not know about this (duh)
-            sprintf(szSetupString, "RELATEDOBJECT=%lX",
-                    _wpQueryHandle(pRelatedObject));
-            pTrashObject = _wpclsNew(somSelf,   // class object
-                                     _wpQueryTitle(pRelatedObject),
-                                     szSetupString, // setup string
-                                     pTrashCan,     // where to create the object
-                                     TRUE);  // lock
-        }
-    }
-
-    return (pTrashObject);
-}
 
 /*
  *@@ wpclsInitData:
@@ -3050,6 +2221,17 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->pTitleData        = pNLSStrings->pszSize;
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ulSize));
                 pcfi->ulLenFieldData    = sizeof(ULONG);
+                pcfi->DefaultComparison = CMP_GREATER;
+            break;
+
+            // fifth item: class of related object
+            case 4:
+                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
+                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
+                pcfi->flData            |= CFA_STRING | CFA_RIGHT;
+                pcfi->pTitleData        = pNLSStrings->pszOrigClass;
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszOriginalClass));
+                pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
         }   // end for

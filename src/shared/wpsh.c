@@ -37,7 +37,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -468,76 +468,77 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                 }
             }
 
-            fFolderSemOwned = !_wpRequestObjectMutexSem(pFolder, SEM_INDEFINITE_WAIT);
             wpshCheckIfPopulated(pFolder);
             pNewObject = _wpCreateFromTemplate(pTemplate,
                                                pFolder,
                                                TRUE);
 
-            if (pNewObject)
+            fFolderSemOwned = !_wpRequestObjectMutexSem(pFolder, 3000);
+            if (    (fFolderSemOwned)
+                &&  (pNewObject)
+               )
             {
                 PMINIRECORDCORE pmrc;
 
-                fNewObjSemOwned = !_wpRequestObjectMutexSem(pNewObject, SEM_INDEFINITE_WAIT);
-
-                pmrc = _wpQueryCoreRecord(pNewObject);
-
-                if ((hwndCnr) && (pmrc))
-                {
-                    // move new object to mouse pos, if allowed;
-                    // we must do this "manually" by manipulating the
-                    // cnr itself, because the WPS methods for setting
-                    // icon positions simply don't work (I think this
-                    // broke with Warp 3)
-
-                    if (fIconPos)       // valid-data flag set above
-                    {
-                        /* _wpCnrInsertObject(pNewObject,
-                                    hwndCnr,
-                                    pptlMenuMousePos,
-                                    pmrc,
-                                    NULL); */
-
-                        // the WPS shares records among views, so we need
-                        // to update the record core info first
-                        WinSendMsg(hwndCnr,
-                                   CM_QUERYRECORDINFO,
-                                   (MPARAM)&pmrc,
-                                   (MPARAM)1);         // one record only
-                        // un-display the new object at the old (default) location
-                        WinSendMsg(hwndCnr,
-                                   CM_ERASERECORD,
-                                       // this only changes the visibility of the
-                                       // record without changing the recordcore;
-                                       // this msg is intended for drag'n'drop and such
-                                   (MPARAM)pmrc,
-                                   NULL);
-
-                        // move object
-                        pmrc->ptlIcon.x = pptlMenuMousePos->x;
-                        pmrc->ptlIcon.y = pptlMenuMousePos->y;
-
-                        // repaint at new position
-                        WinSendMsg(hwndCnr,
-                                   CM_INVALIDATERECORD,
-                                   (MPARAM)&pmrc,
-                                   MPFROM2SHORT(1,     // one record only
-                                       CMA_REPOSITION | CMA_ERASE));
-
-                        // scroll cnr work area to make the new object visible
-                        cnrhScrollToRecord(hwndCnr,
-                                           (PRECORDCORE)pmrc,
-                                           CMA_TEXT,
-                                           FALSE);
-                    }
-
-                } // end if ((hwndCnr) && (pmrc))
-
+                fNewObjSemOwned = !_wpRequestObjectMutexSem(pNewObject, 3000);
                 if (fNewObjSemOwned)
                 {
+                    pmrc = _wpQueryCoreRecord(pNewObject);
+
+                    if ((hwndCnr) && (pmrc))
+                    {
+                        // move new object to mouse pos, if allowed;
+                        // we must do this "manually" by manipulating the
+                        // cnr itself, because the WPS methods for setting
+                        // icon positions simply don't work (I think this
+                        // broke with Warp 3)
+
+                        if (fIconPos)       // valid-data flag set above
+                        {
+                            /* _wpCnrInsertObject(pNewObject,
+                                        hwndCnr,
+                                        pptlMenuMousePos,
+                                        pmrc,
+                                        NULL); */
+
+                            // the WPS shares records among views, so we need
+                            // to update the record core info first
+                            WinSendMsg(hwndCnr,
+                                       CM_QUERYRECORDINFO,
+                                       (MPARAM)&pmrc,
+                                       (MPARAM)1);         // one record only
+                            // un-display the new object at the old (default) location
+                            WinSendMsg(hwndCnr,
+                                       CM_ERASERECORD,
+                                           // this only changes the visibility of the
+                                           // record without changing the recordcore;
+                                           // this msg is intended for drag'n'drop and such
+                                       (MPARAM)pmrc,
+                                       NULL);
+
+                            // move object
+                            pmrc->ptlIcon.x = pptlMenuMousePos->x;
+                            pmrc->ptlIcon.y = pptlMenuMousePos->y;
+
+                            // repaint at new position
+                            WinSendMsg(hwndCnr,
+                                       CM_INVALIDATERECORD,
+                                       (MPARAM)&pmrc,
+                                       MPFROM2SHORT(1,     // one record only
+                                           CMA_REPOSITION | CMA_ERASE));
+
+                            // scroll cnr work area to make the new object visible
+                            cnrhScrollToRecord(hwndCnr,
+                                               (PRECORDCORE)pmrc,
+                                               CMA_TEXT,
+                                               FALSE);
+                        }
+
+                    } // end if ((hwndCnr) && (pmrc))
+
                     _wpReleaseObjectMutexSem(pNewObject);
                     fNewObjSemOwned = FALSE;
-                }
+                } // end if (fNewObjSemOwned)
 
                 // the object is now created; depending on the
                 // Global settings, we will now either open
@@ -677,8 +678,12 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
 /*
  *@@ wpshQueryFrameFromView:
  *       this routine gets the frame window handle of the
- *       specified object view; returns 0 if the specified view is
- *       not currently open.
+ *       specified object view (OPEN_* flag, e.g. OPEN_CONTENTS
+ *       or OPEN_SETTINGS), as found in the view items list
+ *       of somSelf (wpFindViewItem).
+ *
+ *       Returns NULLHANDLE if the specified view is not
+ *       currently open.
  */
 
 HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
@@ -735,6 +740,213 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
     }
 
     return (ulView);
+}
+
+/*
+ *@@ wpshQuerySourceObject:
+ *      this helper function evaluates a given container
+ *      to find out which objects have been selected while
+ *      a context menu is open. The WPS gives the items on
+ *      which the menu action should be performed upon
+ *      container "source" emphasis, so this is what we
+ *      evaluate.
+ *
+ *      This function only works when a context menu is open,
+ *      because otherwise WPS cnr items don't have source emphasis.
+ *
+ *      However, if (fKeyboardMode == TRUE), this function
+ *      does not check for source emphasis, but selection
+ *      emphasis instead. Only in that case this function
+ *      can be used even when no context menu is open on
+ *      the container. This is useful for processing hotkeys
+ *      on objects, because the WPS makes those work on
+ *      selected objects only.
+ *
+ *      The result of this evaluation is stored in
+ *      *pulSelection, which can be:
+ *
+ *      --   SEL_WHITESPACE the context menu was opened on the
+ *                          whitespace of the container;
+ *                          this func then returns the folder itself.
+ *                          This is only possible if (fKeyboard ==
+ *                          FALSE).
+ *
+ *      --   SEL_SINGLESEL  the context menu was opened for a
+ *                          single selected object (that is,
+ *                          exactly one object is selected and
+ *                          the menu was opened above that object):
+ *                          this func then returns that object.
+ *
+ *      --   SEL_MULTISEL   the context menu was opened on one
+ *                          of a multitude of selected objects;
+ *                          this func then returns the first of the
+ *                          selected objects. Only in that case,
+ *                          keep calling wpshQueryNextSourceObject
+ *                          to get the other selected objects.
+ *
+ *      --   SEL_SINGLEOTHER the context menu was opened for a
+ *                          single object _other_ than the selected
+ *                          objects:
+ *                          this func then returns that object.
+ *                          This is only possible if (fKeyboard ==
+ *                          FALSE).
+ *
+ *      --   SEL_NONEATALL: no object is selected. This is only
+ *                          possible if (fKeyboard == TRUE); only
+ *                          in that case, NULL is returned also.
+ *
+ *      Note that these flags are defined in include\helpers\cnrh.h.
+ *
+ *      Keep in mind that if this function returns something other
+ *      than the folder of the container (SEL_WHITESPACE), the
+ *      returned object might be a shadow, which you might need to
+ *      dereference before working on it.
+ *
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from menus.c; changed prefix
+ *@@changed V0.9.1 (2000-01-31) [umoeller]: added fKeyboardMode support
+ */
+
+WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open menu
+                                HWND hwndCnr,          // in: cnr
+                                BOOL fKeyboardMode,    // in: if TRUE, check selected instead of source only
+                                PULONG pulSelection)   // out: selection flags
+{
+    WPObject        *pObject = NULL;
+
+    do
+    {
+        PMINIRECORDCORE pmrcSource = 0,
+                        pmrcSelected = 0;
+        if (!fKeyboardMode)
+        {
+            // not keyboard, but mouse mode:
+            // get first object with source emphasis
+            pmrcSource = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                     CM_QUERYRECORDEMPHASIS,
+                                                     (MPARAM)CMA_FIRST,
+                                                     (MPARAM)CRA_SOURCE);
+
+            if (pmrcSource == NULL)
+            {
+                // if CM_QUERYRECORDEMPHASIS returns NULL
+                // for source emphasis (CRA_SOUCE),
+                // this means the whole container has source
+                // emphasis --> context menu on folder whitespace
+                pObject = somSelf;   // folder
+                *pulSelection = SEL_WHITESPACE;
+                // we're done
+                break;
+            }
+            else if (((LONG)pmrcSource) == -1)
+                // error:
+                break;
+            // else: we have at least one object with source emphasis
+        }
+
+        // get first _selected_ now
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)CMA_FIRST,
+                                                   (MPARAM)CRA_SELECTED);
+        if (((LONG)pmrcSelected) == -1)
+            // error:
+            break;
+
+        if (!fKeyboardMode)
+        {
+            // not keyboard, but mouse mode:
+            // get the object with source emphasis
+            // (this is != NULL at this point)
+            pObject = OBJECT_FROM_PREC(pmrcSource);
+
+            // check if first source object is equal to
+            // first selected object, i.e. the menu was
+            // opened on one or several selected objects
+            if (pmrcSelected != pmrcSource)
+            {
+                // no:
+                // only one object, but not one of
+                // the selected ones
+                *pulSelection = SEL_SINGLEOTHER;
+                // we're done
+                break;
+            }
+        }
+        else
+        {
+            // keyboard mode:
+            if (pmrcSelected)
+                pObject = OBJECT_FROM_PREC(pmrcSelected);
+            else
+            {
+                // no selected object: that's no object
+                // at all
+                *pulSelection = SEL_NONEATALL;
+                // we're done
+                break;
+            }
+        }
+
+        // we're still going if
+        // a)   we're in menu mode and the first
+        //      source object equals the first selected
+        //      object or
+        // b)   we're in keyboard mode and any
+        //      selected object was found.
+        // Now, are several objects selected?
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)pmrcSelected,
+                                                        // get second obj
+                                                   (MPARAM)CRA_SELECTED);
+        if (pmrcSelected)
+            // several objects:
+            *pulSelection = SEL_MULTISEL;
+        else
+            // only one object:
+            *pulSelection = SEL_SINGLESEL;
+    } while (FALSE);
+
+    // note that we have _not_ dereferenced shadows
+    // here, because this will lead to confusion for
+    // finding other selected objects in the same
+    // folder; dereferencing shadows is therefore
+    // the responsibility of the caller
+    return (pObject);       // can be NULL
+}
+
+/*
+ *@@ wpshQueryNextSourceObject:
+ *      if wpshQuerySourceObject above returns SEL_MULTISEL,
+ *      you can keep calling this helper func to get the
+ *      other objects with source emphasis until this function
+ *      returns NULL.
+ *
+ *      This will return the next object after pObject which
+ *      is selected or NULL if it's the last.
+ *
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from menus.c; changed prefix
+ */
+
+WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
+                                    WPObject *pObject)
+{
+    WPObject *pObject2 = NULL;
+    PMINIRECORDCORE pmrcCurrent = _wpQueryCoreRecord(pObject);
+    if (pmrcCurrent)
+    {
+        PMINIRECORDCORE pmrcNext
+            = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                          CM_QUERYRECORDEMPHASIS,
+                                          (MPARAM)pmrcCurrent,
+                                          (MPARAM)CRA_SELECTED);
+        if (    (pmrcNext)
+             && ((LONG)pmrcNext != -1)
+           )
+            pObject2 = OBJECT_FROM_PREC(pmrcNext);
+    }
+
+    return (pObject2);
 }
 
 /*
@@ -898,4 +1110,236 @@ BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passe
     return (fSuccess);
 }
 
+/*
+ *@@ wpshQueryDraggedObject:
+ *      this helper function can be used with wpDragOver
+ *      and/or wpDrop to resolve a DRAGITEM to a WPS object.
+ *      This supports both DRM_OBJECT and DRM_OS2FILE
+ *      rendering mechanisms.
+ *
+ *      If (ppObject != NULL), the object is resolved and
+ *      written into that pointer as a SOM pointer to the
+ *      object.
+ *
+ *      Returns:
+ *      -- 0: invalid object or mechanism not supported.
+ *      -- 1: DRM_OBJECT mechanism, *ppObject is valid.
+ *      -- 2: DRM_OS2FILE mechanism, *ppObject is valid.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
 
+ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
+                             WPObject **ppObjectFound)
+{
+    ULONG   ulrc = 0;
+
+    // check DRM_OBJECT
+    if (DrgVerifyRMF(pdrgItem,
+                     "DRM_OBJECT",      // mechanism
+                     NULL))             // any format
+    {
+        // get the object pointer:
+        // the WPS stores the MINIRECORDCORE in drgItem.ulItemID
+        WPObject *pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID);
+        if (pObject)
+        {
+            ulrc = 1;
+            if (ppObjectFound)
+                *ppObjectFound = pObject;
+        }
+    }
+    // check DRM_FILE (used by other PM applications)
+    else if (DrgVerifyRMF(pdrgItem,
+                          "DRM_OS2FILE",       // mechanism
+                          NULL))            // any format
+    {
+        CHAR    szFullFile[2*CCHMAXPATH];
+        ULONG   cbFullFile;
+        // get source directory; this always ends in "\"
+        cbFullFile = DrgQueryStrName(pdrgItem->hstrContainerName, // source container
+                                     sizeof(szFullFile),
+                                     szFullFile);
+        if (cbFullFile)
+        {
+            // append file name to source directory
+            if (DrgQueryStrName(pdrgItem->hstrSourceName,
+                                sizeof(szFullFile) - cbFullFile,
+                                szFullFile + cbFullFile))
+            {
+                ulrc = 2;
+                if (ppObjectFound)
+                    *ppObjectFound = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                               szFullFile);
+            }
+        }
+    }
+
+    return (ulrc);
+}
+
+#ifdef __DEBUG__
+    /*
+     *@@ wpshIdentifyRestoreID:
+     *      this returns a string to identify the
+     *      "restore ID" used in wpRestoreString,
+     *      wpRestoreData, wpRestoreLong.
+     *
+     *      This is useful for debugging all those
+     *      keys that are undocumented.
+     *
+     *      This returns a static PSZ, so do not
+     *      free it.
+     *
+     *@@added V0.9.1 (2000-01-17) [umoeller]
+     */
+
+    PSZ wpshIdentifyRestoreID(PSZ pszClass,     // in: class name (as in wpRestore*)
+                              ULONG ulKey)      // in: value ID (as in wpRestore*)
+    {
+        if (strcmp(pszClass, "WPObject") == 0)
+        {
+            switch (ulKey)
+            {
+                case 1:
+                    return ("IDKEY_OBJID");
+                case 2:
+                    return ("IDKEY_OBJHELPPANEL");
+                case 6:
+                    return ("IDKEY_OBJSZID");
+                case 7:
+                    return ("IDKEY_OBJSTYLE");
+                case 8:
+                    return ("IDKEY_OBJMINWIN");
+                case 9:
+                    return ("IDKEY_OBJCONCURRENT");
+                case 10:
+                    return ("IDKEY_OBJVIEWBUTTON");
+                case 11:
+                    return ("IDKEY_OBJDATA");
+                case 12:
+                    return ("IDKEY_OBJSTRINGS");
+            }
+        }
+        else if (strcmp(pszClass, "WPFileSystem") == 0)
+        {
+            switch (ulKey)
+            {
+                case 4:
+                    return ("IDKEY_FSYSMENUCOUNT");
+                case 3:
+                    return ("IDKEY_FSYSMENUARRAY");
+            }
+        }
+        else if (strcmp(pszClass, "WPFolder") == 0)
+        {
+            switch (ulKey)
+            {
+                case IDKEY_FDRCONTENTATTR    : // 2900
+                    return ("IDKEY_FDRCONTENTATTR");
+                case IDKEY_FDRTREEATTR       : // 2901
+                    return ("IDKEY_FDRTREEATTR");
+                case IDKEY_FDRCVLFONT        : // 2902
+                    return ("IDKEY_FDRCVLFONT");
+                case IDKEY_FDRCVNFONT        : // 2903
+                    return ("IDKEY_FDRCVNFONT");
+                case IDKEY_FDRCVIFONT        : // 2904
+                    return ("IDKEY_FDRCVIFONT");
+                case IDKEY_FDRTVLFONT        : // 2905
+                    return ("IDKEY_FDRTVLFONT");
+                case IDKEY_FDRTVNFONT        : // 2906
+                    return ("IDKEY_FDRTVNFONT");
+                case IDKEY_FDRDETAILSATTR    : // 2907
+                    return ("IDKEY_FDRDETAILSATTR");
+                case IDKEY_FDRDVFONT         : // 2908
+                    return ("IDKEY_FDRDVFONT");
+                case IDKEY_FDRDETAILSCLASS   : // 2909
+                    return ("IDKEY_FDRDETAILSCLASS");
+                case IDKEY_FDRICONPOS        : // 2910
+                    return ("IDKEY_FDRICONPOS");
+                case IDKEY_FDRINVISCOLUMNS   : // 2914
+                    return ("IDKEY_FDRINVISCOLUMNS");
+                case IDKEY_FDRINCCLASS       : // 2920
+                    return ("IDKEY_FDRINCCLASS");
+                case IDKEY_FDRINCNAME        : // 2921
+                    return ("IDKEY_FDRINCNAME");
+                case IDKEY_FDRFSYSSEARCHINFO : // 2922
+                    return ("IDKEY_FDRFSYSSEARCHINFO");
+                case IDKEY_FILTERCONTENT     : // 2923
+                    return ("IDKEY_FILTERCONTENT");
+                case IDKEY_CNRBACKGROUND     : // 2924
+                    return ("IDKEY_CNRBACKGROUND");
+                case IDKEY_FDRINCCRITERIA    : // 2925
+                    return ("IDKEY_FDRINCCRITERIA");
+                case IDKEY_FDRICONVIEWPOS    : // 2926
+                    return ("IDKEY_FDRICONVIEWPOS");
+                case IDKEY_FDRSORTCLASS      : // 2927
+                    return ("IDKEY_FDRSORTCLASS");
+                case IDKEY_FDRSORTATTRIBS    : // 2928
+                    return ("IDKEY_FDRSORTATTRIBS");
+                case IDKEY_FDRSORTINFO       : // 2929
+                    return ("IDKEY_FDRSORTINFO");
+                case IDKEY_FDRSNEAKYCOUNT    : // 2930
+                    return ("IDKEY_FDRSNEAKYCOUNT");
+                case IDKEY_FDRLONGARRAY      : // 2931
+                    return ("IDKEY_FDRLONGARRAY");
+                case IDKEY_FDRSTRARRAY       : // 2932
+                    return ("IDKEY_FDRSTRARRAY");
+                case IDKEY_FDRCNRBACKGROUND  : // 2933
+                    return ("IDKEY_FDRCNRBACKGROUND");
+                case IDKEY_FDRBKGNDIMAGEFILE : // 2934
+                    return ("IDKEY_FDRBKGNDIMAGEFILE");
+                case IDKEY_FDRBACKGROUND     : // 2935
+                    return ("IDKEY_FDRBACKGROUND");
+                case IDKEY_FDRSELFCLOSE      : // 2936
+                    return ("IDKEY_FDRSELFCLOSE");
+
+                case 2937:
+                    return ("IDKEY_FDRODMENUBARON");
+                case 2938:
+                    return ("IDKEY_FDRGRIDINFO");
+                case 2939:
+                    return ("IDKEY_FDRTREEVIEWCONTENTS");
+            }
+        }
+
+        return ("unknown");
+    }
+
+    /*
+     *@@ wpshDumpTaskRec:
+     *
+     *@@added V0.9.1 (2000-02-01) [umoeller]
+     */
+
+    VOID wpshDumpTaskRec(WPObject *somSelf,
+                         PSZ pszMethodName,
+                         PTASKREC pTaskRec)
+    {
+        _Pmpf(("%s: dumping task rec for %s", pszMethodName, _wpQueryTitle(somSelf) ));
+
+        if (pTaskRec)
+        {
+            ULONG   ul = 0;
+
+            while (pTaskRec)
+            {
+                _Pmpf(("Index: %d", ul));
+                _Pmpf(("    useCount: %d", pTaskRec->useCount));
+                _Pmpf(("    pStdDlg: 0x%lX", pTaskRec->pStdDlg));
+                _Pmpf(("    folder: %s", _wpQueryTitle(pTaskRec->folder) ));
+                _Pmpf(("    xOrigin: %d", pTaskRec->xOrigin));
+                _Pmpf(("    yOrigin: %d", pTaskRec->yOrigin));
+                _Pmpf(("    pszTitle: %s", pTaskRec->pszTitle));
+                _Pmpf(("    posAfterRecord: 0x%lX", pTaskRec->positionAfterRecord));
+                _Pmpf(("    keepAssocs: %d", pTaskRec->fKeepAssociations));
+                _Pmpf(("    pReserved: 0x%lX", pTaskRec->pReserved));
+
+                pTaskRec = pTaskRec->next;
+                ul++;
+            }
+        }
+        else
+            _Pmpf(("    pTaskRec is NULL"));
+    }
+#endif

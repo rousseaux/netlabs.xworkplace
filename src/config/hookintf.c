@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -130,6 +130,58 @@ BOOL hifXWPHookReady(VOID)
             if (pGlobalSettings->fEnableXWPHook)
                 brc = TRUE;
     return (brc);
+}
+
+/*
+ *@@ hifObjectHotkeysEnabled:
+ *      returns TRUE if object hotkeys have been
+ *      enabled. This does not mean that the
+ *      hook is running, but returns the flag
+ *      in HOOKCONFIG only.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+BOOL hifObjectHotkeysEnabled(VOID)
+{
+    BOOL    brc = FALSE;
+    HOOKCONFIG  HookConfig;
+    ULONG       cb = sizeof(HookConfig);
+    if (PrfQueryProfileData(HINI_USER,
+                            INIAPP_XWPHOOK,
+                            INIKEY_HOOK_CONFIG,
+                            &HookConfig,
+                            &cb))
+        if (HookConfig.fGlobalHotkeys)
+            brc = TRUE;
+
+    return (brc);
+}
+
+/*
+ *@@ hifEnableObjectHotkeys:
+ *      enables or disables object hotkeys
+ *      altogether. This does not change
+ *      the hotkeys list.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+VOID hifEnableObjectHotkeys(BOOL fEnable)
+{
+    BOOL    brc = FALSE;
+    HOOKCONFIG  HookConfig;
+    ULONG       cb = sizeof(HookConfig);
+    if (PrfQueryProfileData(HINI_USER,
+                            INIAPP_XWPHOOK,
+                            INIKEY_HOOK_CONFIG,
+                            &HookConfig,
+                            &cb))
+    {
+        HookConfig.fGlobalHotkeys = fEnable;
+        // write back to OS2.INI and notify hook
+        hifHookConfigChanged(&HookConfig);
+    }
 }
 
 /*
@@ -289,14 +341,14 @@ BOOL hifHookConfigChanged(PVOID pvdc)
 VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
         XFIELDINFO      xfi[7];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
-        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_HOTK_CNR);
+        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_HOTK_CNR);
         PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
         // recreate container at the same position as
@@ -307,12 +359,12 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         SWP             swpCnr;
         WinQueryWindowPos(hwndCnr, &swpCnr);
         WinDestroyWindow(hwndCnr);
-        hwndCnr = WinCreateWindow(pcnbp->hwndPage,        // parent
+        hwndCnr = WinCreateWindow(pcnbp->hwndDlgPage,        // parent
                                   WC_CONTAINER,
                                   "",
                                   CCS_MINIICONS | CCS_READONLY | CCS_SINGLESEL,
                                   swpCnr.x, swpCnr.y, swpCnr.cx, swpCnr.cy,
-                                  pcnbp->hwndPage,        // owner
+                                  pcnbp->hwndDlgPage,        // owner
                                   HWND_TOP,
                                   ID_XSDI_HOTK_CNR,
                                   NULL, NULL);
@@ -369,7 +421,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         // several seconds, so have this done by the
         // file thread
         xthrPostFileMsg(FIM_INSERTHOTKEYS,
-                        (MPARAM)WinWindowFromID(pcnbp->hwndPage, ID_XSDI_HOTK_CNR),
+                        (MPARAM)WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_HOTK_CNR),
                         (MPARAM)&pcnbp->fShowWaitPointer);
     }
 }
@@ -413,7 +465,7 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (pcnbp->preccSource)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndPage,
+                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
                                                  cmnQueryNLSModuleHandle(FALSE),
                                                  ID_XSM_HOTKEYS_SEL);
                     }
@@ -422,7 +474,7 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         cnrhShowContextMenu(pcnbp->hwndControl,     // cnr
                                             (PRECORDCORE)pcnbp->preccSource,
                                             hPopupMenu,
-                                            pcnbp->hwndPage);    // owner
+                                            pcnbp->hwndDlgPage);    // owner
                 break; }
             }
         break;
@@ -481,11 +533,11 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     precc->szHotkey,        // %1: hotkey
                                     precc->recc.pszIcon     // %2: object title
                               };
-                if (cmnMessageBoxMsgExt(pcnbp->hwndPage,
-                                     148,       // "XWorkplace Setup
-                                     apsz, 2,   // two string replacements
-                                     162,       // Sure hotkey?
-                                     MB_YESNO)
+                if (cmnMessageBoxMsgExt(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                                        148,       // "XWorkplace Setup
+                                        apsz, 2,   // two string replacements
+                                        162,       // Sure hotkey?
+                                        MB_YESNO)
                         == MBID_YES)
                     _xwpclsRemoveObjectHotkey(_XFldObject,
                                               precc->Hotkey.ulHandle);
@@ -545,14 +597,14 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         }
 
         // set up sliders
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
                            0, 3);      // six pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
                            MPFROM2SHORT(9, 10),
                            6);      // six pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
                            0, 3);      // six pixels high
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
                            MPFROM2SHORT(9, 10),
                            6);      // six pixels high
     }
@@ -560,31 +612,31 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
     if (flFlags & CBI_SET)
     {
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_CHORDWINLIST,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_CHORDWINLIST,
                               pdc->fChordWinList);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_SYSMENUMB2,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SYSMENUMB2,
                               pdc->fSysMenuMB2TitleBar);
 
         // mb3 scroll
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3SCROLL,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLL,
                               pdc->fMB3Scroll);
 
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  pdc->usMB3ScrollMin);
 
         if (pdc->usScrollMode == SM_AMPLIFIED)
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
                                   TRUE);
         else
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3LINEWISE,
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3LINEWISE,
                                   TRUE);
 
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  pdc->sAmplification + 9);
             // 0 = 10%, 11 = 100%, 13 = 120%, ...
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
                               pdc->fMB3ScrollReverse);
 
     }
@@ -595,26 +647,26 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         BOOL        fEnableAmp = (   (pdc->fMB3Scroll)
                                   && (pdc->usScrollMode == SM_AMPLIFIED)
                                  );
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3PIXELS_TXT1,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT1,
                           pdc->fMB3Scroll);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
                           pdc->fMB3Scroll);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3PIXELS_TXT2,
-                          pdc->fMB3Scroll);
-
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3LINEWISE,
-                          pdc->fMB3Scroll);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT2,
                           pdc->fMB3Scroll);
 
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMP_TXT1,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3LINEWISE,
+                          pdc->fMB3Scroll);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
+                          pdc->fMB3Scroll);
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT1,
                           fEnableAmp);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMP_SLIDER,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER,
                           fEnableAmp);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3AMP_TXT2,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT2,
                           fEnableAmp);
 
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
                           pdc->fMB3Scroll);
     }
 }
@@ -657,7 +709,7 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             pcnbp->hwndControl,
                                             SMA_INCREMENTVALUE);
 
-            WinSetDlgItemShort(pcnbp->hwndPage,
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
                                ID_XSDI_MOUSE_MB3PIXELS_TXT2,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
@@ -683,7 +735,7 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             SMA_INCREMENTVALUE);
 
             sprintf(szText, "%d%%", 100 + ((lSliderIndex - 9) * 10) );
-            WinSetDlgItemText(pcnbp->hwndPage,
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_MB3AMP_TXT2,
                               szText);
 
@@ -805,19 +857,19 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         }
 
         // setup sliders
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage,
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
                            MPFROM2SHORT(5, 10),
                            3);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage,
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
                            MPFROM2SHORT(0, 10),
                            6);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage,
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(4, 10),
                            3);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndPage,
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(9, 10),
                            6);
@@ -825,15 +877,15 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         // check top left screen corner
         ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
         ulScreenCornerSelectedIndex = 1;        // top left
-        winhSetDlgItemChecked(pcnbp->hwndPage,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ulScreenCornerSelectedID,
                               TRUE);
 
         // fill drop-down box
         {
             PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-            ULONG   ul;
-            HWND    hwndDrop = WinWindowFromID(pcnbp->hwndPage,
+            // ULONG   ul;
+            HWND    hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_DROP);
 
             WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszSpecialWindowList);
@@ -844,25 +896,25 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_NAME | CV_MINI | CA_DRAWICON);
-        } END_CNRINFO(WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_OPEN_CNR));
+        } END_CNRINFO(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR));
     }
 
     if (flFlags & CBI_SET)
     {
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
-        HWND    hwndCnr = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_OPEN_CNR);
-        HWND    hwndDrop = WinWindowFromID(pcnbp->hwndPage, ID_XSDI_MOUSE_SPECIAL_DROP);
+        HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR);
+        HWND    hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP);
 
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_SLIDINGFOCUS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SLIDINGFOCUS,
                               pdc->fSlidingFocus);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_BRING2TOP,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
                               pdc->fBring2Top);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
                               pdc->fIgnoreSeamless);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                               pdc->fIgnoreDesktop);
 
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndPage,
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  // slider uses .1 seconds ticks
@@ -870,9 +922,9 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
         // auto-hide mouse pointer
 
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_AUTOHIDE,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE,
                               (pdc->fAutoHideMouse != 0));
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndPage,
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  pdc->ulAutoHideDelay);
@@ -882,7 +934,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         if (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] == 0)
         {
             // "Inactive" corner:
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_INACTIVEOBJ, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_INACTIVEOBJ, TRUE);
             cnrhRemoveAll(hwndCnr);
             winhSetLboxSelectedItem(hwndDrop, LIT_NONE, TRUE);
         }
@@ -890,7 +942,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                   >= 0xFFFF0000)
         {
             // special function for this corner:
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_SPECIAL_CHECK, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_CHECK, TRUE);
             cnrhRemoveAll(hwndCnr);
             winhSetLboxSelectedItem(hwndDrop,
                                     (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex]
@@ -902,7 +954,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
             // actual object for this corner:
             HOBJECT hobj = pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex];
 
-            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOUSE_OPEN_CHECK, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CHECK, TRUE);
 
             winhSetLboxSelectedItem(hwndDrop,
                                     LIT_NONE,
@@ -934,31 +986,31 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
     if (flFlags & CBI_ENABLE)
     {
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_BRING2TOP,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
                           pdc->fSlidingFocus);
 
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
                           pdc->fAutoHideMouse);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
                           pdc->fAutoHideMouse);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
                           pdc->fAutoHideMouse);
 
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_SPECIAL_DROP,
-                          winhIsDlgItemChecked(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP,
+                          winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_CHECK));
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_MOUSE_OPEN_CNR,
-                          winhIsDlgItemChecked(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR,
+                          winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_OPEN_CHECK));
     }
 }
@@ -1011,7 +1063,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // convert to ms
             pdc->ulSlidingFocusDelay = lSliderIndex * 100;
             sprintf(szTemp, "%d ms", pdc->ulSlidingFocusDelay);
-            WinSetDlgItemText(pcnbp->hwndPage,
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
                               szTemp);
         break; }
@@ -1030,7 +1082,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // convert to seconds
             pdc->ulAutoHideDelay = lSliderIndex;
             sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
-            WinSetDlgItemText(pcnbp->hwndPage,
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_AUTOHIDE_TXT2,
                               szTemp);
         break; }
@@ -1186,7 +1238,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_SPECIAL_DROP:
         {
             // new special function selected from drop-down box:
-            HWND hwndDrop = WinWindowFromID(pcnbp->hwndPage, usItemID);
+            HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
             LONG lIndex = winhQueryLboxSelectedItem(hwndDrop, LIT_FIRST);
             if (lIndex == LIT_NONE)
                 // disable hot corner

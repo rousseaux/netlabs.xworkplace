@@ -15,7 +15,7 @@
  *      FALSE isn't that meaningful, in my view.)
  *
  *      So this file is new with V0.82. The system sounds are still
- *      played by fnwpQuickObject (kernel.c), but all the function
+ *      played by fnwpSpeedyObject (kernel.c), but all the function
  *      calls to MMPM/2 have been moved into this file so that the main
  *      DLL does not have to be linked against the MMPM/2 libraries.
  *
@@ -34,16 +34,16 @@
  *      1) The functions in this file are not intended to be called
  *         directly to play sounds because access to multimedia
  *         devices needs to be serialized using MMPM/2 messages.
- *         This is what the Quick thread does. Use xthrPostQuickMsg
+ *         This is what the Speedy thread does. Use xthrPostSpeedyMsg
  *         instead, which will post QM_PLAYSOUND to the quick thread.
  *
  *      2) THIS LIBRARY IS NOT THREAD-SAFE. The makefile (main.mak)
  *         compiles this source code as a subsystem library to reduce
  *         the size of the DLL. As a result, SOUND.DLL must only
- *         be called by the Quick thread. See the VAC++ docs for more
+ *         be called by the Speedy thread. See the VAC++ docs for more
  *         information on subsystem libraries.
  *
- *      For these reasons, simply use xthrPostQuickMsg to play
+ *      For these reasons, simply use xthrPostSpeedyMsg to play
  *      a system sound, which is bomb-proof.
  *
  *      With V0.82, I have also fixed some problems WRT multiple
@@ -56,7 +56,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich Mîller.
+ *      Copyright (C) 1997-2000 Ulrich Mîller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -88,23 +88,23 @@
 
 /*
  *@@ sndOpenSound:
- *      this is called by the Quick thread (fnwpQuickObject)
+ *      this is called by the Speedy thread (fnwpSpeedyObject)
  *      when it receives QM_PLAYSOUND to start playing a sound.
  *      In order to store the current status of
- *      the sound device, the Quick thread uses a global
+ *      the sound device, the Speedy thread uses a global
  *      usDeviceID variable in kernel.c, which is modified
  *      by this func. "Device" in this context means an
  *      individual sound file.
  *
  *      We also need the object window of the calling
- *      thread (which is hwndQuickObject from kernel.c)
+ *      thread (which is hwndSpeedyObject from kernel.c)
  *      to inform MMPM/2 where to post notification
  *      messages.
  *
  *      We will only attempt to open the sound file here
  *      and then return; we will _not_ yet play the sound
  *      because we will need to wait for the MM_MCIPASSDEVICE
- *      message (which will be posted to hwndQuickObject, the Quick
+ *      message (which will be posted to hwndSpeedyObject, the Speedy
  *      thread object window) for checking whether the device
  *      is actually available.
  *
@@ -115,7 +115,7 @@
  *@@changed V0.9.0 [umoeller]: added EXPENTRY to the function header (thanks, RÅdiger Ihle)
  */
 
-VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
+VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Speedy thread object wnd
                            PUSHORT pusDeviceID,   // in/out: "device" ID (= sound file).
                                   // This is != 0 if we're already playing something
                            PSZ pszFile)           // in: sound file to play
@@ -207,7 +207,7 @@ VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
 
 /*
  *@@ sndPlaySound:
- *      this is called by the Quick thread (fnwpQuickObject)
+ *      this is called by the Speedy thread (fnwpSpeedyObject)
  *      when it receives MM_MCIPASSDEVICE with MCI_GAINING_USE
  *      set, i.e. the device is ready to play. So that's
  *      what we'll do here.
@@ -219,7 +219,7 @@ VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
  *@@changed V0.9.0 [umoeller]: added EXPENTRY to the function header (thanks, RÅdiger Ihle)
  */
 
-VOID EXPENTRY sndPlaySound(HWND hwndObject,     // in: Quick thread object wnd
+VOID EXPENTRY sndPlaySound(HWND hwndObject,     // in: Speedy thread object wnd
                            PUSHORT pusDeviceID, // in: "device" ID (= sound file)
                            ULONG ulVolume)      // in: volume for sound (0-100)
 {
@@ -240,7 +240,7 @@ VOID EXPENTRY sndPlaySound(HWND hwndObject,     // in: Quick thread object wnd
                    &msp, 0);
 
     // play and request MM_MCINOTIFY msg to
-    // the Quick thread object window
+    // the Speedy thread object window
     mpp.hwndCallback = (HWND)hwndObject;
     mciSendCommand(*pusDeviceID,
                    MCI_PLAY,
@@ -251,7 +251,7 @@ VOID EXPENTRY sndPlaySound(HWND hwndObject,     // in: Quick thread object wnd
 
 /*
  *@@ sndStopSound:
- *      this is called by the Quick thread (fnwpQuickObject)
+ *      this is called by the Speedy thread (fnwpSpeedyObject)
  *      in two situations:
  *      1)  MMPM/2 is done playing our sound, i.e.
  *          upon receiving MM_MCINOTIFY;
@@ -285,7 +285,7 @@ VOID EXPENTRY sndStopSound(PUSHORT pusDeviceID)
                    MCI_WAIT,
                    &mgp,
                    0);
-    // set the Quick thread's device ID to 0 so
+    // set the Speedy thread's device ID to 0 so
     // we know that we're not currently playing
     // anything
     *pusDeviceID = 0;

@@ -28,7 +28,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -123,7 +123,7 @@ BOOL                fQuickOpenCancelled = FALSE;
 
 // global structure with data needed across threads
 // (see kernel.h)
-KERNELGLOBALS       ThreadGlobals = {0};
+KERNELGLOBALS       KernelGlobals = {0};
 
 // forward declarations
 MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -139,7 +139,7 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MP
 
 PCKERNELGLOBALS krnQueryGlobals(VOID)
 {
-    return &ThreadGlobals;
+    return &KernelGlobals;
 }
 
 /*
@@ -155,7 +155,7 @@ PCKERNELGLOBALS krnQueryGlobals(VOID)
 PKERNELGLOBALS krnLockGlobals(ULONG ulTimeout)
 {
     if (cmnLock(ulTimeout))
-        return (&ThreadGlobals);
+        return (&KernelGlobals);
     else
         return (NULL);
 }
@@ -203,7 +203,8 @@ FILE* _System krnExceptOpenLogFile(VOID)
     sprintf(szFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_CRASHLOG);
     file = fopen(szFileName, "a");
 
-    if (file) {
+    if (file)
+    {
         DosGetDateTime(&DT);
         fprintf(file, "\nXFolder trap message -- Date: %02d/%02d/%04d, Time: %02d:%02d:%02d\n",
             DT.month, DT.day, DT.year,
@@ -240,7 +241,10 @@ FILE* _System krnExceptOpenLogFile(VOID)
 VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen()
                                      PTIB ptib)       // in: thread info block
 {
+    PID         pid;
     TID         tid;
+    ULONG       ulCount;
+    APIRET      arc;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     // *** thread info
@@ -251,14 +255,14 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
 
             // find out which thread trapped
             fprintf(file,
-                "Thread information: \n    TID 0x%lX (%d) ",
+                "Crashing thread:\n    TID 0x%lX (%d) ",
                 ptib->tib_ptib2->tib2_ultid,        // hex
                 ptib->tib_ptib2->tib2_ultid);       // dec
 
             if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiWorkerThread))
                 fprintf(file, " (XWorkplace Worker thread)");
-            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiQuickThread))
-                fprintf(file, " (XWorkplace Quick thread)");
+            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiSpeedyThread))
+                fprintf(file, " (XWorkplace Speedy thread)");
             else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiFileThread))
                 fprintf(file, " (XWorkplace File thread)");
             else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiUpdateThread))
@@ -288,8 +292,8 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     if (tid = thrQueryID(pKernelGlobals->ptiWorkerThread))
         fprintf(file,  "    XWorkplace Worker thread ID: 0x%lX (%d)\n", tid, tid);
 
-    if (tid = thrQueryID(pKernelGlobals->ptiQuickThread))
-        fprintf(file,  "    XWorkplace Quick thread ID: 0x%lX (%d)\n", tid, tid);
+    if (tid = thrQueryID(pKernelGlobals->ptiSpeedyThread))
+        fprintf(file,  "    XWorkplace Speedy thread ID: 0x%lX (%d)\n", tid, tid);
 
     if (tid = thrQueryID(pKernelGlobals->ptiFileThread))
         fprintf(file,  "    XWorkplace File thread ID: 0x%lX (%d)\n", tid, tid);
@@ -300,6 +304,20 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     if (tid = thrQueryID(pKernelGlobals->ptiUpdateThread))
         fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid);
 
+    tid = cmnQueryLock();
+    if (tid)
+        fprintf(file, "\nGlobal lock semaphore is currently owned by thread 0x%lX (%u).\n", tid, tid);
+    else
+        fprintf(file, "\nGlobal lock semaphore is currently not owned.\n", tid, tid);
+
+    arc = DosQueryMutexSem(pKernelGlobals->hmtxAwakeObjects,
+                           &pid, &tid, &ulCount);
+    if ((arc == NO_ERROR) && (tid))
+        fprintf(file, "Awake-objects semaphore is currently owned by thread 0x%lX (%u) (request count: %d).\n",
+                      tid, tid, ulCount);
+    else
+        fprintf(file, "Awake-objects semaphore is currently not owned (request count: %d).\n",
+                tid, tid, ulCount);
 }
 
 /* ******************************************************************
@@ -745,8 +763,17 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         exit(99);
                 }
                 else
+                {
                     // just report:
-                    DebugBox("XFolder: Exception caught", (PSZ)mp1);
+                    PSZ pszMsg = (PSZ)mp1;
+                    strhxcat(&pszMsg,
+                             "\n\nPlease post a bug report to "
+                             "xworkplace-user@egroups.com and attach the the file "
+                             "XFLDTRAP.LOG, which you will find in the root "
+                             "directory of your boot drive. ");
+                    DebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
+                }
+
                 free((PSZ)mp1);
             }
         break; }
@@ -946,10 +973,10 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         case T1M_DAEMONREADY:
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            if (ThreadGlobals.pDaemonShared)
+            if (KernelGlobals.pDaemonShared)
             {
                 // cast PVOID
-                PDAEMONSHARED pDaemonShared = ThreadGlobals.pDaemonShared;
+                PDAEMONSHARED pDaemonShared = KernelGlobals.pDaemonShared;
                 if (    (pGlobalSettings->fEnableXWPHook)
                      && (pDaemonShared->hwndDaemonObject)
                    )
@@ -959,6 +986,12 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                0);
             }
         break; }
+
+        #ifdef __DEBUG__
+        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
+            CRASH;
+        break;
+        #endif
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
@@ -1017,7 +1050,6 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
     switch (msg)
     {
-
         case WM_INITDLG:
         {
             // WinSetWindowULong(hwnd, QWL_USER, (ULONG)mp2);
@@ -1143,8 +1175,8 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break; }
 
         case WM_COMMAND:
-            switch (SHORT1FROMMP(mp1)) {
-
+            switch (SHORT1FROMMP(mp1))
+            {
                 case DID_CANCEL:
                 {
                     fQuickOpenCancelled = TRUE;
@@ -1303,20 +1335,20 @@ VOID krnShowStartupDlgs(VOID)
 
         // disable items which are irrelevant
         WinEnableControl(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
-                          pGlobalSettings->BootLogo);
+                         pGlobalSettings->BootLogo);
         WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
-                          pGlobalSettings->fReplaceArchiving);
+                         pGlobalSettings->fReplaceArchiving);
         WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
-                          pGlobalSettings->fReplaceIcons);
+                         pGlobalSettings->fReplaceIcons);
 
         if (WinProcessDlg(hwndPanic) == DID_OK)
         {
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
-                ThreadGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
+                KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
-                ThreadGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
+                KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
-                ThreadGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
+                KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
             {
                 PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
@@ -1398,7 +1430,7 @@ VOID krnShowStartupDlgs(VOID)
  *      c) Create the Thread-1 object window (krn_fnwpThread1Object).
  *
  *      d) Call xthrStartThreads to have the additional XWorkplace
- *         threads started. The Quick thread will then display the
+ *         threads started. The Speedy thread will then display the
  *         boot logo, if allowed.
  *
  *      e) Start the XWorkplace daemon (XWPDAEMN.EXE, xwpdaemn.c),
@@ -1423,14 +1455,14 @@ VOID krnInitializeXWorkplace(VOID)
 
     // check if we're called for the first time,
     // because we better initialize this only once
-    if (ThreadGlobals.hwndThread1Object == NULLHANDLE)
+    if (KernelGlobals.hwndThread1Object == NULLHANDLE)
     {
 
         // zero KERNELGLOBALS
-        memset(&ThreadGlobals, 0, sizeof(KERNELGLOBALS));
+        memset(&KernelGlobals, 0, sizeof(KERNELGLOBALS));
 
         // store WPS startup time
-        DosGetDateTime(&ThreadGlobals.StartupDateTime);
+        DosGetDateTime(&KernelGlobals.StartupDateTime);
 
         // register exception hooks for /helpers/except.c
         excRegisterHooks(krnExceptOpenLogFile,
@@ -1439,7 +1471,7 @@ VOID krnInitializeXWorkplace(VOID)
 
         // initialize awake-objects list (which holds
         // plain WPObject* pointers)
-        ThreadGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
+        KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
 
         // if shift is pressed, show "Panic" dialog
         krnShowStartupDlgs();
@@ -1450,22 +1482,27 @@ VOID krnInitializeXWorkplace(VOID)
                          (PFNWP)krn_fnwpThread1Object,    // Window procedure
                          0,                  // class style
                          0);                 // extra window words
-        ThreadGlobals.hwndThread1Object = WinCreateWindow(
-                            HWND_OBJECT,
-                            WNDCLASS_THREAD1OBJECT, // class name
-                            (PSZ)"",     // title
-                            0,           // style
-                            0,0,0,0,     // position
-                            0,           // owner
-                            HWND_BOTTOM, // z-order
-                            ID_THREAD1OBJECT, // window id
-                            NULL,        // create params
-                            NULL);       // pres params
+        KernelGlobals.hwndThread1Object
+            = WinCreateWindow(HWND_OBJECT,
+                              WNDCLASS_THREAD1OBJECT, // class name
+                              (PSZ)"",     // title
+                              0,           // style
+                              0,0,0,0,     // position
+                              0,           // owner
+                              HWND_BOTTOM, // z-order
+                              ID_THREAD1OBJECT, // window id
+                              NULL,        // create params
+                              NULL);       // pres params
 
-        if (ThreadGlobals.hwndThread1Object == NULLHANDLE)
-            DebugBox("XFolder: Error",
-                    "XFolder failed to create the XFolder Workplace object window.");
+        if (KernelGlobals.hwndThread1Object == NULLHANDLE)
+            DebugBox(HWND_DESKTOP, "XFolder: Error",
+                     "XFolder failed to create the XFolder Workplace object window.");
     }
+
+    // set up config.sys path
+    sprintf(KernelGlobals.szConfigSys,
+            "%c:\\config.sys",
+            doshQueryBootDrive());
 
     /*
      *  enable NumLock at startup
@@ -1533,7 +1570,7 @@ VOID krnInitializeXWorkplace(VOID)
             #endif
 
             if (arc != NO_ERROR)
-                DebugBox("XWorkplace",
+                DebugBox(HWND_DESKTOP, "XWorkplace",
                          "Error allocating shared memory for daemon.");
             else
             {
@@ -1544,7 +1581,7 @@ VOID krnInitializeXWorkplace(VOID)
                 memset(pDaemonShared, 0, sizeof(DAEMONSHARED));
                 // store the thread-1 object window, which
                 // gets messages from the daemon
-                pDaemonShared->hwndThread1Object = ThreadGlobals.hwndThread1Object;
+                pDaemonShared->hwndThread1Object = KernelGlobals.hwndThread1Object;
                 pDaemonShared->ulWPSStartupCount = 1;
                 // at the first WPS start, always process startup folder
                 pDaemonShared->fProcessStartupFolder = TRUE;
@@ -1575,13 +1612,13 @@ VOID krnInitializeXWorkplace(VOID)
                     pd.pszStartupDir = szDir;
                     pd.pszEnvironment = "WORKPLACE\0\0";
 
-                    ThreadGlobals.happDaemon = WinStartApp(ThreadGlobals.hwndThread1Object, // hwndNotify,
+                    KernelGlobals.happDaemon = WinStartApp(KernelGlobals.hwndThread1Object, // hwndNotify,
                                                            &pd,
                                                            "-D", // params; otherwise the daemon
                                                                  // displays a msg box
                                                            NULL,
                                                            0);// no SAF_INSTALLEDCMDLINE,
-                    if (ThreadGlobals.happDaemon)
+                    if (KernelGlobals.happDaemon)
                         // success:
                         fDaemonStarted = TRUE;
                 }
@@ -1589,7 +1626,7 @@ VOID krnInitializeXWorkplace(VOID)
 
             if (!fDaemonStarted)
                 // error:
-                DebugBox("XWorkplace",
+                DebugBox(HWND_DESKTOP, "XWorkplace",
                          "The XWorkplace daemon (XWPDAEMON.EXE) could not be started.");
         } // end if DosGetNamedSharedMem
         else
@@ -1599,7 +1636,7 @@ VOID krnInitializeXWorkplace(VOID)
             // and we have a WPS restart
 
             // store new thread-1 object wnd
-            pDaemonShared->hwndThread1Object = ThreadGlobals.hwndThread1Object;
+            pDaemonShared->hwndThread1Object = KernelGlobals.hwndThread1Object;
             // increase WPS startup count
             pDaemonShared->ulWPSStartupCount++;
 
@@ -1619,7 +1656,7 @@ VOID krnInitializeXWorkplace(VOID)
             // the last WPS restart
         }
 
-        ThreadGlobals.pDaemonShared = pDaemonShared;
+        KernelGlobals.pDaemonShared = pDaemonShared;
     }
 
     /*
@@ -1629,7 +1666,7 @@ VOID krnInitializeXWorkplace(VOID)
 
     if (pGlobalSettings->fReplaceArchiving)
         // check whether we need a WPS backup (archives.c)
-        arcCheckIfBackupNeeded(ThreadGlobals.hwndThread1Object,
+        arcCheckIfBackupNeeded(KernelGlobals.hwndThread1Object,
                                T1M_DESTROYARCHIVESTATUS);
 }
 

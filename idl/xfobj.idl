@@ -8,7 +8,7 @@
  *
  *      See src\classes\xfobj.c for details.
  *
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -36,6 +36,29 @@ interface M_XFldObject;            // Forward Reference to XFldObject metaclass
 
 interface XFldObject : WPObject
 {
+
+    /*
+     *@@ WPOBJECTDATA:
+     *      internal data structure for WPObject
+     *      settings. We store a pointer to the
+     *      instance's structure in _pWPObjectData,
+     *      which is examined in _wpRestoreData.
+     *
+     *@@added V0.9.1 (2000-01-22) [umoeller]
+     */
+
+    struct WPOBJECTDATASTRUCT
+    {
+        LONG  lDefaultView;
+        ULONG ulHelpPanel;      // 0 means default, apparently
+        ULONG ulUnknown3;
+        ULONG ulObjectStyle;
+        ULONG ulMinWin;         // MINWIN_DEFAULT=0, MINWIN_HIDDEN=1, MINWIN_VIEWER=2, MINWIN_DESKTOP=3
+        ULONG ulConcurrent;     // CCVIEW_DEFAULT=0, CCVIEW_ON=1, CCVIEW_OFF=2
+        ULONG ulViewButton;     // HIDEBUTTON=1, MINBUTTON=2, DEFAULTBUTTON=3
+        ULONG ulMenuFlag;       // 2?
+    };
+    typedef WPOBJECTDATASTRUCT *PWPOBJECTDATASTRUCT;
 
     /*
      * New instance methods for XFldObject:
@@ -88,8 +111,11 @@ interface XFldObject : WPObject
 
     // the following have been added with V0.9.0
     BOOL        fDeleted;       // if TRUE, the following two fields are valid
-    CDATE       cdateDeleted;   // data for xwpQueryDeletion
-    CTIME       ctimeDeleted;   // data for xwpQueryDeletion
+    CDATE       cdateDeleted;   // data for xwpQueryDeletion, if fDeleted == TRUE
+    CTIME       ctimeDeleted;   // data for xwpQueryDeletion, if fDeleted == TRUE
+
+    PWPOBJECTDATASTRUCT pWPObjectData;
+    ULONG       cbWPObjectData;
 
     /*
      * The following is forced into the .H file:
@@ -108,15 +134,18 @@ interface XFldObject : WPObject
 
     wpSaveState: override;
     wpRestoreState: override;
+    wpRestoreData: override;
 
     wpDisplayMenu: override;
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
 
-    wpAddSettingsPages: override;
+    // wpAddSettingsPages: override;
+    wpAddObjectGeneralPage: override;
 
     wpConfirmObjectTitle: override;
+    wpDelete: override;
 
 #ifdef __PRIVATE__
 

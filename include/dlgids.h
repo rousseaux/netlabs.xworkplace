@@ -8,11 +8,6 @@
  *      This file is #include'd by the XFolder C code itself
  *      and all the .RC and .DLG files.
  *
- *      DO NOT CHANGE! This is a highly complex system of
- *      id's which has evolved over time, and which I don't
- *      fully understand myself any more. If you alter any
- *      codes here, everything will blow up.
- *
  *      Changes for V0.9.0:
  *      -- lots of new IDs, of course, for all the new dialogs.
  *         Note: even the existing IDs have mostly been redefined.
@@ -20,10 +15,19 @@
  *         unable to find anything in here any more.
  *      -- dialog ID's for Treesize and NetscapeDDE have been moved
  *         into this file to allow for NLS for these two programs.
+ *
+ *      Since these dialog ID's are shared across all of XWorkplace,
+ *      we need to have "number spaces" for the different developers.
+ *      If you add resources to XFLDRxxx.DLL, add your "number space"
+ *      to the list below. Do not add resources which are part of
+ *      another developer's number space, or we'll get into trouble.
+ *
+ *      Current number spaces:
+ *      -- Ulrich M”ller:  200-12000
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -193,6 +197,11 @@
 
 #define ID_XFD_STARTUPSTATUS            292
 
+#define ID_XFD_FILEOPSSTATUS            293
+#define ID_XSDI_SOURCEFOLDER            294
+#define ID_XSDI_CURRENTOBJECT           295
+#define ID_XSDI_TARGETFOLDER            296
+
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
  ******************************************/
@@ -334,7 +343,7 @@
 #define ID_XSDI_DTL_SETUP_ENTRY         725
 
 // "File" page replacement (XFolder, XFldDataFile, V0.9.0)
-#define ID_XSD_FILESPAGE                730
+#define ID_XSD_FILESPAGE1               730
 #define ID_XSDI_FILES_REALNAME          731
 #define ID_XSDI_FILES_CREATIONDATE      732
 #define ID_XSDI_FILES_CREATIONTIME      733
@@ -354,18 +363,23 @@
 #define ID_XSDI_FILES_EASIZE            747
 #define ID_XSDI_FILES_WORKAREA          748     // added V0.9.1 (99-12-20) [umoeller]
 
+#define ID_XSD_FILESPAGE2               760
+#define ID_XSDI_FILES_EALIST            761
+#define ID_XSDI_FILES_EAINFO            762
+#define ID_XSDI_FILES_EACONTENTS        763
+
 // "Details" page replacement (XFldDisk, V0.9.0)
-#define ID_XSD_DISK_DETAILS             760
-#define ID_XSDI_DISK_LABEL              761
-#define ID_XSDI_DISK_FILESYSTEM         762
-#define ID_XSDI_DISK_SECTORSIZE         765
-#define ID_XSDI_DISK_TOTAL_SECTORS      766
-#define ID_XSDI_DISK_TOTAL_BYTES        767
-#define ID_XSDI_DISK_ALLOCATED_SECTORS  768
-#define ID_XSDI_DISK_ALLOCATED_BYTES    769
-#define ID_XSDI_DISK_AVAILABLE_SECTORS  770
-#define ID_XSDI_DISK_AVAILABLE_BYTES    771
-#define ID_XSDI_DISK_CHART              772
+#define ID_XSD_DISK_DETAILS             770
+#define ID_XSDI_DISK_LABEL              771
+#define ID_XSDI_DISK_FILESYSTEM         772
+#define ID_XSDI_DISK_SECTORSIZE         775
+#define ID_XSDI_DISK_TOTAL_SECTORS      776
+#define ID_XSDI_DISK_TOTAL_BYTES        777
+#define ID_XSDI_DISK_ALLOCATED_SECTORS  778
+#define ID_XSDI_DISK_ALLOCATED_BYTES    779
+#define ID_XSDI_DISK_AVAILABLE_SECTORS  780
+#define ID_XSDI_DISK_AVAILABLE_BYTES    781
+#define ID_XSDI_DISK_CHART              782
 
 // "Module" page (XFldProgramFile, V0.9.0)
 #define ID_XSD_PGMFILE_MODULE           789
@@ -689,6 +703,7 @@
 #define ID_XSDI_DTP_LOGOFILE            2119
 #define ID_XSDI_DTP_LOGO_BROWSE         2120
 #define ID_XSDI_DTP_BOOTUPSTATUS        2121
+#define ID_XSDI_DTP_NUMLOCKON           2122  // added V0.9.1 (2000-02-09) [umoeller]
 
 // XFldDesktop "Shutdown" page (V0.9.0)
 #define ID_XSD_DTP_SHUTDOWN             2125
@@ -752,7 +767,7 @@
  ******************************************/
 
 #define ID_XTD_SETTINGS                 3000
-#define ID_XTDI_DELETE                  3001
+// #define ID_XTDI_DELETE                  3001
 #define ID_XTDI_EMPTYSTARTUP            3002
 #define ID_XTDI_EMPTYSHUTDOWN           3003
 #define ID_XTDI_CONFIRMEMPTY            3004
@@ -1240,29 +1255,34 @@
 #define ID_XTSI_TRASHCAN                5843
 #define ID_XTSI_TRASHOBJECT             5844
 
-#define ID_XTSI_TRASHSETTINGS           5845
+#define ID_XTSI_TRASHSETTINGSPAGE       5845
+#define ID_XTSI_TRASHDRIVESPAGE         5846
 
-#define ID_XTSI_ORIGFOLDER              5846
-#define ID_XTSI_DELDATE                 5847
-#define ID_XTSI_DELTIME                 5848
-#define ID_XTSI_SIZE                    5849
+#define ID_XTSI_ORIGFOLDER              5847
+#define ID_XTSI_DELDATE                 5848
+#define ID_XTSI_DELTIME                 5849
+#define ID_XTSI_SIZE                    5850
+#define ID_XTSI_ORIGCLASS               5851
+
+#define ID_XTSI_STB_POPULATING          5852
+#define ID_XTSI_STB_OBJCOUNT            5853
 
 // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-#define ID_XSSI_HOTKEY_TITLE            5850
-#define ID_XSSI_HOTKEY_FOLDER           5851
-#define ID_XSSI_HOTKEY_HANDLE           5852
-#define ID_XSSI_HOTKEY_HOTKEY           5853
+#define ID_XSSI_HOTKEY_TITLE            5854
+#define ID_XSSI_HOTKEY_FOLDER           5855
+#define ID_XSSI_HOTKEY_HANDLE           5856
+#define ID_XSSI_HOTKEY_HOTKEY           5857
 
 // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-#define ID_XSSI_CLSLIST_INDEX           5854
-#define ID_XSSI_CLSLIST_METHOD          5855
-#define ID_XSSI_CLSLIST_ADDRESS         5856
-#define ID_XSSI_CLSLIST_CLASS           5857
-#define ID_XSSI_CLSLIST_OVERRIDDENBY    5858
+#define ID_XSSI_CLSLIST_INDEX           5858
+#define ID_XSSI_CLSLIST_METHOD          5859
+#define ID_XSSI_CLSLIST_ADDRESS         5860
+#define ID_XSSI_CLSLIST_CLASS           5861
+#define ID_XSSI_CLSLIST_OVERRIDDENBY    5862
 
 // "Special functions" on XWPMouse "Movement" page
-#define ID_XSSI_SPECIAL_WINDOWLIST      5859
-#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5860
+#define ID_XSSI_SPECIAL_WINDOWLIST      5863
+#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5864
 
 /******************************************
  *  Features on XWPSetup "Features" page  *
@@ -1295,12 +1315,12 @@
 #define ID_XCSI_CLEANUPINIS             6042
 #define ID_XCSI_REPLFILEEXISTS          6043
 #define ID_XCSI_REPLDRIVENOTREADY       6044
-#define ID_XCSI_DELETEINTOTRASHCAN      6045
+#define ID_XCSI_XWPTRASHCAN             6045
 
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
 #define ID_XCSI_XWPHOOK                 6051
 #define ID_XCSI_ANIMOUSE                6052
-#define ID_XCSI_NUMLOCKON               6053
+#define ID_XCSI_GLOBALHOTKEYS           6053
 
 /******************************************
  *          Treesize                      *

@@ -16,7 +16,9 @@ Last updated Jan 04, 2000, Ulrich M”ller
 1. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1998-99 Ulrich M”ller.
+    Copyright (C) 1997-2000 Ulrich M”ller,
+                            Christian Langanke,
+                            and others.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in
@@ -51,8 +53,8 @@ Last updated Jan 04, 2000, Ulrich M”ller
     The SRC\HELPERS and INCLUDE\HELPERS directories are no longer
     present in this source tree. Instead, the code from the WarpIN
     project is used, which also resides on the Netlabs CVS source
-    tree. As a result, you need to check out the WarpIN source code
-    before compiling XWorkplace.
+    tree. As a result, you also need to check out the WarpIN source
+    code before compiling XWorkplace.
 
     Here comes a quick-start guide; for details, please refer to
     PROGREF.INF.
@@ -125,17 +127,9 @@ Last updated Jan 04, 2000, Ulrich M”ller
         submenu, but clicking on them will not open the proper
         association.
 
-    2)  A few settings checkboxes do not work yet or not any longer.
-        This doesn't hurt, but doesn't do anything either.
-
-    3)  The new trash displays wrong info sometimes and cannot delete
+    2)  The new trash displays wrong info sometimes and cannot delete
         objects which have the read-only attribute on.
 
-        Also, the trash can presently hangs the WPS when objects in
-        the trash can are destroyed. This applies to both destroying
-        single objects as well as emptying the trash can.
-
-
-
+    3)  XSHUTDWN.EXE currently doesn't work at all.
 
 

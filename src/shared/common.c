@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -55,11 +55,13 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR        // SC_CLOSE etc.
+#define INCL_WINMESSAGEMGR
 #define INCL_WININPUT
 #define INCL_WINDIALOGS
 #define INCL_WINMENUS
@@ -90,6 +92,8 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\stringh.h"            // string helper routines
+#include "helpers\textview.h"           // PM XTextView control
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
 #include "helpers\winh.h"               // PM helper routines
 
@@ -151,532 +155,6 @@ void _CRT_term(void);
 
 /* ******************************************************************
  *                                                                  *
- *   XFolder debugging helpers                                      *
- *                                                                  *
- ********************************************************************/
-
-#ifdef _PMPRINTF_
-
-/*
- *@@ cmnDumpMemoryBlock:
- *      if _PMPRINTF_ has been #define'd in common.h,
- *      this will dump a block of memory to the PMPRINTF
- *      output window. Useful for debugging internal
- *      structures.
- *      If _PMPRINTF_ has been NOT #define'd in common.h,
- *      no code will be produced. :-)
- */
-
-void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
-                        ULONG ulSize,   // in: size of block
-                        ULONG ulIndent) // in: how many spaces to put
-                                        //     before each output line
-{
-    PBYTE   pbCurrent = pb;
-    ULONG   ulCount = 0,
-            ulLineCount = 0;
-    CHAR    szLine[400] = "",
-            szAscii[30] = "         ";
-    PSZ     pszLine = szLine,
-            pszAscii = szAscii;
-
-    for (pbCurrent = pb;
-         ulCount < ulSize;
-         pbCurrent++, ulCount++)
-    {
-        if (ulLineCount == 0) {
-            memset(szLine, ' ', ulIndent);
-            pszLine += ulIndent;
-        }
-        pszLine += sprintf(pszLine, "%02lX ", *pbCurrent);
-
-        if ((*pbCurrent > 31) && (*pbCurrent < 127))
-            *pszAscii = *pbCurrent;
-        else
-            *pszAscii = '.';
-        pszAscii++;
-
-        ulLineCount++;
-        if ( (ulLineCount > 7) || (ulCount == ulSize-1) )
-        {
-            _Pmpf(("%04lX:  %s  %s",
-                    ulCount-7,
-                    szLine,
-                    szAscii));
-            pszLine = szLine;
-            pszAscii = szAscii;
-            ulLineCount = 0;
-        }
-    }
-}
-#else
-    // _PMPRINTF not #define'd: do nothing
-    #define cmnDumpMemoryBlock(pb, ulSize, ulIndent)
-#endif
-
-/* ******************************************************************
- *                                                                  *
- *   Heap debugging window                                          *
- *                                                                  *
- ********************************************************************/
-
-#ifdef __DEBUG_ALLOC__
-        // if XWorkplace is compiled with
-        // VAC++ debug memory funcs,
-        // compile the heap window also
-
-    /*
-     *@@ MEMRECORD:
-     *
-     *@@added V0.9.1 (99-12-04) [umoeller]
-     */
-
-    typedef struct _MEMRECORD
-    {
-        RECORDCORE  recc;
-
-        ULONG       ulIndex;
-
-        const void  *pObject;
-        const char  *filename;
-        ULONG       useflag,
-                    status;
-
-        PSZ         pszUseFlag,     // const string
-                    pszStatus;      // const string
-
-        PSZ         pszAddress;     // points to szAddress
-        CHAR        szAddress[20];
-
-        ULONG       ulSize;
-
-        PSZ         pszSource;      // points to szSource
-        CHAR        szSource[CCHMAXPATH];
-
-        ULONG       ulLine;
-
-    } MEMRECORD, *PMEMRECORD;
-
-    ULONG       ulHeapItemsCount1,
-                ulHeapItemsCount2;
-    ULONG       ulTotalAllocated,
-                ulTotalFreed;
-    PMEMRECORD  pMemRecordThis = NULL;
-    PSZ         pszMemCnrTitle = NULL;
-
-    /*
-     *@@ fncbMemHeapWalkCount:
-     *      callback func for _heap_walk function used for
-     *      fnwpMemDebug.
-     *
-     *@@added V0.9.1 (99-12-04) [umoeller]
-     */
-
-    int fncbMemHeapWalkCount(const void *pObject,
-                             size_t Size,
-                             int useflag,
-                             int status,
-                             const char *filename,
-                             size_t line)
-    {
-        // skip all the items which seem to be
-        // internal to the runtime
-        if ((filename) || (useflag == _FREEENTRY))
-        {
-            ulHeapItemsCount1++;
-            if (useflag == _FREEENTRY)
-                ulTotalFreed += Size;
-            else
-                ulTotalAllocated += Size;
-        }
-        return (0);
-    }
-
-    /*
-     *@@ fncbMemHeapWalkFill:
-     *      callback func for _heap_walk function used for
-     *      fnwpMemDebug.
-     *
-     *@@added V0.9.1 (99-12-04) [umoeller]
-     */
-
-    int fncbMemHeapWalkFill(const void *pObject,
-                            size_t Size,
-                            int useflag,
-                            int status,
-                            const char *filename,
-                            size_t line)
-    {
-        // skip all the items which seem to be
-        // internal to the runtime
-        if ((filename) || (useflag == _FREEENTRY))
-        {
-            ulHeapItemsCount2++;
-            if ((pMemRecordThis) && (ulHeapItemsCount2 < ulHeapItemsCount1))
-            {
-                pMemRecordThis->ulIndex = ulHeapItemsCount2 - 1;
-
-                pMemRecordThis->pObject = pObject;
-                pMemRecordThis->useflag = useflag;
-                pMemRecordThis->status = status;
-                pMemRecordThis->filename = filename;
-
-                pMemRecordThis->pszAddress = pMemRecordThis->szAddress;
-
-                pMemRecordThis->ulSize = Size;
-
-                pMemRecordThis->pszSource = pMemRecordThis->szSource;
-
-                pMemRecordThis->ulLine = line;
-
-                pMemRecordThis = (PMEMRECORD)pMemRecordThis->recc.preccNextRecord;
-            }
-            else
-                return (1);     // stop
-        }
-
-        return (0);
-    }
-
-    /*
-     *@@ mnu_fnCompareIndex:
-     *
-     *@@added V0.9.1 (99-12-03) [umoeller]
-     */
-
-    SHORT EXPENTRY mnu_fnCompareIndex(PMEMRECORD pmrc1, PMEMRECORD  pmrc2, PVOID pStorage)
-    {
-        HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-        pStorage = pStorage; // to keep the compiler happy
-        if ((pmrc1) && (pmrc2))
-            if (pmrc1->ulIndex < pmrc2->ulIndex)
-                return (-1);
-            else if (pmrc1->ulIndex > pmrc2->ulIndex)
-                return (1);
-
-        return (0);
-    }
-
-    /*
-     *@@ mnu_fnCompareSourceFile:
-     *
-     *@@added V0.9.1 (99-12-03) [umoeller]
-     */
-
-    SHORT EXPENTRY mnu_fnCompareSourceFile(PMEMRECORD pmrc1, PMEMRECORD  pmrc2, PVOID pStorage)
-    {
-        HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-        pStorage = pStorage; // to keep the compiler happy
-        if ((pmrc1) && (pmrc2))
-                switch (WinCompareStrings(habDesktop, 0, 0,
-                        pmrc1->szSource, pmrc2->szSource, 0))
-                {
-                    case WCS_LT: return (-1);
-                    case WCS_GT: return (1);
-                    default:    // equal
-                        if (pmrc1->ulLine < pmrc2->ulLine)
-                            return (-1);
-                        else if (pmrc1->ulLine > pmrc2->ulLine)
-                            return (1);
-
-                }
-
-        return (0);
-    }
-
-    #define ID_MEMCNR   1000
-
-    /*
-     *@@ cmn_fnwpMemDebug:
-     *      client window proc for the heap debugger window
-     *      accessible from the Desktop context menu if
-     *      __DEBUG_ALLOC__ is defined. Otherwise, this is not
-     *      compiled.
-     *
-     *      Usage: this is a regular PM client window procedure
-     *      to be used with WinRegisterClass and WinCreateStdWindow.
-     *      See dtpMenuItemSelected, which uses this.
-     *
-     *      This creates a container with all the memory objects
-     *      with the size of the client area in turn.
-     *
-     *@@added V0.9.1 (99-12-04) [umoeller]
-     */
-
-
-    MRESULT EXPENTRY cmn_fnwpMemDebug(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
-    {
-        MRESULT mrc = 0;
-
-        switch (msg)
-        {
-            case WM_CREATE:
-            {
-                TRY_LOUD(excpt1, NULL)
-                {
-                    PCREATESTRUCT pcs = (PCREATESTRUCT)mp2;
-                    HWND hwndCnr;
-                    hwndCnr = WinCreateWindow(hwndClient,        // parent
-                                              WC_CONTAINER,
-                                              "",
-                                              WS_VISIBLE | CCS_MINIICONS | CCS_READONLY | CCS_SINGLESEL,
-                                              0, 0, 0, 0,
-                                              hwndClient,        // owner
-                                              HWND_TOP,
-                                              ID_MEMCNR,
-                                              NULL, NULL);
-                    if (hwndCnr)
-                    {
-                        XFIELDINFO      xfi[7];
-                        PFIELDINFO      pfi = NULL;
-                        PMEMRECORD      pMemRecordFirst;
-                        int             i = 0;
-
-                        // set up cnr details view
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, ulIndex);
-                        xfi[i].pszColumnTitle = "No.";
-                        xfi[i].ulDataType = CFA_ULONG;
-                        xfi[i++].ulOrientation = CFA_RIGHT;
-
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, pszUseFlag);
-                        xfi[i].pszColumnTitle = "useflag";
-                        xfi[i].ulDataType = CFA_STRING;
-                        xfi[i++].ulOrientation = CFA_CENTER;
-
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, pszStatus);
-                        xfi[i].pszColumnTitle = "status";
-                        xfi[i].ulDataType = CFA_STRING;
-                        xfi[i++].ulOrientation = CFA_CENTER;
-
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, pszSource);
-                        xfi[i].pszColumnTitle = "Source";
-                        xfi[i].ulDataType = CFA_STRING;
-                        xfi[i++].ulOrientation = CFA_LEFT;
-
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, ulLine);
-                        xfi[i].pszColumnTitle = "Line";
-                        xfi[i].ulDataType = CFA_ULONG;
-                        xfi[i++].ulOrientation = CFA_RIGHT;
-
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, ulSize);
-                        xfi[i].pszColumnTitle = "Size";
-                        xfi[i].ulDataType = CFA_ULONG;
-                        xfi[i++].ulOrientation = CFA_RIGHT;
-
-                        xfi[i].ulFieldOffset = FIELDOFFSET(MEMRECORD, pszAddress);
-                        xfi[i].pszColumnTitle = "Address";
-                        xfi[i].ulDataType = CFA_STRING;
-                        xfi[i++].ulOrientation = CFA_LEFT;
-
-                        pfi = cnrhSetFieldInfos(hwndCnr,
-                                                &xfi[0],
-                                                i,             // array item count
-                                                TRUE,          // no draw lines
-                                                2);            // return column
-
-                        {
-                            PSZ pszFont = "9.WarpSans";
-                            WinSetPresParam(hwndCnr,
-                                            PP_FONTNAMESIZE,
-                                            strlen(pszFont),
-                                            pszFont);
-                        }
-
-                        // count heap items
-                        ulHeapItemsCount1 = 0;
-                        ulTotalFreed = 0;
-                        ulTotalAllocated = 0;
-                        _heap_walk(fncbMemHeapWalkCount);
-
-                        pMemRecordFirst = (PMEMRECORD)cnrhAllocRecords(hwndCnr,
-                                                                       sizeof(MEMRECORD),
-                                                                       ulHeapItemsCount1);
-                        if (pMemRecordFirst)
-                        {
-                            ulHeapItemsCount2 = 0;
-                            pMemRecordThis = pMemRecordFirst;
-                            _heap_walk(fncbMemHeapWalkFill);
-
-                            // the following doesn't work while _heap_walk is running
-                            pMemRecordThis = pMemRecordFirst;
-                            while (pMemRecordThis)
-                            {
-                                switch (pMemRecordThis->useflag)
-                                {
-                                    case _USEDENTRY: pMemRecordThis->pszUseFlag = "Used"; break;
-                                    case _FREEENTRY: pMemRecordThis->pszUseFlag = "Freed"; break;
-                                }
-
-                                switch (pMemRecordThis->status)
-                                {
-                                    case _HEAPBADBEGIN: pMemRecordThis->pszStatus = "heap bad begin"; break;
-                                    case _HEAPBADNODE: pMemRecordThis->pszStatus = "heap bad node"; break;
-                                    case _HEAPEMPTY: pMemRecordThis->pszStatus = "heap empty"; break;
-                                    case _HEAPOK: pMemRecordThis->pszStatus = "OK"; break;
-                                }
-
-                                sprintf(pMemRecordThis->szAddress, "0x%lX", pMemRecordThis->pObject);
-                                strcpy(pMemRecordThis->szSource,
-                                        (pMemRecordThis->filename)
-                                            ? pMemRecordThis->filename
-                                            : "?");
-
-                                pMemRecordThis = (PMEMRECORD)pMemRecordThis->recc.preccNextRecord;
-                            }
-
-                            cnrhInsertRecords(hwndCnr,
-                                              NULL,         // parent
-                                              (PRECORDCORE)pMemRecordFirst,
-                                              NULL,
-                                              CRA_RECORDREADONLY,
-                                              ulHeapItemsCount2);
-                        }
-
-                        BEGIN_CNRINFO()
-                        {
-                            CHAR szCnrTitle[1000];
-                            sprintf(szCnrTitle,
-                                    "Total allocated: %d bytes\n"
-                                    "Total freed: %d bytes",
-                                    ulTotalAllocated,
-                                    ulTotalFreed);
-                            pszMemCnrTitle = strdup(szCnrTitle);
-                            cnrhSetTitle(pszMemCnrTitle);
-                            cnrhSetView(CV_DETAIL | CV_MINI | CA_DETAILSVIEWTITLES
-                                            | CA_DRAWICON
-                                        | CA_CONTAINERTITLE | CA_TITLEREADONLY
-                                            | CA_TITLESEPARATOR | CA_TITLELEFT);
-                            cnrhSetSplitBarAfter(pfi);
-                            cnrhSetSplitBarPos(250);
-                        } END_CNRINFO(hwndCnr);
-                    }
-                }
-                CATCH(excpt1) {} END_CATCH();
-
-                mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
-            break; }
-
-            case WM_WINDOWPOSCHANGED:
-            {
-                PSWP pswp = (PSWP)mp1;
-                mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
-                if (pswp->fl & SWP_SIZE)
-                {
-                    WinSetWindowPos(WinWindowFromID(hwndClient, ID_MEMCNR), // cnr
-                                    HWND_TOP,
-                                    0, 0, pswp->cx, pswp->cy,
-                                    SWP_SIZE | SWP_MOVE | SWP_SHOW);
-                }
-            break; }
-
-            case WM_CONTROL:
-            {
-                USHORT usItemID = SHORT1FROMMP(mp1),
-                       usNotifyCode = SHORT2FROMMP(mp1);
-                if (usItemID == ID_MEMCNR)       // cnr
-                {
-                    switch (usNotifyCode)
-                    {
-                        case CN_CONTEXTMENU:
-                        {
-                            PMEMRECORD precc = (PMEMRECORD)mp2;
-                            if (precc == NULL)
-                            {
-                                // whitespace
-                                HWND hwndMenu = WinCreateMenu(HWND_DESKTOP,
-                                                              NULL); // no menu template
-                                winhInsertMenuItem(hwndMenu,
-                                                   MIT_END,
-                                                   1001,
-                                                   "Sort by index",
-                                                   MIS_TEXT, 0);
-                                winhInsertMenuItem(hwndMenu,
-                                                   MIT_END,
-                                                   1002,
-                                                   "Sort by source file",
-                                                   MIS_TEXT, 0);
-                                cnrhShowContextMenu(WinWindowFromID(hwndClient, ID_MEMCNR),
-                                                    NULL,       // record
-                                                    hwndMenu,
-                                                    hwndClient);
-                            }
-                        }
-                    }
-                }
-            break; }
-
-            case WM_COMMAND:
-                switch (SHORT1FROMMP(mp1))
-                {
-                    case 1001:  // sort by index
-                        WinSendMsg(WinWindowFromID(hwndClient, ID_MEMCNR),
-                                   CM_SORTRECORD,
-                                   (MPARAM)mnu_fnCompareIndex,
-                                   0);
-                    break;
-
-                    case 1002:  // sort by source file
-                        WinSendMsg(WinWindowFromID(hwndClient, ID_MEMCNR),
-                                   CM_SORTRECORD,
-                                   (MPARAM)mnu_fnCompareSourceFile,
-                                   0);
-                    break;
-                }
-            break;
-
-            case WM_CLOSE:
-                WinDestroyWindow(WinWindowFromID(hwndClient, ID_MEMCNR));
-                WinDestroyWindow(WinQueryWindow(hwndClient, QW_PARENT));
-                free(pszMemCnrTitle);
-                pszMemCnrTitle = NULL;
-            break;
-
-            default:
-                mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
-        }
-
-        return (mrc);
-    }
-
-    /*
-     *@@ cmnCreateMemDebugWindow:
-     *
-     *@@added V0.9.1 (99-12-18) [umoeller]
-     */
-
-    VOID cmnCreateMemDebugWindow(VOID)
-    {
-        ULONG flStyle = FCF_TITLEBAR | FCF_SYSMENU | FCF_HIDEMAX
-                        | FCF_SIZEBORDER | FCF_SHELLPOSITION
-                        | FCF_NOBYTEALIGN | FCF_TASKLIST;
-        if (WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                             "XWPMemDebug",
-                             cmn_fnwpMemDebug, 0L, 0))
-        {
-            HWND hwndClient, hwndCnr;
-            HWND hwndMemFrame = WinCreateStdWindow(HWND_DESKTOP,
-                                                   0L,
-                                                   &flStyle,
-                                                   "XWPMemDebug",
-                                                   "Allocated XWorkplace Memory Objects",
-                                                   0L,
-                                                   NULLHANDLE,     // resource
-                                                   0,
-                                                   &hwndClient);
-            if (hwndMemFrame)
-            {
-                WinSetWindowPos(hwndMemFrame,
-                                NULLHANDLE,
-                                0, 0, 0, 0,
-                                SWP_SHOW | SWP_ACTIVATE);
-            }
-        }
-    }
-
-#endif // __DEBUG_ALLOC__
-
-/* ******************************************************************
- *                                                                  *
  *   Main module handling (XFLDR.DLL)                               *
  *                                                                  *
  ********************************************************************/
@@ -719,11 +197,11 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
         case 0:
         {
             // DLL being loaded:
-            CHAR    szTemp[400];
-            PSZ     p = NULL;
-            ULONG   aulCPList[8] = {0},
-                    cbCPList = sizeof(aulCPList),
-                    ulListSize = 0;
+            // CHAR    szTemp[400];
+            // PSZ     p = NULL;
+            // ULONG   aulCPList[8] = {0},
+                    // cbCPList = sizeof(aulCPList);
+                    // ulListSize = 0;
 
             // store the DLL handle in the global variable so that
             // cmnQueryMainModuleHandle() below can return it
@@ -825,7 +303,7 @@ BOOL cmnLock(ULONG ulTimeout)
                           0,            // unshared
                           FALSE);       // unowned
 
-    if (DosRequestMutexSem(hmtxCommonLock, ulTimeout) == NO_ERROR)
+    if (WinRequestMutexSem(hmtxCommonLock, ulTimeout) == NO_ERROR)
         return TRUE;
     else
         return FALSE;
@@ -840,6 +318,30 @@ BOOL cmnLock(ULONG ulTimeout)
 VOID cmnUnlock(VOID)
 {
     DosReleaseMutexSem(hmtxCommonLock);
+}
+
+/*
+ *@@ cmnQueryLock:
+ *      returns the thread ID which currently owns
+ *      the common lock semaphore or 0 if the semaphore
+ *      is not owned (not locked).
+ *
+ *@@added V0.9.1 (2000-01-30) [umoeller]
+ */
+
+ULONG cmnQueryLock(VOID)
+{
+    PID     pid = 0;
+    TID     tid = 0;
+    ULONG   ulCount = 0;
+    if (DosQueryMutexSem(hmtxCommonLock,
+                         &pid,
+                         &tid,
+                         &ulCount)
+            == NO_ERROR)
+        return (tid);
+
+    return (0);
 }
 
 /*
@@ -1283,8 +785,9 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                        szResourceModuleName,
                                        (PHMODULE)&hmodNLS))
                     {
-                        DebugBox("XFolder: Couldn't Find Resource DLL",
-                            szResourceModuleName);
+                        DebugBox(HWND_DESKTOP,
+                                 "XFolder: Couldn't Find Resource DLL",
+                                 szResourceModuleName); // ###
                     }
                     else
                     {
@@ -1325,7 +828,9 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     if (lLength == 0)
                                     {
                                         // version string not found: complain
-                                        DebugBox("XFolder", "The requested file is not an XFolder National Language Support DLL.");
+                                        DebugBox(HWND_DESKTOP,
+                                                 "XFolder",
+                                                 "The requested file is not an XFolder National Language Support DLL.");
                                         DosFreeModule(hmodNLS);
                                         hmodNLS = hmodOldResource;
                                         return NULLHANDLE;
@@ -1345,7 +850,9 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                                       (PVOID)NULL)
                                                 == DID_CANCEL)
                                         {
-                                            DebugBox("XFolder", "The new National Language Support DLL was not loaded.");
+                                            DebugBox(HWND_DESKTOP,
+                                                     "XFolder",
+                                                     "The new National Language Support DLL was not loaded.");
                                             // unload new NLS DLL
                                             DosFreeModule(hmodNLS);
                                             hmodNLS = hmodOldResource;
@@ -1632,8 +1139,10 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     &(pNLSStrings->pszTrashCan));
                             cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHOBJECT,
                                     &(pNLSStrings->pszTrashObject));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHSETTINGS,
-                                    &(pNLSStrings->pszTrashSettings));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHSETTINGSPAGE,
+                                    &(pNLSStrings->pszTrashSettingsPage));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDRIVESPAGE,
+                                    &(pNLSStrings->pszTrashDrivesPage));
                             cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGFOLDER,
                                     &(pNLSStrings->pszOrigFolder));
                             cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELDATE,
@@ -1642,6 +1151,14 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     &(pNLSStrings->pszDelTime));
                             cmnLoadString(habDesktop, hmodNLS, ID_XTSI_SIZE,
                                     &(pNLSStrings->pszSize));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGCLASS,
+                                    &(pNLSStrings->pszOrigClass));
+
+                            // trash can status bar strings; V0.9.1 (2000-02-04) [umoeller]
+                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_POPULATING,
+                                    &(pNLSStrings->pszStbPopulating));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_OBJCOUNT,
+                                    &(pNLSStrings->pszStbObjCount));
 
                             // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
                             cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_TITLE,
@@ -2304,6 +1821,52 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
  ********************************************************************/
 
 /*
+ *@@ cmnShowProductInfo:
+ *      shows the XWorkplace "Product info" dlg.
+ *      This calls WinProcessDlg in turn.
+ *
+ *@@added V0.9.1 (2000-02-13) [umoeller]
+ */
+
+VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
+{
+    // advertise for myself
+    CHAR szGPLInfo[2000];
+    HWND hwndInfo = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                               fnwpDlgGeneric,
+                               cmnQueryNLSModuleHandle(FALSE),
+                               ID_XFD_PRODINFO,
+                               NULL),
+         hwndTextView;
+    txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
+    hwndTextView = txvReplaceWithTextView(hwndInfo,
+                                          ID_XLDI_TEXT2,
+                                          WS_VISIBLE | WS_TABSTOP,
+                                          XTXF_WORDWRAP | XTXF_VSCROLL,
+                                          2);
+
+    cmnSetControlsFont(hwndInfo, 1, 10000);
+
+    xthrPlaySystemSound(ulSound);
+
+    // load GPL info message into prodinfo MLE
+    cmnGetMessage(NULL, 0,
+                  szGPLInfo, sizeof(szGPLInfo),
+                  140);
+    WinSendMsg(hwndTextView, TXM_NEWTEXT, (MPARAM)szGPLInfo, 0);
+    // WinSetDlgItemText(hwndInfo, ID_XLDI_TEXT2, szGPLInfo);
+    /* WinSendDlgItemMsg(hwndInfo, ID_XLDI_TEXT2,
+                      MLM_SETFIRSTCHAR,       // scroll MLE to top
+                      (MPARAM)0,
+                      MPNULL); */
+
+    cmnSetHelpPanel(0);
+    winhCenterWindow(hwndInfo);
+    WinProcessDlg(hwndInfo);
+    WinDestroyWindow(hwndInfo);
+}
+
+/*
  *@@ cmnQueryDefaultFont:
  *      this returns the font to be used for dialogs.
  *      If the "Use 8.Helv" checkbox is enabled on
@@ -2357,14 +1920,14 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
     {
 
         /*
-         * WM_SETLONGTEXT:
+         * XM_SETLONGTEXT:
          *      this arrives here when the window text changes,
          *      especially when fnwpMessageBox sets the window
          *      text; we will now reposition all the controls.
          *      mp1 is a PSZ to the new text.
          */
 
-        case WM_SETLONGTEXT:
+        case XM_SETLONGTEXT:
         {
             CHAR szFont[300];
             PSZ p = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
@@ -2372,11 +1935,13 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                 free(p);
             p = strdup((PSZ)mp1);
             WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)p);
-            PrfQueryProfileString(HINI_USER, INIAPP_XWORKPLACE, INIKEY_DLGFONT,
+            PrfQueryProfileString(HINI_USER,
+                                  INIAPP_XWORKPLACE, INIKEY_DLGFONT,
                                   (PSZ)cmnQueryDefaultFont(),
                                   szFont, sizeof(szFont)-1);
             WinSetPresParam(hwndStatic, PP_FONTNAMESIZE,
-                 (ULONG)strlen(szFont) + 1, (PVOID)szFont);
+                            (ULONG)strlen(szFont) + 1,
+                            (PVOID)szFont);
             // this will also update the display
         break; }
 
@@ -2404,32 +1969,33 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                                 (ULONG)sizeof(szFont),
                                 (PVOID)&szFont,
                                 0);
-                    PrfWriteProfileString(HINI_USER, INIAPP_XWORKPLACE, INIKEY_DLGFONT,
-                        szFont);
+                    PrfWriteProfileString(HINI_USER,
+                                          INIAPP_XWORKPLACE, INIKEY_DLGFONT,
+                                          szFont);
 
                     // now also change the buttons
                     WinSetPresParam(WinWindowFromID(hwndDlg, 1),
-                        PP_FONTNAMESIZE,
-                        (ULONG)strlen(szFont) + 1, (PVOID)szFont);
+                                    PP_FONTNAMESIZE,
+                                    (ULONG)strlen(szFont) + 1, (PVOID)szFont);
                     WinSetPresParam(WinWindowFromID(hwndDlg, 2),
-                        PP_FONTNAMESIZE,
-                        (ULONG)strlen(szFont) + 1, (PVOID)szFont);
+                                    PP_FONTNAMESIZE,
+                                    (ULONG)strlen(szFont) + 1, (PVOID)szFont);
                     WinSetPresParam(WinWindowFromID(hwndDlg, 3),
-                        PP_FONTNAMESIZE,
-                        (ULONG)strlen(szFont) + 1, (PVOID)szFont);
+                                    PP_FONTNAMESIZE,
+                                    (ULONG)strlen(szFont) + 1, (PVOID)szFont);
 
-                    WinPostMsg(hwndStatic, WM_UPDATE, MPNULL, MPNULL);
+                    WinPostMsg(hwndStatic, XM_UPDATE, MPNULL, MPNULL);
                 break; }
             }
         break; }
 
         /*
-         * WM_UPDATE:
+         * XM_UPDATE:
          *      this actually does all the calculations to reposition
          *      all the msg box controls
          */
 
-        case WM_UPDATE:
+        case XM_UPDATE:
         {
             RECTL   rcl, rcl2;
             SWP     swp;
@@ -2438,7 +2004,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
 
             HPS hps = WinGetPS(hwndStatic);
 
-            // _Pmpf(( "WM_UPDATE" ));
+            // _Pmpf(( "XM_UPDATE" ));
 
             pszText = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
             if (pszText)
@@ -2463,17 +2029,17 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                 WinQueryWindowPos(hwndStatic, &swp);
                 swp.cy -= rcl.yBottom;
                 WinSetWindowPos(hwndStatic, 0,
-                    swp.x, swp.y, swp.cx, swp.cy,
-                    SWP_SIZE);
+                                swp.x, swp.y, swp.cx, swp.cy,
+                                SWP_SIZE);
 
                 // reposition the icon
                 hwndIcon = WinWindowFromID(WinQueryWindow(hwndStatic, QW_PARENT),
-                                ID_XFDI_GENERICDLGICON);
+                                           ID_XFDI_GENERICDLGICON);
                 WinQueryWindowPos(hwndIcon, &swp);
                 swp.y -= rcl.yBottom;
                 WinSetWindowPos(hwndIcon, 0,
-                    swp.x, swp.y, swp.cx, swp.cy,
-                    SWP_MOVE);
+                                swp.x, swp.y, swp.cx, swp.cy,
+                                SWP_MOVE);
 
                 // resize the dlg frame window
                 hwndDlg = WinQueryWindow(hwndStatic, QW_PARENT);
@@ -2482,8 +2048,8 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                 swp.y  += (rcl.yBottom / 2);
                 WinInvalidateRect(hwndDlg, NULL, FALSE);
                 WinSetWindowPos(hwndDlg, 0,
-                    swp.x, swp.y, swp.cx, swp.cy,
-                    SWP_SIZE | SWP_MOVE);
+                                swp.x, swp.y, swp.cx, swp.cy,
+                                SWP_SIZE | SWP_MOVE);
             }
         break; }
 
@@ -2504,7 +2070,9 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                 GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
                 // set "static text" color
                 GpiSetColor(hps,
-                        WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0));
+                            WinQuerySysColor(HWND_DESKTOP,
+                                             SYSCLR_WINDOWSTATICTEXT,
+                                             0));
                 winhDrawFormattedText(hps, &rcl, pszText, DT_LEFT | DT_TOP);
             }
             WinEndPaint(hps);
@@ -2547,7 +2115,7 @@ MRESULT EXPENTRY fnwpMessageBox(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // set string to 0
             WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)NULL);
             pfnwpOrigStatic = WinSubclassWindow(hwndStatic,
-                    fnwpAutoSizeStatic);
+                                                fnwpAutoSizeStatic);
             mrc = fnwpDlgGeneric(hwndDlg, msg, mp1, mp2);
         break; }
 
@@ -2667,15 +2235,18 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
             free(pszButton);
         }
 
+        // unset predefined default button
         WinSetWindowBits(WinWindowFromID(hwndDlg, 1), QWL_STYLE,
-                0,
-                BS_DEFAULT);
+                         0,
+                         BS_DEFAULT);
 
+        // query default button IDs
         if (flStyle & MB_DEFBUTTON2)
             ulDefaultButtonID = 2;
         else if (flStyle & MB_DEFBUTTON3)
             ulDefaultButtonID = 3;
 
+        // set new default button
         {
             HWND    hwndDefaultButton = WinWindowFromID(hwndDlg, ulDefaultButtonID);
             WinSetWindowBits(hwndDefaultButton, QWL_STYLE,
@@ -2690,7 +2261,7 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
             ulAlarmFlag = WA_WARNING;
 
         WinSetWindowText(hwndDlg, pszTitle);
-        WinSendMsg(hwndStatic, WM_SETLONGTEXT, pszMessage, MPNULL);
+        WinSendMsg(hwndStatic, XM_SETLONGTEXT, pszMessage, MPNULL);
 
         winhCenterWindow(hwndDlg);
         if (flStyle & MB_SYSTEMMODAL)
@@ -2706,7 +2277,7 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
                 case 1:     ulrc = MBID_YES; break;
                 default:    ulrc = MBID_NO;  break;
             }
-        if (flButtons == MB_YESNOCANCEL)
+        else if (flButtons == MB_YESNOCANCEL)
             switch (ulrcDlg)
             {
                 case 1:     ulrc = MBID_YES; break;
@@ -2865,6 +2436,49 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
             ulMessage);
 
     return (cmnMessageBox(hwndOwner, szTitle, szMessage, flStyle));
+}
+
+/*
+ *@@ cmnDosErrorMsgBox:
+ *      displays a DOS error message.
+ *      This calls cmnMessageBox in turn.
+ *
+ *@@added V0.9.1 (2000-02-08) [umoeller]
+ */
+
+ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
+                        CHAR cDrive,        // in: drive letter
+                        PSZ pszTitle,       // in: msgbox title
+                        APIRET arc,         // in: DOS error code to get msg for
+                        ULONG ulFlags)      // in: as in cmnMessageBox flStyle
+{
+    ULONG   mbrc = 0;
+    CHAR    szError[1000];
+    ULONG   ulLen = 0;
+    APIRET  arc2 = NO_ERROR;
+
+    // get error message for APIRET
+    CHAR    szDrive[3] = "?:";
+    PSZ     pszTable = szDrive;
+    szDrive[0] = cDrive;
+
+    arc2 = DosGetMessage(&pszTable, 1,
+                         szError, sizeof(szError),
+                         arc,
+                         "OSO001.MSG",        // default OS/2 message file
+                         &ulLen);
+    szError[ulLen] = 0;
+
+    if (arc2 != NO_ERROR)
+        sprintf(szError,
+                "%s: DosGetMessage returned error %d",
+                __FUNCTION__, arc2);
+
+    mbrc = cmnMessageBox(HWND_DESKTOP,
+                         pszTitle,
+                         szError,
+                         ulFlags);
+    return (mbrc);
 }
 
 /*

@@ -28,7 +28,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -91,7 +91,6 @@
 // C library headers
 #include <stdio.h>              // needed for except.h
 #include <setjmp.h>             // needed for except.h
-#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -240,7 +239,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     if (Update)
     {
         // update open views of this folder
-        _xwpForEachOpenView(somSelf, 0, &fdrUpdateFolderSorts);
+        fdrForEachOpenInstanceView(somSelf, 0, &fdrUpdateFolderSorts);
         // save instance data
         _wpSaveDeferred(somSelf);
         // update folder "Sort" notebook page, if open
@@ -424,7 +423,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 {
     PENUMCONTENT pec;
 
-    XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpBeginEnumContent");
 
     pec = malloc(sizeof(ENUMCONTENT));
@@ -521,7 +520,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 //    PSZ pszValue;
                 //  } EABINDING, *PEABINDING;
 
-                ULONG ulrc = 0;
                 PBYTE pICONPOS = malloc(peab->usValueLength+100);
 
                 if (pICONPOS)
@@ -576,7 +574,7 @@ SOM_Scope WPObject*  SOMLINK xf_xwpEnumNext(XFolder *somSelf,
     WPObject *pObject = NULL;
     PENUMCONTENT pec = (PENUMCONTENT)henum;
 
-    XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpEnumNext");
 
     if (pec)
@@ -616,7 +614,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
 {
     PENUMCONTENT pec = (PENUMCONTENT)henum;
     BOOL brc = FALSE;
-    XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpEndEnumContent");
 
     if (pec)
@@ -953,10 +951,14 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *
  *      This method has been introduced for two reasons:
  *
- *      a)   you can call it yourself if you want to update the
- *           status bar;
+ *      a)   You can call it yourself if you need to have the
+ *           status bar updated; use
+ +              WinQueryWindow(hwndFrame, 0x9001)
+ *           to get hwndStatusBar for this method. If that call
+ *           returns NULLHANDLE, there is no status bar for the
+ *           folder view.
  *
- *      b)   you can override this method if you wish to have a
+ *      b)   You can override this method if you wish to have a
  *           different status bar display. This method gets called
  *           using SOM name-lookup resolution, so you can even
  *           override this method if you don't want to derive your
@@ -964,8 +966,9 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *           the same prototype in your WPFolder subclass, and your
  *           method will get called instead of this default one.
  *
- *           See the XWPTrashCan class (xtrash.c) for how this can
- *           be done.
+ *           The XWPTrashCan class (xtrash.c) is an example of a
+ *           WPFolder (not XFolder!) subclass which overrides this
+ *           method (see XWPTrashCan::xwpUpdateStatusBar).
  *
  *           See the SOM Programming Guide for details about name-lookup
  *           method resolution.
@@ -977,8 +980,13 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *
  *      This method calls stbComposeText (statbars.c) per default,
  *      which translates all status bar mnemonics except for the
- *      $x flags (tabulators), which are evaluated during WM_PAINT
- *      of fdr_fnwpStatusBar only.
+ *      $x flags (tabulators), which are evaluated
+ *
+ *      If any $x flags are found (see the XWorkplace User Guide for
+ *      WPObject status bar codes), these will be parsed during WM_PAINT
+ *      of fdr_fnwpStatusBar only. So you can use those tags when
+ *      setting the status bar's text to position status bar substrings.
+ *      All other tags are not evaluated though.
  *
  *      hwndStatusbar has the HWND of the status bar window (a child
  *      of the folder frame). The QWL_USER window word of that
@@ -986,9 +994,14 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *      containing more information.
  *
  *      hwndCnr is the container HWND of the folder view to which
- *      the status bar has been added.
+ *      the status bar has been added. Use that for getting selected
+ *      objects.
  *
  *@@added V0.9.0 [umoeller]
+ */
+
+/*
+ * BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
@@ -1008,73 +1021,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
     }
 
     return (psz != 0);
-}
-
-/*
- *@@ xwpForEachOpenView:
- *      this instance method goes through all open views of a folder and calls
- *      pfnwpCallback for each them (as opposed to M_XFolder::xwpclsForEachOpenView,
- *      which goes through all open folders on the system).
- *
- *      The following params are then passed to pfnwpCallback:
- *      --   HWND       hwnd: the hwnd of the view frame window;
- *      --   ULONG      mp1:  the view type (as def'd in wpOpen)
- *      --   XFolder*   mp2:  somSelf.
- *
- *      This method does not return until all views have been processed.
- *      You might want to call this method in a different thread if the task
- *      will take long.
- *
- *      This method returns TRUE if the callback returned TRUE at least once.
- *      Note on disk objects/root folders: the WPS does not maintain an open
- *      view list for root folders, but only for the corresponding disk object.
- *      xwpForEachOpenView will call open disk views also, but the callback
- *      will still be passed the root folder in pFolder!
- */
-
-SOM_Scope BOOL  SOMLINK xf_xwpForEachOpenView(XFolder *somSelf,
-                                              ULONG ulMsg,
-                                              PFNWP pfnwpCallback)
-{
-    BOOL brc = FALSE;
-    WPObject *somSelf2;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpForEachOpenView");
-
-    if (_somIsA(somSelf, _WPRootFolder))
-        // for disk/root folder views: root folders have no
-        // open view, instead the disk object is registered
-        // to have the open view. Duh. So we need to find
-        // the disk object first
-        somSelf2 = _xwpclsQueryDiskObject(_XFldDisk, somSelf);
-    else
-        somSelf2 = somSelf;
-
-    if (somSelf2)
-    {
-        if (_wpFindUseItem(somSelf2, USAGE_OPENVIEW, NULL))
-        {   // folder has an open view;
-            // now we go search the open views of the folder and get the
-            // frame handle of the desired view (ulView) */
-            PVIEWITEM   pViewItem;
-            for (pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, NULL);
-                pViewItem;
-                pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem))
-            {
-                if ((*pfnwpCallback)(pViewItem->handle,
-                                     ulMsg,
-                                     (MPARAM)pViewItem->view,
-                                     // but even if we have found a disk object
-                                     // above, we need to pass it the root folder
-                                     // pointer, because otherwise the callback
-                                     // might get into trouble
-                                     (MPARAM)somSelf)
-                            == (MPARAM)TRUE)
-                    brc = TRUE;
-            } // end for
-        } // end if
-    }
-    return (brc);
 }
 
 /*
@@ -1337,8 +1283,8 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
 {
     BOOL        rc = FALSE,             // processed
-                fChanged = FALSE,       // instance data changed
-                fCallParent = TRUE;
+                fChanged = FALSE;       // instance data changed
+                // fCallParent = TRUE;
     CHAR        szValue[CCHMAXPATH + 1];
     ULONG       cbValue;
 
@@ -1497,9 +1443,9 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
         else
             usSort = SET_DEFAULT;
 
-        _xwpclsForEachOpenView(_XFolder,
-                               usSort,
-                               fdrSortAllViews);
+        fdrForEachOpenInstanceView(somSelf,
+                                   usSort,
+                                   fdrSortAllViews);
     }
 
     if (fChanged)
@@ -1615,93 +1561,10 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 }
 
 /*
- *@@ IdentifyRestoreID:
- *
- *@@added V0.9.1 (2000-01-17) [umoeller]
- */
-
-PSZ IdentifyRestoreID(PSZ pszClass,
-                      ULONG ulKey)
-{
-    if (strcmp(pszClass, "WPFolder") == 0)
-    {
-        switch (ulKey)
-        {
-            case IDKEY_FDRCONTENTATTR    : // 2900
-                return ("IDKEY_FDRCONTENTATTR");
-            case IDKEY_FDRTREEATTR       : // 2901
-                return ("IDKEY_FDRTREEATTR");
-            case IDKEY_FDRCVLFONT        : // 2902
-                return ("IDKEY_FDRCVLFONT");
-            case IDKEY_FDRCVNFONT        : // 2903
-                return ("IDKEY_FDRCVNFONT");
-            case IDKEY_FDRCVIFONT        : // 2904
-                return ("IDKEY_FDRCVIFONT");
-            case IDKEY_FDRTVLFONT        : // 2905
-                return ("IDKEY_FDRTVLFONT");
-            case IDKEY_FDRTVNFONT        : // 2906
-                return ("IDKEY_FDRTVNFONT");
-            case IDKEY_FDRDETAILSATTR    : // 2907
-                return ("IDKEY_FDRDETAILSATTR");
-            case IDKEY_FDRDVFONT         : // 2908
-                return ("IDKEY_FDRDVFONT");
-            case IDKEY_FDRDETAILSCLASS   : // 2909
-                return ("IDKEY_FDRDETAILSCLASS");
-            case IDKEY_FDRICONPOS        : // 2910
-                return ("IDKEY_FDRICONPOS");
-            case IDKEY_FDRINVISCOLUMNS   : // 2914
-                return ("IDKEY_FDRINVISCOLUMNS");
-            case IDKEY_FDRINCCLASS       : // 2920
-                return ("IDKEY_FDRINCCLASS");
-            case IDKEY_FDRINCNAME        : // 2921
-                return ("IDKEY_FDRINCNAME");
-            case IDKEY_FDRFSYSSEARCHINFO : // 2922
-                return ("IDKEY_FDRFSYSSEARCHINFO");
-            case IDKEY_FILTERCONTENT     : // 2923
-                return ("IDKEY_FILTERCONTENT");
-            case IDKEY_CNRBACKGROUND     : // 2924
-                return ("IDKEY_CNRBACKGROUND");
-            case IDKEY_FDRINCCRITERIA    : // 2925
-                return ("IDKEY_FDRINCCRITERIA");
-            case IDKEY_FDRICONVIEWPOS    : // 2926
-                return ("IDKEY_FDRICONVIEWPOS");
-            case IDKEY_FDRSORTCLASS      : // 2927
-                return ("IDKEY_FDRSORTCLASS");
-            case IDKEY_FDRSORTATTRIBS    : // 2928
-                return ("IDKEY_FDRSORTATTRIBS");
-            case IDKEY_FDRSORTINFO       : // 2929
-                return ("IDKEY_FDRSORTINFO");
-            case IDKEY_FDRSNEAKYCOUNT    : // 2930
-                return ("IDKEY_FDRSNEAKYCOUNT");
-            case IDKEY_FDRLONGARRAY      : // 2931
-                return ("IDKEY_FDRLONGARRAY");
-            case IDKEY_FDRSTRARRAY       : // 2932
-                return ("IDKEY_FDRSTRARRAY");
-            case IDKEY_FDRCNRBACKGROUND  : // 2933
-                return ("IDKEY_FDRCNRBACKGROUND");
-            case IDKEY_FDRBKGNDIMAGEFILE : // 2934
-                return ("IDKEY_FDRBKGNDIMAGEFILE");
-            case IDKEY_FDRBACKGROUND     : // 2935
-                return ("IDKEY_FDRBACKGROUND");
-            case IDKEY_FDRSELFCLOSE      : // 2936
-                return ("IDKEY_FDRSELFCLOSE");
-
-            case 2937:
-                return ("IDKEY_FDRODMENUBARON");
-            case 2938:
-                return ("IDKEY_FDRGRIDINFO");
-            case 2939:
-                return ("IDKEY_FDRTREEVIEWCONTENTS");
-        }
-    }
-
-    return ("unknown");
-}
-
-/*
  *@@ wpRestoreLong:
  *      this instance method restores a 32-bit data
  *      value from the folder EAs upon object awakening.
+ *
  *      We check the "ulKey" value after having called
  *      the parent to be able to intercept the pointer
  *      to certain WPS-internal folder data, which
@@ -1722,7 +1585,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
     // XFolderMethodDebug("XFolder","xf_wpRestoreLong");
 
     brc = XFolder_parent_WPFolder_wpRestoreLong(somSelf, pszClass,
-                                                  ulKey, pulValue);
+                                                ulKey, pulValue);
 
     if (strcmp(pszClass, "WPFolder") == 0)
     {
@@ -1745,13 +1608,16 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
                     }
             break; }
         }
-
-        if (pulValue)
-            _Pmpf(("Long %s (%s %d) --> 0x%lX",
-                    IdentifyRestoreID(pszClass, ulKey),
-                    pszClass, ulKey,
-                    *pulValue));        // data returned
     }
+
+    #ifdef DEBUG_RESTOREDATA
+        if ((pulValue) && (brc))
+            _Pmpf(("Long %s (%s %d) --> 0x%lX",
+                   wpshIdentifyRestoreID(pszClass, ulKey),
+                   pszClass, ulKey,
+                   *pulValue));        // data returned
+    #endif
+
     return (brc);
 }
 
@@ -1785,14 +1651,15 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                 }
             break;
         }
-
-        if ((pszValue) && (brc))
-            _Pmpf(("Strg %s (%s %d) --> %s",
-                    IdentifyRestoreID(pszClass, ulKey),
-                    pszClass, ulKey,
-                    pszValue));        // data returned
     }
 
+    #ifdef DEBUG_RESTOREDATA
+        if ((pszValue) && (brc))
+            _Pmpf(("Strg %s (%s %d) --> %s",
+                   wpshIdentifyRestoreID(pszClass, ulKey),
+                   pszClass, ulKey,
+                   pszValue));        // data returned
+    #endif
 
     return (brc);
 }
@@ -1840,15 +1707,6 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
     // data
     if (strcmp(pszClass, "WPFolder") == 0)
     {
-        // #ifdef DEBUG_RESTOREDATA
-        if ((pValue) && (brc))
-            _Pmpf(("Data %s (%s %d) size_in %d -> out %d",
-                    IdentifyRestoreID(pszClass, ulKey),
-                    pszClass, ulKey,
-                    cbOrigValue,    // size in or 0 if size queried
-                    *pcbValue));    // size out
-        // #endif
-
         switch (ulKey)
         {
             case IDKEY_FDRSORTINFO:
@@ -2038,6 +1896,15 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
         }   // end switch
     }
 
+    #ifdef DEBUG_RESTOREDATA
+        if ((pValue) && (brc))
+            _Pmpf(("Data %s (%s %d) size_in %d -> out %d",
+                    wpshIdentifyRestoreID(pszClass, ulKey),
+                    pszClass, ulKey,
+                    cbOrigValue,    // size in or 0 if size queried
+                    *pcbValue));    // size out
+    #endif
+
     return (brc);
 }
 
@@ -2065,21 +1932,41 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
 
     if (pGlobalSettings->fReplaceFilePage)
     {
+        // page 2
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
 
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndNotebook;
         pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_FILESPAGE;
-        pcnbp->ulPageID = SP_FILE;
+        pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
+        pcnbp->ulPageID = SP_FILE2;
+        // pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = pNLSStrings->pszFilePage;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
+
+        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
+        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
+
+        ntbInsertPage(pcnbp);
+
+        // page 1
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
+        pcnbp->ulPageID = SP_FILE1;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszFilePage;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
 
-        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFileInitPage;     // in xfdataf.c
-        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFileItemChanged;  // in xfdataf.c
+        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
+        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
 
         return (ntbInsertPage(pcnbp));
     }
@@ -2259,13 +2146,18 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
 
     ulMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
-                                                         ulFlags,
-                                                         hwndCnr,
-                                                         fMultiSelect);
+                                                             ulFlags,
+                                                             hwndCnr,
+                                                             fMultiSelect);
     #ifdef DEBUG_MENUS
         _Pmpf(("XFolder::wpFilterPopupMenu parent flags:"));
         _Pmpf(("  CTXT_CRANOTHER %d", ulMenuFilter & CTXT_CRANOTHER));
     #endif
+
+    // if object has been deleted already (ie. is in trashcan),
+    // remove delete
+    if (_xwpQueryDeletion(somSelf, NULL, NULL))
+        ulMenuFilter &~ CTXT_DELETE;
 
     // now suppress default menu items according to
     // Global Settings;
@@ -2326,9 +2218,20 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      process input when any menu item was selected;
- *      we do this by calling the common XFolder function
- *      in menus.c, which is also used by XFldDisk.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the new menu items
+ *      we have inserted for our subclass.
+ *
+ *      We pass the input to mnuMenuItemSelected in menus.c
+ *      because disk menu items are mostly shared with XFldDisk.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
@@ -2386,7 +2289,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                                   ULONG ulView,
                                   ULONG param)
 {
-    HWND                hwndNewFrame;
+    HWND        hwndNewFrame; // return HWND
+    BOOL        fFolderLocked = FALSE;
     // XFolderMethodDebug("XFolder","xf_wpOpen");
 
     #ifdef DEBUG_SOMMETHODS
@@ -2396,21 +2300,37 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                     param));
     #endif
 
-    // have parent do the window creation
-    hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
-                                                  hwndCnr,
-                                                  ulView,
-                                                  param);
-
-    if (   (ulView == OPEN_CONTENTS)
-        || (ulView == OPEN_TREE)
-        || (ulView == OPEN_DETAILS)
-       )
+    TRY_LOUD(excpt1, NULL)
     {
-        fdrManipulateNewView(somSelf,
-                             hwndNewFrame,
-                             ulView);
+        // request object mutex;
+        // parent_wpOpen starts the Populate thread, and we
+        // don't want that one to start until we are done
+        // with our folder manipulations
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
+        {
+            // have parent do the window creation
+            hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
+                                                          hwndCnr,
+                                                          ulView,
+                                                          param);
+
+            if (   (ulView == OPEN_CONTENTS)
+                || (ulView == OPEN_TREE)
+                || (ulView == OPEN_DETAILS)
+               )
+            {
+                fdrManipulateNewView(somSelf,
+                                     hwndNewFrame,
+                                     ulView);
+            }
+        }
     }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+                // this will unblock the Populate thread
 
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("End of XFolder::wpOpen for %s: hwndFrame = 0x%lX",
@@ -2508,9 +2428,9 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf, ULONG ulView,
 
     rc = XFolder_parent_WPFolder_wpRefresh(somSelf, ulView, pReserved);
 
-    _xwpForEachOpenView(somSelf,
-                (ULONG)2,           // update
-                (PFNWP)fncbUpdateStatusBars);
+    fdrForEachOpenInstanceView(somSelf,
+                              (ULONG)2,           // update
+                              (PFNWP)fncbUpdateStatusBars);
 
     xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
 
@@ -2647,7 +2567,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryFldrAttr(XFolder *somSelf,
 
         _Pmpf(("  Flags: %s", szInfo));
     }
-    #endif
+    #endif // DEBUG_SORT
 
     return (ulAttr);
 }
@@ -2738,6 +2658,135 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
 
     return (rc);
 }
+
+/*
+ *@@ wpDragOver:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+/* SOM_Scope MRESULT  SOMLINK xf_wpDragOver(XFolder *somSelf, HWND hwndCnr,
+                                         PDRAGINFO pdrgInfo)
+{
+    MRESULT mrc;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpDragOver");
+
+    mrc = XFolder_parent_WPFolder_wpDragOver(somSelf, hwndCnr,
+                                             pdrgInfo);
+
+    _Pmpf(("XFolder::wpDragOver: parent returned MRESULT 0x%lX", mrc));
+
+    return (mrc);
+} */
+
+/*
+ *@@ wpRender:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+/* SOM_Scope MRESULT  SOMLINK xf_wpRender(XFolder *somSelf, PDRAGTRANSFER pdxfer)
+{
+    MRESULT mrc;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpRender");
+
+    mrc = XFolder_parent_WPFolder_wpRender(somSelf, pdxfer);
+
+    _Pmpf(("XFolder::wpRender: parent returned MRESULT 0x%lX", mrc));
+
+    return (mrc);
+
+} */
+
+/*
+ *@@ wpRenderComplete:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+/* SOM_Scope MRESULT  SOMLINK xf_wpRenderComplete(XFolder *somSelf,
+                                               PDRAGTRANSFER pdxfer,
+                                               ULONG ulResult)
+{
+    MRESULT mrc;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpRenderComplete");
+
+    mrc = XFolder_parent_WPFolder_wpRenderComplete(somSelf,
+                                                     pdxfer,
+                                                     ulResult);
+
+    _Pmpf(("XFolder::wpRenderComplete: parent returned MRESULT 0x%lX", mrc));
+
+    return (mrc);
+} */
+
+/*
+ *@@ wpFormatDragItem:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+/* SOM_Scope BOOL  SOMLINK xf_wpFormatDragItem(XFolder *somSelf,
+                                            PDRAGITEM pdrgItem)
+{
+    BOOL brc;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpFormatDragItem");
+
+    brc = (XFolder_parent_WPFolder_wpFormatDragItem(somSelf,
+                                                     pdrgItem));
+    _Pmpf(("XFolder::wpFormatDragItem: parent returned BOOL %d", brc));
+
+    return (brc);
+
+} */
+
+/*
+ *@@ wpDrop:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+/* SOM_Scope MRESULT  SOMLINK xf_wpDrop(XFolder *somSelf, HWND hwndCnr,
+                                     PDRAGINFO pdrgInfo, PDRAGITEM pdrgItem)
+{
+    MRESULT mrc;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpDrop");
+
+    mrc = (XFolder_parent_WPFolder_wpDrop(somSelf, hwndCnr,
+                                           pdrgInfo, pdrgItem));
+    _Pmpf(("XFolder::wpDrop: parent returned MRESULT 0x%lX", mrc));
+
+    return (mrc);
+} */
+
+/*
+ *@@ wpEndConversation:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+/* SOM_Scope MRESULT  SOMLINK xf_wpEndConversation(XFolder *somSelf,
+                                                ULONG ulItemID,
+                                                ULONG flResult)
+{
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpEndConversation");
+
+    return (XFolder_parent_WPFolder_wpEndConversation(somSelf,
+                                                      ulItemID,
+                                                      flResult));
+} */
 
 /*
  *@@ wpMoveObject:
@@ -2832,8 +2881,10 @@ SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
  *      when files are renamed any more.
  */
 
-SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf, PVOID pSortRecord,
-                                         ULONG ulView, ULONG ulType)
+SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
+                                         PVOID pSortRecord,
+                                         ULONG ulView,
+                                         ULONG ulType)
 {
     PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
@@ -2846,7 +2897,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf, PVOID pSortRecord,
             if (hwndCnr)
             {
                 fdrSetFldrCnrSort(somSelf, hwndCnr,
-                               TRUE);  // enfore cnr sort
+                                  TRUE);  // enfore cnr sort
                 return (TRUE);
             }
         }
@@ -2900,44 +2951,6 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
  ********************************************************************/
 
 /*
- *@@ xwpclsForEachOpenView:
- *      this class method goes through all open folder windows and calls
- *      pfnwpCallback for each open view of each open folder.
- *      As opposed to XFolder::xwpForEachOpenView, this goes thru really
- *      all open folders views on the system.
- *
- *      The following params will be passed to pfnwpCallback:
- *      -- HWND       hwnd: the hwnd of the view frame window;
- *      -- ULONG      msg:  ulMsg, as passed to this method
- *      -- ULONG      mp1:  the view type (as def'd in wpOpen)
- *      -- XFolder*   mp2:  the currently open folder.
- *
- *      This method does not return until all views have been processed.
- *      You might want to call this method in a different thread if the task
- *      will take long.
- */
-
-SOM_Scope BOOL  SOMLINK xfM_xwpclsForEachOpenView(M_XFolder *somSelf,
-                                                  ULONG ulMsg,
-                                                  PFNWP pfnwpCallback)
-{
-    XFolder     *pFolder;
-    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
-    M_XFolderMethodDebug("M_XFolder","xfM_xwpclsForEachOpenView");
-
-    for ( pFolder = _wpclsQueryOpenFolders(somSelf, NULL, QC_FIRST, FALSE);
-          pFolder;
-          pFolder = _wpclsQueryOpenFolders(somSelf, pFolder, QC_NEXT, FALSE))
-    {
-        if (_somIsA(pFolder, _WPFolder))
-        {
-            _xwpForEachOpenView(pFolder, ulMsg, pfnwpCallback);
-        }
-    }
-    return TRUE;
-}
-
-/*
  *@@ xwpclsQueryConfigFolder:
  *      returns the XFolder Configuration Folder or NULL
  *      if it doesn't exist.
@@ -2947,7 +2960,7 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsForEachOpenView(M_XFolder *somSelf,
 
 SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
 {
-    M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryConfigFolder");
 
     if (pConfigFolder == NULL)
@@ -2957,6 +2970,11 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
                         wpshQueryObjectFromID(XFOLDER_CONFIGID, NULL);
                     // changed V0.9.0: the class method doesn't seem to
                     // be working on the new Warp Server
+    else
+        // config folder queried previously:
+        // check that object
+        if (!wpshCheckObject(pConfigFolder))
+            pConfigFolder = NULL;
 
     return (pConfigFolder);
 }

@@ -94,7 +94,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
 {
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
     ULONG               ulrc = 0;
 
@@ -137,7 +137,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
 {
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
     ULONG               ulrc = 0;
 

@@ -33,7 +33,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Stefan Milcke,
+ *      Copyright (C) 1997-2000 Stefan Milcke,
  *                            Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -169,7 +169,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             apszPercentages[10] = "5.000";
         }
 
-        WinSendDlgItemMsg(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPIN,
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           SPBM_SETARRAY,
                           (MPARAM)&apszPercentages,
                           (MPARAM)PERCENTAGES_COUNT);       // array size
@@ -180,13 +180,13 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         CHAR        cArchivesCount = 0;
         ULONG       ul = 0;
 
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_ENABLE,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_ENABLE,
                               (pArcSettings->ulArcFlags & ARCF_ENABLED) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_ALWAYS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
                               (pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_NEXT,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
                               (pArcSettings->ulArcFlags & ARCF_NEXT) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_INI,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI,
                               (pArcSettings->ulArcFlags & ARCF_INI) != 0);
 
         // INI files percentage:
@@ -204,7 +204,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                 // prevent rounding errors
             {
                 // yes: set this spin button array item
-                WinSendDlgItemMsg(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPIN,
+                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                                   SPBM_SETCURRENTVALUE,
                                   (MPARAM)ul,
                                   (MPARAM)NULL);
@@ -213,20 +213,20 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         }
 
         // every xxx days
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_DAYS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
                               (pArcSettings->ulArcFlags & ARCF_DAYS) != 0);
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPIN,
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
                                1, 50,       // spin button limits
                                pArcSettings->ulEveryDays);
 
         // status
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_SHOWSTATUS,
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                               pArcSettings->fShowStatus);
 
         // no. of archives
         arcSetNumArchives(&cArchivesCount,
                           FALSE);       // query
-        winhSetDlgItemSpinData(pcnbp->hwndPage, ID_XSDI_ARC_ARCHIVES_SPIN,
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_SPIN,
                                1, 9,        // spin button limits
                                cArchivesCount);
     }
@@ -235,26 +235,26 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         BOOL    fEnabled = ((pArcSettings->ulArcFlags & ARCF_ENABLED) != 0),
                 fAlways = ((pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0),
-                fINI = winhIsDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_INI),
-                fDays = winhIsDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_DAYS);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_ALWAYS,
+                fINI = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI),
+                fDays = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
                           fEnabled);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_NEXT,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
                           fEnabled && !fAlways);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_INI,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI,
                           fEnabled && !fAlways);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPIN,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPINTXT1,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_DAYS,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
                           fEnabled && !fAlways);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPIN,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
                           ( (fEnabled) && (fDays) ) && !fAlways);
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPINTXT1,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
                           ( (fEnabled) && (fDays) ) && !fAlways);
 
-        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_SHOWSTATUS,
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                           fEnabled);
     }
 }
@@ -305,7 +305,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 float   flTemp = 0;
                 // query current spin button array
                 // item as a string
-                WinSendDlgItemMsg(pcnbp->hwndPage, usItemID,
+                WinSendDlgItemMsg(pcnbp->hwndDlgPage, usItemID,
                                   SPBM_QUERYVALUE,
                                   (MPARAM)szTemp,
                                   MPFROM2SHORT(sizeof(szTemp),
@@ -320,10 +320,10 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_ARC_DAYS_SPIN:
-            pArcSettings->ulEveryDays = winhAdjustDlgItemSpinData(
-                                    pcnbp->hwndPage, usItemID,
-                                    0,              // no grid
-                                    usNotifyCode);
+            pArcSettings->ulEveryDays = winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
+                                                                  usItemID,
+                                                                  0,              // no grid
+                                                                  usNotifyCode);
         break;
 
         case ID_XSDI_ARC_SHOWSTATUS:
@@ -332,10 +332,10 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_ARC_ARCHIVES_SPIN:
         {
-            CHAR    cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(
-                                    pcnbp->hwndPage, usItemID,
-                                    0,              // no grid
-                                    usNotifyCode);
+            CHAR    cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
+                                                                     usItemID,
+                                                                     0,              // no grid
+                                                                     usNotifyCode);
             arcSetNumArchives(&cArchivesCount,
                               TRUE);        // set
             fSave = FALSE;

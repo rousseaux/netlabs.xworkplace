@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -261,13 +261,25 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
 
 /*
  *@@ wpMenuItemSelected:
- *      process input when any menu item was selected;
- *      we pass the input to mnuMenuItemSelected in menus.c.
+ *      this WPObject method processes menu selections.
+ *      This is overridden to support the new menu items
+ *      we have inserted for our subclass.
+ *
+ *      We pass the input to mnuMenuItemSelected in menus.c
+ *      because disk menu items are mostly shared with XFolder.
+ *
+ *      Note that the WPS invokes this method upon every
+ *      object which has been selected in the container.
+ *      That is, if three objects have been selected and
+ *      a menu item has been selected for all three of
+ *      them, all three objects will receive this method
+ *      call. This is true even if FALSE is returned from
+ *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemSelected(XFldDisk *somSelf,
-                                                HWND hwndFrame,
-                                                ULONG ulMenuId)
+                                                  HWND hwndFrame,
+                                                  ULONG ulMenuId)
 {
     XFolder         *pFolder = _wpQueryRootFolder(somSelf);
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);

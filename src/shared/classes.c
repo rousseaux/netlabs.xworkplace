@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -106,7 +106,9 @@
 
 /*
  *@@  clsAddClass2Cnr:
- *      This inserts one single WPS class record core into a given container.
+ *      this inserts one single WPS class record core into the
+ *      given container.
+ *
  *      We create a new record core (of CLASSRECORDCORE type) from the
  *      data which is given in the WPSLISTITEM structure.
  *      SELECTCLASSDATA is a "Select class" dialog description
@@ -125,11 +127,13 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
                                  PWPSLISTITEM pwpsMyself,       // in: class description
                                  PSELECTCLASSDATA pscd)         // in: dlg info
 {
-    PCLASSRECORDCORE      preccNew = (PCLASSRECORDCORE)
-            cnrhAllocRecords(hwndCnr, sizeof(CLASSRECORDCORE), 1);
     // recc attributes
-    ULONG            usAttrs = CRA_EXPANDED | CRA_RECORDREADONLY;
+    ULONG               usAttrs = CRA_EXPANDED | CRA_RECORDREADONLY;
 
+    PCLASSRECORDCORE    preccNew
+        = (PCLASSRECORDCORE)cnrhAllocRecords(hwndCnr,
+                                             sizeof(CLASSRECORDCORE),
+                                             1);
     #ifdef DEBUG_WPSCLASSES
         _Pmpf(("  clsAddClass2Cnr %s\n", pszCurrentClass));
     #endif
@@ -150,8 +154,10 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
                 // disabled, expanded etc.
                 if (pscd->pfnwpReturnAttrForClass)
                     usAttrs = (USHORT)(*pscd->pfnwpReturnAttrForClass)(
-                                               hwndCnr, (ULONG)pscd,
-                                               (MPARAM)pwpsMyself, (MPARAM)preccParent);
+                                                      hwndCnr,
+                                                      (ULONG)pscd,
+                                                      (MPARAM)pwpsMyself,
+                                                      (MPARAM)preccParent);
                 else
                 {
                     // no callback defined: set read-only
@@ -188,7 +194,12 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
             WinSendMsg(hwndCnr, CM_SETRECORDEMPHASIS,
                        (MPARAM)preccNew,
                        MPFROM2SHORT(TRUE,
-                                    (USHORT)(usAttrs & (CRA_INUSE | CRA_CURSORED | CRA_PICKED | CRA_SELECTED)))
+                                    (USHORT)(usAttrs & (CRA_INUSE
+                                                        | CRA_CURSORED
+                                                        | CRA_PICKED
+                                                        | CRA_SELECTED)
+                                                       )
+                                            )
                       );
         }
 
@@ -349,22 +360,24 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
  *      This is defined and explained in classlst.h.
  *      If any callback is set to NULL, safe defaults are used.
  *
- *      This function only inserts all the containers as CLASSRECORDCORE
- *      structures. It does _not_ handle anything later. It is your
- *      responsibility to make the container useful, e.g. by intercepting
- *      container WM_CONTROL messages to provide for context menus and all that.
+ *      This function only inserts all the containers as
+ *      CLASSRECORDCORE structures. It does _not_ handle
+ *      anything later. It is your responsibility to make
+ *      the container useful, e.g. by intercepting container
+ *      WM_CONTROL messages to provide for context menus and
+ *      all that.
  *
- *      Take a look at xclslist.c to find out how the XWPClassList class
- *      view utilizes this function.
+ *      Take a look at config/classlst.c to find out how the
+ *      XWPClassList class view utilizes this function.
  *
- *      <B>Warning:</B> This function eats up a lot of memory, depending
- *      on how many WPS classes are installed. This memory is NOT
- *      freed when this function returns, because the container
- *      still needs it. AFTER destroying the container window,
- *      you must issue clsCleanupWpsClasses (below) with the
- *      PWPSCLASSESINFO return value of whis function. This will free
- *      the internal linked list of WPS class items and all
- *      allocated SOM resources.
+ *      <B>Warning:</B> This function eats up a lot of memory,
+ *      depending on how many WPS classes are installed. This
+ *      memory is NOT freed when this function returns, because
+ *      the container still needs it. AFTER destroying the
+ *      container window, you must issue clsCleanupWpsClasses
+ *      (below) with the PWPSCLASSESINFO return value of this
+ *      function. This will free the internal linked list of
+ *      WPS class items and all allocated SOM resources.
  *
  *@@changed V0.9.1 (99-12-07) [umoeller]: fixed memory leak
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
@@ -860,7 +873,7 @@ ULONG clsSelectWpsClassDlg(HWND hwndOwner,
  *      If (fClassMethods == FALSE), _instance_
  *      method information is returned.
  *
- *      if (fClassMethods == TRUE), _class_ mehod
+ *      If (fClassMethods == TRUE), _class_ method
  *      information is returned.
  *
  *      This function is reentrant, so it can be
@@ -869,12 +882,18 @@ ULONG clsSelectWpsClassDlg(HWND hwndOwner,
  *      method can take several seconds on slower
  *      systems.
  *
+ *      If *pfAbort is set to TRUE while this function
+ *      is running (from another thread, of course),
+ *      this function aborts immediately and returns
+ *      NULL.
+ *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
  */
 
-PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,
-                               BOOL fClassMethods)
+PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query method for
+                               BOOL fClassMethods,      // in: class or instance methods?
+                               PBOOL pfAbort)           // in: when this is set to TRUE, this function aborts
 {
     PMETHODINFO pmi = (PMETHODINFO)malloc(sizeof(METHODINFO));
     if (pmi)
@@ -1046,9 +1065,8 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
  */
 
-BOOL clsFreeMethodInfo(PMETHODINFO *ppMethodInfo)
+VOID clsFreeMethodInfo(PMETHODINFO *ppMethodInfo)
 {
-    BOOL brc = FALSE;
     if (ppMethodInfo)
         if (*ppMethodInfo)
         {
@@ -1070,7 +1088,6 @@ BOOL clsFreeMethodInfo(PMETHODINFO *ppMethodInfo)
             free(*ppMethodInfo);
             *ppMethodInfo = NULL;
         }
-    return (FALSE);
 }
 
 

@@ -121,7 +121,7 @@ MYOWNINC = $(INC)\config
 $(OUTPUTDIR)\cfgsys.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\procstat.h \
-            $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+            $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\winh.h \
     $(INC)\classes\xfsys.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\classes.h $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
@@ -134,7 +134,7 @@ $(OUTPUTDIR)\classlst.obj: \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
             $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\threads.h \
     $(INC)\dlgids.h \
-    $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \
+    $(INC)\shared\classes.h $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \
     $(INC)\classes\xclslist.ih \
     $(@B).c $(MYOWNINC)\$(@B).h
 

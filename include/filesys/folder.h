@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -78,6 +78,19 @@
     ULONG fdrQuerySetup(WPObject *somSelf,
                         PSZ pszSetupString,
                         ULONG cbSetupString);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   Folder view helpers                                            *
+     *                                                                  *
+     ********************************************************************/
+
+    BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
+                                    ULONG ulMsg,
+                                    PFNWP pfnwpCallback);
+
+    BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
+                                  PFNWP pfnwpCallback);
 
     /* ******************************************************************
      *                                                                  *
@@ -165,24 +178,36 @@
          *      window subclassing. One of these structures
          *      is created for each folder view (window) which
          *      is subclassed by fdrSubclassFolderFrame and
-         *      stored in a global linked list. Most importantly,
-         *      this structure stores the original frame window
-         *      procedure before the window was subclassed, but
-         *      we also use this to store various other data
-         *      for status bars etc.
+         *      stored in a global linked list.
+         *
+         *      This is one of the most important kludges which
+         *      XFolder uses to hook itself into the WPS.
+         *      Most importantly, this structure stores the
+         *      original frame window procedure before the
+         *      window was subclassed, but we also use this
+         *      to store various other data for status bars etc.
+         *
+         *      We need this additional structure because all
+         *      the data in here is _view_-specific, not
+         *      folder-specific.
+         *
+         *@@changed V0.9.1 (2000-01-29) [umoeller]: added pSourceObject and ulSelection fields
          */
 
         typedef struct _SUBCLASSEDLISTITEM
         {
-            HWND        hwndFrame;          // folder frame
+            HWND        hwndFrame;          // folder view frame window
             WPFolder    *somSelf;           // folder object
             WPObject    *pRealObject;       // "real" object; this is == somSelf
                                             // for folders, but the corresponding
                                             // disk object for WPRootFolders
-            PFNWP       pfnwpOriginal;      // orig. frame wnd proc
-            HWND        hwndStatusBar,      // status bar window
-                        hwndCnr,            // cnr window
+            PFNWP       pfnwpOriginal;      // orig. frame wnd proc before subclassing
+                                            // (WPS folder proc)
+            HWND        hwndStatusBar,      // status bar window; NULL if there's no
+                                            // status bar for this view
+                        hwndCnr,            // cnr window (child of hwndFrame)
                         hwndSupplObject;    // supplementary object wnd
+                                            // (fdr_fnwpSupplFolderObject)
             ULONG       ulView;             // OPEN_CONTENTS
                                             //   or OPEN_TREE
                                             //   or OPEN_DETAILS
@@ -190,6 +215,15 @@
             BOOL        fRemoveSrcEmphasis; // flag for whether XFolder has added
                                             // container source emphasis
             ULONG       ulLastSelMenuItem;  // last selected menu item ID
+            WPObject    *pSourceObject;     // object whose record core has source
+                                            // emphasis;
+                                            // this field is valid only between
+                                            // WM_INITMENU and WM_COMMAND; if this
+                                            // is NULL, the entire folder whitespace
+                                            // has source emphasis
+            ULONG       ulSelection;        // SEL_* flags;
+                                            // this field is valid only between
+                                            // WM_INITMENU and WM_COMMAND
         } SUBCLASSEDLISTITEM, *PSUBCLASSEDLISTITEM;
 
         VOID fdrInitPSLI(VOID);
@@ -354,7 +388,10 @@
 
     void fdrStoreFldrHotkeys(VOID);
 
-    BOOL fdrProcessFldrHotkey(HWND hwndFrame, MPARAM mp1, MPARAM mp2);
+    BOOL fdrProcessFldrHotkey(HWND hwndFrame,
+                              USHORT usFlags,
+                              USHORT usch,
+                              USHORT usvk);
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,

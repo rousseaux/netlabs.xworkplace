@@ -21,7 +21,7 @@
  *              maximized and minimized,
  *          --  container programming: tree views, context menus, drag-n-drop.
  *
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This program is part of the XWorkplace package.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -122,8 +122,10 @@ VOID CollectDirectory(PDIRINFO pdiThis)
     double        dSizeThisDir = 0,
                   dEASizeThisDir = 0;
 
-    _Pmpf(("Entering CollectDirectory"));
-    _Pmpf(("  for: %s", pdiThis->szFullPath));
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("Entering CollectDirectory"));
+        _Pmpf(("  for: %s", pdiThis->szFullPath));
+    #endif
 
     // add a "\" to the directory, if we're not in root
     strcpy(szCurrentDir, pdiThis->szFullPath);

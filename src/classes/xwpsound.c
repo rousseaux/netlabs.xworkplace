@@ -27,7 +27,7 @@
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.
- *      The implementation for this class is in in filesys\sound.c.
+ *      The implementation for this class is in in config\sound.c.
  *
  *@@added V0.9.0 [umoeller]
  *@@somclass XWPSound xtrc_
@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -93,7 +93,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xwpsound.ih"
-#include "xfobj.ih"
+// #include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -172,8 +172,8 @@ SOM_Scope BOOL  SOMLINK xsnd_wpAddSettingsPages(XWPSound *somSelf,
        ) */
     {
         // XFolder "Internals" page bottommost
-        if (pGlobalSettings->AddObjectPage)
-            _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+        /* if (pGlobalSettings->AddObjectPage)
+            _xwpAddObjectInternalsPage(somSelf, hwndNotebook); */
 
         // "Symbol" page next
         _wpAddObjectGeneralPage(somSelf, hwndNotebook);

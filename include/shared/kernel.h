@@ -15,11 +15,11 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -31,6 +31,10 @@
 
     // required header files
     #include "helpers\threads.h"
+
+    #ifndef INCL_DOSSEMAPHORES
+        #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
+    #endif
 
     /********************************************************************
      *                                                                  *
@@ -182,12 +186,12 @@
             WPObject            *pAwakeWarpCenter;
 
             /*
-             * Quick thread:
+             * Speedy thread:
              *      this thread is always running.
              */
 
-            PTHREADINFO         ptiQuickThread;
-            HWND                hwndQuickObject;
+            PTHREADINFO         ptiSpeedyThread;
+            HWND                hwndSpeedyObject;
 
             // sound data
             ULONG               ulMMPM2Working;      // MMSTAT_* flags above
@@ -250,26 +254,26 @@
      *                                                                  *
      ********************************************************************/
 
-    #define T1M_BEGINSTARTUP            WM_USER+1100
+    #define T1M_BEGINSTARTUP            (WM_USER+1100)
 
-    #define T1M_POCCALLBACK             WM_USER+1101
+    #define T1M_POCCALLBACK             (WM_USER+1101)
 
-    #define T1M_BEGINQUICKOPEN          WM_USER+1102
-    #define T1M_NEXTQUICKOPEN           WM_USER+1103
+    #define T1M_BEGINQUICKOPEN          (WM_USER+1102)
+    #define T1M_NEXTQUICKOPEN           (WM_USER+1103)
 
-    #define T1M_LIMITREACHED            WM_USER+1104
+    #define T1M_LIMITREACHED            (WM_USER+1104)
 
-    #define T1M_EXCEPTIONCAUGHT         WM_USER+1105
+    #define T1M_EXCEPTIONCAUGHT         (WM_USER+1105)
 
-    #define T1M_QUERYXFOLDERVERSION     WM_USER+1106
+    #define T1M_QUERYXFOLDERVERSION     (WM_USER+1106)
 
-    #define T1M_EXTERNALSHUTDOWN        WM_USER+1107
+    #define T1M_EXTERNALSHUTDOWN        (WM_USER+1107)
 
-    #define T1M_DESTROYARCHIVESTATUS    WM_USER+1108    // added V0.9.0
+    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+1108)    // added V0.9.0
 
-    #define T1M_OPENOBJECTFROMHANDLE    WM_USER+1110    // added V0.9.0
+    #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+1110)    // added V0.9.0
 
-    #define T1M_DAEMONREADY             WM_USER+1111    // added V0.9.0
+    #define T1M_DAEMONREADY             (WM_USER+1111)    // added V0.9.0
 
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 

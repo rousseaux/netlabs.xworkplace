@@ -39,7 +39,7 @@
 # DEBUG CODE
 # ----------
 
-# If DEBUG is set to anything, the following is enabled:
+# If XWP_DEBUG is set to anything, the following is enabled:
 #
 # -- The compiler flags below will be changed to produce debug
 #    code. Otherwise, release code will be produced.
@@ -53,7 +53,7 @@
 #    extra heap checking functions into XWorkplace.
 #    This will slow down XWorkplace's performance SIGNIFICANTLY.
 
-DEBUG=YES
+# XWP_DEBUG=YES
 
 
 # DYNAMIC TRACE
@@ -74,6 +74,13 @@ DEBUG=YES
 # DYNAMIC_TRACE=F
 
 
+# NATIONAL LANGUAGE SUPPORT
+# -------------------------
+
+!ifndef XWP_LANG_CODE
+XWP_LANG_CODE = 001
+!endif
+
 # RUNNING XWORKPLACE
 # ------------------
 
@@ -88,13 +95,15 @@ XWPRUNNING = J:\Tools\WPS\XWorkplace
 !endif
 
 
-# RUNNING XWORKPLACE
+# XWORKPLACE RELEASE
 # ------------------
 
 !ifndef XWPRELEASE
-XWPRELEASE = K:\projects\distrib\XWorkplace\current.cpl
+XWPRELEASE = K:\projects\distrib\XWorkplace\current
 !endif
 
+XWPRELEASE_MAIN = $(XWPRELEASE)\kernel
+XWPRELEASE_NLS = $(XWPRELEASE)\$(XWP_LANG_CODE)
 
 # HELPERS DIRECTORIES
 # -------------------
@@ -187,20 +196,23 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classe
 # ----------------
 
 # Compiler macro. This is used for each .OBJ file to be created.
-# If the DEBUG environment variable was set to anything, we
+# If the XWP_DEBUG environment variable was set to anything, we
 # will use debugging compiler options.
-# DEBUG is set by MAKE.CMD or above.
+# XWP_DEBUG is set by MAKE.CMD or above.
 #
 # No need to change this. Change the variables above instead.
 
 CC = error_in_setup_in_do_not_use_CC_directly
 
-!ifdef DEBUG
+CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
+# /Wuse+ /Wuni+
+
+!ifdef XWP_DEBUG
 # debug code
-CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /o- /oi- /ol- /ti+ /tm+ /tn+ /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru /Wuse- /D__DEBUG__=1
+CC_TEMP      = icc /I$(PROJECT_INCLUDE) $(CC_WARNINGS) /c /gd- /gi+ /q+ /se /ss /o- /oi- /ol- /ti+ /tm+ /tn+  /D__DEBUG__=1
 !else
 # release code
-CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /o+ /oi- /ol- /Tn+ /W2
+CC_TEMP      = icc /I$(PROJECT_INCLUDE) $(CC_WARNINGS) /c /gd- /gi+ /q+ /se /ss /o+ /oi- /ol- /Tn+
 !endif
 
 # DLL code
@@ -271,10 +283,10 @@ CC_HELPERS = $(CC_DLL)
 
 LINK_BASE = ilink /nologo /noe /map:$(OUTPUTDIR)\$(@B).map /linenumbers
 
-!ifdef DEBUG
+!ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /linenumbers /debug
 !else
-LINK =  $(LINK_BASE) /optfunc /exepack:2
+LINK =  $(LINK_BASE) /optfunc /exepack:2 /packcode /packdata
 !endif
 
 # Some LINK386 cmd line options
@@ -288,8 +300,8 @@ LINK =  $(LINK_BASE) /optfunc /exepack:2
 # /linenumbers: include linenumbers in MAP file
 # /nod:    no default library search (explicitly specify libs)
 # /nol:    no logo (link386 startup)
-# /packcode: group neighboring code segments
-# /packdata: group neighboring data segments
+# /packcode: group neighboring code segments (enabled per default)
+# /packdata: group neighboring data segments (disabled per default)
 # /debug:  include debug code
 # /optfunc: optimize code arrangement (takes some extra time)
 # /exepack:2 use Warp 3 executable compression

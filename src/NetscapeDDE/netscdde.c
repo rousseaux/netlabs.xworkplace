@@ -3,7 +3,7 @@
  * netscdde.c:
  *      this is the main (and only) C file for the
  *      Netscape DDE interface. This code is much more
- *      messy than XFolder's. It's a rather quick hack
+ *      messy than XWorkplace's. It's a rather quick hack
  *      done in about two days with DDE code stolen from
  *      various places.
  *
@@ -17,11 +17,11 @@
  *      for all Netscape versions at
  *      http://developer.netscape.com/library/documentation/communicator/DDE
  *
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -66,8 +66,13 @@ PSZ             szOpenURLTopic = "WWW_OpenURL";     // open URL DDE topic
                                                         // (see Netscape docs)
 
 // options flags, modified by command line interface
-BOOL            optNewWindow = FALSE, optDebug = FALSE, optExecute = TRUE, optConfirmStart = TRUE,
-                optMinimized = FALSE, optHidden = FALSE;
+BOOL            optNewWindow = FALSE,
+                optDebug = FALSE,
+                optExecute = TRUE,
+                optConfirmStart = TRUE,
+                optMinimized = FALSE,
+                optHidden = FALSE,
+                optQuiet = FALSE;           // "-q", don't show status windows
 
 BOOL            NetscapeFound = FALSE;
 
@@ -213,6 +218,8 @@ BOOL LoadNLS(VOID)
 /*
  * main:
  *      program entry point; accepts URLs on the command line.
+ *
+ *@@changed V0.9.1 (2000-02-07) [umoeller]: added "-q" option
  */
 
 int main(int argc,
@@ -224,10 +231,10 @@ int main(int argc,
     BOOL            Proceed = TRUE;
 
     if (!(hab = WinInitialize(0)))
-        return FALSE;
+        return (1);
 
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
-        return FALSE;
+        return (1);
 
     // now attempt to find the XWorkplace NLS resource DLL,
     // which we need for all resources (new with XWP 0.9.0)
@@ -305,8 +312,11 @@ int main(int argc,
                                 optDebug = TRUE;
                                 break;
 
-                            default:    // unknown parameter
+                            case 'q': // added V0.9.1 (2000-02-07) [umoeller]
+                                optQuiet = TRUE;
+                                break;
 
+                            default:    // unknown parameter
                                 ExplainParams();
                                 Proceed = FALSE;
                                 break;
@@ -343,12 +353,12 @@ int main(int argc,
             // used for DDE message processing.
             fcd.cb = sizeof(FRAMECDATA);
             fcd.flCreateFlags = FCF_TITLEBAR |
-                FCF_SYSMENU |
-                FCF_MENU |
-                FCF_SIZEBORDER |
-                FCF_SHELLPOSITION |
-                FCF_MINMAX |
-                FCF_TASKLIST;
+                                   FCF_SYSMENU |
+                                   FCF_MENU |
+                                   FCF_SIZEBORDER |
+                                   FCF_SHELLPOSITION |
+                                   FCF_MINMAX |
+                                   FCF_TASKLIST;
 
             fcd.hmodResources = NULLHANDLE;
             // set our resource key (so PM can find menus, icons, etc).
@@ -365,7 +375,7 @@ int main(int argc,
                                         NULL);
 
             if (!hwndDebug)
-                return FALSE;
+                return (1);
 
             // set the NetscDDE icon for the frame window
             WinSendMsg(hwndDebug,
@@ -398,12 +408,14 @@ int main(int argc,
                 WinShowWindow(hwndDebug, TRUE);
 
             // now show "Contacting Netscape"
-            hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
-                                        WinDefDlgProc,
-                                        hmodNLS, ID_NDD_CONTACTING,
-                                        0);
-
-            WinShowWindow(hwndContacting, TRUE);
+            if (!optQuiet)
+            {
+                hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
+                                            WinDefDlgProc,
+                                            hmodNLS, ID_NDD_CONTACTING,
+                                            0);
+                WinShowWindow(hwndContacting, TRUE);
+            }
 
             // now post msg to main window to initiate DDE
             WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_INITIATE, 0), 0);
@@ -423,7 +435,7 @@ int main(int argc,
     WinDestroyMsgQueue(hmq);
     WinTerminate(hab);
 
-    return TRUE;
+    return (0);
 }
 
 /*
@@ -679,18 +691,20 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 case IDM_DELAYEXIT:
                 {
-                    if ((!NetscapeFound) && (optExecute))
+                    if (    (!NetscapeFound)
+                         && (optExecute)
+                       )
                     {
                         // confirm start netscape
-                        if ((!optConfirmStart)
-                            || (WinCenteredDlgBox(HWND_DESKTOP,
-                                                  hwndDebug,
-                                                  WinDefDlgProc,
-                                                  hmodNLS,
-                                                  ID_NDD_QUERYSTART,
-                                                  NULL)
-                                == DID_OK)
-                            )
+                        if (    (!optConfirmStart)
+                             || (WinCenteredDlgBox(HWND_DESKTOP,
+                                                   hwndDebug,
+                                                   WinDefDlgProc,
+                                                   hmodNLS,
+                                                   ID_NDD_QUERYSTART,
+                                                   NULL)
+                                      == DID_OK)
+                           )
                         {
                             STARTDATA       SData =
                             {0};
@@ -713,13 +727,14 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                             // window
                             if (hwndContacting)
                                 WinDestroyWindow(hwndContacting);
-
-                            hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
-                                                        WinDefDlgProc,
-                                                        hmodNLS, ID_NDD_STARTING,
-                                                        0);
-
-                            WinShowWindow(hwndContacting, TRUE);
+                            if (!optQuiet)
+                            {
+                                hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
+                                                            WinDefDlgProc,
+                                                            hmodNLS, ID_NDD_STARTING,
+                                                            0);
+                                WinShowWindow(hwndContacting, TRUE);
+                            }
 
                             // now start session
                             strcpy(szArgs, szNetscapeParams);

@@ -17,7 +17,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -66,6 +66,14 @@
     ULONG wpshQueryView(WPObject* somSelf,
                         HWND hwndFrame);
 
+    WPObject* wpshQuerySourceObject(WPFolder *somSelf,
+                                    HWND hwndCnr,
+                                    BOOL fKeyboardMode,
+                                    PULONG pulSelection);
+
+    WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
+                                        WPObject *pObject);
+
     ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf);
 
     BOOL wpshCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fFullPath);
@@ -80,4 +88,18 @@
     #define wpshQueryCnrFromFrame(hwndFrame) \
                 WinWindowFromID(hwndFrame, 0x8008)
 
+    ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
+                                 WPObject **ppObjectFound);
+
+    #ifdef __DEBUG__
+        PSZ wpshIdentifyRestoreID(PSZ pszClass,
+                                  ULONG ulKey);
+
+        VOID wpshDumpTaskRec(WPObject *somSelf,
+                             PSZ pszMethodName,
+                             PTASKREC pTaskRec);
+    #else
+        #define wpshIdentifyRestoreID(psz, ul) ""
+        #define wpshDumpTaskRec(somSelf, pszMethodName, pTaskRec)
+    #endif
 #endif

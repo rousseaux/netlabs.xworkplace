@@ -13,7 +13,7 @@
  */
 
 /*
- *      This file Copyright (C) 1997-99 Ulrich M”ller,
+ *      This file Copyright (C) 1997-2000 Ulrich M”ller,
  *                                      ARAKAWA Atsushi.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by

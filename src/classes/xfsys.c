@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -93,7 +93,7 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include "xfobj.h"
+// #include "xfobj.h"
 
 /* ******************************************************************
  *                                                                  *
@@ -303,6 +303,8 @@ SOM_Scope BOOL  SOMLINK xfsys_wpQueryDefaultHelp(XFldSystem *somSelf,
  *      inherits all pages from the "System" object
  *      which might be added by other WPS utils, while
  *      this thing does not.
+ *
+ *@@changed V0.9.1 (2000-02-17) [umoeller]: cut adding "Internals" page
  */
 
 SOM_Scope BOOL  SOMLINK xfsys_wpAddSettingsPages(XFldSystem *somSelf,
@@ -315,9 +317,12 @@ SOM_Scope BOOL  SOMLINK xfsys_wpAddSettingsPages(XFldSystem *somSelf,
     // explicitly
 
     // XFolder "Internals" page bottommost
-    _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+    // _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+
     // "Symbol" page next
     _wpAddObjectGeneralPage(somSelf, hwndNotebook);
+        // this inserts the "Internals"/"Object" page now
+
     // "Screen" page 2 next; this page may exist on some systems
     // depending on the video driver, and we want this in "OS/2 Kernel"
     // also

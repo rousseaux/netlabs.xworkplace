@@ -4,7 +4,7 @@
  *      this has the code for the XWorkplace Daemon process
  *      (XWPDAEMN.EXE), which is an invisible PM program with
  *      a single object window running in the background. This
- *      doesnot appear in the window list, but is only seen
+ *      does not appear in the window list, but is only seen
  *      by the XWorkplace main DLL (XFLDR.DLL).
  *
  *      The daemon is started automatically by XFLDR.DLL upon
@@ -108,7 +108,7 @@
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -133,7 +133,6 @@
 
 #include "hook\xwphook.h"               // hook and daemon definitions
 
-#include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "setup.h"                      // code generation and debugging options
@@ -171,6 +170,8 @@ ULONG           ulMonitorTimer = 0;
 #define IOCTL_CDROMDISK             0x80
 #define CDROMDISK_DEVICESTATUS      0x60
 #define CDROMDISK_GETUPC            0x79
+
+const char *WNDCLASS_DAEMONOBJECT = "XWPDaemonObject";
 
 /* ******************************************************************
  *                                                                  *
@@ -274,6 +275,9 @@ int CheckRemoveableDrive(void)
 VOID LoadHotkeysForHook(VOID)
 {
     ULONG   ulSizeOfData = 0;
+
+    _Pmpf(("XWPDAEMON: LoadHotkeysForHook, pHookData: 0x%lX", pHookData));
+
     // get size of data for pszApp/pszKey
     if (PrfQueryProfileSize(HINI_USER,
                             INIAPP_XWPHOOK,
@@ -317,6 +321,9 @@ VOID LoadHotkeysForHook(VOID)
 BOOL LoadHookConfig(VOID)
 {
     BOOL brc = FALSE;
+
+    _Pmpf(("XWPDAEMON: LoadHookConfig, pHookData: 0x%lX", pHookData));
+
     if (pHookData)
     {
         ULONG cb =  sizeof(HOOKCONFIG);
@@ -357,7 +364,7 @@ VOID InstallHook(VOID)
                              NULLHANDLE);
     #endif
 
-    _Pmpf(("hookInit called, pHookData: 0x%lX", pHookData));
+    _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", pHookData));
 
     if (pHookData)
         if (    (pHookData->fInputHooked)
@@ -383,7 +390,7 @@ VOID DeinstallHook(VOID)
     if (pDaemonShared->fHookInstalled)
     {
         hookKill();
-        _Pmpf(("hookKilled called"));
+        _Pmpf(("XWPDAEMON: hookKilled called"));
         pDaemonShared->fHookInstalled = FALSE;
     }
     pHookData = NULL;
@@ -581,7 +588,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
         /*
          *@@ XDM_DESKTOPREADY:
-         *      this gets posted from XFLDR.DLL after
+         *      this gets posted from fnwpFileObject after
          *      the WPS desktop frame has been opened
          *      so that the daemon/hook knows about the
          *      HWND of the WPS desktop. This is necessary
@@ -847,21 +854,19 @@ int main(int argc, char *argv[])
                     if (arc == NO_ERROR)
                     {
                         // OK:
-                        PSZ     pszInitClass = "XWorkplaceDaemonClass";
-
                         // install exit list
                         DosExitList(EXLST_ADD,
                                     DaemonExitList);
 
                         // create the object window
                         WinRegisterClass(habDaemon,
-                                         pszInitClass,
-                                         (PFNWP)fnwpDaemonObject,    // Window procedure
+                                         (PSZ)WNDCLASS_DAEMONOBJECT,
+                                         (PFNWP)fnwpDaemonObject,
                                          0,                  // class style
                                          0);                 // extra window words
                         pDaemonShared->hwndDaemonObject
                                        = WinCreateWindow(HWND_OBJECT,
-                                                         pszInitClass,
+                                                         (PSZ)WNDCLASS_DAEMONOBJECT,
                                                          "XWorkplace PM Daemon",
                                                          0,           // style
                                                          0,0,0,0,     // position

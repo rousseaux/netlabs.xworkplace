@@ -11,7 +11,7 @@
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
- *      file of the XFolder main distribution.
+ *      file of the XWorkplace main distribution.
  *      This program is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -40,6 +40,16 @@
 
     /* ******************************************************************
      *                                                                  *
+     *   OS2.INI applications and keys                                  *
+     *                                                                  *
+     ********************************************************************/
+
+    #define INIAPP_XWPHOOK          "XWorkplace:Hook"   // added V0.9.0
+    #define INIKEY_HOOK_HOTKEYS     "Hotkeys"           // added V0.9.0
+    #define INIKEY_HOOK_CONFIG      "Config"            // added V0.9.0
+
+    /* ******************************************************************
+     *                                                                  *
      *   Structures                                                     *
      *                                                                  *
      ********************************************************************/
@@ -60,9 +70,14 @@
      *      This gets (re)loaded by the daemon when
      *      XDM_HOOKCONFIG is received by fnwpDaemonObject.
      *
-     *      Note that object hotkey definitions are not
-     *      part of this structure. Those are set using
-     *      XDM_HOTKEYSCHANGED instead.
+     *      For every item, the safe default value is null
+     *      so the structure can be zeroed to disable
+     *      everything.
+     *
+     *      Note that the object hotkey _definitions_ are
+     *      not part of this structure. Those are set using
+     *      XDM_HOTKEYSCHANGED instead. However, object
+     *      hotkeys are globally enabled in here (fGlobalHotkeys).
      */
 
     typedef struct _HOOKCONFIG
@@ -142,6 +157,9 @@
         BOOL            fAutoHideMouse;
         ULONG           ulAutoHideDelay;
                 // delay in seconds; 0 means 1 second, 2 means 3, ...
+
+        // Global object hotkeys:
+        BOOL            fGlobalHotkeys;
 
     } HOOKCONFIG, *PHOOKCONFIG;
 
@@ -262,13 +280,13 @@
         // cached data used while MB3 is down; V0.9.1 (99-12-03)
         SHORT       sMB3InitialMouseXPos,
                     sMB3InitialMouseYPos;
-        LONG        lMB3InitialXThumbPos,
-                    lMB3InitialYThumbPos;
-        SHORT       sPreviousThumbXPos,
-                    sPreviousThumbYPos;
+        SHORT       sMB3InitialXThumbPos,
+                    sMB3InitialYThumbPos;
+        SHORT       sCurrentThumbXPos,
+                    sCurrentThumbYPos;
 
-        BOOL        fPostVertEndScroll,
-                    fPostHorzEndScroll;
+        BOOL        fPostVertSBEndScroll,
+                    fPostHorzSBEndScroll;
                 // these are TRUE if MB3 has been depressed and moved and
                 // scroller messages have been posted; this requests
                 // a SB_ENDSCROLL upon WM_BUTTON3UP
@@ -326,19 +344,19 @@
      *                                                                  *
      ********************************************************************/
 
-    #define XDM_HOOKCONFIG          WM_USER
+    #define XDM_HOOKCONFIG          (WM_USER)
 
-    #define XDM_HOOKINSTALL         WM_USER + 1
+    #define XDM_HOOKINSTALL         (WM_USER + 1)
 
-    #define XDM_DESKTOPREADY        WM_USER + 2
+    #define XDM_DESKTOPREADY        (WM_USER + 2)
 
-    #define XDM_HOTKEYPRESSED       WM_USER + 3
+    #define XDM_HOTKEYPRESSED       (WM_USER + 3)
 
-    #define XDM_HOTKEYSCHANGED      WM_USER + 4
+    #define XDM_HOTKEYSCHANGED      (WM_USER + 4)
 
-    #define XDM_SLIDINGFOCUS        WM_USER + 5
+    #define XDM_SLIDINGFOCUS        (WM_USER + 5)
 
-    #define XDM_HOTCORNER           WM_USER + 6
+    #define XDM_HOTCORNER           (WM_USER + 6)
 
     /* ******************************************************************
      *                                                                  *

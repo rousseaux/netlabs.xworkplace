@@ -12,7 +12,7 @@
  *          running with Idle priority (which is now configurable, V0.9.0);
  *      --  XFolder "File" thread / object window (fntFileThread, fnwpFileObject;
  *          new with V0.9.0), running at regular priority;
- *      --  XFolder "Quick" thread / object window (fntQuickThread, fnwpQuickObject),
+ *      --  XFolder "Speedy" thread / object window (fntSpeedyThread, fnwpSpeedyObject),
  *          running at maximum regular priority.
  *
  *      Also, we have functions to communicate with these threads.
@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -83,10 +83,9 @@
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\winh.h"               // PM helper routines
 
-// SOM headers which don't crash with prec. header files
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
+// SOM headers which don't crash with prec. header files
 #include "xfldr.h"
-#include "xtrash.h"
 
 // headers in /folder
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -97,6 +96,7 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
+#include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\sounddll.h"           // declarations for SOUND.DLL
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -123,9 +123,9 @@ HMQ                 hmqWorkerThread = NULLHANDLE;
 // flags for whether the Worker thread owns semaphores
 BOOL                fWorkerAwakeObjectsSemOwned = FALSE;
 
-// Quick thread
-HAB                 habQuickThread = NULLHANDLE;
-HMQ                 hmqQuickThread = NULLHANDLE;
+// Speedy thread
+HAB                 habSpeedyThread = NULLHANDLE;
+HMQ                 hmqSpeedyThread = NULLHANDLE;
 CHAR                szBootupStatus[256];
 HWND                hwndBootupStatus = NULLHANDLE;
 
@@ -685,7 +685,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // get the mutex semaphore
                     // pKernelGlobals->ulWorkerFunc2 = 6030;
                     fWorkerAwakeObjectsSemOwned
-                          = (DosRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
+                          = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
                              == NO_ERROR);
 
                     if (fWorkerAwakeObjectsSemOwned)
@@ -693,7 +693,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
 
                         #ifdef DEBUG_AWAKEOBJECTS
-                        _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
+                            _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
                         #endif
 
                         // check if this object is stored already
@@ -701,12 +701,12 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         {
                             // object not stored yet: do it now
                             #ifdef DEBUG_AWAKEOBJECTS
-                            _Pmpf(("WT:lstAppendItem rc: %d",
-                                   lstAppendItem(pllAwakeObjects,
-                                                 pObj2Store)));
+                                _Pmpf(("WT:lstAppendItem rc: %d",
+                                       lstAppendItem(pllAwakeObjects,
+                                                     pObj2Store)));
                             #else
-                               lstAppendItem(pllAwakeObjects,
-                                             pObj2Store);
+                                lstAppendItem(pllAwakeObjects,
+                                              pObj2Store);
                             #endif
                         }
                         #ifdef DEBUG_AWAKEOBJECTS
@@ -765,7 +765,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // get the mutex semaphore
             // pKernelGlobals->ulWorkerFunc2 = 7000;
             fWorkerAwakeObjectsSemOwned =
-                    (DosRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
+                    (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
                     == NO_ERROR);
             if (fWorkerAwakeObjectsSemOwned)
             {
@@ -848,9 +848,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // for each open folder view, call the callback
             // which updates the status bars
             // (fncbUpdateStatusBars in folder.c)
-            _xwpclsForEachOpenView(_XFolder,
-                                   (ULONG)mp1,
-                                   (PFNWP)fncbUpdateStatusBars);
+            fdrForEachOpenGlobalView((ULONG)mp1,
+                                     (PFNWP)fncbUpdateStatusBars);
         break; }
 
         /*
@@ -940,6 +939,12 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
         break; }
 
+        #ifdef __DEBUG__
+        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
+            CRASH;
+        break;
+        #endif
+
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
 
@@ -1009,20 +1014,19 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
         krnUnlockGlobals();
     }
 
-    begin:
-
     fTrapped = FALSE;
 
     if (habWorkerThread = WinInitialize(0))
     {
         if (hmqWorkerThread = WinCreateMsgQueue(habWorkerThread, 4000))
         {
+            BOOL fExit = FALSE;
+
+            do
             {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                HWND hwndWorkerObjectTemp = NULLHANDLE;
 
                 WinCancelShutdown(hmqWorkerThread, TRUE);
-
-                pKernelGlobals->WorkerThreadHighPriority = FALSE;
 
                 WinRegisterClass(habWorkerThread,
                                  WNDCLASS_WORKEROBJECT,    // class name
@@ -1031,7 +1035,7 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
                                  0);                 // extra window words
 
                 // create Worker object window
-                pKernelGlobals->hwndWorkerObject = WinCreateWindow(
+                hwndWorkerObjectTemp = WinCreateWindow(
                                     HWND_OBJECT,
                                     WNDCLASS_WORKEROBJECT,
                                     (PSZ)"",     // title
@@ -1043,58 +1047,91 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
                                     NULL,        // create params
                                     NULL);       // pres params
 
-                if (!pKernelGlobals->hwndWorkerObject)
-                    DebugBox("XFolder: Error",
+                if (!hwndWorkerObjectTemp)
+                    DebugBox(HWND_DESKTOP,
+                             "XFolder: Error",
                              "XFolder failed to create the Worker thread object window.");
 
-                // set ourselves to idle-time priority; this will
-                //   be raised to regular when the msg queue becomes congested
-                pKernelGlobals->WorkerThreadHighPriority = TRUE;
-                        // otherwise the following func won't work right
-                RaiseWorkerThreadPriority(FALSE);
-
-                krnUnlockGlobals();
-            }
-
-            TRY_LOUD(excpt1, xthrOnKillWorkerThread)
-            {
-                // now enter the message loop
-                while (WinGetMsg(habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
                 {
+                    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                    if (pKernelGlobals)
                     {
-                        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                        if (pKernelGlobals->ulWorkerMsgCount > 0)
-                            pKernelGlobals->ulWorkerMsgCount--;
+                        pKernelGlobals->hwndWorkerObject = hwndWorkerObjectTemp;
 
-                        if (pKernelGlobals->ulWorkerMsgCount < 10)
-                            RaiseWorkerThreadPriority(FALSE);
+                        // set ourselves to idle-time priority; this will
+                        //   be raised to regular when the msg queue becomes congested
+                        pKernelGlobals->WorkerThreadHighPriority = TRUE;
+                                // otherwise the following func won't work right
+                        RaiseWorkerThreadPriority(FALSE);
+
                         krnUnlockGlobals();
                     }
-
-                    // dispatch the queue msg
-                    WinDispatchMsg(habWorkerThread, &qmsg);
                 }
-                // loop until WM_QUIT
-            }
-            CATCH(excpt1)
-            {
-                // the exception handler puts us here if an exception occured:
-                // set flag that exception occured
-                fTrapped = TRUE;
-            } END_CATCH();
+
+                TRY_LOUD(excpt1, xthrOnKillWorkerThread)
+                {
+                    // now enter the message loop
+                    while (WinGetMsg(habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
+                    {
+                        {
+                            PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                            if (pKernelGlobals->ulWorkerMsgCount > 0)
+                                pKernelGlobals->ulWorkerMsgCount--;
+
+                            if (pKernelGlobals->ulWorkerMsgCount < 10)
+                                RaiseWorkerThreadPriority(FALSE);
+                            krnUnlockGlobals();
+                        }
+
+                        // dispatch the queue msg
+                        WinDispatchMsg(habWorkerThread, &qmsg);
+                    } // loop until WM_QUIT
+
+                    // WM_QUIT:
+                    fExit = TRUE;
+                }
+                CATCH(excpt1)
+                {
+                    // the exception handler puts us here if an exception occured:
+                    // set flag that exception occured
+                    fTrapped = TRUE;
+                } END_CATCH();
+
+                if (fWorkerAwakeObjectsSemOwned)
+                {
+                    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                    // in any case, release mutex semaphores owned by the Worker thread
+                    DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
+                    fWorkerAwakeObjectsSemOwned = FALSE;
+                    krnUnlockGlobals();
+                }
+
+                if (fTrapped)
+                    if (pszErrMsg == NULL)
+                    {
+                        // only report the first error, or otherwise we will
+                        // jam the system with msg boxes
+                        pszErrMsg = malloc(1000);
+                        if (pszErrMsg)
+                        {
+                            strcpy(pszErrMsg,
+                                   "An error occured in the XWorkplace Worker thread. "
+                                   "Since the error is probably not serious, "
+                                   "the Worker thread will continue to run. "
+                                   "However, if errors like these persist, "
+                                   "you might want to disable the "
+                                   "Worker thread in the \"XWorkplace Setup\" object.");
+                            krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
+                        }
+                    }
+
+            } while (!fExit);
         }
     }
 
+    // clean up
     {
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-        // in any case, release mutex semaphores owned by the Worker thread
-        if (fWorkerAwakeObjectsSemOwned)
-        {
-            DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-            fWorkerAwakeObjectsSemOwned = FALSE;
-        }
-
-        // clean up
         WinDestroyWindow(pKernelGlobals->hwndWorkerObject);
         pKernelGlobals->hwndWorkerObject = NULLHANDLE;
         WinDestroyMsgQueue(hmqWorkerThread);
@@ -1102,34 +1139,7 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
 
         WinTerminate(habWorkerThread);
         habWorkerThread = NULLHANDLE;
-
-        DosCloseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-
         krnUnlockGlobals();
-    }
-
-    if (fTrapped)
-    {
-        if (pszErrMsg == NULL)
-        {
-            // only report the first error, or otherwise we will
-            // jam the system with msg boxes
-            pszErrMsg = malloc(1000);
-            if (pszErrMsg)
-            {
-                strcpy(pszErrMsg, "An error occured in the XFolder Worker thread. "
-                        "Since the error is probably not serious, "
-                        "the Worker thread will continue to run. However, if errors "
-                        "like these persist, you might want to disable the "
-                        "Worker thread in the XFolder Global Settings, "
-                        "contact XFolder's author, and send him the file XFLDTRAP.LOG, "
-                        "which you will find in the root directory of your boot drive. ");
-                krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
-            }
-        }
-
-        // "restart" thread
-        goto begin;
     }
 
     thrGoodbye((PTHREADINFO)ptiMyself);
@@ -1151,16 +1161,18 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     BOOL rc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-    if (thrQueryID(pKernelGlobals->ptiFileThread))
-    {
-        if (pKernelGlobals->hwndFileObject)
+    if (pKernelGlobals)
+        if (thrQueryID(pKernelGlobals->ptiFileThread))
         {
-            rc = WinPostMsg(pKernelGlobals->hwndFileObject,
-                            msg,
-                            mp1,
-                            mp2);
+            if (pKernelGlobals->hwndFileObject)
+            {
+                rc = WinPostMsg(pKernelGlobals->hwndFileObject,
+                                msg,
+                                mp1,
+                                mp2);
+            }
         }
-    }
+
     return (rc);
 }
 
@@ -1175,12 +1187,12 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = NULL;
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+    // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     switch (msg)
     {
         /*
-         * FIM_DESKTOPPOPULATED:
+         *@@ FIM_DESKTOPPOPULATED:
          *      this msg is posted by XFldDesktop::wpPopulate;
          *      we will now go for the XWorkplace startup
          *      processing.
@@ -1205,7 +1217,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break;
 
         /*
-         * FIM_STARTUP:
+         *@@ FIM_STARTUP:
          *      this gets posted in turn by FIM_DESKTOPPOPULATED
          *      initially and several times afterwards with an
          *      increasing value in mp1, depending on which
@@ -1281,7 +1293,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                 case 4:
                     // destroy boot logo, if present
-                    xthrPostQuickMsg(QM_DESTROYLOGO, 0, 0);
+                    xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
                 break;
             } // end switch
 
@@ -1293,7 +1305,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         /*
-         * FIM_STARTUPFOLDERDONE:
+         *@@ FIM_STARTUPFOLDERDONE:
          *      this gets posted from various locations
          *      involved in processing the Startup folder
          *      when processing is complete or has been
@@ -1319,9 +1331,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         /*
-         * FIM_RECREATECONFIGFOLDER:
+         *@@ FIM_RECREATECONFIGFOLDER:
          *    this msg is posted if the
-         *    config folder was not found
+         *    config folder was not found.
          */
 
         case FIM_RECREATECONFIGFOLDER:
@@ -1397,7 +1409,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                         sprintf(szMsg, "Oooooops! XFolder could not find %s, which should have recreated "
                                        "your config folder. Please re-install XFolder.",
                                        szPath3);
-                        DebugBox("XFolder", szMsg);
+                        DebugBox(HWND_DESKTOP, "XFolder", szMsg);
                     }
                     WinDestroyWindow(hwndCreating);
                 }
@@ -1405,7 +1417,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         /*
-         * FIM_TREEVIEWAUTOSCROLL:
+         *@@ FIM_TREEVIEWAUTOSCROLL:
          *     this msg is posted mainly by fdr_fnwpSubclassedFolderFrame
          *     (subclassed folder windows) after the "plus" sign has
          *     been clicked on (WM_CONTROL for containers with
@@ -1461,20 +1473,27 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         /*
-         * FIM_EMPTYTRASH:
-         *      empties the trashcan whose somSelf must be
-         *      specified in mp1. This gets posted from
-         *      XWPTrashCan::wpMenuItemSelected.
+         *@@ FIM_PROCESSTASKLIST:
+         *      this processes a file-task-list created
+         *      using fopsCreateFileTaskList. This message
+         *      gets posted by fopsStartProcessingTasks.
+         *
+         *      This calls fopsFileThreadProcessing in turn.
+         *      This message only makes sure that processing
+         *      runs on the File thread.
+         *
+         *      Parameters:
+         *      -- mp1: HFILETASKLIST to process.
+         *
+         *@@added V0.9.1 (2000-01-29) [umoeller]
          */
 
-        case FIM_EMPTYTRASH:
-            _xwpEmptyTrashCan((XWPTrashCan*)mp1,
-                              NULL,     // pfnwpCallback
-                              0);
+        case FIM_PROCESSTASKLIST:
+            fopsFileThreadProcessing((HFILETASKLIST)mp1);
         break;
 
         /*
-         * FIM_STOREGLOBALSETTINGS:
+         *@@ FIM_STOREGLOBALSETTINGS:
          *      writes the GLOBALSETTINGS structure back to
          *      OS2.INI. This gets posted from cmnStoreGlobalSettings.
          *
@@ -1496,7 +1515,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         /*
-         * FIM_REFRESH:
+         *@@ FIM_REFRESH:
          *      this refreshes a folder's content by invoking
          *      wpRefresh on it.
          *
@@ -1511,7 +1530,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break;
 
         /*
-         * FIM_DOUBLEFILES:
+         *@@ FIM_DOUBLEFILES:
          *      collects all files in a given list of directories
          *      and creates a new list of files which occur in
          *      several directories.
@@ -1742,6 +1761,12 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             }
         break; }
 
+        #ifdef __DEBUG__
+        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
+            CRASH;
+        break;
+        #endif
+
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
@@ -1835,7 +1860,9 @@ void _Optlink fntFileThread(PVOID ptiMyself)
                                         NULL);       // pres params
 
                     if (!pKernelGlobals->hwndFileObject)
-                        DebugBox("XFolder: Error", "XFolder failed to create the File thread object window.");
+                        DebugBox(HWND_DESKTOP,
+                                 "XFolder: Error",
+                                 "XFolder failed to create the File thread object window.");
 
                     krnUnlockGlobals();
                 }
@@ -1859,9 +1886,7 @@ void _Optlink fntFileThread(PVOID ptiMyself)
             pszErrMsg = malloc(1000);
             if (pszErrMsg)
             {
-                strcpy(pszErrMsg, "An error occured in the XFolder File thread. "
-                        "\n\nYou will find additional debug information "
-                        "in the XFLDTRAP.LOG file in the root directory of your boot drive. ");
+                strcpy(pszErrMsg, "An error occured in the XFolder File thread. ");
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
             }
         }
@@ -1885,23 +1910,23 @@ void _Optlink fntFileThread(PVOID ptiMyself)
 
 /* ******************************************************************
  *                                                                  *
- *   here come the Quick thread functions                           *
+ *   here come the Speedy thread functions                           *
  *                                                                  *
  ********************************************************************/
 
 /*
- *@@ xthrPostQuickMsg:
- *      this posts a msg to the XFolder Quick thread object window.
+ *@@ xthrPostSpeedyMsg:
+ *      this posts a msg to the XFolder Speedy thread object window.
  */
 
-BOOL xthrPostQuickMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
+BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     BOOL rc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-    if (thrQueryID(pKernelGlobals->ptiQuickThread))
-        if (pKernelGlobals->hwndQuickObject)
-            rc = WinPostMsg(pKernelGlobals->hwndQuickObject,
+    if (thrQueryID(pKernelGlobals->ptiSpeedyThread))
+        if (pKernelGlobals->hwndSpeedyObject)
+            rc = WinPostMsg(pKernelGlobals->hwndSpeedyObject,
                             msg,
                             mp1,
                             mp2);
@@ -1910,7 +1935,7 @@ BOOL xthrPostQuickMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ xthrPlaySystemSound:
- *      this posts a msg to the XFolder Quick thread to
+ *      this posts a msg to the XFolder Speedy thread to
  *      have SOUND.DLL play a system sound. This should
  *      be failsafe, since successful loading of that DLL
  *      is checked for.
@@ -1926,8 +1951,8 @@ BOOL xthrPlaySystemSound(USHORT usIndex)
 
     if (pKernelGlobals->ulMMPM2Working == MMSTAT_WORKING)
         // SOUND.DLL loaded successfully and
-        // Quickthread running:
-        rc = WinPostMsg(pKernelGlobals->hwndQuickObject,
+        // Speedythread running:
+        rc = WinPostMsg(pKernelGlobals->hwndSpeedyObject,
                         QM_PLAYSYSTEMSOUND,
                         (MPARAM)usIndex,
                         MPNULL);
@@ -1937,7 +1962,7 @@ BOOL xthrPlaySystemSound(USHORT usIndex)
 
 /*
  *@@ xthrIsPlayingSystemSound:
- *      returns TRUE if the Quick thread is
+ *      returns TRUE if the Speedy thread is
  *      currently playing a system sound.
  *      This is useful for waiting until it's done.
  */
@@ -1952,14 +1977,14 @@ ULONG   ulVolumeTemp = 0;
 SHAPEFRAME sb = {0};
 
 /*
- *@@ fnwpQuickObject:
- *      wnd proc for Quick thread object window
- *      (see fntQuickThread below)
+ *@@ fnwpSpeedyObject:
+ *      wnd proc for Speedy thread object window
+ *      (see fntSpeedyThread below)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new global settings
  */
 
-MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = NULL;
 
@@ -1990,7 +2015,7 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                         // blow-up mode:
                         HDC         hdcMem;
                         HPS         hpsMem;
-                        if (gpihCreateMemPS(habQuickThread,
+                        if (gpihCreateMemPS(habSpeedyThread,
                                             &hdcMem,
                                             &hpsMem))
                         {
@@ -2016,7 +2041,7 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                     else
                     {
                         // transparent mode:
-                        if (shpLoadBitmap(habQuickThread,
+                        if (shpLoadBitmap(habSpeedyThread,
                                           pszBootLogoFile, // from file,
                                           0, 0,     // not from resources
                                           &sb))
@@ -2103,7 +2128,7 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                                       szTemp);
 
                     // show window for 2 secs
-                    WinStartTimer(habQuickThread, hwndObject, 1, 2000);
+                    WinStartTimer(habSpeedyThread, hwndObject, 1, 2000);
                 }
         break; }
 
@@ -2132,7 +2157,7 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
         /*
          * QM_PLAYSYSTEMSOUND:
          *      plays system sound specified in MMPM.INI.
-         *      This is posted by xthrPostQuickMsg.
+         *      This is posted by xthrPostSpeedyMsg.
          *      (USHORT)mp1 must be the MMPM.INI index (see
          *      sndQuerySystemSound in common.c for a list).
          */
@@ -2181,7 +2206,7 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
          *      This message is only posted by
          *      QM_PLAYSYSTEMSOUND (above) if a system
          *      sound was queried successfully.
-         *      To play sounds in the Quick thread, we use
+         *      To play sounds in the Speedy thread, we use
          *      SOUND.DLL, which should have been loaded
          *      at WPS startup. (See krnInitializeXWorkplace.
          *      If not, we don't get this message in the
@@ -2300,6 +2325,12 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
             krnUnlockGlobals();
         break; }
 
+        #ifdef __DEBUG__
+        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
+            CRASH;
+        break;
+        #endif
+
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
@@ -2308,10 +2339,10 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 }
 
 /*
- *@@ xthrOnKillQuickThread:
+ *@@ xthrOnKillSpeedyThread:
  *      thread "exit list" func registered with
  *      the TRY_xxx macros (helpers\except.c).
- *      In case the Quick thread gets killed,
+ *      In case the Speedy thread gets killed,
  *      this function gets called. As opposed to
  *      real exit list functions, which always get
  *      called on thread 1, this gets called on
@@ -2326,15 +2357,15 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
  *@@added V0.9.0 [umoeller]
  */
 
-VOID APIENTRY xthrOnKillQuickThread(VOID)
+VOID APIENTRY xthrOnKillSpeedyThread(VOID)
 {
     krnUnlockGlobals(); // just to make sure
 }
 
 /*
- *@@ fntQuickThread:
+ *@@ fntSpeedyThread:
  *          this is the thread function for the XFolder
- *          "Quick" thread, which is responsible for
+ *          "Speedy" thread, which is responsible for
  *          showing that bootup logo and displaying
  *          the notification window when classes get initialized.
  *
@@ -2342,7 +2373,7 @@ VOID APIENTRY xthrOnKillQuickThread(VOID)
  *          calling the funcs in sounddll.c (SOUND.DLL), if that
  *          DLL was successfully loaded.
  *
- *          To play system sounds, use xthrPostQuickMsg.
+ *          To play system sounds, use xthrPostSpeedyMsg.
  *
  *          As opposed to the "Worker" thread, this thread runs
  *          with high regular priority.
@@ -2350,26 +2381,26 @@ VOID APIENTRY xthrOnKillQuickThread(VOID)
  *          This thread is also created from krnInitializeXWorkplace.
  */
 
-void _Optlink fntQuickThread(PVOID ptiMyself)
+void _Optlink fntSpeedyThread(PVOID ptiMyself)
 {
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
     BOOL                  fTrapped = FALSE;
 
-    TRY_LOUD(excpt1, xthrOnKillQuickThread)
+    TRY_LOUD(excpt1, xthrOnKillSpeedyThread)
     {
-        if (habQuickThread = WinInitialize(0))
+        if (habSpeedyThread = WinInitialize(0))
         {
-            if (hmqQuickThread = WinCreateMsgQueue(habQuickThread, 3000))
+            if (hmqSpeedyThread = WinCreateMsgQueue(habSpeedyThread, 3000))
             {
                 {
                     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
 
-                    WinCancelShutdown(hmqQuickThread, TRUE);
+                    WinCancelShutdown(hmqSpeedyThread, TRUE);
 
-                    WinRegisterClass(habQuickThread,
+                    WinRegisterClass(habSpeedyThread,
                                      WNDCLASS_QUICKOBJECT,    // class name
-                                     (PFNWP)fnwpQuickObject,    // Window procedure
+                                     (PFNWP)fnwpSpeedyObject,    // Window procedure
                                      0,                  // class style
                                      0);                 // extra window words
 
@@ -2380,7 +2411,7 @@ void _Optlink fntQuickThread(PVOID ptiMyself)
                                    0);
 
                     // create object window
-                    pKernelGlobals->hwndQuickObject = WinCreateWindow(
+                    pKernelGlobals->hwndSpeedyObject = WinCreateWindow(
                                         HWND_OBJECT,
                                         WNDCLASS_QUICKOBJECT,
                                         (PSZ)"",     // title
@@ -2392,15 +2423,17 @@ void _Optlink fntQuickThread(PVOID ptiMyself)
                                         NULL,        // create params
                                         NULL);       // pres params
 
-                    if (!pKernelGlobals->hwndQuickObject)
-                        DebugBox("XFolder: Error", "XFolder failed to create the Quick thread object window.");
+                    if (!pKernelGlobals->hwndSpeedyObject)
+                        DebugBox(HWND_DESKTOP,
+                                 "XFolder: Error",
+                                 "XFolder failed to create the Speedy thread object window.");
 
                     krnUnlockGlobals();
                 }
 
                 // now enter the message loop
-                while (WinGetMsg(habQuickThread, &qmsg, NULLHANDLE, 0, 0))
-                    WinDispatchMsg(habQuickThread, &qmsg);
+                while (WinGetMsg(habSpeedyThread, &qmsg, NULLHANDLE, 0, 0))
+                    WinDispatchMsg(habSpeedyThread, &qmsg);
                                 // loop until WM_QUIT
             }
         }
@@ -2416,16 +2449,14 @@ void _Optlink fntQuickThread(PVOID ptiMyself)
             pszErrMsg = malloc(1000);
             if (pszErrMsg)
             {
-                strcpy(pszErrMsg, "An error occured in the XFolder Quick thread. "
+                strcpy(pszErrMsg, "An error occured in the XFolder Speedy thread. "
                         "\n\nThe additional XFolder system sounds will be disabled for the "
                         "rest of this Workplace Shell session. You will need to restart "
                         "the WPS in order to re-enable them. "
                         "\n\nIf errors like these persist, you might want to disable the "
                         "additional XFolder system sounds again. For doing this, execute "
                         "SOUNDOFF.CMD in the BIN subdirectory of the XFolder installation "
-                        "directory. "
-                        "\n\nYou will find additional debug information "
-                        "in the XFLDTRAP.LOG file in the root directory of your boot drive. ");
+                        "directory. ");
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
             }
         }
@@ -2436,12 +2467,12 @@ void _Optlink fntQuickThread(PVOID ptiMyself)
 
     {
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-        WinDestroyWindow(pKernelGlobals->hwndQuickObject);
-        pKernelGlobals->hwndQuickObject = NULLHANDLE;
-        WinDestroyMsgQueue(hmqQuickThread);
-        hmqQuickThread = NULLHANDLE;
-        WinTerminate(habQuickThread);
-        habQuickThread = NULLHANDLE;
+        WinDestroyWindow(pKernelGlobals->hwndSpeedyObject);
+        pKernelGlobals->hwndSpeedyObject = NULLHANDLE;
+        WinDestroyMsgQueue(hmqSpeedyThread);
+        hmqSpeedyThread = NULLHANDLE;
+        WinTerminate(habSpeedyThread);
+        habSpeedyThread = NULLHANDLE;
 
         if (fTrapped)
             pKernelGlobals->ulMMPM2Working = MMSTAT_CRASHED;
@@ -2582,8 +2613,8 @@ BOOL xthrStartThreads(VOID)
                       fntWorkerThread,
                       0);
 
-            thrCreate(&(pKernelGlobals->ptiQuickThread),
-                      fntQuickThread,
+            thrCreate(&(pKernelGlobals->ptiSpeedyThread),
+                      fntSpeedyThread,
                       0);
         }
 

@@ -791,8 +791,8 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
     PSZ         pszParams = NULL,
                 pszAdapterParams[2] = { 0, 0 },
                 pszUnitParams[4] = { 0, 0, 0, 0 };
-    PS506ADAPTER pS506AdapterThis = 0;
-    PS506UNIT   pS506UnitThis = 0;
+    // PS506ADAPTER pS506AdapterThis = 0;
+    // PS506UNIT   pS506UnitThis = 0;
     ULONG       ul = 0;
     CHAR        szTemp[40];
 
@@ -1064,10 +1064,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         pszToken = 0;
             PS506ALL    pS506All = malloc(sizeof(S506ALL));
             ULONG       ul = 0;
-            LONG        lColor;
-            CHAR        szFont[] = "8.Helv";
-
-
+            // LONG        lColor;
+            // CHAR        szFont[] = "8.Helv";
 
             // store DRIVERDLGDATA in window words
             pddd = (PDRIVERDLGDATA)mp2;
@@ -1361,7 +1359,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         sprintf(szMsg, "Syntax error in parameters: %s\n\nCurrent token: %s"
                                        "\n\nWarning: All subsequent parameters have been discarded.\n",
                                 pszError, pszToken);
-                        DebugBox("IBM1S506.ADD", szMsg);
+                        DebugBox(hwndDlg, "IBM1S506.ADD", szMsg);
                         break;
                     }
                 } while (pszToken = strtok(NULL, " "));
@@ -1375,7 +1373,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     sprintf(szMsg, "Warning: The following parameters were not recognized and will be ignored:"
                                    "\n\n%s\n\n",
                             pszUnrecognized);
-                    DebugBox("IBM1S506.ADD", szMsg);
+                    DebugBox(hwndDlg, "IBM1S506.ADD", szMsg);
                 }
             }
 
@@ -1477,18 +1475,18 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             }
 
             // update dialog
-            WinPostMsg(hwndDlg, WM_SETTINGS2DLG, 0, 0);
+            WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
 
         break; }
 
         /*
-         * WM_SETTINGS2DLG:
+         * XM_SETTINGS2DLG:
          *      this user msg (common.h) gets posted when
          *      the dialog controls need to be set according
          *      to the current settings.
          */
 
-        case WM_SETTINGS2DLG:
+        case XM_SETTINGS2DLG:
         {
             CHAR            szTemp[30];
             ULONG           ul = 0;
@@ -1634,17 +1632,17 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             winhSetDlgItemChecked(hwndDlg, ID_OSDI_DANIS506_U_REMOVEABLE,
                                   pS506UnitThis->b3Removeable);
 
-            WinPostMsg(hwndDlg, WM_ENABLEITEMS, 0, 0);
+            WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
         break; }
 
         /*
-         * WM_ENABLEITEMS:
+         * XM_ENABLEITEMS:
          *      this user msg (common.h) gets posted when
          *      the dialog controls need to be enabled/disabled
          *      according to the current settings.
          */
 
-        case WM_ENABLEITEMS:
+        case XM_ENABLEITEMS:
         {
             PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
             // find current adapter pointer
@@ -1734,13 +1732,13 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
         break; }
 
         /*
-         * WM_DLG2SETTINGS:
+         * XM_DLG2SETTINGS:
          *      this user msg (common.h) gets posted when
          *      the settings need to be re-read from the
          *      dialog controls.
          */
 
-        case WM_DLG2SETTINGS:
+        case XM_DLG2SETTINGS:
         {
             PSZ pszNewParams = RecomposeParamsString(hwndDlg,
                                                      (PS506ALL)pddd->pvUser);
@@ -1856,7 +1854,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                             pS506All->bCurrentAdapter = 1;
 
                         // update controls for that adapter
-                        WinPostMsg(hwndDlg, WM_SETTINGS2DLG, 0, 0);
+                        WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
                     }
                 break;
 
@@ -1882,7 +1880,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                                 pS506All->bCurrentUnit = 3; break;
                         }
 
-                        WinPostMsg(hwndDlg, WM_SETTINGS2DLG, 0, 0);
+                        WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
                     }
                 break;
 
@@ -1929,7 +1927,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                             break;
                         }
                         // update params string
-                        WinPostMsg(hwndDlg, WM_DLG2SETTINGS, 0, 0);
+                        WinPostMsg(hwndDlg, XM_DLG2SETTINGS, 0, 0);
                     }
                 break;
 
@@ -2077,9 +2075,9 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                             break;
                         }
 
-                        WinPostMsg(hwndDlg, WM_ENABLEITEMS, 0, 0);
+                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
                         // update params string
-                        WinPostMsg(hwndDlg, WM_DLG2SETTINGS, 0, 0);
+                        WinPostMsg(hwndDlg, XM_DLG2SETTINGS, 0, 0);
                     }
                 break;
 
@@ -2104,7 +2102,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         }
 
                         // update params string
-                        WinPostMsg(hwndDlg, WM_DLG2SETTINGS, 0, 0);
+                        WinPostMsg(hwndDlg, XM_DLG2SETTINGS, 0, 0);
                     }
                 break;
 
@@ -2154,7 +2152,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         }
 
                         // update params string
-                        WinPostMsg(hwndDlg, WM_DLG2SETTINGS, 0, 0);
+                        WinPostMsg(hwndDlg, XM_DLG2SETTINGS, 0, 0);
                     }
                 break;
 
@@ -2188,7 +2186,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     // reset all values
                     PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
                     SetS506Defaults(pS506All);
-                    WinPostMsg(hwndDlg, WM_SETTINGS2DLG, 0, 0);
+                    WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
                 break; }
 
                 default:

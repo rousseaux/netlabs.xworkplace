@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -572,16 +572,21 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
  *      This gets a METHODTHREADINFO in the user
  *      parameter.
  *
+ *      If THREADINFO.fExit gets set to TRUE, the
+ *      thread terminates itself.
+ *
  *@@added V0.9.1 (99-12-20) [umoeller]
  */
 
 void _Optlink cll_fntMethodCollectThread(PVOID ptiMyself)
 {
-    PMETHODTHREADINFO pmti = (PMETHODTHREADINFO)(((PTHREADINFO)ptiMyself)->ulData);
+    PTHREADINFO pti = (PTHREADINFO)ptiMyself;
+    PMETHODTHREADINFO pmti = (PMETHODTHREADINFO)(pti->ulData);
     // now update method info
     PMETHODINFO pMethodInfo = clsQueryMethodInfo(pmti->pClassObject,
                                                  // return-class-methods flag
-                                                 pmti->fClassMethods);
+                                                 pmti->fClassMethods,
+                                                 &pti->fExit); // exit flag
     // notify method info dlg;
     // WinPostMsg works even though we don't
     // have a message queue
@@ -1132,7 +1137,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
         case WM_CREATE:
         {
             // frame window successfully created:
-            RECTL           rcl;
+            // RECTL           rcl;
             SPLITBARCDATA   sbcd;
             PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
@@ -1291,7 +1296,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             // one for the old, one for the new data
             // (from PM docs)
             PSWP pswpNew = PVOIDFROMMP(mp1);
-            PSWP pswpOld = pswpNew + 1;
+            // PSWP pswpOld = pswpNew + 1;
 
             // resizing?
             if (pswpNew->fl & SWP_SIZE)
@@ -1355,7 +1360,10 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 // wait for method thread to terminate
                 thrWait(pClientData->ptiMethodCollectThread);
                 if (pClientData->ptiMethodCollectThread)
+                {
                     free(pClientData->ptiMethodCollectThread);
+                    pClientData->ptiMethodCollectThread = NULL;
+                }
 
                 // remove this window from the object's use list
                 _wpDeleteFromObjUseList(pClientData->somSelf,
@@ -1636,14 +1644,14 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                 // one for the old, one for the new data
                 // (from PM docs)
                 PSWP pswpNew = PVOIDFROMMP(mp1);
-                PSWP pswpOld = pswpNew + 1;
+                // PSWP pswpOld = pswpNew + 1;
 
                 // resizing?
                 if (pswpNew->fl & SWP_SIZE)
                 {
                     if (pClassTreeCnrData)
                     {
-                        BOOL brc = winhAdjustControls(hwndDlg,             // dialog
+                        winhAdjustControls(hwndDlg,             // dialog
                                            ampClassCnrCtls,    // MPARAMs array
                                            sizeof(ampClassCnrCtls) / sizeof(MPARAM), // items count
                                            pswpNew,             // mp1
@@ -2300,14 +2308,14 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
             // one for the old, one for the new data
             // (from PM docs)
             PSWP pswpNew = PVOIDFROMMP(mp1);
-            PSWP pswpOld = pswpNew + 1;
+            // PSWP pswpOld = pswpNew + 1;
 
             // resizing?
             if (pswpNew->fl & SWP_SIZE)
             {
                 if (pClassInfoData)
                 {
-                    BOOL brc = winhAdjustControls(hwndDlg,             // dialog
+                    winhAdjustControls(hwndDlg,             // dialog
                                        ampClassInfoCtls,    // MPARAMs array
                                        sizeof(ampClassInfoCtls) / sizeof(MPARAM), // items count
                                        pswpNew,             // mp1
@@ -2471,14 +2479,14 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             // one for the old, one for the new data
             // (from PM docs)
             PSWP pswpNew = PVOIDFROMMP(mp1);
-            PSWP pswpOld = pswpNew + 1;
+            // PSWP pswpOld = pswpNew + 1;
 
             // resizing?
             if (pswpNew->fl & SWP_SIZE)
             {
                 if (pMethodInfoData)
                 {
-                    BOOL brc = winhAdjustControls(hwndDlg,             // dialog
+                    winhAdjustControls(hwndDlg,             // dialog
                                        ampMethodInfoCtls,    // MPARAMs array
                                        sizeof(ampMethodInfoCtls) / sizeof(MPARAM), // items count
                                        pswpNew,             // mp1
@@ -2655,7 +2663,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
         case WM_COMMAND:
         {
-            PFNCNRSORT  pfnCnrSort = NULL;
+            // PFNCNRSORT  pfnCnrSort = NULL;
 
             switch (SHORT1FROMMP(mp1))  // menu command
             {
@@ -2751,7 +2759,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                            ULONG flFlags)              // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPClassListData *somThis = XWPClassListGetData(pcnbp->somSelf);
 
     if (flFlags & CBI_INIT)
@@ -2769,10 +2777,10 @@ VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XLDI_SHOWSOMOBJECT,
-                _fShowSOMObject);
-        winhSetDlgItemChecked(pcnbp->hwndPage, ID_XLDI_SHOWMETHODS,
-                _fShowMethods);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XLDI_SHOWSOMOBJECT,
+                              _fShowSOMObject);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XLDI_SHOWMETHODS,
+                              _fShowMethods);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2999,7 +3007,7 @@ HWND cllCreateClassListView(WPObject *somSelf,
                             HWND hwndCnr,
                             ULONG ulView)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndFrame = 0;
 
     TRY_LOUD(excpt1, NULL)

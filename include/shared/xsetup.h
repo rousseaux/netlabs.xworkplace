@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -23,6 +23,10 @@
 
 #ifndef XSETUP_HEADER_INCLUDED
     #define XSETUP_HEADER_INCLUDED
+
+    BOOL setCreateStandardObject(HWND hwndOwner,
+                                 USHORT usMenuID,
+                                 BOOL fXWPObject);
 
     /* ******************************************************************
      *                                                                  *
@@ -65,8 +69,6 @@
         MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        USHORT usItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
-    #else
-        #error "shared\notebook.h needs to be included before including xsetup.h".
     #endif
 #endif
 

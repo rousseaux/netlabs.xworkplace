@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -30,9 +30,9 @@
     #define SOUND_HEADER_INCLUDED
 
     // Quick thread msgs (QM_xxx) for xfdesk.c
-    #define QM_BOOTUPSTATUS             WM_USER+140
-    #define QM_PLAYSOUND                WM_USER+141
-    #define QM_PLAYSYSTEMSOUND          WM_USER+142
+    #define QM_BOOTUPSTATUS             (WM_USER+140)
+    #define QM_PLAYSOUND                (WM_USER+141)
+    #define QM_PLAYSYSTEMSOUND          (WM_USER+142)
 
     // function prototypes for SOUND.DLL imports;
     // APIENTRY has been added to the following prototypes with V0.9.0:

@@ -8,7 +8,7 @@
  *
  *      See src\classes\xfldr.c for details.
  *
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -221,7 +221,7 @@ interface XFolder : WPFolder
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
-    BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
+    // BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
@@ -411,7 +411,7 @@ interface M_XFolder : M_WPFolder
      *
      */
 
-    BOOL xwpclsForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
+    // BOOL xwpclsForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
     XFolder xwpclsQueryConfigFolder();
     XFolder xwpclsQueryFavoriteFolder(in XFolder pFolder);
     XFolder xwpclsQueryQuickOpenFolder(in XFolder pFolder);

@@ -9,45 +9,63 @@
 <!-- V0.9.0: add the following line -->
 <B>Class: XFolder</B><HR>
 What makes XFolder different from other folder enhancements
-is that you can FREELY CONFIGURE
+is that you can <I>freely configure</I>
 popup menus without having to reboot.
+
 <P>This is done with the use of a separate
-<STRONG>Configuration Folder,</STRONG> which looks just like any normal
-WPS folder. The installation script placed it on your desktop, but you may move it
-anywhere you like.
+<B>Configuration Folder,</B> which looks just like any normal
+WPS folder.
+<!-- V0.9.1: fixed the following -->
+The installation script placed it in the "XWorkplace" folder on your Desktop,
+but you may move it anywhere you like.
+
 <P>Whatever you put into this configuration folder will immediately
 appear in the context menus of all the
 folders on your system.
+
 <P>Let's clarify this by taking a look at the pre-set configuration again:
+
+<!-- V0.9.1: screenshot updated! -->
 <P><IMG SRC="menu1.gif">
+
 <P>The pre-set configuration folder looks like this:
+
+<!-- V0.9.1: screenshot updated! -->
 <P><IMG SRC="menu2.gif">
+
 <P>As you can see, the folders and program objects in the XFolder Configuration folder
 correspond to the items in the context menu.
+<!-- V0.9.1: added the following phrase -->
+So if you add something to the Configuration Folder or remove some object from it, this
+will immediately affect all folder context menus.
+
 <P>However, the action which XFolder performs upon selecting a context menu items depends
 on the type of object that corresponds to the menu item. You need to differentiate between
 the following types of objects:
 
-<OL><LI><STRONG>Program objects</STRONG> will be started when the corresponding menu item
-is selected. (Actually, not the program object will be started, but the program defined
-in the program object's Settings notebook.)
+<OL><LI><B>Program objects</B> in the Configuration Folder will be started when the
+corresponding menu item is selected.
+(Actually, not the program object will be started, but the program defined in the
+program object's Settings notebook.)
 <P>The four "command line" objects are pretty much copies of the ones that are also installed
 by OS/2 itself.
-The objects in the <CITE>"Create a~nother"</CITE>
+<!-- V0.9.1: removed all this
+The objects in the "Create a~nother"
 folder all point to
-<!-- V0.9.0: change XFolder to XWorkplace -->
-<A HREF="080related.html">a little REXX script</A> in the XWorkplace
-installation directory, which can create folders and program objects.
+a little REXX script in the XWorkplace
+installation directory, which can create folders and program objects. -->
 <P>XFolder can perform a number of useful tricks on program objects.
 Please read through the <A HREF="menu_4wpprogram.html">"Extra features for program objects"</A>
 page to learn more.
 
-<BR><LI>Putting <STRONG>another folder</STRONG> in the configuration folder will
+<BR><LI>Putting <B>another folder</B> in the configuration folder will
 create a cascading submenu
 in the context menus. In this "subfolder", you can place more objects and folders.
 This way, you can create a whole popup menu hierarchy (as can be seen in the default setup above).
+<!-- V0.9.1: added this phrase -->
+There's no limit on nesting folders, so you may create hierarchies many levels deep.
 
-<BR><LI>A <STRONG>template or shadow of a template</STRONG> will result in the creation of a
+<BR><LI>A <B>template or shadow of a template</B> will result in the creation of a
 new object from it when the respective menu item is selected. The new object will be created in
 the folder whose context menu was used.
 <P>For example, if you have created a folder template with
@@ -56,17 +74,19 @@ folder, and when you select its corresponding menu item from a folder's context 
 folder will be created in this folder, just as if you had dragged a folder from the template.
 <P>See <A HREF="menu_2template.html">"Creating objects with XFolder"</A> for more.
 
-<BR><LI><STRONG>All other objects</STRONG> will simply be opened when their corresponding menu
+<BR><LI><B>All other objects</B> will simply be opened when their corresponding menu
 item was selected. This includes shadows of program objects, shadows of folders, "real" files,
 shadows of them, and so on.
 <P>For example, you can put a shadow of your favorite data file (e.g. "To-do list") into
-the context menus. Another example is the shadow of the OS/2 System notebook in the
+the context menus. Another example is the shadow of the
+<!-- V0.9.1: changed OS/2 System to this -->
+"XWorkplace Setup" object in the
 <!-- V0.9.0: change XFolder to XWorkplace -->
 "XWorkplace" submenu, with which you can access the
 <!-- V0.9.0: change XFolder to XWorkplace -->
 <A HREF="sys_2global.html">XWorkplace Global Settings</A>.
 
-<BR><LI>Starting with version 0.50, you can insert <STRONG>menu separators</STRONG> by putting a program title with the
+<BR><LI>Starting with version 0.50, you can insert <B>menu separators</B> by putting a program title with the
 exact title of <CITE>"---"</CITE> into a configuration folder. See the
 <A HREF="menu_4wpprogram.html">next page</A> for
 details.
