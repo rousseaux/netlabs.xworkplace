@@ -70,7 +70,7 @@ davon geben.
  
 <P><LI>Normalerweise werden alle nicht abgearbeiteten Nachrichten vom PM an
 <CODE>WinDefWindowProc</CODE> weitergeleitet. Bei Widgets ist das anders: Sie mssen
-unprozessierte Nachrichten immer an die "&xcenter;-Standard-Widget-Prozedur" weiterleiten,
+nicht verarbeitete Nachrichten immer an die "&xcenter;-Standard-Widget-Prozedur" weiterleiten,
 deren Adresse in Ihrem Widget in der
 <A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>-Struktur bei
 <CODE>WM_CREATE</CODE> im Feld <CODE>pfnwpDefWidgetProc</CODE> abgelegt wird.
@@ -79,7 +79,7 @@ mssen.)
  
 <P>Wenn Sie unprozessierte Nachrichten nicht weiterleiten, werden Sie der Funktionalit„t
 des Widgets ernsthaft schaden. Noch schlimmer, Sie werden Speicherlecks verursachen, da
-die Standard-Widget-Prozedur dafr verantwortlich ist, die Resourcen aufzur„umen und wichtige
+die Standard-Widget-Prozedur dafr verantwortlich ist, die Ressourcen aufzur„umen und wichtige
 Nachrichten vom &xcenter; abzuarbeiten.
  
 <P><LI>Sogar wenn Sie Ihre eigene Routinen bei der Nachricht <CODE>WM_DESTROY</CODE>

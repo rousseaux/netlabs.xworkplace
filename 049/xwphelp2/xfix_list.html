@@ -66,7 +66,6 @@ nicht existiert.
 Nochmals zur Erinnerung: Offensichtlich sind diese <CODE>DRIV</CODE>-Knoten einfach nur eine Markierung
 in den Handles-Daten.
  
-<!-- parent = Eltern oder Elternteil -->
 <P><LI>Das Feld <B>"Elternteil"</B> ist ebenfalls mit einem Eintrag in der <CODE>OS2SYS.INI</CODE> 
 abgelegt und spezifiziert das Handle eines Ordners, in welchem sich dieses Objekt
 (entweder eine Datei oder ein anderer Ordner) befindet.
@@ -80,7 +79,7 @@ vollst„ndigen
 <A HREF="glossary/gls_path.html">Pfad</A>
 eines Datei-Handles nicht zusammensetzen, wenn das Elternteil-Handle 
 nicht gltig ist.
-Siehe nachfolgenden Text, wie es funktioniert.
+Siehe nachfolgenden Text dazu, wie es funktioniert.
  
 <P><LI>Der <B>"Kurzname"</B> ist im Handles-Block abgelegt und gibt den Namen des
 Dateisystemobjekts ohne vollst„ndige Pfadangabe an. Die L„nge des Dateinamens
@@ -99,8 +98,8 @@ Eltern dazwischen sind).
  
 <P>Wenn der "Kinder"-Eintrag 0 ist, k”nnen Sie diesen Eintrag l”schen, ohne andere
 Eintr„ge zu besch„digen. (Das schlieát jedoch nach wie vor aus, daá es immer sicher
-ist den Eintrag zu l”schen, weil es Referenzen etc.
-besch„digen k”nnte. Siehe <A HREF="xfix_delete.html">Datei-Handles l”schen</A>. )
+ist den Eintrag zu l”schen, weil es Referenzen usw.
+besch„digen k”nnte. Siehe <A HREF="xfix_delete.html">Datei-Handles l”schen</A>.)
  
 <P><LI>Das Feld <B>"Kopien"</B> ist ebenfalls von xfix eingerichtet und z„hlt
 die Anzahl der Kopien jedes Handle. <B>Dieser Wert sollte fr jedes 
@@ -108,7 +107,7 @@ Handle am besten Null sein.</B>
 Ist er das nicht, wird sich die WPS vermutlich bald verabschieden.
 Darum gibt xfix diesem Handle den Status "Kopie" und markiert ihn als ungltig.
  
-<P>Siehe <A HREF="xfix_howto.html">Wie kann ich...</A>, um mehr zu Duplikaten (Kopien) zu erfahren.
+<P>Siehe <A HREF="xfix_howto.html">Wie kann ich...</A>, um mehr ber Duplikate (Kopien) zu erfahren.
  
 <P><LI>Das Feld <B>"Refzn."</B> steht fr "Referenzen" und zeigt Ihnen an, ob 
 dieses Handle gegenw„rtig in der Datei <CODE>OS2.INI</CODE> genutzt wird.
@@ -128,9 +127,9 @@ bereits von der WPS ge”ffnet wurde und seine Ordnerposition gespeichert hat.
 <P>Siehe <A HREF="xfix_delete.html">L”schen von Handles</A> zu den Auswirkungen
 einer L”schung von Datei-Handles, welche diese Felder gesetzt haben.
  
-<P><LI>Der <B>"Lange Name"</B> zeigt Ihnen die vollst„ndige Pfadangabe dieses Handles, wie
+<P><LI>Der <B>"Lange Name"</B> zeigt die vollst„ndige Pfadangabe dieses Handles, wie
 sie von der WPS aufgel”st werden wrde, an. Beachten Sie, daá diese nicht im Handle-Eintrag
-der <CODE>OS2SYS.INI</CODE> steht... stattdessen zeigt es die Eleganz des 
+der <CODE>OS2SYS.INI</CODE> steht... statt dessen zeigt es die Eleganz des 
 ganzen Datei-Handles-Konzepts.
  
 <P>Der Weg, wie das Ganze funktioniert, wenn die WPS einen vollst„ndigen Dateinamen

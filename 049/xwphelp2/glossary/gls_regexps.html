@@ -16,7 +16,7 @@ Suchen nach reinen Zeichenketten.
  
 <P>&xwp; verwendet eine Kombination verschiedener Standards fr
 RE-Syntaxen.
-Benutzer der Unix-Programme
+Benutzern der Unix-Programme
 <CODE>egrep</CODE> und <CODE>awk</CODE> werden diese REs bekannt vorkommen.
 Erweiterungen, die durch POSIX sowie die Unix-Programme
 <CODE>ex</CODE> und <CODE>vi</CODE> und weitere GNU-Programme eingefhrt
@@ -84,7 +84,7 @@ oder nicht m”glich sein drfen.
 </PRE>
  
 Um in den eckigen Klammern auch die Zeichen <CODE>-</CODE>, <CODE>^</CODE> oder
-<CODE>]</CODE> angeben zu k”nnen, setzen Sie wieder einen Schr„gstrich rckw„rts
+<CODE>]</CODE> angeben zu k”nnen, setzt man wieder einen Schr„gstrich rckw„rts
 davor. Beispielsweise findet
 <CODE>[\])}]</CODE> die Zeichen <CODE>]</CODE> oder <CODE>)</CODE> oder <CODE>}</CODE>.
  
@@ -155,7 +155,7 @@ sie am Anfang einer Zeile steht.
 <P><B>Wiederholungen</B>
  
 <P>Mit den Zeichen <CODE>?</CODE>, <CODE>+</CODE>, <CODE>{M}</CODE> oder <CODE>{M,N}</CODE>
-k”nnen Sie nach Wiederholungen suchen.
+kann nach Wiederholungen gesucht werden.
  
 <PRE>
   ab?c      a, dann keine oder eine Wiederholung von b, dann c
@@ -176,14 +176,14 @@ wenn diese aus wenigstens 10 Wortzeichen besteht.
  
 <P><B>Alternativen</B>
  
-<P>Sie k”nnen mit dem <code>|</code>-Zeichen nach etwas <i>oder</i> etwas anderem
+<P>Mit dem <code>|</code>-Zeichen kann man nach etwas <i>oder</i> etwas anderem
 suchen. Beispielsweise findet <CODE>fred|bill</CODE> die Kette
 <CODE>fred</CODE> oder <CODE>bill</CODE>.
 <CODE>fred|bill|rob</CODE> findet jeden der drei Namen.
  
 <P><B>Verschachtelte Ausdrcke</B>
  
-<P>Mit runden Klammern k”nnen Sie REs gruppieren, um Operatoren wie
+<P>Mit runden Klammern k”nnen REs gruppiert werden, um Operatoren wie
 Wiederholungen oder Alternativen genau zu bezeichnen.
 Beispielsweise findet <CODE>(frosch|kr”te)+</CODE> eine oder mehrere Wiederholungen
 von entweder

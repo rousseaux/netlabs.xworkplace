@@ -72,7 +72,7 @@ zu merken.
 Zeichenketten in eckigen Klammern, z.B. <CODE>&lt;WP_DESKTOP&gt;</CODE>).
 Objekt-IDs werden in der Sektion
 <CODE>PM_Workplace:Location</CODE> der <CODE>OS2.INI</CODE>
-zusammen mit dem Objekt-Handles abgelegt und k”nnen nur aufgel”st werden, wenn das
+zusammen mit dem Objekt-Handle abgelegt und k”nnen nur aufgel”st werden, wenn das
 Handle gltig ist.
  
 <P>Das Hauptproblem an dieser Implementation ist, daá die WPS die Arbeitsoberfl„che
@@ -116,11 +116,11 @@ nicht ben”tigt.
  
 <P><LI>Die WPS legt leider auch Handles fr jedes Objekt an, welches durch die
 automatische Aktualisierung des Ordners aktualisiert wird. Das geschieht, wenn
-der Ordner ge”ffnet ist und Sie darin irgendetwas von der Befehlszeile aus tun
-(oder wenn andere Anwendungen etwas mit Dateien in diesem Ordner machen),
-dann wird fr jede Datei, die ge„ndert wird, ein neues Handle erzeugt.
+der Ordner ge”ffnet ist und man darin irgendetwas von der Befehlszeile aus tut
+(oder wenn andere Anwendungen etwas mit Dateien in diesem Ordner machen).
+Dann wird fr jede Datei, die ge„ndert wird, ein neues Handle erzeugt.
  
-<P>Ein einfacher Testfall dafr ist eine ZIP-Datei in einem offenen
+<P>Ein einfacher Testfall dafr ist, eine ZIP-Datei in einem offenen
 Ordner zu entpacken. Das wird viele Dateisystem-Handles erzeugen, die
 wahrscheinlich nie wieder benutzt werden. Als Ergebnis dieses Verhaltens wird
 eine groáe Anzahl von Dateisystem-Handles erzeugt.

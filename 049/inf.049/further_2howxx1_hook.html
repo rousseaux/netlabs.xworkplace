@@ -49,7 +49,7 @@ und auch der &xwp; PM-Hook). Sie fangen bestimmte Nachrichten ab und manipuliere
 <P>Jedesmal, wenn beispielsweise der &xwp; PM-Hook eine <CODE>WM_CHAR</CODE>-Nachricht
 erh„lt (das geschieht, wenn eine Taste gedrckt oder losgelassen wird), prft er, ob
 sich diese Taste in der globalen Liste der Tastenkrzel befindet. Ist dies der Fall,
-wird die Nachricht verschluckt (so daá das Zielfenster sie nicht erh„lt) und stattdessen
+wird die Nachricht verschluckt (so daá das Zielfenster sie nicht erh„lt) und statt dessen
 wird ein Teil des &xwp;-WPS-Codes benachrichtigt, der dann das entsprechende Objekt
 ”ffnen kann, das vom Anwender fr dieses Tastenkrzel festgelegt worden ist.
  
@@ -58,7 +58,7 @@ von der anderer Hook-Hilfsprogramme. Die meisten dieser Hilfsprogramme melden ih
 Hook-Funktion beim PM an, wenn sie gestartet werden, und melden sie wieder ab, wenn das
 Programm beendet wird (wenn z.B. in der Fensterliste "Schlieáen" gew„hlt wird).
  
-<P>Stattdessen wird der &xwp;-PM-Hook von einem besonderen Programm aus registriert, das
+<P>Statt dessen wird der &xwp;-PM-Hook von einem besonderen Programm aus registriert, das
 nicht in der Fensterliste sichtbar ist - dem <B>&xwp; Daemon,</B> <CODE>XWPDAEMN.EXE</CODE>.
 Sie k”nnen es jedoch mit WatchCat oder einem anderen Prozeáauflister sehen. Probieren einmal,
 das Programm zu killen, Sie werden sehen, daá alle Hook-Funktionen nicht mehr verfgbar sind.

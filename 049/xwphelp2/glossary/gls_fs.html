@@ -22,15 +22,15 @@ besitzen. Das Dateisystem wird festgelegt, wenn das Volumen formatiert
 wird und kann ohne weiteres nicht ge„ndert werden, ohne das Volumen
 neu zu formatieren.
  
-<P>Mit den heutigen Betriebssystemen kommt eine Vielzahl verschiedener
-Dateisysteme, die jeweils ihre eigenen St„rken und Schw„chen haben.
+<P>Mit den heutigen Betriebssystemen wird eine Vielzahl verschiedener
+Dateisysteme geliefert, die jeweils ihre eigenen St„rken und Schw„chen haben.
 &os2; untersttzt die folgenden Dateisysteme:
  
 <OL><LI>Das <B>FAT</B>-Dateisystem (fr "File Allocation Table")
 ist das „lteste Dateisystem, welches auf Personal Computern benutzt
 wurde. Es wurde mit den frhesten DOS-Versionen eingefhrt und ist
 weder leistungsf„hig noch schnell noch flexibel noch effizient.
-Seine Dateinamen sind beschr„nkt auf 8+3 Zeichen und mit groáen
+Seine Dateinamen sind auf 8+3 Zeichen beschr„nkt und mit groáen
 Volumen wird aufgrund der Art und Weise, wie Daten intern verwaltet
 werden, viel Platz verschwendet. Zus„tzlich werden FAT-Volumen sehr
 schnell fragmentiert.
@@ -47,13 +47,13 @@ eingebaut. Eine IFS-Anweisung in der Datei &cfgsys; ist folglich nicht erforderl
 <!-- V0.9.20: rewrote this paragraph -->
 <P>Mit Windows 95 hat Microsoft das FAT-Dateisystem erweitert, um lange
 Dateinamen verwenden zu k”nnen. Die anderen Probleme von FAT wurden dabei
-jedoch nicht behoben. Unter &os2; werden Sie statt der langen Dateinamen
-lediglich die 8+3-Konvention sehen.
+jedoch nicht behoben. Unter &os2; sieht man statt der langen Dateinamen
+lediglich die 8+3-Konvention.
  
 <!-- V0.9.20: and added this -->
 <P>Zus„tzlich hat Microsoft mit Windows 98 ein neues Dateisystem
 namens "FAT32" hinzugefgt. Trotz seines Namens ist dieses Dateisystem
-mit FAT nicht kompatibel. Es gibt L”sungen dritter Anbieter, die es Ihnen
+mit FAT nicht kompatibel. Es gibt L”sungen dritter Anbieter, die es
 erlauben, ber einen IFS-Treiber in der Datei &cfgsys;
 FAT32-Partitionen unter &os2; zu betreiben.
  
@@ -69,7 +69,7 @@ vergeudet es nicht so viel Plattenplatz und vermeidet Fragmentierung.
 <P>Verglichen mit noch neueren Dateisystemen hat HPFS trotzdem einige
 Beschr„nkungen. Vor allem kann das Standard-HPFS nur eine
 <A HREF="glossary/gls_caches.html">Cache-Gr”áe</A> von 2 MB verwalten.
-In Anbetracht der Speichermengen, die heutzutage in Computer eingebaut werden,
+In Anbetracht der Speichermengen, die heutzutage in Rechner eingebaut werden,
 ist dies nicht viel.
  
 <P>Die HPFS-Untersttzung muá mit dem Treiber
@@ -106,8 +106,8 @@ das ebenfalls von IBM AIX und Linux untersttzt wird.
  
 <P>Gegenber HPFS weist JFS die folgenden Vorteile auf:
  
-<BR><OL><LI>Es fhrt Buch ber s„mtliche Schreiboperationen auf die Platte
-in einem sogenannten "journal". Wenn das System abstrzt, muá JFS kein
+<BR><OL><LI>Es fhrt ber s„mtliche Schreiboperationen auf die Platte
+in einem sogenannten "journal" Buch. Wenn das System abstrzt, muá JFS kein
 volles <CODE>CHKDSK</CODE> ausfhren, um die Integrit„t des Dateisystems
 herzustellen, sondern kann einfach das Journal auf die Platte "zurckspielen".
 Deshalb braucht <CODE>CHKDSK</CODE> auf einem JFS-Volumen Sekunden statt
@@ -147,7 +147,7 @@ ist ein weiterer Dateisystemtreiber n”tig. Dies ist der Treiber
 &cfgsys;, der auch lange Dateinamen im Microsoft-Joliet-Format untersttzt.
  
 </OL>
-W„hlen Sie eines der verwandten Themen aus der folgenden Liste aus, um weitere Informationen zu erhalten:
+Weitere Informationen erhalen Sie durch Auswahl eines verwandten Themas aus der folgenden Liste:
  
 <UL>
 <LI><A HREF="glossary/gls_volume.html">šber Laufwerke, Volumen und Partitionen</A>

@@ -12,10 +12,10 @@ von 4 GB fhrt. Dieser wird blicherweise "virtueller Adreáraum"
 genannt.
  
 <P>Beachten Sie, daá dieser Adreáraum auf jedem Rechner unabh„ngig
-davon besteht, wieviel physikalischer Speicher im Rechner tats„chlich
+davon besteht, wieviel physischer Speicher im Rechner tats„chlich
 installiert ist. Einer der groáen Vorteile des 80386-Prozessors gegenber
 frheren Prozessoren ist, daá die Prozessor-Hardware die šbersetzung
-von virtuellen Adressen in physikalische Adressen bernimmt. Dabei
+von virtuellen Adressen in physische Adressen bernimmt. Dabei
 wird er von dem Betriebssystem (in diesem Fall &os2;) insoweit
 untersttzt, als dieses dem Prozessor Tabellen bergibt, in denen
 Umwandlungsinformationen gespeichert sind.
@@ -46,7 +46,7 @@ nicht zugreifen.
 den Anwendungen zur Verfgung.
  
 <P>W„hrend hinter der System-Arena und den gemeinsamen Arenen fr alle Prozesse
-der gleiche physikalische Speicher steht, sind die privaten Arenen fr jeden
+der gleiche physische Speicher steht, sind die privaten Arenen fr jeden
 Prozeá unterschiedlich. Jede Anwendung hat ihre eigene private Arena fr
 Code und Daten. Die gemeinsame Arena hingegen wird fr Code und Daten benutzt,
 die mehreren Prozessen gemeinsam ist; so werden z.B.
@@ -57,15 +57,15 @@ in die gemeinsame Arena geladen.
 <P>Die Grenze zwischen gemeinsamer Arena und den privaten Arenen ist variabel
 und h„ngt davon ab, wieviel gemeinsamer Speicher derzeit im System benutzt wird.
 Dies ist der Grund, warum das System manchmal "Zu wenig Speicher" meldet, wenn
-sehr viele DLLs geladen sind. Tats„chlich hat das System nicht zuwenig physikalischen
+sehr viele DLLs geladen sind. Tats„chlich hat das System nicht zuwenig physischen
 Speicher (da es ja ansonsten die
 <a href="glossary/gls_mem_paging.html">Auslagerungsdatei</a> vergr”áern wrde),
 sondern es ist der Adreáraum vollst„ndig belegt.
  
 <P>Die OS/2-Kernel von 2.0 bis 4.5 (der Aurora-Kernel) hatten eine fixe Grenze
 bei 512 MB fr den Speicher, der fr Anwendungen verwendbar war. Der Grund
-hierfr lag in der Untersttzung fr 16-Bit-Programme, die ohne weiteres
-nicht auf Speicher ber dieser Grenze zugreifen k”nnen.
+hierfr lag in der Untersttzung fr 16-Bit-Programme, die nicht ohne weiteres
+auf Speicher ber dieser Grenze zugreifen k”nnen.
  
 <P>Dies hat sich mit dem Aurora-Kernel ge„ndert, der es Anwendungen erlaubt,
 Speicher ber der 512-MB-Grenze anzufordern, wenn in der Datei &cfgsys;
@@ -99,8 +99,8 @@ in der Datei &cfgsys; angeben.
  
 <P>Trotzdem hat die Benutzung von hohem Speicher Nebenwirkungen.
 Wie oben erw„hnt, kann der hohe Speicher von 16-Bit-Code nicht benutzt
-werden. Daher brauchen Sie z.B. eine 32-Bit-Version von TCP/IP
-(Version 4.1 oder neuer), wenn Sie hohen Speicher mit Java nutzen wollen.
+werden. Daher ben”tigt man z.B. eine 32-Bit-Version von TCP/IP
+(Version 4.1 oder neuer), wenn man hohen Speicher mit Java nutzen will.
  
 <P>Hinzu kommt, daá die System-Arena um so kleiner wird, je h”her
 Sie <CODE>VIRTUALADDRESSLIMIT</CODE> festlegen. Sehr viel hoher Speicher

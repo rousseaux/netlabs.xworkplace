@@ -22,7 +22,7 @@ Treiber von IBM, bietet darber hinaus jedoch eine Vielzahl an Erweiterungen.
 Da die IBM-Treiber bei vielen neuen Chips„tzen nicht in der Lage sind, das
 Busmastering zu aktivieren, wird dringend der Einsatz dieses erweiterten
 Treibers empfohlen, der die Festplattenleistung stark verbessern kann. Darber
-hinaus erm”glicht dieser Treiber es, die Festplatten-Controller viel genauer
+hinaus erm”glicht es dieser Treiber, die Festplatten-Controller viel genauer
 einzustellen, um beispielsweise Systemprobleme zu l”sen.
  
 </OL>Fr jede Einstellung steht detaillierte Hilfe in Form eines <B>fly-over
@@ -39,7 +39,7 @@ und beinhalten Startmeldungen und (im Fall von <CODE>DANIS506.ADD</CODE>)
 die Art der Hardwareidentifizierung beim Systemstart.
  
 <P><LI><B>Adapter- (Controller-) Einstellungen</B> beziehen sich nur auf einen
-Adapter (bzw. Controller). Beim IDE und EIDE-Bus steuert ein Adapter zwei
+Adapter (bzw. Controller). Beim IDE- und EIDE-Bus steuert ein Adapter zwei
 Laufwerke. PCs haben gew”hnlich zwei Adapter eingebaut, so daá man maximal
 vier (E)IDE-Ger„te an einen Standard-PC anschlieáen kann. Im Dialogfenster
 finden Sie die zugeh”rigen Einstellungen im unteren, linken Bereich.
@@ -48,20 +48,20 @@ finden Sie die zugeh”rigen Einstellungen im unteren, linken Bereich.
 mssen Adaptereinstellungen durch eine Option <CODE>/A:x</CODE>
 eingeleitet werden, wobei <CODE>x</CODE> die Nummer des zu konfigurierenden
 Adapters (0 oder 1) angibt, auf den sich die weiteren Parameter beziehen.
-Diese Option wird vom Dialog automatisch gesetzt, sobald Sie eine beliebige
-Adaptereinstellung abweichend von der Standardvorgabe „ndern. S„mtliche
+Diese Option wird vom Dialog automatisch gesetzt, sobald man eine beliebige
+Adaptereinstellung abweichend von der Standardvorgabe „ndert. S„mtliche
 Einstellungen innerhalb der Gruppe <B>Adapter- (Controller-) Einstellungen</B>
 beziehen sich ausschlieálich auf den Adapter, der im Bereich <B>"Aktueller
 Adapter"</B> gerade ausgew„hlt ist.
  
 <P>Jeder der beiden Adapter ben”tigt ein paar Systemressourcen wie Interrupt
 (IRQ), einen DMA (Direct Memory Access) -Kanal und eine Port-Adresse, um mit
-dem Computer Daten austauschen zu k”nnen. Werden hier keine Einstellungen
+dem Rechner Daten austauschen zu k”nnen. Werden hier keine Einstellungen
 gemacht, werden die internen Standardvorgaben verwendet, die auf den meisten
 System funktionieren.
  
-<P>Fr Details zur Busmastering (DMA) -Untersttzung beachten Sie bitte die
-Hinweise weiter unten.
+<P>Details zur Busmastering (DMA) -Untersttzung entnehmen Sie bitte den
+Hinweisen weiter unten.
  
 <P><LI><B>Ger„te- (Laufwerks-) Einstellungen</B> betreffen nur ein einzelnes
 Laufwerk. Je Adapter k”nnen zwei Laufwerke angeschlossen sein, die gew”hnlich
@@ -73,8 +73,8 @@ mssen Laufwerkseinstellungen durch eine Option <CODE>/A:x</CODE>
 (die den Adapter angibt) und eine darauf folgende Option <CODE>/U:x</CODE>
 (die das Ger„t am Adapter angibt) eingeleitet werden, wobei <CODE>x</CODE>
 jeweils 0 oder 1 ist. Diese Option wird vom Dialog automatisch gesetzt, sobald
-Sie eine beliebige Laufwerkseinstellung abweichend von der Standardvorgabe
-„ndern. S„mtliche Einstellungen innerhalb der Gruppe <B>Ger„te- (Laufwerks-)
+man eine beliebige Laufwerkseinstellung abweichend von der Standardvorgabe
+„ndert. S„mtliche Einstellungen innerhalb der Gruppe <B>Ger„te- (Laufwerks-)
 Einstellungen</B> beziehen sich ausschlieálich auf das Laufwerk, das im Bereich
 <B>"Aktuelle Einheit"</B> gerade ausgew„hlt ist.
  
@@ -108,7 +108,7 @@ auch sicherer als das regul„re DMA oder die PIO-Modi.
 dabei k”nnen „ltere Controller sein, die das Verfahren gar nicht kennen oder
 auch schlechte Kabelverbindungen, die bei h”heren šbertragungsraten zu viel
 Rauschen auf dem Datenbus und damit Datenfehler verursachen. Darber hinaus
-beherrschen viele „ltere Laufwerke das DMA-Verfahren nicht zu gut oder nur
+beherrschen viele „ltere Laufwerke das DMA-Verfahren nicht sonderlich gut oder nur
 bei niedrigen šbertragungsraten. Aus diesem Grund kann Busmastering komplett
 deaktiviert oder (mit <CODE>DANIS506.ADD</CODE>) auf eine feste
 šbertragungsrate begrenzt werden.

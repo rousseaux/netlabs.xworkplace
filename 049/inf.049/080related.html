@@ -11,11 +11,11 @@
 <!-- Changed with V0.9.0: replace XFolder with &xwp; -->
 <BODY>
 In den verschiedenen Unterverzeichnissen des &xwp;-Installationsverzeichnisses
-finden Sie eine Reihe von Dateien, die Ihnen eventuell von Nutzen sein
+befinden sich eine Reihe von Dateien, die Ihnen eventuell von Nutzen sein
 kînnen:
  
 <!-- this item changed with V0.83 -->
-<UL><LI><CITE><STRONG>BOOTMGR.CMD</STRONG></CITE> ist neu mit V0.83.
+<UL><LI><CITE><STRONG>BOOTMGR.CMD</STRONG></CITE> ist seit V0.83 vorhanden.
 Dieses Skript wurde von Duane A. Chamblee &lt;duanec@ibm.net&gt; zur
 VerfÅgung gestellt und fÅgt automatisch alle momentanen
 BootManager-Auswahloptionen zu den benutzerdefinierten
@@ -30,10 +30,10 @@ werden von &xwp; benutzt, um die Standard-Konfigurationsordner zu
 erstellen. Dies sind schlichte REXX-Skripte, die eine Anzahl von
 Objekten auf Ihrer ArbeitsoberflÑche erstellen.
 <P>Diese Skripte werden sowohl aufgerufen, nachdem &xwp; installiert wurde
-(nach dem ersten WPS-Neustart), als auch wenn &xwp; seinen Konfigurationsordner
+(nach dem ersten WPS-Neustart), als auch, wenn &xwp; seinen Konfigurationsordner
 nicht zu lokalisieren vermag.
 <P>Sie kînnen diese Skripte modifizieren, um eine andersartige Standardkonfiguration
-erstellt zu bekommen; sie sollten jedoch sehr vorsichtig sein, wenn Sie
+erstellt zu bekommen; Sie sollten jedoch sehr vorsichtig sein, wenn Sie
 die verschiedenen Objekteinstellungen Ñndern, vor allem die OBJECTID-SchlÅsselworte,
 weil &xwp; auf einige von ihnen angewiesen ist.
  
@@ -46,14 +46,14 @@ Parameter auf der Befehlszeile:
 <PRE>newobj &lt;wpsclass&gt; &lt;name&gt;</PRE>
 <P>Dies erzeugt eine neue Instanz der Klasse <CITE>&lt;wpsclass&gt;</CITE> mit dem Titel
 <CITE>&lt;name&gt;</CITE> im aktuellen Verzeichnis. Siehe auch die
-Seite <A HREF="xices_1wpsclasses.html">"WPS Classes"</A> (english)
+Seite <A HREF="xices_1wpsclasses.html">"WPS-Klassen"</A>
 fÅr eine Liste aller WPS-Klassen. Nicht alle dieser Klassen
 sollten allerdings hierfÅr benutzt werden.
 <P>Beispiel:
 <PRE>newobj WPFolder New_Folder</PRE>
 <P>erzeugt einen neuen Ordner namens "New_Folder" im aktuellen Verzeichnis.
 <P><STRONG>Hinweis:</STRONG> Seit V0.41 kann XFolder auch Objekte aus Schablonen erstellen.
-Dies hat den Vorteil, da· Sie bestimmte Voreinstellungen setzen
+Dies hat den Vorteil, da· bestimmte Voreinstellungen gesetzt werden
 kînnen (besonders fÅr Ordner).
  
 <!-- this item changed with V0.84 -->
@@ -73,7 +73,7 @@ Sie registrieren wollen und die zugleich <CITE>&lt;oldclass&gt;</CITE>
 ersetzen soll. Auch hier spielt Gro·- und Kleinschreibung eine Rolle.
 <P><CITE>&lt;dllname&gt;</CITE> ist die dynamische Linkbibliothek
 (DLL), die die Klasse <CITE>&lt;replacewithclass&gt;</CITE> enthÑlt.
-Wenn die DLL sich nicht im LIBPATH befindet (wie bei XFolder),
+Wenn sich die DLL nicht im LIBPATH befindet (wie bei XFolder),
 mÅssen Sie den vollen Pfad angeben.
 <P>Wird <CITE>&lt;dllname&gt;</CITE> nicht angegeben, so wird <CITE>&lt;replacewithclass&gt;</CITE>
 deregistriert und von der Ersetzungsliste fÅr
@@ -130,7 +130,7 @@ dann auch berechnet wird.
 <P>Alle Einstellungen werden beim Schlie·en gespeichert.
  
 <P><LI><CITE><STRONG>WPSRESET.EXE</STRONG></CITE>
-kann die WPS neu starten, ohne da· Ihr gesamter Rechner neu
+kann die WPS neu starten, ohne da· der gesamte Rechner neu
 gestartet werden mu· (siehe <A HREF="xsd_1restartwps.html">"WPS
 neu starten"</A> fÅr Details).
 Es wird inzwischen (V0.71) nur noch vom Installationsskript verwendet,

@@ -18,17 +18,17 @@ der Arbeitsoberfl„che integriert, um diese Funktion einfach
 konfigurieren zu k”nnen.
 <P>
 Das Startlogo bleibt bis zur vollst„ndigen Initialisierung der
-WPS sichtbar. Dann verschwindet es und wird keine Systemressourcen
-mehr verbrauchen.
+WPS sichtbar. Dann verschwindet es und verbraucht keine Systemressourcen
+mehr.
 <P>
 Die <B>"Systemstart"-Seite im Einstellungsnotizbuchs der 
-Arbeitsoberfl„che</B> erlaubt Ihnen, die Graphik fr das Startlogo
+Arbeitsoberfl„che</B> erlaubt es, die Graphik fr das Startlogo
 und den Stil auszuw„hlen. Eine detailliertere Beschreibung 
-bekommen Sie, wenn Sie die "Hilfe"-Schaltfl„che auf dieser Seite anw„hlen.
+erhalten Sie durch Bet„tigen der Schaltfl„che "Hilfe" auf dieser Seite.
 <P>
 Drei Startlogos sind standardm„áig bei &xwp; dabei:
 <UL><LI><CODE>xfolder.bmp</CODE> (die Standardeinstellung)
-ist eine Variation des alten XFolder Logos. Dieses sollte auch 
+ist eine Variation des alten XFolder-Logos. Dieses sollte auch 
 langsameren Systemen keine Probleme bereiten.
 <!-- V0.9.19: fixed the following filename -->
 <LI><CODE>os2warpx.bmp</CODE> ist ein alternatives, neues Design,
@@ -45,9 +45,9 @@ folgende Punkte beachten:
 muá eine <B>unkomprimierte OS/2-1.3-Bitmap</B> sein.
 V2.0-Bitmaps werden nicht geladen. Es muáten eigene Routinen
 verwendet werden, da zum diesem Zeitpunkt w„hrend des Starts der WPS
-die Multimediaklassen noch nicht funktionieren. Sie k”nnen
-PMView oder die Multimediaklassen der WPS benutzen, um bestehende
-Dateien in das 1.3er-Format umzuwandeln.
+die Multimediaklassen noch nicht funktionieren. Vorhandene Dateien
+lassen sich mit PMView oder den Multimediaklassen der WPS
+in das 1.3er-Format umwandeln.
  
 <P><LI>Transparenz wird nach dem „uáersten Pixel der linken 
 unteren Ecke berechnet. Das heiát, daá alle Pixel mit derselben 
@@ -60,19 +60,19 @@ Wenn Sie eine Graphik benutzen, die 500x500 Pixel hat, von denen
 die H„lfte durchsichtig ist, kann das Ihr System fr mehrere
 Minuten blockieren. Und damit ist wirklich <I>blockieren</I> 
 gemeint, denn die meiste Zeit wird vom Presentation Manager (PM) 
-verbraucht, und das Killen von Prozessen h„ngt dann gew”hnlich das
+verbraucht, und das Terminieren von Prozessen h„ngt dann gew”hnlich das
 gesamte System auf.
 <!-- V0.9.0: moved the following paragraph up from the bottom;
              rewrote this -->
-<P>Wenn etwas schief geht und die WPS nicht mehr startet, k”nnen
-Sie die <B>"Umschalt"-Taste drcken</B> w„hrend die WPS startet.
-Das wird den <A HREF="xsd_01intro.html">"Panik"-Dialog</A> anzeigen,
+<P>Wenn etwas schiefgehen und die WPS nicht mehr starten sollte, k”nnen
+Sie beim Start der WPS die <B>"Umschalt"-Taste drcken</B>.
+Dadurch wird der <A HREF="xsd_01intro.html">"Panik"-Dialog</A> angezeigt,
 wo Sie das Startlogo deaktivieren k”nnen, um das Problem nach dem 
 vollst„ndigen Start der Arbeitsoberfl„che zu beheben.
 <P>
 Da der PM nur auf Anzeige von rechteckigen Fenstern ausgelegt 
-ist, ist die einzige M”glichkeit diese "geformten" Fenster 
-anzuzeigen, die Graphik Pixel fr Pixel zu analysieren, und so 
+ist, ist die einzige M”glichkeit, diese "geformten" Fenster 
+anzuzeigen, die Graphik Pixel fr Pixel zu analysieren und so 
 viele rechteckige Sub-Fenster darzustellen, wie rechteckige, 
 undurchsichtige Bereiche in der Graphik existieren.
 <P>
@@ -95,8 +95,8 @@ Beispiel:
 Sub-Fenster zur Folge haben (mit "1"-"4" markiert).
 <P>
  
-Wenn Sie jedoch "diagonale" oder andere nicht rechteckige
-Transparenzen in Ihrer Graphik haben, werden ein oder mehrere
+Wenn sich jedoch "diagonale" oder andere nicht rechteckige
+Transparenzen in Ihrer Graphik befinden, werden ein oder mehrere
 Sub-Fenster <I>pro Zeile</I> der Graphik erstellt, was den PM
 wirklich besch„ftigen kann.
 <P>
@@ -139,8 +139,8 @@ und probieren Sie aus, womit Ihr System noch fertig wird. Bei
 groáe Graphiken sollten Sie versuchen, die Transparenzen
 rechteckig zu halten.
 <!-- V0.9.0: added this -->
-"Dithern" Sie die Graphiken nicht, sondern benutzen Sie statt
-dessen nur reine Farben.
+"Dithern" Sie die Graphiken nicht, sondern benutzen Sie statt dessen
+nur reine Farben.
 </OL>
 <!-- V0.9.0: the following has been removed -->
 <BR>

@@ -9,13 +9,13 @@
 <B>Klasse: XWPKeyboard</B>
 <HR>
 Seit V0.9.3 erlaubt es &xwp;, bestimmten Tasten, die normalerweise nicht unter
-&os2; funktionieren, eine besondere Bedeutung zuzuweisen. Sie k”nnen diese
-zus„tzlichen Tasten dann auch als Objekt-Tastenkrzel verwenden. Damit dies
+&os2; funktionieren, eine besondere Bedeutung zuzuweisen. Diese zus„tzlichen Tasten
+lassen sich dann auch als Objekt-Tastenkrzel verwenden. Damit dies
 funktioniert, mssen diese Tasten ber die Seite "Funktionstasten" des
 erweiterten "Tastatur"-Objekts registriert werden.
  
 <P>Auch diese Funktion wird ber den &xwp;-PM-Hook implementiert. Damit Sie verstehen,
-wie es funktioniert (und bevor sie die Seite "Funktionstasten" verwenden), sollten
+wie es funktioniert (und bevor Sie die Seite "Funktionstasten" verwenden), sollten
 Sie die folgenden Erl„uterungen nachvollziehen.
  
 <P>Die Verarbeitung von Tastatureingaben ist bei jedem Betriebssystem eine komplexe Angelegenheit.
@@ -24,27 +24,27 @@ gem„á den aktuellen Spracheinstellungen.
  
 <P>Unter &os2; wird diese Verarbeitung auf mehreren Systemebenen durchgefhrt. Erstens
 w„re da der Tastatur-Hardwaretreiber, der in &cfgsys; ber eine BASEDEV-Anweisung
-geladen wird. Dieser reagiert auf Hardware-Interrupts, die von der physichen
+geladen wird. Dieser reagiert auf Hardware-Interrupts, die von der physischen
 Hardware der Tastatur ausgel”st werden, und empf„ngt deshalb jeden einzelnen Tastendruck
 im System.
  
 <P>Der &os2;-Kernel verarbeitet dann diese Tastendrcke fr diejenige Anwendung, die
 momentan den Eingabefokus innehat. Die weitere Verarbeitung unterscheidet sich je
-nach der Art der Anwendung. Presentation-Manager- (PM) Anwendungen (einschlieálich der
+nach Art der Anwendung. Presentation-Manager- (PM) Anwendungen (einschlieálich der
 Workplace Shell) empfangen gew”hnlich eine Nachricht, daá eine Taste gedrckt oder
 losgelassen worden ist. Der &xwp;-PM-Hook kann deshalb diese Nachrichten abfangen und
 sie manipulieren. (Auf diese Weise funktionieren brigens auch die
 <A HREF="mouse_81objhotkeys.html">Objekt-Tastenkrzel</A>.)
  
 <P>Unglcklicherweise basiert die Standardverarbeitung der Tastatur unter &os2; immer
-noch auf den originalen IBM-kompatiblen AT-Tastaturen mit 101/102-Tasten, die in den
+noch auf den originalen, IBM-kompatiblen AT-Tastaturen mit 101/102-Tasten, die in den
 1980ern eingefhrt wurden. Heutzutage besitzen viele Tastaturen zus„tzliche Tasten,
-die von &os2; berhaupt nicht erkannt werden oder sie produzieren einfach eine Zeichenausgabe,
+die von &os2; berhaupt nicht erkannt werden oder einfach eine Zeichenausgabe produzieren,
 was eigentlich nicht geschehen sollte.
  
-<P>Diese zus„tzlichen Funktionstasten sind beispielsweise die drei "Windows"-Tasten, die man
+<P>Bei diesen zus„tzlichen Funktionstasten handelt es sich beispielsweise um die drei "Windows"-Tasten, die man
 auf den meisten heute angebotenen Tastaturen vorfindet. Auáerdem gibt es noch einige erweiterte
-Tastaturen mit zus„tzlichen "Multimedia"-Tasten. Auch haben viele Laptops ein paar Tasten mehr.
+Tastaturen mit zus„tzlichen "Multimedia"-Tasten. Auch besitzen viele Laptops ein paar Tasten mehr.
  
 <P>Der &xwp;-PM-Hook kann herausfinden, welche physische Taste eigentlich bet„tigt
 wurde, indem er den <B>Hardware-Scan-Code</B> der Taste auswertet, der von der
@@ -73,8 +73,8 @@ durch Drcken der Schaltfl„che "Hilfe" auf jener Seite.
 <OL><LI>Es gibt praktisch <B>keine šberprfung auf Fehler</B>, wenn Sie eine
 Funktionstaste bei &xwp; registrieren. Scan-Codes sind hardwareabh„ngig, deswegen
 gibt es fr &xwp; keine M”glichkeit zu entscheiden, ob ein bestimmter Code
-nicht registriert werden sollte. Sie k”nnten beispielsweise die "Enter"- oder eine
-beliebige Zeichentaste als Funktionstaste anmelden, was wirklich keine gute Idee ist.
+nicht registriert werden sollte. Sie k”nnten beispielsweise die Eingabe- oder eine
+beliebige Zeichentaste als Funktionstaste anmelden, was wirklich keine gute Idee w„re.
 <B>Registrieren Sie deshalb nur "echte" zus„tzliche Tasten bei &xwp; oder die Taste
 funktioniert eventuell nicht mehr.</B>
  

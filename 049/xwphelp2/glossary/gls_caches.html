@@ -11,7 +11,7 @@
 <BODY>
 <P>Dateisystem-Caches sind ein Mechanismus, der von den meisten heutigen Betriebssystemen
 genutzt wird, um berflssige Laufwerkszugriffe zu vermeiden. Um dies zu erreichen,
-wird ein Teil des Hauptspeichers (RAM) in Ihrem Rechner als ein Puffer fr die
+wird ein Teil des Hauptspeichers (RAM) im Rechner als ein Puffer fr die
 Daten benutzt, die auf die Laufwerke geschrieben bzw. von ihnen gelesen werden.
 Einen solchen Speicherbereich bezeichnet man als "Cache".
  
@@ -32,7 +32,7 @@ geht.
 <P>Umgekehrt k”nnen Daten, die von einer Anwendung auf die Festplatte geschrieben werden,
 erst einmal in den Cache kopiert und so lange zurckgehalten werden, bis die Festplatte
 Zeit hat, die Daten entgegenzunehmen. Dies bezeichnet man als "verz”gertes Schreiben"
-("lazy write") und kann die Leistung Ihres Systems erheblich steigern. Andererseits
+("lazy write") und kann die Leistung des Systems erheblich steigern. Andererseits
 erh”ht sich dadurch die Gefahr von Datenverlust bei Stromausfall oder Systemabstrzen,
 weil die Daten in den Caches unter Umst„nden noch nicht auf die Platte geschrieben sind.
 Wenn Sie ein stabiles System haben und selten CHKDSKs beim Starten sehen, k”nnen Sie
@@ -44,16 +44,16 @@ HPFS-Laufwerke einen zweiten. Diese beiden Caches werden getrennt ber unterschi
 CONFIG.SYS-Anweisungen konfiguriert.
  
 <IFNDEF __NOOS2KERNEL__>
-Diese Einstellungen k”nnen Sie im Objekt
-<A HREF="objects/obj_krnl.html">"&os2;-Kernel"</A> „ndern. Die Einstellungen fr
-HPFS finden Sie auf der "Treiber"-Seite, da HPFS ein installierbares Dateisystem
+Diese Einstellungen lassen sich im Objekt
+<A HREF="objects/obj_krnl.html">"&os2;-Kernel"</A> anpassen. Die Einstellungen fr
+HPFS befinden sich auf der Seite "Treiber", da HPFS ein installierbares Dateisystem
 (IFS) ist. Da FAT im Gegesatz dazu in den &os2;-Kernel eingebaut ist, hat es
 seine eigene Seite.
 </IFNDEF>
  
 <P>Beachten Sie, daá der Speicher, den Sie fr Dateisystem-Caches reservieren,
 nicht mehr fr andere Zwecke zur Verfgung steht. Wenn Sie zu viel Speicher fr
-die Caches reservieren, kann dies die Leistung Ihres Systems negativ beeinflussen,
+die Caches reservieren, kann dies die Leistung des Systems negativ beeinflussen,
 da &os2; dann m”glicherweise Speicher auslagern muá. Experimentieren Sie mit den
 Einstellungen.
  
@@ -63,7 +63,7 @@ bercksichtigen, welche Dateisysteme Sie mehr benutzen: greifen Sie z.B. haupts„
 auf HPFS-Laufwerke zu, so lohnt es sich nicht, fr FAT-Laufwerke viel Cache zu reservieren
 (und umgekehrt).
  
-<P>Mit den Speichergr”áen heutiger Computer ist dies kein groáes Problem mehr.
+<P>Mit den Speichergr”áen heutiger Rechner ist dies kein groáes Problem mehr.
 Wenn Sie jedoch lediglich 16 MB Hauptspeicher haben (oder noch weniger), sollten
 Sie nicht mehr als 1024 KB fr die Caches insgesamt reservieren.
  

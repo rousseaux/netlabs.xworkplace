@@ -17,8 +17,8 @@ Befehlszeile aus manipulieren, werden Sie sehen, daá die WPS auf magische
 Weise von diesen Modifikationen erf„hrt und den Ordnerinhalt automatisch
 aktualisiert.
  
-<P>W„hrend dies theoretisch eine groáartige Funktion ist, gibt es
-schwerwiegende Einschr„nkungen ihrer Standardimplementation in der WPS.
+<P>Theoretisch ist dies eine groáartige Funktion, aber
+ihre Standardimplementation in der WPS unterliegt schwerwiegenden Einschr„nkungen.
 Am wichtigsten ist, daá die WPS exzessiv Dateisystem-Handles fr alle
 automatisch aktualisierten Objekte anlegt, wodurch die INI-Dateien unn”tigerweise
 vergr”áert werden. Beachten Sie, daá dies sogar geschieht, wenn sich
@@ -30,7 +30,7 @@ auf der Seite "Funktionalit„t" des
  
 <P>Ist die Ersetzung aktiviert, verhindert &xwp; den Betrieb der internen WPS-Threads,
 die fr die automatische Aktualisierung der Ordner verantwortlich sind. Unter anderem
-verhindert dies die Erzeugung von Dateisystem-Handles. Stattdessen startet &xwp; eigene
+verhindert dies die Erzeugung von Dateisystem-Handles. Statt dessen startet &xwp; eigene
 Threads, welche die Aktivit„t des Dateisystems berwachen und dann Ordner
 automatisch aktualisieren.
  

@@ -10,18 +10,18 @@
 Das
 <!-- V0.9.19: added link -->
 <A HREF="xcenter/xc_main.html">&xcenter;</A>-"Wachposten"-Widget
-zeigt Ihnen einen Graphen des momentanen
-Speicherverbrauchs auf Ihrem System an.
+zeigt einen Graphen des momentanen
+Speicherverbrauchs des Systems an.
  
 <P>Es braucht ein wenig Zeit, um den Wachposten zu verstehen, aber dann ist
 er sehr ntzlich. Dem
 <A HREF="xcenter/xc_pulse.html">"Puls"-Widget</A> nicht un„hnlich,
 zeigt er in einem
-Graphen an, wie sich der Speicherverbrauch auf Ihrem System mit der Zeit
+Graphen an, wie sich der Speicherverbrauch des Systems mit der Zeit
 ver„ndert hat. Die Darstellung wird alle zwei Sekunden aktualisiert.
  
 <P>Allerdings zeigt der Wachposten mehrere Kurven zur selben Zeit in
-verschiedenen Farben an, wobei die momentanen Meáwerte (in MB) in
+verschiedenen Farben an, wobei die aktuellen Meáwerte (in MB) in
 derselben Farbe am linken Rand zu sehen sind:
  
 <!-- V0.9.15: refreshed the image here -->
@@ -55,24 +55,24 @@ ansteigen lieá. &os2; hat dann sp„ter die Auslagerungsdatei wieder schrumpfen
 lassen. -->
  
 <P><LI>Wenn Sie einen einigermaáen aktuellen <CODE>win32k.sys</CODE>-Treiber des
-Odin-Projekts (von M„rz 2001 oder neuer) installiert haben, wird die Gr”áe Ihrer
+Odin-Projekts (von M„rz 2001 oder neuer) installiert haben, wird die Gr”áe der
 Auslagerungsdatei in zwei zus„tzlichen Farben dargestellt. Der <B>dritte Wert
-(in lila)</B> zeigt dann die Gr”áe, die in Ihrer Auslagerungsdatei gerade
-benutzt wird, w„hrend der <B>untere Wert (in rot)</B> den freien Speicher in
-der Auslagerungsdatei angibt. Addieren Sie beide Werte, dann kommen Sie auf die
-Gesamtgr”áe Ihrer Auslagerungsdatei.
+(in lila)</B> zeigt dann die Gr”áe des in der Auslagerungsdatei gerade
+benutzten Speichers, w„hrend der <B>untere Wert (in rot)</B> den freien Speicher in
+der Auslagerungsdatei angibt. Addieren Sie beide Werte, so kommen Sie auf die
+Gesamtgr”áe der Auslagerungsdatei.
  
 <P>Wie Sie in der obigen Abbildung sehen k”nnen, wurde mehr und mehr Speicher
 reserviert, bis der freie Speicher (in grn) aufgebraucht war. &os2; fing dann an,
 der freien Platz in der Auslagerungsdatei (in rot) zu benutzen, bis auch der
 aufgebraucht war. Also hat &os2; angefangen, die Auslagerungsdatei zu vergr”áern,
-was man daran sieht, daá die lila Kurve steigt. Schlieálich wurde der Speicher
+was man daran sieht, daá die lilafarbene Kurve steigt. Schlieálich wurde der Speicher
 nach und nach wieder freigegeben, was man daran sieht, daá der blaue und
 lilafarbene Graph wieder abnehmen. Schlieálich hat &os2; angefangen, die
 Auslagerungsdatei zu verkleinern, da wieder viel Platz darin frei wurde.
  
 <P>Wenn Sie keinen aktuellen <CODE>win32k.sys</CODE>-Treiber installiert haben,
-werden Sie nur eine lilafarbene Kurve sehen, die die Gr”áe Ihrer Auslagerungsdatei
+werden Sie nur eine lilafarbene Kurve sehen, die die Gr”áe der Auslagerungsdatei
 darstellt.
  
 <!-- end V0.9.15 -->
@@ -98,7 +98,7 @@ that the free RAM becomes used up during the compile process. -->
 <!-- V0.9.19: changed the following -->
 <P>Beachten Sie, daá Sie an das Wachposten-Widget
 <A HREF="glossary/gls_dropfonts.html">Schriftarten und Farben ziehen und bergeben</A>
-k”nnen. Momentan k”nnen Sie allerdings nur die Hintergrundfarbe
+k”nnen. Momentan l„át sich allerdings nur die Hintergrundfarbe
 „ndern. Auáerdem ist es
 <!-- V0.9.19: added link -->
 <A HREF="xcenter/xc_main_sizbar.html">in der Gr”áe ver„nderlich</A>.
@@ -141,7 +141,7 @@ und die Gr”áe der Auslagerungsdatei addiert werden.
 einfach die Differenz zwischen dem gesamten physischen RAM und dem momentan
 freien physischen RAM.
 </IFNDEF>
-<P>Beachten Sie, daá diese Implementation Ihnen nicht den freien Platz auf dem
+<P>Beachten Sie, daá diese Implementation nicht den freien Platz auf dem
 Laufwerk der Auslagerungsdatei zeigen kann.
  
 </UL>

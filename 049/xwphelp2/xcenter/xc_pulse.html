@@ -20,8 +20,8 @@ pro Sekunde aktualisiert, genau wie die entsprechende Anzeige im &warpcenter;.
  
 <P>Der grne Teil des Graphen stellt die "Benutzer"-Belastung des Systems dar,
 w„hrend der blaue Teil die "IRQ"-Belastung darstellt. Die Prozentzahl, die in der
-Mitte angezeigt wird, gibt die Summe von "Benutzer"- und "IRQ"-Last an. Fr
-Details lesen Sie bitte die Bemerkungen am Ende.
+Mitte angezeigt wird, gibt die Summe von "Benutzer"- und "IRQ"-Last an. Einzelheiten
+entnehmen Sie bitte den Bemerkungen am Ende.
 <!-- end V0.9.9 -->
  
 <!-- V0.9.19: changed the following -->
@@ -33,7 +33,7 @@ Auáerdem ist es
 <A HREF="xcenter/xc_main_sizbar.html">in der Gr”áe ver„nderlich</A>.
  
 <P>Falls Sie &os2; auf einem Multiprozessorsystem laufen haben, kann das
-Puls-Widget momentan trotzdem nur die Auslastung des ersten Prozessors
+Puls-Widget derzeit trotzdem nur die Auslastung des ersten Prozessors
 anzeigen.
  
 <P><B>Details der Implementation</B>
@@ -47,12 +47,12 @@ bei Laptops zus„tzliche Batterieenergie verbraucht).
  
 <P>Als Ergebnis verbraucht das Puls-Widget <I>keine</I> zus„tzliche
 Prozessorzeit, auáer der Zeit, die es zum erneuten Zeichnen des Widgets selbst
-ben”tigt. In anderen Worten belastet das Puls-Widget die CPU selbst nicht, sondern
+ben”tigt. Mit anderen Worten belastet das Puls-Widget die CPU selbst nicht, sondern
 fragt nur den &os2;-Kernel nach der Auslastung und zeigt diese als Graph an.
  
 <P>Die zus„tzliche Belastung durch das Neuzeichnen des Widgets selbst ist auch
-der Grund, warum Sie niemals eine Prozessorauslastung von Null sehen werden, auch
-wenn Sie gerade nichts auf Ihrem System tun. Auf dem System des Autors (einem
+der Grund, warum niemals eine Prozessorauslastung von Null angezeigt wird, auch
+wenn Sie gerade nichts auf dem System tun. Auf dem System des Autors (einem
 Pentium-II 400), f„llt die CPU-Belastung bei der Standardgr”áe des Widgets
 niemals unter 0.7%.
  
@@ -61,18 +61,18 @@ niemals unter 0.7%.
  
 <P>Das <CODE>DosPerfSysCall</CODE>-API wurde vor relativ kurzer Zeit eingefhrt,
 und es kann sein, daá es auf Ihrem System nicht funktioniert. Es sollte mit
-Warp 4 und neuer (oder mit Warp 3 und einem „quivalenten Fixpack-Level, das
-Fixpack 26 sein sollte) funktionieren.
+Warp 4 und neuer (oder mit Warp 3 und einem „quivalenten Fixpack-Level, bei dem es
+sich um Fixpack 26 handeln drfte) funktionieren.
  
-<P>Auáerdem bemerkt die IBM-Dokumentation fr dieses API, daá man einen Prozessor
+<P>Weiterhin bemerkt die IBM-Dokumentation fr dieses API, daá man einen Prozessor
 der Pentium-Klasse ben”tigt, damit die Kernel-Leistungsz„hler funktionieren.
  
 <P>Wenn das Widget keinen Graphen sondern nur <CODE>"E xxx"</CODE> anzeigt (wobei
 <CODE>xxx</CODE> ein &os2;-Standardfehlercode ist), gab es einen Fehler. Am
-wahrscheinlichsten werden Sie <CODE>"E 182"</CODE> bekommen, was bedeutet, daá
-das <CODE>DosPerfSysCall</CODE>-API auf Ihrem System nicht gefunden wurde. Bei
+wahrscheinlichsten ist <CODE>"E 182"</CODE>, was bedeutet, daá
+das <CODE>DosPerfSysCall</CODE>-API auf dem System nicht gefunden wurde. Bei
 anderen Fehlercodes k”nnen Sie auf der Befehlszeile <CODE>HELP SYSxxx</CODE>
-eintippen.
+eingeben.
  
 <P><B>"Benutzer"- und "IRQ"-Auslastung</B>
  
@@ -85,7 +85,7 @@ besch„ftigt war, Code entweder von einer Applikation, dem &os2;-Kernel oder
 einem Ger„tetreiber im normalen Fluá der Prozesse und Threads auszufhren, wie
 es vom Scheduler im &os2;-Kernel verteilt wird.
 <!-- V0.9.13: changed this -->
-(Siehe <A HREF="glossary/gls_scheduler.html">"Prozesse und Threads"</A> fr Details.)
+(Details siehe <A HREF="glossary/gls_scheduler.html">"Prozesse und Threads"</A>.)
  
 <P>Im Unterschied dazu gibt die <B>"IRQ"-Auslastung</B> die Zeit an, die gebraucht
 wurde, um Interrupts (="Unterbrecher") auszufhren. Wie Sie vielleicht wissen, sind
@@ -94,18 +94,18 @@ daá ein besonderes Ereignis eingetreten ist, das sofort bearbeitet werden muá.
 Meistens werden Interrupts von Festplatten, Sound- und Netzwerkkarten ausgel”st.
 Diese Ger„te k”nnen es sich nicht leisten zu warten, bis der &os2;-Scheduler die
 Zeitscheibe eines Prozesses fertig bearbeitet hat und bereit ist, auf die n„chste
-Aufgabe umzuschalten. Stattdessen unterbricht der &os2;-Kernel die normal
-vorgesehene Sequenz, wenn ein Interrupt ausgel”st wird, und ruft einen
+Aufgabe umzuschalten. Statt dessen unterbricht der &os2;-Kernel den normal
+vorgesehenen Ablauf, wenn ein Interrupt ausgel”st wird, und ruft einen
 "Interrupt-Handler" auf, was in den meisten F„llen der Code in einem Ger„tetreiber
 sein wird. (Im allgemeinen k”nnen nur &os2;-Ger„tetreiber Interrupt-Handler
 installieren.) Wenn beispielsweise ein Interrupt von einer Festplatte eintrifft,
 wird sofort Code im Treiber <CODE>IBM1S506.ADD</CODE> aufgerufen, der sich um den
 Interrupt kmmert.
  
-<P>Wenn Sie nie irgendeine IRQ-Auslastung auf Ihrem System sehen, ist das kein
+<P>Wenn nie irgendeine IRQ-Auslastung auf dem System angezeigt wird, ist das kein
 Problem. Das ist wahrscheinlich der Fall, wenn Sie keine Netzwerkkarten installiert
-und auáerdem Busmaster-Zugriffe fr Ihre Festplatte aktiviert haben. Wenn Sie aber
-hohe IRQ-Auslastung haben, k”nnten Sie sich Maánahmen berlegen, diese Last zu
+und auáerdem Busmaster-Zugriffe fr die Festplatte aktiviert haben. Wenn Sie aber eine
+hohe IRQ-Auslastung feststellen, k”nnten Sie sich Maánahmen berlegen, diese Last zu
 reduzieren - Busmaster-Zugriffe fr die Festplatten einschalten und/oder eine
 Netzwerkkarte zu besorgen, die Busmaster-Zugriffe untersttzt.
  

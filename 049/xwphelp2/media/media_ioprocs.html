@@ -24,7 +24,7 @@ der Programmierer gewesen ist.
  
 <P><B>"FourCC"</B> steht fr "four-character code" (Code aus vier Zeichen) und wird benutzt,
 um eine IOProc mit einem Dateiformat zu verbinden und, falls erforderlich, einen Codec fr
-eine IOProc zu finden. Siehe n„chste Seite fr Details.
+eine IOProc zu finden. Details siehe n„chste Seite.
  
 <P>Es gibt mehrere <B>"IOProc-Typen"</B>:
 <UL><LI><B>"Datei"</B>-IOProcs handhaben ein bestimmtes Dateiformat. Sie werden zum ™ffnen
@@ -45,15 +45,15 @@ abh„ngig von den verwendeten Speichermedien-IOProcs.
 IOProcs bei Audiodateien nur fr das <I>Dateiformat</I> zust„ndig sind
 (z.B. <CODE>.WAV</CODE>), aber nicht fr den <I>Inhalt</I> einer Datei.
 Die meisten Audiodateien sind komprimiert, um also den eigentlichen Inhalt einer solchen
-Datei verstehen zu k”nnen, ben”tigt MMPM/2 einen Codec fr die Datei. Siehe n„chste Seite
-fr Details.
+Datei verstehen zu k”nnen, ben”tigt MMPM/2 einen Codec fr die Datei. Details siehe
+n„chste Seite.
  
 <P><LI><B>Film</B> ist fr Videodateien gedacht. Genau wie bei Audiodateien ben”tigt MMPM/2
-einen Codec, um den <I>Inhalt</I> einer solchen Datei handhaben zu k”nnen. Siehe n„chste Seite fr
-Details.
+einen Codec, um den <I>Inhalt</I> einer solchen Datei handhaben zu k”nnen. Details siehe
+n„chste Seite.
  
 <P><LI><B>Bild</B>-IOProcs kmmern sich um Bild- (Bitmap-) Dateien. Sie wurden mit Warp 4
-wesentlich erweitert, das mit IOProcs fr die am meisten gebr„uchlichen Bilddateitypen
+wesentlich erweitert, das mit IOProcs fr die gebr„uchlichsten Bilddateitypen
 geliefert wird. Dennoch fehlen einige und manche der Implementationen sind etwas instabil.
 (Versuchen Sie einmal, eine komprimierte TIFF-Datei von 20MB mit dem Bildeditor von Warp 4 zu speichern.)
 Im Gegensatz zu den zwei vorherigen Typen sind bei der Handhabung von Bilddateien keine Codecs beteiligt.
