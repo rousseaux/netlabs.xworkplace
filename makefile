@@ -71,10 +71,10 @@
 # VARIABLES
 # ---------
 
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)\dll_mt
+
 # objects.in defines the .OBJ files to be compiled.
 !include make\objects.in
-
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 
 # The OBJS macro contains all the .OBJ files which have been
 # created from the files in MAIN\. The definitions below are
@@ -184,7 +184,7 @@ helpers:
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE_DIR)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)" "CC_HELPERS=$(CC_HELPERS_DLL)"
+"OUTPUTDIR_HELPERS=$(XWP_OUTPUT_ROOT)" "CC_HELPERS=$(CC_HELPERS_DLL)"
 # according to VAC++ user guide, we need to use /ge+ for libs
 # even if the lib will be linked to a DLL
     @cd $(CURRENT_DIR)
@@ -196,7 +196,7 @@ helpers_exe_mt:
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (EXE MT version)
     @cd $(HELPERS_BASE_DIR)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
+"OUTPUTDIR_HELPERS=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(CURRENT_DIR)
 
 # compile_all: compile main (without treesize etc.)
@@ -351,14 +351,14 @@ $(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
 src\shared\xwpres.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) resources module"
 
-$(MODULESDIR)\xwpres.dll: src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\xwpres.res $(XWP_OUTPUT_ROOT)\dummyfont.obj
+$(MODULESDIR)\xwpres.dll: src\shared\xwpres.def $(OUTPUTDIR)\xwpres.res $(OUTPUTDIR)\dummyfont.obj
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK_ALWAYSPACK) /OUT:$@ src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\dummyfont.obj
+        $(LINK_ALWAYSPACK) /OUT:$@ src\shared\xwpres.def $(OUTPUTDIR)\dummyfont.obj
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        $(RC) ..\xwpres.res $(@B).dll
+        $(RC) $(OUTPUTDIR)\xwpres.res $(@B).dll
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif

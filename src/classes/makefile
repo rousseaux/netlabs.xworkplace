@@ -1,6 +1,4 @@
 #
-# Makefile for src\classes.
-#
 # See make\readme.txt about an introduction to the make system introduced
 # in the CVS trunk on 2003-01-28.
 #

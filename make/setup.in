@@ -1,65 +1,39 @@
-
 #
 # setup.in:
 #       this is included from all makefiles in the subdirectories
 #       (via the NMAKE !INCLUDE directive) to set up variables
-#       common to all makefiles, such as compiler options and
-#       directory specifications.
+#       common to all makefiles.
 #
-#       Starting with V0.9.12, this includes config.in in turn,
-#       which only contains system-specific variables.
-#
-#       As a result, there is NORMALLY NO NEED to modify this
-#       file. Modify config.in instead.
-#
-#       After including this file, the makefiles can use the following
-#       macros, which will all be properly set for debug or non-debug mode
-#       and with the include directories set properly:
-#
-#           $(CC_DLL_MT)    compile DLL code (multi-threaded)
-#           $(CC_DLL_SUBSYS compile DLL code (single-threaded, subsystem libraries)
-#           $(CC_EXE_MT)    compile EXE code (multi-threaded)
-#           $(CC_EXE_ST)    compile EXE code (single-threaded)
-#
-#           $(LINK)      call linker (ILINK.EXE per default)
-#
-#           $(RC)        call resource compiler
-#
-#       In addition, the following variables will be set to
-#       values that will be useful for the makefiles:
-#
-#           $(PROJECT_BASE_DIR)     root directory of the local
-#                                   XWorkplace repository, e.g.
-#                                   "K:\cvs\xworkplace"
-#
-#           $(HELPERS_BASE_DIR)     root directory of the local
-#                                   xwphelpers repository, e.g.
-#                                   "K:\cvs\xwphelpers"
-#
-#           $(XWP_OUTPUT_ROOT)      directory where to place output
-#                                   files in, e.g.
-#                                   "K:\cvs\xworkplace\bin"
-#
-#           $(MODULESDIR)           modules subdirectory of the above, e.g.
-#                                   "K:\cvs\xworkplace\bin\modules"
-#
-#           $(XWP_LANG_CODE)        language code that is being built, e.g.
-#                                   "001"
-#
-
-# say hello on entering a directory
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .bmp .c .cpp .def .dll .exe .gif .h .hlp .html .idl .ih .inf .ipf .obj .rc .res .tmf .txt
 
 # set up PROJECT_BASE_DIR, which is required by other
 # makefiles (and most importantly by xwphelpers)
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPDIR)
 # this should give us something like K:\cvs\xworkplace
+
+
+# HELPERS DIRECTORIES
+# -------------------
+
+# XWorkplace uses lots of generic OS/2 helpers code, which
+# I have developed over time. Since this code is shared with
+# WarpIN and other projects might want to use it too, this
+# has been extracted to a separate CVS archive. We assume
+# it's in the CVS tree also, so we derive this from $(CVS_WORK_ROOT).
+
+!ifndef HELPERS_BASE_DIR
+HELPERS_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
+!endif
+
+!ifdef XWP_DEBUG
+PMPRINTF_LIB = $(HELPERS_BASE_DIR)\src\helpers\pmprintf.lib
+!else
+PMPRINTF_LIB =
+!endif
+
+MAKE_INCLUDE_DIR = $(HELPERS_BASE_DIR)\make
+
+
+!include $(MAKE_INCLUDE_DIR)\common.in
 
 
 # COMMON FILES
@@ -88,6 +62,7 @@ HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 # MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
 # PROJECT_OUTPUT_DIR has been set by setup.in based on the environment.
 MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
+MAPDIR=$(MODULESDIR)
 #!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
 #!endif
 !if [@md $(MODULESDIR) 2> NUL]
@@ -159,28 +134,6 @@ XWPRELEASE_NLSDOC = $(XWPRELEASE)\inf$(XWP_LANG_CODE)
 XWPRELEASE_049 = $(XWPRELEASE)\049
 XWPRELEASE_049DOC = $(XWPRELEASE)\inf049
 XWPRELEASE_MAP = $(XWPRELEASE)\map
-
-
-# HELPERS DIRECTORIES
-# -------------------
-
-# XWorkplace uses lots of generic OS/2 helpers code, which
-# I have developed over time. Since this code is shared with
-# WarpIN and other projects might want to use it too, this
-# has been extracted to a separate CVS archive. We assume
-# it's in the CVS tree also, so we derive this from $(CVS_WORK_ROOT).
-
-!ifndef HELPERS_BASE_DIR
-HELPERS_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
-!endif
-
-!ifdef XWP_DEBUG
-PMPRINTF_LIB = $(HELPERS_BASE_DIR)\src\helpers\pmprintf.lib
-!else
-PMPRINTF_LIB =
-!endif
-
-MAKE_INCLUDE_DIR = $(HELPERS_BASE_DIR)\make
 
 
 # PRECOMPILED HEADERS
@@ -284,8 +237,6 @@ RUN_UNLOCK = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlock.exe
 RUN_STRRPL = $(HELPERS_BASE_DIR)\strrpl.exe
 
 RUN_DCD = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\dcd.cmd
-
-RUN_MAPSYM = mapsym
 
 !ifndef ENTITYDEFS
 !ifdef XWPLITE
@@ -447,7 +398,7 @@ CC_HELPERS_DLL    = $(CC_DLL_MT)
 
 LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\SOM\LIB\ "$(VACBASE)\lib\"
 
-LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers $(LIBDIRS)
+LINK_BASE = ilink /nologo /noe /map:$(MAPDIR)\$(@B).map /linenumbers $(LIBDIRS)
 
 !ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /debug

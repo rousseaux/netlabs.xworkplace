@@ -352,6 +352,7 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
  *@@added V0.9.7 (2001-01-18) [umoeller]
  *@@changed V0.9.12 (2001-05-06) [umoeller]: fixed potential endless loop
  *@@changed V1.0.1 (2002-12-15) [umoeller]: fixed frame sizing border @@fixes 246
+ *@@changed V1.0.2 (2003-02-03) [umoeller]: added another pixel offset
  */
 
 STATIC BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
@@ -483,8 +484,9 @@ STATIC BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                             }
                             else
                                 // XCenter on top:
-                                if (pDataThat->cyFrame + cyFrame > ulCutTop)
-                                    ulCutTop = pDataThat->cyFrame + cyFrame;
+                                if (pDataThat->cyFrame + cyFrame - 1 > ulCutTop)
+                                    ulCutTop = pDataThat->cyFrame + cyFrame - 1;
+                                            // added -1 V1.0.2 (2003-02-03) [umoeller]
 
                             // pNode = pNode->pNext;
                         }

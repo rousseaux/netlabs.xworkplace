@@ -169,10 +169,31 @@ typedef struct _INSTANCEFILTER
  *
  ********************************************************************/
 
-static HMTX                G_hmtxInstances = NULLHANDLE;
-static TREE                *G_InstanceTypesTreeRoot = NULL;
-static LONG                G_cInstanceTypes;
-static LINKLIST            G_llInstanceFilters;
+static HMTX     G_hmtxInstances = NULLHANDLE;
+static TREE     *G_InstanceTypesTreeRoot = NULL;
+static LONG     G_cInstanceTypes;
+static LINKLIST G_llInstanceFilters;
+
+static PCSZ     G_pcszCODEPAGE = "CODEPAGE";
+
+#define CID_SYSTEMID "xwpftyp.dtd"
+
+static PCSZ G_pcszDoctype =
+"<!DOCTYPE XWPFILETYPES SYSTEM \"" CID_SYSTEMID "\">";
+
+static const STATICSYSTEMID G_aSysIds[] =
+    {
+        CID_SYSTEMID,
+        "<!ELEMENT XWPFILETYPES (TYPE*)>\n"
+        "    <!ATTLIST XWPFILETYPES\n"
+        "            CODEPAGE NMTOKEN '850' >\n"
+        "<!ELEMENT TYPE (TYPE* | FILTER*)>\n"
+        "    <!ATTLIST TYPE\n"
+        "            NAME CDATA #REQUIRED >\n"
+        "<!ELEMENT FILTER EMPTY>\n"
+        "    <!ATTLIST FILTER\n"
+        "            VALUE CDATA #IMPLIED>\n"
+    };
 
 /* ******************************************************************
  *
@@ -1319,24 +1340,26 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
  *      filters.
  *
  *@@added V0.9.12 (2001-05-21) [umoeller]
+ *@@changed V1.0.2 (2003-02-07) [umoeller]: added codepage support
  */
 
 STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
-                            PCSZ pcszTypeNameThis)
+                            PCSZ pcszTypeNameThis)          // in: current type (already CP-decoded)
 {
     APIRET arc = NO_ERROR;
 
-    PLINKLIST pllElementFilters = xmlGetElementsByTagName(pTypeElementThis,
-                                                          "FILTER");
-
-    if (pllElementFilters)
+    PLINKLIST pllElementFilters;
+    if (pllElementFilters = xmlGetElementsByTagName(pTypeElementThis,
+                                                    "FILTER"))
     {
         // alright, this is tricky...
         // we don't just want to overwrite the existing
         // filters, we need to merge them with the new
         // filters, if any exist.
 
-        CHAR    szFilters[2000] = "";   // should suffice
+        // CHAR    szFilters[2000] = "";   // should suffice        bah! V1.0.2 (2003-02-07) [umoeller]
+        ULONG   lenFiltersTotal = 0;
+        PSZ     pszFilters = NULL;
         ULONG   cbFilters = 0;
 
         // 1) get the XWorkplace-defined filters for this file type
@@ -1345,9 +1368,10 @@ STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
                                                   INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
                                                   (PSZ)pcszTypeNameThis,
                                                   &cbFiltersData);
+
         LINKLIST llAllFilters;
         PLISTNODE pNode;
-        lstInit(&llAllFilters, FALSE);      // will hold all PSZ's, no auto-free
+        lstInit(&llAllFilters, TRUE);      // will hold all PSZ's, auto-free    V1.0.2 (2003-02-07) [umoeller]
 
         PMPF_ASSOCS(("     got %d new filters for %s, merging",
                     lstCountItems(pllElementFilters),
@@ -1361,22 +1385,22 @@ STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
 
             PMPF_ASSOCS(("       got %d bytes of existing filters", cbFiltersData));
 
-            if (pFilter)
+            // now parse the filters string
+            while ((*pFilter) && (!arc))
             {
-                // now parse the filters string
-                while ((*pFilter) && (!arc))
-                {
-                    PMPF_ASSOCS(("           appending existing %s", pFilter));
+                ULONG   lenFilter = strlen(pFilter);
 
-                    lstAppendItem(&llAllFilters,
-                                  pFilter);
+                PMPF_ASSOCS(("           appending existing %s", pFilter));
 
-                    // go for next object filter (after the 0 byte)
-                    pFilter += strlen(pFilter) + 1;
-                    if (pFilter >= pszFiltersData + cbFiltersData)
-                        break; // while (*pFilter))
-                } // end while (*pFilter)
-            }
+                lstAppendItem(&llAllFilters,
+                              memcpy(malloc(lenFilter + 1), pFilter, lenFilter + 1));
+                lenFiltersTotal += lenFilter + 1;
+
+                // go for next object filter (after the 0 byte)
+                pFilter += lenFilter + 1;
+                if (pFilter >= pszFiltersData + cbFiltersData)
+                    break; // while (*pFilter))
+            } // end while (*pFilter)
         }
         else
             PMPF_ASSOCS(("       no existing filters"));
@@ -1389,23 +1413,31 @@ STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
             PDOMNODE pFilterNode = (PDOMNODE)pNode->pItemData;
 
             // filter is in attribute VALUE="*.psd"
-            const XSTRING *pstrFilter = xmlGetAttribute(pFilterNode,
-                                                        "VALUE");
+            const XSTRING *pstrFilterEnc = xmlGetAttribute(pFilterNode,
+                                                           "VALUE");
 
             PMPF_ASSOCS(("           adding new %s",
-                        (pstrFilter) ? pstrFilter->psz : "NULL"));
+                        (pstrFilterEnc) ? pstrFilterEnc->psz : "NULL"));
 
-            if (pstrFilter)
+            if (pstrFilterEnc)
             {
                 // check if filter is on list already
                 PLISTNODE pNode2;
+
                 BOOL fExists = FALSE;
+
+                // decode non-ASCII stuff V1.0.2 (2003-02-07) [umoeller]
+                XSTRING strFilter;
+                xstrInit(&strFilter, 0);
+                xstrcpys(&strFilter, pstrFilterEnc);
+                xstrDecode2(&strFilter, '%');
+
                 for (pNode2 = lstQueryFirstNode(&llAllFilters);
                      pNode2;
                      pNode2 = pNode2->pNext)
                 {
                     if (!strcmp((PSZ)pNode2->pItemData,
-                                pstrFilter->psz))
+                                strFilter.psz))
                     {
                         fExists = TRUE;
                         break;
@@ -1413,39 +1445,50 @@ STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
                 }
 
                 if (!fExists)
+                {
                     lstAppendItem(&llAllFilters,
-                                  pstrFilter->psz);
+                                  strFilter.psz);       // will be freed with auto-free list
+                    lenFiltersTotal += strFilter.ulLength + 1;
+                }
+                else
+                    xstrClear(&strFilter);
             }
         }
 
         // 3) compose new filters string from the list with
         //    the old and new filters, each filter null-terminated
-        cbFilters = 0;
-        for (pNode = lstQueryFirstNode(&llAllFilters);
-             pNode;
-             pNode = pNode->pNext)
+        if (lenFiltersTotal)
         {
-            PSZ pszFilterThis = (PSZ)pNode->pItemData;
-            PMPF_ASSOCS(("       appending filter %s",
-                             pszFilterThis));
+            if (!(pszFilters = malloc(lenFiltersTotal + 1)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            else
+            {
+                for (pNode = lstQueryFirstNode(&llAllFilters);
+                     pNode;
+                     pNode = pNode->pNext)
+                {
+                    PSZ pszFilterThis = (PSZ)pNode->pItemData;
+                    PMPF_ASSOCS(("       appending filter %s",
+                                     pszFilterThis));
 
-            cbFilters += sprintf(&(szFilters[cbFilters]),
-                                 "%s",
-                                 pszFilterThis    // filter string
-                                ) + 1;
+                    cbFilters += sprintf(pszFilters + cbFilters,
+                                         "%s",
+                                         pszFilterThis    // filter string
+                                        ) + 1;
+                }
+            }
         }
 
         if (pszFiltersData)
             free(pszFiltersData);
 
-        // 4) write out the merged filters list now
-        PrfWriteProfileData(HINI_USER,
-                            (PSZ)INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                            (PSZ)pcszTypeNameThis,
-                            (cbFilters)
-                                ? szFilters
-                                : NULL,     // no items found: delete key
-                            cbFilters);
+        if (!arc)
+            // 4) write out the merged filters list now
+            PrfWriteProfileData(HINI_USER,
+                                (PSZ)INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                (PSZ)pcszTypeNameThis,
+                                pszFilters,                 // can be NULL if no filters found
+                                cbFilters);
 
         lstClear(&llAllFilters);
         lstFree(&pllElementFilters);
@@ -1467,15 +1510,17 @@ STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
  *      (root) element.
  *
  *@@added V0.9.12 (2001-05-21) [umoeller]
+ *@@changed V1.0.2 (2003-02-07) [umoeller]: added codepage support
  */
 
 STATIC APIRET ImportTypes(PDOMNODE pParentElement,
-                          PCSZ pcszParentType)  // in: parent type name or NULL
+                          PCSZ pcszParentType)          // in: parent type name or NULL
 {
-    APIRET arc = NO_ERROR;
-    PLINKLIST pllTypes = xmlGetElementsByTagName(pParentElement,
-                                                 "TYPE");
-    if (pllTypes)
+    APIRET      arc = NO_ERROR;
+    PLINKLIST   pllTypes;
+
+    if (pllTypes = xmlGetElementsByTagName(pParentElement,
+                                           "TYPE"))
     {
         PLISTNODE pTypeNode;
         for (pTypeNode = lstQueryFirstNode(pllTypes);
@@ -1485,10 +1530,9 @@ STATIC APIRET ImportTypes(PDOMNODE pParentElement,
             PDOMNODE pTypeElementThis = (PDOMNODE)pTypeNode->pItemData;
 
             // get the type name
-            const XSTRING *pstrTypeName = xmlGetAttribute(pTypeElementThis,
-                                                          "NAME");
-
-            if (!pstrTypeName)
+            const XSTRING *pstrTypeNameEnc;
+            if (!(pstrTypeNameEnc = xmlGetAttribute(pTypeElementThis,
+                                                    "NAME")))
                 arc = ERROR_DOM_VALIDITY;
             else
             {
@@ -1496,32 +1540,38 @@ STATIC APIRET ImportTypes(PDOMNODE pParentElement,
                 // check if it's in OS2.INI already
                 ULONG cb = 0;
 
+                // decode the type name
+                XSTRING strTypeName;
+                xstrInit(&strTypeName, 0);
+                xstrcpys(&strTypeName, pstrTypeNameEnc);
+                xstrDecode2(&strTypeName, '%');
+
                 PMPF_ASSOCS(("importing %s, parent is %s",
-                        pstrTypeName->psz,
-                        (pcszParentType) ? pcszParentType : "NULL"));
+                             strTypeName.psz,
+                             (pcszParentType) ? pcszParentType : "NULL"));
 
                 if (    (!PrfQueryProfileSize(HINI_USER,
                                               (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                              pstrTypeName->psz,
+                                              strTypeName.psz,
                                               &cb))
                      || (cb == 0)
                    )
                 {
                     // alright, add a new type, with a single null byte
                     // (no associations yet)
-                    CHAR NullByte = '\0';
+                    static const CHAR NullByte = '\0';
 
                     PMPF_ASSOCS(("   type %s doesn't exist, adding to PMWP_ASSOC_TYPE",
-                            pstrTypeName->psz));
+                                 strTypeName.psz));
 
                     PrfWriteProfileData(HINI_USER,
                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                        pstrTypeName->psz,
-                                        &NullByte,
+                                        strTypeName.psz,
+                                        (PSZ)&NullByte,
                                         1);
                 }
                 else
-                    PMPF_ASSOCS(("   type %s exists",  pstrTypeName->psz));
+                    PMPF_ASSOCS(("   type %s exists",  strTypeName.psz));
 
                 // now update parent type
                 // in any case, write the parent type
@@ -1534,19 +1584,20 @@ STATIC APIRET ImportTypes(PDOMNODE pParentElement,
                 PrfWriteProfileString(HINI_USER,
                                       (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
                                       // key name == type name
-                                      pstrTypeName->psz,
+                                      strTypeName.psz,
                                       // data == parent type
                                       (PSZ)pcszParentType);
 
                 // get the filters, if any
                 ImportFilters(pTypeElementThis,
-                              pstrTypeName->psz);
-            }
+                              strTypeName.psz);
 
-            // recurse for this file type, it may have subtypes
-            if (!arc)
+                // recurse for this file type, it may have subtypes
                 arc = ImportTypes(pTypeElementThis,
-                                  pstrTypeName->psz);
+                                  strTypeName.psz);
+
+                xstrClear(&strTypeName);
+            }
         } // end for (pTypeNode = lstQueryFirstNode(pllTypes);
 
         lstFree(&pllTypes);
@@ -1580,9 +1631,9 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
         // now go parse
         // create the DOM
         PXMLDOM pDom = NULL;
-        if (!(arc = xmlCreateDOM(0,             // no validation
-                                 NULL,
-                                 0,
+        if (!(arc = xmlCreateDOM(DF_PARSEDTD | DF_FAIL_IF_NO_DTD | DF_DROP_WHITESPACE,
+                                 G_aSysIds,
+                                 ARRAYITEMCOUNT(G_aSysIds),
                                  NULL,
                                  NULL,
                                  NULL,
@@ -1598,10 +1649,20 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
                     PDOMNODE pRootElement;
                     if (pRootElement = xmlGetRootElement(pDom))
                     {
+                        // decode codepage attribute V1.0.2 (2003-02-07) [umoeller]
+                        const XSTRING *pstrCPAttr;
+                        ULONG   ulcpSys = nlsQueryCodepage(),
+                                ulcpDoc;
+
+                        if (!(pstrCPAttr = xmlGetAttribute(pRootElement,
+                                                           G_pcszCODEPAGE)))
+                            ulcpDoc = ulcpSys;      // old format: assume process codepage
+                        else
+                            ulcpDoc = atoi(pstrCPAttr->psz);
+
                         arc = ImportTypes(pRootElement,
                                           NULL);        // parent type == none
                                 // this recurses into subtypes
-
                     }
                     else
                         arc = ERROR_DOM_NO_ELEMENT;
@@ -1690,10 +1751,13 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
  *      and the respective attributes.
  *
  *@@added V0.9.12 (2001-05-21) [umoeller]
+ *@@changed V1.0.2 (2003-02-07) [umoeller]: added pstrBuf param
+ *@@changed V1.0.2 (2003-02-07) [umoeller]: now encoding non-ASCII characters to fix XML encoding problems
  */
 
 STATIC APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (document root node if none)
                             PFILETYPELISTITEM pliAssoc,    // in: type description
+                            PXSTRING pstrBuf,              // in/out: working buffer (must be initialized)
                             PDOMNODE *ppNewNode)           // out: new element
 {
     PDOMNODE pNodeReturn;
@@ -1703,14 +1767,18 @@ STATIC APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
                                      "TYPE",
                                      &pNodeReturn)))
     {
-        PDOMNODE pAttribute;
+        PDOMNODE    pAttribute;
         pliAssoc->precc = (PFILETYPERECORD)pNodeReturn;
         pliAssoc->fProcessed = TRUE;
+
+        xstrcpy(pstrBuf, pliAssoc->pszFileType, 0);
+        xstrEncodeASCII(pstrBuf);           // V1.0.2 (2003-02-07) [umoeller]
 
         // create NAME attribute
         if (!(arc = xmlCreateAttributeNode(pNodeReturn,
                                            "NAME",
-                                           pliAssoc->pszFileType,
+                                           pstrBuf->psz,
+                                           pstrBuf->ulLength,
                                            &pAttribute)))
         {
             // create child ELEMENTs for each
@@ -1725,30 +1793,32 @@ STATIC APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
             {
                 // pszFiltersData now has a string array of
                 // defined filters, each null-terminated
-                PSZ     pFilter;
+                PSZ     pFilter = pszFiltersData;
 
-                if (pFilter = pszFiltersData)
+                // now parse the filters string
+                while ((*pFilter) && (!arc))
                 {
-                    // now parse the filters string
-                    while ((*pFilter) && (!arc))
-                    {
-                        // add the filter to the "Filters" container
-                        PDOMNODE pFilterNode;
-                        if (!(arc = xmlCreateElementNode(pNodeReturn,
-                                                         // parent record; this might be pRootElement
-                                                         "FILTER",
-                                                         &pFilterNode)))
-                            arc = xmlCreateAttributeNode(pFilterNode,
-                                                         "VALUE",
-                                                         pFilter,
-                                                         &pAttribute);
+                    // add the filter to the "Filters" container
+                    PDOMNODE pFilterNode;
+                    ULONG lenFilter = strlen(pFilter);
+                    xstrcpy(pstrBuf, pFilter, lenFilter);
+                    xstrEncodeASCII(pstrBuf);               // V1.0.2 (2003-02-07) [umoeller]
 
-                        // go for next object filter (after the 0 byte)
-                        pFilter += strlen(pFilter) + 1;
-                        if (pFilter >= pszFiltersData + cbFiltersData)
-                            break; // while (*pFilter))
-                    } // end while (*pFilter)
-                }
+                    if (!(arc = xmlCreateElementNode(pNodeReturn,
+                                                     // parent record; this might be pRootElement
+                                                     "FILTER",
+                                                     &pFilterNode)))
+                        arc = xmlCreateAttributeNode(pFilterNode,
+                                                     "VALUE",
+                                                     pstrBuf->psz,
+                                                     pstrBuf->ulLength,
+                                                     &pAttribute);
+
+                    // go for next object filter (after the 0 byte)
+                    pFilter += lenFilter + 1;
+                    if (pFilter >= pszFiltersData + cbFiltersData)
+                        break; // while (*pFilter))
+                } // end while (*pFilter)
 
                 free(pszFiltersData);
             }
@@ -1778,9 +1848,10 @@ STATIC APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
  */
 
 STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
-                                             PLINKLIST pllFileTypes,  // in: list of all file types
+                                             PLINKLIST pllFileTypes,    // in: list of all file types
                                              PSZ pszKey,
-                                             PDOMNODE *ppNewElement)   // out: element node for this key
+                                             PXSTRING pstrBuf,          // in/out: working buffer (must be initialized)
+                                             PDOMNODE *ppNewElement)    // out: element node for this key
 {
     APIRET              arc = NO_ERROR;
     PDOMNODE            pParentNode = pRootElement,
@@ -1802,6 +1873,7 @@ STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
                                              pllFileTypes,
                                              // recurse with parent
                                              pszParentForKey,
+                                             pstrBuf,
                                              &pParentNode);
         free(pszParentForKey);
     }
@@ -1825,10 +1897,9 @@ STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
                 {
                     if (!pliAssoc->fCircular)
                     {
-                        // add record core, which will be stored in
-                        // pliAssoc->pftrecc
                         arc = ExportAddType(pParentNode,
                                             pliAssoc,
+                                            pstrBuf,
                                             &pNodeReturn);
                     }
 
@@ -1865,7 +1936,8 @@ STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
+STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement,
+                                 PXSTRING pstrBuf)          // in/out: working buffer (must be initialized)
 {
     APIRET arc = NO_ERROR;
     PSZ pszAssocTypeList;
@@ -1919,6 +1991,7 @@ STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
                 arc = ExportAddFileTypeAndAllParents(pRootElement,
                                                      &llFileTypes,
                                                      pKey,
+                                                     pstrBuf,
                                                      &pNewElement);
                                                 // this will recurse
                 #ifdef __DEBUG__
@@ -1943,21 +2016,25 @@ STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
         if (!arc)
         {
             pAssocNode = lstQueryFirstNode(&llFileTypes);
+
             while ((pAssocNode) && (!arc))
             {
-                PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)(pAssocNode->pItemData);
+                PFILETYPELISTITEM pliAssoc = (PFILETYPELISTITEM)pAssocNode->pItemData;
+
                 if (!pliAssoc->fProcessed)
                 {
                     // add to root element node
                     PDOMNODE pNewElement;
                     arc = ExportAddType(pRootElement,
                                         pliAssoc,
+                                        pstrBuf,
                                         &pNewElement);
                     #ifdef __DEBUG__
                     if (arc)
                         PMPF_ASSOCS(("xmlCreateElementNode returned %d", arc));
                     #endif
                 }
+
                 pAssocNode = pAssocNode->pNext;
             }
         }
@@ -1973,27 +2050,6 @@ STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
 }
 
 /*
- *@@ G_pcszDoctype:
- *      the DTD for the export file.
- *
- *@@added V0.9.12 (2001-05-21) [umoeller]
- */
-
-static PCSZ G_pcszDoctype =
-"<!DOCTYPE XWPFILETYPES [\n"
-"\n"
-"<!ELEMENT XWPFILETYPES (TYPE*)>\n"
-"\n"
-"<!ELEMENT TYPE (TYPE* | FILTER*)>\n"
-"    <!ATTLIST TYPE\n"
-"            NAME CDATA #REQUIRED >\n"
-"<!ELEMENT FILTER EMPTY>\n"
-"    <!ATTLIST FILTER\n"
-"            VALUE CDATA #IMPLIED>\n"
-"]>";
-
-
-/*
  *@@ ftypExportTypes:
  *      writes the current types and filters setup into
  *      the specified XML file, which should have an
@@ -2002,42 +2058,52 @@ static PCSZ G_pcszDoctype =
  *      Returns either a DOS or XML error code (see xml.h).
  *
  *@@added V0.9.12 (2001-05-21) [umoeller]
+ *@@changed V1.0.2 (2003-02-07) [umoeller]: format changed; encoding non-ASCII values; DTD no longer exposed
  */
 
 APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
 {
     APIRET arc = NO_ERROR;
 
+    XSTRING     strBuf;     // working buffer V1.0.2 (2003-02-07) [umoeller]
+    xstrInit(&strBuf, 0);
+
     TRY_LOUD(excpt1)
     {
         PDOMDOCUMENTNODE pDocument = NULL;
-        PDOMNODE pRootElement = NULL;
+        PDOMNODE    pRootElement = NULL,
+                    pCPAttr;
 
         // create a DOM
         if (!(arc = xmlCreateDocument("XWPFILETYPES",
                                       &pDocument,
                                       &pRootElement)))
         {
+            // add the codepage attribute V1.0.2 (2003-02-07) [umoeller]
+            CHAR    szEncoding[30];
+            ULONG   lenEncoding;
+
+            lenEncoding = sprintf(szEncoding,
+                                  "%d",
+                                  nlsQueryCodepage());
+
             // add the types tree
-            if (!(arc = ExportAddTypesTree(pRootElement)))
+            if (    (!(arc = xmlCreateAttributeNode(pRootElement,
+                                                    G_pcszCODEPAGE,
+                                                    szEncoding,
+                                                    lenEncoding,
+                                                    &pCPAttr)))
+                 && (!(arc = ExportAddTypesTree(pRootElement,
+                                                &strBuf)))
+               )
             {
                 // create a text XML document from all this
                 XSTRING strDocument;
-                CHAR    szEncoding[30];
-                ULONG   acp[8];
-                ULONG   cb = 0;
 
                 xstrInit(&strDocument, 1000);
 
-                DosQueryCp(sizeof(acp),
-                           acp,
-                           &cb);
-                sprintf(szEncoding,
-                        "CP%d",
-                        acp[0]);
-
                 if (!(arc = xmlWriteDocument(pDocument,
-                                             szEncoding, // "ISO-8859-1",
+                                             "US-ASCII",
                                              G_pcszDoctype,
                                              &strDocument)))
                 {
@@ -2063,6 +2129,8 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
     {
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
+
+    xstrClear(&strBuf);
 
     return arc;
 }

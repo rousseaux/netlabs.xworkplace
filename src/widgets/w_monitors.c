@@ -529,6 +529,8 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
  *
  *      NOTE: It is assumed that pSetup is zeroed
  *      out. We do not clean up previous data here.
+ *
+ *@@changed V1.0.2 (2003-02-03) [umoeller]: changed default text color
  */
 
 VOID MwgtScanSetup(PCSZ pcszSetupString,
@@ -555,7 +557,10 @@ VOID MwgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0);
+        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP,
+                                                  // SYSCLR_WINDOWSTATICTEXT,
+                                                  SYSCLR_WINDOWTEXT,        // changed V1.0.2 (2003-02-03) [umoeller]
+                                                  0);
 
     // font:
     // we set the font presparam, which automatically

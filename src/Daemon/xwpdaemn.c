@@ -977,6 +977,62 @@ HSWITCH winhHSWITCHfromHAPP(HAPP happ)
 }
 
 /*
+ *@@ winhSleep:
+ *      copied over here from winh.c.
+ *
+ *@@added V1.0.2 (2003-02-07) [umoeller]
+ */
+
+VOID winhSleep(ULONG ulSleep)    // in: sleep time in milliseconds
+{
+    HWND    hwnd;
+
+    if (hwnd = WinCreateWindow(HWND_OBJECT,
+                               WC_STATIC,
+                               (PSZ)"",
+                               0,
+                               0,0,0,0,
+                               0,
+                               HWND_BOTTOM,
+                               0,
+                               NULL,
+                               NULL))
+    {
+        QMSG    qmsg;
+        HAB     hab;
+
+        if (    (hab = WinQueryAnchorBlock(hwnd))
+             && (WinStartTimer(hab,
+                               hwnd,
+                               1,
+                               ulSleep))
+           )
+        {
+            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+            {
+                if (    (qmsg.hwnd == hwnd)
+                     && (qmsg.msg == WM_TIMER)
+                     && (qmsg.mp1 == (MPARAM)1)     // timer ID
+                   )
+                    break;
+
+                WinDispatchMsg(hab, &qmsg);
+            }
+            WinStopTimer(hab,
+                         hwnd,
+                         1);
+        }
+        else
+            // timer creation failed:
+            DosSleep(ulSleep);
+
+        WinDestroyWindow(hwnd);
+    }
+    else
+        DosSleep(ulSleep);
+}
+
+/*
  *@@ ProcessAutoScroll:
  *      this gets called from fnwpDaemonObject to
  *      implement the "AutoScroll" feature.
@@ -3453,7 +3509,7 @@ int main(int argc, char *argv[])
         lstInit(&G_llClickWatches, TRUE);
         lstInit(&G_llWinlistWatches, TRUE);
 
-        // check security dummy parameter "-D"
+        // check safety net parameter "-D"
         if (    (argc != 2)
              || (strcmp(argv[1], "-D"))
            )
@@ -3600,8 +3656,7 @@ int main(int argc, char *argv[])
                     DosSetExceptionHandler(
                         (PEXCEPTIONREGISTRATIONRECORD)&TermExcptStruct.RegRec2);
 
-                    TermExcptStruct.ulExcpt = setjmp(TermExcptStruct.RegRec2.jmpThread);
-                    if (TermExcptStruct.ulExcpt == 0)
+                    if (!(TermExcptStruct.ulExcpt = setjmp(TermExcptStruct.RegRec2.jmpThread)))
                     {
                         // no termination exception:
 
@@ -3615,8 +3670,7 @@ int main(int argc, char *argv[])
                     }
                     // else: exception occured...
 
-                    DosUnsetExceptionHandler(
-                        (PEXCEPTIONREGISTRATIONRECORD)&TermExcptStruct.RegRec2);
+                    DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&TermExcptStruct.RegRec2);
 
                     // we get here if
                     // a) we received WM_QUIT (can't see why this would happen);
@@ -3628,6 +3682,17 @@ int main(int argc, char *argv[])
                     // so kill the hook again
                     // (cleanup must be in proper order to avoid PM hangs)
                     DeinstallHook();
+
+#ifdef __DEBUG__
+                    DosBeep(2000, 100);
+#endif
+
+                    winhSleep(500);      // sleep a bit to allow PM processes to exit the hook DLL
+                                         // V1.0.2 (2003-02-07) [umoeller]
+
+#ifdef __DEBUG__
+                    DosBeep(1000, 100);
+#endif
 
                     WinDestroyWindow(G_pXwpGlobalShared->hwndDaemonObject);
                     G_pXwpGlobalShared->hwndDaemonObject = NULLHANDLE;

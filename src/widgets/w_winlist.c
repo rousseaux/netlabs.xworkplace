@@ -482,6 +482,7 @@ STATIC VOID WwgtClearSetup(PWINLISTSETUP pSetup)
  *      out. We do not clean up previous data here.
  *
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
+ *@@changed V1.0.2 (2003-02-03) [umoeller]: changed default text color
  */
 
 STATIC VOID WwgtScanSetup(PCSZ pcszSetupString,
@@ -508,7 +509,10 @@ STATIC VOID WwgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0);
+        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP,
+                                                  // SYSCLR_WINDOWSTATICTEXT,
+                                                  SYSCLR_WINDOWTEXT,        // changed V1.0.2 (2003-02-03) [umoeller]
+                                                  0);
 
     // font:
     // we set the font presparam, which automatically

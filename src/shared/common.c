@@ -1150,22 +1150,16 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
 VOID cmnInitEntities(VOID)
 {
     // get the current process codepage for the WPS
-    ULONG acp[8];       // fixed V0.9.19 (2002-04-14) [umoeller], this needs an array
-    ULONG cb = 0;
-    APIRET arcCP;
-    if (arcCP = DosQueryCp(sizeof(acp),
-                           acp,
-                           &cb))
-        acp[0] = 437;
+    ULONG   ulcp = nlsQueryCodepage();      // V1.0.2 (2003-02-07) [umoeller]
 
-    if (acp[0] == 850)
+    if (ulcp == 850)
         strlcpy(G_szCopyright, G_pcszCopyChar, sizeof(G_szCopyright));
     else
     {
         WinCpTranslateString(G_habThread1,
                              850,
                              (PSZ)G_pcszCopyChar,
-                             acp[0],
+                             ulcp,
                              sizeof(G_szCopyright),
                              G_szCopyright);
         if (G_szCopyright[0] == '\xFF')
@@ -4782,25 +4776,7 @@ static CONTROLDEF
             {INFO_WIDTH, 4},
             COMMON_SPACING
         },
-    ProductInfoText3 = /* CONTROLDEF_TEXT_WORDBREAK(
-                            NULL,
-                            ID_XSDI_INFO_STRING,
-                            INFO_WIDTH), */
-#if 1
-        CONTROLDEF_XTEXTVIEW_HTML(NULL, ID_XSDI_INFO_STRING, INFO_WIDTH, NULL),
-#else
-        {
-            WC_XTEXTVIEW,
-            NULL,
-            WS_VISIBLE,
-            ID_XSDI_INFO_STRING,
-            CTL_COMMON_FONT,
-            0,
-            {INFO_WIDTH, SZL_AUTOSIZE},
-            COMMON_SPACING,
-            NULL
-        },
-#endif
+    ProductInfoText3 = CONTROLDEF_XTEXTVIEW_HTML(NULL, ID_XSDI_INFO_STRING, INFO_WIDTH, NULL),
     ProductInfoSepLine2 = CONTROLDEF_SEPARATORLINE(9999, INFO_WIDTH, 4),
     ProductInfoInstalledMemoryTxt = LOADDEF_TEXT(ID_XSDI_INFO_MAINMEM_TXT),
     ProductInfoInstalledMemoryValue = CONTROLDEF_TEXT_RIGHT(
@@ -5069,9 +5045,6 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                        NULL,
                        cmnQueryDefaultFont()))
     {
-        // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9998));
-        // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9999));
-
         winhCenterWindow(hwndInfo);
         WinProcessDlg(hwndInfo);
         winhDestroyWindow(&hwndInfo);

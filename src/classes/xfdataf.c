@@ -82,6 +82,8 @@
 #define INCL_WINMENUS
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #define INCL_WINSHELLDATA       // Prf* functions
+
+#define INCL_GPILOGCOLORTABLE
 #include <os2.h>
 
 // C library headers
@@ -565,6 +567,8 @@ SOM_Scope HBITMAP  SOMLINK xdf_xwpLazyLoadThumbnail(XFldDataFile *somSelf,
                                                     BOOL* pbQuitEarly)
 {
     HBITMAP hbm;
+    HPAL    hpal = NULLHANDLE;
+
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_xwpLazyLoadThumbnail");
 
@@ -573,14 +577,19 @@ SOM_Scope HBITMAP  SOMLINK xdf_xwpLazyLoadThumbnail(XFldDataFile *somSelf,
     if (    (ctsIsImageFile(somSelf))
          && (_wpQueryBitmapHandle(somSelf,
                                   &hbm,
-                                  NULL,
+                                  &hpal,            // we _must_ specify hpal, or the brain-dead MMPM classes crash
                                   ulWidth,
                                   ulHeight,
                                   0,
                                   0,
                                   pbQuitEarly))
        )
+    {
+        if (hpal)
+            GpiDeletePalette(hpal);
+
         return hbm;
+    }
 
     return NULLHANDLE;
 }

@@ -28,7 +28,7 @@
  *      Public License version 2 (GPL), permission is granted, free
  *      of charge, to use this file for the purpose of creating software
  *      that integrates into XWorkplace or eComStation, even if that
- *      software is not published under that license.
+ *      software is not published under the GPL.
  *
  *      This permission  extends to this single file only, but NOT to
  *      other files of the XWorkplace sources, not even those that

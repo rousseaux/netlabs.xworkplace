@@ -20,7 +20,7 @@
 # files created by this makefile.
 OUTPUTDIR = $(PROJECT_BASE_DIR)\include\classes
 
-!undef SMINCLUDE
+# !undef SMINCLUDE
 
 # Some SOM variables. You won't have to change these.
 SOMTEMP = $(TEMP)
@@ -35,7 +35,8 @@ SOMTEMP = $(TEMP)
 #    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
 !endif
 
-SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(PROJECT_BASE_DIR)\idl;$(TKBASE)\idl;$(TKBASE)\SOM\include
+SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(PROJECT_BASE_DIR)\idl;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include
+#       V1.0.2 (2003-02-07) [umoeller] leave $(SMINCLUDE) in here or Paul will complain :-)
 
 !if [@echo    TKBASE    is $(TKBASE)]
 !endif
