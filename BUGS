@@ -17,8 +17,6 @@ Ulrich M”ller.
 CURRENT PROBLEMS
 ----------------
 
---  folders that have always sort off keep scrolling down
-
 --  file dialog is broken
 
 --  split view
@@ -31,7 +29,7 @@ CURRENT PROBLEMS
 
     --  double-clicking on folders in right view
 
-    --  folder refresh, register view etc.
+    --  tree view doesn't refresh
 
 --  shift+view click does not keep the menu open
 

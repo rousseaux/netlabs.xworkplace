@@ -673,6 +673,7 @@ VOID fdrFormatFrame(HWND hwndFrame,
  *      fnwpSubclWPFolderWindow.
  *
  *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: fixed annoying scroll bars in folder frame when always sort was off
  */
 
 MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -685,7 +686,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
     //  query the number of standard frame controls
     ULONG ulCount = (ULONG)pfnwpOriginal(psfv->hwndFrame, WM_FORMATFRAME, mp1, mp2);
 
-    PMPF_STATUSBARS(("WM_FORMATFRAME ulCount = %d", ulCount ));
+    PMPF_STATUSBARS(("WM_FORMATFRAME ulCount = %d", ulCount));
 
     if (psfv->hwndStatusBar)
     {
@@ -699,6 +700,10 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
                        ulCount,
                        &hwndClient);
 
+        PMPF_STATUSBARS(("fNeedCnrScroll = %d, hwndClient = 0x%lX",
+                         psfv->fNeedCnrScroll,
+                         hwndClient));
+
         if (psfv->fNeedCnrScroll)
         {
             CNRINFO     CnrInfo;
@@ -706,9 +711,20 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
 
             cnrhQueryCnrInfo(hwndClient, &CnrInfo);
 
-            if ((LONG)CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
+            PMPF_STATUSBARS(("CnrInfo.ptlOrigin.y %d, ulStatusBarHeight %d",
+                             CnrInfo.ptlOrigin.y,
+                             ulStatusBarHeight));
+
+            // CnrInfo.ptlOrigin.y is always 0, no matter if we get
+            // scroll bars later on or not, so the below check didn't
+            // exactly help... the point is we must ALWAYS reduce
+            // the ptlOrigin.y by the status bar height, or we'll
+            // get scroll bars, period
+            // V0.9.21 (2002-09-09) [umoeller]
+
+            // if (CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
             {
-                RECTL rclViewport;
+                // RECTL rclViewport;
 
                 CnrInfo.ptlOrigin.y -= ulStatusBarHeight;
 
@@ -728,6 +744,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
             // container's vertical scroll bar and _then_
             // another PAGEUP to the container itself
             // V0.9.18 (2002-03-24) [umoeller]
+            /* no longer needed since the above code works now V0.9.21 (2002-09-09) [umoeller]
             PostWMChar(WinWindowFromID(hwndClient, 0x7FF9),
                        KC_VIRTUALKEY | KC_CTRL,
                        MPFROM2SHORT(0,
@@ -736,6 +753,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
                        KC_VIRTUALKEY,
                        MPFROM2SHORT(0,
                                     VK_PAGEUP));
+            */
 
             // set flag to FALSE to prevent a second adjustment
             psfv->fNeedCnrScroll = FALSE;

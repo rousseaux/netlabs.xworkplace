@@ -208,6 +208,7 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
  *      TRUE, since the file was obviously already deleted.
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: added wpSetError on errors
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
@@ -228,6 +229,8 @@ SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
         else
             arc = DosDelete(szFilename);
 
+        PMPF_FOPS(("DosDelete(%s) returned %d", szFilename, arc));
+
         switch (arc)
         {
             case NO_ERROR:
@@ -235,8 +238,18 @@ SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
             case ERROR_PATH_NOT_FOUND:
                 brc = TRUE;
             break;
+
+            default:
+                // anything else is truly an error, so set an error
+                // code on the object so fops_bottom.c can figure
+                // out what went wrong; wpFree has called
+                // wpSetError(NO_ERROR) previously
+                // V0.9.21 (2002-09-09) [umoeller]
+                _wpSetError(somSelf, arc);
         }
     }
+
+    PMPF_FOPS(("returning %s", (brc) ? "TRUE" : "FALSE"));
 
     return brc;
 

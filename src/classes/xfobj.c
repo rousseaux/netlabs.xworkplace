@@ -1601,6 +1601,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed higly broken _wpSaveImmediate call
  *@@changed V0.9.20 (2002-07-16) [umoeller]: added exception handling
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized to use real method calls finally
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: added wpSetError for errors
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
@@ -1616,6 +1617,10 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
         {
             ULONG   ulStyle = _wpQueryStyle(somSelf);
             PSZ     pszID = _wpQueryObjectID(somSelf);
+
+            // reset the object error code because our wpDestroyObject
+            // overrides may set that V0.9.21 (2002-09-09) [umoeller]
+            _wpSetError(somSelf, NO_ERROR);
 
             // if the object has an object ID assigned, remove this...
             // this should clean the INI entry
@@ -1642,41 +1647,42 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
 
             // no longer so, we can override wpDestroyObject now
             // V0.9.20 (2002-07-25) [umoeller]
-            _wpDestroyObject(somSelf);
 
-            /*
-            if (pxwpDestroyStorage = (somTD_XFldObject_xwpDestroyStorage)somResolveByName(
-                                      somSelf,
-                                      "xwpDestroyStorage"))
-                pxwpDestroyStorage(somSelf);
-            */
+            // but we should check the return code, dammit... this can
+            // return FALSE, for example, if the user tries to delete
+            // an executable that is currently in use, and then this frees
+            // the SOM object even though the file is still there, which
+            // then reappears on refresh
+            // V0.9.21 (2002-09-09) [umoeller]
+            if (_wpDestroyObject(somSelf))
+            {
+                // the WPS then calls wpSaveImmediate just in case the object
+                // has called wpSaveDeferred. I'm not sure this is a good idea...
+                // this will add another entry to the INI file. This should be
+                // moved up.
+                // _wpSaveImmediate(somSelf);
 
-            // the WPS then calls wpSaveImmediate just in case the object
-            // has called wpSaveDeferred. I'm not sure this is a good idea...
-            // this will add another entry to the INI file. This should be
-            // moved up.
-            // _wpSaveImmediate(somSelf);
+                // no!!
+                // V0.9.20 (2002-07-16) [umoeller]
+                xo_wpSaveImmediate(somSelf);
+                    // NOTE: NO METHOD CALL!
+                    // this makes sure ONLY that the object is removed from
+                    // both our private dirty list AND the IBM dirty list,
+                    // but does not actually save the data because only
+                    // the storage classes (WPAbstract, WPFileSystem) call
+                    // wpSaveState... this fix probably solves the problems
+                    // that people were reporting with CHECKINI restoring
+                    // lots of objects already
 
-            // no!!
-            // V0.9.20 (2002-07-16) [umoeller]
-            xo_wpSaveImmediate(somSelf);
-                // NOTE: NO METHOD CALL!
-                // this makes sure ONLY that the object is removed from
-                // both our private dirty list AND the IBM dirty list,
-                // but does not actually save the data because only
-                // the storage classes (WPAbstract, WPFileSystem) call
-                // wpSaveState... this fix probably solves the problems
-                // that people were reporting with CHECKINI restoring
-                // lots of objects already
+                // then there's another undocumented method call... i'm unsure
+                // what this does, but what the heck.
+                _wpDeleteWindowPosKeys(somSelf);
+                        // we can call the method now V0.9.20 (2002-07-25) [umoeller]
 
-            // then there's another undocumented method call... i'm unsure
-            // what this does, but what the heck.
-            _wpDeleteWindowPosKeys(somSelf);
-                    // we can call the method now V0.9.20 (2002-07-25) [umoeller]
-
-            // finally, this calls wpMakeDormant, which destroys the SOM object
-            brc = _wpMakeDormant(somSelf, 0);
-                    // we can call the method now V0.9.20 (2002-07-25) [umoeller]
+                // finally, this calls wpMakeDormant, which destroys the SOM object
+                brc = _wpMakeDormant(somSelf, 0);
+                        // we can call the method now V0.9.20 (2002-07-25) [umoeller]
+            }
 
         } // if (pKernelGlobals->fAutoRefreshReplaced)
         else

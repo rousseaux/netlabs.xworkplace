@@ -288,33 +288,37 @@ HWND stbCreateBar(WPFolder *somSelf,        // in: (root) folder
                                   hwndFrame,        // owner
                                   HWND_BOTTOM,
                                   ID_STATUSBAR,            // ID
-                                  (PVOID)NULL,
-                                  (PVOID)NULL))
+                                  NULL,
+                                  NULL))
     {
         PCSZ    pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
 
         // set up window data (QWL_USER) for status bar
-        PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
+        PSTATUSBARDATA psbd;
 
-        psbd->somSelf    = somSelf;
-        psbd->pRealObject = pRealObject;        // V0.9.21 (2002-08-21) [umoeller]
-        psbd->hwndFrame = hwndFrame;
-        psbd->hwndCnr = hwndCnr;
-        psbd->habStatusBar = WinQueryAnchorBlock(hwndBar);
-        psbd->idTimer    = 0;
-        psbd->fDontBroadcast = TRUE;
-                    // prevents broadcasting of WM_PRESPARAMSCHANGED
-        psbd->fFolderPopulated = FALSE;
-                    // suspends updating until folder is populated;
-        WinSetWindowPtr(hwndBar, QWL_USER, psbd);
+        if (psbd = NEW(STATUSBARDATA))
+        {
+            psbd->somSelf    = somSelf;
+            psbd->pRealObject = pRealObject;        // V0.9.21 (2002-08-21) [umoeller]
+            psbd->hwndFrame = hwndFrame;
+            psbd->hwndCnr = hwndCnr;
+            psbd->habStatusBar = WinQueryAnchorBlock(hwndBar);
+            psbd->idTimer    = 0;
+            psbd->fDontBroadcast = TRUE;
+                        // prevents broadcasting of WM_PRESPARAMSCHANGED
+            psbd->fFolderPopulated = FALSE;
+                        // suspends updating until folder is populated;
 
-        // subclass static control to make it a status bar
-        psbd->pfnwpStatusBarOriginal = WinSubclassWindow(hwndBar,
-                                                         fnwpStatusBar);
-        WinSetPresParam(hwndBar,
-                        PP_FONTNAMESIZE,
-                        (ULONG)strlen(pszStatusBarFont) + 1,
-                        (PVOID)pszStatusBarFont);
+            WinSetWindowPtr(hwndBar, QWL_USER, psbd);
+
+            // subclass static control to make it a status bar
+            psbd->pfnwpStatusBarOriginal = WinSubclassWindow(hwndBar,
+                                                             fnwpStatusBar);
+            WinSetPresParam(hwndBar,
+                            PP_FONTNAMESIZE,
+                            (ULONG)strlen(pszStatusBarFont) + 1,
+                            (PVOID)pszStatusBarFont);
+        }
     }
 
     return hwndBar;
@@ -440,11 +444,11 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                             _wpQueryHandle(psli2->pRealObject));
 
                     cbIni = sizeof(ulIni);
-                    if (PrfQueryProfileData(HINI_USER,
-                                            (PSZ)WPINIAPP_FOLDERPOS,
-                                            szFolderPosKey,
-                                            &ulIni,
-                                            &cbIni) == FALSE)
+                    if (!PrfQueryProfileData(HINI_USER,
+                                             (PSZ)WPINIAPP_FOLDERPOS,
+                                             szFolderPosKey,
+                                             &ulIni,
+                                             &cbIni))
                         ulIni = 0;
 
                     if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS

@@ -28,7 +28,20 @@
 
     /* ******************************************************************
      *
-     *   Error codes
+     *   WPS error codes
+     *
+     ********************************************************************/
+
+    /*
+        The WPS defines a bunch of WPERR_* values as PM errors (see
+        pmerr.h in the toolkit). Those are values starting with
+        0x1700 (5888) so they apparently do not conflict with the
+        Control Program codes.
+    */
+
+    /* ******************************************************************
+     *
+     *   XWorkplace error codes
      *
      ********************************************************************/
 

@@ -794,6 +794,56 @@ BOOL fopsUseForceDelete(PCSZ pcszFilename)
 }
 
 /*
+ *@@ Call_wpFree:
+ *      calls wpFree on the given object and returns an
+ *      error code if that fails. Now that we use wpSetError
+ *      in our wpDestroyObject overrides, this is a good
+ *      idea to do.
+ *
+ *@@added V0.9.21 (2002-09-09) [umoeller]
+ */
+
+APIRET Call_wpFree(PFILETASKLIST pftl,
+                   WPObject *pobj)
+{
+    APIRET  arc;
+    BOOL    fRepeat;
+
+    do
+    {
+        arc = NO_ERROR;
+        fRepeat = FALSE;
+
+        if (!_wpFree(pobj))
+        {
+            // check if we can get an error code from the object...
+            // we now use wpSetError in wpDestroyObject, so this
+            // _might_ have something meaningful
+            if (!(arc = _wpQueryError(pobj)))
+                // nothing set:
+                arc = FOPSERR_WPFREE_FAILED;
+        }
+
+        // added error reports here; since we have disabled
+        // the message boxes in wpDestroyObject, the user
+        // gets no feedback at all if the deletion failed,
+        // but we should give her some V0.9.21 (2002-09-09) [umoeller]
+        if (    (arc)
+             && (pftl->pfnErrorCallback)
+           )
+            if (!pftl->pfnErrorCallback(pftl->ulOperation,
+                                        pobj,
+                                        FOPSERR_WPFREE_FAILED,
+                                        NULL))
+                // NO_ERROR return code means retry:
+                fRepeat = TRUE;
+
+    } while (fRepeat);
+
+    return arc;
+}
+
+/*
  *@@ fopsFileThreadSneakyDeleteFolderContents:
  *      this gets called from fopsFileThreadTrueDelete before
  *      an instance of WPFolder actually gets deleted.
@@ -937,11 +987,8 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                             if (!frc)
                             {
                                 // either no problem or problem fixed:
-                                if (!_wpFree(pFSObj))
-                                {
-                                    frc = FOPSERR_WPFREE_FAILED;
+                                if (frc = Call_wpFree(pftl, pFSObj))
                                     *ppObject = pFSObj;
-                                }
                             }
                         }
                         else
@@ -1028,6 +1075,7 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.20 (2002-07-12) [umoeller]: optimizations and adjustments for fopsUseForceDelete
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed deleting FTP folders
  *@@changed V0.9.20 (2002-08-04) [umoeller]: no longer unsetting FOI_DELETEINPROGRESS before wpFree'ing a folder
+ *@@changed V0.9.21 (2002-09-09) [umoeller]: added better error reports if wpFree failed
  */
 
 APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -1061,13 +1109,10 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                                 pfu->pSourceObject,
                                                 pulIgnoreSubsequent);
 
-        if (    (!frc)
-             && (!_wpFree(pfu->pSourceObject))
+        if (    (frc)
+             || (frc = Call_wpFree(pftl, pfu->pSourceObject))
            )
-        {
             *ppObjectFailed = pfu->pSourceObject;
-            frc = FOPSERR_WPFREE_FAILED;
-        }
     }
     else
     {
@@ -1280,9 +1325,8 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
 
                                 PMPF_TRASHCAN(("calling _wpFree"));
 
-                                if (!_wpFree(pSubObjThis))
+                                if (frc = Call_wpFree(pftl, pSubObjThis))
                                 {
-                                    frc = FOPSERR_WPFREE_FAILED;
                                     *ppObjectFailed = pSubObjThis;
 
                                     // only if freeing the folder failed, unset
@@ -1579,7 +1623,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_TRUEDELETE:
-                        PMPF_FOPS(("destroying %s",
+                        PMPF_FOPS(("calling fopsFileThreadTrueDelete for %s",
                                     _wpQueryTitle(fu.pSourceObject) ));
 
                         frc = fopsFileThreadTrueDelete(hftl,

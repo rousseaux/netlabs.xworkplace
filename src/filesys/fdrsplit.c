@@ -355,6 +355,14 @@ STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                 if (fdrCheckIfPopulated(pFolder,
                                         fFoldersOnly))
                 {
+                    if (!fFoldersOnly)
+                        // refresh the files only if we are not
+                        // in folders-only mode
+                        WinPostMsg(psv->hwndMainControl,
+                                   FM_POPULATED_FILLFILES,
+                                   (MPARAM)prec,
+                                   (MPARAM)pFolder);
+
                     // in any case, refresh the tree
                     WinPostMsg(psv->hwndMainControl,
                                FM_POPULATED_FILLTREE,
@@ -368,14 +376,6 @@ STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                                    FM_POPULATED_SCROLLTO,
                                    (MPARAM)prec,
                                    0);
-
-                    if (!fFoldersOnly)
-                        // refresh the files only if we are not
-                        // in folders-only mode
-                        WinPostMsg(psv->hwndMainControl,
-                                   FM_POPULATED_FILLFILES,
-                                   (MPARAM)prec,
-                                   (MPARAM)pFolder);
                 }
 
                 // clear wait pointer
@@ -759,7 +759,7 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
  *
  ********************************************************************/
 
-STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
+STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /*
  *@@ fdrCreateFrameWithCnr:
@@ -1010,15 +1010,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
              */
 
             case WM_WINDOWPOSCHANGED:
-            {
-                // this msg is passed two SWP structs:
-                // one for the old, one for the new data
-                // (from PM docs)
-                PSWP pswpNew = PVOIDFROMMP(mp1);
-                // PSWP pswpOld = pswpNew + 1;
-
-                // resizing?
-                if (pswpNew->fl & SWP_SIZE)
+                if (((PSWP)mp1)->fl & SWP_SIZE)
                 {
                     PFDRSPLITVIEW  psv;
                     if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
@@ -1030,14 +1022,13 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                         HWND_TOP,
                                         0,
                                         0,
-                                        pswpNew->cx,
-                                        pswpNew->cy,
+                                        ((PSWP)mp1)->cx,
+                                        ((PSWP)mp1)->cy,
                                         SWP_SIZE);
                     }
                 }
 
                 // return default NULL
-            }
             break;
 
             /*
@@ -1460,7 +1451,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 /*
  *@@ TreeFrameControl:
  *      implementation for WM_CONTROL for FID_CLIENT
- *      in fnwpSubclassedTreeFrame.
+ *      in fnwpTreeFrame.
  *
  *      Set *pfCallDefault to TRUE if you want the
  *      parent window proc to be called.
@@ -1468,10 +1459,10 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  *@@added V0.9.21 (2002-08-26) [umoeller]
  */
 
-MRESULT TreeFrameControl(HWND hwndFrame,
-                         MPARAM mp1,
-                         MPARAM mp2,
-                         PBOOL pfCallDefault)
+STATIC MRESULT TreeFrameControl(HWND hwndFrame,
+                                MPARAM mp1,
+                                MPARAM mp2,
+                                PBOOL pfCallDefault)
 {
     MRESULT mrc = 0;
     HWND                hwndMainControl;
@@ -1645,7 +1636,7 @@ MRESULT TreeFrameControl(HWND hwndFrame,
 }
 
 /*
- *@@ fnwpSubclassedTreeFrame:
+ *@@ fnwpTreeFrame:
  *      subclassed frame window on the right for the
  *      "Files" container. This has the files cnr
  *      as its FID_CLIENT.
@@ -1655,7 +1646,7 @@ MRESULT TreeFrameControl(HWND hwndFrame,
  *      couple more for extra features.
  */
 
-MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
 
@@ -1791,7 +1782,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
 /*
  *@@ FilesFrameControl:
  *      implementation for WM_CONTROL for FID_CLIENT
- *      in fnwpSubclassedFilesFrame.
+ *      in fnwpFilesFrame.
  *
  *      Set *pfCallDefault to TRUE if you want the
  *      parent window proc to be called.
@@ -1799,10 +1790,10 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
  *@@added V0.9.21 (2002-08-26) [umoeller]
  */
 
-MRESULT FilesFrameControl(HWND hwndFrame,
-                          MPARAM mp1,
-                          MPARAM mp2,
-                          PBOOL pfCallDefault)
+STATIC MRESULT FilesFrameControl(HWND hwndFrame,
+                                 MPARAM mp1,
+                                 MPARAM mp2,
+                                 PBOOL pfCallDefault)
 {
     MRESULT mrc = 0;
     HWND                hwndMainControl;
@@ -1821,11 +1812,11 @@ MRESULT FilesFrameControl(HWND hwndFrame,
             PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
             PMINIRECORDCORE prec;
 
-            if (    // (pnre->pRecord)
-                 // && (pnre->fEmphasisMask & CRA_SELECTED)
-                 // && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                 // && (prec->flRecordAttr & CRA_SELECTED)
-                    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+            if (    (pnre->pRecord)
+                 && (pnre->fEmphasisMask & CRA_SELECTED)
+                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                 && (prec->flRecordAttr & CRA_SELECTED)
+                 && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                  && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                  // notifications not disabled?
                  && (psv->fSplitViewReady)
@@ -1868,10 +1859,28 @@ MRESULT FilesFrameControl(HWND hwndFrame,
                  && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                  && (pobj = fdrvGetFSFromRecord(prec,
                                                 TRUE))       // folders only:
+                 && (psv->precFilesShowing)
                )
             {
                 // double click on folder:
-
+                // if this is a _direct_ subfolder of the folder
+                // that we are currently displaying, that's easy
+                if (_wpQueryFolder(pobj) == OBJECT_FROM_PREC(psv->precFilesShowing))
+                {
+                    /* fdrSplitPopulate(psv,
+                                     prec, */
+                    WinSendMsg(psv->hwndTreeCnr,
+                               CM_EXPANDTREE,
+                               (MPARAM)prec,
+                               MPNULL);
+                    WinSendMsg(psv->hwndTreeCnr,
+                               CM_SETRECORDEMPHASIS,
+                               (MPARAM)prec,
+                               MPFROM2SHORT(CRA_SELECTED, CRA_SELECTED));
+                }
+                else
+                    // not a direct child (shadow probably):
+                    *pfCallDefault = TRUE;
             }
             else
                 *pfCallDefault = TRUE;
@@ -1928,7 +1937,7 @@ MRESULT FilesFrameControl(HWND hwndFrame,
 }
 
 /*
- *@@ fnwpSubclassedFilesFrame:
+ *@@ fnwpFilesFrame:
  *      subclassed frame window on the right for the
  *      "Files" container. This has the tree cnr
  *      as its FID_CLIENT.
@@ -1938,7 +1947,7 @@ MRESULT FilesFrameControl(HWND hwndFrame,
  *      couple more for extra features.
  */
 
-STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
 
@@ -1952,7 +1961,6 @@ STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
         switch (msg)
         {
             case WM_CONTROL:
-            {
                 if (SHORT1FROMMP(mp1) == FID_CLIENT)     // that's the container
                     mrc = FilesFrameControl(hwndFrame,
                                             mp1,
@@ -1960,7 +1968,6 @@ STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
                                             &fCallDefault);
                 else
                     fCallDefault = TRUE;
-            }
             break;
 
             case WM_SYSCOMMAND:
@@ -2161,7 +2168,7 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                                      pRootsFolder,
                                      pRootObject);
         psv->psfvTree->pfnwpOriginal = WinSubclassWindow(psv->hwndTreeFrame,
-                                                         fnwpSubclassedTreeFrame);
+                                                         fnwpTreeFrame);
 
         // same thing for files frame; however we need to
         // insert a temp object first to let the WPS subclass
@@ -2177,7 +2184,7 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                                       pRootsFolder,
                                       pRootObject);
         psv->psfvFiles->pfnwpOriginal = WinSubclassWindow(psv->hwndFilesFrame,
-                                                          fnwpSubclassedFilesFrame);
+                                                          fnwpFilesFrame);
 
         // remove the temp object again
         _wpCnrRemoveObject(pRootsFolder,

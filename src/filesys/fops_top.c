@@ -212,7 +212,7 @@ APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
                                                             // out: ignore subsequent errors of the same type
 {
     CHAR    szMsg[1000];
-    PCSZ     apsz[5] = {0};
+    PCSZ    apsz[5] = {0};
     ULONG   cpsz = 0,
             ulMsg = 0,
             flFlags = 0;
@@ -269,6 +269,34 @@ APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             cpsz = 1;
         break;
 
+        case FOPSERR_WPFREE_FAILED:
+        {
+            // this was added for giving the user feedback if
+            // wpFree failed on an object, we should then allow
+            // retry
+            // V0.9.21 (2002-09-09) [umoeller]
+            APIRET arc2;
+            XSTRING str;
+            if (!(arc2 = _wpQueryError(pObject)))
+                arc2 = FOPSERR_WPFREE_FAILED;
+
+            xstrInit(&str, 0);
+            cmnDescribeError(&str, arc2, NULL, TRUE);
+
+            apsz[0] = pszTitle;
+            apsz[1] = str.psz;
+            if (MBID_RETRY == cmnMessageBoxExt(NULLHANDLE,
+                                               104,
+                                               apsz,
+                                               2,
+                                               252,
+                                               MB_RETRYCANCEL))
+                frError = NO_ERROR;
+
+            xstrClear(&str);
+        }
+        break;
+
         default:
             if (    (ulOperation == XFT_INSTALLFONTS)
                  || (ulOperation == XFT_DEINSTALLFONTS)
@@ -308,11 +336,11 @@ APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
     if (flFlags)
     {
         ULONG ulrc = cmnMessageBoxExt(NULLHANDLE,
-                                         175,
-                                         apsz,
-                                         cpsz,
-                                         ulMsg,
-                                         flFlags);
+                                      175,
+                                      apsz,
+                                      cpsz,
+                                      ulMsg,
+                                      flFlags);
         if (    (ulrc == MBID_OK)
              || (ulrc == MBID_YES)
            )
