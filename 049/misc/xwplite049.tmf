@@ -1,12 +1,13 @@
-<--XFL0140-->: eWorkplace Komponenten (C) 1997-2002 Ulrich Mîller.
-Basiert auf XWorkplace &version; (built &date;). Lizensiert fÅr Serenity Systems International.
-EnthÑlt Teile (C) 2000-2002 Martin Lafaix und Paul Ratcliffe.
-EnthÑlt Teile der Standard Function Library (C) 1991-99 iMatix corporation.
+<--PRODUCTINFO-->: eComStation Desktop
+Version 1.1
  
-<--ECSPRODINFO01-->: eComStation Desktop Version 4.5
+<--XFL0140-->: Erweiterungen der ArbeitsoberflÑche &copy;&nbsp;1997-2002 Ulrich Mîller.
+Basiert auf XWorkplace &version; (erstellt am &date;). Lizensiert fÅr Serenity&nbsp;Systems&nbsp;International.
+EnthÑlt Teile &copy;&nbsp;2000-2002&nbsp;Martin&nbsp;Lafaix und Paul&nbsp;Ratcliffe.
+EnthÑlt Teile der Standard Function Library &copy;&nbsp;1991-99&nbsp;iMatix&nbsp;corporation.
  
-<--ECSPRODINFO02-->: (C) 1992, 1996 IBM Corporation.
-(C) 2001, 2002 Serenity Systems International.
+<--ECSPRODINFO02-->: &copy;&nbsp;1992, 1996 IBM Corporation.
+&copy;&nbsp;2001, 2002 Serenity Systems International.
  
  
 <--DUMMY_END_MARKER-->:

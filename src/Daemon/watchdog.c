@@ -135,6 +135,20 @@ void SetOperation(ULONG op,
 
 /*
  *@@ fntTeaser:
+ *      teaser thread started by fntWatchdog.
+ *
+ *      This does nothing except enumerating all desktop
+ *      windows and sending a message to each of them
+ *      to be able to detect whether the system is
+ *      responsive.
+ *
+ *      Before each PM call, we set a global flag and the
+ *      current system uptime to allow fntWatchdog to
+ *      detect how much time we have taken for a call.
+ *      This way the watchdog can detect whether we're
+ *      stuck in a PM call.
+ *
+ *      This loops forever.
  *
  *@@added V [umoeller]
  */
@@ -166,7 +180,6 @@ void _Optlink fntTeaser(PTHREADINFO ptiMyself)
                         // stop
                         break;
 
-
                     SetOperation(OP_QUERYWINDOWPROCESS, &fLocked);
                     if (!WinQueryWindowProcess(hwnd, &pid, &tid))
                         // window has died?
@@ -186,7 +199,10 @@ void _Optlink fntTeaser(PTHREADINFO ptiMyself)
                         UnlockWatchdog();
                         fLocked = FALSE;
 
-                        // call WinSendMsg
+                        // call WinSendMsg to see if the target
+                        // desktop window responds; we use
+                        // WM_QUERYCTLTYPE just because it's
+                        // inexpensive processing in any window proc
                         WinSendMsg(hwnd,
                                    WM_QUERYCTLTYPE,
                                    0,
@@ -216,7 +232,8 @@ void _Optlink fntTeaser(PTHREADINFO ptiMyself)
 
 /*
  *@@ PMSEM:
- *      PM semaphore.
+ *      PM semaphore definition, according to
+ *      the OS/2 debugging handbook.
  *
  *@@added V0.9.21 (2002-08-12) [umoeller]
  */
@@ -273,7 +290,44 @@ typedef struct _PMSEM
 
 #define LASTSEM             34
 
-#define TIMEOUT     (1 * 1000)
+static const PCSZ G_papcszSems[] =
+    {
+        "PMSEM_ATOM", // 0
+        "PMSEM_USER", // 1
+        "PMSEM_VISLOCK", // 2
+        "PMSEM_DEBUG", // 3
+        "PMSEM_HOOK", // 4
+        "PMSEM_HEAP", // 5
+        "PMSEM_DLL", // 6
+        "PMSEM_THUNK", // 7
+        "PMSEM_XLCE", // 8
+        "PMSEM_UPDATE", // 9
+        "PMSEM_CLIP", // 10
+        "PMSEM_INPUT", // 11
+        "PMSEM_DESKTOP", // 12
+        "PMSEM_HANDLE", // 13
+        "PMSEM_ALARM", // 14
+        "PMSEM_STRRES", // 15
+        "PMSEM_TIMER", // 16
+        "PMSEM_CONTROLS", // 17
+        "GRESEM_GreInit", // 18
+        "GRESEM_AutoHeap", // 19
+        "GRESEM_PDEV", // 20
+        "GRESEM_LDEV", // 21
+        "GRESEM_CodePage", // 22
+        "GRESEM_HFont", // 23
+        "GRESEM_FontCntxt", // 24
+        "GRESEM_FntDrvr", // 25
+        "GRESEM_ShMalloc", // 26
+        "GRESEM_GlobalData", // 27
+        "GRESEM_DbcsEnv", // 28
+        "GRESEM_SrvLock", // 29
+        "GRESEM_SelLock", // 30
+        "GRESEM_ProcLock", // 31
+        "GRESEM_DriverSem", // 32
+        "GRESEM_semIfiCache", // 33
+        "GRESEM_semFontTable", // 34
+    };
 
 /*
  *@@ LockHungs:
@@ -356,44 +410,7 @@ PCSZ GetOpName(ULONG opHung)
     return "unknown";
 }
 
-static const PCSZ G_papcszSems[] =
-    {
-        "PMSEM_ATOM", // 0
-        "PMSEM_USER", // 1
-        "PMSEM_VISLOCK", // 2
-        "PMSEM_DEBUG", // 3
-        "PMSEM_HOOK", // 4
-        "PMSEM_HEAP", // 5
-        "PMSEM_DLL", // 6
-        "PMSEM_THUNK", // 7
-        "PMSEM_XLCE", // 8
-        "PMSEM_UPDATE", // 9
-        "PMSEM_CLIP", // 10
-        "PMSEM_INPUT", // 11
-        "PMSEM_DESKTOP", // 12
-        "PMSEM_HANDLE", // 13
-        "PMSEM_ALARM", // 14
-        "PMSEM_STRRES", // 15
-        "PMSEM_TIMER", // 16
-        "PMSEM_CONTROLS", // 17
-        "GRESEM_GreInit", // 18
-        "GRESEM_AutoHeap", // 19
-        "GRESEM_PDEV", // 20
-        "GRESEM_LDEV", // 21
-        "GRESEM_CodePage", // 22
-        "GRESEM_HFont", // 23
-        "GRESEM_FontCntxt", // 24
-        "GRESEM_FntDrvr", // 25
-        "GRESEM_ShMalloc", // 26
-        "GRESEM_GlobalData", // 27
-        "GRESEM_DbcsEnv", // 28
-        "GRESEM_SrvLock", // 29
-        "GRESEM_SelLock", // 30
-        "GRESEM_ProcLock", // 31
-        "GRESEM_DriverSem", // 32
-        "GRESEM_semIfiCache", // 33
-        "GRESEM_semFontTable", // 34
-    };
+#define TIMEOUT     (1 * 1000)
 
 /*
  *@@ fntWatchdog:
@@ -534,6 +551,8 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
 
                             if (pidtid = paPMSems[ulSemThis].ulOwnerPidTid)
                             {
+                                // this sem is OWNED:
+                                // consider the owner a hung app!
                                 AppendHung(LOUSHORT(pidtid),
                                            opHung,      // OP_SENDMSG
                                            ulSemThis);         // semid
@@ -553,9 +572,10 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                             // magic is invalid:
                             if (LogFile)
                                 fprintf(LogFile,
-                                        "magic for sem %d (%s) is invalid\n",
+                                        "magic for sem %d (%s) is invalid, stopping watchdog\n",
                                         ulSemThis,
                                         G_papcszSems[ulSemThis]);
+                            ptiMyself->fExit = TRUE;
                             break;
                         }
                     }
@@ -579,7 +599,8 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                                  ulHung < G_cHungs;
                                  ++ulHung)
                             {
-                                if (p = prc32FindProcessFromPID(t, G_aHungs[ulHung].pid))
+                                ULONG pid = G_aHungs[ulHung].pid;
+                                if (p = prc32FindProcessFromPID(t, pid))
                                 {
                                     if (m = prc32FindModule(t, p->usHModule))
                                     {
@@ -593,8 +614,8 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
 
                                         sprintf(szTemp,
                                                 "PID 0x%lX (%d) (%s) is hung (op %s, %s)",
-                                                G_aHungs[ulHung].pid,
-                                                G_aHungs[ulHung].pid,
+                                                pid,
+                                                pid,
                                                 m->pcName,      // module name
                                                 GetOpName(G_aHungs[ulHung].op),
                                                 pcszSem
@@ -605,10 +626,22 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                                                     "hung process [%d]: %s\n",
                                                     ulHung,
                                                     szTemp);
-
-                                        apsz[ulHung] = strdup(szTemp);
                                     }
+                                    else
+                                        sprintf(szTemp,
+                                                "Cannot find HMODULE 0x%lX for PID 0x%lX (%d) in sysstate buffer",
+                                                p->usHModule,
+                                                pid,
+                                                pid);
                                 }
+                                else
+                                    sprintf(szTemp,
+                                            "Cannot find PID 0x%lX (%d) in sysstate buffer",
+                                            pid,
+                                            pid);
+
+
+                                apsz[ulHung] = strdup(szTemp);
                             }
 
                             prc32FreeInfo(t);
@@ -629,15 +662,16 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
 
             if (cPaint)
             {
-                // found any hung processes:
                 if (hpsScreen = WinGetScreenPS(HWND_DESKTOP))
                 {
+                    // found any hung processes:
                     #define CX_BORDER   10
                     #define CY_BOTTOM   30
                     #define SPACING     5
                     #define LINEHEIGHT  20
 
-                    RECTL   rcl;
+                    RECTL   rcl,
+                            rcl2;
                     POINTL  ptl;
                     ULONG   ulPaint;
 
@@ -652,10 +686,10 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                                 &rcl,
                                 CLR_WHITE);
 
-                    ptl.x = CX_BORDER + SPACING;
-                    ptl.y = rcl.yTop - SPACING - LINEHEIGHT;
-
-                    GpiSetColor(hpsScreen, CLR_BLACK);
+                    rcl2.xLeft = CX_BORDER + SPACING;
+                    rcl2.yBottom = rcl.yBottom;
+                    rcl2.xRight = rcl.xRight;
+                    rcl2.yTop = rcl.yTop - SPACING; //  - LINEHEIGHT;
 
                     for (ulPaint = 0;
                          ulPaint < cPaint;
@@ -664,19 +698,31 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                         PSZ psz;
                         if (psz = apsz[ulPaint])
                         {
+                            WinDrawText(hpsScreen,
+                                        -1,
+                                        psz,
+                                        &rcl2,
+                                        CLR_BLACK,
+                                        CLR_WHITE,
+                                        DT_TOP | DT_LEFT);
+
+                            /*
                             GpiCharStringAt(hpsScreen,
                                             &ptl,
                                             strlen(psz),
                                             psz);
+                            */
+
                             free(psz);
 
-                            ptl.y -= LINEHEIGHT;
+                            rcl2.yTop -= LINEHEIGHT;
                         }
                     }
 
                     WinReleasePS(hpsScreen);
                     hpsScreen = NULLHANDLE;
-                } // if (hpsScreen = WinGetScreenPS(HWND_DESKTOP))
+
+                }
             } // if (cPaint)
 
             DosSleep(1000);

@@ -59,9 +59,12 @@ Leider werden diese Karten bei Aufl”sungen von 1024x768 und mehr nur mit 60 Hz u
 800x600 leben k”nnen, sieht es nach einer L”sung aus.
  
 <P><LI><B>Warum funktionieren Ordnerkontextmens nicht bei Ordnern in der Klickstartleiste?</B>
-<P>Ich weiá es nicht. Sie sind immer leer. Ich denke, die Klickstartleiste ruft &xwp;s
-Fensterprozedur nicht auf, sondern verwendet eine eigene. Ich habe bis jetzt keinen Weg gefunden herauszufinden, von
-wo aus die Kontextmens ge”ffnet werden, da die Klickstartleiste zur Anzeige der Objekte normale Referenzen verwendet.
+<!-- V0.9.19: rewrote this answer -->
+<P>Weil die Klickstartleiste kein Ordner ist. &xwp; kann nur die Standard-Fensterprozedur der
+Ordner unterklassieren, um wichtige Systemnachrichten zu empfangen, wenn Mens ge”ffnet werden.
+Das ist der Zeitpunkt, zu dem die variablen Meneintr„ge in die Kontextmens eingefgt werden.
+Da die Klickstartleiste nicht die Standard-Fensterprozedur fr Ordner benutzt, kann &xwp; sie
+auch nicht einfach unterklassieren.
  
 <P><LI><B>Ich habe dem Konfigurationsordner etwas hinzugefgt, aber es taucht nicht in den Mens auf.
 Handelt es sich um ein Kompatibilit„tsproblem?</B>

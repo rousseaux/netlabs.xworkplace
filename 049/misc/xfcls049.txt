@@ -504,3 +504,5 @@ BDview 0 (WSeB/CP/eCS) Implementiert ein Objekt zum Umschalten zwischen Einstell
 WPVideoSystem 1 (Scitech Display Doctor) Ersetzt die Klasse WPSystem und erweitert die Seite "Bildschirm" des Einstellungsnotizbuches "System".
 XWPFileSystem 1 XWorkplace ersetzt die Klasse WPFileSystem durch diese Klasse, um auf verschiedene interne Daten der WPS zugreifen zu kînnen, u. a. um "Turbo-Ordner" unterstÅtzen zu kînnen.
 
+//Items added with V0.9.19
+FileState 1 (FILESTAT.DLL) Zeigt Statistiken fÅr Dateien an, die daran Åbergeben werden.

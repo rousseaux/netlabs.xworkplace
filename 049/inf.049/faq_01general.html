@@ -18,26 +18,18 @@ auch ein ”ffentliches Fehlerverzeichnis, das Ihre Frage auch beantworten k”nnte.
  
 <OL>
 <LI><B>Macht &xwp; die WPS langsamer?</B>
-<P>Ich denke nicht, daá dies allgemein zutrifft. Ich habe keine Tests durchgefhrt,
-aber im allgemeinen verlangsamt &xwp; nur <I>bestimmte</I> WPS-Funktionen, aber nicht die
-WPS allgemein.
-<!-- V0.9.0: changed the following -->
-<P>Die offensichtlichste Verlangsamung erfolgt beim ™ffnen eines Ordnerkontextmens,
-da der Konfigurationsordner (inklusive aller Unterordner) eingelesen werden muá, damit
-das Kontextmen entsprechend aufgebaut werden kann.
-<P>Seit V0.9.0 jedoch h„lt &xwp; den Inhalt des Konfigurationsordners vor, so daá
-der Inhalt nur einmal eingelesen wird, bis Sie den Konfigurationsordner oder einen seiner
-Unterordner modifizieren. Dies sollte zu einiger Geschwindigkeitszunahme fhren. Mit
-V0.9.0 habe ich auch meine internen Funktionen fr verkettete Listen berarbeitet,
-was ebenfalls in einer Geschwindigkeitszunahme resultieren sollte.
-<!-- V0.9.13: changed the following -->
-<P>Was andere Funktionen von &xwp; angeht, es h„ngt davon ab. Einige Dinge k”nnen
-das System tats„chlich verlangsamen (wie etwa das Heraussuchen der Informationen fr
-die Statuszeile), aber es gibt andere Bereiche, in denen die &xwp;-Routinen tats„chlich
-schneller sind als der WPS-Code. Beispielsweise werden Ordner viel schneller bev”lkert,
-wenn die erweiterten Dateizuordnungen aktiviert sind, da &xwp; intern sehr effiziente
-Cacheroutinen fr Objekt-Handles verwendet.
-<!-- end V0.9.13 -->
+<!-- V0.9.19: rewrote this answer -->
+<P>Es kommt darauf an. Eine Funktionen k”nnen eine leichte Verlangsamung bewirken,
+wie etwa das erstmalige ™ffnen eines Ordner-Kontextmens, da &xwp; den Inhalt des
+Konfigurationsordners (einschlieálich aller Unterverzeichnisse) einlesen muá, um das
+Kontextmen entsprechend aufzubauen.
+<P>Andere Funktionen beschleunigen die WPS dagegen. Die Funktion
+<A HREF="fldr_30turbo.html">Turbo-Ordner</A> beispielsweise kann Ordner dramatisch
+schneller machen.
+Auáerdem geht die Bev”lkerung der Ordner wesentlich schneller vonstatten, wenn die
+erweiterten Dateizuordnungen aktiviert sind, da &xwp; fr die Handhabung der
+Objekt-Handles intern sehr effiziente Cache-Routinen verwendet.
+<!-- end V0.9.19 -->
 <P>Im Gegensatz zu manchen anderen WPS-Erweiterungen weist &xwp; auch keinen exzessiven
 Speicherverbrauch auf. Ich habe dies einmal bei meinem System berprft, und
 zus„tzlich zur Gr”áe der &xwp;-DLLs selbst alloziert &xwp; nur ein paar 100 KBs
