@@ -108,8 +108,14 @@ rc = SysCreateObject("WPShadow", Screen, "<XWP_MAINFLDR>", "SHADOWID=<XWP_MEDIA>
 
 /* "Mouse" shadow (added V0.9.2) */
 rc = SysCreateObject("WPShadow", Mouse, "<XWP_MAINFLDR>", "SHADOWID=<WP_MOUSE>;OBJECTID=<XWP_MOUSEMAINSHADOW>;", "U");
+if (\rc) then
+    /* IBM changed the object ID of the "Mouse" object with MCP/ACP, so try this then
+    V0.9.16 (2001-10-23) [umoeller] */
+    rc = SysCreateObject("WPShadow", Mouse, "<XWP_MAINFLDR>", "SHADOWID=<WPSTK_MOUSE>;OBJECTID=<XWP_MOUSEMAINSHADOW>;", "U");
+
 /* "Keyboard" shadow (added V0.9.2) */
 rc = SysCreateObject("WPShadow", Keyboard, "<XWP_MAINFLDR>", "SHADOWID=<WP_KEYB>;OBJECTID=<XWP_KEYBMAINSHADOW>;", "U");
+
 /* "Sound" shadow (added V0.9.2) */
 rc = SysCreateObject("WPShadow", Sound, "<XWP_MAINFLDR>", "SHADOWID=<WP_SOUND>;OBJECTID=<XWP_SOUNDMAINSHADOW>;", "U");
 

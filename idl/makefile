@@ -69,6 +69,8 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmedia.h \
      $(OUTPUTDIR)\xwpmouse.h \
+     $(OUTPUTDIR)\xwpnetwork.h \
+     $(OUTPUTDIR)\xwpnetsrv.h \
      $(OUTPUTDIR)\xwppgm.h \
      $(OUTPUTDIR)\xwpsetup.h \
      $(OUTPUTDIR)\xwpscreen.h \
@@ -160,7 +162,11 @@ $(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpmouse.h:         $(@B).idl
 
-$(OUTPUTDIR)\xwppgm.h:         $(@B).idl
+$(OUTPUTDIR)\xwpnetwork.h:       $(@B).idl
+
+$(OUTPUTDIR)\xwpnetsrv.h:       $(@B).idl
+
+$(OUTPUTDIR)\xwppgm.h:           $(@B).idl
 
 $(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
 

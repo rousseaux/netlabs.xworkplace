@@ -38,6 +38,8 @@ $(OUTPUTDIR)\xwpkeybd.obj \
 $(OUTPUTDIR)\xwpmedia.obj \
 !endif
 $(OUTPUTDIR)\xwpmouse.obj \
+$(OUTPUTDIR)\xwpnetwork.obj \
+$(OUTPUTDIR)\xwpnetsrv.obj \
 $(OUTPUTDIR)\xwppgm.obj \
 $(OUTPUTDIR)\xwpsetup.obj \
 $(OUTPUTDIR)\xwpscreen.obj \
@@ -88,6 +90,7 @@ $(OUTPUTDIR)\filetype.obj \
 $(OUTPUTDIR)\folder.obj \
 $(OUTPUTDIR)\fops_bottom.obj \
 $(OUTPUTDIR)\fops_top.obj \
+$(OUTPUTDIR)\icons.obj \
 $(OUTPUTDIR)\object.obj \
 $(OUTPUTDIR)\program.obj \
 $(OUTPUTDIR)\refresh.obj \

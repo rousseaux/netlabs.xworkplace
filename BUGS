@@ -69,7 +69,7 @@ Ulrich M”ller.
 
 --  folder content functions ignore INCLUDe settings
 
---  setup strings for WPShadow: SHADOWEDOBJECT (?) not reported
+--  setup strings for WPShadow: SHADOWID (?) not reported
 
 --  installation:
     2) Hang on some systems. Dunno what causes this, need to debug more. I can't remember changing anything with the install between 0.9.13 and 0.9.14 (except for making the archive an EXE file), so this really beats me now.

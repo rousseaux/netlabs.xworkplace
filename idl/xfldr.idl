@@ -297,8 +297,8 @@ interface XFolder : WPFolder
             // an XFolder sort setting...
             // removed V0.9.12 (2001-05-18) [umoeller]
 
-    LONG            MenuMousePosX,
-                    MenuMousePosY;
+    // LONG            MenuMousePosX,       // removed V0.9.16 (2001-10-23) [umoeller]
+       //              MenuMousePosY;       // removed V0.9.16 (2001-10-23) [umoeller]
 
     //# ULONG           ulDummy;
 
@@ -382,6 +382,11 @@ interface XFolder : WPFolder
                 // functions can detect whether this is an "open view",
                 // or regular context menu, or one of the pulldowns.
 
+    BOOL        fInwpAddFolderView1Page;
+                // TRUE while in wpAddFolderView1Page; allows us
+                // to do an evil hack in wpInsertSettingsPage
+                // V0.9.16 (2001-10-23) [umoeller]
+
     /*
      * WPFolder methods overridden by XFolder:
      *
@@ -413,6 +418,8 @@ interface XFolder : WPFolder
     wpPopulate: override;
     wpRefresh: override;
 
+    wpInsertSettingsPage: override;
+
     wpAddObjectGeneralPage2: override;
 
     wpAddFile1Page: override;
@@ -422,13 +429,7 @@ interface XFolder : WPFolder
     wpAddFolderBackgroundPage: override;
     wpAddFolderSortPage: override;
 
-    wpAddSettingsPages: override;
-
-    wpSetFldrFlags: override;
-    wpQueryFldrFlags: override;
-
-    wpSetFldrAttr: override;
-    wpQueryFldrAttr: override;
+    wpAddFolderView1Page: override;
 
     wpAddToContent: override;
     wpDeleteFromContent: override;

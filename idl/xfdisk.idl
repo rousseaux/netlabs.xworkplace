@@ -81,6 +81,7 @@ interface XFldDisk : WPDisk
     wpViewObject: override;
     wpOpen: override;
 
+    wpAddSettingsPages: override;
     wpAddDiskDetailsPage: override;
 
 #ifdef __PRIVATE__

@@ -89,6 +89,10 @@ rc = SysCreateObject("WPFolder", "~XWorkplace", "<XWP_CONFIG>", "DEFAULTVIEW=ICO
     rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_CFG4>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWORKPLACE_SETUPCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", WorkplaceShell, "<XWP_CFG4>", "SHADOWID=<XWP_WPS>;OBJECTID=<XWP_WPSCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", Mouse, "<XWP_CFG4>", "SHADOWID=<WP_MOUSE>;OBJECTID=<XWP_WPMOUSECFGSHADOW>;", "U");
+    if (\rc) then
+        /* IBM changed the object ID of the "Mouse" object with MCP/ACP, so try this then
+        V0.9.16 (2001-10-23) [umoeller] */
+        rc = SysCreateObject("WPShadow", Mouse, "<XWP_CFG4>", "SHADOWID=<WPSTK_MOUSE>;OBJECTID=<XWP_WPMOUSECFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", Keyboard, "<XWP_CFG4>", "SHADOWID=<WP_KEYB>;OBJECTID=<XWP_WPKEYBCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", Screen, "<XWP_CFG4>", "SHADOWID=<XWP_SCREEN>;OBJECTID=<XWP_SCREENCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", "OS/2 Kernel", "<XWP_CFG4>", "SHADOWID=<XWP_KERNEL>;OBJECTID=<XWP_KERNELCFGSHADOW>;", "U");
