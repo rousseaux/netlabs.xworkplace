@@ -382,7 +382,15 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      give the Startup folder a new closed icon.
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
+ *
+ *      We give the Startup folder a new closed icon.
  */
 
 SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconData(M_XFldStartup *somSelf,

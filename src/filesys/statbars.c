@@ -449,11 +449,12 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *
  *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
  *@@changed V0.9.5 (2000-09-20) [pr]: WPSharedDir has WPDisk status bar
+ *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrrpl
  */
 
 ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
-                                   PSZ* ppszText,    // in/out: status bar text
-                                   CHAR cThousands)  // in: thousands separator
+                                   PXSTRING pstrText,  // in/out: status bar text
+                                   CHAR cThousands)     // in: thousands separator
 {
     ULONG       ulrc = 0;
     CHAR        szTemp[300];
@@ -482,7 +483,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         if (_somIsA(pObject, G_WPUrl))
         {
             // yes, we have a URL object:
-            if (p = strstr(*ppszText, "\tU")) // URL mnemonic
+            if (p = strstr(pstrText->psz, "\tU")) // URL mnemonic
             {
                 CHAR szFilename[CCHMAXPATH];
                 PSZ pszFilename = _wpQueryFilename(pObject, szFilename, TRUE);
@@ -496,11 +497,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     {
                         if (strlen(pszURL) > 100)
                             strcpy(pszURL+97, "...");
-                        xstrrpl(ppszText, 0, "\tU", pszURL, 0);
+                        xstrcrpl(pstrText, 0, "\tU", pszURL, 0);
                         free(pszURL);
                     }
                 if (!pszURL)
-                    xstrrpl(ppszText, 0, "\tU", "?", 0);
+                    xstrcrpl(pstrText, 0, "\tU", "?", 0);
                 ulrc++;
             }
         }
@@ -534,7 +535,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
          */
 
         // the following are for free space on drive
-        if (p = strstr(*ppszText, "\tfb"))
+        if (p = strstr(pstrText->psz, "\tfb"))
         {
             double dbl;
 
@@ -551,11 +552,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             else
                 strhThousandsDouble(szTemp, dbl,
                                     cThousands);
-            xstrrpl(ppszText, 0, "\tfb", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tfb", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tfk"))
+        if (p = strstr(pstrText->psz, "\tfk"))
         {
             double dbl;
 
@@ -573,11 +574,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strhThousandsDouble(szTemp,
                                     ((dbl + 500) / 1000),
                                     cThousands);
-            xstrrpl(ppszText, 0, "\tfk", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tfk", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tfK"))
+        if (p = strstr(pstrText->psz, "\tfK"))
         {
             double dbl;
 
@@ -595,11 +596,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strhThousandsDouble(szTemp,
                                     ((dbl + 512) / 1024),
                                     cThousands);
-            xstrrpl(ppszText, 0, "\tfK", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tfK", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tfm"))
+        if (p = strstr(pstrText->psz, "\tfm"))
         {
             double dbl;
 
@@ -617,11 +618,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strhThousandsDouble(szTemp,
                                     ((dbl +500000) / 1000000),
                                     cThousands);
-            xstrrpl(ppszText, 0, "\tfm", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tfm", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tfM"))
+        if (p = strstr(pstrText->psz, "\tfM"))
         {
             double dbl;
 
@@ -639,11 +640,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                strhThousandsDouble(szTemp,
                                    ((dbl + (1024*1024/2)) / (1024*1024)),
                                    cThousands);
-            xstrrpl(ppszText, 0, "\tfM", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tfM", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tF"))  // file-system type (HPFS, ...)
+        if (p = strstr(pstrText->psz, "\tF"))  // file-system type (HPFS, ...)
         {
             CHAR szBuffer[200];
 
@@ -658,9 +659,9 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                                     szBuffer,
                                     sizeof(szBuffer))
                          == NO_ERROR)
-                xstrrpl(ppszText, 0, "\tF", szBuffer, 0);
+                xstrcrpl(pstrText, 0, "\tF", szBuffer, 0);
             else
-                xstrrpl(ppszText, 0, "\tF", "?", 0);
+                xstrcrpl(pstrText, 0, "\tF", "?", 0);
             ulrc++;
         }
     }
@@ -687,15 +688,15 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
              $EK     EA size in KBytes
          */
 
-        if (p = strstr(*ppszText, "\ty")) // attribs
+        if (p = strstr(pstrText->psz, "\ty")) // attribs
         {
             PSZ p2 = NULL;
             p2 = _wpQueryType(pObject);
-            xstrrpl(ppszText, 0, "\ty", (p2) ? p2 : "?", 0);
+            xstrcrpl(pstrText, 0, "\ty", (p2) ? p2 : "?", 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tD"))  // date
+        if (p = strstr(pstrText->psz, "\tD"))  // date
         {
             FILEFINDBUF4 ffb4;
             ULONG ulDateFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iDate", 0);
@@ -707,11 +708,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             strcpy(szTemp, "?");
             _wpQueryDateInfo(pObject, &ffb4);
             strhFileDate(szTemp, &(ffb4.fdateLastWrite), ulDateFormat, szDateSep[0]);
-            xstrrpl(ppszText, 0, "\tD", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tD", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tT"))  // time
+        if (p = strstr(pstrText->psz, "\tT"))  // time
         {
             FILEFINDBUF4 ffb4;
             ULONG ulTimeFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iTime", 0);
@@ -724,11 +725,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             strcpy(szTemp, "?");
             _wpQueryDateInfo(pObject, &ffb4);
             strhFileTime(szTemp, &(ffb4.ftimeLastWrite), ulTimeFormat, szTimeSep[0]);
-            xstrrpl(ppszText, 0, "\tT", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tT", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\ta")) // attribs
+        if (p = strstr(pstrText->psz, "\ta")) // attribs
         {
             ULONG fAttr = _wpQueryAttr(pObject);
             szTemp[0] = (fAttr & FILE_ARCHIVED) ? 'A' : 'a';
@@ -736,42 +737,42 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             szTemp[2] = (fAttr & FILE_READONLY) ? 'R' : 'r';
             szTemp[3] = (fAttr & FILE_SYSTEM  ) ? 'S' : 's';
             szTemp[4] = '\0';
-            xstrrpl(ppszText, 0, "\ta", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\ta", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tEb")) // easize
+        if (p = strstr(pstrText->psz, "\tEb")) // easize
         {
             ULONG ulEASize;
             ulEASize = _wpQueryEASize(pObject);
             strhThousandsDouble(szTemp, ulEASize, cThousands);
-            xstrrpl(ppszText, 0, "\tEb", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tEb", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tEk"))
+        if (p = strstr(pstrText->psz, "\tEk"))
         {
             ULONG ulEASize;
             ulEASize = _wpQueryEASize(pObject);
             strhThousandsDouble(szTemp, ((ulEASize+500)/1000), cThousands);
-            xstrrpl(ppszText, 0, "\tEk", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tEk", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tEK"))
+        if (p = strstr(pstrText->psz, "\tEK"))
         {
             ULONG ulEASize;
             ulEASize = _wpQueryEASize(pObject);
             strhThousandsDouble(szTemp, ((ulEASize+512)/1024), cThousands);
-            xstrrpl(ppszText, 0, "\tEK", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tEK", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tr")) // real name
+        if (p = strstr(pstrText->psz, "\tr")) // real name
         {
             strcpy(szTemp, "?");
             _wpQueryFilename(pObject, szTemp, FALSE);
-            xstrrpl(ppszText, 0, "\tr", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tr", szTemp, 0);
             ulrc++;
         }
     }
@@ -794,7 +795,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             $d      working directory (as specified in the Settings)
          */
 
-        if (p = strstr(*ppszText, "\tp"))  // program executable
+        if (p = strstr(pstrText->psz, "\tp"))  // program executable
         {
             strcpy(szTemp, "?");
             if (!pProgDetails)
@@ -807,11 +808,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszExecutable);
                 else strcpy(szTemp, "");
 
-            xstrrpl(ppszText, 0, "\tp", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tp", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tP"))  // program executable
+        if (p = strstr(pstrText->psz, "\tP"))  // program executable
         {
             strcpy(szTemp, "?");
             if (!pProgDetails)
@@ -824,11 +825,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszParameters);
                 else strcpy(szTemp, "");
 
-            xstrrpl(ppszText, 0, "\tP", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tP", szTemp, 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\td"))  // startup dir
+        if (p = strstr(pstrText->psz, "\td"))  // startup dir
         {
             strcpy(szTemp, "?");
             if (!pProgDetails)
@@ -841,7 +842,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszStartupDir);
                 else strcpy(szTemp, "");
 
-            xstrrpl(ppszText, 0, "\td", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\td", szTemp, 0);
             ulrc++;
         }
 
@@ -862,29 +863,29 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
              $W      WPS class name (e.g. WPDataFile)
          */
 
-        if (p = strstr(*ppszText, "\tw"))     // class default title
+        if (p = strstr(pstrText->psz, "\tw"))     // class default title
         {
             SOMClass *pClassObject = _somGetClass(pObject);
             if (pClassObject)
-                xstrrpl(ppszText, 0, "\tw", _wpclsQueryTitle(pClassObject), 0);
+                xstrcrpl(pstrText, 0, "\tw", _wpclsQueryTitle(pClassObject), 0);
             else
-                xstrrpl(ppszText, 0, "\tw", "?", 0);
+                xstrcrpl(pstrText, 0, "\tw", "?", 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tW"))     // class name
+        if (p = strstr(pstrText->psz, "\tW"))     // class name
         {
             strcpy(szTemp, "?");
-            xstrrpl(ppszText, 0, "\tW", _somGetClassName(pObject), 0);
+            xstrcrpl(pstrText, 0, "\tW", _somGetClassName(pObject), 0);
             ulrc++;
         }
 
-        if (p = strstr(*ppszText, "\tt"))          // object title
+        if (p = strstr(pstrText->psz, "\tt"))          // object title
         {
             strcpy(szTemp, "?");
             strcpy(szTemp, _wpQueryTitle(pObject));
             strhBeautifyTitle(szTemp);
-            xstrrpl(ppszText, 0, "\tt", szTemp, 0);
+            xstrcrpl(pstrText, 0, "\tt", szTemp, 0);
             ulrc++;
         }
     }
@@ -927,6 +928,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
  *@@changed V0.9.0 [umoeller]: added shadow dereferencing
  *@@changed V0.9.3 (2000-04-08) [umoeller]: added cnr error return code check
  *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
+ *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrrpl
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -960,7 +962,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
        the above functions afterwards.
     */
 
-    PSZ         pszReturn = NULL;
+    XSTRING     strText;
 
     CNRINFO     CnrInfo;
     PMINIRECORDCORE pmrcSelected, pmrc2;
@@ -976,6 +978,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // get thousands separator from "Country" object
     CHAR        cThousands = cmnQueryThousandsSeparator(),
                 szTemp[300];
+
+    xstrInit(&strText, 300);
 
     // go thru all the selected objects in the container
     // and sum up the size of the corresponding objects in
@@ -1024,7 +1028,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // objects are selected
     if ( (ulSelectedCount == 0) || (pObject == NULL) )
         // "no object" mode
-        pszReturn = strdup(cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
+        xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
     else if (ulSelectedCount == 1)
     {
         // "single-object" mode: query the text to translate
@@ -1039,12 +1043,12 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         if (pObject == NULL)
             return(strdup(""));
 
-        pszReturn = strdup(stbQueryClassMnemonics(_somGetClass(pObject)));
+        xstrcpy(&strText, stbQueryClassMnemonics(_somGetClass(pObject)));
                                                   // object's class object
     }
     else
         // "multiple objects" mode
-        pszReturn = strdup(cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
+        xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
 
     // before actually translating any "$" keys, all the
     // '$' characters in the mnemonic string are changed to
@@ -1054,7 +1058,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // filename contains a '$' character.
     // All the translation logic will then only search for
     // those tab characters.
-    while (p2 = strchr(pszReturn, '$'))
+    while (p2 = strchr(strText.psz, '$'))
         *p2 = '\t';
 
     if (ulSelectedCount == 1)
@@ -1062,7 +1066,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         // "single-object" mode: translate
         // object-specific mnemonics first
         stbTranslateSingleMnemonics(pObject,               // the object itself
-                                    &pszReturn,
+                                    &strText,
                                     cThousands);
         if (_somIsA(pObject, _WPFileSystem))
             // if we have a file-system object, we
@@ -1081,7 +1085,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // if we have a "total size" query, also sum up the size of
     // the whole folder into ulSizeTotal, which will be handled
     // in detail below
-    if (strstr(pszReturn, "\tS"))
+    if (strstr(strText.psz, "\tS"))
     {
         #ifdef DEBUG_STATUSBARS
             _Pmpf(("Calculating total size"));
@@ -1112,129 +1116,129 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         #endif
     }
 
-    if (p = strstr(pszReturn, "\tc")) // selected objs count
+    if (p = strstr(strText.psz, "\tc")) // selected objs count
     {
         sprintf(szTemp, "%d", ulSelectedCount);
-        xstrrpl(&pszReturn, 0, "\tc", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tc", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tC")) // total obj count
+    if (p = strstr(strText.psz, "\tC")) // total obj count
     {
         sprintf(szTemp, "%d", CnrInfo.cRecords);
-        xstrrpl(&pszReturn, 0, "\tC", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tC", szTemp, 0);
     }
 
     // the following are for free space on drive
 
-    if (p = strstr(pszReturn, "\tfb"))
+    if (p = strstr(strText.psz, "\tfb"))
     {
         strhThousandsDouble(szTemp,
                             wpshQueryDiskFreeFromFolder(somSelf),
                             cThousands);
-        xstrrpl(&pszReturn, 0, "\tfb", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tfb", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tfk"))
+    if (p = strstr(strText.psz, "\tfk"))
     {
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) + 500) / 1000),
                             cThousands);
-        xstrrpl(&pszReturn, 0, "\tfk", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tfk", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tfK"))
+    if (p = strstr(strText.psz, "\tfK"))
     {
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) + 512) / 1024),
                             cThousands);
-        xstrrpl(&pszReturn, 0, "\tfK", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tfK", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tfm"))
+    if (p = strstr(strText.psz, "\tfm"))
     {
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) +500000) / 1000000),
                             cThousands);
-        xstrrpl(&pszReturn, 0, "\tfm", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tfm", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tfM"))
+    if (p = strstr(strText.psz, "\tfM"))
     {
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) + (1024*1024/2)) / (1024*1024)),
                             cThousands);
-        xstrrpl(&pszReturn, 0, "\tfM", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tfM", szTemp, 0);
     }
 
     // the following are for SELECTED size
-    if (p = strstr(pszReturn, "\tsb"))
+    if (p = strstr(strText.psz, "\tsb"))
     {
         strhThousandsULong(szTemp, ulSizeSelected, cThousands);
-        xstrrpl(&pszReturn, 0, "\tsb", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tsb", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tsk"))
+    if (p = strstr(strText.psz, "\tsk"))
     {
         strhThousandsULong(szTemp, ((ulSizeSelected+500) / 1000), cThousands);
-        xstrrpl(&pszReturn, 0, "\tsk", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tsk", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tsK"))
+    if (p = strstr(strText.psz, "\tsK"))
     {
         strhThousandsULong(szTemp, ((ulSizeSelected+512) / 1024), cThousands);
-        xstrrpl(&pszReturn, 0, "\tsK", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tsK", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tsm"))
+    if (p = strstr(strText.psz, "\tsm"))
     {
         strhThousandsULong(szTemp, ((ulSizeSelected+500000) / 1000000), cThousands);
-        xstrrpl(&pszReturn, 0, "\tsm", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tsm", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tsM"))
+    if (p = strstr(strText.psz, "\tsM"))
     {
         strhThousandsULong(szTemp, ((ulSizeSelected+(1024*1024/2)) / (1024*1024)), cThousands);
-        xstrrpl(&pszReturn, 0, "\tsM", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tsM", szTemp, 0);
     }
 
     // the following are for TOTAL folder size
-    if (p = strstr(pszReturn, "\tSb"))
+    if (p = strstr(strText.psz, "\tSb"))
     {
         strhThousandsULong(szTemp, ulSizeTotal, cThousands);
-        xstrrpl(&pszReturn, 0, "\tSb", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tSb", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tSk"))
+    if (p = strstr(strText.psz, "\tSk"))
     {
         strhThousandsULong(szTemp, ((ulSizeTotal+500) / 1000), cThousands);
-        xstrrpl(&pszReturn, 0, "\tSk", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tSk", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tSK"))
+    if (p = strstr(strText.psz, "\tSK"))
     {
         strhThousandsULong(szTemp, ((ulSizeTotal+512) / 1024), cThousands);
-        xstrrpl(&pszReturn, 0, "\tSK", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tSK", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tSm"))
+    if (p = strstr(strText.psz, "\tSm"))
     {
         strhThousandsULong(szTemp, ((ulSizeTotal+500000) / 1000000), cThousands);
-        xstrrpl(&pszReturn, 0, "\tSm", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tSm", szTemp, 0);
     }
 
-    if (p = strstr(pszReturn, "\tSM"))
+    if (p = strstr(strText.psz, "\tSM"))
     {
         strhThousandsULong(szTemp, ((ulSizeTotal+(1024*1024/2)) / (1024*1024)), cThousands);
-        xstrrpl(&pszReturn, 0, "\tSM", szTemp, 0);
+        xstrcrpl(&strText, 0, "\tSM", szTemp, 0);
     }
 
     // now translate remaining '\t' characters back into
     // '$' characters; this might happen if the user actually
     // wanted to see a '$' character displayed
-    while (p2 = strchr(pszReturn, '\t'))
+    while (p2 = strchr(strText.psz, '\t'))
         *p2 = '$';
 
-    return (pszReturn);
+    return (strText.psz);
 }
 
 /* ******************************************************************

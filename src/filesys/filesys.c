@@ -625,63 +625,64 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                                                                   pszEAName);
                             if (peab)
                             {
-                                PSZ     pszInfo = NULL,
-                                        pszContents = NULL;
+                                PSZ     pszContents = NULL;
+                                XSTRING strInfo;
                                 USHORT  usEAType = eaQueryEAType(peab);
                                 CHAR    szTemp[100];
                                 BOOL    fDumpBinary = TRUE;
 
-                                xstrcpy(&pszInfo, pszEAName);
+                                xstrInit(&strInfo, 200);
+                                xstrcpy(&strInfo, pszEAName);
 
                                 switch (usEAType)
                                 {
                                     case EAT_BINARY:
-                                        xstrcat(&pszInfo, " (EAT_BINARY");
+                                        xstrcat(&strInfo, " (EAT_BINARY");
                                     break;
 
                                     case EAT_ASCII:
-                                        xstrcat(&pszInfo, " (EAT_ASCII");
+                                        xstrcat(&strInfo, " (EAT_ASCII");
                                         pszContents = eaCreatePSZFromBinding(peab);
                                         fDumpBinary = FALSE;
                                     break;
 
                                     case EAT_BITMAP:
-                                        xstrcat(&pszInfo, " (EAT_BITMAP");
+                                        xstrcat(&strInfo, " (EAT_BITMAP");
                                     break;
 
                                     case EAT_METAFILE:
-                                        xstrcat(&pszInfo, " (EAT_METAFILE");
+                                        xstrcat(&strInfo, " (EAT_METAFILE");
                                     break;
 
                                     case EAT_ICON:
-                                        xstrcat(&pszInfo, " (EAT_ICON");
+                                        xstrcat(&strInfo, " (EAT_ICON");
                                     break;
 
                                     case EAT_EA:
-                                        xstrcat(&pszInfo, " (EAT_EA");
+                                        xstrcat(&strInfo, " (EAT_EA");
                                     break;
 
                                     case EAT_MVMT:
-                                        xstrcat(&pszInfo, " (EAT_MVMT");
+                                        xstrcat(&strInfo, " (EAT_MVMT");
                                     break;
 
                                     case EAT_MVST:
-                                        xstrcat(&pszInfo, " (EAT_MVST");
+                                        xstrcat(&strInfo, " (EAT_MVST");
                                     break;
 
                                     case EAT_ASN1:
-                                        xstrcat(&pszInfo, " (EAT_ASN1");
+                                        xstrcat(&strInfo, " (EAT_ASN1");
                                     break;
 
                                     default:
                                     {
                                         sprintf(szTemp, " (type 0x%lX", usEAType);
-                                        xstrcat(&pszInfo, szTemp);
+                                        xstrcat(&strInfo, szTemp);
                                     }
                                 }
 
                                 sprintf(szTemp, ", %d bytes)", peab->usValueLength);
-                                xstrcat(&pszInfo, szTemp);
+                                xstrcat(&strInfo, szTemp);
 
                                 if (fDumpBinary)
                                 {
@@ -693,7 +694,7 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                                 // set static above MLE
                                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                                   ID_XSDI_FILES_EAINFO,
-                                                  pszInfo);
+                                                  strInfo.psz);
 
                                 // set MLE; this might be empty
                                 WinSetDlgItemText(pcnbp->hwndDlgPage,
@@ -701,8 +702,7 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                                                   pszContents);
 
                                 eaFreeBinding(peab);
-                                if (pszInfo)
-                                    free(pszInfo);
+                                xstrClear(&strInfo);
                                 if (pszContents)
                                     free(pszContents);
                             }
@@ -905,7 +905,8 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         if ((_wpQueryProgDetails(pcnbp->somSelf, (PPROGDETAILS)NULL, &cbProgDetails)))
             if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pcnbp->somSelf,
                                                           cbProgDetails,
-                                                          NULL)) != NULL)
+                                                          NULL))
+                    != NULL)
             {
                 _wpQueryProgDetails(pcnbp->somSelf, pProgDetails, &cbProgDetails);
 
@@ -942,7 +943,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  */
 
 VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
-                           PSZ *ppszTemp)     // in: string to append to (xstrcat)
+                           PXSTRING pstrTemp)   // in: string to append to (xstrcat)
 {
     PSZ pszValue = NULL;
     ULONG ulSize = 0;
@@ -962,9 +963,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                 {
                     if (pProgDetails->pszExecutable)
                     {
-                        xstrcat(ppszTemp, "EXENAME=");
-                        xstrcat(ppszTemp, pProgDetails->pszExecutable);
-                        xstrcat(ppszTemp, ";");
+                        xstrcat(pstrTemp, "EXENAME=");
+                        xstrcat(pstrTemp, pProgDetails->pszExecutable);
+                        xstrcat(pstrTemp, ";");
 
                         switch (pProgDetails->progt.progc)
                         {
@@ -1041,7 +1042,7 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                         }
 
                         if (pszProgString)
-                            xstrcat(ppszTemp, pszProgString);
+                            xstrcat(pstrTemp, pszProgString);
                     }
                 } // end if (_somIsA(somSelf, _WPProgram)
 
@@ -1049,18 +1050,18 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                 if (pProgDetails->pszParameters)
                     if (strlen(pProgDetails->pszParameters))
                     {
-                        xstrcat(ppszTemp, "PARAMETERS=");
-                        xstrcat(ppszTemp, pProgDetails->pszParameters);
-                        xstrcat(ppszTemp, ";");
+                        xstrcat(pstrTemp, "PARAMETERS=");
+                        xstrcat(pstrTemp, pProgDetails->pszParameters);
+                        xstrcat(pstrTemp, ";");
                     }
 
                 // STARTUPDIR=
                 if (pProgDetails->pszStartupDir)
                     if (strlen(pProgDetails->pszStartupDir))
                     {
-                        xstrcat(ppszTemp, "STARTUPDIR=");
-                        xstrcat(ppszTemp, pProgDetails->pszStartupDir);
-                        xstrcat(ppszTemp, ";");
+                        xstrcat(pstrTemp, "STARTUPDIR=");
+                        xstrcat(pstrTemp, pProgDetails->pszStartupDir);
+                        xstrcat(pstrTemp, ";");
                     }
 
                 // SET XXX=VVV
@@ -1084,9 +1085,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                             {
                                 PSZ pszThis = *ppszThis;
 
-                                xstrcat(ppszTemp, "SET ");
-                                xstrcat(ppszTemp, pszThis);
-                                xstrcat(ppszTemp, ";");
+                                xstrcat(pstrTemp, "SET ");
+                                xstrcat(pstrTemp, pszThis);
+                                xstrcat(pstrTemp, ";");
 
                                 // next environment string
                                 ppszThis++;
@@ -1112,9 +1113,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
             // wpQueryAssociationFilter:
             // supported by both WPProgram and WPProgramFile
     {
-        xstrcat(ppszTemp, "ASSOCFILTER=");
-        xstrcat(ppszTemp, pszValue);
-        xstrcat(ppszTemp, ";");
+        xstrcat(pstrTemp, "ASSOCFILTER=");
+        xstrcat(pstrTemp, pszValue);
+        xstrcat(pstrTemp, ";");
     }
 
     // ASSOCTYPE
@@ -1122,9 +1123,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
             // wpQueryAssociationType:
             // supported by both WPProgram and WPProgramFile
     {
-        xstrcat(ppszTemp, "ASSOCTYPE=");
-        xstrcat(ppszTemp, pszValue);
-        xstrcat(ppszTemp, ";");
+        xstrcat(pstrTemp, "ASSOCTYPE=");
+        xstrcat(pstrTemp, pszValue);
+        xstrcat(pstrTemp, ";");
     }
 }
 
@@ -1140,29 +1141,32 @@ ULONG fsysQueryProgramFileSetup(WPObject *somSelf,
                                 ULONG cbSetupString)    // in: size of that buffer or 0
 {
     // temporary buffer for building the setup string
-    PSZ     pszTemp = NULL;
+    XSTRING strTemp;
     ULONG   ulReturn = 0;
 
+    xstrInit(&strTemp, 1000);
+
     fsysQueryProgramSetup(somSelf,
-                          &pszTemp);
+                          &strTemp);
 
     /*
      * append string
      *
      */
 
-    if (pszTemp)
+    if (strTemp.ulLength)
     {
         // return string if buffer is given
         if ((pszSetupString) && (cbSetupString))
             strhncpy0(pszSetupString,   // target
-                      pszTemp,          // source
+                      strTemp.psz,      // source
                       cbSetupString);   // buffer size
 
         // always return length of string
-        ulReturn = strlen(pszTemp);
-        free(pszTemp);
+        ulReturn = strTemp.ulLength;
     }
+
+    xstrClear(&strTemp);
 
     return (ulReturn);
 }

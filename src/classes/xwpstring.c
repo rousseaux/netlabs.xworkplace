@@ -817,9 +817,15 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
  *      a new view needs to be opened. Normally, this
  *      gets called after wpViewObject has scanned the
  *      object's USEITEMs and has determined that a new
- *      view is needed, mostly in response to a menu
- *      selection from the "Open" submenu or a double-click
- *      in the folder.
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
  *
  *      The "view" of setup strings is to invoke the setup
  *      string on a separate thread.
@@ -1028,7 +1034,12 @@ SOM_Scope PSZ  SOMLINK xwstrM_wpclsQueryTitle(M_XWPString *somSelf)
  *@@ wpclsQueryIconData:
  *      this WPObject class method builds the default
  *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned).
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
+ *
  *      We override this to give XWPString object a new
  *      icon (src\shared\xwpstring.ico).
  */
@@ -1050,7 +1061,12 @@ SOM_Scope ULONG  SOMLINK xwstrM_wpclsQueryIconData(M_XWPString *somSelf,
 
 /*
  *@@ wpclsQuerySettingsPageSize:
- *
+ *      this WPObject class method should return the
+ *      size of the largest settings page in dialog
+ *      units; if a settings notebook is initially
+ *      opened, i.e. no window pos has been stored
+ *      yet, the WPS will use this size, to avoid
+ *      truncated settings pages.
  */
 
 SOM_Scope BOOL  SOMLINK xwstrM_wpclsQuerySettingsPageSize(M_XWPString *somSelf,
@@ -1066,6 +1082,13 @@ SOM_Scope BOOL  SOMLINK xwstrM_wpclsQuerySettingsPageSize(M_XWPString *somSelf,
 
 /*
  *@@ wpclsCreateDefaultTemplates:
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
  *
  *@@added V0.9.3 (2000-04-26) [umoeller]
  */

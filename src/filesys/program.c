@@ -374,6 +374,9 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)
 
 /*
  *@@ progDisplayParamsPrompt:
+ *      this gets called from progSetupArgs for each of
+ *      those "[prompt]" strings that is found in the
+ *      arguments of a program object.
  *
  *      This function must either return FALSE or it MUST
  *      replace the [] thing in the buffer, or the caller
@@ -382,9 +385,9 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-BOOL progDisplayParamsPrompt(PSZ *ppszParamsNew,
-                             PSZ pStart,
-                             PSZ pEnd)
+BOOL DisplayParamsPrompt(PXSTRING pstrParamsNew,
+                         PSZ pStart,
+                         PSZ pEnd)
 {
     BOOL brc = TRUE;
 
@@ -415,12 +418,19 @@ BOOL progDisplayParamsPrompt(PSZ *ppszParamsNew,
                 if (WinProcessDlg(hwndDlg) == DID_OK)
                 {
                     CHAR    szNew[300];
+                    XSTRING strFind,
+                            strReplace;
+                    xstrInit(&strFind, 0);
+                    xstrset(&strFind, pszBrackets);     // must not be freed here!
+                    xstrInit(&strReplace, 0);
+
                     WinQueryDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
                                         sizeof(szNew), szNew);
-                    xstrrpl(ppszParamsNew,
+                    xstrset(&strReplace, szNew);        // must not be freed here!
+                    xstrrpl(pstrParamsNew,
                             0,
-                            pszBrackets,
-                            szNew,
+                            &strFind,
+                            &strReplace,
                             0);
                 }
                 else
@@ -504,7 +514,7 @@ BOOL progSetupArgs(const char *pcszParams,
                    PSZ *ppszParamsNew)          // out: new params
 {
     BOOL    brc = TRUE;
-    PSZ     pszParamsNew = 0;
+    XSTRING strParamsNew;
     BOOL    fAppendDataFilename = TRUE;
 
     CHAR    szDataFilename[CCHMAXPATH] = "";
@@ -513,6 +523,8 @@ BOOL progSetupArgs(const char *pcszParams,
         // get fully q'fied data file name
         _wpQueryFilename(pFile, szDataFilename, TRUE);
     // else no file: szDataFilename is empty
+
+    xstrInit(&strParamsNew, 200);
 
     if (pcszParams)
     {
@@ -525,11 +537,11 @@ BOOL progSetupArgs(const char *pcszParams,
 
         // copy existing params into new buffer
         // so we can search and replace
-        pszParamsNew = strdup(pcszParams);
+        xstrcpy(&strParamsNew, pcszParams);
 
         //  "%**P": drive and path information without the last backslash (\).
         fFirstLoop = TRUE;
-        while (p = strstr(pszParamsNew, "%**P"))
+        while (p = strstr(strParamsNew.psz, "%**P"))
         {
             if (fFirstLoop)
             {
@@ -540,7 +552,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     strhncpy0(szTemp, szDataFilename, p2 - szDataFilename);
                 fFirstLoop = FALSE;
             }
-            xstrrpl(&pszParamsNew, 0, "%**P", szTemp, NULL);
+            xstrcrpl(&strParamsNew, 0, "%**P", szTemp, NULL);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -548,7 +560,7 @@ BOOL progSetupArgs(const char *pcszParams,
 
         //  "%**D": drive with ':' or UNC name.
         fFirstLoop = TRUE;
-        while (p = strstr(pszParamsNew, "%**D"))
+        while (p = strstr(strParamsNew.psz, "%**D"))
         {
             if (fFirstLoop)
             {
@@ -559,7 +571,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     strhncpy0(szTemp, szDataFilename, p2 - szDataFilename);
                 fFirstLoop = FALSE;
             }
-            xstrrpl(&pszParamsNew, 0, "%**D", szTemp, NULL);
+            xstrcrpl(&strParamsNew, 0, "%**D", szTemp, NULL);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -567,7 +579,7 @@ BOOL progSetupArgs(const char *pcszParams,
 
         //  "%**N": file name without extension.
         fFirstLoop = TRUE;
-        while (p = strstr(pszParamsNew, "%**N"))
+        while (p = strstr(strParamsNew.psz, "%**N"))
         {
             if (fFirstLoop)
             {
@@ -591,7 +603,7 @@ BOOL progSetupArgs(const char *pcszParams,
                 }
                 fFirstLoop = FALSE;
             }
-            xstrrpl(&pszParamsNew, 0, "%**N", szTemp, NULL);
+            xstrcrpl(&strParamsNew, 0, "%**N", szTemp, NULL);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -599,7 +611,7 @@ BOOL progSetupArgs(const char *pcszParams,
 
         // "%**F": file name with extension.
         fFirstLoop = TRUE;
-        while (p = strstr(pszParamsNew, "%**F"))
+        while (p = strstr(strParamsNew.psz, "%**F"))
         {
             if (fFirstLoop)
             {
@@ -611,7 +623,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     strcpy(szTemp, p2 + 1);
                 fFirstLoop = FALSE;
             }
-            xstrrpl(&pszParamsNew, 0, "%**F", szTemp, NULL);
+            xstrcrpl(&strParamsNew, 0, "%**F", szTemp, NULL);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
@@ -622,7 +634,7 @@ BOOL progSetupArgs(const char *pcszParams,
         fFirstLoop = TRUE;
         {
             PSZ pszExt = "";
-            while (p = strstr(pszParamsNew, "%**E"))
+            while (p = strstr(strParamsNew.psz, "%**E"))
             {
                 if (fFirstLoop)
                 {
@@ -631,7 +643,7 @@ BOOL progSetupArgs(const char *pcszParams,
                         pszExt = "";
                     fFirstLoop = FALSE;
                 }
-                xstrrpl(&pszParamsNew, 0, "%**E", pszExt, NULL);
+                xstrcrpl(&strParamsNew, 0, "%**E", pszExt, NULL);
 
                 // disable appending the full path to the end
                 fAppendDataFilename = FALSE;
@@ -639,33 +651,33 @@ BOOL progSetupArgs(const char *pcszParams,
         }
 
         // "%*": full path of data file, if pArgDataFile
-        while (p = strstr(pszParamsNew, "%*"))
+        while (p = strstr(strParamsNew.psz, "%*"))
         {
-            xstrrpl(&pszParamsNew, 0, "%*", szDataFilename, NULL);
+            xstrcrpl(&strParamsNew, 0, "%*", szDataFilename, NULL);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
         }
 
         // "%": disable passing full path
-        while (p = strstr(pszParamsNew, "%"))
+        while (p = strstr(strParamsNew.psz, "%"))
         {
-            xstrrpl(&pszParamsNew, 0, "%", "", NULL);
+            xstrcrpl(&strParamsNew, 0, "%", "", NULL);
 
             // disable appending the full path to the end
             fAppendDataFilename = FALSE;
         }
 
         // now go for prompts...
-        while (p = strchr(pszParamsNew, '['))
+        while (p = strchr(strParamsNew.psz, '['))
         {
             PSZ pStart = p,
                 pEnd;
             if (pEnd = strchr(pStart, ']'))
             {
-                brc = progDisplayParamsPrompt(&pszParamsNew,
-                                              pStart,
-                                              pEnd);
+                brc = DisplayParamsPrompt(&strParamsNew,
+                                          pStart,
+                                          pEnd);
 
             } // if (pEnd = strchr(pStart, ']'))
             else
@@ -681,22 +693,23 @@ BOOL progSetupArgs(const char *pcszParams,
     if (fAppendDataFilename)
     {
         // none of the above worked:
-        // append to the end
-        if ((pszParamsNew) && (strlen(pszParamsNew)))
-            if (*(pszParamsNew + strlen(pszParamsNew) - 1) != ' ')
-                xstrcat(&pszParamsNew,
+        // append filename to the end
+        if (strParamsNew.ulLength)
+            // space as last character?
+            if (    *(strParamsNew.psz + strParamsNew.ulLength - 1)
+                 != ' ')
+                xstrcat(&strParamsNew,
                         " ");
 
-        xstrcat(&pszParamsNew,
+        xstrcat(&strParamsNew,
                 szDataFilename);
     }
 
     if (brc)
-        *ppszParamsNew = pszParamsNew;
+        *ppszParamsNew = strParamsNew.psz;
     else
         // cancelled or error:
-        if (pszParamsNew)
-            free(pszParamsNew);
+        xstrClear(&strParamsNew);
 
     return (brc);
 }

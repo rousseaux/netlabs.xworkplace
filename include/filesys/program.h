@@ -46,10 +46,6 @@
      *
      ********************************************************************/
 
-    BOOL progDisplayParamsPrompt(PSZ *ppszParamsNew,
-                                 PSZ pStart,
-                                 PSZ pEnd);
-
     #ifdef INCL_WINPROGRAMLIST
     HAPP progStartApp(const PROGDETAILS *pcProgDetails,
                       const char *pcszParameters,

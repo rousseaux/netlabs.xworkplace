@@ -355,7 +355,15 @@ SOM_Scope PSZ  SOMLINK xwpscrM_wpclsQueryTitle(M_XWPScreen *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
  *
+ *      We give the "Screen" object a new standard icon here.
  */
 
 SOM_Scope ULONG  SOMLINK xwpscrM_wpclsQueryIconData(M_XWPScreen *somSelf,

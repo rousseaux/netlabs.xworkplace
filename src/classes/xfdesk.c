@@ -618,7 +618,15 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
 
 /*
  *@@ wpclsQueryIconData:
- *      give XFldDesktop's a new default closed icon, if the
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
+ *
+ *      We give XFldDesktop's a new default closed icon, if the
  *      global settings allow this.
  *      This is loaded from /ICONS/ICONS.DLL.
  */

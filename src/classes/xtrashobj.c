@@ -803,9 +803,15 @@ SOM_Scope BOOL  SOMLINK xtro_wpMoveObject(XWPTrashObject *somSelf,
  *      a new view needs to be opened. Normally, this
  *      gets called after wpViewObject has scanned the
  *      object's USEITEMs and has determined that a new
- *      view is needed, mostly in response to a menu
- *      selection from the "Open" submenu or a double-click
- *      in the folder.
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
  *
  *      Since trash objects have no views, we'll always
  *      return NULLHANDLE.
@@ -987,12 +993,12 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
  *      Templates folder to allow a class to
  *      create its default templates.
  *
- *      The default WPS
- *      behavior is to create new templates if the class
- *      default title is different from the existing
- *      templates, but since we never want templates for
- *      trash objects, we'll have to suppress this
- *      behavior.
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
+ *
+ *      Since we never want templates for trash objects,
+ *      we'll have to suppress this behavior.
  */
 
 SOM_Scope BOOL  SOMLINK xtroM_wpclsCreateDefaultTemplates(M_XWPTrashObject *somSelf,

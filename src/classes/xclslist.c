@@ -405,9 +405,15 @@ SOM_Scope BOOL  SOMLINK xwlist_wpQueryDefaultHelp(XWPClassList *somSelf,
  *      a new view needs to be opened. Normally, this
  *      gets called after wpViewObject has scanned the
  *      object's USEITEMs and has determined that a new
- *      view is needed, mostly in response to a menu
- *      selection from the "Open" submenu or a double-click
- *      in the folder.
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
  *
  *      We need to support the new "Class list view" here.
  *
@@ -553,7 +559,15 @@ SOM_Scope PSZ  SOMLINK xwlistM_wpclsQueryTitle(M_XWPClassList *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      give the "WPS Class List" object
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
+ *
+ *      We give the "WPS Class List" object
  *      a new icon.
  */
 

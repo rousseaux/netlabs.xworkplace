@@ -442,9 +442,15 @@ SOM_Scope BOOL  SOMLINK xfdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
  *      a new view needs to be opened. Normally, this
  *      gets called after wpViewObject has scanned the
  *      object's USEITEMs and has determined that a new
- *      view is needed, mostly in response to a menu
- *      selection from the "Open" submenu or a double-click
- *      in the folder.
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
  *
  *      Of course, for data files, the "views" are the
  *      various associations in the "Open" submenu, which
@@ -799,13 +805,17 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this is called by the system to allow a class to
- *      create its default templates. The default WPS
- *      behavior is to create new templates if the class
- *      default title is different from the existing
- *      templates, but since we are replacing the class,
- *      we will have to suppress this in order not to
- *      crowd the Templates folder.
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
+ *
+ *      Since we are replacing the class, we will have to
+ *      suppress this in order not to crowd the Templates
+ *      folder.
  */
 
 SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf,
@@ -832,7 +842,15 @@ SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSel
 
 /*
  *@@ wpclsQueryIconData:
- *      give data files a new default icon, if the
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
+ *
+ *      We give data files a new default icon, if the
  *      global settings allow this.
  *      This is loaded from /ICONS/ICONS.DLL.
  */

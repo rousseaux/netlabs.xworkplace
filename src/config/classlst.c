@@ -139,7 +139,7 @@ typedef struct _METHODRECORD
     PSZ                 pszIntroducedBy;        // name of class which introduced the method.
                                                 // This is the return value of _somGetname and must not be freed.
     ULONG               ulIntroducedBy;         // inheritance distance (see SOMMETHOD.ulIntroducedBy, classlst.h)
-    PSZ                 pszOverriddenBy;        // string of classes which override this method.
+    PSZ                 pszOverriddenBy2;       // string of classes which override this method.
                                                 // This is composed of the linked list in SOMMETHOD.
     ULONG               ulOverriddenBy;         // inheritance distance (see SOMMETHOD.ulOverriddenBy, classlst.h)
 
@@ -2508,7 +2508,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
-            xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszOverriddenBy);
+            xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszOverriddenBy2);
             xfi[i].pszColumnTitle = pNLSStrings->pszClsListOverriddenBy;
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
@@ -2598,8 +2598,10 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                 // to the method data returned by clsQueryMethodInfo
                 while ((preccThis) && (pNode))
                 {
-                    PSOMMETHOD psm = (PSOMMETHOD)pNode->pItemData;
-                    PLISTNODE pnodeOverride;
+                    PSOMMETHOD  psm = (PSOMMETHOD)pNode->pItemData;
+                    PLISTNODE   pnodeOverride;
+                    XSTRING     strOverriddenBy;
+                    xstrInit(&strOverriddenBy, 200);
 
                     // set up information
                     preccThis->ulMethodIndex = ulIndex;
@@ -2626,20 +2628,24 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
                         if (pClassObject)
                         {
-                            if (preccThis->pszOverriddenBy)
+                            if (strOverriddenBy.ulLength)
                                 // not first class: append comma
-                                xstrcat(&preccThis->pszOverriddenBy, ", ");
+                                xstrcat(&strOverriddenBy, ", ");
 
-                            xstrcat(&preccThis->pszOverriddenBy, _somGetName(pClassObject));
+                            xstrcat(&strOverriddenBy, _somGetName(pClassObject));
                         }
 
                         pnodeOverride = pnodeOverride->pNext;
                     }
 
-                    if (preccThis->pszOverriddenBy)
+                    if (strOverriddenBy.ulLength)
+                        // we have overrides:
+                        preccThis->pszOverriddenBy2 = strOverriddenBy.psz;
+
+                    if (strOverriddenBy.psz)
                         // store this string in list of items to be freed later
                         lstAppendItem(&pMethodInfoData->pClientData->llCnrStrings,
-                                      preccThis->pszOverriddenBy);
+                                      strOverriddenBy.psz);
 
                     preccThis->ulOverriddenBy = psm->ulOverriddenBy;
 

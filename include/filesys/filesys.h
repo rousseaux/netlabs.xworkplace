@@ -62,8 +62,10 @@
                                  ULONG flFlags);
     #endif
 
+    #ifdef XSTRING_HEADER_INCLUDED
     VOID fsysQueryProgramSetup(WPObject *somSelf,
-                               PSZ *ppszTemp);
+                               PXSTRING pstrTemp);
+    #endif
 
     ULONG fsysQueryProgramFileSetup(WPObject *somSelf,
                                     PSZ pszSetupString,

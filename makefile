@@ -228,7 +228,7 @@ helpers:
 # which is prepared for this. The helpers.lib file
 # is created in the .\bin directory and can be used
 # with both EXE's and DLL's (VAC++ user guide says).
-    @echo $(MAKEDIR)\makefile: Going for WarpIN subdir src\helpers (DLL version)
+    @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin" "CC_HELPERS=$(CC_HELPERS_DLL)"

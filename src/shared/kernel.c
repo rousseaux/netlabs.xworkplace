@@ -1223,12 +1223,14 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
             {
                 if (mp1)
                 {
-                    PSZ pszMsg = (PSZ)mp1;
+                    XSTRING strMsg;
+                    xstrInit(&strMsg, 0);
+                    xstrset(&strMsg, (PSZ)mp1);
                     if (mp2)
                     {
                         // restart WPS: Yes/No box
                         if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                          pszMsg,
+                                          strMsg.psz,
                                           (PSZ)"XFolder: Exception caught",
                                           0,
                                           MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
@@ -1242,15 +1244,15 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     else
                     {
                         // just report:
-                        xstrcat(&pszMsg,
+                        xstrcat(&strMsg,
                                 "\n\nPlease post a bug report to "
                                 "xworkplace-user@egroups.com and attach the the file "
                                 "XWPTRAP.LOG, which you will find in the root "
                                 "directory of your boot drive. ");
-                        winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
+                        winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", strMsg.psz);
                     }
 
-                    free(pszMsg);
+                    xstrClear(&strMsg);
                 }
             break; }
 

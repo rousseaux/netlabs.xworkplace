@@ -315,7 +315,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
  *         run into problems when WM_APPTERMINATENOTIFY
  *         comes in.
  *
- *      Note: These flags are NOT persistant across
+ *      Note: These flags are NOT persistent across
  *      reboots, i.e. not stored with wpSaveState.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
@@ -426,6 +426,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
                                                    PUSHORT pusKeyCode)
 {
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryObjectHotkey");
+
     return (objQueryObjectHotkey(somSelf, pusFlags, pucScanCode, pusKeyCode));
 }
 
@@ -461,6 +462,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
                                                  USHORT usKeyCode)
 {
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetObjectHotkey");
+
     return (objSetObjectHotkey(somSelf, usFlags, ucScanCode, usKeyCode));
 }
 
@@ -492,6 +494,11 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
  *
  *      This method only returns setup strings which have
  *      non-default values.
+ *
+ *      This method only resolves the method pointer for
+ *      the "xwpQuerySetup2" method, which must to the actual
+ *      setup string composing. See XFldObject::xwpQuerySetup2
+ *      for details.
  *
  *@@added V0.9.1 (2000-01-16) [umoeller]
  */
@@ -545,7 +552,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *      2.  You must call the parent method _after_ your implementation
  *          to make sure XFldObject gets called last, because the OBJECTID
  *          setup string must be added at the very last position in the
- *          complete setup string, and that string is implemented
+ *          complete setup string (IBM says), and that string is implemented
  *          by the XFldObject method.
  *
  *      3.  When calling the parent method, modify the buffer and size

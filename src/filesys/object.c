@@ -236,44 +236,46 @@ VOID AddFolderView2Cnr(HWND hwndCnr,
                        ULONG ulView,
                        PSZ pszView)
 {
-    PSZ pszTemp = 0;
+    XSTRING strTemp;
     ULONG ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
 
-    xstrcpy(&pszTemp, pszView);
-    xstrcat(&pszTemp, ": ");
+    xstrInit(&strTemp, 200);
+
+    xstrcpy(&strTemp, pszView);
+    xstrcat(&strTemp, ": ");
 
     if (ulViewAttrs & CV_ICON)
-        xstrcat(&pszTemp, "CV_ICON ");
+        xstrcat(&strTemp, "CV_ICON ");
     if (ulViewAttrs & CV_NAME)
-        xstrcat(&pszTemp, "CV_NAME ");
+        xstrcat(&strTemp, "CV_NAME ");
     if (ulViewAttrs & CV_TEXT)
-        xstrcat(&pszTemp, "CV_TEXT ");
+        xstrcat(&strTemp, "CV_TEXT ");
     if (ulViewAttrs & CV_TREE)
-        xstrcat(&pszTemp, "CV_TREE ");
+        xstrcat(&strTemp, "CV_TREE ");
     if (ulViewAttrs & CV_DETAIL)
-        xstrcat(&pszTemp, "CV_DETAIL ");
+        xstrcat(&strTemp, "CV_DETAIL ");
     if (ulViewAttrs & CA_DETAILSVIEWTITLES)
-        xstrcat(&pszTemp, "CA_DETAILSVIEWTITLES ");
+        xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ");
 
     if (ulViewAttrs & CV_MINI)
-        xstrcat(&pszTemp, "CV_MINI ");
+        xstrcat(&strTemp, "CV_MINI ");
     if (ulViewAttrs & CV_FLOW)
-        xstrcat(&pszTemp, "CV_FLOW ");
+        xstrcat(&strTemp, "CV_FLOW ");
     if (ulViewAttrs & CA_DRAWICON)
-        xstrcat(&pszTemp, "CA_DRAWICON ");
+        xstrcat(&strTemp, "CA_DRAWICON ");
     if (ulViewAttrs & CA_DRAWBITMAP)
-        xstrcat(&pszTemp, "CA_DRAWBITMAP ");
+        xstrcat(&strTemp, "CA_DRAWBITMAP ");
     if (ulViewAttrs & CA_TREELINE)
-        xstrcat(&pszTemp, "CA_TREELINE ");
+        xstrcat(&strTemp, "CA_TREELINE ");
 
     // owner...
 
     AddObjectUsage2Cnr(hwndCnr,
                        preccLevel2,
-                       pszTemp,
+                       strTemp.psz,
                        CRA_RECORDREADONLY);
 
-    free(pszTemp);
+    xstrClear(&strTemp);
 }
 
 /*
@@ -1721,7 +1723,7 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  *      a string if necessary.
  */
 
-VOID CheckStyle(PSZ *ppsz,       // in: string for xstrcat
+VOID CheckStyle(PXSTRING pxstr,       // in: string for xstrcat
                 ULONG ul1,        // in: style 1
                 ULONG ul2,        // in: style 2
                 ULONG ulMask,     // in: mask for style 1/2
@@ -1729,11 +1731,11 @@ VOID CheckStyle(PSZ *ppsz,       // in: string for xstrcat
 {
     if ((ul1 & ulMask) != (ul2 & ulMask))
     {
-        xstrcat(ppsz, pszName);
+        xstrcat(pxstr, pszName);
         if (ul1 & ulMask)
-            xstrcat(ppsz, "YES;");
+            xstrcat(pxstr, "YES;");
         else
-            xstrcat(ppsz, "NO;");
+            xstrcat(pxstr, "NO;");
     }
 }
 
@@ -1755,7 +1757,7 @@ ULONG objQuerySetup(WPObject *somSelf,
                     ULONG cbSetupString)    // in: size of that buffer or 0
 {
     // temporary buffer for building the setup string
-    PSZ     pszTemp = NULL;
+    XSTRING strTemp;
     ULONG   ulReturn = 0;
     ULONG   ulValue = 0,
             // ulDefaultValue = 0,
@@ -1765,10 +1767,12 @@ ULONG objQuerySetup(WPObject *somSelf,
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
+    xstrInit(&strTemp, 200);
+
     if (_somIsA(somSelf, _WPProgram))
     {
         fsysQueryProgramSetup(somSelf,
-                              &pszTemp);
+                              &strTemp);
     }
 
     // CCVIEW
@@ -1776,11 +1780,11 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case CCVIEW_ON:
-            xstrcat(&pszTemp, "CCVIEW=YES;");
+            xstrcat(&strTemp, "CCVIEW=YES;");
         break;
 
         case CCVIEW_OFF:
-            xstrcat(&pszTemp, "CCVIEW=NO;");
+            xstrcat(&strTemp, "CCVIEW=NO;");
         break;
         // ignore CCVIEW_DEFAULT
     }
@@ -1799,23 +1803,23 @@ ULONG objQuerySetup(WPObject *somSelf,
             switch (_pWPObjectData->lDefaultView)
             {
                 case OPEN_SETTINGS:
-                    xstrcat(&pszTemp, "DEFAULTVIEW=SETTINGS;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=SETTINGS;");
                 break;
 
                 case OPEN_CONTENTS:
-                    xstrcat(&pszTemp, "DEFAULTVIEW=ICON;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=ICON;");
                 break;
 
                 case OPEN_TREE:
-                    xstrcat(&pszTemp, "DEFAULTVIEW=TREE;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=TREE;");
                 break;
 
                 case OPEN_DETAILS:
-                    xstrcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=DETAILS;");
                 break;
 
                 case OPEN_RUNNING:
-                    xstrcat(&pszTemp, "DEFAULTVIEW=RUNNING;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=RUNNING;");
                 break;
 
                 case OPEN_DEFAULT:
@@ -1827,7 +1831,7 @@ ULONG objQuerySetup(WPObject *somSelf,
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
                     sprintf(szTemp, "DEFAULTVIEW=%d;", _pWPObjectData->lDefaultView);
-                    xstrcat(&pszTemp, szTemp);
+                    xstrcat(&strTemp, szTemp);
                 break; }
             }
         }
@@ -1841,7 +1845,7 @@ ULONG objQuerySetup(WPObject *somSelf,
         {
             CHAR szTemp[40];
             sprintf(szTemp, "HELPPANEL=%d;", _pWPObjectData->ulHelpPanel);
-            xstrcat(&pszTemp, szTemp);
+            xstrcat(&strTemp, szTemp);
         }
 
     // HIDEBUTTON
@@ -1849,11 +1853,11 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case HIDEBUTTON:
-            xstrcat(&pszTemp, "HIDEBUTTON=YES;");
+            xstrcat(&strTemp, "HIDEBUTTON=YES;");
         break;
 
         case MINBUTTON:
-            xstrcat(&pszTemp, "HIDEBUTTON=NO;");
+            xstrcat(&strTemp, "HIDEBUTTON=NO;");
         break;
 
         // ignore DEFAULTBUTTON
@@ -1873,15 +1877,15 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case MINWIN_HIDDEN:
-            xstrcat(&pszTemp, "MINWIN=HIDE;");
+            xstrcat(&strTemp, "MINWIN=HIDE;");
         break;
 
         case MINWIN_VIEWER:
-            xstrcat(&pszTemp, "MINWIN=VIEWER;");
+            xstrcat(&strTemp, "MINWIN=VIEWER;");
         break;
 
         case MINWIN_DESKTOP:
-            xstrcat(&pszTemp, "MINWIN=DESKTOP;");
+            xstrcat(&strTemp, "MINWIN=DESKTOP;");
         break;
 
         // ignore MINWIN_DEFAULT
@@ -1892,32 +1896,32 @@ ULONG objQuerySetup(WPObject *somSelf,
     ulClassStyle = _wpclsQueryStyle(_somGetClass(somSelf));
 
     // NOMOVE:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOMOVE, "NOMOVE=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NOMOVE, "NOMOVE=");
         // OBJSTYLE_NOMOVE == CLSSTYLE_NEVERMOVE == 0x00000002; see wpobject.h
     // NOLINK:
     // NOSHADOW:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOLINK, "NOLINK=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NOLINK, "NOLINK=");
         // OBJSTYLE_NOLINK == CLSSTYLE_NEVERLINK == 0x00000004; see wpobject.h
     // NOCOPY:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOCOPY, "NOCOPY=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NOCOPY, "NOCOPY=");
         // OBJSTYLE_NOCOPY == CLSSTYLE_NEVERCOPY == 0x00000008; see wpobject.h
     // NODELETE:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NODELETE, "NODELETE=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NODELETE, "NODELETE=");
         // OBJSTYLE_NODELETE == CLSSTYLE_NEVERDELETE == 0x00000040; see wpobject.h
     // NOPRINT:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOPRINT, "NOPRINT=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NOPRINT, "NOPRINT=");
         // OBJSTYLE_NOPRINT == CLSSTYLE_NEVERPRINT == 0x00000080; see wpobject.h
     // NODRAG:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NODRAG, "NODRAG=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NODRAG, "NODRAG=");
         // OBJSTYLE_NODRAG == CLSSTYLE_NEVERDRAG == 0x00000100; see wpobject.h
     // NOTVISIBLE:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOTVISIBLE, "NOTVISIBLE=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NOTVISIBLE, "NOTVISIBLE=");
         // OBJSTYLE_NOTVISIBLE == CLSSTYLE_NEVERVISIBLE == 0x00000200; see wpobject.h
     // NOSETTINGS:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NOSETTINGS, "NOSETTINGS=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NOSETTINGS, "NOSETTINGS=");
         // OBJSTYLE_NOSETTINGS == CLSSTYLE_NEVERSETTINGS == 0x00000400; see wpobject.h
     // NORENAME:
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NORENAME, "NORENAME=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NORENAME, "NORENAME=");
         // OBJSTYLE_NORENAME == CLSSTYLE_NEVERRENAME == 0x00000800; see wpobject.h
 
     // NODROP:
@@ -1929,18 +1933,18 @@ ULONG objQuerySetup(WPObject *somSelf,
                                               CLSSTYLE_PRIVATE have the same
                                               value (DD 86093F)  */
     // However, according to WPSREF, the setup string is still NODROP, not NODROPON.
-    CheckStyle(&pszTemp, ulStyle, ulClassStyle, OBJSTYLE_NODROPON, "NODROP=");
+    CheckStyle(&strTemp, ulStyle, ulClassStyle, OBJSTYLE_NODROPON, "NODROP=");
         // OBJSTYLE_NODROPON == CLSSTYLE_NEVERDROPON == 0x00002000; see wpobject.h
 
     if (ulStyle & OBJSTYLE_TEMPLATE)
-        xstrcat(&pszTemp, "TEMPLATE=YES;");
+        xstrcat(&strTemp, "TEMPLATE=YES;");
 
     // TITLE
     /* pszValue = _wpQueryTitle(somSelf);
     {
-        xstrcat(&pszTemp, "TITLE=");
-            xstrcat(&pszTemp, pszValue);
-            xstrcat(&pszTemp, ";");
+        xstrcat(&strTemp, "TITLE=");
+            xstrcat(&strTemp, pszValue);
+            xstrcat(&strTemp, ";");
     } */
 
     // OBJECTID: always append this LAST!
@@ -1948,9 +1952,9 @@ ULONG objQuerySetup(WPObject *somSelf,
     if (pszValue)
         if (strlen(pszValue))
         {
-            xstrcat(&pszTemp, "OBJECTID=");
-            xstrcat(&pszTemp, pszValue);
-            xstrcat(&pszTemp, ";");
+            xstrcat(&strTemp, "OBJECTID=");
+            xstrcat(&strTemp, pszValue);
+            xstrcat(&strTemp, ";");
         }
 
     /*
@@ -1958,18 +1962,19 @@ ULONG objQuerySetup(WPObject *somSelf,
      *
      */
 
-    if (pszTemp)
+    if (strTemp.ulLength)
     {
         // return string if buffer is given
         if ((pszSetupString) && (cbSetupString))
             strhncpy0(pszSetupString,   // target
-                      pszTemp,          // source
+                      strTemp.psz,      // source
                       cbSetupString);   // buffer size
 
         // always return length of string
-        ulReturn = strlen(pszTemp);
-        free(pszTemp);
+        ulReturn = strTemp.ulLength;
     }
+
+    xstrClear(&strTemp);
 
     return (ulReturn);
 }

@@ -979,8 +979,8 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
     // replace placeholders in introductory strings
     pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
                                                   ID_XFDI_CLASH_TXT1));
-    xstrrpl(&pszTemp, 0, "%1", pszRealNameFound, 0);
-    xstrrpl(&pszTemp, 0, "%2", pszFolder, 0);
+    strhrpl(&pszTemp, 0, "%1", pszRealNameFound, 0);
+    strhrpl(&pszTemp, 0, "%2", pszFolder, 0);
     WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
                       pszTemp);
     free(pszTemp);

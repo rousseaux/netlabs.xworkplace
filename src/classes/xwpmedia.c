@@ -1081,7 +1081,16 @@ SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
  *
+ *      We give the "Multimedia" object a new standard
+ *      icon here.
  */
 
 SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryIconData(M_XWPMedia *somSelf,
@@ -1101,7 +1110,12 @@ SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryIconData(M_XWPMedia *somSelf,
 
 /*
  *@@ wpclsQuerySettingsPageSize:
- *
+ *      this WPObject class method should return the
+ *      size of the largest settings page in dialog
+ *      units; if a settings notebook is initially
+ *      opened, i.e. no window pos has been stored
+ *      yet, the WPS will use this size, to avoid
+ *      truncated settings pages.
  */
 
 SOM_Scope BOOL  SOMLINK xwmmM_wpclsQuerySettingsPageSize(M_XWPMedia *somSelf,

@@ -837,12 +837,12 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 case CN_EMPHASIS:
                 {
-                    // PSZ pszBldLevel = "",
-                        // pszFilename = "",
-                    PSZ pszParams = "",
-                        pszText2MLE = NULL;
+                    PSZ     pszParams = "";
+                    XSTRING strText2MLE;
                     BOOL fEnable = FALSE,
                          fAcceptsParams = FALSE;
+
+                    xstrInit(&strText2MLE, 200);
 
                     if (pcnbp->preccLastSelected)
                     {
@@ -853,32 +853,32 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         if (precc->pDriverSpec)
                         {
-                            xstrcpy(&pszText2MLE,
+                            xstrcpy(&strText2MLE,
                                      precc->pDriverSpec->pszDescription);
-                            xstrcat(&pszText2MLE,
+                            xstrcat(&strText2MLE,
                                      "\n");
-                            xstrcat(&pszText2MLE,
+                            xstrcat(&strText2MLE,
                                      "File: ");
-                            xstrcat(&pszText2MLE,
+                            xstrcat(&strText2MLE,
                                      precc->szDriverNameFull);
-                            xstrcat(&pszText2MLE,
+                            xstrcat(&strText2MLE,
                                      "\n");
 
                             if (precc->arc == NO_ERROR)
                             {
                                 // driver description
-                                xstrcat(&pszText2MLE,
+                                xstrcat(&strText2MLE,
                                          "Version: ");    // ###
-                                xstrcat(&pszText2MLE,
+                                xstrcat(&strText2MLE,
                                          precc->szVersion);
 
-                                xstrcat(&pszText2MLE,
+                                xstrcat(&strText2MLE,
                                          "\n");
-                                xstrcat(&pszText2MLE,
+                                xstrcat(&strText2MLE,
                                          "Vendor: ");     // ###
-                                xstrcat(&pszText2MLE,
+                                xstrcat(&strText2MLE,
                                          precc->szVendor);
-                                xstrcat(&pszText2MLE,
+                                xstrcat(&strText2MLE,
                                          "\n");
                             }
                             else
@@ -886,7 +886,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 // error:
                                 PSZ pszErr = doshQuerySysErrorMsg(precc->arc);
                                         // will be freed
-                                xstrcat(&pszText2MLE, pszErr);
+                                xstrcat(&strText2MLE, pszErr);
                                 free(pszErr);
                             }
 
@@ -904,22 +904,18 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           FALSE);
                     }
 
-                    if (pszText2MLE)
+                    if (strText2MLE.ulLength)
                     {
                         WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_STATICDATA,
-                                          pszText2MLE);
-                        /* WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                   ID_OSDI_DRIVR_STATICDATA),
-                                   TXM_NEWTEXT,
-                                   (MPARAM)pszText2MLE,
-                                   0); */
-                        free(pszText2MLE);
+                                          strText2MLE.psz);
                     }
                     else
                         WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_STATICDATA,
                                           "");
+
+                    xstrClear(&strText2MLE);
 
                     WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
@@ -1163,11 +1159,11 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     else
                     {
                         CHAR    szBackup[CCHMAXPATH];
-                        xstrrpl(&pszConfigSys,
-                                 0, // offset
-                                 precc->szConfigSysLine,
-                                 szNewLine,
-                                 0);
+                        strhrpl(&pszConfigSys,
+                                0, // offset
+                                precc->szConfigSysLine,
+                                szNewLine,
+                                0);
                         // update record core
                         strcpy(precc->szConfigSysLine, szNewLine);
                         strcpy(precc->szParams, szNewParams);

@@ -492,10 +492,15 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
  *      a new view needs to be opened. Normally, this
  *      gets called after wpViewObject has scanned the
  *      object's USEITEMs and has determined that a new
- *      view is needed, mostly in response to a menu
- *      selection from the "Open" submenu or a double-click
- *      in the folder.
+ *      view is needed.
  *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
  *
  *      We call the parent first and then subclass the
  *      resulting frame window, similar to what we're doing

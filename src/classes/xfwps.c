@@ -546,7 +546,15 @@ SOM_Scope PSZ  SOMLINK xfwpsM_wpclsQueryTitle(M_XFldWPS *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      give the WPS object a new icon
+ *      this WPObject class method builds the default
+ *      icon for objects of a class (i.e. the icon which
+ *      is shown if no instance icon is assigned). This
+ *      apparently gets called from some of the other
+ *      icon instance methods if no instance icon was
+ *      found for an object. The exact mechanism of how
+ *      this works is not documented.
+ *
+ *      We give the "Workplace Shell" object a new icon.
  */
 
 SOM_Scope ULONG  SOMLINK xfwpsM_wpclsQueryIconData(M_XFldWPS *somSelf,

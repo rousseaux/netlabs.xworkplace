@@ -160,7 +160,7 @@ $(OUTPUTDIR)\notebook.obj: \
 $(OUTPUTDIR)\kernel.obj: \
      $(INC)\setup.h \
      $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\memdebug.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+        $(HLPINC)\memdebug.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfldr.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
