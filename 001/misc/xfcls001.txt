@@ -493,7 +493,8 @@ BA2KSchedFold 1 Back Again/2000 Object Scheduler. Special WPS folder subclass th
 BA2KWCatalog 1 Back Again/2000 Catalog file. These files contain a description of an existing backup, i.e. where the backuped files came from and will go to on restoring it again, made with Back Again/2000 by CDS, Inc.
 CWAudio 1 Parent class of Chris Wohlgemuth's CW MM package for seamless WPS integration of Russel O'Connor's MMIOProcs.
 CWDataFile 1 Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPDataFile class. Implements configurable context menus for files and the display of file size in the context menu.
-CWDisk 1 Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPDisk class. Implements the possibility to remove the "Format disk" menu item from hard disks' context menus.
+// the following updated with V1.0.4
+CWDisk 1 Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPDisk class. Implements the possibility to remove the "Format disk" menu item from hard disks' context menus and the display of usage bars for drives in the drives folder.
 CWFolder 1 Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPFolder class. Implements configurable context menu items for folders.
 CWMediaFolder 1 Part of Chris Wohlgemuth's CW MM package. Subclass of CWProgFolder. Implements a media player for all audio file formats supported by MMOS2 (and possible extensions). The folder is used as a playing list.
 CWMenuFolder 1 Part of Chris Wohlgemuth's WPS Wizard. Implements a configuration folder for additional context menu items that works pretty much the same as XWorkplace's.
@@ -517,3 +518,13 @@ SomNote 1 (SOMNOTE.DLL) SomNote is an object that is part of the Object Factory 
 // Items added with V1.0.1
 XWPVCard 1 This XWorkplace class allows manipulation of vCard information in *.vcf files.
 
+// Items added with V1.0.4
+CWDVDFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of data DVDs.
+CWLaunchArea 1 Part of Chris Wohlgemuth's WPS Wizard. Can be used by other classes and handles drag and drop.
+NWPDisk 1 Part of Norman Virus Control. Replacement class for WPDisk. Adds a "Check for viruses..." item to the pop-up menu of drive objects.
+NWPFileSys 1 Part of Norman Virus Control. Replacement class for WPDisk. Adds a "Check for viruses..." item to the pop-up menu of file system objects.
+NWPDesktop 1 Part of Norman Virus Control. Replacement class for WPDesktop. Adds a submenu "Norman Virus Control" to the desktop's pop-up menu.
+NVCTaskFile 1 Part of Norman Virus Control. Class for NVC task definition files.
+ODCCFix 1 Fix for the Object Desktop Control Center by Rich Walsh.
+RelishBun 1 Part of Relish by Sundial Systems. Buns are custom views and affect the way the Relish PIM data is presented.
+WPSSDesktop 1 Part of Doodle's Screen Saver. Implements a new screen saver with plug-ins and replaces the standard 'Lockup' page in the desktop's settings notebook.

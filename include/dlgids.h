@@ -2450,6 +2450,14 @@
 
 #define ID_XSSI_DEINSTALLINGFONTS       6302        // V1.0.1 (2002-12-15) [pr]
 
+/* Sentinel widget with support for color settings V1.0.4 (2005-03-27) [chennecke] */
+#define ID_CRSI_SWGT_PHYS               6303
+#define ID_CRSI_SWGT_PHYSFREE           6304
+#define ID_CRSI_SWGT_PHYSINUSE          6305
+#define ID_CRSI_SWGT_SWAPFILE           6306
+#define ID_CRSI_SWGT_SWAP               6307
+#define ID_CRSI_SWGT_SWAPFREE           6308
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000

@@ -1124,6 +1124,14 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Outgoing"
     ID_CRSI_IPWGT_BYTESTOTAL            "bytes total"
 
+    /* Sentinel properties page V1.0.4 (2005-03-27) [chennecke] */
+    ID_CRSI_SWGT_PHYS                   "Physical Memory"
+    ID_CRSI_SWGT_PHYSFREE               "Free"
+    ID_CRSI_SWGT_PHYSINUSE              "Used"
+    ID_CRSI_SWGT_SWAPFILE               "Swap File"
+    ID_CRSI_SWGT_SWAP                   "Used/Size"
+    ID_CRSI_SWGT_SWAPFREE               "Free"
+
     /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
     ID_CRMI_XCSUB_PROPERTIES            "&xcenter; ~properties"
     ID_CRMI_XCSUB_CLOSE                 "Close &xcenter;"
