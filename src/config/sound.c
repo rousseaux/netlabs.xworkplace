@@ -422,6 +422,8 @@ static VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
  *      Returns TRUE only if we actually copied, that
  *      is, the user didn't press Cancel and no errors
  *      occured.
+ *
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: check for scheme exists is case-insensitive now
  */
 
 static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
@@ -452,8 +454,10 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
             PSZ     pszDelete = NULL;
 
             // get new scheme name from dlg
-            WinQueryDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
-                                sizeof(szNewScheme)-1, szNewScheme);
+            WinQueryDlgItemText(hwndDlg,
+                                ID_XSDI_FT_ENTRYFIELD,
+                                sizeof(szNewScheme) - 1,
+                                szNewScheme);
 
             if (strlen(szNewScheme) < 3)
                 winhDebugBox(pnbp->hwndFrame,
@@ -468,16 +472,18 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
                 PCSZ     psz = szNewScheme;
                 // exists: have user confirm this
                 if (cmnMessageBoxExt(pnbp->hwndFrame,
-                                        151,  // "Sound"
-                                        &psz, 1,
-                                        152,
-                                        MB_YESNO)
+                                     151,  // "Sound"
+                                     &psz, 1,
+                                     152,
+                                     MB_YESNO)
                         == MBID_YES)
                 {
                     sndDestroySoundScheme(pszDelete);   // V0.9.20 (2002-07-03) [umoeller]
                 }
                 else
                     fOverwrite = FALSE;
+
+                free(pszDelete);
             }
 
             // shall we proceed?
@@ -525,9 +531,6 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
                     PrfCloseProfile(hiniMMPM);
                 } // end if (hiniMMPM)
             } // end if (fOverwrite)
-
-            if (pszDelete)
-                free(pszDelete);
 
         } // end if (WinProcessDlg(hwndDlg) == DID_OK)
     } // end if (hwndDlg)
