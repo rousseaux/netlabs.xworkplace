@@ -106,7 +106,7 @@
 #define MAPPINGS_FILE "@mapping"        // note: 8 chars maximum (FAT)!
 
 /*
- *@@ TRASHMAPPINGNODE:
+ *@@ TRASHMAPPINGTREENODE:
  *      entry for the binary tree in G_MappingsTreeRoot.
  *
  *      The tree is sorted according to pszSourceRealName.
@@ -2308,7 +2308,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
                      ulLogicalDrive < CB_SUPPORTED_DRIVES + 3;
                      ulLogicalDrive++)
                 {
-                    APIRET  arc = doshAssertDrive(ulLogicalDrive);
+                    APIRET  arc = doshAssertDrive(ulLogicalDrive, 0);
 
                     switch (arc)
                     {

@@ -1,7 +1,8 @@
 
 /*
  *@@sourcefile center.h:
- *      public header file for the XCenter.
+ *      public header file for the XCenter and plugins.
+ *
  *      This contains all declarations which are needed by
  *      all parts of the XCenter and to implement widget
  *      plugin DLLs.
@@ -40,7 +41,11 @@
      ********************************************************************/
 
     // PM window class name for XCenter client (needed by XWPDaemon)
-    #define WC_XCENTER_CLIENT     "XWPCenterClient"
+    // #define WC_XCENTER_CLIENT     "XWPCenterClient"
+        // moved this to kernel.h because xwpdaemn.c includes this too
+        // and we don't want the stupid daemon to be recompiled every
+        // time this header changes
+        // V0.9.13 (2001-06-19) [umoeller]
 
     // button types (src\xcenter\w_objbutton.c)
     #define BTF_OBJBUTTON       1
@@ -55,13 +60,17 @@
     #define XCS_SUNKBORDERS         0x0002
     #define XCS_SIZINGBARS          0x0004
     #define XCS_ALL3DBORDERS        0x0008
+    #define XCS_SPACINGLINES        0x0010      // added V0.9.13 (2001-06-19) [umoeller]
 
     /*
      *@@ XCENTERGLOBALS:
      *      global data for a running XCenter instance.
-     *      A pointer to this structure exists in each
+     *      This is created once per open XCenter.
+     *
+     *      A pointer to this one structure exists in each
      *      XCENTERWIDGET instance so that the widgets
-     *      can access some of the global data.
+     *      can access some of the data of the XCenter
+     *      they belong to.
      *
      *      In this structure, an XCenter instance
      *      passes a number of variables to its member
@@ -69,7 +78,8 @@
      *      more quickly for convenience. This structure
      *      is fully initialized at the time the widgets
      *      are created, but values may change while the
-     *      XCenter is open.
+     *      XCenter is open (e.g. if the user changes
+     *      view settings in the XCenter settings notebook).
      *
      *      "Globals" isn't really a good name since
      *      one of these structures is created for
@@ -81,22 +91,25 @@
     typedef struct _XCENTERGLOBALS
     {
         HAB                 hab;
-                    // anchor block of frame and client (constant)
+                    // anchor block of the XCenter thread and thus
+                    // all XCenter windows (including widgets)
         HWND                hwndFrame,
                     // XCenter frame window (constant)
                             hwndClient;
-                    // client (child of XCenter frame) (constant)
+                    // XCenter client (child of XCenter frame) (constant)
 
         PVOID               pCountrySettings;
-                    // country settings; this points to a COUNTRYSETTINGS
-                    // structure (prfh.h) (constant)
+                    // country settings; this really points to a
+                    // COUNTRYSETTINGS structure (include\helpers\prfh.h)
+                    // and might be useful if you want to use settings
+                    // from the "Country" object (constant)
 
         ULONG               cyInnerClient;
                     // height of inner client (same as height of all widgets!).
                     // This is normally == cyWidgetmax unless the user has
                     // resized the XCenter, but it will always be >= cyWidgetMax.
                     // The "inner client" plus the 3D border width plus the
-                    // border spacing make up the full height of the client.
+                    // border spacing make up the full height of the XCenter.
 
                     // This can change while the XCenter is open.
                     // This was changed with V0.9.9 (2001-03-09) [umoeller];
@@ -129,6 +142,8 @@
                     // -- XCS_ALL3DBORDERS: XCenter should draw all four 3D
                     //      borders around itself. If not set, it will only
                     //      draw one border (the one towards the screen).
+                    // -- XCS_SPACINGLINES: XCenter should draw small 3D lines
+                    //      between the widgets too (V0.9.13 (2001-06-19) [umoeller]).
 
         ULONG               ulPosition;
                     // XCenter position on screen, if a widget cares...
@@ -142,8 +157,11 @@
                     // 3D border width; can change
         ULONG               ulBorderSpacing;
                     // border spacing (added to 3D border width); can change
-        ULONG               ulSpacing;
-                    // spacing between widgets; can change
+        ULONG               ulWidgetSpacing;
+                    // spacing between widgets; can change;
+                    // if flDisplayStyle also has XCS_SPACINGLINES set,
+                    // an extra 2 pixels will be added internally to this
+                    // value
 
         /*
          *      The following fields have been added with
@@ -168,7 +186,29 @@
         ULONG               cyWidgetMax;
                     // height of tallest widget == minimum height of client
                     // V0.9.9 (2001-03-09) [umoeller]
-                    // This may change while the XCenter is open.
+                    // This may change while the XCenter is open if
+                    // widgets are added or removed.
+
+        LONG                lcolClientBackground;
+                    // background color of the XCenter client area,
+                    // in case a widget is interested.
+                    // V0.9.13 (2001-06-19) [umoeller]
+
+        PVOID               pvSomSelf;
+                    // XCenter's somSelf object pointer. This is a
+                    // XCenter* pointer really, but has been declared
+                    // as PVOID so you won't have to include the WPS
+                    // SOM headers.
+                    // V0.9.13 (2001-06-19) [umoeller]
+
+        HWND                hwndTooltip;
+                    // XCenter's tooltip control (comctl.c). This is
+                    // the one tooltip that is created for all widgets.
+                    // This member has been made public so widgets may
+                    // choose to work with the tooltip... but do not
+                    // mess with this unless you know what you're doing,
+                    // since all widgets share this one tooltip.
+                    // V0.9.13 (2001-06-21) [umoeller]
 
     } XCENTERGLOBALS, *PXCENTERGLOBALS;
 
@@ -188,7 +228,7 @@
      *      XCenter widget settings dialogs basically
      *      work as follows:
      *
-     *      1.  You must a function that displays a modal
+     *      1.  You must write a function that displays a modal
      *          dialog. This function must have the following
      *          prototype:
      *
@@ -283,15 +323,113 @@
     #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
     #define WGTF_TOOLTIP                0x0010
     #define WGTF_TOOLTIP_AT_MOUSE      (0x0020 + 0x0010)
-    #define WGTF_TRANSPARENT            0x0040
-    #define WGTF_CONTAINER              0x0080
-    #define WGTF_NONFOCUSTRAVERSABLE    0x0100
+    #define WGTF_TRAYABLE               0x0040
 
     /*
      *@@ XCENTERWIDGETCLASS:
      *      describes one widget class which can be
      *      used in an XCenter. Such a class can either
      *      be internal or in a widget plugin DLL.
+     *
+     *      The window procedure which implements the widget
+     *      class must be registered by a plug-in DLL when
+     *      its INIT callback gets called by the XCenter.
+     *
+     *      There are a few rules which must be followed
+     *      with the window procedures of the widget classes:
+     *
+     *      -- At the very least, the widget's window proc must
+     *         implement WM_CREATE, WM_PAINT, and (if cleanup
+     *         is necessary) WM_DESTROY. WM_PRESPARAMCHANGED
+     *         would also be nice to support fonts and colors
+     *         dropped on the widget.
+     *
+     *      -- On WM_CREATE, the widget receives a pointer to
+     *         its XCENTERWIDGET structure in mp1.
+     *
+     *         The first thing the widget _must_ do on WM_CREATE
+     *         is to store the XCENTERWIDGET pointer (from mp1)
+     *         in its QWL_USER window word by calling:
+     *
+     +              WinSetWindowPtr(hwnd, QWL_USER, mp1);
+     *
+     *      -- The XCenter communicates with the widget using
+     *         WM_CONTROL messages. SHORT1FROMMP(mp1), the
+     *         source window ID, is always ID_XCENTER_CLIENT.
+     *         SHORT2FROMMP(mp1), the notification code, can
+     *         be:
+     *
+     *         --  XN_QUERYSIZE: the XCenter wants to know the
+     *             widget's size.
+     *
+     *         --  XN_SETUPCHANGED: widget's setup string has
+     *             changed.
+     *
+     *      -- You must never use WinSetWindowPos on your widget
+     *         window yourself because this will solidly confuse
+     *         the XCenter widget formatting. If you want your
+     *         widget window to be resized, post XCM_SETWIDGETSIZE
+     *         to the widget's parent instead, which will resize
+     *         your widget properly and also reformat the other
+     *         widgets, if necessary.
+     *
+     *      -- All unprocessed messages should be routed
+     *         to ctrDefWidgetProc instead of WinDefWindowProc.
+     *
+     *      -- WM_MENUEND must _always_ be passed on after your
+     *         own processing (if any) to remove source emphasis
+     *         for popup menus.
+     *
+     *      -- WM_DESTROY must _always_ be passed on after
+     *         your own cleanup code to avoid memory leaks,
+     *         because this function performs important cleanup
+     *         as well.
+     *
+     *      -- WM_COMMAND command values above 0x7f00 are reserved.
+     *         If you extend the context menu given to you in
+     *         XCENTERWIDGET.hwndContextMenu, you must use
+     *         menu item IDs < 0x7f00. This has been changed
+     *         with V0.9.11 (2001-04-25) [umoeller] to avoid
+     *         conflicts with the WPS menu item IDs, sorry.
+     *
+     *      <B>Tooltip support</B>
+     *
+     *      If your widget class has the WGTF_TOOLTIP flag set,
+     *      it will receive WM_CONTROL with TTN_* notifications
+     *      and the source window ID set to ID_XCENTER_TOOLTIP.
+     *      If it responds to TTN_NEEDTEXT, it must fill the
+     *      TOOLTIPTEXT pointed to by mp2. See include\helpers\comctl.h
+     *      for details.
+     *
+     *      In addition, the widget will also receive the TTN_SHOW
+     *      and TTN_POP notifications when the tooltip is being
+     *      shown or hidden above it.
+     *
+     *      <B>Trayable widgets</B>
+     *
+     *      If your widget is supposed to be trayable (i.e.
+     *      the WGTF_TRAYABLE flag is set in the XCENTERWIDGETCLASS),
+     *      it must conform to a few extra rules:
+     *
+     *      -- Trayable widgets cannot be sizeable or greedy.
+     *
+     *      -- You must never assume that the parent window of
+     *         your widget really is the XCenter client. It can
+     *         also be a tray widget.
+     *
+     *      -- Your widget must be prepared for being created or
+     *         destroyed at times other than XCenter creation or
+     *         destruction because the tray widget will do this
+     *         when the current tray is switched.
+     *
+     *      -- If you use XCM_* messages, never post them to the
+     *         XCenter client window (whose handle is available
+     *         thru XCENTERGLOBALS). All XCM_* essages are understood
+     *         by the tray widget also, and if your widget is in a tray,
+     *         it must post them to the tray instead of the client.
+     *         As a result, always use WinQueryWindow(QW_PARENT),
+     *         which will properly give you either the XCenter
+     *         client or the tray widget.
      */
 
     typedef struct _XCENTERWIDGETCLASS
@@ -300,6 +438,7 @@
                 // PM window class name of this widget class (can be shared among
                 // several widget classes). A plugin DLL is responsible for
                 // registering this window class when it's loaded.
+                // Naturally, this must be unique on the system.
 
         ULONG           ulExtra;
                 // additional identifiers the class might need if the
@@ -308,36 +447,55 @@
                 // during WM_CREATE so you can differentiate between several
                 // widget classes in the same window proc. You must copy this
                 // to your private widget data then.
+                // For example, MONITORS.DLL uses this to differentiate
+                // between the various monitor widget classes.
 
         const char      *pcszWidgetClass;
                 // internal widget class name; this is used to identify
                 // the class. This must be unique on the system and should
-                // not contain any spaces (e.g.: "MySampleClass").
+                // not contain any spaces or special characters.
+                // A valid name would be "MySampleClass".
+                // This is stored internally in the XCenter data and is
+                // used whenever the XCenter is opened to create all the
+                // widgets from the respective widget classes. In other
+                // words, this is the class identifier and must never
+                // change between several releases of your plugin DLL,
+                // or otherwise widget creation will fail.
+                // Choose this name carefully.
 
         const char      *pcszClassTitle;
-                // widget class title (shown to user in "Add widget" popup
-                // menu). Example: "Sample widget".
+                // explanatory widget class title, which is shown to the
+                // user in the "Add widget" popup menu. Example: "Sample widget".
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:
                 // -- WGTF_SIZEABLE: widget window can be resized with
-                //    the mouse by the user.
+                //    the mouse by the user. A sizing bar is automatically
+                //    painted by the XCenter engine then.
                 // -- WGTF_NOUSERCREATE: do not show this class in
                 //    the "add widget" menu, and do not allow creating
                 //    instances of this in the XCenter settings notebook.
+                //    This is used for the object button widget, which
+                //    can only be created through drag'n'drop.
                 // -- WGTF_UNIQUEPERXCENTER: only one widget of this class
                 //    should be created per XCenter.
                 // -- WGTF_UNIQUEGLOBAL: only one widget of this class
                 //    should be created in all XCenters on the system.
-                //    This includes WGTF_UNIQUEPERXCENTER.
+                //    This implies WGTF_UNIQUEPERXCENTER.
                 // -- WGTF_TOOLTIP: if set, the widget has a tooltip
                 //    and will receive WM_CONTROL messages with the
-                //    TTN_NEEDTEXT notification code (see helpers\comctl.h).
+                //    TTN_NEEDTEXT, TTN_SHOW, or TTN_POP notification codes
+                //    (see helpers\comctl.h).
                 //    The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
+                //    See XCENTERWIDGETCLASS for tooltip handling.
                 // -- WGTF_TOOLTIP_AT_MOUSE: like WGTF_TOOPTIP, but the
                 //    tooltip is not centered above the widget, but put
                 //    at the mouse position instead.
-                //    This includes WGTF_TOOLTIP.
+                //    This implies WGTF_TOOLTIP.
+                // -- WGTF_TRAYABLE: widget is "trayable", that is, it
+                //    supports being created inside a tray widget.
+                //    Note: Restrictions apply if you want your widget
+                //    to be trayable.
 
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,
@@ -356,16 +514,21 @@
      *      of this is created for each widget that the
      *      user has configured for a widget.
      *
+     *      An array of these is stored in packed form in the
+     *      XCenter instance data and describes all widgets
+     *      in the XCenter. Widget classes normally don't need
+     *      this.
+     *
      *      An array of these is returned by XCenter::xwpQueryWidgets.
      */
 
     typedef struct _XCENTERWIDGETSETTING
     {
-        PSZ                 pszWidgetClass;   // widget class name;
+        PSZ             pszWidgetClass;   // widget class name;
                     // we cannot use the binary PXCENTERWIDGETCLASS pointer
                     // here because these structures are dynamically unloaded...
                     // use ctrpFindClass to find the XCENTERWIDGETCLASS ptr.
-        PSZ                 pszSetupString;
+        PSZ             pszSetupString;
                     // widget-class-specific setup string; can be NULL
 
             // Note: both pointers are assumed to be allocated
@@ -383,6 +546,9 @@
      *      Each XCenter widget is a separate window,
      *      being a child window of the XCenter client,
      *      which in turn is a child of the XCenter frame.
+     *      The exception is a widget in a tray, which is
+     *      a child of a tray widget, which in turn is a
+     *      child of the XCenter client.
      *
      *      This structure is created once for each widget
      *      and passed to each widget in mp1 of WM_CREATE.
@@ -392,7 +558,9 @@
      *
      *      The widget can allocate another widget-specific
      *      buffer and store its pointer into the pUser
-     *      field.
+     *      field. This is strongly recommended because
+     *      otherwise your widget will have no place to
+     *      store its instance data.
      *
      *      This structure is automatically freed by the
      *      XCenter when the widget is destroyed. However,
@@ -400,6 +568,9 @@
      *      your own responsibility to free that on WM_DESTROY.
      *      General rule: The widget must clean up what it
      *      allocated itself.
+     *
+     *      See XCENTERWIDGETCLASS for rules that a widget
+     *      window proc must conform to.
      */
 
     typedef struct _XCENTERWIDGET
@@ -423,7 +594,7 @@
                 // src/shared/center.c). The widget's own window
                 // proc must pass all unprocessed messages (and a
                 // few more) to this instead of WinDefWindowProc.
-                // See ctrDefWidgetProc for details.
+                // See XCENTERWIDGETCLASS for details.
 
         const XCENTERGLOBALS *pGlobals;
                 // ptr to client/frame window data (do not change)
@@ -448,6 +619,11 @@
                 // the widget. The pointer can be NULL if no
                 // setup string exists. After WM_CREATE, the
                 // pointer is set to NULL always.
+                // The widget should use this string to initialize
+                // itself. When its instance data changes, it
+                // should send XCM_SAVESETUP to its parent
+                // so that the XCenter can record the new setup
+                // string.
 
         /*
          *  Setup fields:
@@ -469,7 +645,7 @@
                 // NOTE: If your widget is "greedy", i.e. wants
                 // all remaining size on the XCenter bar (by
                 // returning -1 for cx with WM_CONTROL and
-                //
+                // XCN_QUERYSIZE), it cannot be sizeable.
 
         HWND        hwndContextMenu;
                 // default context menu for this widget.
@@ -500,6 +676,11 @@
                 // initially NULL, but you can use this for your
                 // own data (which you must clean up yourself on
                 // WM_DESTROY).
+
+        PVOID       pvWidgetSetting;
+                // private pointer for tray widget. Do not use this.
+                // V0.9.13 (2001-06-21) [umoeller]
+
     } XCENTERWIDGET;
 
     /* ******************************************************************
@@ -507,6 +688,11 @@
      *   Public widget helpers (exported from XFLDR.DLL)
      *
      ********************************************************************/
+
+    // All these are specified as both simple prototypes and
+    // function pointer declarations so that widget classes
+    // can import these functions from XFLDR.DLL in the init
+    // callback.
 
     PSZ APIENTRY ctrScanSetupString(const char *pcszSetupString,
                                     const char *pcszKeyword);
@@ -540,13 +726,13 @@
     typedef VOID APIENTRY CTRPAINTSTATICWIDGETBORDER(HPS hps, PXCENTERWIDGET pWidget);
     typedef CTRPAINTSTATICWIDGETBORDER *PCTRPAINTSTATICWIDGETBORDER;
 
+    VOID APIENTRY ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget, BOOL fRemove);
+    typedef VOID APIENTRY CTRDRAWWIDGETEMPHASIS(PXCENTERWIDGET pWidget, BOOL fRemove);
+    typedef CTRDRAWWIDGETEMPHASIS *PCTRDRAWWIDGETEMPHASIS;
+
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
                 // a pointer to this is in XCENTERWIDGET if the widget
                 // is a non-container widget
-
-    MRESULT EXPENTRY ctrDefContainerWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-                // a pointer to this is in XCENTERWIDGET if the widget
-                // is a container widget
 
     /* ******************************************************************
      *
@@ -657,199 +843,58 @@
     #define XN_OBJECTDESTROYED          3
 
     /*
-     *@@ XN_QUERYSETUP:
-     *      notification code for WM_CONTROL sent to a widget
-     *      when the sender needs to know the widget's setup string.
+     *@@ XN_INUSECHANGED:
+     *      notification code for WM_CONTROL posted (!)
+     *      to a widget if it has registered itself with
+     *      XFldObject::xwpSetWidgetNotify.
+     *
+     *      This is posted from XFldObject::wpCnrSetEmphasis
+     *      when the object's in-use emphasis changes.
      *
      *      Parameters:
      *
      *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
      *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYSETUP).
+     *      -- SHORT2FROMMP(mp1): notify code (XN_INUSECHANGED).
      *
-     *      -- char *mp2: buffer into which the setup string is
-     *                    copied.  It can be NULL, in which case
-     *                    nothing is copied.  Otherwise, it is
-     *                    expected to contain enough room for the
-     *                    whole setup string.
+     *      -- WPObject* mp2: SOM object pointer of object whose
+     *                  emphasis changed.
      *
-     *      The widget must return the minimum required size needed
-     *      to store the setup string (even if mp2 is NULL).
-     *
-     *@@added V0.9.9 (2001-03-01) [lafaix]
+     *@@added V0.9.13 (2001-06-21) [umoeller]
      */
 
-    #define XN_QUERYSETUP               4
-
-    // flags for XN_BEGINANIMATE and XN_ENDANIMATE
-    #define XAF_SHOW                    1
-    #define XAF_HIDE                    2
+    #define XN_INUSECHANGED             4
 
     /*
-     *@@ XN_BEGINANIMATE:
-     *      notification code for WM_CONTROL sent to a widget from
-     *      an XCenter when it is about to begin animating.
+     *@@ XN_DISPLAYSTYLECHANGED:
+     *      notification code for WM_CONTROL sent (!)
+     *      to all widgets whenever an XCenter display
+     *      style changes.
+     *
+     *      If your widget caches data from XCENTERGLOBALS
+     *      locally somewhere, or needs to rearrange its
+     *      display based on those settings, you should
+     *      intercept this and reformat yourself.
+     *
+     *      It is not necessary to invalidate your widget
+     *      display though since this will be done
+     *      automatically by the XCenter when display
+     *      styles change. So after this notification,
+     *      you can be sure that WM_PAINT will come in
+     *      anyway.
      *
      *      Parameters:
      *
      *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
      *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_BEGINANIMATE).
+     *      -- SHORT2FROMMP(mp1): notify code (XN_DISPLAYSTYLECHANGED).
      *
-     *      -- ULONG mp2: XAF_SHOW if the parent initiate a 'show' animation,
-     *                    XAF_HIDE if the parent initiate a 'hide' animation.
+     *      -- mp2: unused, always NULL.
      *
-     *      This notification is sent regardless of whether the XCenter
-     *      actually does animation.  If it does no animation,
-     *      XN_ENDANIMATE immediately follows XN_BEGINANIMATE.
-     *
-     *      An active widget can react to this message to start or
-     *      stop doing something.  For example, a gauge widget can
-     *      choose to stop running when the container is hidden, to
-     *      save CPU cycles.
-     *
-     *@added V0.9.9 (2001-03-01) [lafaix]
+     *@@added V0.9.13 (2001-06-21) [umoeller]
      */
 
-    #define XN_BEGINANIMATE             5
-
-    /*
-     *@@ XN_ENDANIMATE:
-     *      notification code for WM_CONTROL sent to a widget from
-     *      an XCenter when it has ended animating.
-     *
-     *      Parameters:
-     *
-     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
-     *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_ENDANIMATE).
-     *
-     *      -- ULONG mp2: XAF_SHOW if the parent ended a 'show' animation,
-     *                    XAF_HIDE if the parent ended a 'hide' animation.
-     *
-     *      This notification is sent regardless of whether the XCenter
-     *      actually does animation.  If it does no animation,
-     *      XN_ENDANIMATE immediately follows XN_BEGINANIMATE.
-     *
-     *      An active widget can react to this message to start or
-     *      stop doing something.  For example, a gauge widget can
-     *      choose to stop running when the container is hidden, to
-     *      save CPU cycles.
-     *
-     *@added V0.9.9 (2001-03-01) [lafaix]
-     */
-
-    #define XN_ENDANIMATE               6
-
-    /*
-     *@@ XN_QUERYWIDGETCOUNT:
-     *      notification code for WM_CONTROL sent from the XCenter
-     *      to a widget when it needs to know how many elements a
-     *      container-widget contains.
-     *
-     *      Parameters:
-     *
-     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
-     *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGETCOUNT).
-     *
-     *      -- PULONG mp2: pointer to an ULONG in which the widget
-     *                     must fill in its widget count.
-     *
-     *      The widgets count must only include first level elements.
-     *      That is, if a container contains other containers, the
-     *      elements in those sub-containers should not be included.
-     *
-     *      The widget must return TRUE if it has put its count in the
-     *      ULONG.  Otherwise, the XCenter will assume some dumb default
-     *      for the count.
-     *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
-     *@@changed V0.9.9 (2001-03-11) [lafaix]: uses a PULONG to return the count.
-     */
-
-    #define XN_QUERYWIDGETCOUNT         7
-
-    /*
-     *@@ XN_QUERYWIDGET:
-     *      notification code for WM_CONTROL sent from the XCenter
-     *      to a widget when it needs to know the widget present at
-     *      a given position.
-     *
-     *      Parameters:
-     *
-     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
-     *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGET).
-     *
-     *      -- ULONG mp2: widget index (0 is the first widget).
-     *
-     *      The widget must return 0 if no widget exists at that index.
-     *      Otherwise it must return a pointer to the corresponding
-     *      XCENTERWIDGET structure.
-     *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
-     */
-
-    #define XN_QUERYWIDGET              8
-
-    // structure needed for XN_INSERTWIDGET
-    typedef struct _WIDGETINFO
-    {
-        SHORT          sOffset;
-                   // either WGT_END or the 0-based offset
-        PXCENTERWIDGET pWidget;
-                   // the widget to be inserted
-    } WIDGETINFO, *PWIDGETINFO;
-
-    // flags and return values for XN_INSERTWIDGET:
-    #define WGT_END                     (-1)
-    #define WGT_ERROR                   (-1)
-
-    /*
-     *@@ XN_INSERTWIDGET:
-     *      notification code for WM_CONTROL sent from the XCenter
-     *      to a widget when it needs to add a widget at a specified
-     *      offset to a container-widget.
-     *
-     *      Parameters:
-     *
-     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
-     *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_INSERTWIDGET).
-     *
-     *      -- PWIDGETINFO mp2: a pointer to a WIDGETINFO structure
-     *                          that details the insertion.
-     *
-     *      The widget must return WGT_ERROR if the insertion failed.
-     *      Otherwise it must return the offset of the widget following
-     *      the inserted one.
-     *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
-     */
-
-    #define XN_INSERTWIDGET             9
-
-    /*
-     *@@ XN_DELETEWIDGET:
-     *      notification code for WM_CONTROL sent from the XCenter
-     *      to a widget when it needs to remove a widget at a specified
-     *      offset.
-     *
-     *      Parameters:
-     *
-     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
-     *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_INSERTWIDGET).
-     *
-     *      -- SHORT mp2: the to be removed widget's offset.
-     *
-     *      The widget must return the count of remaining widgets.
-     *
-     *@@added V0.9.9 (2001-02-23) [lafaix]
-     */
-
-    #define XN_DELETEWIDGET             10
+    #define XN_DISPLAYSTYLECHANGED      5
 
     /* ******************************************************************
      *
@@ -859,10 +904,19 @@
 
     /*
      *@@ XCM_SETWIDGETSIZE:
-     *      this msg can be posted to the client
-     *      from a widget if it wants to change
+     *      this msg can be posted by a widget
+     *      to its parent if it wants to change
      *      its size, e.g. because its display
      *      has changed and it needs more room.
+     *
+     *      The widget's parent will usually be
+     *      the XCenter client. However, if you
+     *      want your widget to be trayable, you
+     *      should never use XCENTERGLOBALS.hwndClient
+     *      but use WinQueryWindow(hwndWidget, QW_PARENT)
+     *      instead, because if your widget is in
+     *      a tray, its parent will be a tray widget,
+     *      which understands this message as well.
      *
      *      Parameters:
      *
@@ -871,9 +925,9 @@
      *      -- ULONG mp2: the new width that the
      *         widget wants to have.
      *
-     *      Note: _Post_, do not send this message
-     *      to the client. This causes excessive
-     *      redraw of possibly all widgets.
+     *      Note: _Post_, do not send this message.
+     *      This causes excessive redraw of possibly
+     *      all widgets.
      */
 
     #define XCM_SETWIDGETSIZE           WM_USER
@@ -888,9 +942,19 @@
 
     /*
      *@@ XCM_REFORMAT:
-     *      reformats the XCenter and all widgets. This
-     *      gets posted by ctrDefWidgetProc when a widget
+     *      posted by a widget to its parent to reformat
+     *      the XCenter (or a tray) and all sibling widgets.
+     *      This gets posted by ctrDefWidgetProc when a widget
      *      gets destroyed, but can be posted by anyone.
+     *
+     *      The widget's parent will usually be
+     *      the XCenter client. However, if you
+     *      want your widget to be trayable, you
+     *      should never use XCENTERGLOBALS.hwndClient
+     *      but use WinQueryWindow(hwndWidget, QW_PARENT)
+     *      instead, because if your widget is in
+     *      a tray, its parent will be a tray widget,
+     *      which understands this message as well.
      *
      *      Parameters:
      *
@@ -920,29 +984,49 @@
      *
      *      -- mp2: reserved, must be 0.
      *
-     *      NOTE: This msg must be POSTED, not sent, to the XCenter
-     *      client. It causes excessive redraw.
+     *      Note: _Post_, do not send this message.
+     *      This causes excessive redraw of possibly
+     *      all widgets.
      */
 
     #define XCM_REFORMAT                (WM_USER + 1)
 
     /*
      *@@ XCM_SAVESETUP:
-     *      this msg can be sent (!) to the client
-     *      by a widget if its settings have been
+     *      this msg can be sent (!) by a widget to
+     *      its parent if its settings have been
      *      changed and it wants these settings to
      *      be saved with the XCenter instance data.
+     *
+     *      The widget's parent will usually be
+     *      the XCenter client. However, if you
+     *      want your widget to be trayable, you
+     *      should never use XCENTERGLOBALS.hwndClient
+     *      but use WinQueryWindow(hwndWidget, QW_PARENT)
+     *      instead, because if your widget is in
+     *      a tray, its parent will be a tray widget,
+     *      which understands this message as well.
      *
      *      This is useful when fonts or colors have
      *      been dropped on the widget and no settings
      *      dialog is currently open (and ctrSetSetupString
      *      therefore won't work).
      *
+     *      Note: Saving widget setup strings in the XCenter
+     *      data is a possibly expensive operation. Use
+     *      this message economically.
+     *
+     *      Restrictions: This doesn't work during WM_CREATE
+     *      of your widget.
+     *
      *      Parameters:
      *
      *      -- HWND mp1: widget's window.
      *
      *      -- const char* mp2: zero-terminated setup string.
+     *
+     *      Returns: TRUE if the setup string was successfully
+     *      saved.
      *
      *@@added V0.9.7 (2000-12-04) [umoeller]
      */

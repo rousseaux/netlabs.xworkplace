@@ -75,7 +75,7 @@
  *         There is a "pUser" pointer in that structure that the
  *         widget can use for allocating its own data.
  *
- *         For details, see ctrDefWidgetProc.
+ *         For details, see XCENTERWIDGETCLASS and XCENTERWIDGET.
  *
  *      <B>Widget settings</B>
  *
@@ -157,7 +157,7 @@
  *      The "engine" of the XCenter which does all the hard stuff
  *      (settings management, window creation, window reformatting,
  *      DLL management, etc.) is in xcenter\ctr_engine.c. You
- *      better not touch that  if you only want to write a plugin.
+ *      better not touch that if you only want to write a plugin.
  *
  *      Function prefix for this file:
  *      --  ctr*
@@ -275,6 +275,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // gpi helper
 #include "helpers\linklist.h"           // linked list helper routines
@@ -453,19 +454,16 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
     PWGTSETTINGSTEMP pSettingsTemp = (PWGTSETTINGSTEMP)hSetting;
     if (pSettingsTemp)
     {
-        PXCENTERWIDGETSETTING pSetting = pSettingsTemp->pSetting;
+        PPRIVATEWIDGETSETTING pSetting = pSettingsTemp->pSetting;
         if (pSetting)
         {
             // change setup string in the settings structure
-            if (pSetting->pszSetupString)
-            {
+            if (pSetting->Public.pszSetupString)
                 // we already had a setup string:
-                free(pSetting->pszSetupString);
-                pSetting->pszSetupString = NULL;
-            }
+                free(pSetting->Public.pszSetupString);
 
-            if (pcszNewSetupString)
-                pSetting->pszSetupString = strdup(pcszNewSetupString);
+            pSetting->Public.pszSetupString = strhdup(pcszNewSetupString);
+                        // can be NULL
 
             brc = TRUE;
 
@@ -478,7 +476,7 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
                            WM_CONTROL,
                            MPFROM2SHORT(ID_XCENTER_CLIENT,
                                         XN_SETUPCHANGED),
-                           (MPARAM)pSetting->pszSetupString);
+                           (MPARAM)pSetting->Public.pszSetupString);
             }
 
             _wpSaveDeferred(pSettingsTemp->somSelf);
@@ -570,7 +568,7 @@ VOID ctrPaintStaticWidgetBorder(HPS hps,
                         lDark,
                         lLight);
     }
- }
+}
 
 /*
  *@@ ctrShowContextMenu:
@@ -629,6 +627,33 @@ VOID ctrShowContextMenu(PXCENTERWIDGET pWidget,
     }
 }
 
+/*
+ *@@ ctrDrawWidgetEmphasis:
+ *      helper function to draw emphasis around a widget.
+ *
+ *@@added V0.9.13 (2001-06-19) [umoeller]
+ */
+
+VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
+                           BOOL fRemove)            // in: if TRUE, emphasis is removed
+{
+    HWND hwndClient = pWidget->pGlobals->hwndClient;
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
+                                                                      QWL_USER);
+    HPS hps = DrgGetPS(hwndClient);
+    if (hps)
+    {
+        gpihSwitchToRGB(hps);
+        // draw source emphasis around widget
+        ctrpDrawEmphasis(pXCenterData,
+                         fRemove,
+                         NULL,
+                         pWidget->hwndWidget,
+                         hps);
+        DrgReleasePS(hps);
+    }
+}
+
 /* ******************************************************************
  *
  *   Default widget window proc (exported from XFLDR.DLL)
@@ -678,10 +703,9 @@ VOID DwgtMenuEnd(HWND hwnd,
     if (pWidget)
     {
         if (hwndMenu == pWidget->hwndContextMenu)
-        {
-            WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
-            // WinInvalidateRect(pWidget->pGlobals->hwndFrame, NULL, FALSE);
-        }
+            WinInvalidateRect(WinQueryWindow(hwnd, QW_PARENT),
+                              NULL,
+                              FALSE);
     }
 }
 
@@ -737,12 +761,29 @@ VOID DwgtCommand(HWND hwnd,
                     }
                 break;
 
+                /*
+                 * ID_CRMI_REMOVEWGT:
+                 *      "remove widget" menu item.
+                 */
+
                 case ID_CRMI_REMOVEWGT:
                 {
-                    ULONG ulMyIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                                   hwnd);
-                    _xwpRemoveWidget(pXCenterData->somSelf,
-                                     ulMyIndex);
+                    PWIDGETVIEWSTATE pOwningTray = ((PWIDGETVIEWSTATE)pWidget)->pOwningTray;
+                    if (pOwningTray)
+                    {
+                        // this widget resides in a tray:
+                        WinSendMsg(pOwningTray->Widget.hwndWidget,
+                                   XCM_REMOVESUBWIDGET,
+                                   (MPARAM)pWidget,     // ptr is same as PWIDGETVIEWSTATE
+                                   0);
+                    }
+                    else
+                    {
+                        ULONG ulMyIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                                       hwnd);
+                        _xwpRemoveWidget(pXCenterData->somSelf,
+                                         ulMyIndex);
+                    }
                 break; }
             }
         }
@@ -771,6 +812,16 @@ MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
 /*
  *@@ DwgtDestroy:
  *      implementation for WM_DESTROY in ctrDefWidgetProc.
+ *
+ *      This also frees the XCENTERWIDGET/WIDGETVIEWSTATE
+ *      that was allocated by ctrpCreateWidgetWindow.
+ *
+ *      If the widget is a "root" widget, the XCENTERWIDGET
+ *      is also removed from pXCenterData->llWidgets.
+ *      However, if the widget is in a tray, it is NOT
+ *      removed from the widget views list in the tray;
+ *      the tray must take care of that before calling
+ *      WinDestroyWindow on the widget.
  */
 
 VOID DwgtDestroy(HWND hwnd)
@@ -793,16 +844,16 @@ VOID DwgtDestroy(HWND hwnd)
                 if (pXCenterData)
                 {
                     // remove the widget from the list of open
-                    // views in the XCenter... the problem here
-                    // is that we only see the XCENTERWIDGET
-                    // struct, which is really part of the
-                    // WIDGETVIEWSTATE structure in the llWidgets
-                    // list... so XCENTERWIDGET must be the first
-                    // member of the WIDGETVIEWSTATE structure!
-                    if (!lstRemoveItem(&pXCenterData->llWidgets,
-                                       pWidget))
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "lstRemoveItem failed.");
+                    // views in the XCenter, but only if this is
+                    // not part of a tray;
+                    // XCENTERWIDGET is first member in WIDGETVIEWSTATE,
+                    // so this typecast works
+                    PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pWidget;
+                    if (!pView->pOwningTray)
+                        if (!lstRemoveItem(&pXCenterData->llWidgets,
+                                           pView))
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                   "lstRemoveItem failed.");
                 }
 
                 if (pWidget->pcszWidgetClass)
@@ -815,6 +866,20 @@ VOID DwgtDestroy(HWND hwnd)
                 {
                     WinDestroyWindow(pWidget->hwndContextMenu);
                     pWidget->hwndContextMenu = NULLHANDLE;
+                }
+
+                // if the widget was registered with the
+                // tooltip control, remove it
+                // V0.9.13 (2001-06-21) [umoeller]
+                if (pWidget->ulClassFlags & WGTF_TOOLTIP)
+                {
+                    TOOLINFO ti = {0};
+                    ti.hwndToolOwner = pWidget->pGlobals->hwndClient;
+                    ti.hwndTool = hwnd;
+                    WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                               TTM_DELTOOL,
+                               (MPARAM)0,
+                               &ti);
                 }
 
                 free(pWidget);
@@ -836,54 +901,8 @@ VOID DwgtDestroy(HWND hwnd)
  *      default window procedure for widgets. This is
  *      exported from XFLDR.DLL.
  *
- *      There are a few rules which must be followed
- *      with the window procedures of the widget classes:
- *
- *      -- At the very least, the widget's window proc must
- *         implement WM_CREATE, WM_PAINT, and (if cleanup
- *         is necessary) WM_DESTROY. WM_PRESPARAMCHANGED
- *         would also be nice to support fonts and colors
- *         dropped on the widget.
- *
- *      -- On WM_CREATE, the widget receives a pointer to
- *         its XCENTERWIDGET structure in mp1.
- *
- *         The first thing the widget MUST do on WM_CREATE
- *         is to store the XCENTERWIDGET pointer (from mp1)
- *         in its QWL_USER window word by calling:
- *
- +              WinSetWindowPtr(hwnd, QWL_USER, mp1);
- *
- *      -- The XCenter communicates with the widget using
- *         WM_CONTROL messages. SHORT1FROMMP(mp1), the
- *         source window ID, is always ID_XCENTER_CLIENT.
- *         SHORT2FROMMP(mp1), the notification code, can
- *         be:
- *
- *         --  XN_QUERYSIZE: the XCenter wants to know the
- *             widget's size.
- *
- *         --  XN_SETUPCHANGED: widget's setup string has
- *             changed.
- *
- *      -- All unprocessed messages should be routed
- *         to ctrDefWidgetProc instead of WinDefWindowProc.
- *
- *      -- WM_MENUEND must _always_ be passed on after your
- *         own processing (if any) to remove source emphasis
- *         for popup menus.
- *
- *      -- WM_DESTROY must _always_ be passed on after
- *         your own cleanup code to avoid memory leaks,
- *         because this function performs important cleanup
- *         as well.
- *
- *      -- WM_COMMAND command values above 0x7f00 are reserved.
- *         If you extend the context menu given to you in
- *         XCENTERWIDGET.hwndContextMenu, you must use
- *         menu item IDs < 0x7f00. This has been changed
- *         with V0.9.11 (2001-04-25) [umoeller] to avoid
- *         conflicts with the WPS menu item IDs, sorry.
+ *      See XCENTERWIDGETCLASS for rules that widget
+ *      window procs must conform to.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: changed default widget menu item IDs
@@ -956,69 +975,6 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         default:
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
-    }
-
-    return (mrc);
-}
-
-/*
- *@@ ctrDefContainerWidgetProc:
- *      default window procedure for container widgets. This is
- *      exported from XFLDR.DLL.
- *
- *      There are a few rules which must be followed
- *      with the window procedures of the widget classes:
- *
- *      -- At the very least, the widget's window proc must
- *         implement WM_CREATE, WM_PAINT, and (if cleanup
- *         is necessary) WM_DESTROY. WM_PRESPARAMCHANGED
- *         would also be nice to support fonts and colors
- *         dropped on the widget.
- *
- *      -- On WM_CREATE, the widget receives a pointer to
- *         its XCENTERWIDGET structure in mp1.
- *
- *         The first thing the widget MUST do on WM_CREATE
- *         is to store the XCENTERWIDGET pointer (from mp1)
- *         in its QWL_USER window word by calling:
- *
- +              WinSetWindowPtr(hwnd, QWL_USER, mp1);
- *
- *      -- All unprocessed messages should be routed
- *         to ctrDefContainerWidgetProc instead of WinDefWindowProc.
- *
- *      -- WM_MENUEND must _always_ be passed on after your
- *         own processing (if any) to remove source emphasis
- *         for popup menus.
- *
- *      -- WM_DESTROY must _always_ be passed on after
- *         your own cleanup code to avoid memory leaks,
- *         because this function performs important cleanup
- *         as well.
- *
- *      -- WM_COMMAND command values above 0x7f00 are reserved.
- *         If you extend the context menu given to you in
- *         XCENTERWIDGET.hwndContextMenu, you must use
- *         menu item IDs < 0x7f00. This has been changed
- *         with V0.9.11 (2001-04-25) [umoeller] to avoid
- *         conflicts with the WPS menu item IDs, sorry.
- *
- *@@added V0.9.9 (2001-02-27) [lafaix]
- */
-
-MRESULT EXPENTRY ctrDefContainerWidgetProc(HWND hwnd,
-                                           ULONG msg,
-                                           MPARAM mp1,
-                                           MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        // **lafaix: these used to be your messages here
-
-        default:
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
     }
 
     return (mrc);

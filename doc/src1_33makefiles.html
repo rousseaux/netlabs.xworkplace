@@ -69,6 +69,11 @@ the "all" or the "dep" target. A "dep" target was then added to all the makefile
 in <CODE>src\</CODE> which invokes <CODE>fastdep</CODE> on all C files to produce
 the <CODE>.depend</CODE> file... which is in turn included in the makefiles.
 
+<P>This invokes <CODE>fastdep.exe</CODE> from the XWP Helpers directory, which I stole from
+the Odin sources. fastdep was written by Knut Stange Osmundsen and
+creates a <CODE>.depend</CODE> file in each source directory
+with all the includes which are retrieved directly from the C sources.
+
 </UL>
 </BODY>
 </HTML>

@@ -414,6 +414,14 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 
 <--XFL0218-->: The master audio volume is not working correctly. The control will be closed.
 
+;
+; the following items are new with V0.9.13
+;
+
+<--XFL0219-->: Error code %1 was reported by the system. Unfortunately, no error message was found for this code.
+<--XFL0220-->: Delete tray
+<--XFL0221-->: Are you sure you wish to delete the tray named "%1"?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

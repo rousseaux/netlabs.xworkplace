@@ -16,7 +16,7 @@ for dependencies (<CODE>#include</CODE> statements) and writes a
 <CODE>.depend</CODE> file into each source directory which is then
 used by the makefiles to rebuild things properly.
 
-<P>Note: You only need to run <CODE>nmake dep</CODE> before building for
+<P><B>Note:</B> You only need to run <CODE>nmake dep</CODE> before building for
 the first time, or if source dependencies (<CODE>#include</CODE> statements)
 have changed. To be on the safe side, re-run <CODE>nmake dep</CODE> once
 after you have checked out new sources from the CVS server.
@@ -24,6 +24,11 @@ after you have checked out new sources from the CVS server.
 <P><CODE>nmake dep</CODE> uses the fantastic <CODE>fastdep</CODE> utility by
 Knut Stange Osmundsen, which I have stolen from the Odin sources. This should
 be in the root directory of your <CODE>xwphelpers</CODE> repository.
+
+<P><B>Note:</B> If you have never built XWorkplace before, <CODE>nmake dep</CODE>
+will give you lots of warnings that headers could not be found. This is normal
+because the SOM headers for the XWorkplace classes will only be produced during
+the first full build.
 
 <P><LI>After that, run either <CODE>nmake all</CODE> or <CODE>nmake really_all</CODE>
 to build. This will produce lots of object files in <CODE>bin\</CODE> and
@@ -44,7 +49,8 @@ options:
 <UL><LI>Delete the entire <CODE>bin\</CODE> tree. This is not part of the CVS
 repository at Netlabs and recreated dynamically for all files that have been
 created.
-Deleting it will cause all target object files to become outdated and thus be recompiled.
+Deleting it will cause all target object files to become outdated and thus be recompiled,
+which will then also invoke the linker.
 
 <P><LI>Use <CODE>nmake -a</CODE> on the main makefile. This will even re-invoke
 the SOM compiler on all <CODE>.IDL</CODE> files.

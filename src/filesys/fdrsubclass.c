@@ -1838,7 +1838,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
  *
  *      --  complete interception of file-operation menu items
  *          such as "delete" for deleting all objects into the
- *          XWorkplace trash can
+ *          XWorkplace trash can; this is now done thru a
+ *          new method, which can be overridden by WPFolder
+ *          subclasses (such as the trash can). See
+ *          XFolder::xwpProcessObjectCommand.
  *
  *      --  container control messages: tree view auto-scroll,
  *          updating status bars etc.
@@ -1852,7 +1855,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
  *      every single folder message) and large message procedures
  *      may thrash the processor caches.
  *
- *      The actual message processing is now in ProcessFolderMsgs.
+ *      The actual message processing is now in fdrProcessFolderMsgs.
+ *      This allows us to use the same message processing from
+ *      other (future) parts of XWorkplace which no longer rely
+ *      on subclassing the default WPS folder frames.
  *
  *@@changed V0.9.0 [umoeller]: moved cleanup code from WM_CLOSE to WM_DESTROY; un-subclassing removed
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c

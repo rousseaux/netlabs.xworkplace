@@ -86,10 +86,10 @@
     #endif
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID XWPENTRY fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG flFlags);
 
-        MRESULT fonSampleTextItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fonSampleTextItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);

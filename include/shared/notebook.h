@@ -47,11 +47,11 @@
     // some callback function prototypes:
 
     // 1)  init-page callback
-    typedef VOID (FNCBACTION)(PCREATENOTEBOOKPAGE, ULONG);
+    typedef VOID XWPENTRY FNCBACTION(PCREATENOTEBOOKPAGE, ULONG);
     typedef FNCBACTION *PFNCBACTION;
 
     // 2)  item-changed callback
-    typedef MRESULT (FNCBITEMCHANGED)(PCREATENOTEBOOKPAGE,
+    typedef MRESULT XWPENTRY FNCBITEMCHANGED(PCREATENOTEBOOKPAGE,
                                       ULONG,    // ulItemID
                                             // V0.9.9 (2001-03-27) [umoeller]: turned USHORT into ULONG
                                       USHORT,   // usNotifyCode
@@ -59,7 +59,7 @@
     typedef FNCBITEMCHANGED *PFNCBITEMCHANGED;
 
     // 3)  message callback
-    typedef BOOL (FNCBMESSAGE)(PCREATENOTEBOOKPAGE, ULONG, MPARAM, MPARAM, MRESULT*);
+    typedef BOOL XWPENTRY FNCBMESSAGE(PCREATENOTEBOOKPAGE, ULONG, MPARAM, MPARAM, MRESULT*);
     typedef FNCBMESSAGE *PFNCBMESSAGE;
 
     /*

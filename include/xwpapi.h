@@ -18,6 +18,9 @@
             // shared memory name of XWPGLOBALSHARED structure
             // THIS NAME MUST NOT BE CHANGED, fafner relies on this
 
+    // PM window class name for XCenter client (needed by XWPDaemon)
+    #define WC_XCENTER_CLIENT     "XWPCenterClient"
+
     /*
      *@@ XWPGLOBALSHARED:
      *      block of shared memory which is used for

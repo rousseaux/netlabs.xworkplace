@@ -152,7 +152,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[]
         0,                          // additional flag, not used here
         "SampleWidget",             // internal widget class name
         "Sample",                   // widget class name displayed to user
-        WGTF_UNIQUEPERXCENTER,      // widget class flags
+        WGTF_UNIQUEPERXCENTER | WGTF_TRAYABLE,      // widget class flags
         NULL                        // no settings dialog
       };
 
@@ -271,8 +271,6 @@ typedef struct _SAMPLEPRIVATE
             // widget settings that correspond to a setup string
 
 } SAMPLEPRIVATE, *PSAMPLEPRIVATE;
-
-VOID ScanSwitchList(PSAMPLEPRIVATE pPrivate);
 
 /* ******************************************************************
  *
@@ -598,6 +596,8 @@ VOID WgtPaint(HWND hwnd,
  *      thing for a widget to react to colors and fonts
  *      dropped on it. While we're at it, we also save
  *      these colors and fonts in our setup string data.
+ *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID WgtPresParamChanged(HWND hwnd,
@@ -664,7 +664,10 @@ VOID WgtPresParamChanged(HWND hwnd,
             if (strSetup.ulLength)
                 // we have a setup string:
                 // tell the XCenter to save it with the XCenter data
-                WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
+                // changed V0.9.13 (2001-06-21) [umoeller]:
+                // post it to parent instead of fixed XCenter client
+                // to make this trayable
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);
@@ -698,7 +701,7 @@ VOID WgtDestroy(HWND hwnd,
  *      window procedure for the winlist widget class.
  *
  *      There are a few rules which widget window procs
- *      must follow. See ctrDefWidgetProc in src\shared\center.c
+ *      must follow. See XCENTERWIDGETCLASS in center.h
  *      for details.
  *
  *      Other than that, this is a regular window procedure

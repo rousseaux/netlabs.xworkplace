@@ -188,7 +188,8 @@
     extern const char *XFOLDER_INTROID;
     extern const char *XFOLDER_USERGUIDE;
 
-    extern const char *XWORKPLACE_ARCHIVE_MARKER;
+    // extern const char *XWORKPLACE_ARCHIVE_MARKER;
+        // removed V0.9.13 (2001-06-14) [umoeller]
 
     /********************************************************************
      *
@@ -365,6 +366,8 @@
     #define ID_XSH_SORTPAGE                 129     // V0.9.12: sort page (instance or global)
 
     #define ID_XSH_WIDGET_POWER_MAIN        130     // V0.9.12 (2001-05-26) [umoeller]
+
+    #define ID_XSH_WIDGET_TRAY              131     // V0.9.13 (2001-06-21) [umoeller]
 
     /********************************************************************
      *
@@ -1449,11 +1452,11 @@
      *
      ********************************************************************/
 
-    HMODULE cmnQueryMainCodeModuleHandle(VOID);
+    HMODULE XWPENTRY cmnQueryMainCodeModuleHandle(VOID);
 
     #define cmnQueryMainModuleHandle #error Func prototype has changed.
 
-    const char* cmnQueryMainModuleFilename(VOID);
+    const char* XWPENTRY cmnQueryMainModuleFilename(VOID);
 
     HMODULE XWPENTRY cmnQueryMainResModuleHandle(VOID);
     typedef HMODULE XWPENTRY CMNQUERYMAINRESMODULEHANDLE(VOID);
@@ -1465,11 +1468,11 @@
      *
      ********************************************************************/
 
-    VOID cmnLog(const char *pcszSourceFile,
-                ULONG ulLine,
-                const char *pcszFunction,
-                const char *pcszFormat,
-                ...);
+    VOID XWPENTRY cmnLog(const char *pcszSourceFile,
+                         ULONG ulLine,
+                         const char *pcszFunction,
+                         const char *pcszFormat,
+                         ...);
 
     /* ******************************************************************
      *
@@ -1477,26 +1480,26 @@
      *
      ********************************************************************/
 
-    BOOL cmnQueryXWPBasePath(PSZ pszPath);
+    BOOL XWPENTRY cmnQueryXWPBasePath(PSZ pszPath);
 
-    const char* cmnQueryLanguageCode(VOID);
+    const char* XWPENTRY cmnQueryLanguageCode(VOID);
 
-    BOOL cmnSetLanguageCode(PSZ pszLanguage);
+    BOOL XWPENTRY cmnSetLanguageCode(PSZ pszLanguage);
 
     const char* XWPENTRY cmnQueryHelpLibrary(VOID);
     typedef const char* XWPENTRY CMNQUERYHELPLIBRARY(VOID);
     typedef CMNQUERYHELPLIBRARY *PCMNQUERYHELPLIBRARY;
 
     #ifdef SOM_WPObject_h
-        BOOL cmnDisplayHelp(WPObject *somSelf,
-                            ULONG ulPanelID);
+        BOOL XWPENTRY cmnDisplayHelp(WPObject *somSelf,
+                                     ULONG ulPanelID);
     #endif
 
-    const char* cmnQueryMessageFile(VOID);
+    const char* XWPENTRY cmnQueryMessageFile(VOID);
 
-    HMODULE cmnQueryIconsDLL(VOID);
+    HMODULE XWPENTRY cmnQueryIconsDLL(VOID);
 
-    PSZ cmnQueryBootLogoFile(VOID);
+    PSZ XWPENTRY cmnQueryBootLogoFile(VOID);
 
     HMODULE XWPENTRY cmnQueryNLSModuleHandle(BOOL fEnforceReload);
     typedef HMODULE XWPENTRY CMNQUERYNLSMODULEHANDLE(BOOL fEnforceReload);
@@ -1505,21 +1508,21 @@
     // PNLSSTRINGS cmnQueryNLSStrings(VOID);        removed V0.9.9 (2001-04-04) [umoeller]
 
     #ifdef PRFH_HEADER_INCLUDED
-    PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload);
+        PCOUNTRYSETTINGS XWPENTRY cmnQueryCountrySettings(BOOL fReload);
     #endif
 
-    CHAR cmnQueryThousandsSeparator(VOID);
+    CHAR XWPENTRY cmnQueryThousandsSeparator(VOID);
 
-    BOOL cmnIsValidHotkey(USHORT usFlags,
-                          USHORT usKeyCode);
+    BOOL XWPENTRY cmnIsValidHotkey(USHORT usFlags,
+                                   USHORT usKeyCode);
 
-    BOOL cmnDescribeKey(PSZ pszBuf,
-                        USHORT usFlags,
-                        USHORT usKeyCode);
+    BOOL XWPENTRY cmnDescribeKey(PSZ pszBuf,
+                                 USHORT usFlags,
+                                 USHORT usKeyCode);
 
-    BOOL cmnAddProductInfoMenuItem(HWND hwndMenu);
+    BOOL XWPENTRY cmnAddProductInfoMenuItem(HWND hwndMenu);
 
-    VOID cmnAddCloseMenuItem(HWND hwndMenu);
+    VOID XWPENTRY cmnAddCloseMenuItem(HWND hwndMenu);
 
     /* ******************************************************************
      *
@@ -1527,9 +1530,9 @@
      *
      ********************************************************************/
 
-    void cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
+    void XWPENTRY cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
 
-    PSZ cmnGetString(ULONG ulStringID);
+    PSZ XWPENTRY cmnGetString(ULONG ulStringID);
 
     /********************************************************************
      *
@@ -1537,25 +1540,25 @@
      *
      ********************************************************************/
 
-    const char* cmnQueryStatusBarSetting(USHORT usSetting);
+    const char* XWPENTRY cmnQueryStatusBarSetting(USHORT usSetting);
 
-    BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting);
+    BOOL XWPENTRY cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting);
 
-    ULONG cmnQueryStatusBarHeight(VOID);
+    ULONG XWPENTRY cmnQueryStatusBarHeight(VOID);
 
-    PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults);
+    PCGLOBALSETTINGS XWPENTRY cmnLoadGlobalSettings(BOOL fResetDefaults);
 
-    const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID);
+    const GLOBALSETTINGS* XWPENTRY cmnQueryGlobalSettings(VOID);
 
-    GLOBALSETTINGS* cmnLockGlobalSettings(const char *pcszSourceFile,
-                                          ULONG ulLine,
-                                          const char *pcszFunction);
+    GLOBALSETTINGS* XWPENTRY cmnLockGlobalSettings(const char *pcszSourceFile,
+                                                   ULONG ulLine,
+                                                   const char *pcszFunction);
 
-    VOID cmnUnlockGlobalSettings(VOID);
+    VOID XWPENTRY cmnUnlockGlobalSettings(VOID);
 
-    BOOL cmnStoreGlobalSettings(VOID);
+    BOOL XWPENTRY cmnStoreGlobalSettings(VOID);
 
-    BOOL cmnSetDefaultSettings(USHORT usSettingsPage);
+    BOOL XWPENTRY cmnSetDefaultSettings(USHORT usSettingsPage);
 
     /* ******************************************************************
      *
@@ -1712,48 +1715,48 @@
 
     } XWPSETUPENTRY, *PXWPSETUPENTRY;
 
-    VOID cmnSetupInitData(PXWPSETUPENTRY paSettings,
-                          ULONG cSettings,
-                          PVOID somThis);
+    VOID XWPENTRY cmnSetupInitData(PXWPSETUPENTRY paSettings,
+                                   ULONG cSettings,
+                                   PVOID somThis);
 
     #ifdef XSTRING_HEADER_INCLUDED
-        VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings,
-                                 ULONG cSettings,
-                                 PVOID somThis,
-                                 PXSTRING pstr);
+        VOID XWPENTRY cmnSetupBuildString(PXWPSETUPENTRY paSettings,
+                                          ULONG cSettings,
+                                          PVOID somThis,
+                                          PXSTRING pstr);
     #endif
 
     #ifdef SOM_WPObject_h
-        BOOL cmnSetupScanString(WPObject *somSelf,
-                                PXWPSETUPENTRY paSettings,
-                                ULONG cSettings,
-                                PVOID somThis,
-                                PSZ pszSetupString,
-                                PULONG pcSuccess);
+        BOOL XWPENTRY cmnSetupScanString(WPObject *somSelf,
+                                         PXWPSETUPENTRY paSettings,
+                                         ULONG cSettings,
+                                         PVOID somThis,
+                                         PSZ pszSetupString,
+                                         PULONG pcSuccess);
 
-        BOOL cmnSetupSave(WPObject *somSelf,
-                          PXWPSETUPENTRY paSettings,
-                          ULONG cSettings,
-                          const char *pcszClassName,
-                          PVOID somThis);
+        BOOL XWPENTRY cmnSetupSave(WPObject *somSelf,
+                                   PXWPSETUPENTRY paSettings,
+                                   ULONG cSettings,
+                                   const char *pcszClassName,
+                                   PVOID somThis);
 
-        BOOL cmnSetupRestore(WPObject *somSelf,
-                             PXWPSETUPENTRY paSettings,
-                             ULONG cSettings,
-                             const char *pcszClassName,
-                             PVOID somThis);
+        BOOL XWPENTRY cmnSetupRestore(WPObject *somSelf,
+                                      PXWPSETUPENTRY paSettings,
+                                      ULONG cSettings,
+                                      const char *pcszClassName,
+                                      PVOID somThis);
     #endif
 
-    ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings,
-                              ULONG cSettings,
-                              PULONG paulOffsets,
-                              ULONG cOffsets,
-                              PVOID somThis);
+    ULONG XWPENTRY cmnSetupSetDefaults(PXWPSETUPENTRY paSettings,
+                                       ULONG cSettings,
+                                       PULONG paulOffsets,
+                                       ULONG cOffsets,
+                                       PVOID somThis);
 
-    ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
-                                ULONG cOffsets,
-                                PVOID somThis,
-                                PVOID pBackup);
+    ULONG XWPENTRY cmnSetupRestoreBackup(PULONG paulOffsets,
+                                         ULONG cOffsets,
+                                         PVOID somThis,
+                                         PVOID pBackup);
 
     /* ******************************************************************
      *
@@ -1761,18 +1764,18 @@
      *
      ********************************************************************/
 
-    BOOL cmnTrashCanReady(VOID);
+    BOOL XWPENTRY cmnTrashCanReady(VOID);
 
-    BOOL cmnEnableTrashCan(HWND hwndOwner,
-                           BOOL fEnable);
+    BOOL XWPENTRY cmnEnableTrashCan(HWND hwndOwner,
+                                    BOOL fEnable);
 
     #ifdef SOM_WPObject_h
-        BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject);
+        BOOL XWPENTRY cmnDeleteIntoDefTrashCan(WPObject *pObject);
     #endif
 
-    BOOL cmnEmptyDefTrashCan(HAB hab,
-                             PULONG pulDeleted,
-                             HWND hwndConfirmOwner);
+    BOOL XWPENTRY cmnEmptyDefTrashCan(HAB hab,
+                                      PULONG pulDeleted,
+                                      HWND hwndConfirmOwner);
 
     /********************************************************************
      *
@@ -1781,25 +1784,25 @@
      ********************************************************************/
 
     #ifdef SOM_WPObject_h
-        BOOL cmnRegisterView(WPObject *somSelf,
-                             PUSEITEM pUseItem,
-                             ULONG ulViewID,
-                             HWND hwndFrame,
-                             const char *pcszViewTitle);
+        BOOL XWPENTRY cmnRegisterView(WPObject *somSelf,
+                                      PUSEITEM pUseItem,
+                                      ULONG ulViewID,
+                                      HWND hwndFrame,
+                                      const char *pcszViewTitle);
     #endif
 
-    BOOL cmnPlaySystemSound(USHORT usIndex);
+    BOOL XWPENTRY cmnPlaySystemSound(USHORT usIndex);
 
     #ifdef SOM_WPObject_h
-        WPObject* cmnQueryActiveDesktop(VOID);
+        WPObject* XWPENTRY cmnQueryActiveDesktop(VOID);
 
-        HWND cmnQueryActiveDesktopHWND(VOID);
+        HWND XWPENTRY cmnQueryActiveDesktopHWND(VOID);
     #endif
 
-    VOID cmnShowProductInfo(ULONG ulSound);
+    VOID XWPENTRY cmnShowProductInfo(ULONG ulSound);
 
-    HAPP cmnRunCommandLine(HWND hwndOwner,
-                           const char *pcszStartupDir);
+    HAPP XWPENTRY cmnRunCommandLine(HWND hwndOwner,
+                                    const char *pcszStartupDir);
 
     const char* XWPENTRY cmnQueryDefaultFont(VOID);
     typedef const char* XWPENTRY CMNQUERYDEFAULTFONT(VOID);
@@ -1835,51 +1838,61 @@
     // we add:
     #define MBID_YES2ALL               10
 
-    ULONG cmnMessageBox(HWND hwndOwner,
-                        PSZ pszTitle,
-                        PSZ pszMessage,
-                        ULONG flStyle);
+    ULONG XWPENTRY cmnMessageBox(HWND hwndOwner,
+                                 PSZ pszTitle,
+                                 PSZ pszMessage,
+                                 ULONG flStyle);
 
-    APIRET cmnGetMessageExt(PCHAR *pTable,
-                            ULONG ulTable,
-                            PSZ pszBuf,
-                            ULONG cbBuf,
-                            PSZ pszMsgID);
+    APIRET XWPENTRY cmnGetMessageExt(PCHAR *pTable,
+                                     ULONG ulTable,
+                                     PSZ pszBuf,
+                                     ULONG cbBuf,
+                                     PSZ pszMsgID);
 
-    APIRET cmnGetMessage(PCHAR *pTable,
-                         ULONG ulTable,
-                         PSZ pszBuf,
-                         ULONG cbBuf,
-                         ULONG ulMsgNumber);
+    APIRET XWPENTRY cmnGetMessage(PCHAR *pTable,
+                                  ULONG ulTable,
+                                  PSZ pszBuf,
+                                  ULONG cbBuf,
+                                  ULONG ulMsgNumber);
 
-    ULONG cmnMessageBoxMsg(HWND hwndOwner,
-                           ULONG ulTitle,
-                           ULONG ulMessage,
-                           ULONG flStyle);
+    ULONG XWPENTRY cmnMessageBoxMsg(HWND hwndOwner,
+                                    ULONG ulTitle,
+                                    ULONG ulMessage,
+                                    ULONG flStyle);
 
-    ULONG cmnMessageBoxMsgExt(HWND hwndOwner,
-                              ULONG ulTitle,
-                              PCHAR *pTable,
-                              ULONG ulTable,
-                              ULONG ulMessage,
-                              ULONG flStyle);
+    ULONG XWPENTRY cmnMessageBoxMsgExt(HWND hwndOwner,
+                                       ULONG ulTitle,
+                                       PCHAR *pTable,
+                                       ULONG ulTable,
+                                       ULONG ulMessage,
+                                       ULONG flStyle);
 
-    ULONG cmnDosErrorMsgBox(HWND hwndOwner,
-                            CHAR cDrive,
-                            PSZ pszTitle,
-                            APIRET arc,
-                            ULONG ulFlags,
-                            BOOL fShowExplanation);
+    ULONG XWPENTRY cmnDosErrorMsgBox(HWND hwndOwner,
+                                     CHAR cDrive,
+                                     PSZ pszTitle,
+                                     APIRET arc,
+                                     ULONG ulFlags,
+                                     BOOL fShowExplanation);
 
-    VOID cmnSetDlgHelpPanel(ULONG ulHelpPanel);
+    #define TEBF_REMOVETILDE            0x0001
+    #define TEBF_REMOVEELLIPSE          0x0002
+
+    PSZ XWPENTRY cmnTextEntryBox(HWND hwndOwner,
+                                 const char *pcszTitle,
+                                 const char *pcszDescription,
+                                 const char *pcszDefault,
+                                 ULONG ulMaxLen,
+                                 ULONG fl);
+
+    VOID XWPENTRY cmnSetDlgHelpPanel(ULONG ulHelpPanel);
 
     MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 
-    BOOL cmnFileDlg(HWND hwndOwner,
-                    PSZ pszFile,
-                    ULONG flFlags,
-                    HINI hini,
-                    const char *pcszApplication,
-                    const char *pcszKey);
+    BOOL XWPENTRY cmnFileDlg(HWND hwndOwner,
+                             PSZ pszFile,
+                             ULONG flFlags,
+                             HINI hini,
+                             const char *pcszApplication,
+                             const char *pcszKey);
 #endif
 

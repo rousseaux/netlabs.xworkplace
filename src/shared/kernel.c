@@ -1848,7 +1848,7 @@ VOID krnShowStartupDlgs(VOID)
                     G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
                 if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
                 {
-                    PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
+                    PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
                     // disable "check archives" flag
                     pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
                 }

@@ -646,7 +646,7 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.3 (2000-04-28) [umoeller]: added fRelatedObject
  *@@changed V0.9.4 (2000-08-03) [umoeller]: now checking for "no objects"
- *@@changed V0.9.4 (2001-05-17) [pr]: beautified object title
+ *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  */
 
 FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList

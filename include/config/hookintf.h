@@ -160,18 +160,18 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
 
-        VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                     ULONG flFlags);
+        VOID XWPENTRY hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                              ULONG flFlags);
 
-        MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            ULONG ulItemID,
                                            USHORT usNotifyCode,
                                            ULONG ulExtra);
 
-        VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                          ULONG flFlags);
+        VOID XWPENTRY hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                   ULONG flFlags);
 
-        MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                 ULONG ulItemID, USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
@@ -181,24 +181,24 @@
          *                                                                  *
          ********************************************************************/
 
-        VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                       ULONG flFlags);
+        VOID XWPENTRY hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                ULONG flFlags);
 
-        MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              ULONG ulItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
 
-        VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                     ULONG flFlags);
+        VOID XWPENTRY hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                              ULONG flFlags);
 
-        MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            ULONG ulItemID, USHORT usNotifyCode,
                                            ULONG ulExtra);
 
-        VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+        VOID XWPENTRY hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                               ULONG flFlags);
 
-        MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif

@@ -191,7 +191,6 @@
 
 #include "bldlevel.h"
 
-#include "shared\center.h"              // public XCenter interfaces
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 /* ******************************************************************
@@ -1221,11 +1220,13 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      window positions are not saved off screen.
              *
              *@@added V0.9.12 (2001-05-15) [umoeller]
+             *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed crash if hook wasn't active
              */
 
             case XDM_RECOVERWINDOWS:
-                if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
-                    pgmmRecoverAllWindows();
+                if (G_pHookData)        // V0.9.13 (2001-06-14) [umoeller]
+                    if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
+                        pgmmRecoverAllWindows();
             break;
 
             /*

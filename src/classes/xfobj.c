@@ -491,33 +491,45 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
 }
 
 /*
- *@@ xwpAddDestroyNotify:
- *      adds a window handle to the object's internal
- *      destroy-notify list.
+ *@@ xwpAddWidgetNotify:
+ *      adds a widget window handle to the object's
+ *      internal widget-notify list.
  *
- *      When the object is destroyed for any reason
- *      (i.e. when it is deleted or made dormant), the
- *      specified HWND is posted (!) a WM_CONTROL message
- *      with the XN_OBJECTDESTROYED notify code.
+ *      Widget notifies are used to establish a link
+ *      between a WPS object and an object button widget
+ *      in the XCenter. This will post a WM_CONTROL
+ *      message to the given HWND in the following
+ *      situations:
  *
- *      Any XCenter widget that uses an object pointer
- *      internally (such as the built-in object button
- *      widget) should use this method to destroy itself
- *      when its related object gets destroyed.
+ *      --  When the object is destroyed for any reason
+ *          (i.e. when it is deleted or made dormant), the
+ *          specified HWND is posted (!) a WM_CONTROL message
+ *          with the XN_OBJECTDESTROYED notify code.
+ *
+ *          Any XCenter widget that uses an object pointer
+ *          internally (such as the built-in object button
+ *          widget) should use this method to destroy itself
+ *          when its related object gets destroyed.
+ *
+ *      --  When the object's in-use emphasis changes
+ *          (CRA_INUSE), XFldObject::wpCnrSetEmphasis
+ *          posts a WM_CONTROL message with the
+ *          XN_INUSECHANGED notify code.
  *
  *      Use XFldObject::xwpRemoveDestroyNotify to remove
  *      the notification again... e.g. when the widget
  *      itself is destroyed.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from xwpAddDestroyNotify
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpAddDestroyNotify(XFldObject *somSelf,
-                                                  HWND hwnd)
+SOM_Scope BOOL  SOMLINK xfobj_xwpAddWidgetNotify(XFldObject *somSelf,
+                                                 HWND hwnd)
 {
     BOOL    brc = FALSE;
     WPSHLOCKSTRUCT Lock;
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpAddDestroyNotify");
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpAddWidgetNotify");
 
     if (wpshLockObject(&Lock, somSelf))
     {
@@ -525,12 +537,21 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpAddDestroyNotify(XFldObject *somSelf,
         if (_pvllWidgetNotifies == NULL)
             // list not created yet: do it now
             _pvllWidgetNotifies = lstCreate(FALSE);     // no auto-free
+        else
+            // list exists:
+            // make sure it's not in the list yet
+            // V0.9.13 (2001-06-21) [umoeller]
+            if (lstIndexFromItem(_pvllWidgetNotifies,
+                                 (PVOID)hwnd)
+                    != -1)
+            {
+                // exists already:
+                brc = TRUE;
+            }
 
-        if (_pvllWidgetNotifies)
-        {
+        if ((_pvllWidgetNotifies) && (!brc))
             lstAppendItem((PLINKLIST)_pvllWidgetNotifies,
                           (PVOID)hwnd);
-        }
 
         brc = TRUE;
     }
@@ -1814,6 +1835,51 @@ SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
 
     return (XFldObject_parent_WPObject_wpDelete(somSelf, fConfirmations));
 }
+
+/*
+ *@@ wpCnrSetEmphasis:
+ *      this WPObject method changes the object's visual emphasis
+ *      in all containers where it is inserted.
+ *
+ *      We override this method to be able to intercept the
+ *      CRA_INUSE emphasis in case the object is currently
+ *      used in an XCenter object button widget, which then
+ *      needs to be repainted.
+ *
+ *@@added V0.9.13 (2001-06-21) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
+                                               ULONG ulEmphasisAttr,
+                                               BOOL fTurnOn)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpCnrSetEmphasis");
+
+    if (    (ulEmphasisAttr & CRA_INUSE)
+         && (_pvllWidgetNotifies)
+       )
+    {
+        // we have windows that requested notifications:
+        // go thru list
+        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
+        while (pNode)
+        {
+            HWND hwnd = (HWND)pNode->pItemData;
+            WinPostMsg(hwnd,
+                       WM_CONTROL,
+                       MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                    XN_INUSECHANGED),
+                       (MPARAM)somSelf);
+            pNode = pNode->pNext;
+        }
+    }
+
+    return (XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
+                                                        ulEmphasisAttr,
+                                                        fTurnOn));
+}
+
 
 /* ******************************************************************
  *                                                                  *

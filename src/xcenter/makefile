@@ -59,7 +59,8 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 OBJS = $(OUTPUTDIR)\ctr_engine.obj \
        $(OUTPUTDIR)\ctr_notebook.obj \
        $(OUTPUTDIR)\w_objbutton.obj \
-       $(OUTPUTDIR)\w_pulse.obj
+       $(OUTPUTDIR)\w_pulse.obj \
+       $(OUTPUTDIR)\w_tray.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,

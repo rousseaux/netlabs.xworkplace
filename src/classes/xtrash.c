@@ -11,10 +11,12 @@
  *
  *             The trash can folder itself never contains the "real"
  *             WPS objects which have been deleted, but only instances
- *             of XWPTrashObject, which "mirror" the deleted objects.
+ *             of XWPTrashObject (a subclass of WPTransient), which
+ *             "mirror" the deleted objects.
  *             See xtrashobj.c for details.
  *             The actual deleted objects reside in the hidden
- *             "\trash" directories on each drive.
+ *             "\trash" directories on each drive and are never
+ *             visibly inserted into any folder.
  *
  *             Deleting objects is done by XWPTrashCan::xwpDeleteIntoTrashCan.
  *             See the notes there for details.
@@ -35,7 +37,7 @@
  *          XFolder subclassed folder frame procedure,
  *          if this feature has been enabled by the user;
  *
- *      2)  dropping an object onto the trash can object or into
+ *      3)  dropping an object onto the trash can object or into
  *          an open trash can view (using XWPTrashCan::wpDrop).
  *
  *      After going through the labyrinth of the XWorkplace file

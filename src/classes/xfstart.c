@@ -423,8 +423,10 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
             // and does not return until the folder was
             // fully processed (this calls another thrRunSync
             // internally, so the SIQ is not blocked)
-            _xwpStartFolderContents(somSelf,
+            _xwpStartFolderContents(somSelf,        // XFolder method
                                     _xwpQueryXStartupObjectDelay(somSelf));
+                                                    // XFldStartup method
+                // this goes into fdrStartFolderContents
         }
         return (TRUE);
     }

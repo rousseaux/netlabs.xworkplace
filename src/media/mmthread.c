@@ -171,6 +171,7 @@ RESOLVEFUNCTION G_aResolveFromMMIO[] =
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  *@@changed V0.9.7 (2000-12-20) [umoeller]: removed XMM_CDPLAYER
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: fixed Win-OS/2 sound refusal
  */
 
 MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -373,7 +374,13 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                     _Pmpf((__FUNCTION__ ": MM_MCINOTIFY: usNotifyCode = 0x%lX", usNotifyCode));
                 #endif
                 if (usNotifyCode == MCI_NOTIFY_SUCCESSFUL)
+                {
                     xmmStopSound(&G_usSoundDeviceID);
+                    // now close the device again, or otherwise Win-OS/2
+                    // will refuse to work V0.9.13 (2001-06-19) [umoeller]
+                    xmmCloseDevice(&G_usSoundDeviceID);
+                        // this sets G_usSoundDeviceID to NULLHANDLE again
+                }
             }
         }
         break;

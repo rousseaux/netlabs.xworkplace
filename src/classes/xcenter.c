@@ -410,7 +410,7 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
     _pszPackedWidgetSettings = NULL;
     _cbPackedWidgetSettings = 0;
 
-    _pllWidgetSettings = NULL;
+    _pllAllWidgetSettings = NULL;
 }
 
 /*

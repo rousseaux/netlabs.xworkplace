@@ -63,6 +63,7 @@
 #define INCL_WINPOINTERS
 #define INCL_WININPUT
 #define INCL_WINDIALOGS
+#define INCL_WINSTATICS
 #define INCL_WINMENUS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
@@ -88,6 +89,7 @@
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
@@ -366,8 +368,9 @@ const char      *XFOLDER_STRINGTPLID     = "<XWP_STRINGTPL>"; // V0.9.9
 const char      *XFOLDER_INTROID         = "<XWP_INTRO>";
 const char      *XFOLDER_USERGUIDE       = "<XWP_REF>";
 
-const char      *XWORKPLACE_ARCHIVE_MARKER   = "xwparchv.tmp";
+// const char      *XWORKPLACE_ARCHIVE_MARKER   = "xwparchv.tmp";
             // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
+            // removed V0.9.13 (2001-06-14) [umoeller]
 
 /********************************************************************
  *
@@ -4004,6 +4007,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
  *@@added V0.9.3 (2000-05-05) [umoeller]
  *@@changed V0.9.3 (2000-05-05) [umoeller]: removed fnwpMessageBox
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all"
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: now using cmnGetString (faster)
  */
 
 HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
@@ -4014,7 +4018,6 @@ HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
 {
     HAB     hab = WinQueryAnchorBlock(hwndOwner);
     HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
-    PSZ     pszButton = NULL;
     ULONG flButtons = flStyle & 0xF;        // low nibble contains MB_YESNO etc.
     ULONG ulDefaultButtonID = 1;
 
@@ -4037,77 +4040,53 @@ HWND cmnLoadMessageBoxDlg(HWND hwndOwner,
     // give them proper titles or hide them
     if (flButtons == MB_OK)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_OK, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_OK));
         winhShowDlgItem(hwndDlg, 2, FALSE);
         winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
     }
     else if (flButtons == MB_OKCANCEL)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_OK, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_OK));
+        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_CANCEL));
         winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
     }
     else if (flButtons == MB_RETRYCANCEL)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_RETRY, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_RETRY));
+        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_CANCEL));
         winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
     }
     else if (flButtons == MB_ABORTRETRYIGNORE)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_ABORT, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_RETRY, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_IGNORE, &pszButton);
-        WinSetDlgItemText(hwndDlg, 3, pszButton);
-        free(pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_ABORT));
+        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_RETRY));
+        WinSetDlgItemText(hwndDlg, 3, cmnGetString(ID_XSSI_DLG_IGNORE));
     }
     else if (flButtons == MB_YESNO)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_YES));
+        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_NO));
         winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
     }
     else if (flButtons == MB_YESNOCANCEL)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
-        WinSetDlgItemText(hwndDlg, 3, pszButton);
-        free(pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_YES));
+        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_NO));
+        WinSetDlgItemText(hwndDlg, 3, cmnGetString(ID_XSSI_DLG_CANCEL));
     }
     else if (flButtons == MB_CANCEL)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_CANCEL, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_CANCEL));
         winhShowDlgItem(hwndDlg, 2, FALSE);
         winhShowDlgItem(hwndDlg, 3, FALSE);
-        free(pszButton);
     }
     // else if (flButtons == MB_ENTER)
     // else if (flButtons == MB_ENTERCANCEL)
     else if (flButtons == MB_YES_YES2ALL_NO)
     {
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES, &pszButton);
-        WinSetDlgItemText(hwndDlg, 1, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_YES2ALL, &pszButton);
-        WinSetDlgItemText(hwndDlg, 2, pszButton);
-        cmnLoadString(hab, hmod, ID_XSSI_DLG_NO, &pszButton);
-        WinSetDlgItemText(hwndDlg, 3, pszButton);
+        WinSetDlgItemText(hwndDlg, 1, cmnGetString(ID_XSSI_DLG_YES));
+        WinSetDlgItemText(hwndDlg, 2, cmnGetString(ID_XSSI_DLG_YES2ALL));
+        WinSetDlgItemText(hwndDlg, 3, cmnGetString(ID_XSSI_DLG_NO));
     }
 
     // unset predefined default button
@@ -4438,6 +4417,7 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
  *
  *@@added V0.9.1 (2000-02-08) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: reduced stack consumption
  */
 
 ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
@@ -4448,8 +4428,8 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                         BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
 {
     ULONG   mbrc = 0;
-    CHAR    szError[1000],
-            szError2[2000];
+    CHAR    szMsgBuf[1000];
+    XSTRING strError;
     ULONG   ulLen = 0;
     APIRET  arc2 = NO_ERROR;
 
@@ -4458,45 +4438,206 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
     PSZ     pszTable = szDrive;
     szDrive[0] = cDrive;
 
+    xstrInit(&strError, 0);
+
     arc2 = DosGetMessage(&pszTable, 1,
-                         szError, sizeof(szError),
+                         szMsgBuf, sizeof(szMsgBuf),
                          arc,
                          "OSO001.MSG",        // default OS/2 message file
                          &ulLen);
-    szError[ulLen] = 0;
+    szMsgBuf[ulLen] = 0;
 
     if (arc2 != NO_ERROR)
     {
-        sprintf(szError2,
-                "%s: DosGetMessage returned error %d",
-                __FUNCTION__, arc2);
+        CHAR szError3[20];
+        PSZ apsz = szError3;
+        sprintf(szError3, "%d", arc);
+        cmnGetMessage(&apsz,
+                      1,
+                      szMsgBuf,
+                      sizeof(szMsgBuf),
+                      219);          // "error %d occured"
     }
-    else
-    {
-        sprintf(szError2, "(%d) %s", arc, szError);
 
-        if (fShowExplanation)
+    xstrcpy(&strError, szMsgBuf, 0);
+
+    if (!arc2 && fShowExplanation)
+    {
+        arc2 = DosGetMessage(&pszTable, 1,
+                             szMsgBuf, sizeof(szMsgBuf),
+                             arc,
+                             "OSO001H.MSG",        // default OS/2 help message file
+                             &ulLen);
+        if (arc2 == NO_ERROR)
         {
-            CHAR szErrorExpl[1000];
-            arc2 = DosGetMessage(NULL, 0,
-                                 szErrorExpl, sizeof(szErrorExpl),
-                                 arc,
-                                 "OSO001H.MSG",        // default OS/2 help message file
-                                 &ulLen);
-            if (arc2 == NO_ERROR)
-            {
-                szErrorExpl[ulLen] = 0;
-                strcat(szError2, "\n");
-                strcat(szError2, szErrorExpl);
-            }
+            szMsgBuf[ulLen] = 0;
+            xstrcatc(&strError, '\n');
+            xstrcat(&strError, szMsgBuf, 0);
         }
     }
 
     mbrc = cmnMessageBox(HWND_DESKTOP,
                          pszTitle,
-                         szError2,
+                         strError.psz,
                          ulFlags);
+    xstrClear(&strError);
+
     return (mbrc);
+}
+
+/*
+ *@@ cmnTextEntryBox:
+ *      common dialog for entering a text string.
+ *      The dialog has a descriptive text on top
+ *      with an entry field below and "OK" and "Cancel"
+ *      buttons.
+ *
+ *      The string from the user is returned in a
+ *      new buffer, which must be free'd by the caller.
+ *
+ *      fl can be any combination of the following
+ *      flags:
+ *
+ *      --  TEBF_REMOVETILDE: tilde ("~") characters
+ *          are removed from pcszTitle before setting
+ *          the title. Useful for reusing menu item
+ *          texts.
+ *
+ *      --  TEBF_REMOVEELLIPSE: ellipse ("...") strings
+ *          are removed from pcszTitle before setting
+ *          the title. Useful for reusing menu item
+ *          texts.
+ *
+ *@@added V0.9.13 (2001-06-19) [umoeller]
+ */
+
+PSZ cmnTextEntryBox(HWND hwndOwner,
+                    const char *pcszTitle,          // in: dlg title
+                    const char *pcszDescription,    // in: descriptive text above entry field
+                    const char *pcszDefault,        // in: default text or NULL
+                    ULONG ulMaxLen,                 // in: maximum length for entry
+                    ULONG fl)                       // in: TEBF_* flags
+{
+    CONTROLDEF
+                Static = {
+                            WC_STATIC,
+                            NULL,
+                            WS_VISIBLE | SS_TEXT | DT_LEFT | DT_WORDBREAK,
+                            -1,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 300, SZL_AUTOSIZE },     // size
+                            5               // spacing
+                         },
+                Entry = {
+                            WC_ENTRYFIELD,
+                            NULL,
+                            WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MARGIN | ES_AUTOSCROLL,
+                            999,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 300, 20 },     // size
+                            5               // spacing
+                         },
+                OKButton = {
+                            WC_BUTTON,
+                            NULL,
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
+                            DID_OK,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         },
+                CancelButton = {
+                            WC_BUTTON,
+                            NULL,
+                            WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                            DID_CANCEL,
+                            CTL_COMMON_FONT,
+                            0,
+                            { 100, 30 },    // size
+                            5               // spacing
+                         };
+    DLGHITEM DlgTemplate[] =
+        {
+            START_TABLE,
+                START_ROW(0),
+                    CONTROL_DEF(&Static),
+                START_ROW(0),
+                    CONTROL_DEF(&Entry),
+                START_ROW(0),
+                    CONTROL_DEF(&OKButton),
+                    CONTROL_DEF(&CancelButton),
+            END_TABLE
+        };
+
+    HWND hwndDlg = NULLHANDLE;
+    PSZ  pszReturn = NULL;
+    XSTRING strTitle;
+
+    xstrInitCopy(&strTitle, pcszTitle, 0);
+
+    if (fl & (TEBF_REMOVEELLIPSE | TEBF_REMOVETILDE))
+    {
+        ULONG ulOfs;
+        if (fl & TEBF_REMOVEELLIPSE)
+        {
+            ulOfs = 0;
+            while (xstrFindReplaceC(&strTitle,
+                                    &ulOfs,
+                                    "...",
+                                    ""))
+                ;
+        }
+
+        if (fl & TEBF_REMOVETILDE)
+        {
+            ulOfs = 0;
+            while (xstrFindReplaceC(&strTitle,
+                                    &ulOfs,
+                                    "~",
+                                    ""))
+                ;
+        }
+    }
+
+    Static.pcszText = pcszDescription;
+
+    OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+    CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+
+    if (NO_ERROR == dlghCreateDlg(&hwndDlg,
+                                  hwndOwner,
+                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                  WinDefDlgProc,
+                                  strTitle.psz,
+                                  DlgTemplate,      // DLGHITEM array
+                                  ARRAYITEMCOUNT(DlgTemplate),
+                                  NULL,
+                                  cmnQueryDefaultFont()))
+    {
+        ULONG idReturn;
+        HWND hwndEF = WinWindowFromID(hwndDlg, 999);
+        winhCenterWindow(hwndDlg);
+        winhSetEntryFieldLimit(hwndEF, ulMaxLen);
+        if (pcszDefault)
+        {
+            WinSetWindowText(hwndEF, (PSZ)pcszDefault);
+            winhEntryFieldSelectAll(hwndEF);
+        }
+        idReturn = WinProcessDlg(hwndDlg);
+        if (idReturn == DID_OK)
+        {
+            pszReturn = winhQueryWindowText(hwndEF);
+        }
+
+        WinDestroyWindow(hwndDlg);
+    }
+
+    xstrClear(&strTitle);
+
+    return (pszReturn);
 }
 
 /*

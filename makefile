@@ -178,7 +178,8 @@ $(XWP_OUTPUT_ROOT)\winlist.obj \
 $(XWP_OUTPUT_ROOT)\ctr_engine.obj \
 $(XWP_OUTPUT_ROOT)\ctr_notebook.obj \
 $(XWP_OUTPUT_ROOT)\w_objbutton.obj \
-$(XWP_OUTPUT_ROOT)\w_pulse.obj
+$(XWP_OUTPUT_ROOT)\w_pulse.obj \
+$(XWP_OUTPUT_ROOT)\w_tray.obj
 
 OBJS_ANICLASSES = $(XWP_OUTPUT_ROOT)\anand.obj $(XWP_OUTPUT_ROOT)\anos2ptr.obj $(XWP_OUTPUT_ROOT)\anwani.obj $(XWP_OUTPUT_ROOT)\anwcur.obj
 OBJS_ANICONVERT = $(XWP_OUTPUT_ROOT)\cursor.obj $(XWP_OUTPUT_ROOT)\pointer.obj $(XWP_OUTPUT_ROOT)\script.obj
@@ -572,7 +573,7 @@ $(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\widgets\sentinel.def: include\bldlevel.h
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter Theseus 4 plugin DLL"
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "XCenter memory sentinel plugin DLL"
 
 $(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
@@ -902,6 +903,18 @@ release: really_all
 !endif
     $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
     $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
+# now go shrink executables V0.9.13 (2001-06-17) [umoeller]
+!ifndef XWP_DEBUG
+!ifdef LXLITEPATH
+    $(LXLITEPATH)\lxlite \
+$(XWPRELEASE_MAIN)\bin\*.dll \
+$(XWPRELEASE_MAIN)\bin\*.exe \
+$(XWPRELEASE_NLS)\bin\*.dll
+    $(LXLITEPATH)\lxlite \
+$(XWPRELEASE_MAIN)\plugins\xcenter\*.dll \
+$(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll \
+!endif
+!endif
 
 #
 # Special target "warpin": this is not called by "all",

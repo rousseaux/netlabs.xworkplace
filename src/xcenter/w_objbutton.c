@@ -57,6 +57,7 @@
 #define INCL_WINTIMER
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
+#define INCL_WINSTDDRAG
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -152,6 +153,8 @@ typedef struct _OBJBUTTONPRIVATE
                     // the control is painted "down" if either of the two are TRUE
     BOOL        fMouseCaptured; // if TRUE, mouse is currently captured
 
+    BOOL        fHasDragoverEmphasis;   // TRUE only while something is dragged over obj button
+
     HWND        hwndMenuMain;           // if != NULLHANDLE, this has the currently
                                         // open menu (X-button and object buttons)
     HWND        hwndObjectPopup;        // if != NULLHANDLE, this has the currently
@@ -161,7 +164,7 @@ typedef struct _OBJBUTTONPRIVATE
                                         // so we can't check hwndObjectPoup
 
     WPObject    *pobjButton;            // object for this button
-    WPObject    *pobjNotify;            // != NULL if xwpAddDestroyNotify has been
+    WPObject    *pobjNotify;            // != NULL if xwpAddWidgetNotify has been
                                         // called (to avoid duplicate notifications)
 
     HPOINTER    hptrXMini;              // "X" icon for painting on button,
@@ -332,7 +335,7 @@ WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
                     // set list notify so that the widget is destroyed
                     // when the object goes dormant
                     _wpLockObject(pobj);
-                    _xwpAddDestroyNotify(pobj,
+                    _xwpAddWidgetNotify(pobj,
                                          pPrivate->pWidget->hwndWidget);
                     pPrivate->pobjNotify = pobj;
                 }
@@ -385,6 +388,7 @@ MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
  *      implementation for WM_CONTROL.
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
  */
 
 BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -394,17 +398,15 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
     USHORT  usID = SHORT1FROMMP(mp1),
             usNotifyCode = SHORT2FROMMP(mp1);
 
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-
-    // _Pmpf((__FUNCTION__ ": WM_CONTROL id 0x%lX", usID));
-
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        switch (usID)
         {
-            if (usID == ID_XCENTER_CLIENT)
-            {
+            case ID_XCENTER_CLIENT:
                 switch (usNotifyCode)
                 {
                     /*
@@ -417,8 +419,7 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         PSIZEL pszl = (PSIZEL)mp2;
                         pszl->cx = pWidget->pGlobals->cxMiniIcon
                                    + 2;    // 2*1 spacing between icon and border
-                        if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS)
-                                        == 0)
+                        if (0 == (pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
                             pszl->cx += 4;     // 2*2 for button borders
 
                         // we wanna be square
@@ -441,36 +442,40 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                    (MPARAM)ID_CRMI_REMOVEWGT,
                                    NULL);
                     break;
+
+                    /*
+                     * XN_INUSECHANGED:
+                     *      just repaint.
+                     */
+
+                    case XN_INUSECHANGED:
+                        WinInvalidateRect(hwnd, NULL, FALSE);
+                    break;
                 }
-            } // if (usID == ID_XCENTER_CLIENT)
-            else
-            {
-                if (usID == ID_XCENTER_TOOLTIP)
+            break; // ID_XCENTER_CLIENT
+
+            case ID_XCENTER_TOOLTIP:
+                if (usNotifyCode == TTN_NEEDTEXT)
                 {
-                    _Pmpf((__FUNCTION__ ": ID_XCENTER_TOOLTIP"));
-                    if (usNotifyCode == TTN_NEEDTEXT)
+                    PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                    if (pPrivate->ulType == BTF_XBUTTON)
+                        pttt->pszText = "X Button";
+                    else
                     {
-                        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                        _Pmpf((__FUNCTION__ ": TTN_NEEDTEXT"));
-                        if (pPrivate->ulType == BTF_XBUTTON)
-                            pttt->pszText = "X Button";
+                        if (!pPrivate->pobjButton)
+                            // object not queried yet:
+                            pPrivate->pobjButton = FindObject(pPrivate);
+
+                        if (pPrivate->pobjButton)
+                            pttt->pszText = _wpQueryTitle(pPrivate->pobjButton);
                         else
-                        {
-                            if (!pPrivate->pobjButton)
-                                // object not queried yet:
-                                pPrivate->pobjButton = FindObject(pPrivate);
-
-                            if (pPrivate->pobjButton)
-                                pttt->pszText = _wpQueryTitle(pPrivate->pobjButton);
-                            else
-                                pttt->pszText = "Invalid object...";
-                        }
-
-                        pttt->ulFormat = TTFMT_PSZ;
+                            pttt->pszText = "Invalid object...";
                     }
+
+                    pttt->ulFormat = TTFMT_PSZ;
                 }
-            }
-        } // end if (pPrivate)
+            break;
+        } // switch (usID)
     } // end if (pWidget)
 
     return (brc);
@@ -479,6 +484,8 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 /*
  * OwgtPaintButton:
  *      implementation for WM_PAINT.
+ *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
  */
 
 VOID OwgtPaintButton(HWND hwnd)
@@ -488,101 +495,62 @@ VOID OwgtPaintButton(HWND hwnd)
 
     if (hps)
     {
-        // get widget data and its button data from QWL_USER
-        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pWidget)
+        PXCENTERWIDGET pWidget;
+        POBJBUTTONPRIVATE pPrivate;
+        if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+             && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+           )
         {
-            POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-            if (pPrivate)
+            const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
+            RECTL           rclWin;
+            ULONG           fl = XBF_BACKGROUND;        // paint background
+            XBUTTONDATA     xbd;
+
+            if (pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS)
+                fl |= XBF_FLAT;
+            if (    (pPrivate->fMouseButton1Down)
+                 || (pPrivate->fButtonSunk)
+               )
+                fl |= XBF_PRESSED;
+
+            // refresh button data
+            WinQueryWindowRect(hwnd, &xbd.rcl);      // exclusive
+
+            xbd.cxMiniIcon = pGlobals->cxMiniIcon;
+            xbd.lcol3DDark = pGlobals->lcol3DDark;
+            xbd.lcol3DLight = pGlobals->lcol3DLight;
+            xbd.lMiddle = pGlobals->lcolClientBackground; // WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
+
+            if (pPrivate->ulType == BTF_XBUTTON)
             {
-                RECTL   rclWin;
-                ULONG   ulBorder = 0,
-                        cx,
-                        cy,
-                        cxMiniIcon = pWidget->pGlobals->cxMiniIcon,
-                        ulOfs = 0;
-                LONG    lLeft,
-                        lRight,
-                        lMiddle = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
-                HPOINTER hptr = NULLHANDLE;
+                xbd.hptr = pPrivate->hptrXMini;
+            }
+            else
+            {
+                if (!pPrivate->pobjButton)
+                    // object not queried yet:
+                    pPrivate->pobjButton = FindObject(pPrivate);
 
-                if ((pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS) == 0)
-                    ulBorder = 2;
-
-                WinQueryWindowRect(hwnd, &rclWin);      // exclusive
-                gpihSwitchToRGB(hps);
-
-                if (    (pPrivate->fMouseButton1Down)
-                     || (pPrivate->fButtonSunk)
-                   )
+                if (pPrivate->pobjButton)
                 {
-                    // paint button "down":
-                    lLeft = pWidget->pGlobals->lcol3DDark;
-                    lRight = pWidget->pGlobals->lcol3DLight;
-                    // add offset for icon painting at the bottom
-                    ulOfs += 1;
-                    if (ulBorder == 0)
-                        ulBorder = 1;
+                    PMINIRECORDCORE pmrc;
+
+                    xbd.hptr = _wpQueryIcon(pPrivate->pobjButton);
+
+                    if (    (pmrc = _wpQueryCoreRecord(pPrivate->pobjButton))
+                         && (pmrc->flRecordAttr & CRA_INUSE)
+                       )
+                    {
+                        // this object has in-use emphasis:
+                        fl |= XBF_INUSE;
+                    }
                 }
-                else
-                {
-                    lLeft = pWidget->pGlobals->lcol3DLight;
-                    lRight = pWidget->pGlobals->lcol3DDark;
-                }
+            }
 
-                if (ulBorder)
-                {
-                    // button border:
+            ctlPaintXButton(hps,
+                            fl,
+                            &xbd);
 
-                    // now paint button frame
-                    rclWin.xRight--;
-                    rclWin.yTop--;
-                    gpihDraw3DFrame(hps,
-                                    &rclWin,        // inclusive
-                                    ulBorder,
-                                    lLeft,
-                                    lRight);
-
-                    // now paint button middle
-                    rclWin.xLeft += ulBorder;
-                    rclWin.yBottom += ulBorder;
-                    rclWin.xRight -= ulBorder - 1;  // make exclusive again
-                    rclWin.yTop -= ulBorder - 1;    // make exclusive again
-                }
-
-                WinFillRect(hps,
-                            &rclWin,        // exclusive
-                            lMiddle);
-
-                // get icon
-                if (pPrivate->ulType == BTF_XBUTTON)
-                {
-                    hptr = pPrivate->hptrXMini;
-                }
-                else
-                {
-                    if (!pPrivate->pobjButton)
-                        // object not queried yet:
-                        pPrivate->pobjButton = FindObject(pPrivate);
-
-                    if (pPrivate->pobjButton)
-                        hptr = _wpQueryIcon(pPrivate->pobjButton);
-                }
-
-                if (hptr)
-                {
-                    // now paint icon
-                    cx = rclWin.xRight - rclWin.xLeft;
-                    cy = rclWin.yTop - rclWin.yBottom;
-                    GpiIntersectClipRectangle(hps, &rclWin);    // exclusive!
-                    WinDrawPointer(hps,
-                                   // center this in remaining rectl
-                                   rclWin.xLeft + ((cx - cxMiniIcon) / 2) + ulOfs,
-                                   rclWin.yBottom + ((cy - cxMiniIcon) / 2) - ulOfs,
-                                   hptr,
-                                   DP_MINI);
-                }
-            } // end if (pPrivate)
         } // end if (pWidget)
 
         WinEndPaint(hps);
@@ -596,181 +564,177 @@ VOID OwgtPaintButton(HWND hwnd)
 
 VOID OwgtButton1Down(HWND hwnd)
 {
-    // get widget data and its button data from QWL_USER
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        if (WinIsWindowEnabled(hwnd))
         {
-            if (WinIsWindowEnabled(hwnd))
+            pPrivate->fMouseButton1Down = TRUE;
+            WinInvalidateRect(hwnd, NULL, FALSE);
+
+            // since we're not passing the message
+            // to WinDefWndProc, we need to give
+            // ourselves the focus; this will also
+            // dismiss the button's menu, if open
+            WinSetFocus(HWND_DESKTOP, hwnd);
+
+            if (!pPrivate->fMouseCaptured)
             {
-                pPrivate->fMouseButton1Down = TRUE;
-                WinInvalidateRect(hwnd, NULL, FALSE);
+                // capture mouse events while the
+                // mouse button is down
+                WinSetCapture(HWND_DESKTOP, hwnd);
+                pPrivate->fMouseCaptured = TRUE;
+            }
 
-                // since we're not passing the message
-                // to WinDefWndProc, we need to give
-                // ourselves the focus; this will also
-                // dismiss the button's menu, if open
-                WinSetFocus(HWND_DESKTOP, hwnd);
+            if (!pPrivate->fButtonSunk)
+            {
+                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // toggle state is still UP (i.e. button pressed
+                // for the first time): create menu
 
-                if (!pPrivate->fMouseCaptured)
+                // prepare globals in fdrmenus.c
+                cmnuInitItemCache(pGlobalSettings);
+
+                if (pPrivate->ulType == BTF_XBUTTON)
                 {
-                    // capture mouse events while the
-                    // mouse button is down
-                    WinSetCapture(HWND_DESKTOP, hwnd);
-                    pPrivate->fMouseCaptured = TRUE;
-                }
+                    // it's an X-button: load default menu
+                    WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
+                    PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
+                    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+                    BOOL fShutdownRunning = xsdIsShutdownRunning();
 
-                if (!pPrivate->fButtonSunk)
-                {
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                    // toggle state is still UP (i.e. button pressed
-                    // for the first time): create menu
+                    pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
+                                                         cmnQueryNLSModuleHandle(FALSE),
+                                                         ID_CRM_XCENTERBUTTON);
 
-                    // prepare globals in fdrmenus.c
-                    _Pmpf((__FUNCTION__ ": calling cmnuInitItemCache"));
-                    cmnuInitItemCache(pGlobalSettings);
-
-                    if (pPrivate->ulType == BTF_XBUTTON)
+                    if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
                     {
-                        // it's an X-button: load default menu
-                        WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
-                        PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
-                        PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-                        BOOL fShutdownRunning = xsdIsShutdownRunning();
+                        // if XShutdown confirmations have been disabled,
+                        // remove "..." from the shutdown menu entries
+                        winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                              ID_CRMI_RESTARTWPS);
+                        winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                              ID_CRMI_SHUTDOWN);
+                    }
 
-                        pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
-                                                             cmnQueryNLSModuleHandle(FALSE),
-                                                             ID_CRM_XCENTERBUTTON);
+                    WinEnableMenuItem(pPrivate->hwndMenuMain,
+                                      ID_CRMI_RESTARTWPS,
+                                      !fShutdownRunning);
+                    WinEnableMenuItem(pPrivate->hwndMenuMain,
+                                      ID_CRMI_SHUTDOWN,
+                                      !fShutdownRunning);
 
-                        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
-                        {
-                            // if XShutdown confirmations have been disabled,
-                            // remove "..." from the shutdown menu entries
-                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                                  ID_CRMI_RESTARTWPS);
-                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                                  ID_CRMI_SHUTDOWN);
-                        }
-
-                        WinEnableMenuItem(pPrivate->hwndMenuMain,
-                                          ID_CRMI_RESTARTWPS,
-                                          !fShutdownRunning);
-                        WinEnableMenuItem(pPrivate->hwndMenuMain,
-                                          ID_CRMI_SHUTDOWN,
-                                          !fShutdownRunning);
-
-                        if (!pKernelGlobals->pXWPShellShared)
-                        {
-                            // XWPShell not running:
-                            // remove "logoff"
-                            winhRemoveMenuItem(pPrivate->hwndMenuMain,
-                                               ID_CRMI_LOGOFF);
-                        }
-                        else
-                        {
-                            if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
-                                // if XShutdown confirmations have been disabled,
-                                // remove "..." from menu entry
-                                winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                                      ID_CRMI_LOGOFF);
-                            WinEnableMenuItem(pPrivate->hwndMenuMain,
-                                              ID_CRMI_LOGOFF,
-                                              !fShutdownRunning);
-                        }
-
-                        // check if we can find the "Power" object
-                        if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
-                            if (_somIsA(pPrivate->pPower, _WPPower))
-                            {
-                                // is power management enabled?
-                                if (!_wpQueryPowerManagement(pPrivate->pPower))
-                                    // no:
-                                    pPrivate->pPower = NULL;
-                            }
-                            else
-                                pPrivate->pPower = NULL;
-
-                        if (!pPrivate->pPower)
-                            winhRemoveMenuItem(pPrivate->hwndMenuMain,
-                                               ID_CRMI_SUSPEND);
-                        else
-                            // power exists:
-                            if (!_wpQueryPowerConfirmation(pPrivate->pPower))
-                                // if power confirmations have been disabled,
-                                // remove "..." from menu entry
-                                winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                                      ID_CRMI_SUSPEND);
-
-                        // prepare folder content submenu for Desktop
-                        cmnuPrepareContentSubmenu(pActiveDesktop,
-                                                  pPrivate->hwndMenuMain,
-                                                  pszDesktopTitle,
-                                                  0,        // top item
-                                                  FALSE); // no owner draw in main context menu
-                    } // if (pPrivate->ulType == BTF_XBUTTON)
+                    if (!pKernelGlobals->pXWPShellShared)
+                    {
+                        // XWPShell not running:
+                        // remove "logoff"
+                        winhRemoveMenuItem(pPrivate->hwndMenuMain,
+                                           ID_CRMI_LOGOFF);
+                    }
                     else
                     {
-                        // regular object button:
-                        // check if this is a folder...
+                        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+                            // if XShutdown confirmations have been disabled,
+                            // remove "..." from menu entry
+                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                                  ID_CRMI_LOGOFF);
+                        WinEnableMenuItem(pPrivate->hwndMenuMain,
+                                          ID_CRMI_LOGOFF,
+                                          !fShutdownRunning);
+                    }
 
-                        if (!pPrivate->pobjButton)
-                            // object not queried yet:
-                            pPrivate->pobjButton = FindObject(pPrivate);
-
-                        if (pPrivate->pobjButton)
+                    // check if we can find the "Power" object
+                    if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
+                        if (_somIsA(pPrivate->pPower, _WPPower))
                         {
-                            if (_somIsA(pPrivate->pobjButton, _WPFolder))
-                            {
-                                // yes, it's a folder:
-                                // prepare folder content menu by inserting
-                                // a dummy menu item... the actual menu
-                                // fill is done for WM_INITMENU, which comes
-                                // in right afterwards
-                                pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
-                                WinSetWindowBits(pPrivate->hwndMenuMain,
-                                                 QWL_STYLE,
-                                                 MIS_OWNERDRAW,
-                                                 MIS_OWNERDRAW);
-
-                                // insert a dummy menu item so that cmnuPrepareOwnerDraw
-                                // can measure its size
-                                _Pmpf((__FUNCTION__ ": inserting dummy"));
-                                winhInsertMenuItem(pPrivate->hwndMenuMain,
-                                                   0,
-                                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY,
-                                                   "test",
-                                                   MIS_TEXT,
-                                                   0);
-                            }
-                            // else no folder:
-                            // do nothing at this point, just paint the
-                            // button depressed... we'll open the object
-                            // on button-up
+                            // is power management enabled?
+                            if (!_wpQueryPowerManagement(pPrivate->pPower))
+                                // no:
+                                pPrivate->pPower = NULL;
                         }
-                    }
+                        else
+                            pPrivate->pPower = NULL;
 
-                    if (pPrivate->hwndMenuMain)
+                    if (!pPrivate->pPower)
+                        winhRemoveMenuItem(pPrivate->hwndMenuMain,
+                                           ID_CRMI_SUSPEND);
+                    else
+                        // power exists:
+                        if (!_wpQueryPowerConfirmation(pPrivate->pPower))
+                            // if power confirmations have been disabled,
+                            // remove "..." from menu entry
+                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                                  ID_CRMI_SUSPEND);
+
+                    // prepare folder content submenu for Desktop
+                    cmnuPrepareContentSubmenu(pActiveDesktop,
+                                              pPrivate->hwndMenuMain,
+                                              pszDesktopTitle,
+                                              0,        // top item
+                                              FALSE); // no owner draw in main context menu
+                } // if (pPrivate->ulType == BTF_XBUTTON)
+                else
+                {
+                    // regular object button:
+                    // check if this is a folder...
+
+                    if (!pPrivate->pobjButton)
+                        // object not queried yet:
+                        pPrivate->pobjButton = FindObject(pPrivate);
+
+                    if (pPrivate->pobjButton)
                     {
-                        RECTL rclButton;
-                        WinQueryWindowRect(hwnd, &rclButton);
-                        // rclButton now has button coordinates;
-                        // convert this to screen coordinates:
-                        WinMapWindowPoints(hwnd,
-                                           HWND_DESKTOP,
-                                           (PPOINTL)&rclButton,
-                                           2);          // rectl == 2 points
+                        if (_somIsA(pPrivate->pobjButton, _WPFolder))
+                        {
+                            // yes, it's a folder:
+                            // prepare folder content menu by inserting
+                            // a dummy menu item... the actual menu
+                            // fill is done for WM_INITMENU, which comes
+                            // in right afterwards
+                            pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
+                            WinSetWindowBits(pPrivate->hwndMenuMain,
+                                             QWL_STYLE,
+                                             MIS_OWNERDRAW,
+                                             MIS_OWNERDRAW);
 
-                        if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
-                            cmnuSetPositionBelow((PPOINTL)&rclButton);
-
-                        ctlDisplayButtonMenu(hwnd,
-                                             pPrivate->hwndMenuMain);
+                            // insert a dummy menu item so that cmnuPrepareOwnerDraw
+                            // can measure its size
+                            winhInsertMenuItem(pPrivate->hwndMenuMain,
+                                               0,
+                                               pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY,
+                                               "test",
+                                               MIS_TEXT,
+                                               0);
+                        }
+                        // else no folder:
+                        // do nothing at this point, just paint the
+                        // button depressed... we'll open the object
+                        // on button-up
                     }
-                } // end if (!pPrivate->fButtonSunk)
-            }
-        } // end if (pPrivate)
+                }
+
+                if (pPrivate->hwndMenuMain)
+                {
+                    RECTL rclButton;
+                    WinQueryWindowRect(hwnd, &rclButton);
+                    // rclButton now has button coordinates;
+                    // convert this to screen coordinates:
+                    WinMapWindowPoints(hwnd,
+                                       HWND_DESKTOP,
+                                       (PPOINTL)&rclButton,
+                                       2);          // rectl == 2 points
+
+                    if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
+                        cmnuSetPositionBelow((PPOINTL)&rclButton);
+
+                    ctlDisplayButtonMenu(hwnd,
+                                         pPrivate->hwndMenuMain);
+                }
+            } // end if (!pPrivate->fButtonSunk)
+        }
     } // end if (pWidget)
 }
 
@@ -781,50 +745,48 @@ VOID OwgtButton1Down(HWND hwnd)
 
 VOID OwgtButton1Up(HWND hwnd)
 {
-    // get widget data and its button data from QWL_USER
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        if (WinIsWindowEnabled(hwnd))
         {
-            if (WinIsWindowEnabled(hwnd))
+            // un-capture the mouse first
+            if (pPrivate->fMouseCaptured)
             {
-                // un-capture the mouse first
-                if (pPrivate->fMouseCaptured)
-                {
-                    WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-                    pPrivate->fMouseCaptured = FALSE;
-                }
-
-                pPrivate->fMouseButton1Down = FALSE;
-
-                // toggle state with each WM_BUTTON1UP
-                pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
-
-                if (pPrivate->ulType == BTF_OBJBUTTON)
-                    // we have an object button (not X-button):
-                    if (pPrivate->pobjButton)
-                        // object was successfully retrieved on button-down:
-                        if (!_somIsA(pPrivate->pobjButton, _WPFolder))
-                        {
-                            // object is not a folder:
-                            // open it on button up!
-                            _wpViewObject(pPrivate->pobjButton,
-                                          NULLHANDLE,
-                                          OPEN_DEFAULT, // default view, same as dblclick
-                                          0);
-                            // unset button sunk state
-                            // (no toggle)
-                            pPrivate->fButtonSunk = FALSE;
-                        }
-                        // else folder: we do nothing, the work for the menu
-                        // has been set up in button-down and init-menu
-
-                // repaint sunk button state
-                WinInvalidateRect(hwnd, NULL, FALSE);
+                WinSetCapture(HWND_DESKTOP, NULLHANDLE);
+                pPrivate->fMouseCaptured = FALSE;
             }
-        } // end if (pPrivate)
+
+            pPrivate->fMouseButton1Down = FALSE;
+
+            // toggle state with each WM_BUTTON1UP
+            pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
+
+            if (pPrivate->ulType == BTF_OBJBUTTON)
+                // we have an object button (not X-button):
+                if (pPrivate->pobjButton)
+                    // object was successfully retrieved on button-down:
+                    if (!_somIsA(pPrivate->pobjButton, _WPFolder))
+                    {
+                        // object is not a folder:
+                        // open it on button up!
+                        _wpViewObject(pPrivate->pobjButton,
+                                      NULLHANDLE,
+                                      OPEN_DEFAULT, // default view, same as dblclick
+                                      0);
+                        // unset button sunk state
+                        // (no toggle)
+                        pPrivate->fButtonSunk = FALSE;
+                    }
+                    // else folder: we do nothing, the work for the menu
+                    // has been set up in button-down and init-menu
+
+            // repaint sunk button state
+            WinInvalidateRect(hwnd, NULL, FALSE);
+        }
     } // end if (pWidget)
 }
 
@@ -842,108 +804,86 @@ VOID OwgtButton1Up(HWND hwnd)
 
 VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    // get widget data and its button data from QWL_USER
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    _Pmpf((__FUNCTION__ ": entering"));
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        SHORT sMenuIDMsg = (SHORT)mp1;
+        HWND hwndMenuMsg = (HWND)mp2;
+
+        if (   (pPrivate->ulType == BTF_OBJBUTTON)
+            && (hwndMenuMsg == pPrivate->hwndMenuMain)
+           )
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            SHORT sMenuIDMsg = (SHORT)mp1;
-            HWND hwndMenuMsg = (HWND)mp2;
+            // WM_INITMENU for object's button main menu:
+            // we then need to load the objects directly into
+            // the menu
 
-            if (   (pPrivate->ulType == BTF_OBJBUTTON)
-                && (hwndMenuMsg == pPrivate->hwndMenuMain)
-               )
+            cmnuPrepareOwnerDraw(hwndMenuMsg);
+
+            // remove dummy item
+            winhRemoveMenuItem(pPrivate->hwndMenuMain,
+                               pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY);
+
+            if (!pPrivate->pobjButton)
+                // object not queried yet:
+                pPrivate->pobjButton = FindObject(pPrivate);
+
+            if (pPrivate->pobjButton)
             {
-                // WM_INITMENU for object's button main menu:
-                // we then need to load the objects directly into
-                // the menu
-
-                _Pmpf((__FUNCTION__ ": for main menu: calling cmnuPrepareOwnerDraw"));
-                cmnuPrepareOwnerDraw(hwndMenuMsg);
-
-                // remove dummy item
-                _Pmpf((__FUNCTION__ ":   removing dummy"));
-                winhRemoveMenuItem(pPrivate->hwndMenuMain,
-                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY);
-
-                if (!pPrivate->pobjButton)
-                    // object not queried yet:
-                    pPrivate->pobjButton = FindObject(pPrivate);
-
-                if (pPrivate->pobjButton)
+                // just to make sure it's a folder:
+                if (_somIsA(pPrivate->pobjButton, _WPFolder))
                 {
-                    // just to make sure it's a folder:
-                    if (_somIsA(pPrivate->pobjButton, _WPFolder))
+                    // show "Wait" pointer
+                    HPOINTER    hptrOld = winhSetWaitPointer();
+
+                    // populate
+                    wpshCheckIfPopulated(pPrivate->pobjButton,
+                                         FALSE);    // full populate
+
+                    WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                    if (_wpQueryContent(pPrivate->pobjButton, NULL, QC_FIRST))
                     {
-                        // show "Wait" pointer
-                        HPOINTER    hptrOld = winhSetWaitPointer();
-
-                        // populate
-                        wpshCheckIfPopulated(pPrivate->pobjButton,
-                                             FALSE);    // full populate
-
-                        WinSetPointer(HWND_DESKTOP, hptrOld);
-
-                        if (_wpQueryContent(pPrivate->pobjButton, NULL, QC_FIRST))
-                        {
-                            // folder does contain objects: go!
-                            // insert all objects (this takes a long time)...
-                            _Pmpf((__FUNCTION__ ": calling cmnuInsertObjectsIntoMenu"));
-                            cmnuInsertObjectsIntoMenu(pPrivate->pobjButton,
-                                                      pPrivate->hwndMenuMain);
-                            _Pmpf((__FUNCTION__ ": cmnuInsertObjectsIntoMenu returned"));
-
-                            /* winhDumpSWP(__FUNCTION__ " hmenu",
-                                        pPrivate->hwndMenuMain); */
-
-                            // fix menu position...
-                        }
+                        // folder does contain objects: go!
+                        // insert all objects (this takes a long time)...
+                        cmnuInsertObjectsIntoMenu(pPrivate->pobjButton,
+                                                  pPrivate->hwndMenuMain);
                     }
-                } // end if (pobj)
-
-                // mark this as non-WPS context menu
-                pPrivate->fOpenedWPSContextMenu = FALSE;
-
-            } // end if (   (pPrivate->ulType == BTF_OBJBUTTON) ...
-            else
-            {
-                // find out whether the menu of which we are notified
-                // is a folder content menu; if so (and it is not filled
-                // yet), the first menu item is ID_XFMI_OFS_DUMMY
-                _Pmpf((__FUNCTION__ ":   for submenu"));
-                if ((ULONG)WinSendMsg(hwndMenuMsg,
-                                      MM_ITEMIDFROMPOSITION,
-                                      (MPARAM)0,        // menu item index
-                                      MPNULL)
-                           == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
-                {
-                   // okay, let's go
-                   if (pGlobalSettings->FCShowIcons)
-                   {
-                       // show folder content icons ON:
-
-                       #ifdef DEBUG_MENUS
-                           _Pmpf(( "  preparing owner draw"));
-                       #endif
-
-                       cmnuPrepareOwnerDraw(hwndMenuMsg);
-                   }
-
-                   // add menu items according to folder contents
-                   _Pmpf((__FUNCTION__ ":   calling cmnuFillContentSubmenu"));
-                   cmnuFillContentSubmenu(sMenuIDMsg,
-                                          hwndMenuMsg);
                 }
+            } // end if (pobj)
+
+            // mark this as non-WPS context menu
+            pPrivate->fOpenedWPSContextMenu = FALSE;
+
+        } // end if (   (pPrivate->ulType == BTF_OBJBUTTON) ...
+        else
+        {
+            // find out whether the menu of which we are notified
+            // is a folder content menu; if so (and it is not filled
+            // yet), the first menu item is ID_XFMI_OFS_DUMMY
+            if ((ULONG)WinSendMsg(hwndMenuMsg,
+                                  MM_ITEMIDFROMPOSITION,
+                                  (MPARAM)0,        // menu item index
+                                  MPNULL)
+                       == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
+            {
+               // okay, let's go
+               if (pGlobalSettings->FCShowIcons)
+               {
+                   // show folder content icons ON:
+                   cmnuPrepareOwnerDraw(hwndMenuMsg);
+               }
+
+               // add menu items according to folder contents
+               cmnuFillContentSubmenu(sMenuIDMsg,
+                                      hwndMenuMsg);
             }
         }
     }
-    _Pmpf((__FUNCTION__ ": leaving"));
-        // strange... after this, another flurry of WM_MEASUREITEM
-        // things comes in...
 }
 
 /*
@@ -953,37 +893,35 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 {
-    // get widget data and its button data from QWL_USER
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        if ((HWND)mp2 == pPrivate->hwndMenuMain)
         {
-            if ((HWND)mp2 == pPrivate->hwndMenuMain)
+            // main menu is ending:
+            if (!pPrivate->fMouseButton1Down)
             {
-                // main menu is ending:
-                if (!pPrivate->fMouseButton1Down)
-                {
-                    // mouse button not currently down
-                    // --> menu dismissed for some other reason:
-                    pPrivate->fButtonSunk = FALSE;
-                    WinInvalidateRect(hwnd, NULL, FALSE);
-                }
-
-                WinDestroyWindow(pPrivate->hwndMenuMain);
-                pPrivate->hwndMenuMain = NULLHANDLE;
+                // mouse button not currently down
+                // --> menu dismissed for some other reason:
+                pPrivate->fButtonSunk = FALSE;
+                WinInvalidateRect(hwnd, NULL, FALSE);
             }
 
-            if ((HWND)mp2 == pPrivate->hwndObjectPopup)
-            {
-                // object popup (copy of WPS context menu for object button):
-                WinDestroyWindow(pPrivate->hwndObjectPopup);
-                pPrivate->hwndObjectPopup = NULLHANDLE;
-                // remove source emphasis
-                WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
-            }
-        } // end if (pPrivate)
+            WinDestroyWindow(pPrivate->hwndMenuMain);
+            pPrivate->hwndMenuMain = NULLHANDLE;
+        }
+
+        if ((HWND)mp2 == pPrivate->hwndObjectPopup)
+        {
+            // object popup (copy of WPS context menu for object button):
+            WinDestroyWindow(pPrivate->hwndObjectPopup);
+            pPrivate->hwndObjectPopup = NULLHANDLE;
+            // remove source emphasis
+            WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
+        }
     } // end if (pWidget)
 }
 
@@ -1005,147 +943,146 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
     BOOL fProcessed = FALSE;
     ULONG ulMenuId = (ULONG)mp1;
 
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        if (pPrivate->ulType == BTF_XBUTTON)
         {
-            if (pPrivate->ulType == BTF_XBUTTON)
+            fProcessed = TRUE;
+
+            switch (ulMenuId)
             {
-                fProcessed = TRUE;
+                case ID_CRMI_LOCKUPNOW:     // added V0.9.12 (2001-05-01) [umoeller]
+                    // we won't bother with the details,
+                    // just post the menu command to the desktop
+                    WinPostMsg(cmnQueryActiveDesktopHWND(),
+                               WM_COMMAND,
+                               MPFROMSHORT(WPMENUID_LOCKUP), // 705,
+                               MPFROM2SHORT(CMDSRC_MENU,
+                                            FALSE));            // who cares
+                break;
 
-                switch (ulMenuId)
-                {
-                    case ID_CRMI_LOCKUPNOW:     // added V0.9.12 (2001-05-01) [umoeller]
-                        // we won't bother with the details,
-                        // just post the menu command to the desktop
-                        WinPostMsg(cmnQueryActiveDesktopHWND(),
-                                   WM_COMMAND,
-                                   MPFROMSHORT(WPMENUID_LOCKUP), // 705,
-                                   MPFROM2SHORT(CMDSRC_MENU,
-                                                FALSE));            // who cares
-                    break;
+                case ID_CRMI_SUSPEND:
+                    // check if the "Power" object has been set up
+                    // in OwgtInitMenu
+                    if (pPrivate->pPower)
+                    {
+                        BOOL fGo = FALSE;
+                        if (_wpQueryPowerConfirmation(pPrivate->pPower))
+                            // yeah, that's funny: why do they export this function
+                            // and have this setting, and wpChangePowerState doesn't
+                            // confirm anything?!?
+                            // so do it now
+                            fGo = (cmnMessageBoxMsg(pWidget->hwndWidget,
+                                                    197,        // xcenter
+                                                    198,        // sure suspend?
+                                                    MB_YESNO)
+                                            == MBID_YES);
+                        else
+                            fGo = TRUE;
 
-                    case ID_CRMI_SUSPEND:
-                        // check if the "Power" object has been set up
-                        // in OwgtInitMenu
-                        if (pPrivate->pPower)
+                        if (fGo)
                         {
-                            BOOL fGo = FALSE;
-                            if (_wpQueryPowerConfirmation(pPrivate->pPower))
-                                // yeah, that's funny: why do they export this function
-                                // and have this setting, and wpChangePowerState doesn't
-                                // confirm anything?!?
-                                // so do it now
-                                fGo = (cmnMessageBoxMsg(pWidget->hwndWidget,
-                                                        197,        // xcenter
-                                                        198,        // sure suspend?
-                                                        MB_YESNO)
-                                                == MBID_YES);
-                            else
-                                fGo = TRUE;
-
-                            if (fGo)
-                            {
-                                // sleep a little while... otherwise the
-                                // "key up" or tiny "mouse move" will immediately
-                                // wake up the system again
-                                winhSleep(300);
-                                // tell "Power" object to suspend
-                                _wpChangePowerState(pPrivate->pPower,
-                                                    MAKEULONG(6,        // set power state
-                                                              0),       // reserved
-                                                    MAKEULONG(1,        // all devices
-                                                              2));      // suspend
-                            }
+                            // sleep a little while... otherwise the
+                            // "key up" or tiny "mouse move" will immediately
+                            // wake up the system again
+                            winhSleep(300);
+                            // tell "Power" object to suspend
+                            _wpChangePowerState(pPrivate->pPower,
+                                                MAKEULONG(6,        // set power state
+                                                          0),       // reserved
+                                                MAKEULONG(1,        // all devices
+                                                          2));      // suspend
                         }
-                    break;
+                    }
+                break;
 
-                    case ID_CRMI_LOGOFF:
-                    case ID_CRMI_RESTARTWPS:
-                    case ID_CRMI_SHUTDOWN:
-                        // do this on thread 1, or otherwise we'll
-                        // get problems with the XCenter thread
-                        // V0.9.12 (2001-04-28) [umoeller]
-                        krnPostThread1ObjectMsg(T1M_INITIATEXSHUTDOWN,
-                                                (MPARAM)ulMenuId,
-                                                0);
-                    break;
+                case ID_CRMI_LOGOFF:
+                case ID_CRMI_RESTARTWPS:
+                case ID_CRMI_SHUTDOWN:
+                    // do this on thread 1, or otherwise we'll
+                    // get problems with the XCenter thread
+                    // V0.9.12 (2001-04-28) [umoeller]
+                    krnPostThread1ObjectMsg(T1M_INITIATEXSHUTDOWN,
+                                            (MPARAM)ulMenuId,
+                                            0);
+                break;
 
-                    case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]
-                        cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
-                                          NULL);        // boot drive
-                    break;
+                case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]
+                    cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
+                                      NULL);        // boot drive
+                break;
 
-                    default:
-                        fProcessed = FALSE;
-                }
-            } // if (pPrivate->ulType == BTF_XBUTTON)
+                default:
+                    fProcessed = FALSE;
+            }
+        } // if (pPrivate->ulType == BTF_XBUTTON)
 
-            if (!fProcessed)
+        if (!fProcessed)
+        {
+            // we get here...
+            // -- for object buttons; fProcessed is still FALSE
+            // -- for the x-button if none of the standard items
+            //    was selected; this can be a subitem of "desktop" folder contents too
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+            if (     (ulMenuId >= ulFirstVarMenuId)
+                  && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
+                  && (ulMenuId <  0x7f00)       // standard widget menu IDs
+               )
             {
-                // we get here...
-                // -- for object buttons; fProcessed is still FALSE
-                // -- for the x-button if none of the standard items
-                //    was selected; this can be a subitem of "desktop" folder contents too
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
-                if (     (ulMenuId >= ulFirstVarMenuId)
-                      && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
-                      && (ulMenuId <  0x7f00)       // standard widget menu IDs
+                // yes, variable menu item selected:
+                // get corresponding menu list item from the list that
+                // was created by mnuModifyFolderPopupMenu
+                PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
+                WPObject    *pObject = NULL;
+
+                if (pItem)
+                    pObject = pItem->pObject;
+
+                if (pObject)    // defaults to NULL
+                {
+                    // _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
+                    // no.... we're running on the XCenter thread here
+                    // and we don't want the objects to open on the XCenter
+                    // thread because if the XCenter is closed, all those
+                    // views will go away (because the thread's msgq is
+                    // destroyed)... redirect this to thread 1
+                    // V0.9.11 (2001-04-18) [umoeller]
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                           (MPARAM)pObject,
+                                           (MPARAM)OPEN_DEFAULT);
+
+                    fProcessed = TRUE;
+                }
+            } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
+            else
+                // other:
+                // this MIGHT be a command from a WPS context menu...
+                if (    pPrivate->ulType == BTF_OBJBUTTON
+                     && pPrivate->fOpenedWPSContextMenu
+                     && pPrivate->pobjButton
+                     && (ulMenuId <  0x7f00)       // standard widget menu IDs
                    )
                 {
-                    // yes, variable menu item selected:
-                    // get corresponding menu list item from the list that
-                    // was created by mnuModifyFolderPopupMenu
-                    PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
-                    WPObject    *pObject = NULL;
+                    // invoke the command on the object...
+                    // this is probably "open" or "help"
 
-                    if (pItem)
-                        pObject = pItem->pObject;
-
-                    if (pObject)    // defaults to NULL
-                    {
-                        // _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-                        // no.... we're running on the XCenter thread here
-                        // and we don't want the objects to open on the XCenter
-                        // thread because if the XCenter is closed, all those
-                        // views will go away (because the thread's msgq is
-                        // destroyed)... redirect this to thread 1
-                        // V0.9.11 (2001-04-18) [umoeller]
-                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                               (MPARAM)pObject,
-                                               (MPARAM)OPEN_DEFAULT);
-
-                        fProcessed = TRUE;
-                    }
-                } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
-                else
-                    // other:
-                    // this MIGHT be a command from a WPS context menu...
-                    if (    pPrivate->ulType == BTF_OBJBUTTON
-                         && pPrivate->fOpenedWPSContextMenu
-                         && pPrivate->pobjButton
-                         && (ulMenuId <  0x7f00)       // standard widget menu IDs
-                       )
-                    {
-                        // invoke the command on the object...
-                        // this is probably "open" or "help"
-
-                        // but do this on thread 1 also V0.9.11 (2001-04-18) [umoeller]
-                        krnPostThread1ObjectMsg(T1M_MENUITEMSELECTED,
-                                                (MPARAM)pPrivate->pobjButton,
-                                                (MPARAM)ulMenuId);
-                        fProcessed = TRUE;
-                        /* fProcessed = _wpMenuItemSelected(pPrivate->pobjButton,
-                                                         NULLHANDLE,     // hwndFrame
-                                                         ulMenuId); */
-                    }
-            }
-
-            pPrivate->fOpenedWPSContextMenu = FALSE;
+                    // but do this on thread 1 also V0.9.11 (2001-04-18) [umoeller]
+                    krnPostThread1ObjectMsg(T1M_MENUITEMSELECTED,
+                                            (MPARAM)pPrivate->pobjButton,
+                                            (MPARAM)ulMenuId);
+                    fProcessed = TRUE;
+                    /* fProcessed = _wpMenuItemSelected(pPrivate->pobjButton,
+                                                     NULLHANDLE,     // hwndFrame
+                                                     ulMenuId); */
+                }
         }
+
+        pPrivate->fOpenedWPSContextMenu = FALSE;
     }
 
     return (fProcessed);
@@ -1169,115 +1106,243 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        pPrivate->fOpenedWPSContextMenu = FALSE;
+
+        if (pPrivate->ulType == BTF_OBJBUTTON)
         {
-            pPrivate->fOpenedWPSContextMenu = FALSE;
+            // for object buttons, show the WPS context menu
 
-            if (pPrivate->ulType == BTF_OBJBUTTON)
+            if (!pPrivate->pobjButton)
+                // object not queried yet:
+                pPrivate->pobjButton = FindObject(pPrivate);
+
+            if (pPrivate->pobjButton)
             {
-                // for object buttons, show the WPS context menu
-
-                if (!pPrivate->pobjButton)
-                    // object not queried yet:
-                    pPrivate->pobjButton = FindObject(pPrivate);
-
-                if (pPrivate->pobjButton)
-                {
-                    SHORT sIndex;
-                    POINTL ptl;
-                    HWND hmenuTemp;
-                    ptl.x = SHORT1FROMMP(mp1);
-                    ptl.y = SHORT2FROMMP(mp1);
+                SHORT sIndex;
+                POINTL ptl;
+                HWND hmenuTemp;
+                ptl.x = SHORT1FROMMP(mp1);
+                ptl.y = SHORT2FROMMP(mp1);
 
 #ifndef MENU_NODISPLAY
-    #define MENU_NODISPLAY            0x40000000
+#define MENU_NODISPLAY            0x40000000
 #endif
-                    // compose the object menu... we can't let
-                    // the WPS display it because the WPS expects
-                    // the object to be in a PM container. But
-                    // the half-documented MENU_NODISPLAY flag
-                    // takes care of this: it will only build the
-                    // menu, but not display it.
-                    // NOTE: Apparently this flag is not supported
-                    // on Warp 3 (tested Warp 3 without fixpaks
-                    // V0.9.11 (2001-04-25) [umoeller]).
-                    hmenuTemp = _wpDisplayMenu(pPrivate->pobjButton,
-                                               hwnd,            // owner
-                                               NULLHANDLE,
-                                               &ptl,
-                                               MENU_OBJECTPOPUP | MENU_NODISPLAY,
-                                               0);
+                // compose the object menu... we can't let
+                // the WPS display it because the WPS expects
+                // the object to be in a PM container. But
+                // the half-documented MENU_NODISPLAY flag
+                // takes care of this: it will only build the
+                // menu, but not display it.
+                // NOTE: Apparently this flag is not supported
+                // on Warp 3 (tested Warp 3 without fixpaks
+                // V0.9.11 (2001-04-25) [umoeller]).
+                hmenuTemp = _wpDisplayMenu(pPrivate->pobjButton,
+                                           hwnd,            // owner
+                                           NULLHANDLE,
+                                           &ptl,
+                                           MENU_OBJECTPOPUP | MENU_NODISPLAY,
+                                           0);
 
-                    if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
+                if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
+                {
+                    // NOW... we still can't use this because there's
+                    // many menu items in there which will cause the
+                    // WPS to hang if the owner is not a container.
+                    // The WPS simply expects popups to show in containers
+                    // only, so there ain't much we can do about this.
+                    // While "copy", "move" etc. will simply not work,
+                    // "Pickup" will even hang the WPS solidly.
+
+                    // SOOOO.... what we do is make a COPY of the
+                    // WPS context menu with only the items that we support.
+                    pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL);
+                    if (pPrivate->hwndObjectPopup)
                     {
-                        // NOW... we still can't use this because there's
-                        // many menu items in there which will cause the
-                        // WPS to hang if the owner is not a container.
-                        // The WPS simply expects popups to show in containers
-                        // only, so there ain't much we can do about this.
-                        // While "copy", "move" etc. will simply not work,
-                        // "Pickup" will even hang the WPS solidly.
+                        HWND hwndWidgetSubmenu;
 
-                        // SOOOO.... what we do is make a COPY of the
-                        // WPS context menu with only the items that we support.
-                        pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL);
-                        if (pPrivate->hwndObjectPopup)
-                        {
-                            HWND hwndWidgetSubmenu;
+                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                         hmenuTemp,
+                                         WPMENUID_OPEN, // 1, "open" submenu
+                                         MIT_END);
+                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                         hmenuTemp,
+                                         WPMENUID_PROPERTIES, // 0x70, properties
+                                         MIT_END);
+                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                         hmenuTemp,
+                                         WPMENUID_HELP, // 2, "help" submenu
+                                         MIT_END);
 
-                            winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                             hmenuTemp,
-                                             WPMENUID_OPEN, // 1, "open" submenu
-                                             MIT_END);
-                            winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                             hmenuTemp,
-                                             WPMENUID_PROPERTIES, // 0x70, properties
-                                             MIT_END);
-                            winhCopyMenuItem(pPrivate->hwndObjectPopup,
-                                             hmenuTemp,
-                                             WPMENUID_HELP, // 2, "help" submenu
-                                             MIT_END);
+                        winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
+                                                MIT_END,
+                                                1234);
 
-                            winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
-                                                    MIT_END,
-                                                    1234);
+                        // add standard widget menu as submenu
+                        hwndWidgetSubmenu
+                            = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
+                                                   MIT_END,
+                                                   cmnGetString(ID_XSSI_XC_OBJBUTTONWIDGET),
+                                                   2000,    // submenu ID
+                                                   pPrivate->pWidget->hwndContextMenu);
+                        if (hwndWidgetSubmenu)
+                            // disable "Properties"... we have none
+                            WinEnableMenuItem(hwndWidgetSubmenu,
+                                              ID_CRMI_PROPERTIES,
+                                              FALSE);
 
-                            // add standard widget menu as submenu
-                            hwndWidgetSubmenu
-                                = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
-                                                       MIT_END,
-                                                       cmnGetString(ID_XSSI_XC_OBJBUTTONWIDGET),
-                                                       2000,    // submenu ID
-                                                       pPrivate->pWidget->hwndContextMenu);
-                            if (hwndWidgetSubmenu)
-                                // disable "Properties"... we have none
-                                WinEnableMenuItem(hwndWidgetSubmenu,
-                                                  ID_CRMI_PROPERTIES,
-                                                  FALSE);
+                        ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
+                                // destroyed on WM_MENUEND;
+                                // we need not care about the WPS context
+                                // menu we built because the WPS has its
+                                // internal management for that
+                        pPrivate->fOpenedWPSContextMenu = TRUE;
+                    } // end if (pPrivate->hwndObjectPopup)
+                } // end if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
+            } // end if (pPrivate->pobjButton)
+        } // end if (pPrivate->ulType == BTF_OBJBUTTON)
 
-                            ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
-                                    // destroyed on WM_MENUEND;
-                                    // we need not care about the WPS context
-                                    // menu we built because the WPS has its
-                                    // internal management for that
-                            pPrivate->fOpenedWPSContextMenu = TRUE;
-                        } // end if (pPrivate->hwndObjectPopup)
-                    } // end if (hmenuTemp)  // V0.9.11 (2001-04-25) [umoeller]
-                } // end if (pPrivate->pobjButton)
-            } // end if (pPrivate->ulType == BTF_OBJBUTTON)
-
-            if (!pPrivate->fOpenedWPSContextMenu) // V0.9.11 (2001-04-25) [umoeller]
-                // x-button, or cannot build WPS popup (Warp 3),
-                // or object broken: show default widget menu
-                mrc = ctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
-        }
+        if (!pPrivate->fOpenedWPSContextMenu) // V0.9.11 (2001-04-25) [umoeller]
+            // x-button, or cannot build WPS popup (Warp 3),
+            // or object broken: show default widget menu
+            mrc = ctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
     }
 
     return (mrc);
+}
+
+/*
+ *@@ OwgtDragover:
+ *      implementation for DM_DRAGOVER.
+ *
+ *@@added V0.9.13 (2001-06-19) [umoeller]
+ */
+
+MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PDRAGINFO   pdrgInfo = (PDRAGINFO)mp1;
+    // default return values
+    MRESULT     mrc = MRFROM2SHORT(DOR_NEVERDROP,
+                    // cannot be dropped, and don't send
+                    // DM_DRAGOVER again
+                                   DO_UNKNOWN);
+                    // target-defined drop operation:
+                    // user operation (we don't want
+                    // the WPS to copy anything)
+
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
+    {
+        // only object button can accept this
+        if (pPrivate->ulType == BTF_OBJBUTTON)
+        {
+            if (!pPrivate->pobjButton)
+                // object not queried yet:
+                pPrivate->pobjButton = FindObject(pPrivate);
+
+            if (pPrivate->pobjButton)
+            {
+                ctrDrawWidgetEmphasis(pWidget,
+                                      FALSE);
+                pPrivate->fHasDragoverEmphasis = TRUE;
+
+                mrc = _wpDragOver(pPrivate->pobjButton,
+                                  NULLHANDLE,           // cnr
+                                  pdrgInfo);
+            }
+        }
+    }
+
+    // and return the drop flags
+    return (mrc);
+}
+
+/*
+ *@@ OwgtDragLeave:
+ *      implementaton for DM_DRAGLEAVE. Always returns 0.
+ *
+ *@@added V0.9.13 (2001-06-19) [umoeller]
+ */
+
+VOID OwgtDragLeave(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
+    {
+        // only object button can accept this
+        if (pPrivate->ulType == BTF_OBJBUTTON)
+        {
+            if (!pPrivate->pobjButton)
+                // object not queried yet:
+                pPrivate->pobjButton = FindObject(pPrivate);
+
+            if (pPrivate->pobjButton)
+            {
+                if (pPrivate->fHasDragoverEmphasis)
+                {
+                    ctrDrawWidgetEmphasis(pWidget,
+                                          TRUE);        // remove
+                    pPrivate->fHasDragoverEmphasis = FALSE;
+                }
+            }
+        }
+    }
+}
+
+/*
+ *@@ OwgtDrop:
+ *      implementaton for DM_DROP. Always returns 0.
+ *
+ *@@added V0.9.13 (2001-06-19) [umoeller]
+ */
+
+VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PDRAGINFO   pdrgInfo = (PDRAGINFO)mp1;
+
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
+    {
+        // only object button can accept this
+        if (pPrivate->ulType == BTF_OBJBUTTON)
+        {
+            if (!pPrivate->pobjButton)
+                // object not queried yet:
+                pPrivate->pobjButton = FindObject(pPrivate);
+
+            if (pPrivate->pobjButton)
+            {
+                PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo,
+                                                         0);
+
+                if (pPrivate->fHasDragoverEmphasis)
+                {
+                    ctrDrawWidgetEmphasis(pWidget,
+                                          TRUE);        // remove
+                    pPrivate->fHasDragoverEmphasis = FALSE;
+                }
+
+                _wpDrop(pPrivate->pobjButton,
+                        NULLHANDLE,           // cnr
+                        pdrgInfo,
+                        pdrgItem);
+            }
+        }
+    }
 }
 
 /*
@@ -1289,28 +1354,27 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID OwgtDestroy(HWND hwnd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+       )
     {
-        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        if (pPrivate->hptrXMini)
+            WinDestroyPointer(pPrivate->hptrXMini);
+
+        if (pPrivate->pobjNotify)
         {
-            if (pPrivate->hptrXMini)
-                WinDestroyPointer(pPrivate->hptrXMini);
-
-            if (pPrivate->pobjNotify)
-            {
-                // @@todo memory leak still here... does this
-                // even get called?!? V0.9.12 (2001-05-24) [umoeller]
-                _xwpRemoveDestroyNotify(pPrivate->pobjNotify,
-                                        hwnd);
-                _wpUnlockObject(pPrivate->pobjNotify);
-            }
-
-            // free private data
-            free(pPrivate);
-                    // pWidget is cleaned up by DestroyWidgets
+            // @@todo memory leak still here... does this
+            // even get called?!? V0.9.12 (2001-05-24) [umoeller]
+            _xwpRemoveDestroyNotify(pPrivate->pobjNotify,
+                                    hwnd);
+            _wpUnlockObject(pPrivate->pobjNotify);
         }
+
+        // free private data
+        free(pPrivate);
+                // pWidget is cleaned up by DestroyWidgets
     }
 }
 
@@ -1320,6 +1384,8 @@ VOID OwgtDestroy(HWND hwnd)
  *
  *      This is also the owner for the menu it displays and
  *      therefore handles control of the folder content menus.
+ *
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: added d'n'd support
  */
 
 MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1433,11 +1499,9 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
          */
 
         case WM_MEASUREITEM:
-        {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            mrc = cmnuMeasureItem((POWNERITEM)mp2, pGlobalSettings);
-            _Pmpf((__FUNCTION__ ": WM_MEASUREITEM, returning %d", mrc));
-        break; }
+            mrc = cmnuMeasureItem((POWNERITEM)mp2,
+                                  cmnQueryGlobalSettings());
+        break;
 
         /*
          * WM_DRAWITEM:
@@ -1450,12 +1514,11 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
          */
 
         case WM_DRAWITEM:
-        {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            if (cmnuDrawItem(pGlobalSettings,
-                             mp1, mp2))
+            if (cmnuDrawItem(cmnQueryGlobalSettings(),
+                             mp1,
+                             mp2))
                 mrc = (MRESULT)TRUE;
-        break; }
+        break;
 
         /*
          * WM_MENUEND:
@@ -1478,8 +1541,39 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
 
+        /*
+         * WM_CONTEXTMENU:
+         *
+         */
+
         case WM_CONTEXTMENU:
             mrc = OwgtContextMenu(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * DM_DRAGOVER:
+         */
+
+        case DM_DRAGOVER:
+            mrc = OwgtDragover(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * DM_DRAGLEAVE:
+         *
+         */
+
+        case DM_DRAGLEAVE:
+            OwgtDragLeave(hwnd);
+        break;
+
+        /*
+         * DM_DROP:
+         *
+         */
+
+        case DM_DROP:
+            OwgtDrop(hwnd, mp1, mp2);
         break;
 
         /*

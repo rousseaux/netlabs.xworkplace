@@ -9,6 +9,9 @@ XCenter:
     --  more options for winlist... button size, minimize behavior.
     --  winlist: edit filter entries (instead of remove and add).
     --  freely positionable
+    --  Object support for "Run" dialog.. e.g. type in a folder name
+        or data file, and have it opened.
+    --  "Run" TCP/IP support (ftp, http, etc.)
 
 xfix:
     --  "select by name", e.g. "*.jpg"

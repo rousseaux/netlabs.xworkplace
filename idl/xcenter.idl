@@ -150,8 +150,8 @@ interface XCenter : WPAbstract
                                     // (allocated with malloc())
     ULONG cbPackedWidgetSettings;   // size of that buffer
 
-    PVOID pllWidgetSettings;        // linked list of XCENTERWIDGETSETTING entries
-                                    // (this is a PLINKLIST really)
+    PVOID pllAllWidgetSettings;     // linked list of PRIVATEWIDGETSETTING entries
+                                    // (this is a PLINKLIST really, no auto-free!)
 
     /*
      * WPAbstract methods overridden by XCenter:

@@ -20,6 +20,7 @@ German (new V0.9.9 (2001-02-28) [umoeller])
 Klaus Fuchs <Klaus@os2.org>
 Christoph Vogt <ch.vogt@gmx.net>
 Christoph Wingender <christoph.wingender@gmx.net>
+Frank Berke <Frank.Berke@rz.ruhr-uni-bochum.de> V0.9.13 (2001-06-14) [umoeller]
 
 Italian (updated V0.9.3 (2000-04-08) [umoeller])
 Obelix <nbrion@box.seven.it>

@@ -68,18 +68,18 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                  ULONG flFlags);
+        VOID XWPENTRY dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                           ULONG flFlags);
 
-        MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG ulItemID,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra);
 
-        VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+        VOID XWPENTRY dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG flFlags);
 
-        MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);

@@ -475,4 +475,6 @@ DDIcon 1 A replacement class by Jens Borch Christiansen for WPIcon, which makes 
 MKeyWPS 1 Part of MKey by Roger Sennert. Application dependent titlebar buttons, hotkey manager, mouse pointer animations and more.
 mshred 1 Enhanced shredder by M. Kimes (FM/2), a shredder that deletes almost anything.
 
+// Items added with V0.9.13
+AMouse 1 Class that comes with the amouse.sys driver for mice with wheels to enhance the "Mouse" notebook with new settings pages.
 

@@ -5,6 +5,13 @@
  *      This is built into the XCenter and not in
  *      a plugin DLL.
  *
+ *      This is an example of a more complicated
+ *      widget since it now uses multithreading.
+ *      A second thread is started on widget
+ *      creation to monitor the CPU counters in
+ *      the OS/2 kernel. The window proc (on the
+ *      XCenter thread) still does the painting.
+ *
  *      Function prefix for this file:
  *      --  Bwgt*
  *
@@ -68,6 +75,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
@@ -171,6 +179,10 @@ typedef struct _WIDGETPRIVATE
 
     APIRET          arc;            // if != NO_ERROR, an error occured, and
                                     // the error code is displayed instead.
+
+    BOOL            fTooltipShowing;    // TRUE only while tooltip is showing over
+                                    // this widget
+    CHAR            szTooltipText[100]; // current tooltip text
 
     BOOL            fCrashed;       // set to TRUE if the pulse crashed somewhere.
                                     // This will disable display then to avoid
@@ -421,15 +433,15 @@ VOID UnlockData(PWIDGETPRIVATE pPrivate)
  *
  *      This thread does NOT have a PM message queue. It
  *      is started from PwgtCreate and will simply collect
- *      the performance data every second.
+ *      the performance data in a loop, sleeping for a
+ *      second after each query.
  *
  *      Before 0.9.12, we collected the performance data
  *      on the widget thread (i.e. the XCenter thread).
  *      This worked OK as long as no application hogged
  *      the input queue... in that situation, no performance
  *      data was collected while the SIQ was locked which
- *      lead to a highly incorrect display for any busy
- *      PM application.
+ *      lead to a highly incorrect display if PM was busy.
  *
  *      So what we do now is collect the data on this new
  *      thread and only do the display on the PM thread.
@@ -444,9 +456,10 @@ VOID UnlockData(PWIDGETPRIVATE pPrivate)
  *      The thread data is a pointer to WIDGETPRIVATE.
  *
  *      Note: This thread does not allocate the data fields
- *      WIDGETPRIVATE. It only updates the fields, while
+ *      in WIDGETPRIVATE. It only updates the fields, while
  *      the allocations (and the resizes) are still done
- *      on the main thread.
+ *      on the main thread. To synchronize this, we have
+ *      a mutex in WIDGETPRIVATE (see LockData()).
  *
  *@@added V0.9.12 (2001-05-20) [umoeller]
  */
@@ -461,7 +474,8 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
         // give this thread a higher-than-regular priority;
         // this way, the "loads" array is always up-to-date,
         // while the display may be delayed if the system
-        // is really busy
+        // is really busy... time-critical is OK since we
+        // spent only very little time in here
 
         DosSetPriority(PRTYS_THREAD,
                        PRTYC_TIMECRITICAL,  // 3, second highest class
@@ -482,34 +496,28 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                     if (fLocked = LockData(pPrivate))
                     {
                         // has main thread allocated data already?
-                        if (pPrivate->palLoads || pPrivate->palIntrs)
+                        if (    (pPrivate->palLoads)
+                             && (pPrivate->palIntrs)
+                                // get new loads from OS/2 kernel
+                             && (!(pPrivate->arc = doshPerfGet(pPrivate->pPerfData)))
+                           )
                         {
-                            // get new loads from OS/2 kernel
-                            if (!(pPrivate->arc = doshPerfGet(pPrivate->pPerfData)))
-                            {
-                                // in the array of loads, move each entry one to the front;
-                                // drop the oldest entry
-                                if (pPrivate->palLoads)
-                                {
-                                    memcpy(&pPrivate->palLoads[0],
-                                           &pPrivate->palLoads[1],
-                                           sizeof(LONG) * (pPrivate->cLoads - 1));
+                            // in the array of loads, move each entry
+                            // one to the front; drop the oldest entry
+                            memcpy(&pPrivate->palLoads[0],
+                                   &pPrivate->palLoads[1],
+                                   sizeof(LONG) * (pPrivate->cLoads - 1));
 
-                                    // and update the last entry with the current value
-                                    pPrivate->palLoads[pPrivate->cLoads - 1]
-                                        = pPrivate->pPerfData->palLoads[0];
-                                }
+                            // and update the last entry with the current value
+                            pPrivate->palLoads[pPrivate->cLoads - 1]
+                                = pPrivate->pPerfData->palLoads[0];
 
-                                // same thing for interrupt loads
-                                if (pPrivate->palIntrs)
-                                {
-                                    memcpy(&pPrivate->palIntrs[0],
-                                           &pPrivate->palIntrs[1],
-                                           sizeof(LONG) * (pPrivate->cLoads - 1));
-                                    pPrivate->palIntrs[pPrivate->cLoads - 1]
-                                        = pPrivate->pPerfData->palIntrs[0];
-                                }
-                            }
+                            // same thing for interrupt loads
+                            memcpy(&pPrivate->palIntrs[0],
+                                   &pPrivate->palIntrs[1],
+                                   sizeof(LONG) * (pPrivate->cLoads - 1));
+                            pPrivate->palIntrs[pPrivate->cLoads - 1]
+                                = pPrivate->pPerfData->palIntrs[0];
                         }
 
                         UnlockData(pPrivate);
@@ -539,11 +547,11 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                         // we get the next chunk of performance
                         // data. However, we should not use DosSleep
                         // because we MUST exit quickly when the
-                        // widget gets destroyed. The trick is to
-                        // wait on an event semaphore: this gets
-                        // posted by by PwgtDestroy(), but we specify
-                        // a timeout of 1 second, so we get the
-                        // effect of DosSleep as well.
+                        // widget gets destroyed...
+                        // the trick is to wait on an event semaphore:
+                        // with a timeout of one second;
+                        // this will sleep for a second, but exit
+                        // earlier when PwgtDestroy() posts the semaphore
                         if (DosWaitEventSem(pPrivate->hevExit,
                                             1000)       // timeout == 1 second
                                 != ERROR_TIMEOUT)
@@ -642,6 +650,8 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 
     pPrivate->fUpdateGraph = TRUE;
 
+    pPrivate->szTooltipText[0] = '\0';
+
     return (mrc);
 }
 
@@ -650,22 +660,26 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
  *      implementation for WM_CONTROL.
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip
  */
 
 BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
-    {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            USHORT  usID = SHORT1FROMMP(mp1),
-                    usNotifyCode = SHORT2FROMMP(mp1);
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
 
-            if (usID == ID_XCENTER_CLIENT)
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
+    {
+        USHORT  usID = SHORT1FROMMP(mp1),
+                usNotifyCode = SHORT2FROMMP(mp1);
+
+        switch (usID)
+        {
+            case ID_XCENTER_CLIENT:
             {
                 switch (usNotifyCode)
                 {
@@ -681,10 +695,33 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = 10;
 
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
                 }
             }
-        } // end if (pPrivate)
+            break;
+
+            case ID_XCENTER_TOOLTIP:
+                switch (usNotifyCode)
+                {
+                    case TTN_NEEDTEXT:
+                    {
+                        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                        pttt->pszText = pPrivate->szTooltipText;
+                        pttt->ulFormat = TTFMT_PSZ;
+                    }
+                    break;
+
+                    case TTN_SHOW:
+                        pPrivate->fTooltipShowing = TRUE;
+                    break;
+
+                    case TTN_POP:
+                        pPrivate->fTooltipShowing = FALSE;
+                    break;
+                }
+            break;
+        }
     } // end if (pWidget)
 
     return (brc);
@@ -702,6 +739,7 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      --  Caller must hold the data mutex.
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip refresh
  */
 
 VOID PwgtUpdateGraph(HWND hwnd,
@@ -724,7 +762,10 @@ VOID PwgtUpdateGraph(HWND hwnd,
                                               rclBmp.yTop);
     if (pPrivate->pBitmap)
     {
-        HPS hpsMem = pPrivate->pBitmap->hpsMem;
+        HPS     hpsMem = pPrivate->pBitmap->hpsMem;
+        PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+        LONG    lLoad1000 = pPrivate->pPerfData->palLoads[0],
+                lIRQ1000 = pPrivate->pPerfData->palIntrs[0];
 
         // fill the bitmap rectangle
         GpiSetColor(hpsMem,
@@ -762,6 +803,29 @@ VOID PwgtUpdateGraph(HWND hwnd,
                 GpiLine(hpsMem, &ptl);
             }
         } // end if (fLocked)
+
+        // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
+        sprintf(pPrivate->szTooltipText,
+                "CPU load"                  // @@todo localize
+                "\nUser: %lu%c%lu%c"
+                "\nIRQ: %lu%c%lu%c",
+                lLoad1000 / 10,
+                pCountrySettings->cDecimal,
+                lLoad1000 % 10,
+                '%',
+                lIRQ1000 / 10,
+                pCountrySettings->cDecimal,
+                lIRQ1000 % 10,
+                '%');
+
+        if (pPrivate->fTooltipShowing)
+            // tooltip currently showing:
+            // refresh its display
+            WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                       TTM_UPDATETIPTEXT,
+                       (MPARAM)pPrivate->szTooltipText,
+                       0);
+
     }
 
     pPrivate->fUpdateGraph = FALSE;
@@ -865,7 +929,8 @@ VOID PwgtPaint2(HWND hwnd,
                               0, 0,
                               DBM_NORMAL);
 
-                sprintf(szPaint, "%lu%c%lu%c",
+                sprintf(szPaint,
+                        "%lu%c%lu%c",
                         lLoad1000 / 10,
                         pCountrySettings->cDecimal,
                         lLoad1000 % 10,
@@ -1007,6 +1072,7 @@ VOID PwgtGetNewLoad(HWND hwnd)
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1124,7 +1190,10 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     PwgtSaveSetup(&strSetup,
                                   &pPrivate->Setup);
                     if (strSetup.ulLength)
-                        WinSendMsg(pWidget->pGlobals->hwndClient,
+                        // changed V0.9.13 (2001-06-21) [umoeller]:
+                        // post it to parent instead of fixed XCenter client
+                        // to make this trayable
+                        WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                                    XCM_SAVESETUP,
                                    (MPARAM)hwnd,
                                    (MPARAM)strSetup.psz);
@@ -1149,6 +1218,8 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 /*
  *@@ PwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
+ *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID PwgtPresParamChanged(HWND hwnd,
@@ -1213,7 +1284,10 @@ VOID PwgtPresParamChanged(HWND hwnd,
             PwgtSaveSetup(&strSetup,
                           &pPrivate->Setup);
             if (strSetup.ulLength)
-                WinSendMsg(pWidget->pGlobals->hwndClient,
+                // changed V0.9.13 (2001-06-21) [umoeller]:
+                // post it to parent instead of fixed XCenter client
+                // to make this trayable
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);

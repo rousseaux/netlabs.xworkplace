@@ -295,7 +295,7 @@ SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryCurrentTrack(XMMCDPlayer *somSelf)
             {
                 // device is open:
                 PXMMCDPLAYER pPlayer = _pvPlayer;
-                ulrc = pPlayer->usCurrentTrack;
+                ulrc = xmmCDQueryCurrentTrack(pPlayer);
             }
         }
         CATCH(excpt1) {} END_CATCH();
@@ -329,7 +329,7 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDNextTrack(XMMCDPlayer *somSelf)
                 // device is open:
                 PXMMCDPLAYER pPlayer = _pvPlayer;
                 brc = !xmmCDPlayTrack(pPlayer,
-                                      pPlayer->usCurrentTrack + 1,
+                                      xmmCDQueryCurrentTrack(pPlayer) + 1,
                                       TRUE);  // show wait ptr
 
                 if (_hwndOpenView)
@@ -367,8 +367,12 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPrevTrack(XMMCDPlayer *somSelf)
             {
                 // device is open:
                 PXMMCDPLAYER pPlayer = _pvPlayer;
+                ULONG ulCurrentTrack = xmmCDQueryCurrentTrack(pPlayer);
+                if (ulCurrentTrack > 1)
+                    --ulCurrentTrack;
+
                 brc = !xmmCDPlayTrack(pPlayer,
-                                      pPlayer->usCurrentTrack - 1,
+                                      ulCurrentTrack,
                                       TRUE);  // show wait ptr
 
                 if (_hwndOpenView)

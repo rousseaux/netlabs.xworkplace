@@ -908,6 +908,8 @@ VOID MwgtPaint(HWND hwnd, PHEALTHPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
 /*
  *@@ MwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
+ *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID MwgtPresParamChanged(HWND hwnd,
@@ -965,7 +967,10 @@ VOID MwgtPresParamChanged(HWND hwnd,
             WinInvalidateRect(hwnd, NULL, FALSE);
             MwgtSaveSetup(&strSetup, &pPrivate->Setup);
             if (strSetup.ulLength)
-                WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
+                // changed V0.9.13 (2001-06-21) [umoeller]:
+                // post it to parent instead of fixed XCenter client
+                // to make this trayable
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM) hwnd,
                            (MPARAM) strSetup.psz);
@@ -1128,38 +1133,40 @@ MRESULT EXPENTRY fnwpHealthWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      load StHealth library and query function pointers.
  *
  *@@added V0.9.9 (2001-02-06) [smilcke]
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: added pszFailMod
  */
-ULONG loadStHealth(void)
+
+ULONG loadStHealth(PSZ pszFailMod,      // out: failing module
+                   ULONG cbFailMod)
 {
     ULONG rc = 0;
 
     if (!hmStHealth)
     {
-        char failMod[500];
         ULONG ul = 0;
 
-        rc = DosLoadModule(failMod, 500, "StHealth", &hmStHealth);
-        if (rc == NO_ERROR)
+        if (!(rc = DosLoadModule(pszFailMod,
+                                 cbFailMod,
+                                 "StHealth",
+                                 &hmStHealth)))
+        {
             for (ul = 0;
                  ul < sizeof(G_StHealthImports) / sizeof(G_StHealthImports[0]);
                  ul++)
             {
-                if (DosQueryProcAddr(hmStHealth, 0, (PSZ) G_StHealthImports[ul].pcszFunctionName
-                            ,G_StHealthImports[ul].ppFuncAddress) != NO_ERROR)
+                if (rc = DosQueryProcAddr(hmStHealth,
+                                          0,
+                                          (PSZ)G_StHealthImports[ul].pcszFunctionName,
+                                          G_StHealthImports[ul].ppFuncAddress))
                 {
-                    rc = 1;
+                    DosFreeModule(hmStHealth);
+                    hmStHealth=0;
+                    break;
                 }
             }
-    }
-
-    if (rc != NO_ERROR)
-    {
-        if(hmStHealth)
-        {
-            DosFreeModule(hmStHealth);
-            hmStHealth=0;
         }
     }
+
     return rc;
 }
 
@@ -1232,6 +1239,7 @@ ULONG unloadStHealth(void)
  *      global data) of XCENTERWIDGETCLASS structures,
  *      which must have as many entries as the return value.
  *
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: made error msg more meaningful
  */
 
 ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
@@ -1263,7 +1271,8 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
 
     if (!fImportsFailed)
     {
-        if (!loadStHealth())
+        CHAR szFail[300] = "unknown";
+        if (!loadStHealth(szFail, sizeof(szFail)))
         {
             sthRegisterDaemon(FALSE);
             if (!sthDetectChip())
@@ -1287,7 +1296,11 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
                 strcpy(pszErrorMsg, "No compatible chip detected.");
         }
         else
-            strcpy(pszErrorMsg, "Unable to load StHealth.DLL.");
+        {
+            sprintf(pszErrorMsg,
+                    "Unable to load StHealth.DLL, failing module: \"%s\"",
+                    szFail);
+        }
     }
 
     return (ulrc);
@@ -1335,9 +1348,8 @@ VOID EXPENTRY MwgtQueryVersion(PULONG pulMajor,
                                PULONG pulMinor,
                                PULONG pulRevision)
 {
-    // report 0.9.9
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 9;
+    *pulRevision = 13;
 }
 

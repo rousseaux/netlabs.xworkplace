@@ -2520,6 +2520,7 @@ VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ WwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
  *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID WwgtPresParamChanged(HWND hwnd,
@@ -2579,7 +2580,10 @@ VOID WwgtPresParamChanged(HWND hwnd,
                 WwgtSaveSetup(&strSetup,
                               &pPrivate->Setup);
                 if (strSetup.ulLength)
-                    WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
+                    // changed V0.9.13 (2001-06-21) [umoeller]:
+                    // post it to parent instead of fixed XCenter client
+                    // to make this trayable
+                    WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                                XCM_SAVESETUP,
                                (MPARAM)hwnd,
                                (MPARAM)strSetup.psz);
@@ -2630,7 +2634,7 @@ MRESULT WwgtDestroy(HWND hwnd)
  *      window procedure for the winlist widget class.
  *
  *      There are a few rules which widget window procs
- *      must follow. See ctrDefWidgetProc in src\shared\center.c
+ *      must follow. See XCENTERWIDGETCLASS in center.h
  *      for details.
  *
  *      Other than that, this is a regular window procedure
@@ -2911,9 +2915,8 @@ VOID EXPENTRY WwgtQueryVersion(PULONG pulMajor,
                                PULONG pulMinor,
                                PULONG pulRevision)
 {
-    // report 0.9.11
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 12;
+    *pulRevision = 13;
 }
 

@@ -1372,10 +1372,7 @@ ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback
                          ul < cObjects;
                          ul++)
                     {
-                        TREE        *pNode = papNodes[ul];
-                        WPObject    *pobj = (WPObject*)pNode->id;
-
-                        if (pCallback(pobj,
+                        if (pCallback((WPObject*)(papNodes[ul]->id),    // object ptr
                                       ul,
                                       cObjects,
                                       pvUserForCallback))
@@ -1386,7 +1383,8 @@ ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback
                 }
                 else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "Tree node count mismatch.");
+                           "Tree node count mismatch. G_ulDirtyListItemsCount is %d, treeBuildArray found %d.",
+                           G_ulDirtyListItemsCount, cObjects);
 
                 free(papNodes);
             }

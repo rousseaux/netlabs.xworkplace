@@ -74,6 +74,7 @@ VACBASE = K:\libs\IBMVAC
 # XWPRUNNING: directory where your XWorkplace
 # binaries are installed... all the produced
 # files will be copied there.
+# This must exist.
 !ifndef XWPRUNNING
 XWPRUNNING = J:\Tools\WPS\XWorkplace
 !endif
@@ -83,9 +84,27 @@ XWPRUNNING = J:\Tools\WPS\XWorkplace
 
 # XWP_DEBUG: set to YES if you want debug code;
 # set to nothing if not.
+
 # WARNING: Enabling debug code has side effects.
 # See PROGREF.INF for details.
+
+# If XWP_DEBUG is set to anything, the following is enabled:
+#
+# -- setup.in will change the compiler flags to produce debug
+#    code. Otherwise, release code will be produced.
+#
+# -- __DEBUG__ will be #define'd in all source files.
+#    include\setup.h reacts to that and redefines a number of
+#    debugging macros.
+#
+# -- _Pmpf((...)) will be #define'd in the sources to produce
+#    debug messages. YOU MUST HAVE THE PMPRINTF DLLs on your
+#    LIBPATH then. See PROGREF.INF.
+
 # XWP_DEBUG = YES
+
+# MISCELLANEOUS
+# -------------
 
 # XWP_UNLOCK_MODULES: should be set to YES to
 # automatically unlock files.

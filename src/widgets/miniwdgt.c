@@ -333,7 +333,7 @@ VOID WgtPaint(HWND hwnd,
  *      window procedure for the winlist widget class.
  *
  *      There are a few rules which widget window procs
- *      must follow. See ctrDefWidgetProc in src\shared\center.c
+ *      must follow. See XCENTERWIDGETCLASS in center.h
  *      for details.
  *
  *      Other than that, this is a regular window procedure

@@ -324,11 +324,6 @@ typedef struct _WIDGETPRIVATE
     PXBITMAP        pBitmap;        // bitmap for pulse graph; this contains only
                                     // the "client" (without the 3D frame)
 
-    /* HDC             hdcMem;
-    HPS             hpsMem;
-
-    HBITMAP         hbmGraph; */
-
     BOOL            fUpdateGraph;
 
     ULONG           cyNeeded;       // returned for XN_QUERYSIZE... this is initialized
@@ -348,6 +343,10 @@ typedef struct _WIDGETPRIVATE
     ULONG           cSnapshots;
     PSNAPSHOT       paSnapshots;
             // array of memory snapshots
+
+    BOOL            fTooltipShowing;    // TRUE only while tooltip is currently
+                                        // showing over this widget
+    CHAR            szTooltipText[100]; // tooltip text
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
@@ -593,6 +592,8 @@ MRESULT TwgtCreate(HWND hwnd,
 
     pPrivate->fCreating = FALSE;
 
+    pPrivate->szTooltipText[0] = '\0';
+
     return (mrc);
 }
 
@@ -604,17 +605,19 @@ MRESULT TwgtCreate(HWND hwnd,
 BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
 
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            USHORT  usID = SHORT1FROMMP(mp1),
-                    usNotifyCode = SHORT2FROMMP(mp1);
+        USHORT  usID = SHORT1FROMMP(mp1),
+                usNotifyCode = SHORT2FROMMP(mp1);
 
-            if (usID == ID_XCENTER_CLIENT)
+        switch (usID)
+        {
+            case ID_XCENTER_CLIENT:
             {
                 switch (usNotifyCode)
                 {
@@ -633,13 +636,27 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     break; }
                 }
             }
-            else if (usID == ID_XCENTER_TOOLTIP)
+            break;
+
+            case ID_XCENTER_TOOLTIP:
             {
-                if (usNotifyCode == TTN_NEEDTEXT)
+                switch (usNotifyCode)
                 {
-                    PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                    pttt->pszText = "Free memory";
-                    pttt->ulFormat = TTFMT_PSZ;
+                    case TTN_NEEDTEXT:
+                    {
+                        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                        pttt->pszText = pPrivate->szTooltipText;
+                        pttt->ulFormat = TTFMT_PSZ;
+                    }
+                    break;
+
+                    case TTN_SHOW:
+                        pPrivate->fTooltipShowing = TRUE;
+                    break;
+
+                    case TTN_POP:
+                        pPrivate->fTooltipShowing = FALSE;
+                    break;
                 }
             }
         } // end if (pPrivate)
@@ -754,7 +771,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
                                                rclBmp.xRight,
                                                rclBmp.yTop);
         // make sure we repaint below
-        pPrivate->ulMaxMemKBLast = NULLHANDLE;
+        pPrivate->ulMaxMemKBLast = 0;
     }
 
     if (pPrivate->pBitmap)
@@ -773,6 +790,15 @@ VOID TwgtUpdateGraph(HWND hwnd,
         }
         else
         {
+            PSNAPSHOT pLatest
+                = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+            CHAR    sz1[50],
+                    sz2[50],
+                    sz3[50];
+            PSZ     p;
+            PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+            CHAR    cThousands = pCountrySettings->cThousands;
+
             // find the max total RAM value first
             ULONG ulMaxMemKB = 0;
             for (ul = 0;
@@ -843,12 +869,36 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
                 // add a new column to the right
                 PaintGraphLine(pPrivate,
-                               &pPrivate->paSnapshots[pPrivate->cSnapshots - 1],
+                               pLatest, // &pPrivate->paSnapshots[pPrivate->cSnapshots - 1],
                                ulMaxMemKB,
                                pPrivate->cSnapshots - 1,
                                rclBmp.yTop,
                                pPrivate->Setup.lcolBackground);
             }
+
+            // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
+            p = pPrivate->szTooltipText;
+            p += sprintf(p,
+                         "Physical memory usage"                  // @@todo localize
+                         "\nFree RAM: %s KB"
+                         "\nUsed RAM: %s KB"
+                         "\nSwapper size: %s KB",
+                         pstrhThousandsULong(sz1, pLatest->ulPhysFreeKB, cThousands),
+                         pstrhThousandsULong(sz2, pLatest->ulPhysInUseKB, cThousands),
+                         pstrhThousandsULong(sz3, pLatest->ulSwapperSizeKB, cThousands));
+
+            if (pPrivate->arcWin32K == NO_ERROR)
+                sprintf(p,
+                        "\nFree in swapper: %s KB ",
+                        pstrhThousandsULong(sz1, pLatest->ulSwapperFreeKB, cThousands));
+
+            if (pPrivate->fTooltipShowing)
+                // tooltip currently showing:
+                // refresh its display
+                WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                           TTM_UPDATETIPTEXT,
+                           (MPARAM)pPrivate->szTooltipText,
+                           0);
         }
     }
 
@@ -989,19 +1039,20 @@ VOID TwgtPaint(HWND hwnd)
     if (hps)
     {
         // get widget data and its button data from QWL_USER
-        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pWidget)
+        PXCENTERWIDGET pWidget;
+        PWIDGETPRIVATE pPrivate;
+        if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+             && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+           )
         {
-            PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-            if (pPrivate)
-            {
-                TwgtPaint2(hwnd,
-                           pPrivate,
-                           hps,
-                           TRUE);        // draw frame
-            } // end if (pPrivate)
-        } // end if (pWidget)
+            TwgtPaint2(hwnd,
+                       pPrivate,
+                       hps,
+                       TRUE);        // draw frame
+        } // end if (pPrivate)
+
         WinEndPaint(hps);
+
     } // end if (hps)
 }
 
@@ -1066,53 +1117,52 @@ VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 
 VOID TwgtTimer(HWND hwnd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        HPS hps;
+        RECTL rclClient;
+        WinQueryWindowRect(hwnd, &rclClient);
+        if (rclClient.xRight)
         {
-            HPS hps;
-            RECTL rclClient;
-            WinQueryWindowRect(hwnd, &rclClient);
-            if (rclClient.xRight)
+            ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
+
+            if (pPrivate->paSnapshots == NULL)
             {
-                ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
+                // create array of loads
+                ULONG cb = sizeof(SNAPSHOT) * ulGraphCX;
+                pPrivate->cSnapshots = ulGraphCX;
+                pPrivate->paSnapshots
+                    = (PSNAPSHOT)malloc(cb);
+                memset(pPrivate->paSnapshots, 0, cb);
+            }
 
-                if (pPrivate->paSnapshots == NULL)
-                {
-                    // create array of loads
-                    ULONG cb = sizeof(SNAPSHOT) * ulGraphCX;
-                    pPrivate->cSnapshots = ulGraphCX;
-                    pPrivate->paSnapshots
-                        = (PSNAPSHOT)malloc(cb);
-                    memset(pPrivate->paSnapshots, 0, cb);
-                }
+            if (pPrivate->paSnapshots)
+            {
+                // in the array of loads, move each entry one to the front;
+                // drop the oldest entry
+                memcpy(&pPrivate->paSnapshots[0],
+                       &pPrivate->paSnapshots[1],
+                       sizeof(SNAPSHOT) * (pPrivate->cSnapshots - 1));
 
-                if (pPrivate->paSnapshots)
-                {
-                    // in the array of loads, move each entry one to the front;
-                    // drop the oldest entry
-                    memcpy(&pPrivate->paSnapshots[0],
-                           &pPrivate->paSnapshots[1],
-                           sizeof(SNAPSHOT) * (pPrivate->cSnapshots - 1));
+                // and update the last entry with the current value
+                GetSnapshot(pPrivate);
 
-                    // and update the last entry with the current value
-                    GetSnapshot(pPrivate);
+                // update display
+                pPrivate->fUpdateGraph = TRUE;
 
-                    // update display
-                    pPrivate->fUpdateGraph = TRUE;
-
-                    hps = WinGetPS(hwnd);
-                    TwgtPaint2(hwnd,
-                               pPrivate,
-                               hps,
-                               FALSE);       // do not draw frame
-                    WinReleasePS(hps);
-                }
-            } // end if (rclClient.xRight)
-        } // end if (pPrivate)
-    } // end if (pWidget)
+                hps = WinGetPS(hwnd);
+                TwgtPaint2(hwnd,
+                           pPrivate,
+                           hps,
+                           FALSE);       // do not draw frame
+                WinReleasePS(hps);
+            }
+        } // end if (rclClient.xRight)
+    } // end if (pPrivate)
 }
 
 /*
@@ -1120,92 +1170,97 @@ VOID TwgtTimer(HWND hwnd)
  *      implementation for WM_WINDOWPOSCHANGED.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        PSWP pswpNew = (PSWP)mp1,
+             pswpOld = pswpNew + 1;
+        if (pswpNew->fl & SWP_SIZE)
         {
-            PSWP pswpNew = (PSWP)mp1,
-                 pswpOld = pswpNew + 1;
-            if (pswpNew->fl & SWP_SIZE)
+            // window was resized:
+
+            // destroy the buffer bitmap because we
+            // need a new one with a different size
+            if (pPrivate->pBitmap)
+                pgpihDestroyXBitmap(&pPrivate->pBitmap);
+
+            if (pswpNew->cx != pswpOld->cx)
             {
-                // window was resized:
-
-                // destroy the buffer bitmap because we
-                // need a new one with a different size
-                if (pPrivate->pBitmap)
-                    pgpihDestroyXBitmap(&pPrivate->pBitmap);
-
-                if (pswpNew->cx != pswpOld->cx)
+                XSTRING strSetup;
+                // width changed:
+                if (pPrivate->paSnapshots)
                 {
-                    XSTRING strSetup;
-                    // width changed:
-                    if (pPrivate->paSnapshots)
+                    // we also need a new array of past loads
+                    // since the array is cx items wide...
+                    // so reallocate the array, but keep past
+                    // values
+                    ULONG ulNewClientCX = pswpNew->cx - 2;
+                    PSNAPSHOT paNewSnapshots =
+                        (PSNAPSHOT)malloc(sizeof(SNAPSHOT) * ulNewClientCX);
+
+                    if (ulNewClientCX > pPrivate->cSnapshots)
                     {
-                        // we also need a new array of past loads
-                        // since the array is cx items wide...
-                        // so reallocate the array, but keep past
-                        // values
-                        ULONG ulNewClientCX = pswpNew->cx - 2;
-                        PSNAPSHOT paNewSnapshots =
-                            (PSNAPSHOT)malloc(sizeof(SNAPSHOT) * ulNewClientCX);
+                        // window has become wider:
+                        // fill the front with zeroes
+                        memset(paNewSnapshots,
+                               0,
+                               (ulNewClientCX - pPrivate->cSnapshots) * sizeof(SNAPSHOT));
+                        // and copy old values after that
+                        memcpy(&paNewSnapshots[(ulNewClientCX - pPrivate->cSnapshots)],
+                               pPrivate->paSnapshots,
+                               pPrivate->cSnapshots * sizeof(SNAPSHOT));
+                    }
+                    else
+                    {
+                        // window has become smaller:
+                        // e.g. ulnewClientCX = 100
+                        //      pPrivate->cLoads = 200
+                        // drop the first items
+                        ULONG ul = 0;
+                        memcpy(paNewSnapshots,
+                               &pPrivate->paSnapshots[pPrivate->cSnapshots - ulNewClientCX],
+                               ulNewClientCX * sizeof(SNAPSHOT));
+                    }
 
-                        if (ulNewClientCX > pPrivate->cSnapshots)
-                        {
-                            // window has become wider:
-                            // fill the front with zeroes
-                            memset(paNewSnapshots,
-                                   0,
-                                   (ulNewClientCX - pPrivate->cSnapshots) * sizeof(SNAPSHOT));
-                            // and copy old values after that
-                            memcpy(&paNewSnapshots[(ulNewClientCX - pPrivate->cSnapshots)],
-                                   pPrivate->paSnapshots,
-                                   pPrivate->cSnapshots * sizeof(SNAPSHOT));
-                        }
-                        else
-                        {
-                            // window has become smaller:
-                            // e.g. ulnewClientCX = 100
-                            //      pPrivate->cLoads = 200
-                            // drop the first items
-                            ULONG ul = 0;
-                            memcpy(paNewSnapshots,
-                                   &pPrivate->paSnapshots[pPrivate->cSnapshots - ulNewClientCX],
-                                   ulNewClientCX * sizeof(SNAPSHOT));
-                        }
+                    pPrivate->cSnapshots = ulNewClientCX;
+                    free(pPrivate->paSnapshots);
+                    pPrivate->paSnapshots = paNewSnapshots;
+                } // end if (pPrivate->palLoads)
 
-                        pPrivate->cSnapshots = ulNewClientCX;
-                        free(pPrivate->paSnapshots);
-                        pPrivate->paSnapshots = paNewSnapshots;
-                    } // end if (pPrivate->palLoads)
+                pPrivate->Setup.cx = pswpNew->cx;
+                TwgtSaveSetup(&strSetup,
+                              &pPrivate->Setup);
+                if (strSetup.ulLength)
+                    // changed V0.9.13 (2001-06-21) [umoeller]:
+                    // post it to parent instead of fixed XCenter client
+                    // to make this trayable
+                    WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
+                               XCM_SAVESETUP,
+                               (MPARAM)hwnd,
+                               (MPARAM)strSetup.psz);
+                pxstrClear(&strSetup);
+            } // end if (pswpNew->cx != pswpOld->cx)
 
-                    pPrivate->Setup.cx = pswpNew->cx;
-                    TwgtSaveSetup(&strSetup,
-                                  &pPrivate->Setup);
-                    if (strSetup.ulLength)
-                        WinSendMsg(pWidget->pGlobals->hwndClient,
-                                   XCM_SAVESETUP,
-                                   (MPARAM)hwnd,
-                                   (MPARAM)strSetup.psz);
-                    pxstrClear(&strSetup);
-                } // end if (pswpNew->cx != pswpOld->cx)
-
-                // force recreation of bitmap
-                pPrivate->fUpdateGraph = TRUE;
-                WinInvalidateRect(hwnd, NULL, FALSE);
-            } // end if (pswpNew->fl & SWP_SIZE)
-        } // end if (pPrivate)
-    } // end if (pWidget)
+            // force recreation of bitmap
+            pPrivate->fUpdateGraph = TRUE;
+            WinInvalidateRect(hwnd, NULL, FALSE);
+        } // end if (pswpNew->fl & SWP_SIZE)
+    } // end if (pPrivate)
 }
 
 /*
  *@@ TwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
+ *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID TwgtPresParamChanged(HWND hwnd,
@@ -1276,7 +1331,10 @@ VOID TwgtPresParamChanged(HWND hwnd,
             TwgtSaveSetup(&strSetup,
                           &pPrivate->Setup);
             if (strSetup.ulLength)
-                WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
+                // changed V0.9.13 (2001-06-21) [umoeller]:
+                // post it to parent instead of fixed XCenter client
+                // to make this trayable
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);
@@ -1586,9 +1644,8 @@ VOID EXPENTRY TwgtQueryVersion(PULONG pulMajor,
                                PULONG pulMinor,
                                PULONG pulRevision)
 {
-    // report 0.9.9
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 12;
+    *pulRevision = 13;
 }
 

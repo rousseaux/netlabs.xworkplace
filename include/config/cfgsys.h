@@ -53,10 +53,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                               ULONG flFlags);
+        VOID XWPENTRY cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
 
-        MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
@@ -67,18 +67,18 @@
         extern MPARAM *G_pampDriversPage;
         extern ULONG G_cDriversPage;
 
-        VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+        VOID XWPENTRY cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG flFlags);
 
-        MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
 
-        VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+        VOID XWPENTRY cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                          ULONG flFlags);
 
-        MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);

@@ -190,6 +190,13 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     default, ulExtra,            min, max
                0, XCS_ALL3DBORDERS, 0,   0,
 
+        // type,  setup string,     offset,
+        STG_BITFLAG, "SPACINGLINES",    FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, ulExtra,            min, max
+               0, XCS_SPACINGLINES, 0,   0,
+
         /*
          * other LONGs
          *
@@ -318,9 +325,6 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
 
         TRY_LOUD(excpt1)
         {
-            // flag defined in
-            #define WP_GLOBAL_COLOR         0x40000000
-
             XCenterData *somThis = XCenterGetData(somSelf);
 
             // temporary buffer for building the setup string
@@ -396,7 +400,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                                    "%,();=");
 
                         // now append encoded widget setup string
-                        xstrcat(&strTemp, strSetup2.psz, strSetup2.ulLength);
+                        xstrcats(&strTemp, &strSetup2);
 
                         // add terminator
                         xstrcatc(&strTemp, ')');
@@ -521,8 +525,7 @@ BOOL ctrpSetup(XCenter *somSelf,
                )
             {
                 // now, off we go...
-
-                // now parse the WIDGETS string
+                // parse the WIDGETS string
                 // format is: "widget1,widget2,widget3"
                 PSZ pszToken = strtok(pszWidgets, ",");
                 if (pszToken)
@@ -539,7 +542,7 @@ BOOL ctrpSetup(XCenter *somSelf,
                         // pszToken now has one widget
                         PSZ pszWidgetClass = NULL;
                         PSZ pszWidgetSetup = NULL;
-                        // check if this has brackets
+                        // check if this has brackets with the setup string
                         PSZ pBracket = strchr(pszToken, '(');
                         if (pBracket)
                         {
@@ -622,7 +625,7 @@ BOOL ctrpSaveState(XCenter *somSelf)
             // once the settings have been unpacked
             // (i.e. XCenter needed access to them),
             // we have to repack them on each save
-            if (_pllWidgetSettings)
+            if (_pllAllWidgetSettings)
             {
                 // compose array
                 ULONG cbSettingsArray = 0;
@@ -1024,6 +1027,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: added spacing lines setting
  */
 
 VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1099,6 +1103,9 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SIZINGBARS,
                               ((_flDisplayStyle & XCS_SIZINGBARS) != 0));
 
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SPACINGLINES,
+                              ((_flDisplayStyle & XCS_SPACINGLINES) != 0));
+                    // added V0.9.13 (2001-06-19) [umoeller]
 
         // default widget styles
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATBUTTONS,
@@ -1117,6 +1124,7 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: added spacing lines setting
  */
 
 MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1168,6 +1176,10 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRDI_VIEW2_SIZINGBARS:
             ulDisplayFlagChanged = XCS_SIZINGBARS;
+        break;
+
+        case ID_CRDI_VIEW2_SPACINGLINES:
+            ulDisplayFlagChanged = XCS_SPACINGLINES;
         break;
 
         case ID_CRDI_VIEW2_FLATBUTTONS:
@@ -1835,7 +1847,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                         precThis->pszVersion = precThis->szVersion;
                     }
                     else
-                        precThis->pszDLL = "Built-in";
+                        precThis->pszDLL = "Built-in"; // @@todo localize
 
                     precThis->pszClass = (PSZ)pClass->Public.pcszWidgetClass;
 
@@ -1846,6 +1858,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 }
             }
 
+            // kah-wump
             cnrhInsertRecords(hwndCnr,
                               NULL,         // parent
                               (PRECORDCORE)precFirst,

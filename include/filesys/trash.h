@@ -124,24 +124,24 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                          ULONG flFlags);
+        VOID XWPENTRY trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                   ULONG flFlags);
 
-        MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                 ULONG ulItemID, USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
-        VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+        VOID XWPENTRY trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                 ULONG flFlags);
 
-        MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
-        VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+        VOID XWPENTRY trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                               ULONG flFlags);
 
-        MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif

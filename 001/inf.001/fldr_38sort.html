@@ -20,6 +20,7 @@ because IBM has barely documented at all how the WPS sort functions are working
 internally. As a result, you'll
 have to reconfigure the sort settings for certain folders (which will be explained below). -->
 <P>The new XWorkplace sort features are:
+
 <UL><LI>Finally, there are <B>global sort settings,</B>
 which previously did not exist in the WPS.
 While it was possible to set a number of folder settings globally, until now sorting could
@@ -28,37 +29,37 @@ introduces a "Sort" page to the
 <A HREF="sys_2global.html">"Workplace Shell" object</A> for global sort settings,
 which can be overridden individually for
 each folder.
+
 <BR><LI>XWorkplace also gets rid of some of the strange sort settings which nobody used
 anyway, such as the "sort class". (This setting did not make much sense, because
 WPFolder is the only class which introduces meaningful sort criteria anyway.)
-<BR><LI>There is a new item in the "Sort" context submenu for enabling the
-<B>"Always maintain sort order"</B> setting quickly.
-<P><IMG SRC="sort.gif">
-<BR><LI>You can quickly change the <B>default sort criterion</B> for a certain folder by
-opening the "Sort" context submenu and holding down the "Shift" key while selecting
-a sort criterion.
-<BR><LI>Most importantly, XWorkplace
-introduces three new options to the "Sort" menu of every folder, which are
-"Sort by object class", "Sort by extension" and "Sort folders first":
-<BR><OL><LI>The <B>"Sort by object class"</B> feature sorts the folder content according to
-the classes of the contained objects, as they are visible in the third column of a
-folder's Details view.
-<BR><LI>The <STRONG>"Sort by extension"</STRONG> option sorts the
-folder contents by file name
-extension, i.e. the characters after the last dot in the object title. For example,
-".BMP" files would be sorted before ".HTM", ".HTML" and ".ICO" files, in this order. If two
-files have the same extension, they are sorted alphabetically within their extension group.
-Although
-file extensions make sense mostly for file-system objects, abstract objects are sorted in
-this way too.
-<BR><LI>The <STRONG>"Sort folders first"</STRONG>
-sorts the folder alphabetically, but puts all folder objects on top of the list.
-Shadows of folders are treated just like regular folders.
 
-</OL></UL>Per default, XWorkplace defines <CITE>"Ctrl+E"</CITE> as a
-<A HREF="fldr_5xelerators.html">folder hotkey</A> for the "Sort by extension"
-function. You may also set up a hotkey for the "Sort folders first" function
-in the <A HREF="sys_2global.html">Global Settings</A>, if you wish.
+<!-- V0.9.13: rewrote all the following -->
+<BR><LI>Most importantly, XWorkplace gives you lots of new sort options for folders
+-- both for each individual folder and globally through the "Sort" page in the
+<A HREF="sys_2global.html">"Workplace Shell" object</A>.
+
+<P>For one, <B>new sort criteria</B> such as "object class" and "file name extension" have
+been introduced.
+
+<P>Secondly, there is now a new "super-criterion" for always <B>sorting folders first,</B>
+in addition to the folder's default sort criterion. For example,
+you can sort by size and still have all folders sorted to the top.
+
+<P>For all this, the <B>"Sort" submenu</B> in each folder context menu has been reworked too:
+
+<P><IMG SRC="sort.gif">
+
+<BR>As you can see, XWorkplace adds menu items for "Always maintain sort order"
+and "Sort folders first" for quick access.
+
+<P>In addition, you can quickly change the default sort criterion for a
+certain folder by <B>holding down the "Shift"</B> key while selecting a sort criterion
+in the "Sort" menu.
+
+</UL>XWorkplace also defines
+<A HREF="fldr_5xelerators.html">folder hotkeys</A> for the most frequently
+used sort criteria.
 <BR>
 </BODY>
 </HTML>

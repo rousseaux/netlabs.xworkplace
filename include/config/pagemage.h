@@ -36,31 +36,31 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                         ULONG flFlags);
+        VOID XWPENTRY pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                  ULONG flFlags);
 
-        MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                ULONG ulItemID, USHORT usNotifyCode,
                                                ULONG ulExtra);
 
-        VOID pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+        VOID XWPENTRY pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                 ULONG flFlags);
 
-        MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
-        VOID pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+        VOID XWPENTRY pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                 ULONG flFlags);
 
-        MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
-        VOID pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+        VOID XWPENTRY pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                 ULONG flFlags);
 
-        MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
     #else

@@ -84,10 +84,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID XWPENTRY cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                           ULONG flFlags);
 
-        MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);

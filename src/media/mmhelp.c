@@ -89,9 +89,12 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -820,40 +823,56 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: now using position advise, prototype changed
  */
 
-ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID)
+ULONG xmmCDQueryCurrentTrack(PXMMCDPLAYER pPlayer)
 {
     ULONG ulReturn = 0,
           ulrc;
 
     if (xmmLockDevicesList())
     {
-        if (usDeviceID)
+        if (pPlayer->usDeviceID)
         {
-            MCI_STATUS_PARMS msp = {0};
-
-            msp.ulItem = MCI_STATUS_CURRENT_TRACK;
-
-            ulrc = G_mciSendCommand(usDeviceID,
-                                    MCI_STATUS,
-                                    MCI_WAIT
-                                        | MCI_STATUS_ITEM, // msp.ulItem is valid
-                                    &msp,
-                                    0);                              // No user parm
-
-            _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
-
-            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-                ulReturn = LOUSHORT(msp.ulReturn);
+            if (    (    (pPlayer->ulStatus == MCI_MODE_PAUSE)
+                      || (pPlayer->ulStatus == MCI_MODE_PLAY)
+                    )
+                 && (pPlayer->fPositionAdvising)
+               )
+            {
+                // currently playing, and position advise is on:
+                // use current track then
+                ulReturn = pPlayer->ulTrack;
+            }
             else
             {
-                CHAR szError[1000];
-                G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
-                       usDeviceID, LOUSHORT(ulrc), szError));
+                MCI_STATUS_PARMS msp = {0};
+
+                msp.ulItem = MCI_STATUS_CURRENT_TRACK;
+
+                ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                        MCI_STATUS,
+                                        MCI_WAIT
+                                            | MCI_STATUS_ITEM, // msp.ulItem is valid
+                                        &msp,
+                                        0);                              // No user parm
+
+                _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+
+                if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                    ulReturn = LOUSHORT(msp.ulReturn);
+                else
+                {
+                    CHAR szError[1000];
+                    G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                           pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                }
             }
-        }
+        } // end if (pPlayer->usDeviceID)
+        // else: not even a device ID, return 0
+
         xmmUnlockDevicesList();
     }
 
@@ -1015,7 +1034,6 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                     {
                         pPlayer->ulStatus = MCI_MODE_PLAY;
-                        pPlayer->usCurrentTrack = usTrack;
                     }
                     else
                     {
@@ -1506,95 +1524,352 @@ const char* GetDeviceTypeName(ULONG ulDeviceType)
 }
 
 /*
+ *@@ GetAllDeviceNames:
+ *      writes a string array with all current MMPM/2
+ *      device names into *ppszNames. The last entry
+ *      is marked with two null bytes.
+ *
+ *      Each device string is of the "nameXX" form,
+ *      with XX being the device index (e.g.
+ *      "CDaudio01".
+ *
+ *      Caller must issue DosFreeMem on the string
+ *      returned.
+ *
+ *      Returns an MMPM/2 error code.
+ *
+ *@@added V0.9.13 (2001-06-14) [umoeller]
+ */
+
+ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
+                        PSZ *ppszNames)         // out: device names
+{
+    ULONG               cDevices = 0,
+                        ulrc = 0;
+
+    MCI_SYSINFO_PARMS   sip;
+    CHAR                szDevicesCount[10];
+
+    ZERO(&sip);
+    sip.pszReturn = szDevicesCount;
+    sip.ulRetSize = sizeof(szDevicesCount);
+
+    // step 1: get no. of logical devices;
+    // this is done by issuing
+    // MCI_SYSINFO :: MCI_SYSINFO_QUANTITY
+    // against the special device ID 0xFFFF
+    ulrc = G_mciSendCommand(MCI_ALL_DEVICE_ID,    // all devices (0xFFFF)
+                            MCI_SYSINFO,
+                            MCI_SYSINFO_QUANTITY, // get no. of logical devices
+                            &sip,
+                            0);
+    if (    (!ulrc)
+         // number of devices is returned as a STRING
+         // (whoever came up with this sick interface...):
+         // get device count from string
+         && (cDevices = atoi(sip.pszReturn))
+       )
+    {
+        // OK, allocate memory for the device names:
+        ULONG cbDevices = cDevices * MAX_DEVICE_NAME;
+        if (!(ulrc = DosAllocMem ((PVOID*)&sip.pszReturn,
+                                  cbDevices + 1,
+                                  PAG_READ | PAG_WRITE | PAG_COMMIT)))
+        {
+            sip.ulRetSize = (ULONG)cbDevices;
+            // now get the device names:
+            // this is done by issuing
+            // MCI_SYSINFO :: MCI_SYSINFO_NAME
+            // against the special device ID 0xFFFF
+            ulrc = G_mciSendCommand(MCI_ALL_DEVICE_ID,
+                                    MCI_SYSINFO,
+                                    MCI_SYSINFO_NAME,   // get device names
+                                    &sip,
+                                    0);
+            if (!ulrc)
+            {
+                // now we got all the device names, separated
+                // by spaces... make this a string array
+                PSZ pDevices = sip.pszReturn;
+                PSZ pszName;
+                pDevices[strlen(pDevices)+1] = 0;       // double null
+
+                for (pszName = strchr(pDevices, ' ');
+                     (pszName) && (*pszName);
+                     pszName = strchr(pszName + 1, ' '))
+                {
+                    if (*pszName == ' ')
+                        *pszName = 0;
+                }
+
+                *pcDevices = cDevices;
+                *ppszNames = pDevices;
+            }
+        }
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ GetDeviceInfo:
+ *      retrieves detailed info for the specified
+ *      device name and writes it into the specified
+ *      XMMDEVICE instance.
+ *
+ *@@added V0.9.13 (2001-06-14) [umoeller]
+ */
+
+ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
+                    const char *pcszName)       // in: device name (e.g. "CDaudio01")
+{
+    ULONG rc;
+
+    // Alright, here comes the sick stuff with MCI_SYSINFO.
+
+    // To get the details for a device, the following
+    // steps are necessary:
+
+    // --  Issue MCI_SYSINFO :: MCI_SYSINFO_ITEM
+    //     against device ID 0 (!).
+    // --  This expects an MCI_SYSINFO_PARMS structure.
+    // --  In _that_ structure, ulItem specifies what
+    //     to retrieve. The pSysInfoParm must point
+    //     to another structure, depending on what
+    //     was set with ulItem.
+
+    // Totally sick interface, but appears to work.
+
+    // sub-structures pointed to by sip below
+    MCI_SYSINFO_QUERY_NAME  siNames;
+    MCI_SYSINFO_LOGDEVICE   siLogDevice;
+    MCI_SYSINFO_DEVPARAMS   siDevParams;
+
+    // main structure
+    MCI_SYSINFO_PARMS       sip;
+
+    // 1) So to get the detailed device names, we
+    //    use MCI_SYSINFO_QUERY_NAMES, which expects
+    //    an MCI_SYSINFO_QUERY_NAME structure.
+    //    (Good naming, too. Note the single "S" which
+    //    differentiates the flag from the structure. Geese.)
+
+    ZERO(&siNames);
+    strcpy(siNames.szLogicalName, pcszName);
+
+    ZERO(&sip);
+    sip.ulItem = MCI_SYSINFO_QUERY_NAMES;
+    sip.pSysInfoParm = &siNames;
+
+    if (!(rc = G_mciSendCommand(0,                  // device ID
+                                MCI_SYSINFO,
+                                MCI_SYSINFO_ITEM,   // get sub-info
+                                &sip,
+                                0)))
+    {
+        /*
+         typedef struct _MCI_SYSINFO_QUERY_NAME {
+           CHAR       szInstallName[MAX_DEVICE_NAME];  //  Device install name.
+           CHAR       szLogicalName[MAX_DEVICE_NAME];  //  Logical device name.
+           CHAR       szAliasName[MAX_ALIAS_NAME];     //  Alias name.
+           USHORT     usDeviceType;                    //  Device type number.
+           USHORT     usDeviceOrd;                     //  Device type ordinal.
+         } MCI_SYSINFO_QUERY_NAME;
+        */
+
+        pDevice->ulDeviceType = siNames.usDeviceType;
+        pDevice->pcszDeviceType = GetDeviceTypeName(pDevice->ulDeviceType);
+        pDevice->ulDeviceIndex = siNames.usDeviceOrd;
+
+        strhncpy0(pDevice->szInstallName,
+                  siNames.szInstallName,
+                  sizeof(pDevice->szInstallName));
+        strhncpy0(pDevice->szLogicalName,
+                  siNames.szLogicalName,
+                  sizeof(pDevice->szLogicalName));
+        strhncpy0(pDevice->szAliasName,
+                  siNames.szAliasName,
+                  sizeof(pDevice->szAliasName));
+
+        // 2) To now get the detailed driver info, we
+        //    use MCI_SYSINFO_QUERY_DRIVER, which expects
+        //    an MCI_SYSINFO_LOGDEVICE structure.
+        //    This time, input is the install name, which
+        //    is one of the strings like "IBMCDAUDIO01"
+        //    as in MMPM2.INI. This was returned above.
+        ZERO(&siLogDevice);
+        strcpy(siLogDevice.szInstallName, siNames.szInstallName);
+
+        ZERO(&sip);
+        sip.ulItem = MCI_SYSINFO_QUERY_DRIVER;
+        sip.pSysInfoParm = &siLogDevice;
+
+        if (!(rc = G_mciSendCommand(0,         // device ID
+                                    MCI_SYSINFO,
+                                    MCI_SYSINFO_ITEM,       // get sub-info
+                                    &sip,
+                                    0)))
+        {
+            /*
+             typedef struct _MCI_SYSINFO_LOGDEVICE {
+               CHAR       szInstallName[MAX_DEVICE_NAME];                //  Device install name.
+               USHORT     usDeviceType;                                  //  Device type name.
+               ULONG      ulDeviceFlag;
+                  // Flag indicating whether device is controllable or not:
+                        -- MCI_SYSINFO_DEVICESETTINGS: Indicates the MCD has custom device
+                           settings pages.
+                        -- MCI_SYSINFO_DEV_CONTROLLABLE: If a device is controllable, it
+                           usually accepts a PLAY command.
+                        -- MCI_SYSINFO_DEV_NONCONTROLLABLE: Examples of non-controllable
+                           devices are speakers, headphones,  microphone, and amp-mixer devices.
+
+               CHAR       szVersionNumber[MAX_VERSION_NUMBER];           //  INI file version number.
+               CHAR       szProductInfo[MAX_PRODINFO];                   //  Textual product description.
+               CHAR       szMCDDriver[MAX_DEVICE_NAME];                  //  Driver DLL name.
+               CHAR       szVSDDriver[MAX_DEVICE_NAME];                  //  VSD DLL name.
+               CHAR       szPDDName[MAX_PDD_NAME];
+                            // Device PDD name. The device driver name must not be more than eight
+                            // characters (excluding the file extension).
+
+               CHAR       szMCDTable[MAX_DEVICE_NAME];                   //  Device type command table.
+               CHAR       szVSDTable[MAX_DEVICE_NAME];                   //  Device specific command table.
+               USHORT     usShareType;                                   //  Device sharing mode.
+               CHAR       szResourceName[MAX_DEVICE_NAME;                //  Resource name.
+               USHORT     usResourceUnits;                               //  Resource units available.
+               USHORT     usResourceClasses;                             //  Number of resource classes.
+               USHORT     ausClassArray[MAX_CLASSES];                    //  Maximum resource units per class.
+               USHORT     ausValidClassArray[MAX_CLASSES][MAX_CLASSES];  //  Valid class combinations.
+             } MCI_SYSINFO_LOGDEVICE;
+            */
+
+            XSTRING strTemp;
+            BOOL    fHasMCD = (strlen(siLogDevice.szMCDDriver) != 0),
+                    fHasVSD = (strlen(siLogDevice.szVSDDriver) != 0),
+                    fHasPDD = (strlen(siLogDevice.szPDDName) != 0);
+
+            xstrInit(&strTemp, 100);
+
+            if (fHasMCD)
+            {
+                xstrcpy(&strTemp, cmnGetString(ID_MMSI_MCD), 0);
+                xstrcat(&strTemp, ": ", 2);
+                xstrcat(&strTemp, siLogDevice.szMCDDriver, 0);
+            }
+
+            if (fHasVSD)
+            {
+                if (strTemp.ulLength)
+                    xstrcatc(&strTemp, '\n');
+                xstrcat(&strTemp, cmnGetString(ID_MMSI_VSD), 0);
+                xstrcat(&strTemp, ": ", 2);
+                xstrcat(&strTemp, siLogDevice.szVSDDriver, 0);
+            }
+            if (fHasPDD)
+            {
+                if (strTemp.ulLength)
+                    xstrcatc(&strTemp, '\n');
+                xstrcat(&strTemp, cmnGetString(ID_MMSI_PDD), 0);
+                xstrcat(&strTemp, ": ", 2);
+                xstrcat(&strTemp, siLogDevice.szPDDName, 0);
+            }
+
+            // 3) To now get the "device parameters", we
+            //    use MCI_SYSINFO_QUERY_DRIVER, which expects
+            //    an MCI_SYSINFO_DEVPARAMS structure.
+            //    Again, input is the install name, which
+            //    is one of the strings like "IBMCDAUDIO01"
+            //    as in MMPM2.INI. This was returned above.
+
+            ZERO(&siDevParams);
+            strcpy(siDevParams.szInstallName, siNames.szInstallName);
+
+            ZERO(&sip);
+            sip.ulItem = MCI_SYSINFO_QUERY_PARAMS;
+            sip.pSysInfoParm = &siDevParams;
+
+            if (!(rc = G_mciSendCommand(0,         // device ID
+                                        MCI_SYSINFO,
+                                        MCI_SYSINFO_ITEM,       // get sub-info
+                                        &sip,
+                                        0)))
+            {
+                ULONG ulParamsLength = strlen(siDevParams.szDevParams);
+                if (ulParamsLength)
+                {
+                    if (strTemp.ulLength)
+                        xstrcatc(&strTemp, '\n');
+                    xstrcat(&strTemp, cmnGetString(ID_MMSI_PARAMS), 0);
+                    xstrcat(&strTemp, ": \"", 3);
+                    xstrcat(&strTemp, siDevParams.szDevParams, ulParamsLength);
+                    xstrcatc(&strTemp, '\"');
+                }
+            }
+
+            if (strTemp.ulLength)
+                pDevice->pszInfo = strTemp.psz;
+                        // do not free strTemp here
+        }
+    }
+
+    return (rc);
+}
+
+/*
  *@@ xmmQueryDevices:
  *      returns an array of XMMDEVICE structures describing
  *      all available MMPM/2 devices on your system.
+ *
  *      *pcDevices receives the no. of items in the array
  *      (not the array size!). Use xmmFreeDevices to clean up.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  *@@changed V0.9.7 (2000-11-30) [umoeller]: added NLS for device types
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: completely rewritten, now using MCI_SYSINFO to no longer open devices
  */
 
 PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
 {
-    #define XMM_QDEV_ALLOC_DELTA    50
+    ULONG   ulrc;
+    ULONG   cDevices = 0;
+    PSZ     pszDeviceStrings = NULL;
+    PXMMDEVICE paDevices = 0;
 
-    ULONG   cDevices = 0,
-            ulDevicesAllocated = XMM_QDEV_ALLOC_DELTA;
-    PXMMDEVICE paDevices = malloc(sizeof(XMMDEVICE) * XMM_QDEV_ALLOC_DELTA);
-
-    ULONG   ulDevTypeThis = 0;
-    for (ulDevTypeThis = 0;
-         ulDevTypeThis < sizeof(aulDeviceTypes) / sizeof(aulDeviceTypes[0]); // array item count
-         ulDevTypeThis++)
+    if (    (!(ulrc = GetAllDeviceNames(&cDevices,
+                                        &pszDeviceStrings)))
+         && (cDevices)
+         && (pszDeviceStrings)
+       )
     {
-        ULONG   ulrc,
-                ulCurrentDeviceIndex = 0;
-        BOOL    fContinue = FALSE;
-
-        // _Pmpf(("Opening type %d", aDeviceTypes[ulDevTypeThis].ulDeviceTypeID));
-
-        // now, for this device type, enumerate
-        // devices; start with device "1", because
-        // "0" means default device
-        ulCurrentDeviceIndex = 1;
-        fContinue = TRUE;
-        while (fContinue)
+        // OK, now we got a string array in pszDeviceStrings
+        ULONG   cb = (cDevices + 1) * sizeof(XMMDEVICE);
+        // allocate XMMDEVICE array for output to caller;
+        // note, we allocate one extra array item as
+        // a null terminator (which is completely zeroed)
+        if (paDevices = (PXMMDEVICE)malloc(cb))
         {
-            USHORT  usDeviceID = 0;
+            ULONG   ul;
+            PSZ     pszNameThis;
+            PXMMDEVICE pDeviceThis = paDevices;
+            memset(paDevices, 0, cb);
 
-            ulrc = xmmOpenDevice(NULLHANDLE,        // no notify
-                                 aulDeviceTypes[ulDevTypeThis],    // device type
-                                 ulCurrentDeviceIndex,
-                                 &usDeviceID);
-            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+            // run thru the device names array produced above
+            for (ul = 0, pszNameThis = pszDeviceStrings;
+                 (ul < cDevices) && (pszNameThis) && (*pszNameThis);
+                 ul++, pDeviceThis++, pszNameThis += strlen(pszNameThis) + 1)
             {
-                // get info
-                MCI_INFO_PARMS minfop = {0};
-                minfop.pszReturn = paDevices[cDevices].szInfo;
-                minfop.ulRetSize = sizeof(paDevices[cDevices].szInfo);
-                ulrc = G_mciSendCommand(usDeviceID,
-                                        MCI_INFO,
-                                        MCI_WAIT | MCI_INFO_PRODUCT,
-                                        &minfop,
-                                        0);
-                if (LOUSHORT(ulrc) != MCIERR_SUCCESS)
-                    paDevices[cDevices].szInfo[0] = 0;
-
-                _Pmpf(("  Opened!"));
-                if (cDevices >= ulDevicesAllocated)
-                {
-                    // if we had space for 10 devices and current device is 10,
-                    // allocate another 10
-                    paDevices = realloc(paDevices,
-                                        (   sizeof(XMMDEVICE)
-                                          * (ulDevicesAllocated + XMM_QDEV_ALLOC_DELTA)
-                                       ));
-                    ulDevicesAllocated += XMM_QDEV_ALLOC_DELTA;
-                }
-
-                paDevices[cDevices].ulDeviceType = aulDeviceTypes[ulDevTypeThis];
-                paDevices[cDevices].pcszDeviceType = GetDeviceTypeName(aulDeviceTypes[ulDevTypeThis]);
-                paDevices[cDevices].ulDeviceIndex = ulCurrentDeviceIndex;
-
-                cDevices++;
-
-                // next device index for this device type
-                ulCurrentDeviceIndex++;
+                // now get all the details for this device
+                if (GetDeviceInfo(pDeviceThis,
+                                  pszNameThis))
+                    // error:
+                    break;
             }
-            else
-                // stop looping for this device type
-                fContinue = FALSE;
+        }
 
-            // even if open failed, we need to close the
-            // device again
-            xmmCloseDevice(&usDeviceID);
-
-        } // while (TRUE);
-    } // end for (ulDevTypeThis = 0;
+        DosFreeMem(pszDeviceStrings);
+    }
 
     *pcDevices = cDevices;
+
     return (paDevices);
 }
 
@@ -1603,12 +1878,37 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
  *      frees resources allocated by xmmQueryDevices.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: rewritten
  */
 
 BOOL xmmFreeDevices(PXMMDEVICE paDevices)
 {
-    free(paDevices);
-    return (TRUE);
+    PXMMDEVICE pThis;
+
+    if (pThis = paDevices)
+    {
+        // run thru the array and free strings;
+        // xmmQueryDevices has allocated one extra
+        // array item where ulDeviceIndex is 0,
+        // so we just loop until we find that
+        while (pThis->ulDeviceIndex)
+        {
+            if (pThis->pszInfo)
+            {
+                free(pThis->pszInfo);
+                pThis->pszInfo = NULL;
+            }
+
+            pThis++;
+        }
+
+        // now free the entire array
+        free(paDevices);
+
+        return (TRUE);
+    }
+
+    return (FALSE);
 }
 
 

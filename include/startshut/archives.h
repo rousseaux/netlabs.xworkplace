@@ -34,10 +34,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+        VOID XWPENTRY arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                          ULONG flFlags);
 
-        MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);
@@ -56,8 +56,8 @@
     #define WPSACRO_INIKEY_LASTBACKUP   "LastBackup"
 
     /*
-     * WPSArco Settings flags:
-     *      the following are stored in WPSARCOSETTINGS.ulArcFlags
+     * Archiving settings flags:
+     *      the following are stored in ARCHIVINGSETTINGS.ulArcFlags
      *      and correspond to the checkboxes on the "Archives"
      *      page replacement in the Desktop's settings notebook.
      */
@@ -69,11 +69,11 @@
     #define ARCF_DAYS                   0x0010
 
     /*
-     *@@ WPSARCOSETTINGS:
+     *@@ ARCHIVINGSETTINGS:
      *      settings structure stored in OS2.INI.
      */
 
-    typedef struct _WPSARCOSETTINGS
+    typedef struct _ARCHIVINGSETTINGS
     {
         // WPSArcO settings
         ULONG       ulArcFlags,               // ARCF_* flags (archives.h)
@@ -87,11 +87,11 @@
 
         BOOL        fShowStatus;
         CHAR        cArchivesCount;
-    } WPSARCOSETTINGS, *PWPSARCOSETTINGS;
+    } ARCHIVINGSETTINGS, *PARCHIVINGSETTINGS;
 
     VOID arcSetDefaultSettings(VOID);
 
-    PWPSARCOSETTINGS arcQuerySettings(VOID);
+    PARCHIVINGSETTINGS arcQuerySettings(VOID);
 
     BOOL arcSaveSettings(VOID);
 
@@ -104,7 +104,7 @@
     BOOL arcCheckIfBackupNeeded(HWND hwndNotify,
                                 ULONG ulMsg);
 
-    int arcSwitchArchivingOn(BOOL switchOn);
+    APIRET arcSwitchArchivingOn(BOOL fSwitchOn);
 
     BOOL arcSetNumArchives(PCHAR pcArchives,
                            BOOL fSet);

@@ -142,6 +142,12 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
                     " (\"%s\")",
                     _wpQueryTitle(somSelf));
 
+            if (arc == ERROR_AUDIO_CD_ROM)
+                // special error code for "audio cd inserted":
+                arc = ERROR_NOT_DOS_DISK;
+                    // for now, later we can do full audio cd support...
+                    // V0.9.13 (2001-06-14) [umoeller]
+
             mbrc = cmnDosErrorMsgBox(HWND_DESKTOP,
                                      _wpQueryLogicalDrive(somSelf) + 'A' - 1,
                                      szTitle,

@@ -11,8 +11,9 @@
  *             hidden "\trash" directories on each drive. See xtrash.c
  *             for details.
  *
- *             We use WPTransient in order not to clutter up OS2.INI
- *             with abstract objects which have no data to save anyway.
+ *             I have chosen to make XWPTrashObject a subclass of
+ *             WPTransient in order not to clutter up OS2.INI with
+ *             abstract objects which have no data to save anyway.
  *
  *      XWPTrashObject must be installed if XWPTrashCan is installed.
  *
@@ -22,8 +23,8 @@
  *         then goes over the "\TRASH" directories on each drive and
  *         creates trash objects according to their contents.
  *
- *      2) after the trash can has been first populated, when more objects
- *         are "deleted" into the trash can.
+ *      2) if the trash is already populated, whenever more objects are
+ *         "deleted" into the trash can.
  *
  *      Each trash object has its "related object", that is, the corresponding
  *      object in the "\TRASH" directories, in its member variables.
@@ -32,10 +33,15 @@
  *      trash object if the object has been deleted into one of the "\TRASH"
  *      directories.
  *
- *      Trash objects are destroyed ONLY thru XFldObject::wpUnInitData.
- *      When "Empty trash can" or "Destroy trash object" is selected,
- *      the trash can destroys the related object instead, which in
- *      turn destroys the trash object thru XFldObject::wpUnInitData.
+ *      Trash objects are destroyed:
+ *
+ *      1)  when a trash object is restored (moved back out of the trash
+ *          can), because then the trash object makes no more sense;
+ *
+ *      2)  if the related object is destroyed, thru XFldObject::wpUnInitData.
+ *          If the user selects "Empty trash can" or "Destroy trash object",
+ *          the trash can destroys the related object instead, which in
+ *          turn destroys the trash object thru XFldObject::wpUnInitData.
  *
  *@@somclass XWPTrashObject xtro_
  *@@somclass M_XWPTrashObject xtroM_
@@ -155,8 +161,8 @@ typedef struct _XTRO_DETAILS
     PSZ     pszSize;             // formatted size of related object; this points
                                  // to the _szTotalSize instance data
     PSZ     pszOriginalClass;    // class of related object
-    CDATE   cdateDeleted;        // deletion date
-    CTIME   ctimeDeleted;        // deletion date
+    CDATE   cdateDeleted;        // deletion date (copied from related object)
+    CTIME   ctimeDeleted;        // deletion date (copied from related object)
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
 // extra data fields for XWPTrashObject object details:

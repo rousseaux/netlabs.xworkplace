@@ -49,6 +49,7 @@
 #define INCL_WINCOUNTRY
 #define INCL_WINSHELLDATA
 #define INCL_WINERRORS
+#define INCL_WINSYS
 
 #define INCL_GPIREGIONS
 #define INCL_GPIPRIMITIVES
@@ -1729,6 +1730,8 @@ MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
  *@@ fonCreateFontSampleView:
  *      implementation for XWPFontObject::wpOpen. This
  *      creates the "Sample" view for the font object.
+ *
+ *@@changed V0.9.13 (2001-06-17) [umoeller]: fixed default window size
  */
 
 HWND fonCreateFontSampleView(XWPFontObject *somSelf,
@@ -1774,8 +1777,8 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
                 swpFrame.x = 10;
                 swpFrame.y = 10;
-                swpFrame.cx = 200;
-                swpFrame.cy = 200;
+                swpFrame.cx = winhQueryScreenCX() - 20;     // fixed V0.9.13 (2001-06-17) [umoeller]
+                swpFrame.cy = winhQueryScreenCY() - 20;     // fixed V0.9.13 (2001-06-17) [umoeller]
                 swpFrame.hwndInsertBehind = HWND_TOP;
                 swpFrame.fl = SWP_SIZE | SWP_MOVE | SWP_ZORDER;
 

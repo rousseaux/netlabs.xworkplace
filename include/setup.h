@@ -128,7 +128,7 @@
             // #define DEBUG_CNRCONTENT
 
         // the following will printf lots of sort info
-            #define DEBUG_SORT
+            // #define DEBUG_SORT
 
         // the following will printf language code queries and
         // NLS DLL evaluation
@@ -185,13 +185,12 @@
     // XWPEXPORT defines the standard linkage for the
     // XWorkplace helpers.
 
-    #ifdef __EMX__
-        #define XWPENTRY
+    // VAC:
+    #if defined(__IBMC__) || defined(__IBMCPP__)
+        #define XWPENTRY _Optlink
     #else
-        // VAC:
-        #if defined(__IBMC__) || defined(__IBMCPP__)
-            #define XWPENTRY _Optlink
-        #endif
+        // EMX or Watcom:
+        #define XWPENTRY
     #endif
 
     /********************************************************************

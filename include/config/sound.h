@@ -44,10 +44,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+        VOID XWPENTRY sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
 
-        MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra);
     #endif

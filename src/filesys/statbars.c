@@ -633,6 +633,35 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
 }
 
 /*
+ *@@ CheckLogicalDrive:
+ *      returns TRUE if the specified drive is ready
+ *      to avoid the stupid "drive not ready" popups.
+ *
+ *      This expects that *pulLogicalDrive is -1 if
+ *      the drive has not been checked for pDisk.
+ *      If so, *pulLogicalDrive is set to pDisk's
+ *      drive number if the drive is ready, or 0
+ *      otherwise.
+ *
+ *      Returns TRUE if *pulLogicalDrive is != 0.
+ *
+ *@@added V0.9.13 (2001-06-14) [umoeller]
+ */
+
+BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
+                       WPDisk *pDisk)
+{
+    if (*pulLogicalDrive == -1)
+    {
+        *pulLogicalDrive = _wpQueryLogicalDrive(pDisk);
+        if (doshAssertDrive(*pulLogicalDrive, 0) != NO_ERROR)
+            *pulLogicalDrive = 0;
+    }
+
+    return (*pulLogicalDrive != 0);
+}
+
+/*
  *@@ stbTranslateSingleMnemonics:
  *      this method is called on an object by stbComposeText
  *      after the status bar mnemonics have been queried
@@ -666,6 +695,7 @@ VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
  *@@changed V0.9.11 (2001-04-22) [umoeller]: replaced excessive string searches with xstrrpl
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $L mnemonic for disk label
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed missing SOMFree
  */
 
 ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
@@ -695,10 +725,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
         // _WPUrl now either points to the WPUrl class object
         // or is NULL if the class is not installed (Warp 3!).
+        SOMFree(somidWPUrl);       // was missing V0.9.13 (2001-06-14) [umoeller]
     }
 
-    if (    G_WPUrl
-         && _somIsA(pObject, G_WPUrl)
+    if (    (G_WPUrl)
+         && (_somIsA(pObject, G_WPUrl))
        )
     {
         // yes, we have a URL object:
@@ -793,14 +824,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                                    &cReplace);  // out: chars to replace
 
             // get the value and format it
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if (    (ulLogicalDrive)
+            if (    (CheckLogicalDrive(&ulLogicalDrive, pObject))
+                            // sets ulLogicalDrive to 0 if drive not ready
                  && (!doshQueryDiskFree(ulLogicalDrive, &dbl))
                )
             {
@@ -846,14 +871,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                                    &cReplace);  // out: chars to replace
 
             // get the value and format it
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if (    (ulLogicalDrive)
+            if (    (CheckLogicalDrive(&ulLogicalDrive, pObject))
+                            // sets ulLogicalDrive to 0 if drive not ready
                  && (!doshQueryDiskSize(ulLogicalDrive, &dbl))
                )
             {
@@ -888,17 +907,11 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tF"))  // file-system type (HPFS, ...)
         {
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if (   (ulLogicalDrive == 0)
-                || doshQueryDiskFSType(ulLogicalDrive,
-                                       szTemp,
-                                       sizeof(szTemp))
+            if (    (!CheckLogicalDrive(&ulLogicalDrive, pObject))
+                            // sets ulLogicalDrive to 0 if drive not ready
+                 || (doshQueryDiskFSType(ulLogicalDrive,
+                                        szTemp,
+                                        sizeof(szTemp)))
                )
                 strcpy(szTemp, "?");
 
@@ -917,16 +930,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         // drive label V0.9.11 (2001-04-22) [umoeller]
         if (p = strstr(pstrText->psz, "\tL"))
         {
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if (   (ulLogicalDrive == 0)
-                || doshQueryDiskLabel(ulLogicalDrive,
-                                      szTemp)
+            if (    (!CheckLogicalDrive(&ulLogicalDrive, pObject))
+                            // sets ulLogicalDrive to 0 if drive not ready
+                 || (doshQueryDiskLabel(ulLogicalDrive,
+                                        szTemp))
                )
                 strcpy(szTemp, "?");
 

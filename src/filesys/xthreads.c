@@ -1436,6 +1436,7 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
  *      opened.
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: removed archive marker file destruction, no longer needed
  */
 
 void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
@@ -1595,7 +1596,9 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
 
     // destroy archive marker file, if it exists
-    if (_wpQueryFilename(cmnQueryActiveDesktop(),
+    // removed V0.9.13 (2001-06-14) [umoeller],
+    // no longer needed
+    /* if (_wpQueryFilename(cmnQueryActiveDesktop(),
                          szDesktopDir,
                          TRUE))     // fully q'fied
     {
@@ -1607,7 +1610,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
         if (pMarkerFile)
             // exists:
             _wpFree(pMarkerFile);
-    }
+    } */
 
     // if XFolder was just installed, check for
     // existence of config folders and

@@ -686,6 +686,8 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
 
             if (!hptr)
             {
+                ULONG ulLoadPtr = 0;
+
                 // no such .ICO file exists:
                 // examine the application type we have
                 switch (_xwpQueryProgType(somSelf))
@@ -713,46 +715,44 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
                     case PROG_WINDOWABLEVIO:
                         // "window compatible":
                         // OS/2 window icon
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              108);
+                        ulLoadPtr = 108;
                     break;
 
                     case PROG_FULLSCREEN:
                         // "not window compatible":
                         // OS/2 fullscreen icon
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              107);
+                        ulLoadPtr = 107;
                     break;
 
                     case PROG_WINDOWEDVDM:
                         // DOS window
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              105);
+                        ulLoadPtr = 105;
                     break;
 
                     case PROG_VDM: // == PROG_REAL
                         // DOS fullscreen
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              104);
+                        ulLoadPtr = 104;
                     break;
 
                     case PROG_XWP_DLL:
                         // DLL flag set: load DLL icon
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              103);
+                        ulLoadPtr = 103;
                     break;
 
                     case PROG_PDD:
                     case PROG_VDD:
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              106);
+                        ulLoadPtr = 106;
                     break;
 
                     default:
                         // unknown:
-                        hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                              102);
+                        ulLoadPtr = 102;
                 }
+
+                if (ulLoadPtr)
+                    hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
+                                          ulLoadPtr);
+
             }
         }
     }

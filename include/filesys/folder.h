@@ -383,10 +383,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                             ULONG flFlags);
+        VOID XWPENTRY fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG flFlags);
 
-        MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    ULONG ulItemID, USHORT usNotifyCode,
                                    ULONG ulExtra);
 
@@ -396,10 +396,10 @@
      *
      ********************************************************************/
 
-        VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                             ULONG flFlags);
+        VOID XWPENTRY fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG flFlags);
 
-        MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    ULONG ulItemID,
                                    USHORT usNotifyCode,
                                    ULONG ulExtra);
@@ -411,17 +411,17 @@
      ********************************************************************/
 
 
-        VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+        VOID XWPENTRY fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG flFlags);
 
-        MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
 
-        VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp, ULONG flFlags);
+        VOID XWPENTRY fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp, ULONG flFlags);
 
-        MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    ULONG ulItemID,
                                    USHORT usNotifyCode,
                                    ULONG ulExtra);
@@ -432,10 +432,10 @@
      *
      ********************************************************************/
 
-        VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                       ULONG flFlags);
+        VOID XWPENTRY fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                               ULONG flFlags);
 
-        MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         ULONG ulItemID, USHORT usNotifyCode,
                         ULONG ulExtra);
     #endif
@@ -489,10 +489,10 @@
                              HWND hwndMenu);
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+        VOID XWPENTRY fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG flFlags);
 
-        MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);

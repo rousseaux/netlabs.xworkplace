@@ -331,6 +331,7 @@ typedef struct _WPSSORTINFO
  *
  *@@added V0.9.12 (2001-05-18) [umoeller]
  *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed duplicate checks
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: "always sort" and "folders first" always got unchecked, fixed
  */
 
 VOID CheckDefaultSortItem(HWND hwndSortMenu,
@@ -355,6 +356,13 @@ VOID CheckDefaultSortItem(HWND hwndSortMenu,
                                 MM_ITEMIDFROMPOSITION,
                                 MPFROMSHORT(sDefID),
                                 NULL);
+        // stop at the first separator because below that
+        // we have "always sort" and "folders first", which
+        // we don't want to unset
+        // V0.9.13 (2001-06-19) [umoeller]
+        if (sidThis == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR)
+            break;
+
         winhSetMenuItemChecked(hwndSortMenu,
                                sidThis,
                                FALSE);                     // uncheck
@@ -507,23 +515,34 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
 
 /*
  *@@ fdrSortMenuItemSelected:
- *      this is used by both mnuMenuItemSelected and
- *      fdr_fnwpSubclassedFolderFrame for checking if the selected
- *      menu item is one of the folder things and, if so,
- *      setting the folder sort settings accordingly.
+ *      this is used to check if the selected menu item is one
+ *      of the folder sort things and, if so, sets the folder
+ *      sort settings accordingly, or sorts the folder once.
  *
- *      We need to have a separate proc for this because
- *      fdr_fnwpSubclassedFolderFrame needs this if the user uses
- *      the mouse and mnuMenuItemSelected gets the folder
- *      hotkeys.
+ *      This gets called from two locations:
  *
- *      This returns TRUE if the menu item was processed
- *      and then sets *pbDismiss to whether the menu should
- *      be dismissed. If pbDismiss is passed as NULL, this
- *      routine assumes that we're dealing with hotkeys
+ *      --  from mnuFolderSelectingMenuItem in the context
+ *          of fdr_fnwpSubclassedFolderFrame to intercept
+ *          the folder sort menu items even before they
+ *          get passed to wpMenuItemSelected so that we
+ *          can keep the menu open instead of dismissing
+ *          it.
+ *
+ *      --  from fdrSortMenuItemSelected in the context of
+ *          XFolder::wpMenuItemSelected; this processes
+ *          folder hotkeys.
+ *
+ *      If this function returns TRUE, it is assumed that the
+ *      menu item was processed. Only in that case this function
+ *      may set *pbDismiss to whether the menu should be
+ *      dismissed.
+ *
+ *      Note that pbDismiss can be passed as NULL, which means
+ *      that the function got called while dealing with hotkeys
  *      instead of menu items.
  *
  *@@changed V0.9.12 (2001-05-18) [umoeller]: moved this here from fdrmenus.c, mostly rewritten
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: dismissing sort menu again, unless shift was pressed
  */
 
 BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
@@ -659,6 +678,11 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                 // update the menu
                 CheckDefaultSortItem(hwndMenu,
                                      lSort);
+
+                // only if shift was pressed, do not
+                // dismiss menu V0.9.13 (2001-06-19) [umoeller]
+                if (pbDismiss)
+                    *pbDismiss = FALSE;
             }
             else
                 // shift was NOT pressed, or hotkey:
@@ -669,10 +693,6 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
 
             // say "processed"
             brc = TRUE;
-
-            if (pbDismiss)
-                // do not dismiss menu
-                *pbDismiss = FALSE;
         }
     }
 

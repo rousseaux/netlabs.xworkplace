@@ -32,18 +32,6 @@
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPDIR)
 # this should give us something like K:\cvs\xworkplace
 
-# RUNNING XWORKPLACE
-# ------------------
-
-# If XWPRUNNING is defined, the makefiles will copy all created
-# files to that directory. Change this to your existing XFolder
-# installation, or comment this out, if you don't want this to
-# happen. In any case, the files which were built are copied
-# to the INSTALL\ subdirs in our source tree.
-
-!ifndef XWPRUNNING
-!error in setup.in: You must set XWPRUNNING to an existing XWorkplace binary installation. See PROGREF.INF for details.
-!endif
 
 # OUTPUT DIRECTORIES
 # ------------------
@@ -62,24 +50,9 @@ PROJECT_OUTPUT_DIR = $(XWP_OUTPUT_ROOT)
 # will write stuff to.
 HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 
-# DEBUG CODE
-# ----------
-
-# If XWP_DEBUG is set to anything, the following is enabled:
-#
-# -- The compiler flags below will be changed to produce debug
-#    code. Otherwise, release code will be produced.
-#
-# -- __DEBUG__ will be #define'd in all source files.
-#    include\setup.h reacts to that and redefines a number of
-#    debugging macros.
-#
-# -- The compiler settings below will be changed to use debug
-#    heaps for detecting memory leaks. Also, this will compile
-#    extra heap checking functions into XWorkplace.
-#    This will slow down XWorkplace's performance SIGNIFICANTLY.
-
-# XWP_DEBUG=YES
+!ifndef XWPRUNNING
+!error in setup.in: You must set XWPRUNNING to an existing XWorkplace binary installation. See PROGREF.INF for details.
+!endif
 
 
 # DYNAMIC TRACE
@@ -169,7 +142,7 @@ HELPERS_BASE = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
 #
 # Note that we create a _separate_ precompiled header file for each
 # source file (in the $(PRECH) directory). This eats up a lot
-# of space (I have about 30 MBs after a complete XWorkplace build!!),
+# of space (I have about 70 MB after a complete XWorkplace build!!),
 # but makes sure that the precompiled header does not get recreated
 # for each source file, which is a lot faster.
 #
@@ -280,7 +253,7 @@ REPLHANDLES_STRING = /D__REPLHANDLES__=1
 #
 # No need to change this. Change the variables above instead.
 
-CC = error_in_setup_in_do_not_use_CC_directly
+CC = error_in_makefile_do_not_use_CC_directly
 
 # CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru

@@ -55,18 +55,18 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                               ULONG flFlags);
+        VOID XWPENTRY fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
 
-        MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
 
-        VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                               ULONG flFlags);
+        VOID XWPENTRY fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
 
-        MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
@@ -80,17 +80,17 @@
      *
      ********************************************************************/
 
-        VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+        VOID XWPENTRY fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                          ULONG flFlags);
 
-        VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID XWPENTRY fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG flFlags);
 
-        VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+        VOID XWPENTRY fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                           ULONG flFlags);
 
-        VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+        VOID XWPENTRY fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                           ULONG flFlags);
 
     #endif
 

@@ -78,11 +78,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.12"
+#define XFOLDER_VERSION        "0.9.13"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.12"
+#define MINIMUM_NLS_VERSION    "0.9.13"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -149,6 +149,9 @@
 // icons used by monitor widget
 #define ID_POWER_AC            170
 #define ID_POWER_BATTERY       171
+
+// icons used by tray widget
+#define ID_ICON_TRAY           180
 
 /******************************************
  * generics                        < 100  *
@@ -1080,6 +1083,7 @@
 #define ID_CRDI_VIEW2_SUNKBORDERS       3658
 #define ID_CRDI_VIEW2_ALL3DBORDERS      3659
 #define ID_CRDI_VIEW2_SIZINGBARS        3660
+#define ID_CRDI_VIEW2_SPACINGLINES      3661
 
 #define ID_CRD_WINLISTWGT_SETTINGS      3700
 #define ID_CRDI_FILTERS_CURRENTLB       3701
@@ -1268,6 +1272,13 @@
 #define ID_CRMI_REMOVEWGT               0x7f0a
 
 #define ID_CRMI_LOCKUPNOW               0x7f0b
+
+#define ID_CRMI_ADDTRAY                 0x7f0c
+#define ID_CRMI_RENAMETRAY              0x7f0d
+#define ID_CRMI_REMOVETRAY              0x7f0e
+
+#define ID_CRMI_SEP0                    0x7f0f
+#define ID_CRMI_WIDGETCLASSNAME         0x7f10
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 
@@ -1906,6 +1917,25 @@
 #define ID_XSSI_XC_CLASSTITLE           6175           // class title
 #define ID_XSSI_XC_VERSION              6176           // version
 #define ID_XSSI_XC_OBJBUTTONWIDGET      6177           // obj button widget
+
+#define ID_XSSI_ARCENABLEDONCE          6178
+#define ID_MMSI_INSTALLNAME             6179           // "install name";
+#define ID_MMSI_LOGICALNAME             6180           // "logical name";
+#define ID_MMSI_ALIAS                   6181           // "alias";
+#define ID_MMSI_MCD                     6182
+#define ID_MMSI_VSD                     6183
+#define ID_MMSI_PDD                     6184
+#define ID_MMSI_PARAMS                  6185
+
+#define ID_CRSI_ADDTRAY                 6186           // "Add tray"
+#define ID_CRSI_RENAMETRAY              6187           // "Rename tray"
+#define ID_CRSI_REMOVETRAY              6188           // "Delete tray"
+
+#define ID_CRSI_TRAY                    6189           // "Tray %d"
+#define ID_CRSI_NOTRAYACTIVE            6190           // "No active tray"
+
+#define ID_CRSI_ENTERNEWTRAY            6191           // "Please enter a name for the tray to be created:"
+#define ID_CRSI_ENTERRENAMETRAY         6192           // "Please enter a new name for this tray:"
 
 /******************************************
  *          Treesize                      *

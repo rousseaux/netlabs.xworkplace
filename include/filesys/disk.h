@@ -41,10 +41,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+        VOID XWPENTRY dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG flFlags);
 
-        MRESULT dskDetailsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY dskDetailsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);

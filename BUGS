@@ -18,17 +18,39 @@ MINOR PROBLEMS
 --------------
 
 XCenter:
+    -- make object buttons droppable!
+
+sounds:
+    --  close sound device again
+
+extended file types:
+    --  import/export only works once?
+
+XShutdown:
+    --  stop XShutdown while exception handlers are running
+    --  xshutdown folder progress window misnamed ("startup")
+    --  2001-06-06 15:11:50 objForAllDirtyObjects (object.c, line 1388):
+           Tree node count mismatch.
+
+prog start:
+    --  cmd files not started minimized?
+
+XCenter:
+    --  add "rightmost" setting
+
+    --  allow icon resize
+
+    --  3D border size not respected with "resize desktop"
+
+    --  sliding menus doesn't work with "Add widget"
+
     --  rework stay on top
 
     --  template object buttons...
 
-    --  put menus on object buttons on top of the bar, not on top of the button.
-
     --  add option for tooltip shadows.
 
     --  winlist: truncate titles with "..."
-
-    --  make object buttons droppable
 
     --  XCenter "Run": causes black screen with Win-OS/2 execs
 
@@ -80,6 +102,9 @@ folders:
 
     -- shadows missing if "always sort" and "folders first" are enabled (?!?)
 
+    -- create folder from template doesn't show up in tree view
+
+
 file exists dlg:
     --  Right click on a file object (program object does not cause this bug)
         select copy.
@@ -119,10 +144,6 @@ PageMage:
 hook:
     --  screen borders page:
         object setting won't stick sometimes.
-
-    --  sliding menus:
-        --  no submenu delays for menu bars (immediate open)
-        --  new method won't work with system menus
 
     --  there is a little bug with the settings notebook of the mouse - movement 2.
         I can drag and drop objects to the open object, but it doesn't work with

@@ -832,6 +832,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (2000-02-09) [umoeller]: added NumLock support to this page
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed Undo for boot logo file
  */
 
 VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -851,10 +852,8 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
 
             // backup old boot logo file
-            pcnbp->pUser2 = prfhQueryProfileData(HINI_USER,
-                                                 INIAPP_XWORKPLACE,
-                                                 INIKEY_BOOTLOGOFILE,
-                                                 NULL);
+            pcnbp->pUser2 = cmnQueryBootLogoFile();     // malloc'ed
+                    // fixed V0.9.13 (2001-06-14) [umoeller]
 
             // prepare the control to properly display
             // stretched bitmaps
@@ -952,6 +951,34 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     }
 }
 
+
+/*
+ *@@ SetBootLogoFile:
+ *      changes the boot logo file. Shared between the
+ *      entry field handler and "Undo".
+ *
+ *@@added V0.9.13 (2001-06-14) [umoeller]
+ */
+
+VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
+                     const char *pcszNewBootLogoFile,
+                     BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
+{
+    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
+                     (access(pcszNewBootLogoFile, 0) == 0));
+
+    if (fWrite)
+    {
+        // query new file name from entry field
+        PrfWriteProfileString(HINI_USER,
+                              (PSZ)INIAPP_XWORKPLACE,
+                              (PSZ)INIKEY_BOOTLOGOFILE,
+                              (PSZ)pcszNewBootLogoFile);
+        // update the display by calling the INIT callback
+        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+    }
+}
+
 /*
  * dtpStartupItemChanged:
  *      notebook callback function (notebook.c) for the
@@ -963,6 +990,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.1 (2000-02-09) [umoeller]: added NumLock support to this page
  *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed major resource leak; the bootlogo bitmap was never freed
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed Undo for boot logo file
  */
 
 MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -975,63 +1003,67 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     ULONG ulChange = 1;
 
     {
-       GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
-       switch (ulItemID)
-       {
-           case ID_XSDI_DTP_BOOTLOGO:
-               pGlobalSettings->BootLogo = ulExtra;
-               ulChange = 2;       // re-enable items
-           break;
+        switch (ulItemID)
+        {
+            case ID_XSDI_DTP_BOOTLOGO:
+                pGlobalSettings->BootLogo = ulExtra;
+                ulChange = 2;       // re-enable items
+            break;
 
-           case ID_XSDI_DTP_LOGO_TRANSPARENT:
-               pGlobalSettings->bBootLogoStyle = 0;
-           break;
+            case ID_XSDI_DTP_LOGO_TRANSPARENT:
+                pGlobalSettings->bBootLogoStyle = 0;
+            break;
 
-           case ID_XSDI_DTP_LOGO_BLOWUP:
-               pGlobalSettings->bBootLogoStyle = 1;
-           break;
+            case ID_XSDI_DTP_LOGO_BLOWUP:
+                pGlobalSettings->bBootLogoStyle = 1;
+            break;
 
-           case ID_XSDI_DTP_BOOTUPSTATUS:
-               pGlobalSettings->ShowBootupStatus = ulExtra;
-           break;
+            case ID_XSDI_DTP_BOOTUPSTATUS:
+                pGlobalSettings->ShowBootupStatus = ulExtra;
+            break;
 
-           case ID_XSDI_DTP_NUMLOCKON:
-               pGlobalSettings->fNumLockStartup = ulExtra;
-               winhSetNumLock(ulExtra);
-           break;
+            case ID_XSDI_DTP_NUMLOCKON:
+                pGlobalSettings->fNumLockStartup = ulExtra;
+                winhSetNumLock(ulExtra);
+            break;
 
-           case DID_UNDO:
-           {
-               // "Undo" button: get pointer to backed-up Global Settings
-               GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+            case DID_UNDO:
+            {
+                // "Undo" button: get pointer to backed-up Global Settings
+                GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
-               // and restore the settings for this page
-               pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
-               pGlobalSettings->BootLogo = pGSBackup->BootLogo;
-               pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;
-               pGlobalSettings->fNumLockStartup = pGSBackup->fNumLockStartup;  // V0.9.9
+                // and restore the settings for this page
+                pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
+                pGlobalSettings->BootLogo = pGSBackup->BootLogo;
+                pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;
+                pGlobalSettings->fNumLockStartup = pGSBackup->fNumLockStartup;  // V0.9.9
 
-               // update the display by calling the INIT callback
-               pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-           break; }
+                SetBootLogoFile(pcnbp,
+                                (const char *)pcnbp->pUser2,
+                                TRUE);      // write
 
-           case DID_DEFAULT:
-           {
-               // set the default settings for this settings page
-               // (this is in common.c because it's also used at
-               // WPS startup)
-               cmnSetDefaultSettings(pcnbp->ulPageID);
-               // update the display by calling the INIT callback
-               pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-           break; }
+                // update the display by calling the INIT callback
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            break; }
 
-           default:
-               ulChange = 0;
-               fProcessed = FALSE;
-       }
+            case DID_DEFAULT:
+            {
+                // set the default settings for this settings page
+                // (this is in common.c because it's also used at
+                // WPS startup)
+                cmnSetDefaultSettings(pcnbp->ulPageID);
+                // update the display by calling the INIT callback
+                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            break; }
 
-       cmnUnlockGlobalSettings();
+            default:
+                ulChange = 0;
+                fProcessed = FALSE;
+        }
+
+        cmnUnlockGlobalSettings();
     }
 
     if (ulChange)
@@ -1059,19 +1091,9 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             case ID_XSDI_DTP_LOGOFILE:
             {
                 PSZ pszNewBootLogoFile = winhQueryWindowText(pcnbp->hwndControl);
-                if (usNotifyCode == EN_CHANGE)
-                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
-                                     (access(pszNewBootLogoFile, 0) == 0));
-                else if (usNotifyCode == EN_KILLFOCUS)
-                {
-                    // query new file name from entry field
-                    PrfWriteProfileString(HINI_USER,
-                                          (PSZ)INIAPP_XWORKPLACE,
-                                          (PSZ)INIKEY_BOOTLOGOFILE,
-                                          pszNewBootLogoFile);
-                    // update the display by calling the INIT callback
-                    pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-                }
+                SetBootLogoFile(pcnbp,
+                                pszNewBootLogoFile,
+                                (usNotifyCode == EN_KILLFOCUS)); // write?
                 if (pszNewBootLogoFile)
                     free(pszNewBootLogoFile);
             break; }

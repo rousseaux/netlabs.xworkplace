@@ -16,7 +16,7 @@
  *
  *      All funtions in this file have the arc* prefix.
  *
- *      Note that the WPSARCOSETTINGS are only manipulated by the
+ *      Note that the ARCHIVINGSETTINGS are only manipulated by the
  *      new Desktop "Archives" notebook page, whose code is
  *      in xfdesk.c. For the archiving settings, we do not use
  *      the GLOBALSETTINGS structure (as the rest of XWorkplace
@@ -43,8 +43,12 @@
  *@@todo:
  *  csm:
          Ok, no guarantee, but this is what I found out:
+             Offset 0x00: (int32)    "Nummer des Archives nach Restore"
+                                         (Ist immer 0, wenn ein Backup gemacht wurde.
+                                          Nach einem Restore ist hier die Nummer des Archives zu finden)
              Offset 0xCF: (int32)    "Dateien bei jedem Systemstart aktivieren"
                                          (0 = off, 1 = on/selected)
+             Offset 0xD7: (int32)    "Anzahl der zu sichernden Archive"
              Offset 0xD9: (int32)    "Anzeige der Optionen bei jedem Neustart"
                                          (0 = off, 2 = on/selected)
              Offset 0xDD: (int32)    "Zeitsperre fuer Anzeigen der Optionen"
@@ -68,6 +72,8 @@
  */
 
 #define INCL_DOSDATETIME
+#define INCL_DOSERRORS
+
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINSTDSPIN
@@ -114,13 +120,15 @@
  *                                                                  *
  ********************************************************************/
 
-static WPSARCOSETTINGS     G_ArcSettings;
+static ARCHIVINGSETTINGS   G_ArcSettings;
 static DATETIME            G_dtLastArchived;
 static BOOL                G_fSettingsLoaded = FALSE;
 
 static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 
-#define ARC_FILE_OFFSET    0x000CF
+#define ARCOFS_JUSTRESTORED             0x00000
+#define ARCOFS_ARCHIVINGENABLED         0x000CF
+#define ARCOFS_MAXARCHIVES              0x000D7
 
 /********************************************************************
  *                                                                  *
@@ -147,7 +155,7 @@ static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
 VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
+    PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -157,8 +165,8 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(WPSARCOSETTINGS));
-            memcpy(pcnbp->pUser, pArcSettings, sizeof(WPSARCOSETTINGS));
+            pcnbp->pUser = malloc(sizeof(ARCHIVINGSETTINGS));
+            memcpy(pcnbp->pUser, pArcSettings, sizeof(ARCHIVINGSETTINGS));
 
             memset(&G_apszPercentages, 0, sizeof(G_apszPercentages));
             G_apszPercentages[0]  = "0.010";
@@ -279,7 +287,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
+    PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
     ULONG           ulSetFlags = 0;
     BOOL            fSave = TRUE;
 
@@ -349,7 +357,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up archive settings
-            PWPSARCOSETTINGS pWASBackup = (PWPSARCOSETTINGS)(pcnbp->pUser);
+            PARCHIVINGSETTINGS pWASBackup = (PARCHIVINGSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
             pArcSettings->ulArcFlags = pWASBackup->ulArcFlags;
@@ -403,7 +411,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 /*
  *@@ arcSetDefaultSettings:
- *      this initializes the global WPSARCOSETTINGS
+ *      this initializes the global ARCHIVINGSETTINGS
  *      structure with default values.
  *
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
@@ -423,7 +431,7 @@ VOID arcSetDefaultSettings(VOID)
 
 /*
  *@@ arcQuerySettings:
- *      this returns the global WPSARCOSETTINGS
+ *      this returns the global ARCHIVINGSETTINGS
  *      structure, which is filled with the data
  *      from OS2.INI if this is queried for the
  *      first time.
@@ -431,7 +439,7 @@ VOID arcSetDefaultSettings(VOID)
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  */
 
-PWPSARCOSETTINGS arcQuerySettings(VOID)
+PARCHIVINGSETTINGS arcQuerySettings(VOID)
 {
     if (!G_fSettingsLoaded)
     {
@@ -476,7 +484,7 @@ PWPSARCOSETTINGS arcQuerySettings(VOID)
 
 /*
  *@@ arcSaveSettings:
- *      this writes the WPSARCOSETTINGS structure
+ *      this writes the ARCHIVINGSETTINGS structure
  *      back to OS2.INI.
  */
 
@@ -499,7 +507,7 @@ BOOL arcSaveSettings(VOID)
  *
  */
 
-BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
+/* BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
 {
     BOOL brc = FALSE;
 
@@ -526,12 +534,94 @@ BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
     }
 
     return (brc);
+} */
+
+/*
+ *@@ arcSetArchiveByte:
+ *      writes byte "byte" to offset "offset" in ARCHBASE.$$$.
+ *
+ *@@added V0.9.13 (2001-06-14) [umoeller]
+ */
+
+APIRET arcSetArchiveByte(UCHAR byte,        // in: byte to write
+                         LONG offset)
+{
+    APIRET arc = NO_ERROR;
+    ULONG ulAttr;
+    // file is always write protected, so disable this
+    // before writing
+    if (!(arc = doshSetPathAttr(G_szArcBaseFilename,
+                                FILE_ARCHIVED)))
+    {
+        // open the file for write access then
+        HFILE hfArc;
+        if (!(arc = doshOpenExisting(G_szArcBaseFilename,
+                                     OPEN_SHARE_DENYREADWRITE | OPEN_ACCESS_READWRITE
+                                        | OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM
+                                        | OPEN_FLAGS_NOINHERIT,
+                                     &hfArc)))
+        {
+            arc = doshWriteAt(hfArc,
+                              offset,
+                              FILE_BEGIN,
+                              1,
+                              &byte);
+
+            DosClose(hfArc);
+        }
+
+        doshSetPathAttr(G_szArcBaseFilename,
+                        FILE_ARCHIVED | FILE_READONLY);
+    }
+
+    if (arc)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Got error %d");
+
+    return arc;
+}
+
+/*
+ *@@ arcQueryArchiveByte:
+ *      gets byte pointed to by "pByte" from offset "offset"
+ *      in ARCHBASE.$$$.
+ *
+ *@@added V0.9.13 (2001-06-14) [umoeller]
+ */
+
+APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
+                           LONG offset)
+{
+    APIRET arc = NO_ERROR;
+
+    // open the file then
+    HFILE hfArc;
+    if (!(arc = doshOpenExisting(G_szArcBaseFilename,
+                                 OPEN_SHARE_DENYNONE | OPEN_ACCESS_READONLY
+                                    | OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM
+                                    | OPEN_FLAGS_NOINHERIT,
+                                 &hfArc)))
+    {
+        arc = doshReadAt(hfArc,
+                         offset,
+                         FILE_BEGIN,
+                         1,
+                         pByte);
+
+        DosClose(hfArc);
+    }
+
+    if (arc)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Got error %d");
+
+    return arc;
 }
 
 /*
  *@@ arcCheckIfBackupNeeded:
  *      this checks the system according to the settings
- *      in WPSARCOSETTINGS (i.e. always, next bootup,
+ *      in ARCHIVINGSETTINGS (i.e. always, next bootup,
  *      date, INI changes -- see arcCheckINIFiles),
  *      and calls arcSwitchArchivingOn according to the
  *      result of these checks.
@@ -541,7 +631,7 @@ BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
  *      If we enable WPS archiving here, the WPS will
  *      archive the Desktop soon afterwards.
  *
- *      If (WPSARCOSETTINGS.fShowStatus == TRUE), hwndNotify
+ *      If (ARCHIVINGSETTINGS.fShowStatus == TRUE), hwndNotify
  *      will receive a msg with the value ulMsg and the
  *      HWND of the notification window in mp1 to be able
  *      to destroy it later.
@@ -551,25 +641,26 @@ BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
  *      turn starts a timer to destroy the window later.
  *
  *@@changed V0.9.4 (2000-07-22) [umoeller]: archiving wasn't always disabled if turned off completely; fixed
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: no longer using archive marker file, thanks Stefan Mielcke
  */
 
 BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                             ULONG ulMsg)            // in: msg to post to hwndNotify
 {
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     BOOL    fBackup = FALSE,
             fDisableArchiving = FALSE;
+    CHAR    szTemp[300];
 
     // force loading of settings
     arcQuerySettings();
 
     if (G_ArcSettings.ulArcFlags & ARCF_ENABLED)
     {
-        CHAR    szMarkerFilename[2*CCHMAXPATH];
         HWND    hwndStatus = NULLHANDLE;
         BOOL    fShowWindow = TRUE;
-        CHAR    szTemp[100];
         XSTRING strMsg;
+
+        CHAR    lRestoredArchiveNumber = 0;
         BOOL    fWasJustRestored = FALSE;
 
         xstrInit(&strMsg, 300);
@@ -584,32 +675,35 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
             cmnSetControlsFont(hwndStatus, 1, 10000);
         }
 
-        if (GetMarkerFilename(szMarkerFilename))
-        {
-            if (access(szMarkerFilename, 0) == 0)
-                // exists:
-                // this means that this archive was just restored,
-                // so disable archiving...
-                fWasJustRestored = TRUE;
-        }
+        // changed V0.9.13 (2001-06-14) [umoeller]:
+        // get the "restored archive" byte
+        arcQueryArchiveByte(&lRestoredArchiveNumber,
+                            ARCOFS_JUSTRESTORED);
 
-        if (fWasJustRestored)
+        if (lRestoredArchiveNumber)
         {
-            xstrcpy(&strMsg, cmnGetString(ID_XSSI_ARCRESTORED),  0); // pszArcRestored
-            xstrcatc(&strMsg, '\n');
+            // archive was just restored:
+            // disable archiving then
+            sprintf(szTemp,
+                    cmnGetString(ID_XSSI_ARCRESTORED),      // archive %d was restored
+                    lRestoredArchiveNumber);
+            xstrcpy(&strMsg, szTemp, 0);
             fBackup = FALSE;
             fDisableArchiving = TRUE;
-        }
+            arcSetArchiveByte(0, ARCOFS_JUSTRESTORED);
+        } // end V0.9.13 (2001-06-14) [umoeller]
         else
         {
+            // no archive was just restored:
             if (G_ArcSettings.ulArcFlags & ARCF_ALWAYS)
             {
                 fBackup = TRUE;
 
                 if (G_ArcSettings.fShowStatus)
                 {
+
                     WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                      "WPS archiving enabled\n");
+                                      cmnGetString(ID_XSSI_ARCENABLED));
                     WinShowWindow(hwndStatus, TRUE);
                 }
             }
@@ -622,7 +716,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     if (G_ArcSettings.fShowStatus)
                     {
                         WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                          "WPS archiving enabled once\n");
+                                          cmnGetString(ID_XSSI_ARCENABLEDONCE));
                         WinShowWindow(hwndStatus, TRUE);
                     }
 
@@ -720,12 +814,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     // save "last app" etc. data so we won't get this twice
                     arcSaveSettings();
                     xstrcat(&strMsg,
-                            cmnGetString(ID_XSSI_ARCENABLED),  // "WPS archiving enabled", // pszArcEnabled
+                            cmnGetString(ID_XSSI_ARCENABLED),  // "WPS archiving enabled"
                             0);
                 }
                 else
                     xstrcat(&strMsg,
-                            cmnGetString(ID_XSSI_ARCNOTNECC),  // "WPS archiving not necessary", // pszArcNotNecc
+                            cmnGetString(ID_XSSI_ARCNOTNECC),  // "WPS archiving not necessary"
                             0);
 
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, strMsg.psz);
@@ -756,81 +850,55 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
 /*
  *@@ arcSwitchArchivingOn:
- *      depending on switchOn, this switches WPS archiving on or off
+ *      depending on fSwitchOn, this switches WPS archiving on or off
  *      by manipulating the \OS2\BOOT\ARCHBASE.$$$ file.
  *
  *      In addition, this stores the date of the last archive in OS2.INI
  *      and creates a file on the desktop to mark this as an archive.
  *
  *      This should only be called by arcCheckIfBackupNeeded.
+ *
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: optimized
+ *@@changed V0.9.13 (2001-06-14) [smilcke]: when archiving is switched on we have to clear the restore flag
  */
 
-int arcSwitchArchivingOn(BOOL switchOn)
+APIRET arcSwitchArchivingOn(BOOL fSwitchOn)
 {
-    int             file;
-    INT             rc;
-    char            byte[1];
+    APIRET arc = NO_ERROR;
 
-    if (switchOn == TRUE)
-        byte[0] = (char)1;
-    else
-        byte[0] = (char)0;
-
-    // because the archive information file is write protected we must switch
-    // write protection of to write informations to it
-    chmod(G_szArcBaseFilename, S_IREAD | S_IWRITE);
-    // now open the file
-    file = open(G_szArcBaseFilename, O_BINARY | O_RDWR, 0);
-    if (file != -1)
+    if (fSwitchOn)
     {
-        // seek to the position of the archiving flag
-        if (lseek(file, ARC_FILE_OFFSET, SEEK_SET) != -1)
+        if (!(arc = arcSetArchiveByte(1, ARCOFS_ARCHIVINGENABLED)))
         {
-            // write new archive flag
-            if (write(file, byte, 1))
-            {
-                // print message to stdout
-                if (switchOn)
-                {
-                    CHAR szMarkerFilename[2*CCHMAXPATH];
-                    #ifdef DEBUG_STARTUP
-                        _Pmpf(("WPS Archiving activated"));
-                    #endif
-                    // store date of backup in OS2.INI
-                    DosGetDateTime(&G_dtLastArchived);
-                    PrfWriteProfileData(HINI_USER,
-                                        WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
-                                        &G_dtLastArchived,
-                                        sizeof(G_dtLastArchived));
+            // reset the restore flag V0.9.13 (2001-06-14) [smilcke]
+            arc = arcSetArchiveByte(0, ARCOFS_JUSTRESTORED);
 
-                    // create simple text file in desktop main directory
-                    // to mark it as a backup...
-                    if (GetMarkerFilename(szMarkerFilename))
-                    {
-                        FILE *MarkerFile;
-                        MarkerFile = fopen(szMarkerFilename, "w");
-                        if (MarkerFile)
-                        {
-                            fprintf(MarkerFile, "XWorkplace archive marker file.");
-                            fclose(MarkerFile);
-                        }
-                    }
-                }
-                #ifdef DEBUG_STARTUP
-                    else
-                        _Pmpf(("WPS Archiving deactivated"));
-                #endif
-            }
+            #ifdef DEBUG_STARTUP
+             _Pmpf(("WPS Archiving activated"));
+            #endif
+
+            // store date of backup in OS2.INI
+            DosGetDateTime(&G_dtLastArchived);
+            PrfWriteProfileData(HINI_USER,
+                                WPSARCO_INIAPP, WPSACRO_INIKEY_LASTBACKUP,
+                                &G_dtLastArchived,
+                                sizeof(G_dtLastArchived));
         }
-        // close the file
-        rc = close(file);
     }
     else
-        rc = -1;
+    {
+        arc = arcSetArchiveByte(0, ARCOFS_ARCHIVINGENABLED);
 
-    // switch write protection on
-    chmod(G_szArcBaseFilename, S_IREAD);
-    return rc;
+        #ifdef DEBUG_STARTUP
+        _Pmpf(("WPS Archiving deactivated"));
+        #endif
+    }
+
+    if (arc)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Got error %d");
+
+    return (arc);
 }
 
 /*
@@ -845,40 +913,33 @@ int arcSwitchArchivingOn(BOOL switchOn)
  *      If (fSet == FALSE), the current number of archives
  *      is queried and written into *pcArchives, but not
  *      changed.
+ *
+ *@@changed V0.9.12 (2001-05-24) [smilcke]: code optimized to use arcSetByte/arcGetByte
  */
 
 BOOL arcSetNumArchives(PCHAR pcArchives,        // in/out: number of archives
                        BOOL fSet)               // if TRUE, archive number is set
 {
-    int             file;
     BOOL            brc = FALSE;
 
     if (pcArchives)
         if (    (fSet)
-             && ((*pcArchives < 0) || (*pcArchives > 9))
+             && (    (*pcArchives < 0)
+                  || (*pcArchives > 9)
+                )
            )
-            brc = FALSE;     // (*UM)
+        {
+            brc = FALSE;
+        }
         else
         {
-            // because the archive information file is write protected we must switch
-            // write protection of to write informations to it
-            chmod(G_szArcBaseFilename, S_IREAD | S_IWRITE);
-            file = open(G_szArcBaseFilename, O_BINARY | O_RDWR, 0);
-            if (file != -1)
-            {
-                // seek to the position of number of archives
-                if (lseek(file, ARC_FILE_OFFSET + 8, SEEK_SET) != -1)
-                {
-                    if (fSet)
-                        write(file, (PVOID)pcArchives, 1);
-                    else
-                        read(file, pcArchives, 1);
-
-                    brc = TRUE;
-                }
-                close(file);
-            }
-            chmod(G_szArcBaseFilename, S_IREAD);
+            CHAR cArchives = 0;
+            arcQueryArchiveByte(&cArchives,
+                                ARCOFS_MAXARCHIVES);
+            if (fSet)
+                arcSetArchiveByte(*pcArchives,
+                                  ARCOFS_MAXARCHIVES);
+            *pcArchives = cArchives;
         }
 
     return (brc);

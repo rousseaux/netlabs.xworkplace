@@ -239,6 +239,7 @@ BEGIN
 END
 
 /* XCenter standard widget context menu V0.9.7 (2000-11-30) [umoeller] */
+/* changed V0.9.13 (2001-06-21) [umoeller] */
 MENU ID_CRM_WIDGET LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Propertie~s", ID_CRMI_PROPERTIES
@@ -558,9 +559,9 @@ BEGIN
 
     ID_XTSI_CALCULATING                 "calculating..."
 
-    ID_MMSI_DEVICETYPE                  "Device type"
-    ID_MMSI_DEVICEINDEX                 "Device index"
-    ID_MMSI_DEVICEINFO                  "Info"
+    ID_MMSI_DEVICETYPE                  "Type"
+    ID_MMSI_DEVICEINDEX                 "Index"
+    ID_MMSI_DEVICEINFO                  "Drivers"
 
     ID_MMSI_TYPE_IMAGE                  "Image"
     ID_MMSI_TYPE_AUDIO                  "Audio"
@@ -759,7 +760,7 @@ BEGIN
     /* Do not leave our or change the order of the %d, %f and %%
        keys, or XWP might crash. These are needed for inserting
        variable data (sprintf). */
-    ID_XSSI_ARCRESTORED                 "Archive was just restored."
+    ID_XSSI_ARCRESTORED                 "Archive %d was just restored."
     ID_XSSI_ARCDAYSPASSED               "%d day(s) passed since last backup."
     ID_XSSI_ARCDAYSLIMIT                "Limit: %d day(s)."
     ID_XSSI_ARCINICHECKING              "Checking INI files..."
@@ -817,6 +818,29 @@ BEGIN
     ID_XSSI_XC_CLASSTITLE               "Class title"
     ID_XSSI_XC_VERSION                  "Version"
     ID_XSSI_XC_OBJBUTTONWIDGET          "Object button widget"
+
+    /* another archive string V0.9.13 (2001-06-14) [umoeller] */
+    ID_XSSI_ARCENABLEDONCE              "WPS archiving enabled once."
+
+    /* more multimedia strings V0.9.13 (2001-06-14) [umoeller] */
+    ID_MMSI_INSTALLNAME                 "Install name";
+    ID_MMSI_LOGICALNAME                 "Logical name";
+    ID_MMSI_ALIAS                       "Alias";
+    ID_MMSI_MCD                         "Media control driver"
+    ID_MMSI_VSD                         "Vendor-specific driver"
+    ID_MMSI_PDD                         "Physical device driver"
+    ID_MMSI_PARAMS                      "Parameters"
+
+    /* more XCenter strings V0.9.13 (2001-06-19) [umoeller] */
+    ID_CRSI_ADDTRAY                     "A~dd tray..."
+    ID_CRSI_RENAMETRAY                  "Re~name tray..."
+    ID_CRSI_REMOVETRAY                  "D~elete tray..."
+
+    ID_CRSI_TRAY                        "Tray %d"
+    ID_CRSI_NOTRAYACTIVE                "No active tray"
+
+    ID_CRSI_ENTERNEWTRAY                "Please enter a name for the tray to be created:"
+    ID_CRSI_ENTERRENAMETRAY             "Please enter a new name for this tray:"
 END
 
 /* Treesize definitions; added V0.9.0 */

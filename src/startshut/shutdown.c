@@ -2581,7 +2581,6 @@ typedef struct _SHUTDOWNDATA
     HAB             habShutdownThread;
     // HMQ             hmqShutdownThread;       // removed V0.9.12 (2001-05-29) [umoeller]
 
-    // PNLSSTRINGS     pNLSStrings;
     HMODULE         hmodResource;
 
     HWND            hwndProgressBar;        // progress bar in status window
@@ -2594,9 +2593,6 @@ typedef struct _SHUTDOWNDATA
     // BOOL            fPrepareSaveWPSPosted;
 
     ULONG           hPOC;
-
-    /* ULONG           ulAwakeNow,
-                    ulAwakeMax; */
 
     // this is the global list of items to be closed (SHUTLISTITEMs)
     LINKLIST        llShutdown,
@@ -3352,6 +3348,47 @@ VOID xsdUpdateClosingStatus(HWND hwndShutdownStatus,
 }
 
 /*
+ *@@ xsdWaitForExceptions:
+ *      checks for whether helpers/except.c is currently
+ *      busy processing an exception and, if so, waits
+ *      until that thread is done.
+ *
+ *      Gets called several times during fntShutdownThread
+ *      because we don't want to lose the trap logs.
+ *
+ *@@added V0.9.13 (2001-06-19) [umoeller]
+ */
+
+VOID xsdWaitForExceptions(PSHUTDOWNDATA pShutdownData)
+{
+    // check the global variable exported from except.h,
+    // which is > 0 if some exception is currently running
+    if (G_ulExplainExceptionRunning)
+    {
+        ULONG ulSlept = 1;
+
+        while (G_ulExplainExceptionRunning)
+        {
+            CHAR szTemp[500];
+            sprintf(szTemp,
+                    "Urgh, %d exception(s) running, waiting... (%d)",
+                    G_ulExplainExceptionRunning,
+                    ulSlept++);
+            WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
+                              ID_SDDI_STATUS,
+                              szTemp);
+
+            // wait half a second
+            winhSleep(500);
+        }
+
+        WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
+                          ID_SDDI_STATUS,
+                          "OK");
+    }
+}
+
+/*
  *@@ fncbSaveImmediate:
  *      callback for objForAllDirtyObjects to save
  *      the WPS.
@@ -3500,10 +3537,18 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.12 (2001-05-15) [umoeller]: now telling PageMage to recover windows first
  *@@changed V0.9.12 (2001-05-29) [umoeller]: now broadcasting WM_SAVEAPPLICATION here
  *@@changed V0.9.12 (2001-05-29) [umoeller]: StartShutdownThread now uses THRF_PMMSGQUEUE so Wininitialize etc. has been removed here
+ *@@changed V0.9.13 (2001-06-17) [umoeller]: no longer broadcasting WM_SAVEAPPLICATION, going back to old code
+ *@@changed V0.9.13 (2001-06-19) [umoeller]: now pausing while exception handler is still running somewhere
  */
 
 void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 {
+    /*************************************************
+     *
+     *      data setup:
+     *
+     *************************************************/
+
     PSZ             pszErrMsg = NULL;
     QMSG            qmsg;
     APIRET          arc;
@@ -3620,6 +3665,12 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
         xsdLog(LogFile,
                "  Creating shutdown windows...\n");
+
+        /*************************************************
+         *
+         *      shutdown windows setup:
+         *
+         *************************************************/
 
         // setup main (debug) window; this is hidden
         // if we're not in debug mode
@@ -3779,17 +3830,13 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // broadcast WM_SAVEAPPLICATION to all frames which
         // are children of the desktop
         // V0.9.12 (2001-05-29) [umoeller]
-        if (    (0 == pShutdownData->sdParams.ulRestartWPS) // restart WPS (1) or logoff (2)
+        // V0.9.13 (2001-06-17) [umoeller]: nope, go back to doing this for each window
+        /* if (    (0 == pShutdownData->sdParams.ulRestartWPS) // restart WPS (1) or logoff (2)
              || (pShutdownData->sdParams.optWPSCloseWindows)
            )
         {
             xsdLog(LogFile, __FUNCTION__ ": Broadcasting WM_SAVEAPPLICATION\n");
-            WinBroadcastMsg(HWND_DESKTOP,
-                            WM_SAVEAPPLICATION,
-                            NULL,
-                            NULL,
-                            BMSG_SEND | BMSG_FRAMEONLY);
-        }
+        } */
 
         // pShutdownData->ulStatus is still XSD_IDLE at this point
 
@@ -3905,6 +3952,12 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                 }
             }
 
+            // if some thread is currently in an exception handler,
+            // wait until the handler is done; otherwise the trap
+            // log won't be written and we can't find out what
+            // happened V0.9.13 (2001-06-19) [umoeller]
+            xsdWaitForExceptions(pShutdownData);
+
             // set progress bar to the max
             WinSendMsg(pShutdownData->hwndProgressBar,
                        WM_UPDATEPROGRESSBAR,
@@ -3956,11 +4009,23 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // and wait a while
             winhSleep(500);
 
+            // if some thread is currently in an exception handler,
+            // wait until the handler is done; otherwise the trap
+            // log won't be written and we can't find out what
+            // happened V0.9.13 (2001-06-19) [umoeller]
+            xsdWaitForExceptions(pShutdownData);
+
             // finally, save WPS!!
 
             // now using proper "dirty" list V0.9.9 (2001-04-04) [umoeller]
             cObjectsSaved = objForAllDirtyObjects(fncbSaveImmediate,
                                                   pShutdownData);  // user param
+
+            // if some thread is currently in an exception handler,
+            // wait until the handler is done; otherwise the trap
+            // log won't be written and we can't find out what
+            // happened V0.9.13 (2001-06-19) [umoeller]
+            xsdWaitForExceptions(pShutdownData);
 
             // set progress bar to max
             WinSendMsg(pShutdownData->hwndProgressBar,
@@ -4511,16 +4576,15 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
         {
             // window has system menu: close PM application;
             // WM_SAVEAPPLICATION and WM_QUIT is what WinShutdown
-            // does too for every message queue per process
-            // removed this here, we're now broadcasting
-            // at the beginning of fntShutdownThread V0.9.12 (2001-05-27) [umoeller]
-            /* xsdLog(pShutdownData->ShutdownLogFile,
-                   "      Has system menu, posting WM_SAVEAPPLICATION to hwnd 0x%lX\n",
-                   pItem->swctl.hwnd); */
+            // does too for every message queue per process;
+            // re-enabled this here per window V0.9.13 (2001-06-17) [umoeller]
+            xsdLog(pShutdownData->ShutdownLogFile,
+                   "      Posting WM_SAVEAPPLICATION to hwnd 0x%lX\n",
+                   pItem->swctl.hwnd);
 
-            /* WinPostMsg(pItem->swctl.hwnd,
+            WinPostMsg(pItem->swctl.hwnd,
                        WM_SAVEAPPLICATION,
-                       MPNULL, MPNULL); */
+                       MPNULL, MPNULL);
 
             xsdLog(pShutdownData->ShutdownLogFile,
                    "      Posting WM_QUIT to hwnd 0x%lX\n",

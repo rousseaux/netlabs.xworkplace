@@ -109,18 +109,18 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID XWPENTRY stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG flFlags);
 
-        MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
 
-        VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID XWPENTRY stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG flFlags);
 
-        MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);

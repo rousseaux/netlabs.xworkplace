@@ -81,7 +81,7 @@ interface XFldObject : WPObject
     BOOL xwpModifyListNotify(in ULONG flNotifyFlags,
                              in ULONG flNotifyMask);
 
-    BOOL xwpAddDestroyNotify(in HWND hwnd);
+    BOOL xwpAddWidgetNotify(in HWND hwnd);
     BOOL xwpRemoveDestroyNotify(in HWND hwnd);
 
     BOOL xwpQueryObjectHotkey(in PUSHORT pusFlags,
@@ -114,7 +114,7 @@ interface XFldObject : WPObject
                   xwpQueryListNotify,
                   xwpSetListNotify,
                   xwpModifyListNotify,
-                  xwpAddDestroyNotify,
+                  xwpAddWidgetNotify,
                   xwpRemoveDestroyNotify,
                   xwpSetNextObj,
                   xwpQueryNextObj,
@@ -181,11 +181,12 @@ interface XFldObject : WPObject
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
 
-    //# wpAddSettingsPages: override;
     wpAddObjectGeneralPage: override;
 
     wpConfirmObjectTitle: override;
     wpDelete: override;
+
+    wpCnrSetEmphasis: override;
 
 #ifdef __PRIVATE__
 

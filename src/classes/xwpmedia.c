@@ -165,6 +165,11 @@ typedef struct _MMDEVRECORD
 
     PSZ         pszDeviceType;
     ULONG       ulDeviceIndex;
+
+    PSZ         pszInstallName,
+                pszLogicalName,
+                pszAliasName;
+
     PSZ         pszInfo;
 } MMDEVRECORD, *PMMDEVRECORD;
 
@@ -176,6 +181,7 @@ typedef struct _MMDEVRECORD
  *      This thread is created with a msg queue.
  *
  *@@changed V0.9.7 (2000-12-17) [umoeller]: added exit flag
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: added more info
  */
 
 void _Optlink fntInsertDevices(PTHREADINFO pti)
@@ -215,10 +221,18 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
                         break;
                     else
                     {
-                        precc->pszDeviceType = (PSZ)paDevices[ul].pcszDeviceType;
-                        precc->ulDeviceIndex = paDevices[ul].ulDeviceIndex;
-                        precc->pszInfo = paDevices[ul].szInfo;
-                        precc->pDevice = &paDevices[ul];
+                        PXMMDEVICE pDeviceThis = &paDevices[ul];
+
+                        precc->pszDeviceType = (PSZ)pDeviceThis->pcszDeviceType;
+                        precc->ulDeviceIndex = pDeviceThis->ulDeviceIndex;
+
+                        precc->pszInstallName = pDeviceThis->szInstallName;
+                        precc->pszLogicalName = pDeviceThis->szLogicalName;
+                        precc->pszAliasName = pDeviceThis->szAliasName;
+
+                        precc->pszInfo = pDeviceThis->pszInfo;  // can be NULL
+
+                        precc->pDevice = pDeviceThis;
 
                         if (!cnrhInsertRecords(hwndCnr,
                                                NULL,
@@ -257,6 +271,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
  *
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  *@@changed V0.9.7 (2000-12-17) [umoeller]: fixed hang on close while thread was running
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: added more info
  */
 
 VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -267,7 +282,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
-        XFIELDINFO      xfi[5];
+        XFIELDINFO      xfi[8];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
@@ -279,29 +294,46 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszDeviceType);
         xfi[i].pszColumnTitle = cmnGetString(ID_MMSI_DEVICETYPE);  // pszDeviceType
         xfi[i].ulDataType = CFA_STRING;
-        xfi[i++].ulOrientation = CFA_LEFT;
+        xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, ulDeviceIndex);
         xfi[i].pszColumnTitle = cmnGetString(ID_MMSI_DEVICEINDEX);  // pszDeviceIndex
         xfi[i].ulDataType = CFA_ULONG;
-        xfi[i++].ulOrientation = CFA_CENTER;
+        xfi[i++].ulOrientation = CFA_CENTER | CFA_TOP;
+
+        // V0.9.13 (2001-06-14) [umoeller]
+        xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszInstallName);
+        xfi[i].pszColumnTitle = cmnGetString(ID_MMSI_INSTALLNAME); // "install name";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszLogicalName);
+        xfi[i].pszColumnTitle = cmnGetString(ID_MMSI_LOGICALNAME); // "logical name";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszAliasName);
+        xfi[i].pszColumnTitle = cmnGetString(ID_MMSI_ALIAS); // "alias";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+        // end V0.9.13 (2001-06-14) [umoeller]
 
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszInfo);
         xfi[i].pszColumnTitle = cmnGetString(ID_MMSI_DEVICEINFO);  // pszDeviceInfo
         xfi[i].ulDataType = CFA_STRING;
-        xfi[i++].ulOrientation = CFA_LEFT;
+        xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
         pfi = cnrhSetFieldInfos(hwndCnr,
                                 xfi,
                                 i,             // array item count
                                 TRUE,          // draw lines
-                                1);            // return first column
+                                2);            // return third column
 
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
             cnrhSetSplitBarAfter(pfi);
-            cnrhSetSplitBarPos(300);
+            cnrhSetSplitBarPos(250);
         } END_CNRINFO(hwndCnr);
     }
 

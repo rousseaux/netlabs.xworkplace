@@ -181,8 +181,9 @@
                             // -- MCI_MODE_PLAY (3)
                             // -- MCI_MODE_STOP (4)
 
-            USHORT      cTracks,
-                        usCurrentTrack;     // 0 if not playing
+            USHORT      cTracks;
+                        // usCurrentTrack;     // removed V0.9.13 (2001-06-14) [umoeller]
+            ULONG       ulTotalTime;
 
             // CD's table of contents
             MCI_TOC_REC *aTocEntries;
@@ -208,6 +209,8 @@
         ULONG xmmCDCloseDevice(PXMMCDPLAYER *ppPlayer);
 
         ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer);
+
+        ULONG xmmCDQueryCurrentTrack(PXMMCDPLAYER pPlayer);
 
         ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
                         BOOL fShowWaitPointer);
@@ -271,6 +274,14 @@
         #define MCI_DEVTYPE_TTS                 19
     #endif
 
+    #ifndef MAX_DEVICE_NAME
+        #define MAX_DEVICE_NAME                 20
+    #endif
+
+    #ifndef MAX_ALIAS_NAME
+        #define MAX_ALIAS_NAME                  20
+    #endif
+
     /*
      *@@ XMMDEVICE:
      *      describes a single MMPM/2 device returned
@@ -283,8 +294,13 @@
     {
         ULONG   ulDeviceType;       // MCI_DEVTYPE_* identifier
         const char *pcszDeviceType; // NLS description (composed by xmmQueryDevices)
-        ULONG   ulDeviceIndex;      // index (1 or higher)
-        CHAR    szInfo[200];        // return value of szInfo
+        ULONG   ulDeviceIndex;      // index (1 or higher); if 0, it's the last entry
+
+        CHAR    szInstallName[MAX_DEVICE_NAME];
+        CHAR    szLogicalName[MAX_DEVICE_NAME];
+        CHAR    szAliasName[MAX_ALIAS_NAME];
+
+        PSZ     pszInfo;            // driver info (malloc'd)
     } XMMDEVICE, *PXMMDEVICE;
 
     PXMMDEVICE xmmQueryDevices(PULONG pcDevices);

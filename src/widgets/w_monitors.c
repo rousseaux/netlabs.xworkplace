@@ -151,7 +151,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     MWGT_DATE,
                     "Date",
                     "Date monitor",
-                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
+                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },
                 {
@@ -159,7 +159,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     MWGT_TIME,
                     "Time",
                     "Time monitor",
-                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
+                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },
                 {
@@ -167,7 +167,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     MWGT_MEMORY,
                     "PhysMemory",
                     "Free physical memory monitor",
-                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
+                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },
                 {
@@ -175,7 +175,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     MWGT_POWER,
                     "Power",
                     "Battery power monitor",
-                    WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
+                    WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 }
             };
@@ -423,7 +423,6 @@ typedef struct _MONITORPRIVATE
 
     HPOINTER        hptrAC,         // "AC" icon
                     hptrBattery;    // "battery" icon
-    ULONG           ulMiniIconSize;
 
 } MONITORPRIVATE, *PMONITORPRIVATE;
 
@@ -570,18 +569,13 @@ APIRET ApmIOCtl(HFILE hfAPMSys,
 {
     APIRET          arc;
     APMGIO_DPKT     DataPacket;
-    ULONG           ulParmSize = cbParamPck;
     ULONG           ulRetSize = sizeof(DataPacket);
     DataPacket.ReturnCode = GIOERR_PowerNoError;
     if (!(arc = DosDevIOCtl(hfAPMSys,
                             APMGIO_Category,
                             ulFunction,
-                            pvParamPck,
-                                cbParamPck,
-                                &ulParmSize,
-                            &DataPacket,
-                                sizeof(DataPacket),
-                                &ulRetSize)))
+                            pvParamPck, cbParamPck, &cbParamPck,
+                            &DataPacket, sizeof(DataPacket), &ulRetSize)))
         if (DataPacket.ReturnCode)
             arc = DataPacket.ReturnCode | 10000;
 
@@ -664,8 +658,6 @@ MRESULT MwgtCreate(HWND hwnd,
                         // default font: use the same as in the rest of XWorkplace:
                         : pcmnQueryDefaultFont());
 
-    pPrivate->ulMiniIconSize = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
-
     // enable context menu help
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     switch (pPrivate->ulType)
@@ -744,7 +736,7 @@ MRESULT MwgtCreate(HWND hwnd,
                                                                pcmnQueryMainResModuleHandle(),
                                                                ID_POWER_BATTERY);
 
-                        pPrivate->cyCurrent = pPrivate->ulMiniIconSize + 2;
+                        pPrivate->cyCurrent = pWidget->pGlobals->cxMiniIcon + 2;
                     }
                 }
             }
@@ -957,19 +949,22 @@ VOID MwgtPaint(HWND hwnd,
                 }
                 if (pcsz)
                 {
+                    ULONG cxMiniIcon = pPrivate->pWidget->pGlobals->cxMiniIcon;
+
                     sprintf(szPaint, "%d%%", pPrivate->ulBatteryLife);
 
                     WinDrawPointer(hps,
                                    0,
-                                   ((rclWin.yTop - rclWin.yBottom) - pPrivate->ulMiniIconSize)
-                                       / 2,
+                                   (    (rclWin.yTop - rclWin.yBottom)
+                                      - cxMiniIcon
+                                   ) / 2,
                                    (pPrivate->ulBatteryStatus == 3)
                                         ? pPrivate->hptrAC
                                         : pPrivate->hptrBattery,
                                    DP_MINI);
 
                     // add offset for painting text
-                    ulExtraWidth = pPrivate->ulMiniIconSize;
+                    ulExtraWidth = cxMiniIcon;
                 }
             }
         break;
@@ -1011,6 +1006,8 @@ VOID MwgtPaint(HWND hwnd,
 /*
  *@@ MwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
+ *
+ *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
 VOID MwgtPresParamChanged(HWND hwnd,
@@ -1068,7 +1065,10 @@ VOID MwgtPresParamChanged(HWND hwnd,
             MwgtSaveSetup(&strSetup,
                           &pPrivate->Setup);
             if (strSetup.ulLength)
-                WinSendMsg(pPrivate->pWidget->pGlobals->hwndClient,
+                // changed V0.9.13 (2001-06-21) [umoeller]:
+                // post it to parent instead of fixed XCenter client
+                // to make this trayable
+                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);
@@ -1461,6 +1461,6 @@ VOID EXPENTRY MwgtQueryVersion(PULONG pulMajor,
 {
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 12;
+    *pulRevision = 13;
 }
 

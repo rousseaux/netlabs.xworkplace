@@ -178,10 +178,10 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+        VOID XWPENTRY xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                          ULONG flFlags);
 
-        MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);

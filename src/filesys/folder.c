@@ -1240,12 +1240,12 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
 
 /*
  *@@ fdrSnapToGrid:
- *           makes all objects in the folder "snap" on a grid whose
- *           coordinates are to be defined in the GLOBALSETTINGS.
+ *      makes all objects in the folder "snap" on a grid whose
+ *      coordinates are to be defined in the GLOBALSETTINGS.
  *
- *           This function checks if an Icon view of the folder is
- *           currently open; if not and fNotify == TRUE, it displays
- *           a message box.
+ *      This function checks if an Icon view of the folder is
+ *      currently open; if not and fNotify == TRUE, it displays
+ *      a message box.
  *
  *@@changed V0.9.0 [umoeller]: this used to be an instance method (xfldr.c)
  */
@@ -1253,7 +1253,6 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
 BOOL fdrSnapToGrid(WPFolder *somSelf,
                    BOOL fNotify)
 {
-    // WPObject            *obj;
     HWND                hwndFrame = 0,
                         hwndCnr = 0;
     PMINIRECORDCORE     pmrc = 0;
@@ -1263,14 +1262,11 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
     // if Shift is pressed, move all the objects, otherwise
     // only the selected ones
     BOOL                fShiftPressed = doshQueryShiftState();
-    // BOOL                fMoveThisObject = FALSE;
 
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_xfSnapToGrid");
 
     // first we need the frame handle of a currently open icon view;
-    // all others don't make sense */
+    // all others don't make sense
     hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS);
 
     if (hwndFrame)
@@ -1284,6 +1280,12 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
             // now begin iteration over the folder's objects; we don't
             // use the WPS method (wpQueryContent) because this is too
             // slow. Instead, we query the container directly.
+
+            _Pmpf((__FUNCTION__ ": x= %d, y = %d, cx = %d, cy = %d",
+                        pGlobalSettings->GridX,
+                        pGlobalSettings->GridY,
+                        pGlobalSettings->GridCX,
+                        pGlobalSettings->GridCY));
 
             pmrc = NULL;
             do
@@ -1323,36 +1325,30 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
                                (MPARAM)1);         // one record only
                     // un-display the new object at the old (default) location
                     WinSendMsg(hwndCnr,
-                                CM_ERASERECORD,
+                               CM_ERASERECORD,
                                     // this only changes the visibility of the
                                     // record without changing the recordcore;
                                     // this msg is intended for drag'n'drop and such
-                                (MPARAM)pmrc,
-                                NULL);
+                               (MPARAM)pmrc,
+                               NULL);
 
                     // now play with the objects coordinates
-                    lNewX =
-                        ( (
-                            ( (pmrc->ptlIcon.x - pGlobalSettings->GridX)
-                              + (pGlobalSettings->GridCX / 2)
-                            )
-                        / pGlobalSettings->GridCX ) * pGlobalSettings->GridCX )
-                        + pGlobalSettings->GridX;
-                    lNewY =
-                        ( (
-                            ( (pmrc->ptlIcon.y - pGlobalSettings->GridY)
-                              + (pGlobalSettings->GridCY / 2)
-                            )
-                        / pGlobalSettings->GridCY ) * pGlobalSettings->GridCY )
-                        + pGlobalSettings->GridY;
+                    lNewX = ( ( (   (pmrc->ptlIcon.x - pGlobalSettings->GridX)
+                                  + (pGlobalSettings->GridCX / 2)
+                                ) / pGlobalSettings->GridCX
+                              ) * pGlobalSettings->GridCX
+                            ) + pGlobalSettings->GridX;
+                    lNewY = ( ( (   (pmrc->ptlIcon.y - pGlobalSettings->GridY)
+                                  + (pGlobalSettings->GridCY / 2)
+                                ) / pGlobalSettings->GridCY
+                              ) * pGlobalSettings->GridCY
+                            ) + pGlobalSettings->GridY;
 
                     // update the record core
-                    if ( (lNewX) && (lNewX != pmrc->ptlIcon.x) ) {
+                    if ( (lNewX) && (lNewX != pmrc->ptlIcon.x) )
                         pmrc->ptlIcon.x = lNewX;         // X
-                    }
-                    if ( (lNewY) && (lNewY != pmrc->ptlIcon.y) ) {
+                    if ( (lNewY) && (lNewY != pmrc->ptlIcon.y) )
                         pmrc->ptlIcon.y = lNewY;         // Y
-                    }
 
                     // repaint at new position
                     WinSendMsg(hwndCnr,
@@ -2637,6 +2633,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
             strhArrayAppend(&pszToSave,
                             szEntry,
+                            0,
                             &cbToSave);
         }
 
@@ -3395,7 +3392,7 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ fntProcessStartupFolder:
- *      synchronous thread started from fntStartupThread
+ *      synchronous thread started from fdrStartFolderContents
  *      for each startup folder that is to be processed.
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
@@ -3429,62 +3426,64 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 
             // get first object
             ppf->henum = _xwpBeginEnumContent(pFolder);
-            if (ppf->henum)
-                ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
         }
-        else
+
+        if (ppf->henum)
         {
-            // subsequent calls: get next object
+            // in any case, get first or next object
             ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
-        }
 
-        ppf->ulObjectThis++;
+            ppf->ulObjectThis++;
 
-        // now process that object
-        if (ppf->pObject)
-        {
-            // this is not the last object: start it
-
-            // resolve shadows... this never worked for
-            // shadows V0.9.12 (2001-04-29) [umoeller]
-            if (_somIsA(ppf->pObject, _WPShadow))
-                ppf->pObject = _wpQueryShadowedObject(ppf->pObject, TRUE);
-
-            if (wpshCheckObject(ppf->pObject))
+            // now process that object
+            if (ppf->pObject)
             {
-                // open the object:
+                // this is not the last object: start it
 
-                // 1) update the status window
-                if (pGlobalSettings->ShowStartupProgress)
+                // resolve shadows... this never worked for
+                // shadows V0.9.12 (2001-04-29) [umoeller]
+                if (_somIsA(ppf->pObject, _WPShadow))
+                    ppf->pObject = _wpQueryShadowedObject(ppf->pObject, TRUE);
+
+                if (wpshCheckObject(ppf->pObject))
                 {
-                    CHAR szStarting2[500], szTemp[500];
-                    // update status text ("Starting xxx")
-                    strcpy(szTemp, _wpQueryTitle(ppf->pObject));
-                    strhBeautifyTitle(szTemp);
-                    sprintf(szStarting2,
-                            cmnGetString(ID_SDSI_STARTING), // ->pszStarting,
-                            szTemp);
-                    WinSetDlgItemText(ppf->hwndStatus, ID_SDDI_STATUS, szStarting2);
+                    // open the object:
+
+                    // 1) update the status window
+                    if (pGlobalSettings->ShowStartupProgress)
+                    {
+                        CHAR szStarting2[500], szTemp[500];
+                        // update status text ("Starting xxx")
+                        strcpy(szTemp, _wpQueryTitle(ppf->pObject));
+                        strhBeautifyTitle(szTemp);
+                        sprintf(szStarting2,
+                                cmnGetString(ID_SDSI_STARTING), // ->pszStarting,
+                                szTemp);
+                        WinSetDlgItemText(ppf->hwndStatus, ID_SDDI_STATUS, szStarting2);
+                    }
+
+                    // have the object opened on thread-1
+                    hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                                                    (MPARAM)ppf->pObject,
+                                                                    (MPARAM)OPEN_DEFAULT);
+
+                    // update status bar
+                    if (pGlobalSettings->ShowStartupProgress)
+                        WinSendDlgItemMsg(ppf->hwndStatus, ID_SDDI_PROGRESSBAR,
+                                          WM_UPDATEPROGRESSBAR,
+                                          MPFROMLONG(ppf->ulObjectThis),
+                                          MPFROMLONG(ppf->cTotalObjects));
                 }
 
-                // have the object opened on thread-1
-                hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                                               (MPARAM)ppf->pObject,
-                                                               (MPARAM)OPEN_DEFAULT);
-
-                // update status bar
-                if (pGlobalSettings->ShowStartupProgress)
-                    WinSendDlgItemMsg(ppf->hwndStatus, ID_SDDI_PROGRESSBAR,
-                                      WM_UPDATEPROGRESSBAR,
-                                      MPFROMLONG(ppf->ulObjectThis),
-                                      MPFROMLONG(ppf->cTotalObjects));
+                ppf->ulFirstTime = doshQuerySysUptime();
             }
-
-            ppf->ulFirstTime = doshQuerySysUptime();
+            else
+                // no more objects:
+                // break out of the while loop
+                break;
         }
         else
-            // no more objects:
-            // break out of the while loop
+            // error:
             break;
 
         // now wait until we should process the

@@ -1230,8 +1230,9 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
  *      just like wpQueryRootFolder, but this one
  *      avoids "Drive not ready" popups if the drive
  *      isn't ready. In this case, *parc contains
- *      the DOS error code (NO_ERROR otherwise), and
+ *      the error code from doshAssertDrive, and
  *      NULL is returned.
+ *
  *      If you're not interested in the return code,
  *      you may pass parc as NULL.
  *
@@ -1247,7 +1248,7 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
     APIRET   arc = NO_ERROR;
 
     ULONG ulLogicalDrive = _wpQueryLogicalDrive(somSelf);
-    arc = doshAssertDrive(ulLogicalDrive);
+    arc = doshAssertDrive(ulLogicalDrive, 0);
 
     if (    (arc == ERROR_DISK_CHANGE)
          && (bForceMap)
@@ -1255,7 +1256,7 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
          && (doshSetLogicalMap(ulLogicalDrive) == NO_ERROR)
        )
     {
-        arc = doshAssertDrive(ulLogicalDrive);
+        arc = doshAssertDrive(ulLogicalDrive, 0);
     }
 
     if (arc == NO_ERROR)

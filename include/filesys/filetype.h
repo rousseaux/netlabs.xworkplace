@@ -64,10 +64,10 @@
         extern MPARAM *G_pampFileTypesPage;
         extern ULONG G_cFileTypesPage;
 
-        VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID XWPENTRY ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG flFlags);
 
-        MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
@@ -83,10 +83,10 @@
         extern MPARAM *G_pampDatafileTypesPage;
         extern ULONG G_cDatafileTypesPage;
 
-        VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                       ULONG flFlags);
+        VOID XWPENTRY ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                                ULONG flFlags);
 
-        MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              ULONG ulItemID,
                                              USHORT usNotifyCode,
                                              ULONG ulExtra);
@@ -100,10 +100,10 @@
         ULONG ftypInsertAssociationsPage(WPObject *somSelf,
                                          HWND hwndNotebook);
 
-        VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+        VOID XWPENTRY ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                               ULONG flFlags);
 
-        MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT XWPENTRY ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             ULONG ulItemID,
                                             USHORT usNotifyCode,
                                             ULONG ulExtra);
