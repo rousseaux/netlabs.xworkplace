@@ -30,6 +30,13 @@ Klasse l„uft. Threads in dieser Klasse verrichten blicherweise Arbeit,
 die zwar getan werden muá und zeitintensiv ist, die aber auch noch dann
 ausgefhrt werden kann, wenn der Rechner sonst nichts zu tun hat.
  
+<!-- V1.0.0 (2002-09-13) [umoeller]: removed this section
+An example of such a thread is &xwp;'s own
+<A HREF="glossary/gls_workerthr.html">Worker thread</A>, which keeps track of
+the awake Desktop objects on your system. This is fairly time-consuming,
+but not time-critical, so it's done with idle-time priority.
+-->
+
 <P><LI><B>"Regul„r"</B> (2) ist die Priorit„tsklasse, die die meisten
 Threads benutzen. Dies ist auáerdem die Standardklasse unter &os2;, die benutzt
 wird, wenn ein Thread seine Priorit„t nicht explizit „ndert. Zwischen den
@@ -59,6 +66,7 @@ freigibt
 (siehe <A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
 in der Toolkit-Dokumentation<A HREF="_toolkitlink.html">*</A>),
 bekommen andere zeitkritische Threads keine Prozessorzeit.
+<!-- V1.0.0: changed the following phrase -->
 Diese Klasse wird daher blicherweise nur fr Netzwerk- und andere
 Kommunikationsanwendungen benutzt, oder CD-Brenner- und andere
 Multimedia-Software.
