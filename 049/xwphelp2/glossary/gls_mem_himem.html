@@ -1,106 +1,111 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &os2; Virtual Address Space
+        Der virtuelle Adre·raum von &os2;
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.13 -->
 <BODY>
+Wie Sie vielleicht wissen, benutzen Prozessoren seit dem
+80386-Prozessor 32 Bits fÅr alle Adressen, was zu einem Adre·raum
+von 4 GB fÅhrt. Dieser wird Åblicherweise "virtueller Adre·raum"
+genannt.
 
-As you might know, the 80386 and higher processors use 32 bits
-for all addresses, which allows for addressing 4 GB of memory.
-This is generally called the virtual address space.
+<P>Beachten Sie, da· dieser Adre·raum auf jedem Rechner unabhÑngig
+davon besteht, wieviel physikalischer Speicher im Rechner tatsÑchlich
+installiert ist. Einer der gro·en Vorteile des 80386-Prozessors gegenÅber
+frÅheren Prozessoren ist, da· die Prozessor-Hardware die öbersetzung
+von virtuellen Adressen in physikalische Adressen Åbernimmt. Dabei
+wird er von dem Betriebssystem (in diesem Fall &os2;) insoweit
+unterstÅtzt, als dieses dem Prozessor Tabellen Åbergibt, in denen
+Umwandlungsinformationen gespeichert sind.
 
-<P>Note that this address space exists no matter how much physical
-memory is installed on your system. One of the great advantages
-of the 80386 processor (compared to earlier processors) is that
-the processor can do the conversion of a virtual address into
-a physical address in RAM in hardware -- with a little help from
-the operating system (in our case, &os2;), which must give the
-processor tables where conversion data is stored.
-
-<P>To be able to manage virtual memory with respect to the
-various processes that are running in the system, &os2; divides
-the entire virtual address space of 4 GB into <B>arenas.</B>
+<P>Um virtuellen Speicher fÅr mehrere gleichzeitig laufende Prozesse
+verwalten zu kînnen, unterteilt &os2; den gesamten Adre·raum von 4 GB
+in sogenannte <b>Arenen.</b>
 
 <PRE>
  4096 MB -----------------------------------------------------
 
-                system arena
+                System-Arena
 
   512 MB -----------------------------------------------------
-                shared arena
-  variable ---------------+-----------+---------------
-                private   | private   | private
-                arena     | arena     | arena
-                process 1 | process 2 | process 23
+                Gemeinsame (shared) Arena
+  variabel ---------------+-----------+---------------
+                Private   | Private   | Private
+                Arena     | Arena     | Arena
+                Proze· 1  | Proze· 2  | Proze· 3
     0 MB -----------------+-----------+---------------
 </PRE>
 
-The <B>system arena</B> is reserved for code that is running at ring 0,
-that is, device drivers and the &os2; kernel itself. Normal
-applications cannot access that memory.
+Die <B>System-Arena</B> ist fÅr Code reserviert, der auf Ring 0 lÑuft, d.h.
+GerÑtetreiber und der &os2;-Kernel selbst. Anwendungen kînnen auf diesen Speicher
+nicht zugreifen.
 
-<P>By contrast, the <B>shared</B> and <B>private arenas</B> are available
-for use by applications.
+<P>Im Gegensatz dazu stehen die <b>gemeinsame</b> und die <b>privaten Arenen</b>
+den Anwendungen zur VerfÅgung.
 
-<P>While the system and shared arenas will always be backed by
-the same physical memory pages, the private arena is different
-for each process. Each application has its own private memory
-(code and data). By contrast, the shared arena is used for
-code and data that is shared between applications: for example, all
+<P>WÑhrend hinter der System-Arena und den gemeinsamen Arenen fÅr alle Prozesse
+der gleiche physikalische Speicher steht, sind die privaten Arenen fÅr jeden
+Proze· unterschiedlich. Jede Anwendung hat ihre eigene private Arena fÅr
+Code und Daten. Die gemeinsame Arena hingegen wird fÅr Code und Daten benutzt,
+die mehreren Prozessen gemeinsam ist; so werden z.B.
 <!-- V0.9.20: added link -->
 <A HREF="glossary/gls_dll.html">DLLs</A>
-are loaded into that arena.
+in die gemeinsame Arena geladen.
 
-<P>The border between the shared and private arenas is variable
-and depends on how much shared memory is used in the system.
-This is why sometimes the system runs "out of memory" if many
-DLLs are loaded. In reality, the system is not running out of
-physical memory (because it would normally expand the swap file);
-it is really running out of address space.
+<P>Die Grenze zwischen gemeinsamer Arena und den privaten Arenen ist variable
+und hÑngt davon ab, wieviel gemeinsamer Speicher derzeit im System benutzt wird.
+Dies ist der Grund, warum das System manchmal "Zu wenig Speicher" meldet, wenn
+sehr viele DLLs geladen sind. TatsÑchlich hat das System nicht zuwenig physikalischen
+Speicher (da es ja ansonsten die
+<a href="glossary/gls_mem_paging.html">Auslagerungsdatei</a> vergrî·ern wÅrde),
+sondern es ist der Adre·raum vollstÑndig belegt.
 
-<P>All OS/2 kernels from 2.0 before 4.5 (the Aurora kernel)
-had a fixed barrier at 512 MB for application memory. The reason
-for this was support for 16-bit applications which cannot
-easily access memory above that line.
+<P>Die OS/2-Kernel von 2.0 bis 4.5 (der Aurora-Kernel) hatten eine fixe Grenze
+bei 512 MB fÅr den Speicher, der fÅr Anwendungen verwendbar war. Der Grund
+hierfÅr lag in der UnterstÅtzung fÅr 16-Bit-Programme, die ohne weiteres
+nicht auf Speicher Åber dieser Grenze zugreifen kînnen.
 
-<P>This has changed with the Aurora kernel, which allows applications
-to allocate memory above the 512 MB line if <CODE>VIRTUALADDRESSLIMIT</CODE>
-is specified with a value > 512 in &cfgsys;.
-The address space now looks like this:
+<P>Dies hat sich mit dem Aurora-Kernel geÑndert, der es Anwendungen erlaubt,
+Speicher Åber der 512-MB-Grenze anzufordern, wenn in der Datei &cfgsys;
+der Befehl <CODE>VIRTUALADDRESSLIMIT</CODE> mit einem Wert grî·er als 512
+angegeben wird. Der Adre·raum sieht dann wie folgt aus:
 
 <PRE>
  4096 MB ---------------------------------------------
-                system arena
+                System-Arena
  VIRTUALADDRESSLIMIT ---------------------------------
-                high memory arena (shared and private)
+                Arena fÅr hohen Speicher
+                (gemeinsam und privat)
   512 MB ---------------------------------------------
-                shared arena
-  variable ---------------+-----------+---------------
-                private   | private   | private
-                arena     | arena     | arena
-                process 1 | process 2 | process 23
+                Gemeinsame (shared) Arena
+  variabel ---------------+-----------+---------------
+                Private   | Private   | Private
+                Arena     | Arena     | Arena
+                Proze· 1  | Proze· 2  | Proze· 3
     0 MB -----------------+-----------+---------------
 </PRE>
 
-As you can see, the space between the system and shared arenas
-is called "high memory" and is again divided into shared and
-private arenas. This memory is only given to applications if
-they explicitly request this, so enabling high memory only
-has direct consequences for applications which are aware of
-its existence. (For example, Java will use this arena
-if <CODE>SET JAVA_HIGH_MEMORY=1</CODE> is specified in
-&cfgsys;.).
+Wie Sie sehen, wird der Raum zwischen der System-Arena und der
+gemeinsamen Arena "hoher Speicher" (high memory) genannt und
+wird wiederum in gemeinsamen und privaten Speicher unterteilt.
+Dieser Adre·raum wird nur einer Anwendung zugeordnet, wenn diese
+dies ausdrÅcklich anfordert. Folglich hat diese Erweiterung des
+Adre·raums nur Auswirkungen auf Anwendungen, die diese Erweiterung
+ausdrÅcklich nutzen. Zum Beispiel kînnen Sie Java den hohen
+Adre·raum nutzen lassen, indem Sie <CODE>SET JAVA_HIGH_MEMORY=1</CODE>
+in der Datei &cfgsys; angeben.
 
-<P>However, enabling high memory still has side-effects.
-As said above, this memory cannot be used by 16-bit code.
-This is why you need the 32-bit TCP/IP implementation
-(version 4.1 or above) if you use high memory with Java.
+<P>Trotzdem hat die Benutzung von hohem Speicher Nebenwirkungen.
+Wie oben erwÑhnt, kann der hohe Speicher von 16-Bit-Code nicht benutzt
+werden. Daher brauchen Sie z.B. eine 32-Bit-Version von TCP/IP
+(Version 4.1 oder neuer), wenn Sie hohen Speicher mit Java nutzen wollen.
 
-<P>In addition, the higher you set the <CODE>VIRTUALADDRESSLIMIT</CODE>,
-the smaller the system arena becomes. This is why raising the
-virtual address limit may reduce the number of available processes.
+<P>Hinzu kommt, da· die System-Arena um so kleiner wird, je hîher
+Sie <CODE>VIRTUALADDRESSLIMIT</CODE> festlegen. Sehr viel hoher Speicher
+kann daher die Anzahl der Prozesse reduzieren, die vom System verwaltet
+werden kînnen.
 
 <BR>
 </BODY>

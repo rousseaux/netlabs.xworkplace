@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: Paging
+        &xwp;: Auslagern von Speicher
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.13
@@ -9,62 +9,56 @@
     V0.9.20: title changed
 -->
 <BODY>
-The concept of paging allows &os2; to give
-memory to applications even though no more physical memory
-is available. This is sometimes referred to as "virtual memory"
-(which should not be confused with the term "virtual address space"
--- see <A HREF="glossary/gls_mem_himem.html">&os2; Virtual Address Space</A> for more
-on that).
+Das Konzept des Auslagerns von Speicher erlaubt es &os2;, Anwendungen auch
+dann noch Speicher zuzuordnen, wenn der gesamte physikalische Speicher des
+Systems bereits belegt ist. Dies wird manchmal auch "virtueller Speicher"
+genannt (was jedoch nicht mit dem
+<a href="glossary/gls_mem_himem.html">virtuellen Adre·raum</a> zu verwechseln ist).
 
-<P>If paging is enabled, &os2; will temporarily
-move data from physical RAM to a special swap file on a hard disk.
-The &os2; swap file is always
-called <CODE>SWAPPER.DAT</CODE>. Unless changed through
-&cfgsys;, this file resides in the
-<CODE>\OS2\SYSTEM</CODE> directory.
+<P>Wenn die Auslagerung aktiviert ist -- was die Standardeinstellung ist --,
+kann &os2; Daten vorÅbergehend aus dem Hauptspeicher in eine besondere
+Datei auf der Festplatte auslagern. Diese Auslagerungsdatei hei·t unter &os2;
+stets <CODE>SWAPPER.DAT</CODE>. Sofern Sie dies nicht in der Datei
+&cfgsys; anders angegeben haben, liegt diese Datei im Verzeichnis
+<CODE>\OS2\SYSTEM</CODE>.
 
-<P>In detail, the following happens:
+<P>Im Detail passiert dabei folgendes:
 
-<OL><LI>If an &os2; application allocates memory and not enough
-physical memory is available, &os2; takes a chunk of the main
-memory (RAM) which has not been accessed for a while and writes it
-into <CODE>SWAPPER.DAT</CODE>. This part of memory is then
-available and given to the requesting application.
-As a result,
-applications may use more memory than what is physically
-installed in the computer.
+<OL><LI>Wenn eine Anwendung Speicher anfordert und nicht mehr genÅgend
+physikalischer Hauptspeicher frei ist, nimmt &os2; einen Block des physikalischen
+Speichers, der seit einer Weile nicht mehr verwendet wurde, und schreibt ihn
+in die Datei <CODE>SWAPPER.DAT</CODE>. Dieser Block ist damit frei geworden
+und wird der anfordernden Anwendung zur VerfÅgung gestellt. Auf diese Weise
+kînnen Anwendungen mehr Speicher nutzen, als physikalisch vorhanden ist.
 
-<P><LI>Now, if some application accesses the memory chunk that
-was swapped out,
-&os2; intercepts this memory access (because that "memory"
-now resides on the hard disk) and loads that region back into
-memory from the hard disk before the application actually
-accesses it. (If necessary, &os2; will have to swap another
-memory region to the swap file first to make room for the
-memory region which is to be loaded back into memory.)
+<P><LI>Wenn nun aber eine Anwendung versucht, auf den Speicher zuzugreifen,
+der gerade ausgelagert wurde, fÑngt &os2; diese Anforderung ab (weil der
+"Speicher" nun eben auf der Festplatte liegt) und lÑdt den entsprechenden
+Speicherblock wieder zurÅck in den Hauptspeicher, bevor die Anwendung tatsÑchlich
+auf ihn zugreift. (Wenn erforderlich, wird &os2; vorher einen anderen Speicherbereich
+auslagern mÅssen, um fÅr den wieder hereinzuladenden Speicherblock Platz zu schaffen.)
 
-</OL>Naturally, a hard disk is much slower than physical RAM,
-typically by a ratio of 1:100, depending on your processor speed
-and on whether that portion of memory has already been loaded
-into the processor memory caches.
+</OL>NatÅrlich ist eine Festplatte Åblicherweise sehr viel langsamer als
+Hauptspeicher. Je nach Ihrem Prozessor und der aktuellen Speichersituation
+wird dies im Bereich 1:100 liegen.
 
-<P>This is why plenty of RAM is the most important prerequisite
-for an acceptably fast &os2; installation. Even though you may
-install &os2; with only 8 MB of RAM (&warp; 3 allegedly
-even with 4), you will then only hear the hard disk rattle
-because &os2; has to permanently swap in and out.
+<P>Dies ist der Grund, warum Hauptspeicher die vielleicht wichtigste Voraussetzung
+fÅr ein schnelles &os2;-System ist. Auch wenn Sie &os2; theoretisch mit lediglich
+8 MB RAM installieren kînnen (&warp; 3 angeblich sogar mit 4), werden Sie an
+so einem System nicht viel Freude haben, da Sie hauptsÑchlich dem System beim
+Auslagern (und der Festplatte beim Rappeln) zuhîren kînnen.
 
-<P>Even if you have a relatively large amount of RAM installed
-(say, 128 MB or more), &os2; may suddenly start swapping.
-Since growing the swap file is an expensive operation, you
-should choose your <CODE>SWAPPATH</CODE> settings carefully.
+<P>Aber auch wenn Sie relativ viel RAM installiert haben (etwa 128 MB oder mehr),
+kann es passieren, da· &os2; plîtzlich mit dem Auslagern beginnt. Da das Vergrî·ern
+der Auslagerungsdatei eine sehr aufwendige Operation ist, sollten Sie die
+Einstellungen fÅr <CODE>SWAPPATH</CODE> sorgfÑltig auswÑhlen.
 
-<P>If you are using the
+<P>Wenn Sie das
 <!-- V0.9.19: added link -->
-<A HREF="xcenter/xc_main.html">&xcenter;</A>,
-you can also use the
-<A HREF="xcenter/xc_sentinel.html">"Sentinel" widget</A>
-to monitor &os2;'s memory management.
+<A HREF="xcenter/xc_main.html">&xcenter;</A> benutzen,
+kînnen Sie das
+<A HREF="xcenter/xc_sentinel.html">"Wachposten"-Widget</A>
+benutzen, um &os2;s Speicherverwaltung zuzuschauen.
 
 <BR>
 </BODY>
