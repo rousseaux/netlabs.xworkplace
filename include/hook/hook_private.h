@@ -215,7 +215,8 @@
 
         // sliding menus
         HWND        hwndMenuUnderMouse;
-        SHORT       sMenuItemUnderMouse;
+        SHORT       sMenuItemIndexUnderMouse;
+                // V0.9.12 (2001-05-24) [lafaix]: changed meaning (from identity to index)
         MPARAM      mpDelayedSlidingMenuMp1;
 
         // auto-hide mouse pointer state backup; added V0.9.9 (2001-03-21) [lafaix]

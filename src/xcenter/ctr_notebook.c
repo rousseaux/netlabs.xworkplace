@@ -1269,6 +1269,7 @@ typedef struct _WIDGETRECORD
  *      context menu HWND.
  *
  *@@added V0.9.9 (2001-03-09) [umoeller]
+ *@@changed V0.9.12 (2001-05-08) [lafaix]: forced class loading/unloading
  */
 
 VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1317,6 +1318,8 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             cnrhSetSplitBarAfter(pfi);
             cnrhSetSplitBarPos(100);
         } END_CNRINFO(hwndCnr);
+
+        ctrpLoadClasses();
     }
 
     if (flFlags & CBI_SET)
@@ -1371,6 +1374,8 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             WinDestroyWindow((HWND)pcnbp->pUser);
 
         pcnbp->pUser = NULL;
+
+        ctrpFreeClasses();
     }
 }
 
@@ -1392,6 +1397,7 @@ static PWIDGETRECORD G_precDragged = NULL,
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.9 (2001-03-09) [umoeller]
+ *@@changed V0.9.12 (2001-05-08) [lafaix]: fixed problems if widget class not found
  */
 
 MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1634,6 +1640,11 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             WinEnableMenuItem(hPopupMenu,
                                               ID_CRMI_PROPERTIES,
                                               (pClass->pShowSettingsDlg != 0));
+                        else
+                            // V0.9.12 (2001-08-05) [lafaix]
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_CRMI_PROPERTIES,
+                                              FALSE);
                     }
 
                     if (hPopupMenu)
