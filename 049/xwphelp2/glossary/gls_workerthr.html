@@ -1,0 +1,53 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        The &xwp; Worker thread
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.9 -->
+<BODY>
+The &xwp; "Worker" thread does all kinds of background
+work which takes too long to be running on the main GUI thread of the WPS. These
+tasks are offloaded to the Worker thread in order not to block the user interface.
+
+<P>As you might know, &os2; is a "multithreading" operating system, which means that
+a program can execute several tasks simultaneaously. &xwp; uses its "Worker" thread
+(which is just a stupid, not a technical description) to prevent certain time-consuming
+tasks from blocking your system. If &xwp; processed these tasks without the Worker
+thread, the WPS would not react to anything until the task is completed.
+
+<P>The Worker thread runs at "idle time" priority, which means that it only starts working
+if your system has nothing else to do. This way, your system is not slowed down at all
+although some time-consuming tasks might be performed in the background.
+<IFNDEF __NOXWPSETUP__>
+You can change the Worker thread's default priority on the "Paranoia" page in the
+<A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
+</IFNDEF>
+
+<P>Note that the Worker thread does some things which are not documented by IBM, especially
+keeping track of all objects that the WPS keeps in its internal buffers. If you feel that
+&xwp; is not working properly, you might try to disable the thread on
+the "Paranoia" page.
+
+<P>Among other things, the &xwp; worker thread is responsible for the following:
+
+<UL><LI>supporting the eXtended Shutdown;
+
+<BR><LI>in some cases, the "Full path in window title" feature;
+
+<BR><LI>in most cases, the "Auto-scroll Tree views" feature;
+
+<BR><LI>the &xwp; Startup Folder;
+
+<!-- V0.9.19: removed this
+<BR><LI>automatic recreation of the Configuration folders; -->
+
+<BR><LI>proper updating of status bar presentation parameters.
+
+</UL>This setting only has an effect after a reboot or a Desktop restart. The &xwp; Worker
+thread will not be stopped or restarted when you change this setting.
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,78 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Dateitypen und Verknpfungen
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.9
+    Changes:
+    V0.9.20: add &xwp; to title
+    translated: V0.9.21 (2002-09-02) [umoeller]
+-->
+<BODY>
+In der Arbeitsoberfl„che stellen Verknpfungen eine Verbindung
+zwischen Datendateien und
+<!-- V0.9.20: replaced this line -->
+&link_progobjs; her.
+
+<IFNDEF __NOXWPSETUP__>
+Wenn Sie im
+<A HREF="objects/obj_xwpsetup.html">"&xwp; Setup"-Object</A>
+die "Erweiterten Dateizuordnungen" eingeschaltet haben,
+benutzt &xwp; ausschlieálich Dateitypen, um Dateien mit
+Programmobjekten zu verknpfen.
+</IFNDEF>
+
+<P>Der <B>Typ</B> einer Datei h„ngt von zwei Quellen ab:
+
+<UL><LI>Sie k”nnen Dateitypen explizit auf der "Dateitypen"-Seite
+im <A HREF="glossary/gls_notebook.html">Einstellungsnotizbuch</A>
+einer Datendatei festlegen. Diese explizit gesetzten Typen
+werden in den
+<!-- V0.9.20: link added -->
+<A HREF="glossary/gls_eas.html">erweiterten Attributen</A>
+der Datei gespeichert, bis Sie den Typ wieder entfernen.
+
+<P><LI>Darber hinaus weist &xwp; Dateitypen auch automatisch zu.
+Dies geschieht nach sogenannten "Filtern" -- Zeichenketten, die die
+<A HREF="glossary/gls_wildcards.html">Standard-Platzhalter</A>
+"*" und/oder "?" enthalten.
+
+<P>Die Filter fr die automatischen Dateitypen k”nnen Sie auf der
+"Dateitypen"-Seite im
+&link_wpsobj; festlegen. Sie k”nnen z.B. einen Dateityp
+"Acrobat PDF" mit dem Filter <CODE>*.PDF</CODE> erstellen,
+und all diesen  Dateien wird automatisch dieser Typ zugeordnet.
+
+</UL>Wenn ein Programmobjekt mit einem Dateityp <b>verknpft</b>
+wurde, erscheit das Programmobjekt in dem "™ffnen"-Untermen
+der
+<!-- V0.9.19: link added -->
+<A HREF="glossary/gls_popmenu.html">&popmenu;s</A> aller Datendateien,
+die diesen Typ haben. Die erste Verknpfung bestimmt das Symbol der
+Datendatei und wird auáerdem benutzt, wenn Sie auf die Datei
+doppelklicken.
+
+<P>In dem obigen Beispiel, wenn Sie nun den Typ "Acrobat PDF"
+mit dem Programmobjekt fr den Adobe Acrobat Reader verknpfen,
+werden alle Dateien, auf die der Filter <CODE>*.PDF</CODE> paát,
+automatisch mit diesem Programm ge”ffnet.
+
+<P>Dateitypen sind auáerdem <b>vererblich.</b> Auf der "Dateitypen"-Seite
+im &link_wpsobj; k”nnen Sie Hierarchien fr diese Vererbung festlegen,
+indem Sie die angezeigten Dateitypen in der Liste ziehen und fallenlassen.
+Wenn Sie auf diese Weise einen Typ zum "Kind" eines anderen Typen machen,
+erben alle Dateien, die den abgeleiteten Typ haben, automatisch die
+Verknpfungen des "Eltern"-Typs.
+
+<P>Beispiel: Nehmen wir an, Sie haben auch einen Dateityp "PostScript"
+definiert. Da PDF-Dokumente in Wirklichkeit eine spezielle Art von
+Postscript-Dateien sind, k”nnten Sie den Typ
+"Acrobat PDF" zum Kind-Typ von "PostScript" machen. Wenn Sie zum Beispiel
+fr "PostScript" eine Verknpfung mit GhostScript festgelegt haben, k”nnen
+Sie so all Ihre PDF-Dateien auch mit GhostScript ”ffnen.
+
+<BR>
+</BODY>
+</HTML>
+
