@@ -172,6 +172,7 @@
     #define SP_ADMIN_LOCAL_USER     200     // new with V0.9.19 (2002-04-02) [umoeller]
     #define SP_ADMIN_ALL_USERS      201     // new with V0.9.19 (2002-04-02) [umoeller]
     #define SP_ADMIN_ALL_GROUPS     202     // new with V0.9.19 (2002-04-02) [umoeller]
+    #define SP_ADMIN_PROCESSES      203     // new with V1.0.2 (2003-11-13) [umoeller]
 
     // 21) XFldObject
     #define SP_OBJECT_ICONPAGE1     220     // new with V0.9.16 (2001-10-15) [umoeller]

@@ -3,7 +3,8 @@
  *@@sourcefile callb_delete.c:
  *      SES kernel hook code.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -25,9 +26,11 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-// #include <secure.h>
 
 #include <string.h>
+
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -68,19 +71,40 @@ ULONG DELETE_PRE(PSZ pszPath)
        )
     {
         // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsGranted = 0;
+        ULONG   ulPathLen = strlen(pszPath);
+
         if (G_pidShell != G_pLDT->LIS_CurProcID)
         {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                fsGranted = ctxtQueryPermissions(pszPath,
+                                                 ulPathLen,
+                                                 pThisContext->ctxt.cSubjects,
+                                                 pThisContext->ctxt.aSubjects);
+
+                // all bits of fsRequired must be set in fsGranted
+                if ((fsGranted & XWPACCESS_DELETE) != XWPACCESS_DELETE)
+                    rc = ERROR_ACCESS_DENIED;
+            }
         }
+        else
+            pThisContext = NULL;
 
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
-            ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_DELETE_PRE,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_DELETE_PRE,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = rc;
+                pBuf->fsRequired = XWPACCESS_DELETE;
+                pBuf->fsGranted = fsGranted;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,
@@ -106,6 +130,7 @@ ULONG DELETE_PRE(PSZ pszPath)
 VOID DELETE_POST(PSZ pszPath,
                  ULONG RC)
 {
+#if 0       // not needed presently
     if (    (G_pidShell)
          && (!DevHlp32_GetInfoSegs(&G_pGDT,
                                    &G_pLDT))
@@ -116,7 +141,8 @@ VOID DELETE_POST(PSZ pszPath,
             PEVENTBUF_FILENAME pBuf;
             ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_DELETE_POST,
+            if (pBuf = ctxtLogEvent(NULL,
+                                    EVENT_DELETE_POST,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = RC;
@@ -127,6 +153,7 @@ VOID DELETE_POST(PSZ pszPath,
             }
         }
     }
+#endif
 }
 
 

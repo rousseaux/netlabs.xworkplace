@@ -79,6 +79,7 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -1563,10 +1564,11 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
 
 /*
  *@@ fsysRefresh:
- *      implementation for our replacement XWPFileSystem::wpRefresh.
+ *      implementation for our replacement XWPFileSystem::wpRefreshFSInfo.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  *@@changed V1.0.1 (2002-12-08) [umoeller]: added detection of .LONGNAME-changed case @@fixes 238
+ *@@changed V1.0.2 (2004-01-08) [umoeller]: fixed infinite recursion during mozilla URL d&d @@fixes 531
  */
 
 APIRET fsysRefresh(WPFileSystem *somSelf,
@@ -1601,6 +1603,8 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
             {
                 // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
 
+                ULONG flState = _wpQueryState(somSelf); // V1.0.2 (2004-01-08) [umoeller]
+
                 ULONG flRefresh = _wpQueryRefreshFlags(somSelf);
 
                 PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
@@ -1613,6 +1617,16 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                 CHAR            szLongname[CCHMAXPATH];
                 ULONG           ulTitleLen;
                 PSZ             pszTitle;
+
+                // fixing these flags is necessary to avoid endless recursion
+                // V1.0.2 (2004-01-08) [umoeller]
+                _wpSetState(somSelf,
+                            (flState & ~STATEFL_INITIALIZED)
+                                | STATEFL_REFRESHING);
+
+                // the WPS clears this weird flag, whatever it is
+                if (flRefresh & 0x20000000)
+                    _wpSetRefreshFlags(somSelf, flRefresh & ~0x20000000);
 
                 // check if the title has changed (.LONGNAME might
                 // have been deleted or something)
@@ -1636,9 +1650,6 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                 if (strcmp(pszTitle, _wpQueryTitle(somSelf)))
                     // whoa, .LONGNAME changed:
                     _xwpSetTitleOnly(somSelf, pszTitle);
-
-                if (flRefresh & 0x20000000)
-                    _wpSetRefreshFlags(somSelf, flRefresh & ~0x20000000);
 
                 // set the instance variable for wpCnrRefreshDetails to
                 // 0 so that we can count pending changes... see
@@ -1713,6 +1724,11 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                                    OBJSTYLE_NOTDEFAULTICON,
                                    flNewStyle);
                 }
+
+                // V1.0.2 (2004-01-08) [umoeller]
+                _wpSetState(somSelf,
+                            (flState & ~STATEFL_REFRESHING)
+                                | STATEFL_INITIALIZED);
 
                 _wpCnrRefreshDetails(somSelf);
             }

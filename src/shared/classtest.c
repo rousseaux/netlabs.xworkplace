@@ -74,6 +74,7 @@
 #include <wpserver.h>                   // WPServer
 #include <wpshdir.h>                    // WPSharedDir
 #include <wpdisk.h>                     // WPDisk
+#include <wpnetgrp.h>                   // WPNetgrp
 
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "filesys\object.h"             // XFldObject implementation
@@ -288,6 +289,22 @@ BOOL ctsIsSharedDir(WPObject *somSelf)
 BOOL ctsIsServer(WPObject *somSelf)
 {
     return _somIsA(somSelf, _WPServer);
+}
+
+/*
+ *@@ ctsIsNetgrp:
+ *      returns TRUE if somSelf is a network group object
+ *      (of the WPNetgrp class).
+ *
+ *      A WPNetgrp object contains WPServer objects
+ *      and appears in the WPNetwork folder.
+ *
+ *@@added V1.0.2 (2003-10-14) [pr]: @@fixes 514
+ */
+
+BOOL ctsIsNetgrp(WPObject *somSelf)
+{
+    return _somIsA(somSelf, _WPNetgrp);
 }
 
 /*

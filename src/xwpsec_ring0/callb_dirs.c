@@ -3,7 +3,8 @@
  *@@sourcefile callb_move.c:
  *      SES kernel hook code.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -25,9 +26,11 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-// #include <secure.h>
 
 #include <string.h>
+
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -47,7 +50,7 @@
  *
  *      Required privileges:
  *
- *      --  XWPACCESS_CREATE on the directory.
+ *      --  XWPACCESS_CREATE on the parent directory.
  *
  *      Context: Possibly any ring-3 thread on the system.
  */
@@ -61,15 +64,44 @@ ULONG MAKEDIR(PSZ pszPath)
                                    &G_pLDT))
        )
     {
+        // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsGranted = 0;
+        ULONG   ulPathLen = strlen(pszPath);
+
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                // note: we check the full path here, in the assumption
+                // that no ACL exists for the new directory and the
+                // parent will be checked anyway; this could be optimized @@todo
+                fsGranted = ctxtQueryPermissions(pszPath,
+                                                 ulPathLen,
+                                                 pThisContext->ctxt.cSubjects,
+                                                 pThisContext->ctxt.aSubjects);
+
+                // all bits of fsRequired must be set in fsGranted
+                if ((fsGranted & XWPACCESS_CREATE) != XWPACCESS_CREATE)
+                    rc = ERROR_ACCESS_DENIED;
+            }
+        }
+        else
+            pThisContext = NULL;
+
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
-            ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_MAKEDIR,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_MAKEDIR,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = rc;
+                pBuf->fsRequired = XWPACCESS_CREATE;
+                pBuf->fsGranted = fsGranted;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,
@@ -105,15 +137,41 @@ ULONG CHANGEDIR(PSZ pszPath)
                                    &G_pLDT))
        )
     {
+        // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsGranted = 0;
+        ULONG   ulPathLen = strlen(pszPath);
+
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                fsGranted = ctxtQueryPermissions(pszPath,
+                                                 ulPathLen,
+                                                 pThisContext->ctxt.cSubjects,
+                                                 pThisContext->ctxt.aSubjects);
+
+                // all bits of fsRequired must be set in fsGranted
+                if ((fsGranted & XWPACCESS_EXEC) != XWPACCESS_EXEC)
+                    rc = ERROR_ACCESS_DENIED;
+            }
+        }
+        else
+            pThisContext = NULL;
+
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
-            ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_CHANGEDIR,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_CHANGEDIR,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = rc;
+                pBuf->fsRequired = XWPACCESS_EXEC;
+                pBuf->fsGranted = fsGranted;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,
@@ -149,15 +207,41 @@ ULONG REMOVEDIR(PSZ pszPath)
                                    &G_pLDT))
        )
     {
+        // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsGranted = 0;
+        ULONG   ulPathLen = strlen(pszPath);
+
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                fsGranted = ctxtQueryPermissions(pszPath,
+                                                 ulPathLen,
+                                                 pThisContext->ctxt.cSubjects,
+                                                 pThisContext->ctxt.aSubjects);
+
+                // all bits of fsRequired must be set in fsGranted
+                if ((fsGranted & XWPACCESS_DELETE) != XWPACCESS_DELETE)
+                    rc = ERROR_ACCESS_DENIED;
+            }
+        }
+        else
+            pThisContext = NULL;
+
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
-            ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_REMOVEDIR,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_REMOVEDIR,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = rc;
+                pBuf->fsRequired = XWPACCESS_DELETE;
+                pBuf->fsGranted = fsGranted;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,

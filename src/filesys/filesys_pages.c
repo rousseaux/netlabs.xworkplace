@@ -85,7 +85,6 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 
 #include "helpers\xwpsecty.h"           // XWorkplace Security base
-#include "shared\xsecapi.h"             // XWorkplace Security API
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -1025,13 +1024,13 @@ VOID fsysFile3InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                 CHAR    c;
             } aPerms[] =
             {
-                XWPACCESS_READ, 'r',
-                XWPACCESS_WRITE, 'w',
-                XWPACCESS_CREATE, 'c',
-                XWPACCESS_EXEC, 'x',
-                XWPACCESS_DELETE, 'd',
-                XWPACCESS_ATRIB, 'a',
-                XWPACCESS_PERM, 'p'
+                XWPACCESS_READ,     'r',
+                XWPACCESS_WRITE,    'w',
+                XWPACCESS_CREATE,   'c',
+                XWPACCESS_EXEC,     'x',
+                XWPACCESS_DELETE,   'd',
+                XWPACCESS_ATRIB,    'a',
+                XWPACCESS_PERM,     'p'
             };
 
             ULONG ul;

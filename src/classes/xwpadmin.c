@@ -76,9 +76,11 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dialog.h"             // dialog helpers
+#include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -94,7 +96,6 @@
 #include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "helpers\xwpsecty.h"           // XWorkplace Security base
-#include "shared\xsecapi.h"             // XWorkplace Security API
 
 // other SOM headers
 #pragma hdrstop
@@ -164,6 +165,11 @@ static const CONTROLDEF
                             "A",
                             ID_AMDI_USER_LOCALSEC_DATA,
                             RIGHT_COLUMN),
+    LocalContextsTxt = LOADDEF_TEXT(ID_AMDI_USER_CONTEXTS_TXT),
+    LocalContextsData = CONTROLDEF_TEXT_WORDBREAK(
+                            "A",
+                            ID_AMDI_USER_CONTEXTS_DATA,
+                            RIGHT_COLUMN),
     LocalBytesTxt = LOADDEF_TEXT(ID_AMDI_USER_ALLOCBYTES_TXT),
     LocalBytesData = CONTROLDEF_TEXT_WORDBREAK(
                             "A",
@@ -201,6 +207,9 @@ static const DLGHITEM dlgLocalUser[] =
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&LocalSecTxt),
                         CONTROL_DEF(&LocalSecData),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LocalContextsTxt),
+                        CONTROL_DEF(&LocalContextsData),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&LocalBytesTxt),
                         CONTROL_DEF(&LocalBytesData),
@@ -325,7 +334,8 @@ VOID LocalUserTimerPage(PNOTEBOOKPAGE pnbp,
     APIRET arc;
     if (!(arc = xsecQueryStatus(&Status)))
     {
-        CHAR    szTemp[100];
+        CHAR    szTemp[100],
+                cThousands;
 
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_AMDI_USER_LOCALSEC_DATA,
@@ -334,8 +344,15 @@ VOID LocalUserTimerPage(PNOTEBOOKPAGE pnbp,
                             : "Inactive");
 
         nlsThousandsULong(szTemp,
+                          Status.cContexts,
+                          (cThousands = cmnQueryThousandsSeparator()));
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_AMDI_USER_CONTEXTS_DATA,
+                          szTemp);
+
+        nlsThousandsULong(szTemp,
                           Status.cbAllocated,
-                          cmnQueryThousandsSeparator());
+                          cThousands);
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_AMDI_USER_ALLOCBYTES_DATA,
                           szTemp);
@@ -350,7 +367,7 @@ VOID LocalUserTimerPage(PNOTEBOOKPAGE pnbp,
 
         nlsThousandsULong(szTemp,
                           Status.cLogged,
-                          cmnQueryThousandsSeparator());
+                          cThousands);
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_AMDI_USER_EVENTS_DATA,
                           szTemp);
@@ -483,8 +500,8 @@ STATIC VOID AllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         APIRET  arc;
         ULONG   cUsers;
         PXWPUSERDBENTRY paUsers;
-        if (!(arc = xsecQueryUsers(&cUsers,
-                                   &paUsers)))
+        if (!(arc = xsecQueryAllUsers(&cUsers,
+                                      &paUsers)))
         {
             HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -976,8 +993,8 @@ STATIC VOID AllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         {
             ULONG   cUsers;
             PXWPUSERDBENTRY paUsers;
-            if (!(arc = xsecQueryUsers(&cUsers,
-                                       &paUsers)))
+            if (!(arc = xsecQueryAllUsers(&cUsers,
+                                          &paUsers)))
             {
                 HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
@@ -1102,6 +1119,338 @@ STATIC MRESULT AllGroupsItemChanged(PNOTEBOOKPAGE pnbp,
 
 /* ******************************************************************
  *
+ *   Processes page
+ *
+ ********************************************************************/
+
+/*
+ *@@ PROCESSRECORD:
+ *
+ */
+
+typedef struct _PROCESSRECORD
+{
+    RECORDCORE      recc;
+
+    ULONG           pid;
+    PSZ             pszPID;
+    CHAR            szPID[10];
+
+    HMODULE         hmod;
+    PSZ             pszHModule;
+    CHAR            szHModule[10];
+
+    PSZ             pszProcessName;
+    CHAR            szProcessName[50];
+
+    XWPSECID        uidOwner;
+    PSZ             pszOwner;
+    CHAR            szOwner[XWPSEC_NAMELEN + 10];
+
+} PROCESSRECORD, *PPROCESSRECORD;
+
+typedef struct _PROCESSTREENODE
+{
+    TREE            tree;       // ulKey is PID
+    PROCESSRECORD   *pRecord;
+    BOOL            fProcessed;
+} PROCESSTREENODE, *PPROCESSTREENODE;
+
+typedef struct _PROCESSPAGEDATA
+{
+    TREE            *ProcessTree;
+    LONG            cProcessNodes;
+} PROCESSPAGEDATA, *PPROCESSPAGEDATA;
+
+static const CONTROLDEF
+    ProcessesGroup = LOADDEF_GROUP(ID_AMSI_PROCESSES, SZL_AUTOSIZE),
+    ProcessesCnr = CONTROLDEF_CONTAINER(
+                            ID_XFDI_CNR_CNR,
+                            200,        // for now, will be resized
+                            100);       // for now, will be resized
+
+static const DLGHITEM G_dlgProcesses[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&ProcessesGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&ProcessesCnr),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+MPARAM G_ampProcesses[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_AMSI_PROCESSES, XAC_SIZEX | XAC_SIZEY),
+    };
+
+/*
+ *@@ ProcessesInitPage:
+ *      V1.0.2 (2003-11-13) [umoeller]
+ */
+
+STATIC VOID ProcessesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                              ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        HWND            hwndCnr,
+                        hwndRemove;
+        XFIELDINFO      xfi[4];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
+
+        PROCESSPAGEDATA *pPageData;
+        pnbp->pUser
+        = pPageData
+        = NEW(PROCESSPAGEDATA);
+
+        treeInit(&pPageData->ProcessTree,
+                 &pPageData->cProcessNodes);
+
+        // insert the controls using the dialog formatter
+        // V1.0.1 (2003-01-05) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgProcesses,
+                      ARRAYITEMCOUNT(G_dlgProcesses));
+
+        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(PROCESSRECORD, pszPID);
+        xfi[i].pszColumnTitle = "PID";     // @@todo localize
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(PROCESSRECORD, pszHModule);
+        xfi[i].pszColumnTitle = "Module";   // @@todo localize
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(PROCESSRECORD, pszProcessName);
+        xfi[i].pszColumnTitle = "Executable";   // @@todo localize
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(PROCESSRECORD, pszOwner);
+        xfi[i].pszColumnTitle = "Owner";   // @@todo localize
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                0);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        PROCESSPAGEDATA *pPageData;
+
+        if (pPageData = (PROCESSPAGEDATA*)pnbp->pUser)
+        {
+            LONG    cItems;
+            TREE**  papNodes;
+            if (papNodes = treeBuildArray(pPageData->ProcessTree,
+                                          &cItems))
+            {
+                ULONG ul;
+                for (ul = 0; ul < cItems; ul++)
+                {
+                    TREE *pNodeThis = papNodes[ul];
+                    free(pNodeThis);
+                }
+
+                free(papNodes);
+            }
+
+            free(pnbp->pUser);
+            pnbp->pUser = NULL;
+        }
+    }
+}
+
+/*
+ *@@ ProcessesTimerPage:
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+VOID ProcessesTimerPage(PNOTEBOOKPAGE pnbp,
+                        ULONG ulTimer)
+{
+    APIRET arc;
+    PQTOPLEVEL32 pInfo;
+    PROCESSPAGEDATA *pPageData;
+
+    if (    (pPageData = (PROCESSPAGEDATA*)pnbp->pUser)
+         && (pInfo = prc32GetInfo(&arc))
+       )
+    {
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+        PQPROCESS32 pProcThis = pInfo->pProcessData;
+
+        // flag each tree node so we can, after having gone
+        // thru the existing processes, remove all records
+        // for which no process exists any longer
+        PROCESSTREENODE *pNode;
+        for (pNode = (PROCESSTREENODE*)treeFirst(pPageData->ProcessTree);
+             pNode;
+             pNode = (PROCESSTREENODE*)treeNext((TREE*)pNode))
+        {
+            pNode->fProcessed = FALSE;
+        }
+
+        // go over each process; for each entry, check if
+        // it is on the page already; if not, add it
+        while (pProcThis && pProcThis->ulRecType == 1)
+        {
+            PQTHREAD32  t = pProcThis->pThreads;
+            PROCESSRECORD *pRecord = NULL;
+
+            if (!(pNode = (PROCESSTREENODE*)treeFind(pPageData->ProcessTree,
+                                                     pProcThis->usPID,
+                                                     treeCompareKeys)))
+            {
+                if (pRecord = (PROCESSRECORD*)cnrhAllocRecords(hwndCnr,
+                                                               sizeof(PROCESSRECORD),
+                                                               1))
+                {
+                    pRecord->uidOwner = -999;
+
+                    cnrhInsertRecords(hwndCnr,
+                                      NULL,
+                                      (PRECORDCORE)pRecord,
+                                      FALSE, // invalidate
+                                      NULL,
+                                      CRA_RECORDREADONLY,
+                                      1);
+
+                    pNode = NEW(PROCESSTREENODE);
+                    pNode->tree.ulKey = pProcThis->usPID;
+                    pNode->pRecord = pRecord;
+                    // flag this node (avoid deletion below)
+                    pNode->fProcessed = TRUE;
+                    treeInsert(&pPageData->ProcessTree,
+                               &pPageData->cProcessNodes,
+                               (TREE*)pNode,
+                               treeCompareKeys);
+                }
+            }
+            else
+            {
+                // flag this node (avoid deletion below)
+                pNode->fProcessed = TRUE;
+                pRecord = pNode->pRecord;
+            }
+
+            if (pRecord)
+            {
+                // now set up/refresh data
+                PQMODULE32  pMod;
+                BOOL        fInvalidate = FALSE;
+                XWPSECID    uidOwner;
+
+                if (pRecord->pid != pProcThis->usPID)
+                {
+                    pRecord->pid = pProcThis->usPID;
+                    sprintf(pRecord->szPID, "0x%04lX", pProcThis->usPID);
+                    pRecord->pszPID = pRecord->szPID;
+                    fInvalidate = TRUE;
+                }
+
+                if (pRecord->hmod != pProcThis->usHModule)
+                {
+                    pRecord->hmod = pProcThis->usHModule;
+                    sprintf(pRecord->szHModule, "0x%04lX", pProcThis->usHModule);
+                    pRecord->pszHModule = pRecord->szHModule;
+                    fInvalidate = TRUE;
+                }
+
+                if (    (pMod = prc32FindModule(pInfo,
+                                                pProcThis->usHModule))
+                     && (strcmp(pRecord->szProcessName, pMod->pcName))
+                   )
+                {
+                    strlcpy(pRecord->szProcessName,
+                            pMod->pcName,
+                            sizeof(pRecord->szProcessName));
+                    pRecord->pszProcessName = pRecord->szProcessName;
+                    fInvalidate = TRUE;
+                }
+
+
+                if (arc = xsecQueryProcessOwner(pProcThis->usPID, &uidOwner))
+                    uidOwner = (XWPSECID)(-(LONG)arc);
+                if (pRecord->uidOwner != uidOwner)
+                {
+                    CHAR szOwner[XWPSEC_NAMELEN];
+                    PCSZ pcszOwner = szOwner;
+                    pRecord->uidOwner = uidOwner;
+                    if (xsecQueryUserName(uidOwner, szOwner))
+                        pcszOwner = "?";
+                    sprintf(pRecord->szOwner, "%s (%d)", pcszOwner, uidOwner);
+                    pRecord->pszOwner = pRecord->szOwner;
+                    fInvalidate = TRUE;
+                }
+
+                if (fInvalidate)
+                    WinSendMsg(hwndCnr,
+                               CM_INVALIDATERECORD,
+                               (MPARAM)&pRecord,
+                               MPFROM2SHORT(1,
+                                            CMA_TEXTCHANGED));
+            }
+
+            // next process block comes after the
+            // threads
+            t += pProcThis->usThreadCount;
+            pProcThis = (PQPROCESS32)t;
+        }
+
+        prc32FreeInfo(pInfo);
+
+        // now remove all tree nodes where fProcessed
+        // is still FALSE; those need to go
+        pNode = (PROCESSTREENODE*)treeFirst(pPageData->ProcessTree);
+        while (pNode)
+        {
+            PROCESSTREENODE *pNext = (PROCESSTREENODE*)treeNext((TREE*)pNode);
+            if (!pNode->fProcessed)
+            {
+                WinSendMsg(hwndCnr,
+                           CM_REMOVERECORD,
+                           &pNode->pRecord,
+                           MPFROM2SHORT(1,
+                                        CMA_FREE | CMA_INVALIDATE));
+
+                treeDelete(&pPageData->ProcessTree,
+                           &pPageData->cProcessNodes,
+                           (TREE*)pNode);
+            }
+
+            pNode = pNext;
+        }
+    }
+}
+
+/* ******************************************************************
+ *
  *   XWPAdmin instance methods
  *
  ********************************************************************/
@@ -1125,6 +1474,19 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndDlg;
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+
+    // processes page
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XFD_CONTAINERPAGE;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_AMSI_PROCESSES);
+    inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_PROCESSES;
+    inbp.ulPageID = SP_ADMIN_PROCESSES;
+    inbp.pampControlFlags = G_ampProcesses;
+    inbp.cControlFlags = ARRAYITEMCOUNT(G_ampProcesses);
+    inbp.pfncbInitPage    = ProcessesInitPage;
+    inbp.pfncbTimer = ProcessesTimerPage;
+    inbp.ulTimer = 1000;
+    ntbInsertPage(&inbp);
 
     // check if XWPShell is running; if so the queue must exist
     if (xsecQueryStatus(NULL))

@@ -31,6 +31,9 @@
 #include <builtin.h>
 #include <string.h>
 
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
+
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\DevHlp32.h"
@@ -50,7 +53,7 @@ extern ULONG        G_open_count = 0;
 
 extern PPROCESSLIST G_pplTrusted = NULL;           // global list of trusted processes (fixed mem)
 
-extern RING0STATUS  G_R0Status = {0};
+extern XWPSECSTATUS G_R0Status = {0};
 
 extern HVDHSEM      G_hmtx = NULLHANDLE;
 
@@ -73,19 +76,32 @@ extern HVDHSEM      G_hmtx = NULLHANDLE;
 IOCTLRET ioctlRegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packet
 {
     PPROCESSLIST pplShell;
+    ULONG ul;
 
     // get flat pointer to data packet, which is PROCESSLIST
     if (DevHlp32_VirtToLin(pRequest->data,
                            __StackToFlat(&pplShell)))
         return ERROR_I24_INVALID_PARAMETER;
 
-    // make a copy of the shell's list of trusted processes
-    if (!(G_pplTrusted = utilAllocFixed(pplShell->cbStruct)))
-        return ERROR_I24_GEN_FAILURE;
+    // clear out the old security contexts, in case xwpshell
+    // got restarted (should only happen on development machines!)
+    ctxtClearAll();
 
-    memcpy(G_pplTrusted,
-           pplShell,
-           pplShell->cbStruct);
+    // for each process in the shell's list of process, create
+    // one priviledged security context
+    for (ul = 0;
+         ul < pplShell->cTrusted;
+         ++ul)
+    {
+        PXWPSECURITYCONTEXT pContext;
+        if (!(pContext = ctxtCreate(pplShell->apidTrusted[ul],
+                                    0,        // parent PID (unknown here)
+                                    1)))      // 1 subject handle for root
+            // oh boy
+            return ERROR_I24_GEN_FAILURE;
+
+        pContext->ctxt.aSubjects[0] = 0;        // root subject handle
+    }
 
     // reset logging flag in case this is a reopen
     G_bLog = LOG_INACTIVE;
@@ -124,6 +140,8 @@ VOID ioctlDeregisterDaemon(VOID)
     }
 
     ctxtStopLogging();
+
+    ctxtClearAll();
 
     G_pidShell = 0;
 }
@@ -267,7 +285,7 @@ int sec32_ioctl(PTR16 reqpkt)
 
         case XWPSECIO_QUERYSTATUS:
         {
-            PRING0STATUS    pStatusR3;
+            XWPSECSTATUS    *pStatusR3;
             // get flat pointer to data packet, which is LOGBUF
             if (DevHlp32_VirtToLin(pRequest->data,
                                    __StackToFlat(&pStatusR3)))
@@ -276,6 +294,90 @@ int sec32_ioctl(PTR16 reqpkt)
             memcpy(pStatusR3,
                    &G_R0Status,
                    sizeof(G_R0Status));
+        }
+        break;
+
+        /*
+         *@@ XWPSECIO_QUERYCONTEXT:
+         *
+         */
+
+        case XWPSECIO_QUERYCONTEXT:
+        {
+            SECIOCONTEXT        *pCtxtR3;
+            XWPSECURITYCONTEXT  *pThisContext;
+
+            // get flat pointer to data packet, which is SECIOCONTEXT
+            if (DevHlp32_VirtToLin(pRequest->data,
+                                   __StackToFlat(&pCtxtR3)))
+                return STDON | STERR | ERROR_I24_INVALID_PARAMETER;
+
+            // look up the PID
+            if (!(pThisContext = ctxtFind(pCtxtR3->pid)))
+                return STDON | STERR | ERROR_I24_BAD_UNIT;
+
+            if (pThisContext->ctxt.cSubjects > pCtxtR3->cSubjects)
+                // we need more space
+                return STDON | STERR | ERROR_I24_BAD_LENGTH;
+
+            pCtxtR3->cSubjects = pThisContext->ctxt.cSubjects;
+            memcpy(pCtxtR3->aSubjects,
+                   pThisContext->ctxt.aSubjects,
+                   sizeof(HXSUBJECT) * pThisContext->ctxt.cSubjects);
+        }
+        break;
+
+        /*
+         *@@ XWPSECIO_SETCONTEXT:
+         *
+         */
+
+        case XWPSECIO_SETCONTEXT:
+        {
+            SECIOCONTEXT        *pCtxtR3;
+            XWPSECURITYCONTEXT  *pThisContext;
+
+            // get flat pointer to data packet, which is SECIOCONTEXT
+            if (DevHlp32_VirtToLin(pRequest->data,
+                                   __StackToFlat(&pCtxtR3)))
+                return STDON | STERR | ERROR_I24_INVALID_PARAMETER;
+
+            // look up the PID
+            if (!(pThisContext = ctxtFind(pCtxtR3->pid)))
+                return STDON | STERR | ERROR_I24_BAD_UNIT;
+
+            if (pThisContext->ctxt.cSubjects > pCtxtR3->cSubjects)
+            {
+                // um, we need more space: reallocate this context
+                USHORT pidParent = pThisContext->ctxt.pidParent;
+                ctxtFree(pThisContext);
+                if (!(pThisContext = ctxtCreate(pCtxtR3->pid,
+                                                pidParent,
+                                                pCtxtR3->cSubjects)))
+                    return STDON | STERR | ERROR_I24_GEN_FAILURE;
+            }
+
+            pThisContext->ctxt.cSubjects = pCtxtR3->cSubjects;
+            memcpy(pThisContext->ctxt.aSubjects,
+                   pCtxtR3->aSubjects,
+                   sizeof(HXSUBJECT) * pThisContext->ctxt.cSubjects);
+        }
+        break;
+
+        /*
+         *@@ XWPSECIO_SENDACLS:
+         *
+         */
+
+        case XWPSECIO_SENDACLS:
+        {
+            PRING0BUF    pBufR3;
+            // get flat pointer to data packet, which is SECIOCONTEXT
+            if (DevHlp32_VirtToLin(pRequest->data,
+                                   __StackToFlat(&pBufR3)))
+                return STDON | STERR | ERROR_I24_INVALID_PARAMETER;
+
+            return ctxtSendACLs(pBufR3);
         }
         break;
 

@@ -1665,45 +1665,43 @@ BOOL fdrvIsInsertable(WPObject *pObject,
 
     // INSERT_ALL or INSERT_FILESYSTEMS:
 
-    // resolve shadows
-    if (!(pObject = _xwpResolveIfLink(pObject)))
-        // broken shadow:
-        // disallow with INSERT_FILESYSTEMS
-        return (ulFoldersOnly == INSERT_ALL);
-
     if (ulFoldersOnly == INSERT_ALL)
         return TRUE;
 
     // INSERT_FILESYSTEMS:
 
-    if (_somIsA(pObject, _WPDisk))
-        return TRUE;
-
-    if (    // filter out non-file systems (shadows pointing to them have been resolved):
-            (_somIsA(pObject, _WPFileSystem))
-            // filter out hidden objects:
-         && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
-       )
+    // disallow broken shadows with INSERT_FILESYSTEMS
+    if ((pObject = _xwpResolveIfLink(pObject)))
     {
-        // OK, non-hidden file-system object:
-        // regardless of filters, always insert folders
-        if (_somIsA(pObject, _WPFolder))
-            return TRUE;          // templates too
-
-        if ((pcszFileMask) && (*pcszFileMask))
-        {
-            // file mask specified:
-            CHAR szRealName[CCHMAXPATH];
-            if (_wpQueryFilename(pObject,
-                                 szRealName,
-                                 FALSE))       // not q'fied
-            {
-                return doshMatch(pcszFileMask, szRealName);
-            }
-        }
-        else
-            // no file mask:
+        if (_somIsA(pObject, _WPDisk))
             return TRUE;
+
+        if (    // filter out non-file systems (shadows pointing to them have been resolved):
+                (_somIsA(pObject, _WPFileSystem))
+                // filter out hidden objects:
+             && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
+           )
+        {
+            // OK, non-hidden file-system object:
+            // regardless of filters, always insert folders
+            if (_somIsA(pObject, _WPFolder))
+                return TRUE;          // templates too
+
+            if ((pcszFileMask) && (*pcszFileMask))
+            {
+                // file mask specified:
+                CHAR szRealName[CCHMAXPATH];
+                if (_wpQueryFilename(pObject,
+                                     szRealName,
+                                     FALSE))       // not q'fied
+                {
+                    return doshMatch(pcszFileMask, szRealName);
+                }
+            }
+            else
+                // no file mask:
+                return TRUE;
+        }
     }
 
     return FALSE;

@@ -1,5 +1,5 @@
 #
-# Makefile for XPSTAT.EXE.
+# Makefile for XMAKEINI.EXE.
 #
 # See make\readme.txt about an introduction to the make system introduced
 # in the CVS trunk on 2003-01-28.
@@ -40,7 +40,7 @@
 # *
 # ***************************************************************************
 
-MODULESTEM = xpstat
+MODULESTEM = xnet
 
 OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 
@@ -50,13 +50,13 @@ OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 # *
 # ***************************************************************************
 
-BLDLEVELNAME = "$(XWPNAME) process status viewer"
+BLDLEVELNAME = "$(XWPNAME) profile generator"
 
 COPYTODIR = $(XWPRUNNING)\bin
 
 LINKMODULE = $(MODULESTEM).exe
 
-RESOURCE_SOURCES = $(MODULESTEM).h $(MODULESTEM).rc $(MODULESTEM).ico
+!undef RESOURCE_SOURCES
 
 # ***************************************************************************
 # *
@@ -74,5 +74,4 @@ RESOURCE_SOURCES = $(MODULESTEM).h $(MODULESTEM).rc $(MODULESTEM).ico
 # ***************************************************************************
 
 !include $(MAKE_INCLUDE_DIR)\targets.in
-
 

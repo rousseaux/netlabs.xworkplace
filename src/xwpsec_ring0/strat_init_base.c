@@ -22,14 +22,23 @@
  *      causes the kernel to call the driver for a number of
  *      security-sensitve events, such as "open", "delete",
  *      "execute program" and so on. This is done in sec32_init_base().
+ *      In this respect, the driver is a typical OS/2 security
+ *      driver. We do _not_ however use any of the SES functionality
+ *      dealing with subject handles, but instead implement all that
+ *      ourselves.
  *
- *      Structure of the driver:
+ *      In detail:
  *
  *      --  sec32_strategy.c contains our strategy routing table.
  *          This gets called from the 16-bit strategy stub in
  *          sec32_start.asm and routes the regular OS/2 request
  *          packets for "init", "open driver", "ioctl", and "close
  *          driver" to our 32-bit C implementations.
+ *
+ *          In other words, those regular OS/2 strategy calls are
+ *          pretty rare with this driver. Open is restricted to
+ *          a single process (XWPShell, or whoever else opens it),
+ *          and that process uses IOCtls to control the driver.
  *
  *          See strat_ioctl.c for an introduction to the driver's
  *          ioctl interface.
@@ -57,8 +66,12 @@
  *              EXECPGM_POST call.
  *
  *          Note that we do nothing in these callouts unless
- *          XWPShell has the driver currently open. See
+ *          XWPShell currently has the driver open. See
  *          XWPSECIO_REGISTER for details.
+ *
+ *      --  sec32_contexts.c has the driver "engine", so-to-say,
+ *          with logging, security contexts, and authentication
+ *          of the various events.
  *
  *      Contexts in which the driver runs:
  *
@@ -355,6 +368,9 @@ int sec32_init_base(PTR16 reqpkt)
             }
             else
             {
+                // init security contexts
+                ctxtInit();
+
                 // OK, driver successfully initialized:
                 // if not "-Q", put out message
                 if (!fQuiet)

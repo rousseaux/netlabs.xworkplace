@@ -40,6 +40,7 @@
 #include "helpers\stringh.h"
 #include "helpers\textview.h"           // PM text view control
 #include "helpers\winh.h"
+#include "helpers\xwpsecty.h"
 #include "helpers\xstring.h"
 
 #include "dlgids.h"
@@ -96,6 +97,8 @@ PQTOPLEVEL32 G_pInfo = NULL;
 PRECORDCORE G_precSelected = NULL;
 
 BOOL        G_fWordWrap = FALSE;
+
+BOOL        G_fXWPSec = FALSE;
 
 QPROCESS32  SysInitProcess =
                 {
@@ -405,13 +408,9 @@ VOID InsertProcessList(HWND hwndCnr,
                       0);
 
     if (G_pInfo)
-    {
         prc32FreeInfo(G_pInfo);
-        G_pInfo = NULL;
-    }
-    G_pInfo = prc32GetInfo(&arc);
 
-    if (G_pInfo)
+    if (G_pInfo = prc32GetInfo(&arc))
     {
         PQPROCESS32 pProcess = G_pInfo->pProcessData;
         PPROCRECORD precFirst,
@@ -581,15 +580,31 @@ VOID ProcessSelected(VOID)
         pszTemp += sprintf(pszTemp, "PID: 0x%04lX\n", pProcess->usPID);
         pszTemp += sprintf(pszTemp, "Parent PID: 0x%04lX\n", pProcess->usPPID);
         pszTemp += sprintf(pszTemp, "Screen Group ID: 0x%04lX\n", pProcess->ulScreenGroupID);
-
-        pszTemp += sprintf(pszTemp, "\nModule: %s\n", ((PPROCRECORD)G_precSelected)->szModuleName);
         xstrcpy(&strCurrentInfo, szTemp, 0);
 
-        if (pProcess->usPID == 1)
+        if (G_fXWPSec)
         {
+            XWPSECID uidOwner;
+            APIRET  arc;
+            CHAR    szOwnerName[XWPSEC_NAMELEN];
+            if (!(arc = xsecQueryProcessOwner(pProcess->usPID, &uidOwner)))
+                if (!(arc = xsecQueryUserName(uidOwner, szOwnerName)))
+                    sprintf(szTemp, "\nOwning User: %s (ID %d)\n", szOwnerName, uidOwner);
+                else
+                    sprintf(szTemp, "\nOwning User ID: %d\n", uidOwner);
+            else
+                sprintf(szTemp, "\nError %d querying owning user ID\n", arc);
+        }
+        else
+            sprintf(szTemp, "\nMulti-user information not available\n");
+        xstrcat(&strCurrentInfo, szTemp, 0);
+
+        sprintf(szTemp, "\nModule: %s\n", ((PPROCRECORD)G_precSelected)->szModuleName);
+        xstrcat(&strCurrentInfo, szTemp, 0);
+
+        if (pProcess->usPID == 1)
             // sysinit:
             xstrcat(&strCurrentInfo, "\nKernel pseudo-process.\n", 0);
-        }
         else
         {
             // regular process:
@@ -1657,6 +1672,9 @@ int main(int argc, char *argv[])
         return FALSE;
 
     winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
+
+    if (!xsecQueryStatus(NULL))
+        G_fXWPSec = TRUE;
 
     // now attempt to find the XWorkplace NLS resource DLL,
     // which we need for all resources (new with XWP 0.9.0)

@@ -1254,52 +1254,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_REBOOTEXT LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XShutdown: Reboot Actions", ID_XSD_REBOOTEXT, 55, 33, 240, 174, ,
-            FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        ICON            ID_SDICON, ID_SDDI_ICON, 10, 153, 20, 16, WS_GROUP
-        LTEXT           "Enter your custom reboot actions here.", -1, 45,
-                        149, 185, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LISTBOX         ID_XSDI_XRB_LISTBOX, 10, 75, 145, 62, LS_NOADJUSTPOS |
-                        LS_HORZSCROLL
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~New", ID_XSDI_XRB_NEW, 175, 126, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Delete", ID_XSDI_XRB_DELETE, 175, 111, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Up", ID_XSDI_XRB_UP, 175, 90, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "Do~wn", ID_XSDI_XRB_DOWN, 175, 75, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Action descri~ption:", -1, 10, 63, 160, 8,
-                        DT_MNEMONIC
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XSDI_XRB_ITEMNAME, 12, 53, 141, 8, ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "P~artitions ", ID_XSDI_XRB_PARTITIONS, 160, 51, 70,
-                        12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Action command ~line:", -1, 10, 42, 145, 8,
-                        DT_MNEMONIC | NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XSDI_XRB_COMMAND, 12, 32, 216, 8, ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~OK", DID_OK, 10, 6, 60, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 80, 6, 60, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Help", -1, 170, 6, 60, 12, BS_HELP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
 DLGTEMPLATE ID_XSD_SET28STATUSBARS2 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SET28STATUSBARS2, 0, 0, 224, 180, NOT FS_DLGBORDER |

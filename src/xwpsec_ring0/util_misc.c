@@ -29,6 +29,9 @@
 
 #include <builtin.h>
 
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
+
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\DevHlp32.h"
@@ -46,7 +49,7 @@
 
 static PVOID        G_pTemp = NULL;
 
-extern RING0STATUS  G_R0Status;     // in strat_ioctl.c
+extern XWPSECSTATUS G_R0Status;     // in strat_ioctl.c
 
 /* ******************************************************************
  *
@@ -58,12 +61,18 @@ extern RING0STATUS  G_R0Status;     // in strat_ioctl.c
  *@@ utilAllocFixed:
  *      allocates a chunk of fixed kernel memory.
  *
+ *      This calls the VMAlloc devhlp with the given cb parameter
+ *      and the VMDHA_FIXED flag only. Apparently this devhlp goes
+ *      into the kernel's own heap manager under certain conditions,
+ *      most importantly, if the requested size is small. It thus
+ *      appears to be safe to use this in malloc()-like fashion with
+ *      many small objects.
+ *
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
 PVOID utilAllocFixed(ULONG cb)
 {
-    // make a copy of the shell's list of trusted processes
     if (DevHlp32_VMAlloc(cb,                // Length
                          VMDHA_NOPHYSADDR,  // PhysAddr == -1
                          VMDHA_FIXED,       // Flags

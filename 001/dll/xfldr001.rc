@@ -1661,6 +1661,15 @@ BEGIN
     ID_XSDI_ACL_WMCLOSE                 "Clo~se PM window"
     ID_XSDI_ACL_KILLSESSION             "~Kill session (DosKillProcess)"
 
+    /* strings formerly in ID_XSD_REBOOTEXT V1.0.2 (2003-12-03) [umoeller] */
+    ID_XSD_REBOOTEXT_TITLE              "Reboot Actions"
+    ID_XSDI_XRB_INTRO                   "Enter your custom reboot actions here."
+    ID_XSDI_XRB_UP                      "~Up"
+    ID_XSDI_XRB_DOWN                    "Do~wn"
+    ID_XSDI_XRB_ITEMNAME_TXT            "Action descri~ption:"
+    ID_XSDI_XRB_PARTITIONS              "P~artitions "
+    ID_XSDI_XRB_COMMAND_TXT             "Action command ~line:"
+
     /* strings formerly in ID_XSD_MOUSEMAPPINGS2 */
     ID_XSDI_MOUSE_MAPPINGS2GROUP        "Additional mappings"
     ID_XSDI_MOUSE_CHORDWINLIST          "Allo~w show window list everywhere"
@@ -1738,6 +1747,7 @@ BEGIN
     ID_AMDI_USER_CONFIRMPASS_TXT        "Confirm password:"
     ID_AMDI_USER_GROUPS_TXT             "Groups:"
     ID_AMDI_USER_LOCALSEC_TXT           "Local security:"
+    ID_AMDI_USER_CONTEXTS_TXT           "Security contexts:"
     ID_AMDI_USER_ALLOCBYTES_TXT         "Allocated bytes:"
     ID_AMDI_USER_BUFALLOCS_TXT          "Allocated buffers:"
     ID_AMDI_USER_EVENTS_TXT             "Kernel events:"
@@ -1746,6 +1756,8 @@ BEGIN
     ID_AMSI_LOCAL_USER                  "~My Account"
     ID_AMSI_ALL_USERS                   "All ~Users"
     ID_AMSI_ALL_GROUPS                  "All ~Groups"
+
+    ID_AMSI_PROCESSES                   "~Processes"    /* added V1.0.2 (2003-11-13) [umoeller] */
 
     /* new file 3 (permissions) page */
     ID_AMDI_F3_PERMISSIONS_TXT          "Your permissions:"

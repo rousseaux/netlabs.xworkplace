@@ -3,7 +3,8 @@
  *@@sourcefile sec32_data.c:
  *      global variables for the data segment.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -25,7 +26,7 @@
 #define INCL_NOPMAPI
 #include <os2.h>
 
-#include "security\ring0api.h"
+// #include "security\ring0api.h"
 
 #include "xwpsec32.sys\types.h"
 
@@ -42,3 +43,6 @@ extern CHAR             G_szScratchBuf[1000] = "";
 
 // extern EVENTBUFUNION    G_EventBuf = {0};
         // union with the various event buffers
+
+extern USHORT G_rcUnknownContext = NO_ERROR;
+

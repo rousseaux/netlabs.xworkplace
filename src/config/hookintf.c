@@ -150,7 +150,7 @@ BOOL hifLoadHookConfig(PHOOKCONFIG phc)
  *
  *      Returns the new hook install status.
  *      If this is the same as fEnable, the
- *      operation was successfull.
+ *      operation was successful.
  *
  *      This does NOT change the global settings.
  *

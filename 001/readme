@@ -60,6 +60,9 @@ Last updated November 23, 2002
     "XWorkplace User Guide". To extract the documentation
     only, see "3. INSTALLATION" below.
 
+    Alternatively, you can probably find a detailed changelog
+    on http://www.xworkplace.org also.
+
 
 2. REQUIREMENTS
 ===============
@@ -85,7 +88,7 @@ Last updated November 23, 2002
 
     --  Merlin/Aurora Convenience Packages
 
-    --  eComStation 1.0
+    --  eComStation 1.x
 
 
 3. INSTALLATION
@@ -96,19 +99,46 @@ Last updated November 23, 2002
     to make sure the changes become active. A reboot should not
     be necessary.
 
-    WARNING: It was reported that the Workplace Shell hangs itself
-    up after the restart if you have the "Automatic lockup on
-    startup" setting enabled. In that case, disable that setting
-    before allowing WarpIN to restart the WPS.
-
-    ---> In any case, before installing, MAKE A WPS BACKUP.
-
     If you are still unsure whether you should use XWorkplace at
     this point, you can select the "Documentation" package in this
     archive only. This way can then read through XWorkplace's
     documentation first and decide then whether to actually install
     all of it. To install later, simply double-click on XWorkplace's
     .WPI archive again.
+
+    Some WARNINGS:
+
+    --  In any case, before installing, MAKE A WPS BACKUP.
+
+    --  It was reported that the Workplace Shell hangs itself
+        up after the restart if you have the "Automatic lockup
+        on startup" setting enabled. In that case, disable that
+        setting before allowing WarpIN to restart the WPS.
+
+
+    Installing on eComStation 1.1
+    -----------------------------
+
+    If you are installing on eComStation 1.1, note that
+    the "Desktop enhancements" of that version include a
+    special version of XWorkplace that will conflict with
+    the standalone version. Do one of the following:
+
+    *   Install this release of XWorkplace over the version
+        that comes with eCS 1.1 -- that is, when WarpIN
+        asks you about the target directory, enter
+        ?:\ecs\system\ewps (on your boot drive).
+
+        Note however that this will overwrite the version
+        that comes with eCS, which cannot easily be recovered.
+
+    *   Alternatively, exit this XWorkplace installation now
+        and deinstall the eCS version first by running
+
+            ?:\ecs\system\ewps\install\deinst.cmd
+
+        Restart your desktop (or reboot), and then install
+        XWorkplace to any directoy.
 
 
 4. UPGRADING

@@ -172,7 +172,7 @@ PSUBJECTTREENODE FindSubjectInfoFromHandle(HXSUBJECT hSubject)
                                      hSubject,
                                      treeCompareKeys);
 
-    return (pTreeItem);
+    return pTreeItem;
 }
 
 /*
@@ -209,31 +209,6 @@ PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: one of SUBJ_USER
     return NULL;
 }
 
-/*
- *@@ CalcACLNodeSize:
- *      returns the size of the RESOURCEACL entry to be built
- *      from the given acl tree node, including the ACCESS
- *      structs needed for it.
- *
- *@@added V1.0.1 (2003-01-05) [umoeller]
- */
-
-ULONG CalcACLNodeSize(PACLDBTREENODE pNode,
-                      PRESOURCEACL pBuf)       // out: buf offsets
-{
-    ULONG   cPerms = lstCountItems(&pNode->llPerms);
-
-    if (pBuf)
-    {
-        pBuf->cAccesses = cPerms;
-        pBuf->cbName = pNode->usResNameLen + 1;
-    }
-
-    return   sizeof(RESOURCEACL)        // includes one byte for szName already
-           + pNode->usResNameLen
-           + cPerms * sizeof(ACCESS);
-}
-
 /* ******************************************************************
  *
  *   Security logging thread
@@ -248,7 +223,7 @@ ULONG CalcACLNodeSize(PACLDBTREENODE pNode,
 
 APIRET LogEntry(ULONG idLogBuf,
                 PEVENTLOGENTRY pThis,
-                const char* pcszFormat,
+                PCSZ pcszFormat,
                 ...)
 {
     APIRET arc = NO_ERROR;
@@ -260,12 +235,11 @@ APIRET LogEntry(ULONG idLogBuf,
         ULONG   ulLength;
 
         ulLength = sprintf(szTemp,
-                           "%04lX|%04lX %04d-%02d-%02d %02d:%02d:%02d %08lX|%08lX",
-                           pThis->ctxt.pid, pThis->ctxt.tid,
+                           "%04lX|%04lX %08lX %04d-%02d-%02d %02d:%02d:%02d %08lX|%08lX",
+                           pThis->ctxt.pid, pThis->ctxt.tid, pThis->idContext,
                            pThis->stamp.year, pThis->stamp.month, pThis->stamp.day,
                            pThis->stamp.hours, pThis->stamp.minutes, pThis->stamp.seconds,
-                           idLogBuf,
-                           pThis->idEvent);
+                           idLogBuf, pThis->idEvent);
         if (!(arc = doshWrite(G_LogFile,
                               ulLength,
                               szTemp)))
@@ -319,13 +293,15 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                         PEVENTBUF_OPEN pOpen = (PEVENTBUF_OPEN)pbData;
                         LogEntry(pLogBuf->idLogBuf,
                                  pThis,
-                                 "%04d: OPEN PRE  %04lX=\"%s\" %08lX %08lX -> rc %d",
+                                 "%04d: OPEN PRE  %04lX=\"%s\" fl-%08lX md-%08lX -> rc %d (rq:%02lX gr:%02lX)",
                                  ul,
                                  pOpen->SFN,
                                  pOpen->szPath,
                                  pOpen->fsOpenFlags,
                                  pOpen->fsOpenMode,
-                                 pOpen->rc);
+                                 pOpen->rc,
+                                 pOpen->PRE.fsRequired,
+                                 pOpen->PRE.fsGranted);
                     }
                     break;
 
@@ -334,13 +310,16 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                         PEVENTBUF_OPEN pOpen = (PEVENTBUF_OPEN)pbData;
                         LogEntry(pLogBuf->idLogBuf,
                                  pThis,
-                                 "%04d: OPEN POST %04lX=\"%s\" %08lX %08lX -> rc %d",
+                                 "%04d: OPEN POST %04lX=\"%s\" fl-%08lX md-%08lX -> rc %d (c:%d)",
                                  ul,
                                  pOpen->SFN,
                                  pOpen->szPath,
                                  pOpen->fsOpenFlags,
                                  pOpen->fsOpenMode,
-                                 pOpen->rc);
+                                 pOpen->rc,
+                                 (pLogBuf->idLogBuf)
+                                    ? pOpen->POST.cOpenFiles
+                                    : 0);
                     }
                     break;
 
@@ -370,12 +349,14 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     break;
 
                     case EVENT_EXECPGM_PRE:
+                    case EVENT_CREATEVDM_PRE:
                     {
                         PEVENTBUF_FILENAME pExec = (PEVENTBUF_FILENAME)pbData;
                         LogEntry(pLogBuf->idLogBuf,
                                  pThis,
-                                 "%04d: EXEC PRE       \"%s\" -> rc %d",
+                                 "%04d: %s \"%s\" -> rc %d",
                                  ul,
+                                 (pThis->ulEventCode == EVENT_EXECPGM_PRE) ? "EXEC PRE      " : "CREATEVDM PRE ",
                                  pExec->szPath,
                                  pExec->rc);
                     }
@@ -397,14 +378,28 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                     }
                     break;
 
+                    case EVENT_CREATEVDM_POST:
+                    {
+                        PEVENTBUF_CLOSE pBuf = (PEVENTBUF_CLOSE)pbData;
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "%04d: CREATEVDM POST -> rc %d",
+                                 ul,
+                                 pBuf->SFN);       // rc
+                    }
+                    break;
+
                     case EVENT_CLOSE:
                     {
                         PEVENTBUF_CLOSE pClose = (PEVENTBUF_CLOSE)pbData;
                         LogEntry(pLogBuf->idLogBuf,
                                  pThis,
-                                 "%04d: CLOSE     %04lX",
+                                 "%04d: CLOSE     %04lX (c:%d)",
                                  ul,
-                                 pClose->SFN);
+                                 pClose->SFN,
+                                 (pLogBuf->idLogBuf)
+                                    ? pClose->cOpenFiles
+                                    : 0);
                     }
                     break;
 
@@ -427,6 +422,78 @@ VOID LogLoop(PTHREADINFO ptiMyself,
                                  pThis,
                                  "%04d: DEL  POST      \"%s\" -> rc %d",
                                  ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_MAKEDIR:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "%04d: MAKEDIR        \"%s\" -> rc %d",
+                                 ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_CHANGEDIR:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "%04d: CHANGEDIR      \"%s\" -> rc %d",
+                                 ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_REMOVEDIR:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "%04d: REMOVEDIR      \"%s\" -> rc %d",
+                                 ul,
+                                 pFile->szPath,
+                                 pFile->rc);
+                    }
+                    break;
+
+                    case EVENT_TRUSTEDPATH:
+                    {
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "%04d: TRUSTEDPATH",
+                                 ul);
+                    }
+                    break;
+
+                    case EVENT_FINDFIRST:
+                    case EVENT_FINDFIRST3X:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "%04d: %s    \"%s\" -> rc %d (rq:%02lX gr:%02lX)",
+                                 ul,
+                                 (pThis->ulEventCode == EVENT_FINDFIRST) ? "FINDFIRST  " : "FINDFIRST3X",
+                                 pFile->szPath,
+                                 pFile->rc,
+                                 pFile->fsRequired,
+                                 pFile->fsGranted);
+                    }
+                    break;
+
+                    case EVENT_FINDPERMISSIONS:
+                    {
+                        PEVENTBUF_FILENAME pFile = (PEVENTBUF_FILENAME)pbData;
+                        LogEntry(pLogBuf->idLogBuf,
+                                 pThis,
+                                 "      -------(test)- \"%s\" -> 0x%lX",
                                  pFile->szPath,
                                  pFile->rc);
                     }
@@ -487,6 +554,76 @@ void _Optlink fntLogger(PTHREADINFO ptiMyself)
  ********************************************************************/
 
 /*
+ *@@ scxtBuildPIDList:
+ *
+ *      Caller must free() the list if NO_ERROR is returned.
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+APIRET scxtGetRunningPIDs(PPROCESSLIST *ppList)
+{
+    APIRET arc = NO_ERROR;
+
+    // build array of process IDs to send down with SECIO_REGISTER
+    PQTOPLEVEL32 pInfo;
+    if (pInfo = prc32GetInfo2(QS32_PROCESS | QS32_THREAD, &arc))
+    {
+        // count processes; i can't see a field for this
+        PQPROCESS32 pProcThis = pInfo->pProcessData;
+        ULONG cProcs = 0;
+        while (pProcThis && pProcThis->ulRecType == 1)
+        {
+            PQTHREAD32  t = pProcThis->pThreads;
+            ++cProcs;
+            // for next process, skip the threads info;
+            // the next process block comes after the
+            // threads
+            t += pProcThis->usThreadCount;
+            pProcThis = (PQPROCESS32)t;
+        }
+
+        if (cProcs)
+        {
+            PPROCESSLIST    pList;
+            ULONG           cbStruct =   sizeof(PROCESSLIST)
+                                       + (cProcs - 1) * sizeof(ULONG);
+
+            if (!(pList = malloc(cbStruct)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            else
+            {
+                PUSHORT     ppidThis = &pList->apidTrusted[0];
+
+                pList->cbStruct = cbStruct;
+                pList->cTrusted = cProcs;
+
+                // start over
+                pProcThis = pInfo->pProcessData;
+                while (pProcThis && pProcThis->ulRecType == 1)
+                {
+                    PQTHREAD32  t = pProcThis->pThreads;
+
+                    *ppidThis++ = pProcThis->usPID;
+
+                    // for next process, skip the threads info;
+                    // the next process block comes after the
+                    // threads
+                    t += pProcThis->usThreadCount;
+                    pProcThis = (PQPROCESS32)t;
+                }
+
+                *ppList = pList;
+            }
+        }
+
+        prc32FreeInfo(pInfo);
+    }
+
+    return arc;
+}
+
+/*
  *@@ InitRing0:
  *
  *@@added V1.0.1 (2003-01-10) [umoeller]
@@ -511,83 +648,30 @@ APIRET InitRing0(VOID)
                  NULL))
     {
         // driver opened:
-
-        // build array of process IDs to send down with SECIO_REGISTER
-        PQTOPLEVEL32 pInfo;
-        if (pInfo = prc32GetInfo2(QS32_PROCESS | QS32_THREAD, &arc))
+        PPROCESSLIST    pList;
+        if (!(arc = scxtGetRunningPIDs(&pList)))
         {
-            // count processes; i can't see a field for this
-            PQPROCESS32 pProcThis = pInfo->pProcessData;
-            ULONG cProcs = 0;
-            while (pProcThis && pProcThis->ulRecType == 1)
+            // alright, REGISTER these and ENABLE LOCAL SECURITY
+            // by calling DosDevIOCtl
+            if (!(arc = SecIOCtl(XWPSECIO_REGISTER,
+                                 pList,
+                                 pList->cbStruct)))
             {
-                PQTHREAD32  t = pProcThis->pThreads;
-                ++cProcs;
-                // for next process, skip the threads info;
-                // the next process block comes after the
-                // threads
-                t += pProcThis->usThreadCount;
-                pProcThis = (PQPROCESS32)t;
+                // this worked:
+                // start the logger thread
+                thrCreate(&G_tiLogger,
+                          fntLogger,
+                          NULL,
+                          "Logger",
+                          THRF_WAIT,
+                          0);
             }
 
-            if (cProcs)
-            {
-                PPROCESSLIST    pList;
-                ULONG           cbStruct =   sizeof(PROCESSLIST)
-                                           + (cProcs - 1) * sizeof(ULONG);
+            doshWriteLogEntry(G_LogFile,
+                              __FUNCTION__ ": XWPSECIO_REGISTER returned %d (0x%lX)",
+                              arc, arc);
 
-                doshWriteLogEntry(G_LogFile,
-                                  __FUNCTION__ ": got %d processes, list has %d bytes",
-                                  cProcs,
-                                  cbStruct);
-
-                if (!(pList = malloc(cbStruct)))
-                    arc = ERROR_NOT_ENOUGH_MEMORY;
-                else
-                {
-                    PUSHORT     ppidThis = &pList->apidTrusted[0];
-
-                    pList->cbStruct = cbStruct;
-                    pList->cTrusted = cProcs;
-
-                    // start over
-                    pProcThis = pInfo->pProcessData;
-                    while (pProcThis && pProcThis->ulRecType == 1)
-                    {
-                        PQTHREAD32  t = pProcThis->pThreads;
-
-                        *ppidThis++ = pProcThis->usPID;
-
-                        // for next process, skip the threads info;
-                        // the next process block comes after the
-                        // threads
-                        t += pProcThis->usThreadCount;
-                        pProcThis = (PQPROCESS32)t;
-                    }
-
-                    // alright, REGISTER these and ENABLE LOCAL SECURITY
-                    // by calling DosDevIOCtl
-                    if (!(arc = SecIOCtl(XWPSECIO_REGISTER,
-                                         pList,
-                                         pList->cbStruct)))
-                    {
-                        // this worked:
-                        // start the logger thread
-                        thrCreate(&G_tiLogger,
-                                  fntLogger,
-                                  NULL,
-                                  "Logger",
-                                  THRF_WAIT,
-                                  0);
-                    }
-
-                    doshWriteLogEntry(G_LogFile,
-                                      __FUNCTION__ ": XWPSECIO_REGISTER returned %d",
-                                      arc);
-                }
-            }
-
-            prc32FreeInfo(pInfo);
+            free(pList);
         }
 
         if (arc)
@@ -624,9 +708,15 @@ APIRET scxtInit(VOID)
             arc = XWPSEC_CANNOT_GET_MUTEX;
         else
         {
-            if (!(arc = saclLoadDatabase(&ulLineWithError)))
-                // try to open the driver
-                arc = InitRing0();
+            // create the magic zero subject handle
+            XWPSUBJECTINFO si;
+            BOOL fRefresh;
+            si.id = 0;
+            si.bType = SUBJ_USER;
+            if (!(arc = scxtCreateSubject(&si, &fRefresh)))
+                if (!(arc = saclLoadDatabase(&ulLineWithError)))
+                    // try to open the driver
+                    arc = InitRing0();
 
             if (fLocked)
                 UnlockACLs();
@@ -697,7 +787,7 @@ APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
 
     if (G_hfSec32DD)
     {
-        RING0STATUS r0s;
+        XWPSECSTATUS r0s;
 
         pStatus->fLocalSecurity = TRUE;
 
@@ -705,14 +795,8 @@ APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
                              &r0s,
                              sizeof(r0s))))
         {
-            pStatus->cbAllocated = r0s.cbAllocated;
-            pStatus->cAllocations = r0s.cAllocations;
-            pStatus->cFrees = r0s.cFrees;
-            pStatus->cLogBufs = r0s.cLogBufs;
-            pStatus->cMaxLogBufs = r0s.cMaxLogBufs;
-            pStatus->cLogged = r0s.cLogged;
-            pStatus->cGranted = r0s.cGranted;
-            pStatus->cDenied = r0s.cDenied;
+            memcpy(pStatus, &r0s, sizeof(r0s));
+            pStatus->fLocalSecurity = TRUE;
         }
     }
 
@@ -759,8 +843,9 @@ APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
  *
  *      --  NO_ERROR
  *
- *      --  XWPSEC_HSUBJECT_EXISTS: SUBJ_USER only; user already
- *          has a subject handle.
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  XWPSEC_INTEGRITY
  *
  *      Postconditions:
  *
@@ -773,7 +858,8 @@ APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
  *          defer it to a different thread.
  */
 
-APIRET scxtCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
+APIRET scxtCreateSubject(PXWPSUBJECTINFO pSubjectInfo,  // in/out: subject info
+                         BOOL *pfNeedsRefresh)          // out: if set to TRUE, caller must call scxtRefresh
 {
     APIRET arc = NO_ERROR;
 
@@ -842,8 +928,12 @@ APIRET scxtCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
                     pSubjectInfo->hSubject = pNewSubject->SubjectInfo.hSubject;
                     pSubjectInfo->cUsage = pNewSubject->SubjectInfo.cUsage;
 
-                    // call ACL database
-                    // arc = saclSubjectHandleCreated(pSubjectInfo);
+                    _Pmpf(("Created hsubj 0x%lX for %s %d",
+                            pSubjectInfo->hSubject,
+                            (pSubjectInfo->bType == SUBJ_USER) ? "user" : "non-user",
+                            pSubjectInfo->id));
+
+                    *pfNeedsRefresh = TRUE;
                 }
             }
         }
@@ -878,11 +968,16 @@ APIRET scxtCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
  *          defer it to a different thread.
  */
 
-APIRET scxtDeleteSubject(LHANDLE hSubject)
+APIRET scxtDeleteSubject(LHANDLE hSubject,
+                         BOOL *pfNeedsRefresh)          // out: if set to TRUE, caller must call scxtRefresh
 {
     APIRET arc = NO_ERROR;
-
     BOOL fLocked;
+
+    if (!hSubject)
+        // cannot delete root
+        return XWPSEC_INVALID_HSUBJECT;
+
     if (!(fLocked = LockACLs()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
@@ -906,7 +1001,10 @@ APIRET scxtDeleteSubject(LHANDLE hSubject)
                                    (TREE*)psi))
                         arc = XWPSEC_INTEGRITY;
                     else
+                    {
                         free(psi);
+                        *pfNeedsRefresh = TRUE;
+                    }
                 }
             }
     }
@@ -942,13 +1040,7 @@ APIRET scxtQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo)   // in/out: subject i
     else
     {
         PSUBJECTTREENODE p;
-        LHANDLE hsubj = pSubjectInfo->hSubject;
-
-        // process was started before XWPShell: assume root for now
-        if (hsubj == -1)
-            hsubj = 0;
-
-        if (!(p = FindSubjectInfoFromHandle(hsubj)))
+        if (!(p = FindSubjectInfoFromHandle(pSubjectInfo->hSubject)))
             arc = XWPSEC_INVALID_HSUBJECT;
         else
             memcpy(pSubjectInfo,
@@ -1009,55 +1101,164 @@ APIRET scxtFindSubject(BYTE bType,              // in: one of SUBJ_USER, SUBJ_GR
 
 /*
  *@@ scxtFindSecurityContext:
- *      this attempts to find a security context
- *      from a process ID.
+ *      this attempts to find a security context for a process
+ *      ID.
  *
  *      This returns:
  *
  *      --  NO_ERROR: *ppContext was set to a newly allocated
  *          security context, which is to be free()'d by caller.
  *
+ *      --  ERROR_INVALID_PARAMETER: ring 0 didn't like this stuff.
+ *
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
  *      --  XWPSEC_INVALID_PID: security context doesn't exist.
  */
 
-APIRET scxtFindSecurityContext(ULONG ulPID,
-                               PXWPSECURITYCONTEXT *ppContext)
+APIRET scxtFindSecurityContext(USHORT pid,
+                               PXWPSECURITYCONTEXTCORE *ppContext)
 {
-    // @@todo no security contexts yet, build one for the current
-    // local user
-    APIRET          arc;
-    XWPSECID        uid;
-    PXWPLOGGEDON    pLogon;
-    if (    (!(arc = slogQueryLocalUser(&uid)))
-         && (!(arc = slogQueryLogon(uid,
-                                    &pLogon)))
-       )
+    APIRET          arc = NO_ERROR;
+    USHORT          *pcSubjects = NULL;
+    HXSUBJECT       *paSubjects;
+
+    PSECIOCONTEXT   pContext = NULL;
+    PXWPLOGGEDON    pLogon = NULL;
+
+    if (G_hfSec32DD)
     {
-        PXWPSECURITYCONTEXT pReturn;
-        ULONG cb =   sizeof(XWPSECURITYCONTEXT)
-                   + ((pLogon->cSubjects)
-                        ? (pLogon->cSubjects - 1) * sizeof(HXSUBJECT)
-                        : 0);
-        if (!(pReturn = (PXWPSECURITYCONTEXT)malloc(cb)))
+        ULONG cb =    sizeof(SECIOCONTEXT)
+                    + 10 * sizeof(HXSUBJECT);
+        if (!(pContext = malloc(cb)))
             arc = ERROR_NOT_ENOUGH_MEMORY;
         else
         {
-            pReturn->cbStruct = cb;
-            pReturn->ulPID = ulPID;
-            pReturn->cSubjects = pLogon->cSubjects;
+            pContext->pid = pid;
+            pContext->cSubjects = 10;
+
+            if (arc = SecIOCtl(XWPSECIO_QUERYCONTEXT,
+                               pContext,
+                               cb))
+                switch (arc & 0xFF)
+                {
+
+                    case ERROR_I24_BAD_UNIT:
+                        arc = XWPSEC_INVALID_PID;
+                    break;
+
+                    case ERROR_I24_BAD_LENGTH:
+                        arc = ERROR_NOT_ENOUGH_MEMORY; // @@todo we should reallocate!
+                    break;
+
+                    default:
+                        arc = ERROR_INVALID_PARAMETER;
+                }
+            else
+            {
+                pcSubjects = &pContext->cSubjects;
+                paSubjects = pContext->aSubjects;
+            }
+
+            _Pmpf(("got %d from XWPSECIO_GETCONTEXT for pid 0x%lX (hdl 0/%d is 0x%lX)",
+                   arc,
+                   pContext->pid,
+                   pContext->cSubjects,
+                   pContext->aSubjects[0]));
+        }
+    }
+    else
+    {
+        // driver not running: use local user then
+        XWPSECID        uid;
+        if (    (!(arc = slogQueryLocalUser(&uid)))
+             && (!(arc = slogQueryLogon(uid,
+                                        &pLogon)))
+           )
+        {
+            pcSubjects = &pLogon->cSubjects;
+            paSubjects = pLogon->aSubjects;
+        }
+    }
+
+    if (!arc)
+    {
+        PXWPSECURITYCONTEXTCORE pReturn;
+        ULONG cb =   sizeof(XWPSECURITYCONTEXTCORE)
+                   + ((*pcSubjects)
+                        ? (*pcSubjects - 1) * sizeof(HXSUBJECT)
+                        : 0);
+        if (!(pReturn = (PXWPSECURITYCONTEXTCORE)malloc(cb)))
+            arc = ERROR_NOT_ENOUGH_MEMORY;
+        else
+        {
+            pReturn->cSubjects = *pcSubjects;
             memcpy(pReturn->aSubjects,
-                   pLogon->aSubjects,
-                   pLogon->cSubjects * sizeof(HXSUBJECT));
+                   paSubjects,
+                   *pcSubjects * sizeof(HXSUBJECT));
 
             *ppContext = pReturn;
         }
-
-        free(pLogon);
     }
 
-    return NO_ERROR;
+    if (pContext)
+        free(pContext);
+    if (pLogon)
+        free(pLogon);
+
+    return arc;
+}
+
+/*
+ *@@ scxtSetSecurityContext:
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+APIRET scxtSetSecurityContext(USHORT pid,
+                              ULONG cSubjects,
+                              HXSUBJECT *paSubjects)
+{
+    APIRET arc;
+    SECIOCONTEXT    *pContext;
+    ULONG cb =   sizeof(SECIOCONTEXT)
+               + ((cSubjects)
+                    ? (cSubjects - 1) * sizeof(HXSUBJECT)
+                    : 0);
+    if (!(pContext = (SECIOCONTEXT*)malloc(cb)))
+        arc = ERROR_NOT_ENOUGH_MEMORY;
+    else
+    {
+        pContext->pid = pid;
+        pContext->cSubjects = cSubjects;
+        memcpy(pContext->aSubjects,
+               paSubjects,
+               cSubjects * sizeof(HXSUBJECT));
+        if (arc = SecIOCtl(XWPSECIO_SETCONTEXT,
+                           pContext,
+                           cb))
+            switch (arc & 0xFF)
+            {
+                case ERROR_I24_BAD_UNIT:
+                    arc = XWPSEC_INVALID_PID;
+                break;
+
+                case ERROR_I24_GEN_FAILURE:
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+                break;
+
+                default: // ERROR_I24_INVALID_PARAMETER:
+                    arc = ERROR_INVALID_PARAMETER;
+            }
+
+        _Pmpf(("got %d from XWPSECIO_SETCONTEXT for pid 0x%lX (hdl 0/%d is 0x%lX)",
+               arc,
+               pContext->pid,
+               pContext->cSubjects,
+               pContext->aSubjects[0]));
+    }
+
+    return arc;
 }
 
 /*
@@ -1071,7 +1272,7 @@ APIRET scxtFindSecurityContext(ULONG ulPID,
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
 
-APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXT pContext,
+APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXTCORE pContext,
                            ULONG flActions)
 {
     if (!pContext || !flActions)
@@ -1097,6 +1298,26 @@ APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXT pContext,
  *      rebuilds the system ACL table and sends it down to
  *      the driver.
  *
+ *      This roughly works as follows:
+ *
+ *      At any time after initialization, there is a global tree
+ *      of ACLDBTREENODE structs, one for each resource that has
+ *      an access control list assigned to it. Each such list in
+ *      turn consists of a linked list of ACLDBPERM structures,
+ *      one for each user/group-with-permissions pair.
+ *
+ *      The ring-0 driver does not care for groups or users, but
+ *      instead only checks subject handles. We must therefore
+ *
+ *      1)  build a list of all subject handles that currently
+ *          exist (i.e. all users and groups that are currently
+ *          active through logons);
+ *
+ *      2)  go thru the entire ACLDB tree and create a second tree
+ *          for the driver, with subject handles and permissions;
+ *
+ *      3)  send the thing down to the driver.
+ *
  *@@added V1.0.1 (2003-01-05) [umoeller]
  */
 
@@ -1110,90 +1331,161 @@ APIRET scxtRefresh(VOID)
     else
     {
         PACLDBTREENODE  pNode;
-        ULONG           cbTotal,
-                        cACLs;
+        ULONG           cbTotal = sizeof(RING0BUF);
+        ULONG           cACLs = 0;
+        BOOL            fAllocated;
 
-        // free previous ACL table, if any
-        if (G_pRing0Buf)
+        PRING0BUF       pRing0Buf = NULL;
+
+        // run thru this two times: once for knowing the
+        // required size of the buffer, once for actually
+        // writing this
+
+        for (fAllocated = 0;
+             fAllocated < 2;
+             ++fAllocated)
         {
-            DosFreeMem(G_pRing0Buf);
-            G_pRing0Buf = NULL;
-        }
+            PRESOURCEACL    pResourceACL= (PRESOURCEACL)((PBYTE)pRing0Buf + sizeof(RING0BUF));
 
-        // step 1: check how much memory we need
-
-        cbTotal = sizeof(RING0BUF);
-        cACLs = 0;
-
-        // @@todo build subjects array
-
-        for (pNode = (PACLDBTREENODE)treeFirst(G_treeACLDB);
-             pNode;
-             pNode = (PACLDBTREENODE)treeNext((TREE*)pNode))
-        {
-            cbTotal += CalcACLNodeSize(pNode, NULL);
-            ++cACLs;
-        }
-
-        // step 2: allocate buffer
-
-        if (    (cbTotal)
-             && (!(arc = DosAllocMem((PVOID*)&G_pRing0Buf,
-                                     cbTotal,
-                                     PAG_COMMIT | OBJ_TILE | PAG_READ | PAG_WRITE)))
-           )
-        {
-            PBYTE   pbCurrent = (PBYTE)G_pRing0Buf + sizeof(RING0BUF);
-
-            G_pRing0Buf->cbTotal = cbTotal;
-            G_pRing0Buf->cSubjectInfos = 0;
-            G_pRing0Buf->cACLs = cACLs;
-            G_pRing0Buf->ofsACLs = sizeof(RING0BUF);
-
-            // step 3: fill subject infos @@todo
-
-            // step 4: fill ACLs
-            pbCurrent = (PBYTE)G_pRing0Buf + G_pRing0Buf->ofsACLs;
             for (pNode = (PACLDBTREENODE)treeFirst(G_treeACLDB);
                  pNode;
                  pNode = (PACLDBTREENODE)treeNext((TREE*)pNode))
             {
-                ULONG           ul;
-                PRESOURCEACL    pEntryThis = (PRESOURCEACL)pbCurrent;
-                PACCESS         pAccessThis;
-                PLISTNODE       pListNode;
+                PLISTNODE   pListNode;
+                ULONG       cAccessesThis = 0;
+                ULONG       cbResName
+                    =   pNode->usResNameLen + 1
+                      + 3
+                      - ((pNode->usResNameLen + 1 + 3) & 0x03);     // DWORD-alignment
+                ULONG       cbResourceACL =   sizeof(RESOURCEACL)
+                                            + cbResName - 1;
 
-                pEntryThis->cbStruct = CalcACLNodeSize(pNode,
-                                                       pEntryThis);
-                memcpy(pEntryThis->szName,
-                       pNode->szResName,
-                       pNode->usResNameLen + 1);
+                PACCESS     pAccess = (PACCESS)((PBYTE)pResourceACL->szName + cbResName);
+                    // warning, use this pointer only if (fAllocated)
 
-                // set up ACCESS structs
-                pAccessThis = (PACCESS)((PBYTE)pEntryThis->szName + pEntryThis->cbName);
+                // set up ACCESS structs for the RESOURCEACL
                 for (pListNode = lstQueryFirstNode(&pNode->llPerms);
                      pListNode;
                      pListNode = pListNode->pNext)
                 {
-                    PACLDBPERM pPerm = (PACLDBPERM)pListNode->pItemData;
-                    if (scxtFindSubject(pPerm->bType,
+                    PACLDBPERM  pPerm = (PACLDBPERM)pListNode->pItemData;
+                    HXSUBJECT   hSubj;
+                    if (!scxtFindSubject(pPerm->bType,
                                         pPerm->id,
-                                        &pAccessThis->hSubject))
-                        // error (no subject found for this node):
-                        // then the user or group is not currently in
-                        // use, so we must fill in the -1 dummy hSubject
-                        // to block access
-                        pAccessThis->hSubject = -1;
+                                        &hSubj))
+                    {
+                        // this user/group is currently in use as subject:
+                        // then produce an ACCESS entry for it
+                        if (fAllocated)
+                        {
+                            pAccess->hSubject = hSubj;
+                            pAccess->flAccess = pPerm->fbPerm;
+                            ++pAccess;
+                        }
 
-                    pAccessThis->fbAccess = pPerm->fbPerm;
-
-                    pAccessThis++;
+                        ++cAccessesThis;
+                        cbResourceACL += sizeof(ACCESS);
+                    }
                 }
 
-                pbCurrent += pEntryThis->cbStruct;
+                if (!cAccessesThis)
+                {
+                    // if we found no subjects for this resource,
+                    // write out one blocker ACCESS struct with
+                    // the -1 subject
+                    if (fAllocated)
+                    {
+                        pAccess->hSubject = -1;
+                        pAccess->flAccess = 0;
+                    }
+
+                    ++cAccessesThis;
+                    cbResourceACL += sizeof(ACCESS);
+                }
+
+                if (fAllocated)
+                {
+                    pResourceACL->cbStruct = cbResourceACL;
+                    pResourceACL->cAccesses = cAccessesThis;
+                    pResourceACL->cbName = cbResName;       // includes padding
+                    memcpy(pResourceACL->szName,
+                           pNode->szResName,
+                           pNode->usResNameLen + 1);
+
+                    _Pmpf(("built %d ACCESS structs for resource \"%s\" (%d bytes in res)",
+                           pResourceACL->cAccesses,
+                           pResourceACL->szName,
+                           cbResourceACL));
+                }
+
+                cbTotal += cbResourceACL;
+                pResourceACL = (PRESOURCEACL)((PBYTE)pResourceACL + cbResourceACL);
+                ++cACLs;
             }
 
-            // @@todo call driver
+            if (!fAllocated)
+            {
+                // end of first loop:
+                if (!(arc = DosAllocMem((VOID**)&pRing0Buf,
+                                        cbTotal,
+                                        PAG_COMMIT | OBJ_TILE | PAG_READ | PAG_WRITE)))
+                {
+                    pRing0Buf->cbTotal = cbTotal;
+                    pRing0Buf->cACLs = cACLs;
+                }
+                else
+                {
+                    pRing0Buf = 0;
+                    break;
+                }
+            }
+        }
+
+        // free previous ACL table, if any
+        if (G_pRing0Buf)
+            DosFreeMem(G_pRing0Buf);
+        G_pRing0Buf = pRing0Buf;
+
+        if (!arc)
+        {
+            // send the pack down to ring 0
+            switch (0xFF & SecIOCtl(XWPSECIO_SENDACLS,
+                                    G_pRing0Buf,
+                                    G_pRing0Buf->cbTotal))
+            {
+                case NO_ERROR:
+                break;
+
+                case XWPERR_I24_NOT_ENOUGH_MEMORY:
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+                break;
+
+                case XWPERR_I24_INVALID_ACL_FORMAT:
+                    arc = XWPSEC_DB_ACL_INTEGRITY;
+                break;
+
+                default:
+                    arc = XWPSEC_INTEGRITY;
+            }
+
+            doshWriteLogEntry(G_LogFile,
+                              "XWPSECIO_SENDACLS yielded rc %d",
+                              arc);
+        }
+    }
+
+    if (G_pRing0Buf)
+    {
+        PSZ psz;
+        if (psz = strhCreateDump((PBYTE)G_pRing0Buf,
+                                 G_pRing0Buf->cbTotal,
+                                 4))
+        {
+            ULONG len = strlen(psz);
+            doshWrite(G_LogFile,
+                      len + 1,
+                      psz);
+            free(psz);
         }
     }
 
@@ -1218,7 +1510,7 @@ APIRET scxtRefresh(VOID)
 PACCESS FindAccess(PCSZ pcszResource,
                    PULONG pcAccesses)       // out: array item count
 {
-    PBYTE   pbCurrent = (PBYTE)G_pRing0Buf + G_pRing0Buf->ofsACLs;
+    PBYTE   pbCurrent = (PBYTE)G_pRing0Buf + sizeof(RING0BUF);
     ULONG   ul;
 
     for (ul = 0;
@@ -1226,8 +1518,9 @@ PACCESS FindAccess(PCSZ pcszResource,
          ++ul)
     {
         PRESOURCEACL pEntry = (PRESOURCEACL)pbCurrent;
-        if (!strcmp(pcszResource,
-                    pEntry->szName))
+        _Pmpf(("    cmp \"%s\"", pEntry->szName));
+        if (!stricmp(pcszResource,
+                     pEntry->szName))
         {
             *pcAccesses = pEntry->cAccesses;
             return (PACCESS)((PBYTE)pEntry->szName + pEntry->cbName);
@@ -1259,6 +1552,8 @@ ULONG QueryPermissions(PSZ pszResource,             // in: buf with res name (tr
     PACCESS paAccesses;
     ULONG   cAccesses;
 
+    _Pmpf(("checking permissions for \"%s\":", pszResource));
+
     if (!*paSubjects || !G_pRing0Buf)
         // null subject handle: root may do anything
         return XWPACCESS_ALL;
@@ -1273,6 +1568,12 @@ ULONG QueryPermissions(PSZ pszResource,             // in: buf with res name (tr
             ULONG   flAccess = 0;
             ULONG   ulA,
                     ulS;
+
+            _Pmpf(("found %d ACCESS structs for \"%s\" @ofs 0x%lX:",
+                   cAccesses,
+                   pszResource,
+                   (ULONG)paAccesses - (ULONG)G_pRing0Buf));
+
             for (ulA = 0;
                  ulA < cAccesses;
                  ++ulA)
@@ -1282,7 +1583,15 @@ ULONG QueryPermissions(PSZ pszResource,             // in: buf with res name (tr
                      ++ulS)
                 {
                     if (paSubjects[ulS] == paAccesses[ulA].hSubject)
-                        flAccess |= paAccesses[ulA].fbAccess;
+                    {
+                        _Pmpf(("  acc[%d]: hSubj matches 0x%lX: ORing flAccess 0x%lX",
+                                ulA, paSubjects[ulS], paAccesses[ulA].flAccess));
+                        flAccess |= paAccesses[ulA].flAccess;
+                    }
+                    else
+                        _Pmpf(("  acc[%d]: hSubj 0x%lX != hSubj 0x%lX (flAccess 0x%lX)",
+                                ulA, paAccesses[ulA].hSubject,
+                                paSubjects[ulS], paAccesses[ulA].flAccess));
                 }
             }
 

@@ -48,41 +48,34 @@
 
 /*
  *@@ CLOSE:
- *      SES kernel hook for CLOSE.
+ *      SES kernel hook for TRUSTEDPATHCONTROL (control-alt-delete hook).
  *
  *      As with all our hooks, this is stored in G_SecurityHooks
  *      (sec32_callbacks.c) force the OS/2 kernel to call us for
  *      each such event.
  *
- *      Context: Possibly any ring-3 thread on the system.
+ *      Context: I have no freaking idea.
  */
 
-VOID CallType CLOSE(ULONG SFN)
+ULONG CallType TRUSTEDPATHCONTROL(VOID)
 {
     if (    (G_pidShell)
          && (!DevHlp32_GetInfoSegs(&G_pGDT,
                                    &G_pLDT))
        )
     {
-        PXWPSECURITYCONTEXT pThisContext;
-
-        // successful call:
-        if ((pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
-            --(pThisContext->cOpenFiles);
-
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_CLOSE pBuf;
 
-            if (pBuf = ctxtLogEvent(pThisContext,
-                                    EVENT_CLOSE,
+            if (pBuf = ctxtLogEvent(NULL,
+                                    EVENT_TRUSTEDPATH,
                                     sizeof(EVENTBUF_CLOSE)))
             {
-                pBuf->SFN = SFN;
-                if (pThisContext)
-                    pBuf->cOpenFiles = pThisContext->cOpenFiles;
             }
         }
     }
+
+    return 0;
 }
 

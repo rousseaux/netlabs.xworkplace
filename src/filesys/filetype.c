@@ -491,7 +491,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
     TRY_LOUD(excpt1)
     {
         if (    (pcszObjectTitle)
-             && (*pcszObjectTitle)
+             // && (*pcszObjectTitle)
              && (ulTitleLen)
              && (fLocked = LockInstances())
            )
@@ -561,11 +561,11 @@ STATIC ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object ha
         {
             // loop 2: go thru all assocs for this type/filter
             ULONG cbAssocData;
-            PSZ pszAssocData = prfhQueryProfileData(HINI_USER,
+            PSZ pszAssocData;
+            if (pszAssocData = prfhQueryProfileData(HINI_USER,
                                                     pcszIniApp, // "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
                                                     pKey,       // current type or filter
-                                                    &cbAssocData);
-            if (pszAssocData)
+                                                    &cbAssocData))
             {
                 PSZ     pAssoc = pszAssocData;
                 ULONG   ulOfsAssoc = 0;
@@ -627,7 +627,7 @@ STATIC ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object ha
             }
 
             // go for next key
-            pKey += strlen(pKey)+1;
+            pKey += strlen(pKey) + 1;
         }
 
         free(pszKeys);

@@ -62,6 +62,7 @@
 #include "helpers\except.h"
 #include "helpers\stringh.h"
 #include "helpers\winh.h"
+#include "helpers\xwpsecty.h"           // XWorkplace Security base
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
@@ -117,7 +118,7 @@ typedef struct _WINLISTRECORD
     CHAR        szClosable[30];
     PSZ         pszClosable;        // points to szClosable
 
-    ULONG       uid;                // V0.9.19 (2002-04-02) [umoeller]
+    XWPSECID    uid;                // V0.9.19 (2002-04-02) [umoeller]
     CHAR        szUid[30];
     PSZ         pszUid;             // points to szUid;
 

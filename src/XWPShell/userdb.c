@@ -386,6 +386,10 @@ APIRET CreateUser(PXWPUSERDB pDB,
         LINKLIST llGroups;
         PSZ     pszGroups = strdup(pstrGroupID->psz);
         PSZ     pszToken = strtok(pszGroups, ",");
+
+        const XSTRING *pstrUserShell;
+        XSTRING *pstrFree = NULL;
+
         lstInit(&llGroups, FALSE);
         while (pszToken)
         {
@@ -403,6 +407,18 @@ APIRET CreateUser(PXWPUSERDB pDB,
             lstAppendItem(&llGroups, (PVOID)gid);
             pszToken = strtok(NULL, ",");
         };
+
+        // check USERSHELL; if not present, use PMSHELL.EXE
+        if (!(pstrUserShell = xmlGetAttribute(pUserElementThis,
+                                              "USERSHELL")))
+        {
+            PCSZ pcszShell;
+            if (!(pcszShell = getenv("USERSHELL")))
+                pcszShell = "PMSHELL.EXE";
+
+            pstrUserShell = pstrFree = xstrCreate(0);
+            xstrcpy(pstrFree, pcszShell, 0);
+        }
 
         if (!arc)
         {
@@ -427,15 +443,18 @@ APIRET CreateUser(PXWPUSERDB pDB,
                 // store user
                 pNewUser->User.uid = atoi(pstrUserID->psz);
 
-                strhncpy0(pNewUser->User.szUserName,
-                          pstrName->psz,
-                          sizeof(pNewUser->User.szUserName));
-                strhncpy0(pNewUser->User.szFullName,
-                          pCDATA->pstrNodeValue->psz,
-                          sizeof(pNewUser->User.szFullName));
-                strhncpy0(pNewUser->szPassword,
-                          pstrPass->psz,
-                          sizeof(pNewUser->szPassword));
+                strlcpy(pNewUser->User.szUserName,
+                        pstrName->psz,
+                        sizeof(pNewUser->User.szUserName));
+                strlcpy(pNewUser->User.szFullName,
+                        pCDATA->pstrNodeValue->psz,
+                        sizeof(pNewUser->User.szFullName));
+                strlcpy(pNewUser->User.szUserShell,
+                        pstrUserShell->psz,
+                        sizeof(pNewUser->User.szUserShell));
+                strlcpy(pNewUser->szPassword,
+                        pstrPass->psz,
+                        sizeof(pNewUser->szPassword));
 
                 // store group IDs
                 pNewUser->Membership.cGroups = 0;
@@ -456,6 +475,9 @@ APIRET CreateUser(PXWPUSERDB pDB,
                 lstAppendItem(&pDB->llUsers, pNewUser);
             }
         }
+
+        if (pstrFree)
+            xstrFree(&pstrFree);
     }
 
     _PmpfF(("returning %d", arc));
@@ -510,9 +532,9 @@ APIRET LoadDB(VOID)
     lstInit(&G_Database.llGroups, TRUE);      // auto-free
     lstInit(&G_Database.llUsers, TRUE);       // auto-free
 
-    if (!(pszDBPath = getenv("XWPUSERDB")))
+    if (!(pszDBPath = getenv("ETC")))
     {
-        // XWPUSERDB not specified:
+        // ETC not specified:
         // default to "?:\os2" on boot drive
         sprintf(szDBPath, "%c:\\OS2", doshQueryBootDrive());
         pszDBPath = szDBPath;
@@ -670,8 +692,8 @@ APIRET sudbInit(VOID)
  *      and  XWPUSERDBENTRY.szPassword is correct, this
  *      returns NO_ERROR. In that case, the XWPUSERDBENTRY
  *      and XWPGROUPDBENTRY structures are updated to
- *      contain the user and group info, which XWPSec
- *      will then use to create the subject handles.
+ *      contain the user and group info, which the caller
+ *      can then use to create the subject handles.
  *
  *      Otherwise this returns:
  *
@@ -975,8 +997,6 @@ APIRET sudbQueryUser(XWPSECID uid,
     if (!ppUser)
         return ERROR_INVALID_PARAMETER;
 
-    _PmpfF(("entering"));
-
     if (!(fLocked = LockUserDB()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
@@ -1011,6 +1031,42 @@ APIRET sudbQueryUser(XWPSECID uid,
         UnlockUserDB();
 
     _PmpfF(("leaving"));
+
+    return arc;
+}
+
+/*
+ *@@ sudbQueryUserName:
+ *      shortcut function if the caller just needs the
+ *      user name for a given user ID.
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+APIRET sudbQueryUserName(XWPSECID uid,          // in: user id
+                         PSZ pszUserName)       // out: user name (buffer must be XWPSEC_NAMELEN in size)
+{
+    APIRET arc = NO_ERROR;
+    BOOL fLocked;
+
+    if (!(fLocked = LockUserDB()))
+        arc = XWPSEC_CANNOT_GET_MUTEX;
+    else
+    {
+        const XWPUSERDBENTRY* pUserFound;
+        if (!(pUserFound = FindUserFromID(&G_Database.llUsers,
+                                          uid)))
+            arc = XWPSEC_INVALID_ID;
+        else
+        {
+            memcpy(pszUserName,
+                   pUserFound->User.szUserName,
+                   XWPSEC_NAMELEN);
+        }
+    }
+
+    if (fLocked)
+        UnlockUserDB();
 
     return arc;
 }

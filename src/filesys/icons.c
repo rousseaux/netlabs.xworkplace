@@ -547,18 +547,24 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
     else
     {
         PBYTE pbValue;
-        if (pbValue = doshFindEAValue(pFEA2List,
-                                      ".ICON",
-                                      NULL))
+        if (!(pbValue = doshFindEAValue(pFEA2List,
+                                        ".ICON",
+                                        NULL)))
+            arc = ERROR_NO_DATA;
+        else
         {
             // got something:
             PUSHORT pusType = (PUSHORT)pbValue;
-            if (*pusType == EAT_ICON)
+            if (*pusType != EAT_ICON)
+                arc = ERROR_NO_DATA;
+            else
             {
                 // next ushort has data length
                 PUSHORT pcbValue = pusType + 1;
                 USHORT cbData;
-                if (cbData = *pcbValue)
+                if (!(cbData = *pcbValue))
+                    arc = ERROR_NO_DATA;
+                else
                 {
                     PBYTE pbData = (PBYTE)(pcbValue + 1);
 
@@ -590,14 +596,8 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
                             *pcbIconData = cbData;
                     }
                 }
-                else
-                    arc = ERROR_NO_DATA;
             }
-            else
-                arc = ERROR_NO_DATA;
         }
-        else
-            arc = ERROR_NO_DATA;
     }
 
     return arc;
@@ -819,14 +819,12 @@ STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
     ULONG cColors = 1 << pInfo->cBitCount;
     ULONG cyRealSrc = pInfo->cy / 2;             // cy is doubled always
 
-
     PMPF_ICONREPLACEMENTS(("    cbFix %d", pInfo->cbFix));
     PMPF_ICONREPLACEMENTS(("    cx %d", pInfo->cx));
     PMPF_ICONREPLACEMENTS(("    cy %d", pInfo->cy));
     PMPF_ICONREPLACEMENTS(("    cPlanes %d", pInfo->cPlanes));
     PMPF_ICONREPLACEMENTS(("    cBitCount %d, cColors %d", pInfo->cBitCount, cColors));
     PMPF_ICONREPLACEMENTS(("    cColorsUsed %d", pInfo->cColorsUsed));
-
 
     /*
      * check source format:
@@ -906,7 +904,6 @@ STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                 arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
-
                 /*
                  * fill OS/2 target buffer:
                  *
@@ -1293,9 +1290,9 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
     if (!(pNEHeader = pExec->pNEHeader))
         return ERROR_INVALID_EXE_SIGNATURE;
 
-    if (pExec->pDosExeHeader)
+    if (pExec->cbDosExeHeader)
         // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
-        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
+        ulNewHeaderOfs = pExec->DosExeHeader.ulNewHeaderOfs;
 
     // 1) res tbl starts with align leftshift
     pFile = pExec->pFile;
@@ -1775,9 +1772,9 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
        )
         return ERROR_INVALID_EXE_SIGNATURE;
 
-    if (pExec->pDosExeHeader)
+    if (pExec->cbDosExeHeader)
         // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
-        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
+        ulNewHeaderOfs = pExec->DosExeHeader.ulNewHeaderOfs;
 
     pFile = pExec->pFile;
 
@@ -1989,11 +1986,12 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *@@ icoLoadExeIcon:
  *      smarter replacement for WinLoadFileIcon.
  *      In conjunction with the exeh* functions,
- *      this is a full rewrite, including all the
- *      executable parsing.
+ *      this is a full rewrite. This does not call
+ *      the OS/2 loader, but completely parses the
+ *      executable structures itself at ring 3.
  *
  *      Essentially, this function allows you to
- *      get an icon resource from an executable
+ *      get any icon resource from an executable
  *      file without having to run DosLoadModule.
  *      This is used in XWorkplace for getting the
  *      icons for executable files.
@@ -2060,6 +2058,7 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *@@added V0.9.16 (2001-12-08) [umoeller]
  *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer checking buffer size
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed major screwup if pExec was NULL
+ *@@changed V1.0.2 (2003-11-13) [umoeller]: adjusted for new LX func prototype
  */
 
 APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
@@ -2069,8 +2068,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                       PBYTE pbIconData)         // out: if != NULL, icon data that was loaded
 {
     APIRET  arc;
-    PBYTE   pbData = NULL;
-    ULONG   cbData = 0;
+    PBYTE   pbDataFree = NULL,
+            pbDataUse = NULL;
+    ULONG   cbData = 0,
+            ulOfs;
 
     static  s_fCrashed = FALSE;
 
@@ -2089,11 +2090,13 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
         {
             case EXEFORMAT_LX:
                 // these two we can handle for now
-                arc = exehLoadLXResource(pExec,
-                                         RT_POINTER,
-                                         idResource,
-                                         &pbData,
-                                         &cbData);
+                if (!(arc = exehLoadLXResource(pExec,
+                                               RT_POINTER,
+                                               idResource,
+                                               &pbDataFree,
+                                               &ulOfs,
+                                               &cbData)))
+                    pbDataUse = pbDataFree + ulOfs;
             break;
 
             case EXEFORMAT_NE:
@@ -2103,7 +2106,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                         arc = exehLoadOS2NEResource(pExec,
                                                     RT_POINTER,
                                                     idResource,
-                                                    &pbData,
+                                                    &pbDataFree,
                                                     &cbData);
                         #ifdef __DEBUG__
                             if (arc)
@@ -2116,7 +2119,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                         arc = LoadWinNEResource(pExec,
                                                 WINRT_ICON,
                                                 idResource,
-                                                &pbData,
+                                                &pbDataFree,
                                                 &cbData);
                         #ifdef __DEBUG__
                             if (arc)
@@ -2133,7 +2136,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                 arc = LoadWinPEResource(pExec,
                                         WINRT_ICON,
                                         idResource,
-                                        &pbData,
+                                        &pbDataFree,
                                         &cbData);
 
                 PMPF_ICONREPLACEMENTS(("LoadWinPEResource returned %d", arc));
@@ -2147,14 +2150,17 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
         // output data
         if (!arc)
         {
-            if (pbData && cbData)
+            if (!pbDataUse && pbDataFree)
+                pbDataUse = pbDataFree;
+
+            if (pbDataUse && cbData)
             {
                 // build the pointer in any case, cos
                 // we can't find out whether the data
                 // is broken maybe
                 // V0.9.18 (2002-03-24) [umoeller]
                 HPOINTER hptr;
-                if (!(arc = icoBuildPtrHandle(pbData,
+                if (!(arc = icoBuildPtrHandle(pbDataUse,
                                               &hptr)))
                 {
                     if (phptr)
@@ -2169,7 +2175,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                             arc = ERROR_BUFFER_OVERFLOW;
                         else */ // V0.9.18 (2002-03-19) [umoeller]
                             memcpy(pbIconData,
-                                   pbData,
+                                   pbDataUse,
                                    cbData);
 
                     if (pcbIconData)
@@ -2186,8 +2192,8 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
 
-    if (pbData)
-        free(pbData);
+    if (pbDataFree)
+        free(pbDataFree);
 
     #ifdef __DEBUG__
     if (arc)

@@ -290,11 +290,14 @@
 
         VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts);
 
+        #ifdef XWPSECTY_HEADER_INCLUDED
         LONG xsdIsClosable(HAB hab,
                            PSHUTDOWNCONSTS pConsts,
                            SWENTRY *pSwEntry,
                            WPObject **ppObject,
-                           PULONG pulUserID);
+                           XWPSECID *puidOwner);
+
+        #endif
     #endif
     #endif
     #endif
@@ -311,7 +314,9 @@
 
     VOID xsdShowAutoCloseDetails(HWND hwndOwner);
 
-    MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+    // MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    VOID xsdShowRebootActions(HWND hwndOwner);
 
     /* ******************************************************************
      *

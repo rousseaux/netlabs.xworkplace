@@ -3,7 +3,8 @@
  *@@sourcefile sec32_data.c:
  *      global variables for the data segment.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -45,20 +46,16 @@ int DH32ENTRY DevHlp32_AllocGDTSelector(unsigned short *psel, int count)
     rc = NO_ERROR;
     while ((rc == NO_ERROR) && (i < count))
     {
-        rc = DevHlp32_AllocOneGDTSelector(&sel);
-        if (rc == NO_ERROR)
-        {
+        if (!(rc = DevHlp32_AllocOneGDTSelector(&sel)))
             psel[i++] = sel;
-        }
     }
 
     /*
      * In case of error we should free successfuly allocated GDT selectors
      */
     if (rc != NO_ERROR)
-    {
-        while (i) DevHlp32_FreeGDTSelector(psel[--i]);
-    }
+        while (i)
+            DevHlp32_FreeGDTSelector(psel[--i]);
 
     return rc;
 }

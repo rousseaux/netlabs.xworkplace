@@ -3,7 +3,12 @@
  *@@sourcefile sec32_contexts.c:
  *      security contexts implementation.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
+ *
+ *      This file has the driver "engine", so-to-say, with
+ *      functions that get called from most other parts of the
+ *      driver.
  */
 
 /*
@@ -31,6 +36,9 @@
 #include <builtin.h>
 #include <string.h>
 
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
+
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\DevHlp32.h"
@@ -47,13 +55,14 @@
  ********************************************************************/
 
 extern struct InfoSegGDT
-                    *G_pGDT = 0;        // OS/2 global infoseg
+                *G_pGDT = 0;            // OS/2 global infoseg
 extern struct InfoSegLDT
-                    *G_pLDT = 0;        // OS/2 local  infoseg
+                *G_pLDT = 0;            // OS/2 local  infoseg
 
-extern RING0STATUS  G_R0Status;         // in strat_ioctl.c
+extern XWPSECSTATUS
+                G_R0Status;             // in strat_ioctl.c
 
-extern HVDHSEM      G_hmtx;             // in strat_ioctl.c
+extern HVDHSEM  G_hmtx;                 // in strat_ioctl.c
 
 extern PLOGBUF  G_pLogFirst = NULL,     // ptr to first log buffer in linklist
                 G_pLogLast = NULL;      // ptr to last log buffer in linklist
@@ -69,6 +78,30 @@ extern ULONG    G_idLogBlock = 0;       // if != 0, the blockid that the logging
                                         // is currently blocked on;
                                         // if 0, the logging thread is either busy
                                         // in ring-3 or ready to run after a ProcRun()
+
+TREE            *G_ContextsTree;
+
+PRING0BUF       G_pRing0Buf = NULL;     //  system ACL table
+
+CHAR            G_szResource[CCHMAXPATH];   // scratch buffer for authentication
+
+/* ******************************************************************
+ *
+ *   Initialization
+ *
+ ********************************************************************/
+
+/*
+ *@@ ctxtInit:
+ *      initializes the security contexts engine. Must be called
+ *      exactly once at driver init.
+ */
+
+VOID ctxtInit(VOID)
+{
+    treeInit(&G_ContextsTree,
+             &G_R0Status.cContexts);
+}
 
 /* ******************************************************************
  *
@@ -214,6 +247,7 @@ PLOGBUF AllocLogBuffer(VOID)
         // update global ring-0 status
         ++(G_R0Status.cLogBufs);
 
+        // statistics: keep track of max. buffers ever allocated
         if (G_R0Status.cLogBufs > G_R0Status.cMaxLogBufs)
             G_R0Status.cMaxLogBufs = G_R0Status.cLogBufs;
     }
@@ -243,14 +277,15 @@ PLOGBUF AllocLogBuffer(VOID)
  *      byte after that structure where the caller must
  *      copy the event-specific data to. This is to avoid
  *      multiple memcpy's so the logger can memcpy directly
- *      into the buffer. However, the cbData passed in to
- *      this function needs to be the size of the entire
- *      _variable_ data so we can reserve memory correctly
- *      already in here.
+ *      into the newly allocated buffer. However, the cbData
+ *      passed in to this function needs to be the size of
+ *      the entire _variable_ data so we can reserve enough
+ *      memory already in here.
  *
  *      Preconditions:
  *
- *      --  Call this only if G_bLog == LOG_ACTIVE or
+ *      --  Call this only if (G_bLog == LOG_ACTIVE) (that is,
+ *          XWPShell is actually picking up logging data) or
  *          we'll leak memory.
  *
  *      --  DevHlp32_GetInfoSegs _must_ have been called
@@ -258,22 +293,25 @@ PLOGBUF AllocLogBuffer(VOID)
  *          ptr is valid.
  *
  *      --  This possibly allocates a new logging buffer
- *          via VMAlloc, so I guess this can block. As
- *          a result, the caller must be reentrant and
+ *          via VMAlloc, so there is a slim chance that this
+ *          may block if OS/2 needs to work on the swapper.
+ *          As a result, the caller must be reentrant and
  *          not rely on static data before and after this
  *          call.
  *
  *      Context: Possibly any ring-3 thread on the system.
  */
 
-PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
-                   ULONG cbData)           // in: size of that buffer
+PVOID ctxtLogEvent(PXWPSECURITYCONTEXT pContext,        // in: current security context (may be 0, just for logging)
+                   ULONG ulEventCode,      // in: EVENT_* code
+                   ULONG cbData)           // in: size of buffer corresponding to that code
 {
     PVOID   pvReturn = NULL;
     // determine size we need:
     ULONG   cbLogEntry =   sizeof(EVENTLOGENTRY)    // fixed-size struct first
                          + cbData;                  // event-specific data next
 
+    // request logging mutex
     if (!VDHRequestMutexSem(G_hmtx, -1))
         ctxtStopLogging();
     else
@@ -282,15 +320,15 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
         if (!G_pLogLast)
         {
             // no: that's easy, allocate one log buffer and
-            // set it as the first and last
+            // set it as the first and last; we'll use that then
             G_pLogFirst
             = G_pLogLast
             = AllocLogBuffer();
         }
         else
         {
-            // check if we have enough room left in this
-            // log buffer
+            // we do have a log buffer currently: ensure
+            // we have enough room left in this one
             if (G_pLogLast->cbUsed + cbLogEntry >= LOGBUFSIZE)      // 64K
             {
                 // no: allocate a new one
@@ -308,7 +346,7 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
             ctxtStopLogging();
         else
         {
-            // determine target address of new EVENTLOGENTRY in LOGBUF
+            // determine address of new target EVENTLOGENTRY in the LOGBUF
             PEVENTLOGENTRY pEntry = (PEVENTLOGENTRY)((PBYTE)G_pLogLast + G_pLogLast->cbUsed);
 
             // 1) fill fixed EVENTLOGENTRY struct
@@ -316,6 +354,7 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
             pEntry->cbStruct = cbLogEntry;
             pEntry->ulEventCode = ulEventCode;
             pEntry->idEvent = G_idEventNext++;      // global counter
+            pEntry->idContext = (ULONG)pContext;
 
             // copy the first 16 bytes from local infoseg
             // into log entry (these match our CONTEXTINFO
@@ -370,9 +409,9 @@ VOID ctxtStopLogging(VOID)
     while (pThis)
     {
         PLOGBUF pNext = pThis->pNext;
+        --(G_R0Status.cLogBufs);
         utilFreeFixed(pThis,
                       LOGBUFSIZE);     // 64K
-        --(G_R0Status.cLogBufs);
         pThis = pNext;
     }
 
@@ -501,10 +540,10 @@ IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to r
                                        //    º         ³   ³          º         ³   ³          º         ³   ³
         G_pLogFirst = G_pLogFirst->pNext; // º         NUL ³          º         ³   ³          º         ³   ³
             // will be NULL if this was last º         ³   ³          º         B2  ³          º         B2  ³
+        --(G_R0Status.cLogBufs);       //    º         ³   ³          º         ³   ³          º         ³   ³
                                        //    º         ³   ³          º         ³   ³          º         ³   ³
         utilFreeFixed(pFirst,          //    º         ³   ³          º         ³   ³          º         ³   ³
                       LOGBUFSIZE);  // 64K   º         ³   ³          º         ³   ³          º         ³   ³
-        --(G_R0Status.cLogBufs);       //    º         ³   ³          º         ³   ³          º         ³   ³
     }                                  // final:       NUL NUL        º         B2  B2         º         B2  B4
     else
     {
@@ -524,5 +563,302 @@ IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,              // in: flat pointer to r
  *   Security contexts implementation
  *
  ********************************************************************/
+
+/*
+ *@@ ctxtCreate:
+ *      allocates a new security context for the given process
+ *      and inserts it into our private list of contexts.
+ *
+ *      This initializes all fields _except_ the aSubjects array,
+ *      which is left to the caller.
+ *
+ *      Returns NULL on errors.
+ *
+ *      WARNING: This allocates a small buffer, so this may block
+ *      in rare cases.
+ *
+ *@@added V1.0.2 (2003-11-09) [umoeller]
+ */
+
+PXWPSECURITYCONTEXT ctxtCreate(USHORT pidNew,       // in: pid of newly created process
+                               USHORT pidParent,    // in: pid of that process's parent
+                               ULONG cSubjects)     // in: no. of subject handles required (>= 1)
+{
+    ULONG cbStruct =    sizeof(XWPSECURITYCONTEXT)
+                      + sizeof(HXSUBJECT) * (cSubjects - 1);
+    PXWPSECURITYCONTEXT pContext;
+    if (!(pContext = utilAllocFixed(cbStruct)))
+        return NULL;
+
+    pContext->tree.ulKey = pidNew;
+    pContext->cbStruct = cbStruct;
+    pContext->cOpenFiles = 0;
+    pContext->ctxt.pidParent = pidParent;
+    pContext->ctxt.cSubjects = cSubjects;
+
+    // if this fails, we have a duplicate PID and a problem
+    if (treeInsert(&G_ContextsTree,
+                   &G_R0Status.cContexts,
+                   (TREE*)pContext,
+                   treeCompareKeys))
+    {
+        utilFreeFixed(pContext, cbStruct);
+        return NULL;
+    }
+
+    return pContext;
+}
+
+/*
+ *@@ ctxtFind:
+ *      returns the security context that corresponds to the
+ *      given process ID, or NULL if there is none.
+ */
+
+PXWPSECURITYCONTEXT ctxtFind(USHORT pid)
+{
+    PXWPSECURITYCONTEXT pContext;
+    if (!(pContext = (PXWPSECURITYCONTEXT)treeFind(G_ContextsTree,
+                                                   pid,
+                                                   treeCompareKeys)))
+        // if we can't find a context, but just got a CREATEVDM
+        // on the parent process beforehand, then create a new
+        // context right here
+        if (G_pContextCreateVDM)
+        {
+            if (pContext = ctxtCreate(pid,      // new pid
+                                      G_pContextCreateVDM->tree.ulKey,  // parent pid: that of last CREATEVDM
+                                      G_pContextCreateVDM->ctxt.cSubjects))
+            {
+                memcpy(&pContext->ctxt.aSubjects,
+                       &G_pContextCreateVDM->ctxt.aSubjects,
+                       sizeof(HXSUBJECT) * G_pContextCreateVDM->ctxt.cSubjects);
+            }
+
+            G_pContextCreateVDM = NULL;
+        }
+
+    return pContext;
+}
+
+/*
+ *@@ ctxtFree:
+ *      deletes the given security context.
+ */
+
+VOID ctxtFree(PXWPSECURITYCONTEXT pCtxt)
+{
+    if (!treeDelete(&G_ContextsTree,
+                    &G_R0Status.cContexts,
+                    (TREE*)pCtxt))
+        utilFreeFixed((TREE*)pCtxt,
+                      pCtxt->cbStruct);
+}
+
+/*
+ *@@ ctxtClearAll:
+ *      deletes all security contexts presently held in
+ *      ring-0 memory.
+ *
+ *      This is a janitor function that should get called
+ *      only when XWPShell exits, that is, only in
+ *      debug builds.
+ */
+
+VOID ctxtClearAll(VOID)
+{
+    TREE* pNode;
+    while (pNode = treeFirst(G_ContextsTree))
+    {
+        ctxtFree((XWPSECURITYCONTEXT*)pNode);
+    }
+
+    if (G_pRing0Buf)
+    {
+        utilFreeFixed(G_pRing0Buf, G_pRing0Buf->cbTotal);
+        G_pRing0Buf = NULL;
+    }
+}
+
+/* ******************************************************************
+ *
+ *   Authorization
+ *
+ ********************************************************************/
+
+/*
+ *@@ ctxtSendACLs:
+ *      implementation for XWPSECIO_SENDACLS (sec32_ioctl()).
+ *
+ *      This must return an ioctl error code, that is, at least
+ *      STDON must be set (see sec32_ioctl()).
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+int ctxtSendACLs(PRING0BUF pBufR3)
+{
+    int     rc = STDON;
+    ULONG   cbNew = 0;
+
+    PRING0BUF pNewBuf;
+
+    if (!(pNewBuf = utilAllocFixed(pBufR3->cbTotal)))
+        rc = STDON | STERR | XWPERR_I24_INVALID_ACL_FORMAT;
+    else
+        memcpy(pNewBuf,
+               pBufR3,
+               pBufR3->cbTotal);
+
+    if (G_pRing0Buf)
+        utilFreeFixed(G_pRing0Buf, G_pRing0Buf->cbTotal);
+
+    if (G_pRing0Buf = pNewBuf)
+        cbNew = pNewBuf->cbTotal;
+
+    G_R0Status.cbACLs = cbNew;
+
+    return rc;
+}
+
+/*
+ *@@ FindAccess:
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must have checked that G_pRing0Buf is not NULL.
+ *
+ *      --  pcszResource must be upper-cased.
+ *
+ *      Restrictions:
+ *
+ *      --  This function must not block since we use
+ *          a global scratch buffer.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+PACCESS FindAccess(PCSZ pcszResource,
+                   PULONG pcAccesses)       // out: array item count
+{
+    PBYTE   pbCurrent = (PBYTE)G_pRing0Buf + sizeof(RING0BUF);
+    ULONG   ul;
+
+    for (ul = 0;
+         ul < G_pRing0Buf->cACLs;
+         ++ul)
+    {
+        PRESOURCEACL pEntry = (PRESOURCEACL)pbCurrent;
+        if (!strcmp(pcszResource,
+                    pEntry->szName))
+        {
+            *pcAccesses = pEntry->cAccesses;
+            return (PACCESS)((PBYTE)pEntry->szName + pEntry->cbName);
+        }
+
+        pbCurrent += pEntry->cbStruct;
+    }
+
+    return NULL;
+}
+
+/*
+ *@@ QueryPermissions:
+ *      returns the ORed XWPACCESS_* flags for the
+ *      given resource based on the security context
+ *      represented by the given subject handles.
+ *
+ *      Restrictions:
+ *
+ *      --  This function must not block since we use
+ *          a global scratch buffer.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+ULONG ctxtQueryPermissions(PCSZ pcszResource,
+                           ULONG ulResourceLen,     // in: strlen(pcszResource)
+                           ULONG cSubjects,
+                           const HXSUBJECT *paSubjects)
+{
+    PACCESS paAccesses;
+    ULONG   cAccesses;
+    PSZ     pszResource;
+
+    ULONG   ulRemainingLen = ulResourceLen;
+
+    if (!*paSubjects || !G_pRing0Buf)
+        // null subject handle (root) or
+        // ACLs not active: allow everything
+        return XWPACCESS_ALL;
+
+    memcpy(G_szResource,
+           pcszResource,
+           ulResourceLen + 1);
+    pszResource = __strupr(G_szResource);        // @@todo use fshelper which is nls-aware
+
+    while (TRUE)
+    {
+        PSZ p;
+
+        PEVENTBUF_FILENAME pBuf;
+        if (pBuf = ctxtLogEvent(NULL,
+                                EVENT_FINDPERMISSIONS,
+                                sizeof(EVENTBUF_FILENAME) + ulRemainingLen))
+        {
+            pBuf->rc = -1;
+            pBuf->ulPathLen = ulRemainingLen;
+            memcpy(pBuf->szPath,
+                   pszResource,
+                   ulRemainingLen + 1);
+        }
+
+        if (paAccesses = FindAccess(pszResource,
+                                    __StackToFlat(&cAccesses)))
+        {
+            ULONG   flAccess = 0;
+            ULONG   ulA,
+                    ulS;
+
+            for (ulA = 0;
+                 ulA < cAccesses;
+                 ++ulA)
+            {
+                for (ulS = 0;
+                     ulS < cSubjects;
+                     ++ulS)
+                {
+                    if (paSubjects[ulS] == paAccesses[ulA].hSubject)
+                        flAccess |= paAccesses[ulA].flAccess;
+                }
+            }
+
+            if (pBuf = ctxtLogEvent(NULL,
+                                    EVENT_FINDPERMISSIONS,
+                                    sizeof(EVENTBUF_FILENAME) + ulRemainingLen))
+            {
+                pBuf->rc = flAccess;
+                pBuf->ulPathLen = ulRemainingLen;
+                memcpy(pBuf->szPath,
+                       pszResource,
+                       ulRemainingLen + 1);
+            }
+
+            return flAccess;
+        }
+
+        // not found: climb up to parent
+        if (p = strrchr(pszResource + 1,        // we can have entries like "\DEV"
+                        '\\'))
+        {
+            *p = 0;
+            ulRemainingLen = p - pszResource;
+        }
+        else
+            break;
+    }
+
+    return 0;
+}
 
 

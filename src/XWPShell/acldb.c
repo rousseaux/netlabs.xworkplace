@@ -94,7 +94,7 @@ APIRET saclLoadDatabase(PULONG pulLineWithError)
 
     ULONG   ulLineCount = 0;
 
-    if (!(pszDBPath = getenv("XWPACLDB")))
+    if (!(pszDBPath = getenv("ETC")))
     {
         // XWPUSERDB not specified:
         // default to "?:\os2" on boot drive
@@ -107,7 +107,7 @@ APIRET saclLoadDatabase(PULONG pulLineWithError)
         arc = _doserrno;
     else
     {
-        CHAR        szLine[300];
+        CHAR        szLine[300];        // @@todo this is not safe!
         PSZ         pLine = NULL;
         while (pLine = fgets(szLine, sizeof(szLine), UserDBFile))
         {

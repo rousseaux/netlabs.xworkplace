@@ -512,6 +512,7 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
  *@@changed V0.9.1 (99-12-07) [umoeller]: fixed memory leak
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
  *@@changed V0.9.15 (2001-09-14) [umoeller]: reorganized to fix replacements resolution which never worked in time
+ *@@changed V1.0.2 (2003-11-13) [umoeller]: fixed broken DLL name lookup
  */
 
 PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
@@ -557,6 +558,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
         PCLASSRECORDCORE preccOrphans = NULL;
                 // for "root" record cor ("Orphaned classes")
         pObjClass = pwpsciReturn->pObjClass;
+
         // now go thru the WPS class list
         while (pObjClass)
         {
@@ -693,15 +695,25 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                 // this will find the DLL only if the class
                 // has been registered with the WPS (there are
                 // some classes that are not)
+                // V1.0.2 (2003-11-13) [umoeller]: reset pObjClass, this broke
+                // DLL name resolution at one point (this must have worked once!)
+                pObjClass = pwpsciReturn->pObjClass;
                 while (pObjClass)
                 {
-                    if (!strcmp(pwpsNew->pszClassName, pObjClass->pszClassName))
+                    if (!strcmp(pwpsNew->pszClassName,
+                                pObjClass->pszClassName))
+                    {
+                        PMPF_SOMFREAK(("found dll %s for %s",
+                               pObjClass->pszModName,
+                               pwpsNew->pszClassName));
+
+                        pwpsNew->pszModName = pObjClass->pszModName;
                         break;
-                    else
-                        pObjClass = pObjClass->pNext;
+                    }
+
+                    pObjClass = pObjClass->pNext;
                 }
-                if (pObjClass)
-                    pwpsNew->pszModName = pObjClass->pszModName;
+
                 // else DLL = NULL; this happens if class loading
                 // failed or if an undocumented WPS class does not
                 // appear in the "official" WPS class list

@@ -129,6 +129,8 @@ interface XWPFontObject : WPTransient
     //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
         wpOpen: override;
+
+        wpFormatDragItem: override;     //# added V1.0.2 (2003-12-03) [umoeller]
     };
 #endif
 };

@@ -191,6 +191,8 @@
      *
      ********************************************************************/
 
+    VOID krnInit(VOID);
+
     BOOL krnLock(PCSZ pcszSourceFile,
                  ULONG ulLine,
                  PCSZ pcszFunction);

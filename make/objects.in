@@ -63,7 +63,7 @@ $(OUTPUTDIR)\init.obj \
 $(OUTPUTDIR)\notebook.obj \
 $(OUTPUTDIR)\plugins.obj \
 $(OUTPUTDIR)\kernel.obj \
-$(OUTPUTDIR)\xsecapi.obj \
+#$(OUTPUTDIR)\xsecapi.obj \
 $(OUTPUTDIR)\xsetup.obj \
 $(OUTPUTDIR)\wpsh.obj
 

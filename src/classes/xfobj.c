@@ -1762,7 +1762,8 @@ SOM_Scope PUSEITEM  SOMLINK xo_xwpPrepareInsertRecord(XFldObject *somSelf,
  *          therefore copy this flag from the input flOwnerDraw
  *          bits unless you change the RGB mode of the HPS.
  *
- *      The usual sequence for lazy icon loading is this:
+ *      As a result, the usual sequence for lazy icon loading is
+ *      this:
  *
  *      1)  Check that OWDRFL_LAZYLOADICON is set. If not,
  *          call wpQueryIcon to load the icon synchronously.
@@ -5218,6 +5219,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
  *      title fields.
  *
  *@@added V0.9.19 (2002-06-15) [umoeller]
+ *@@changed V1.0.2 (2003-10-14) [pr]: WPNetgroup had no icon page, fixed @@fixes 514
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
@@ -5259,6 +5261,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
                  // better make sure we don't mess with user classes
                  && (    (ctsIsSharedDir(somSelf))
                       || (ctsIsServer(somSelf))         // added V0.9.20 (2002-07-31) [umoeller]
+                      || (ctsIsNetgrp(somSelf))         // added V1.0.2 (2003-10-14) [pr]: @@fixes 514
                     )
                )
             {

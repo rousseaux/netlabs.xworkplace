@@ -731,7 +731,7 @@ PSZ cmnQueryBootLogoFile(VOID)
         CHAR szBootLogoFile[CCHMAXPATH];
         cmnQueryXWPBasePath(szBootLogoFile);
         strcat(szBootLogoFile,
-                "\\bootlogo\\xfolder.bmp");
+               "\\bootlogo\\xfolder.bmp");
         pszReturn = strdup(szBootLogoFile);
     }
 

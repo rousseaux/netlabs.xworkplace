@@ -3,7 +3,8 @@
  *@@sourcefile sec32_strategy.c:
  *      implements the PDD's strategy routing table.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -100,7 +101,7 @@ static int (*driver_routing_table[32])() =
  *
  *      We end up here for every request packet that comes
  *      in from the kernel and call our respective
- *      implementation, if avaiable.
+ *      implementation, if available.
  *
  *      Context: Possibly any ring-3 thread on the system.
  */

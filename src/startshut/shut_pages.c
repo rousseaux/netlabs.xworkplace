@@ -112,7 +112,6 @@
 #include "media\media.h"                // XWorkplace multimedia support
 
 #include "helpers\xwpsecty.h"           // XWorkplace Security base
-#include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
 #include "startshut\archives.h"         // archiving declarations
@@ -562,12 +561,15 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
 
         // Reboot Actions (Desktop page 1)
         case ID_SDDI_REBOOTEXT:
+            /*
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
                       pnbp->hwndFrame,                  // owner
                       (PFNWP)fnwpUserRebootOptions,     // dialog procedure
                       cmnQueryNLSModuleHandle(FALSE),
                       ID_XSD_REBOOTEXT,        // dialog resource id
                       (PVOID)NULL);            // no dialog parameters
+                      */
+            xsdShowRebootActions(pnbp->hwndFrame);
             ulChange = 0;
         break;
 

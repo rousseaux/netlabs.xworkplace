@@ -113,7 +113,6 @@
 #include "media\media.h"                // XWorkplace multimedia support
 
 #include "helpers\xwpsecty.h"           // XWorkplace Security base
-#include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
 #include "startshut\archives.h"         // archiving declarations
@@ -1472,6 +1471,61 @@ VOID xsdShowAutoCloseDetails(HWND hwndOwner)
  *
  ********************************************************************/
 
+static const CONTROLDEF
+    RebootIntro = LOADDEF_TEXT_WORDBREAK(ID_XSDI_ACL_INTRO, ACL_WIDTH - 30),
+    RebootUp = LOADDEF_NOFOCUSBUTTON(ID_XSDI_XRB_UP),
+    RebootDown = LOADDEF_NOFOCUSBUTTON(ID_XSDI_XRB_DOWN),
+    RebootActionTitleTxt = LOADDEF_TEXT(ID_XSDI_XRB_ITEMNAME_TXT),
+    RebootActionTitleEF = CONTROLDEF_ENTRYFIELD(
+                                "",
+                                ID_XSDI_XRB_ITEMNAME,
+                                SZL_REMAINDER,       // remaining width next to partitions button
+                                SZL_AUTOSIZE),
+    RebootPartitionsButton = LOADDEF_NOFOCUSBUTTON(ID_XSDI_XRB_PARTITIONS),
+    RebootActionCmdTxt = LOADDEF_TEXT(ID_XSDI_XRB_COMMAND_TXT),
+    RebootActionCmdEF = CONTROLDEF_ENTRYFIELD(
+                                "",
+                                ID_XSDI_XRB_COMMAND,
+                                -100,       // full width
+                                SZL_AUTOSIZE);
+
+static const DLGHITEM G_dlgRebootActions[] =
+    {
+        START_TABLE,
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&ACLIcon),
+                CONTROL_DEF(&RebootIntro),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&ACLListbox),
+                START_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLNew),
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLDelete),
+                    START_ROW(0),
+                        CONTROL_DEF(&RebootUp),
+                    START_ROW(0),
+                        CONTROL_DEF(&RebootDown),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&RebootActionTitleTxt),
+            START_ROW(0),
+                START_TABLE_EXT(TABLE_INHERIT_SIZE),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&RebootActionTitleEF),
+                        CONTROL_DEF(&RebootPartitionsButton),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&RebootActionCmdTxt),
+            START_ROW(0),
+                CONTROL_DEF(&RebootActionCmdEF),
+            START_ROW(0),
+                CONTROL_DEF(&G_OKButton),
+                CONTROL_DEF(&G_CancelButton),
+                CONTROL_DEF(&G_HelpButton),
+        END_TABLE
+    };
+
 /*
  *@@ fnwpUserRebootOptions:
  *      dlg proc for the "Extended Reboot" options.
@@ -1482,6 +1536,7 @@ VOID xsdShowAutoCloseDetails(HWND hwndOwner)
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
  *@@changed V0.9.0 [umoeller]: renamed from fnwpRebootExt
  *@@changed V0.9.0 [umoeller]: added "Partitions" button
+ *@@changed V1.0.2 (2003-12-03) [umoeller]: now using the dlg formatter
  */
 
 MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1553,14 +1608,17 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
                         pData->usItemCount++;
                     }
+
                     free(pINI);
                 }
             }
 
             WinSendDlgItemMsg(hwndDlg, ID_XSDI_XRB_ITEMNAME,
-                EM_SETTEXTLIMIT, (MPARAM)(100-1), MPNULL);
+                              EM_SETTEXTLIMIT,
+                              (MPARAM)(100-1), MPNULL);
             WinSendDlgItemMsg(hwndDlg, ID_XSDI_XRB_COMMAND,
-                EM_SETTEXTLIMIT, (MPARAM)(CCHMAXPATH-1), MPNULL);
+                              EM_SETTEXTLIMIT,
+                              (MPARAM)(CCHMAXPATH-1), MPNULL);
 
             WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pData);
 
@@ -2095,4 +2153,29 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
     return mrc;
 }
 
+/*
+ *@@ xsdShowRebootActions:
+ *      displays the "Reboot actions" dialog, which is now
+ *      produced with the dialog formatter.
+ *
+ *@@added V1.0.2 (2003-12-03) [umoeller]
+ */
 
+VOID xsdShowRebootActions(HWND hwndOwner)
+{
+    HWND hwndDlg;
+    if (!dlghCreateDlg(&hwndDlg,
+                       hwndOwner,
+                       FCF_FIXED_DLG,
+                       fnwpUserRebootOptions,
+                       cmnGetString(ID_XSD_REBOOTEXT_TITLE),
+                       G_dlgRebootActions,
+                       ARRAYITEMCOUNT(G_dlgRebootActions),
+                       NULL,
+                       cmnQueryDefaultFont()))
+    {
+        winhCenterWindow(hwndDlg);      // still hidden
+        WinProcessDlg(hwndDlg);
+        winhDestroyWindow(&hwndDlg);
+    }
+}

@@ -51,6 +51,8 @@
 
     BOOL ctsIsServer(WPObject *somSelf);
 
+    BOOL ctsIsNetgrp(WPObject *somSelf);
+
     BOOL ctsDescendedFromSharedDir(SOMClass *pClassObject);
 
     BOOL ctsIsDisk(WPObject *somSelf);

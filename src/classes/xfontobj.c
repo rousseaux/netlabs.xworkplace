@@ -671,6 +671,31 @@ SOM_Scope HWND  SOMLINK fono_wpOpen(XWPFontObject *somSelf, HWND hwndCnr,
     return NULLHANDLE;
 }
 
+/*
+ *@@ wpFormatDragItem:
+ *      this WPObject instance method gets called on every source object
+ *      when a user starts dragging stuff. Apparently this gets called
+ *      by the WPS when it gets WM_CONTROL / CN_INITDRAG.
+ *
+ *      We simply return FALSE here to indicate that we cannot be dragged
+ *      at all. One day we might actually become smart and implement the
+ *      "drag font" behavior that the WPS font palette exhibits. @@todo
+ *
+ *@@added V1.0.2 (2003-12-03) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK fono_wpFormatDragItem(XWPFontObject *somSelf,
+                                              PDRAGITEM pdrgItem)
+{
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    XWPFontObjectMethodDebug("XWPFontObject","fono_wpFormatDragItem");
+
+    /* return (XWPFontObject_parent_WPTransient_wpFormatDragItem(somSelf,
+                                                              pdrgItem)); */
+    return FALSE;
+}
+
+
 /* ******************************************************************
  *
  *   XWPFontObject class methods

@@ -1174,30 +1174,6 @@
 #define ID_XSDI_ARC_ARCHIVES_NO_SPIN    2168
 #define ID_XSDI_ARC_ARCHIVES_NO_TXT2    2169
 
-// "extended reboot" / "auto-close" dlg items
-#define ID_XSD_REBOOTEXT                2170
-#define ID_XSDI_XRB_LISTBOX             2171
-#define ID_XSDI_XRB_NEW                 2172
-#define ID_XSDI_XRB_DELETE              2173
-#define ID_XSDI_XRB_UP                  2174
-#define ID_XSDI_XRB_DOWN                2175
-#define ID_XSDI_XRB_ITEMNAME            2176
-#define ID_XSDI_XRB_COMMAND             2177
-#define ID_XSDI_XRB_PARTITIONS          2178     // added  (V0.9.0)
-
-#define ID_XSD_AUTOCLOSE                2180
-#define ID_XSDI_ACL_WMCLOSE             2181
-// #define ID_XSDI_ACL_CTRL_C              2182 removed V0.9.19 (2002-05-23) [umoeller]
-#define ID_XSDI_ACL_KILLSESSION         2183
-#define ID_XSDI_ACL_SKIP                2184
-
-#define ID_XSDI_ACL_STORE               2185    // added V0.9.1 (99-12-10)
-#define ID_XSDI_ACL_INTRO               2186
-#define ID_XSDI_ACL_SESSIONTITLE        2187
-#define ID_XSDI_ACL_DOWHATGROUP         2188
-
-#define ID_XSDI_PARTITIONSFIRST         2190    // menu item of first submenu on "Partitions" button (V0.9.0)
-
 // XFldDesktop "Shutdown" page (V0.9.0)
 // all IDs raised V0.9.16 (2002-01-04) [umoeller]
 #define ID_SDDI_ANIMATE_TXT             2199    // V0.9.19 (2002-06-18) [umoeller]
@@ -1243,6 +1219,36 @@
 #define ID_SDDI_SHAREDGROUP             2228
 
 #define ID_SDDI_CANDESKTOPALTF4         2229        // V0.9.16 (2002-01-04) [umoeller]
+
+// "extended reboot" / "auto-close" dlg items
+// all IDs moved down here V1.0.2 (2003-12-03) [umoeller]
+// #define ID_XSD_REBOOTEXT                2170
+#define ID_XSD_REBOOTEXT_TITLE          2240        // changed V1.0.2 (2003-12-03) [umoeller]
+#define ID_XSDI_XRB_LISTBOX             2241
+#define ID_XSDI_XRB_NEW                 2242
+#define ID_XSDI_XRB_DELETE              2243
+#define ID_XSDI_XRB_UP                  2244
+#define ID_XSDI_XRB_DOWN                2245
+#define ID_XSDI_XRB_PARTITIONS          2246     // added  (V0.9.0)
+#define ID_XSDI_XRB_INTRO               2247        // added V1.0.2 (2003-12-03) [umoeller]
+
+#define ID_XSD_AUTOCLOSE                2248
+#define ID_XSDI_ACL_WMCLOSE             2249
+// #define ID_XSDI_ACL_CTRL_C              2182 removed V0.9.19 (2002-05-23) [umoeller]
+#define ID_XSDI_ACL_KILLSESSION         2250
+#define ID_XSDI_ACL_SKIP                2251
+
+#define ID_XSDI_ACL_STORE               2252    // added V0.9.1 (99-12-10)
+#define ID_XSDI_ACL_INTRO               2253
+#define ID_XSDI_ACL_SESSIONTITLE        2254
+#define ID_XSDI_ACL_DOWHATGROUP         2255
+
+#define ID_XSDI_PARTITIONSFIRST         2256    // menu item of first submenu on "Partitions" button (V0.9.0)
+
+#define ID_XSDI_XRB_ITEMNAME_TXT        2257
+#define ID_XSDI_XRB_ITEMNAME            2258
+#define ID_XSDI_XRB_COMMAND_TXT         2259
+#define ID_XSDI_XRB_COMMAND             2260
 
 /* ******************************************************************
  *
@@ -1460,21 +1466,24 @@
 #define ID_AMDI_USER_CONFIRMPASS_DATA       4010
 #define ID_AMDI_USER_GROUPS_TXT             4011
 #define ID_AMDI_USER_GROUPS_DATA            4012
-#define ID_AMDI_USER_LOCALSEC_TXT           4013
-#define ID_AMDI_USER_LOCALSEC_DATA          4014
-#define ID_AMDI_USER_ALLOCBYTES_TXT         4015
-#define ID_AMDI_USER_ALLOCBYTES_DATA        4016
-#define ID_AMDI_USER_BUFALLOCS_TXT          4017
-#define ID_AMDI_USER_BUFALLOCS_DATA         4018
-#define ID_AMDI_USER_EVENTS_TXT             4019
-#define ID_AMDI_USER_EVENTS_DATA            4020
-#define ID_AMDI_USER_AUTHORIZATIONS_TXT     4021
-#define ID_AMDI_USER_AUTHORIZATIONS_DATA    4022
-#define ID_AMSI_LOCAL_USER                  4023
-#define ID_AMSI_ALL_USERS                   4024
-#define ID_AMSI_ALL_GROUPS                  4025
-#define ID_AMDI_F3_PERMISSIONS_TXT          4026
-#define ID_AMDI_F3_PERMISSIONS_DATA         4027
+#define ID_AMDI_USER_CONTEXTS_TXT           4013
+#define ID_AMDI_USER_CONTEXTS_DATA          4014
+#define ID_AMDI_USER_LOCALSEC_TXT           4015
+#define ID_AMDI_USER_LOCALSEC_DATA          4016
+#define ID_AMDI_USER_ALLOCBYTES_TXT         4017
+#define ID_AMDI_USER_ALLOCBYTES_DATA        4018
+#define ID_AMDI_USER_BUFALLOCS_TXT          4019
+#define ID_AMDI_USER_BUFALLOCS_DATA         4020
+#define ID_AMDI_USER_EVENTS_TXT             4021
+#define ID_AMDI_USER_EVENTS_DATA            4022
+#define ID_AMDI_USER_AUTHORIZATIONS_TXT     4023
+#define ID_AMDI_USER_AUTHORIZATIONS_DATA    4024
+#define ID_AMSI_LOCAL_USER                  4025
+#define ID_AMSI_ALL_USERS                   4026
+#define ID_AMSI_ALL_GROUPS                  4027
+#define ID_AMDI_F3_PERMISSIONS_TXT          4028
+#define ID_AMDI_F3_PERMISSIONS_DATA         4029
+#define ID_AMSI_PROCESSES                   4030    // added V1.0.2 (2003-11-13) [umoeller]
 
 /* ******************************************************************
  *

@@ -50,14 +50,55 @@
 
     typedef USHORT IOCTLRET;
 
-    PVOID ctxtLogEvent(ULONG ulEventCode,
-                       ULONG cbData);
+    VOID ctxtInit(VOID);
+
+    #ifdef XWPTREE_INCLUDED
+
+        /*
+         *@@ XWPSECURITYCONTEXT:
+         */
+
+        typedef struct _XWPSECURITYCONTEXT
+        {
+            TREE    tree;           // ulKey has the pid
+            ULONG   cbStruct;       // size of entire struct, including TREE
+            LONG    cOpenFiles;     // currently open files (raised with each
+                                    // successful OPEN_POST, decr'd with each CLOSE)
+            XWPSECURITYCONTEXTCORE
+                    ctxt;           // context core (xwpsecty.h)
+        } XWPSECURITYCONTEXT, *PXWPSECURITYCONTEXT;
+
+        extern PXWPSECURITYCONTEXT G_pContextCreateVDM;
+
+        PXWPSECURITYCONTEXT ctxtCreate(USHORT pidNew,
+                                       USHORT pidParent,
+                                       ULONG cSubjects);
+
+        PXWPSECURITYCONTEXT ctxtFind(USHORT pid);
+
+        VOID ctxtFree(PXWPSECURITYCONTEXT pCtxt);
+
+        VOID ctxtClearAll(VOID);
+
+        PVOID ctxtLogEvent(PXWPSECURITYCONTEXT pContext,
+                           ULONG ulEventCode,
+                           ULONG cbData);
+
+    #endif
 
     VOID ctxtStopLogging(VOID);
 
     #ifdef RING0API_HEADER_INCLUDED
+
         IOCTLRET ctxtFillLogBuf(PLOGBUF pLogBufR3,
                                 ULONG blockid);
+
+        int ctxtSendACLs(PRING0BUF pBufR3);
+
+        ULONG ctxtQueryPermissions(PCSZ pcszResource,
+                                   ULONG ulResourceLen,     // in: strlen(pcszResource)
+                                   ULONG cSubjects,
+                                   const HXSUBJECT *paSubjects);
     #endif
 
     /* ******************************************************************
@@ -94,19 +135,20 @@
 
     #pragma pack(2)
 
-    typedef struct {
-       PSZ    pszPath;      // well formed path
-       ULONG  ulHandle;     // search handle
-       ULONG  rc;           // rc user got from findfirst
-       PUSHORT pResultCnt;  // count of found files
-       USHORT usReqCnt;     // count user requested
-       USHORT usLevel;      // search level
-       USHORT usBufSize;    // user buffer size
-       USHORT fPosition;    // use position information?
-       PCHAR  pcBuffer;     // ptr to user buffer
-       ULONG  Position;     // Position for restarting search
-       PSZ    pszPosition;  // file to restart search with
-    }  FINDPARMS, *PFINDPARMS;
+    typedef struct
+    {
+        PSZ     pszPath;      // well formed path
+        ULONG   ulHandle;     // search handle
+        ULONG   rc;           // rc user got from findfirst
+        PUSHORT pResultCnt;  // count of found files
+        USHORT  usReqCnt;     // count user requested
+        USHORT  usLevel;      // search level
+        USHORT  usBufSize;    // user buffer size
+        USHORT  fPosition;    // use position information?
+        PCHAR   pcBuffer;     // ptr to user buffer
+        ULONG   Position;     // Position for restarting search
+        PSZ     pszPosition;  // file to restart search with
+    } FINDPARMS, *PFINDPARMS;
 
     #pragma pack()
 
@@ -373,14 +415,14 @@
     ULONG CallType FINDNEXT(PFINDPARMS pParms);
 
     ULONG CallType FINDFIRST3X(ULONG ulSrchHandle,
-                               PSZ pszPath);  //DGE02
+                               PSZ pszPath);
 
-    VOID  CallType FINDCLOSE(ULONG ulSearchHandle);              //DGE02
+    VOID  CallType FINDCLOSE(ULONG ulSearchHandle);
 
     ULONG CallType FINDFIRSTNEXT3X(ULONG ulSrchHandle,
-                                   PSZ pszFile);//DGE02
+                                   PSZ pszFile);
 
-    ULONG CallType FINDCLOSE3X(ULONG ulSrchHandle);              //DGE02
+    ULONG CallType FINDCLOSE3X(ULONG ulSrchHandle);
 
     VOID  CallType EXECPGM_POST(PSZ pszPath,
                                 PCHAR pchArgs,
@@ -389,7 +431,7 @@
     ULONG CallType CREATEVDM(PSZ pszProgram,
                              PSZ pszArgs);
 
-    VOID  CallType CREATEVDMPOST(int rc);
+    VOID  CallType CREATEVDM_POST(int rc);
 
     ULONG CallType SETDATETIME(PDATETIME pDateTimeBuf);
 
@@ -408,13 +450,13 @@
                                ULONG  InfoFlags);
 
     ULONG CallType DEVIOCTL(ULONG  SFN,
-                            ULONG  Category, /* Category 8 and 9 only.*/
+                            ULONG  Category,
                             ULONG  Function,
                             PUCHAR pParmList,
                             ULONG  cbParmList,
                             PUCHAR pDataArea,
                             ULONG  cbDataArea,
-                            ULONG  PhysicalDiskNumber); /* Category 9 only */
+                            ULONG  PhysicalDiskNumber);
 
     ULONG CallType TRUSTEDPATHCONTROL(VOID);
 
@@ -456,6 +498,8 @@
 
     // stuff elsewhere
     extern CHAR     G_szScratchBuf[];
+
+    extern USHORT   G_rcUnknownContext; // default RC for unknown security contexts
 
     /*
     struct InfoSegGDT {
@@ -562,74 +606,6 @@
         unsigned short  LIS_PackPckSel; // First selector above packed arena
     };
     */
-
-    /* ******************************************************************
-     *
-     *   Private logging definitions
-     *
-     ********************************************************************/
-
-    #if 0 // #ifdef RING0API_HEADER_INCLUDED
-
-        /*
-         *@@ EVENTBUF_OPEN_MAX:
-         *      wrapper struct so we can create an
-         *      EVENTBUF_OPENPRE in global data.
-         *
-         *@@added V1.0.1 (2003-01-10) [umoeller]
-         */
-
-        typedef struct _EVENTBUF_OPEN_MAX
-        {
-            EVENTBUF_OPEN       Core;
-            CHAR                szFill[CCHMAXPATH];
-        } EVENTBUF_OPEN_MAX;
-
-        /*
-         *@@ EVENTBUF_EXECPGM_MAX:
-         *      wrapper struct so we can create an
-         *      EVENTBUF_EXECPGM in global data.
-         *
-         *@@added V1.0.1 (2003-01-10) [umoeller]
-         */
-
-        typedef struct _EVENTBUF_EXECPGM_MAX
-        {
-            EVENTBUF_EXECPGM    Core;
-            CHAR                szFill[CCHMAXPATH];
-        } EVENTBUF_EXECPGM_MAX;
-
-        /*
-         *@@ EVENTBUF_FILEONLY_MAX:
-         *      wrapper struct so we can create an
-         *      EVENTBUF_FILEONLY in global data.
-         *
-         *@@added V1.0.1 (2003-01-10) [umoeller]
-         */
-
-        typedef struct _EVENTBUF_FILEONLY_MAX
-        {
-            EVENTBUF_FILEONLY   Core;
-            CHAR                szFill[CCHMAXPATH];
-        } EVENTBUF_FILEONLY_MAX;
-
-        /*
-         *@@ EVENTBUFUNION:
-         *
-         *@@added V1.0.1 (2003-01-10) [umoeller]
-         */
-
-        typedef union _EVENTBUFUNION
-        {
-            EVENTBUF_OPEN_MAX       Open;
-            EVENTBUF_FILEONLY_MAX   FileOnly;
-            EVENTBUF_EXECPGM_MAX    ExecPgm;
-            EVENTBUF_CLOSE          Close;
-        } EVENTBUFUNION;
-
-        extern EVENTBUFUNION    G_EventBuf; // sec32_data.c
-                // union with the various event buffers
-    #endif
 
 #endif
 

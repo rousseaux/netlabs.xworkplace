@@ -86,6 +86,7 @@ COBJS = \
     $(OUTPUTDIR)\callb_find.obj \
     $(OUTPUTDIR)\callb_move.obj \
     $(OUTPUTDIR)\callb_open.obj \
+    $(OUTPUTDIR)\callb_trustedpath.obj \
     $(OUTPUTDIR)\sec32_strategy.obj \
     $(OUTPUTDIR)\sec32_data.obj \
     $(OUTPUTDIR)\sec32_callbacks.obj \

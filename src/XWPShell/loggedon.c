@@ -43,6 +43,7 @@
 
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
+#include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"
 
 #include "helpers\xwpsecty.h"
@@ -274,25 +275,25 @@ APIRET DeregisterLoggedOn(XWPSECID uid,
  *
  *      This function then does the following:
  *
- *      1) Calls sudbAuthenticateUser.
+ *      1)  Calls sudbAuthenticateUser.
  *
- *      2) Creates subject handles for the
- *         user's ID and group ID by calling
- *         scxtCreateSubject.
+ *      2)  Creates subject handles for the
+ *          user's ID and group ID by calling
+ *          scxtCreateSubject.
  *
- *      3) Registers the user as logged on
- *         in our internal list.
+ *      3)  Registers the user as logged on
+ *          in our internal list, if he/she is not
+ *          yet in there. If the user is already
+ *          logged on, we still return NO_ERROR. @@todo
  *
  *      This does not change the security context of
  *      processes or manage the user shell.
  *
- *      On output, XWPLOGGEDON is filled with the
- *      remaining user information (user/group names,
- *      ID's, subject handles).
- *
  *      XWPShell calls this API after the user has
  *      entered his user name and password and has
- *      pressed OK in the logon dialog.
+ *      pressed OK in the logon dialog. This also gets
+ *      called when processes request to switch users
+ *      (as with an "su" command).
  *
  *      See loggedon.c for additional remarks and
  *      restrictions.
@@ -306,14 +307,12 @@ APIRET DeregisterLoggedOn(XWPSECID uid,
  *      --  XWPSEC_NOT_AUTHENTICATED: authentication failed.
  *          NOTE: In that case, the function blocks for
  *          approximately three seconds before returning.
- *
- *      --  XWPSEC_USER_EXISTS: user is already logged on.
  */
 
 APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
                  PCSZ pcszPassword,     // in: password
                  BOOL fLocal,           // in: TRUE if this is the local user
-                 XWPSECID *puid)        // out: user ID if NO_ERROR
+                 PXWPLOGGEDON *ppLogon) // out: logon structure (to be freed by caller)
 {
     APIRET arc = NO_ERROR;
 
@@ -347,6 +346,7 @@ APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
             {
                 XWPSUBJECTINFO  siUser;
                 ULONG           ul;
+                BOOL            fRefresh = FALSE;
 
                 pLogon->cbStruct = cbStruct;
                 memcpy(pLogon->szUserName,
@@ -362,7 +362,7 @@ APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
 
                 _Pmpf(("  sudbAuthenticateUser returned uid %d", uiLogon.uid));
 
-                if (!(arc = scxtCreateSubject(&siUser)))
+                if (!(arc = scxtCreateSubject(&siUser, &fRefresh)))
                 {
                     // got user subject:
                     pLogon->aSubjects[0] = siUser.hSubject;
@@ -383,7 +383,7 @@ APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
                             siGroup.id = pUserDBEntry->Membership.aGIDs[ul];
                             siGroup.bType = SUBJ_GROUP;
 
-                            if (arc = scxtCreateSubject(&siGroup))
+                            if (arc = scxtCreateSubject(&siGroup, &fRefresh))
                                 break;
 
                             pLogon->aSubjects[pLogon->cSubjects++] = siGroup.hSubject;
@@ -396,18 +396,27 @@ APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
                                                       fLocal)))
                        )
                     {
-                        // pass out user ID
-                        *puid = uiLogon.uid;
-
-                        // rebuild system ACL table and send it to the driver
-                        arc = scxtRefresh();
+                        if (!(*ppLogon = malloc(cbStruct)))
+                            arc = ERROR_NOT_ENOUGH_MEMORY;
+                        else
+                            memcpy(*ppLogon,
+                                   pLogon,
+                                   pLogon->cbStruct);
                     }
-                    else
+
+                    if (arc)
+                    {
                         // error: kill the subjects we created
                         for (ul = 0;
                              ul < pLogon->cSubjects;
                              ++ul)
-                            scxtDeleteSubject(pLogon->aSubjects[ul]);
+                            scxtDeleteSubject(pLogon->aSubjects[ul],
+                                              &fRefresh);
+                    }
+
+                    if (fRefresh)
+                        // rebuild system ACL table and send it to the driver
+                        arc = scxtRefresh();
                 }
 
                 if (arc)
@@ -447,25 +456,28 @@ APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
 
 APIRET slogLogOff(XWPSECID uid)
 {
-    APIRET arc = NO_ERROR;
-
-    PXWPLOGGEDON pLogoff;
+    APIRET          arc = NO_ERROR;
+    PXWPLOGGEDON    pLogoff;
 
     if (!(arc = DeregisterLoggedOn(uid,
                                    &pLogoff)))
     {
+        BOOL fRefresh = FALSE;
+
         ULONG   ul;
         for (ul = 0;
              ul < pLogoff->cSubjects;
              ++ul)
         {
-            scxtDeleteSubject(pLogoff->aSubjects[ul]);
+            scxtDeleteSubject(pLogoff->aSubjects[ul],
+                              &fRefresh);
         }
 
         free(pLogoff);
 
         // rebuild system ACL table and send it to the driver
-        arc = scxtRefresh();
+        if (fRefresh)
+            arc = scxtRefresh();
     }
 
     return arc;
@@ -553,3 +565,4 @@ APIRET slogQueryLogon(XWPSECID uid,
 
     return arc;
 }
+

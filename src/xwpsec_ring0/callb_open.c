@@ -3,7 +3,8 @@
  *@@sourcefile callb_open.c:
  *      SES kernel hook code.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -27,6 +28,9 @@
 #include <os2.h>
 
 #include <string.h>
+
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -90,16 +94,67 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
        )
     {
         // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsRequired = 0,
+                fsGranted = 0;
+        ULONG   ulPathLen = strlen(pszPath);
+
         if (G_pidShell != G_pLDT->LIS_CurProcID)
         {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                fsGranted = ctxtQueryPermissions(pszPath,
+                                                 ulPathLen,
+                                                 pThisContext->ctxt.cSubjects,
+                                                 pThisContext->ctxt.aSubjects);
+
+                // DosOpen flags
+                /* if (fsOpenMode & OPEN_FLAGS_DASD) // open drive:               0x8000
+                    flRequired = XWPACCESS_WRITE | XWPACCESS_DELETE | XWPACCESS_CREATE;
+                    // @@todo: check drive?
+                else */
+                {
+                    if (fsOpenFlags & (  OPEN_ACTION_CREATE_IF_NEW          // 0x0010
+                                       | OPEN_ACTION_REPLACE_IF_EXISTS))    // 0x0002
+                                            // @@todo: should "replace" really require "C" perm?
+                        fsRequired |= XWPACCESS_CREATE;
+                    if (fsOpenFlags & OPEN_ACTION_OPEN_IF_EXISTS)           // 0x0001
+                        fsRequired |= XWPACCESS_READ;
+
+                    // OPEN_ACCESS_READONLY           0x0000  /* ---- ---- ---- -000 */
+                    // OPEN_ACCESS_WRITEONLY          0x0001  /* ---- ---- ---- -001 */
+                    // OPEN_ACCESS_READWRITE          0x0002  /* ---- ---- ---- -010 */
+                    switch (fsOpenMode & 3)
+                    {
+                        case OPEN_ACCESS_READONLY:
+                            fsRequired = XWPACCESS_READ;
+                        break;
+
+                        case OPEN_ACCESS_WRITEONLY:
+                            fsRequired = XWPACCESS_WRITE;
+                        break;
+
+                        default:
+                            fsRequired = XWPACCESS_READ | XWPACCESS_WRITE;
+                        break;
+                    }
+                }
+
+                // all bits of fsRequired must be set in fsGranted
+                if ((fsGranted & fsRequired) != fsRequired)
+                    rc = ERROR_ACCESS_DENIED;
+            }
         }
+        else
+            pThisContext = NULL;
 
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_OPEN pBuf;
-            ULONG   ulPathLen = strlen(pszPath);
-
-            if (pBuf = ctxtLogEvent(EVENT_OPEN_PRE,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_OPEN_PRE,
                                     sizeof(EVENTBUF_OPEN) + ulPathLen))
             {
                 pBuf->fsOpenFlags = fsOpenFlags;
@@ -107,6 +162,8 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
                 pBuf->SFN = SFN;
                 pBuf->Action = 0;           // not used with OPEN_PRE
                 pBuf->rc = rc;
+                pBuf->PRE.fsRequired = fsRequired;
+                pBuf->PRE.fsGranted = fsGranted;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,
@@ -141,12 +198,24 @@ ULONG CallType OPEN_POST(PSZ pszPath,
                                    &G_pLDT))
        )
     {
+        PXWPSECURITYCONTEXT pThisContext;
+
+        if (!RC)
+        {
+            // successful call:
+            if ((pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                ++(pThisContext->cOpenFiles);
+        }
+        else
+            pThisContext = NULL;
+
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_OPEN pBuf;
             ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_OPEN_POST,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_OPEN_POST,
                                     sizeof(EVENTBUF_OPEN) + ulPathLen))
             {
                 pBuf->fsOpenFlags = fsOpenFlags;
@@ -154,6 +223,8 @@ ULONG CallType OPEN_POST(PSZ pszPath,
                 pBuf->SFN = SFN;
                 pBuf->Action = Action;
                 pBuf->rc = RC;
+                if (pThisContext)
+                    pBuf->POST.cOpenFiles = pThisContext->cOpenFiles;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,

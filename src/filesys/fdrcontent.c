@@ -959,7 +959,7 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
 
     WPObject *pFilter;
 
-    static xfTD_wpMatchesFilter pwpMatchesFilter = NULL;
+    static xfTD_wpMatchesFilter s_pwpMatchesFilter = NULL;
 
     if (_wpQueryStyle(pObject) & OBJSTYLE_NOTVISIBLE)
         return TRUE;
@@ -967,17 +967,17 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
     if (    (pFilter = _wpQueryFldrFilter(pFolder))        // V0.9.20 (2002-07-25) [umoeller]
             // now that we have the WPFilter object, we can try
             // to resolve the wpMatchesFilter method
-         && (    (pwpMatchesFilter)
+         && (    (s_pwpMatchesFilter)
                  // first call: this method is never overridden,
                  // so we only resolve once for the system
-              || (pwpMatchesFilter = (xfTD_wpMatchesFilter)wpshResolveFor(
+              || (s_pwpMatchesFilter = (xfTD_wpMatchesFilter)wpshResolveFor(
                                                       pFilter,
                                                       NULL, // use somSelf's class
                                                       "wpMatchesFilter"))
             )
        )
     {
-        if (pwpMatchesFilter(pFilter, pObject))
+        if (s_pwpMatchesFilter(pFilter, pObject))
             brc = FALSE;
     }
 

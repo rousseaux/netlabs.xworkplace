@@ -130,7 +130,9 @@
                                 // a bunch of undocumented WPS flags which are
                                 // returned by wpQueryState and set by wpSetState
                                 // and wpModifyState (all undocumented)
+                                #define STATEFL_INITIALIZED     0x0001
                                 #define STATEFL_FILTERED        0x0040
+                                #define STATEFL_REFRESHING      0x0400
         ULONG               flStyle;
                                 // object's style, as returned by wpQueryStyle,
                                 // if not overridden by subclasses; see wpobject.h

@@ -131,8 +131,6 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "shared\xsecapi.h"             // XWorkplace Security API
-
 #include "startshut\apm.h"              // APM power-off for XShutdown
 #include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -1244,7 +1242,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
                    PSHUTDOWNCONSTS pConsts,
                    SWENTRY *pSwEntry,       // in/out: switch entry
                    WPObject **ppObject,     // out: the WPObject*, really, or NULL if the window is no object
-                   PULONG pulUserID)       // out: user ID on whose behalf the user is running or -1 if XWPShell is not running
+                   XWPSECID *puidOwner)     // out: user ID on whose behalf the user is running or sth negative for errors
 {
     LONG           lrc = 0;
     CHAR           szSwUpperTitle[100];
@@ -1339,20 +1337,24 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
 
     if (pConsts->uid == -1)
         // XWPShell not running:
-        *pulUserID = -2;
+        *puidOwner = -2;
     else
     {
+        APIRET arc;
         // XWPShell running:
         if (*ppObject)
             // WPS object: use WPS pid (save time)
-            *pulUserID = pConsts->uid;
+            *puidOwner = pConsts->uid;
         else
-            if (xsecQueryProcessOwner(pSwEntry->swctl.idProcess,
-                                      pulUserID))
+            if (arc = xsecQueryProcessOwner(pSwEntry->swctl.idProcess,
+                                            puidOwner))
+            {
                 // error:
-                *pulUserID = -2;
+                *puidOwner = -(LONG)arc;
+                lrc = XSD_OTHER_FOREIGN;
+            }
             else
-                if (*pulUserID != pConsts->uid)
+                if (*puidOwner != pConsts->uid)
                     lrc = XSD_OTHER_FOREIGN;
     }
 
@@ -1397,7 +1399,7 @@ void xsdBuildShutList(HAB hab,
          ul++)
     {
         // now we check which windows we add to the shutdown list
-        ULONG uid;
+        XWPSECID uid;
         LONG lrc = xsdIsClosable(hab,
                                  &pShutdownData->SDConsts,
                                  &pSwBlock->aswentry[ul],
@@ -1754,6 +1756,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.19 (2002-04-24) [umoeller]: adjustments for new global G_ulShutdownState flag
  *@@changed V0.9.19 (2002-06-18) [umoeller]: misc optimizations
  *@@changed V0.9.19 (2002-06-18) [umoeller]: no longer recovering windows to current desktop for restart wps
+ *@@changed V1.0.2 (2003-12-07) [pr]: retry closing WarpCenter @@fixes 302
  */
 
 STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
@@ -1822,7 +1825,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     if (LogFile)
     {
         // write log header
-        doshWriteLogEntry(LogFile, "-----------------------------------------------------------\n");
+        doshWriteLogEntry(LogFile, "-----------------------------------------------------------");
         doshWriteLogEntry(LogFile, "XWorkplace version: %s", XFOLDER_VERSION);
         doshWriteLogEntry(LogFile, "Shutdown thread started, TID: 0x%lX",
                 thrQueryID(ptiMyself));
@@ -2244,7 +2247,8 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                )
             {
                 // WarpCenter still open?
-                if (_wpFindUseItem(pWarpCenter, USAGE_OPENVIEW, NULL))
+                // V1.0.2 (2003-12-07) [pr]: Retry closing WarpCenter @@fixes 302
+                while (_wpFindUseItem(pWarpCenter, USAGE_OPENVIEW, NULL))
                 {
                     // if open: close it
                     xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
@@ -2261,15 +2265,18 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                                     // nothing else works right!
                                MPFROM2SHORT(CMDSRC_OTHER,
                                             FALSE));     // keyboard?!?
-
+                    WinPostMsg(pShutdownData->SDConsts.hwndOpenWarpCenter,
+                               WM_CLOSE,
+                               WM_NULL,
+                               WM_NULL);
                     _wpWaitForClose(pWarpCenter,
                                     pShutdownData->SDConsts.hwndOpenWarpCenter,
                                     VIEW_ANY,
-                                    SEM_INDEFINITE_WAIT,
+                                    /*SEM_INDEFINITE_WAIT*/ 1000,
                                     TRUE);
-
-                    pShutdownData->SDConsts.hwndOpenWarpCenter = NULLHANDLE;
                 }
+
+                pShutdownData->SDConsts.hwndOpenWarpCenter = NULLHANDLE;
             }
 
             // if some thread is currently in an exception handler,

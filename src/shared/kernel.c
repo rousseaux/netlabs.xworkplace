@@ -205,6 +205,35 @@ static ULONG       G_ulReqLine = 0;
 static const char  *G_pcszReqFunction = NULL;
 
 /*
+ *@@ krnInit:
+ *      called from initMain to initialize kernel globals.
+ *      This must make no assumptions about the state of
+ *      any other XWorkplace component.
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+VOID krnInit(VOID)
+{
+    // first call:
+    DosCreateMutexSem(NULL,         // unnamed
+                      &G_hmtxCommonLock,
+                      0,            // unshared
+                      TRUE);       // request now
+    treeInit(&G_ClassNamesTree,        // V0.9.16 (2001-09-29) [umoeller]
+             NULL);
+
+    // zero KERNELGLOBALS
+    memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
+
+    // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
+    winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
+                           &G_KernelGlobals.hwndSysError);
+
+    krnUnlock();
+}
+
+/*
  *@@ krnLock:
  *      function to request the global hmtxCommonLock
  *      semaphore to finally make the kernel functions
@@ -249,24 +278,13 @@ static const char  *G_pcszReqFunction = NULL;
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype to trace locks
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added classes tree init
+ *@@changed V1.0.2 (2003-11-13) [umoeller]: exported krnInit()
  */
 
 BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
              ULONG ulLine,                      // in: __LINE__
              PCSZ pcszFunction)          // in: __FUNCTION__
 {
-    if (!G_hmtxCommonLock)
-    {
-        // first call:
-        treeInit(&G_ClassNamesTree,        // V0.9.16 (2001-09-29) [umoeller]
-                 NULL);
-        return !DosCreateMutexSem(NULL,         // unnamed
-                                  &G_hmtxCommonLock,
-                                  0,            // unshared
-                                  TRUE);       // request now
-    }
-
-    // subsequent calls:
     if (!DosRequestMutexSem(G_hmtxCommonLock, 10 * 1000))
     {
         // store owner (these are const strings, this is safe)
@@ -408,6 +426,8 @@ BOOL krnClassInitialized(PCSZ pcszClassName)
 {
     BOOL brc = FALSE;
 
+    initLog("entering krnClassInitialized for %s", pcszClassName);
+
     if (krnLock(__FILE__, __LINE__, __FUNCTION__))
             // krnLock initializes the tree now
     {
@@ -423,6 +443,8 @@ BOOL krnClassInitialized(PCSZ pcszClassName)
 
         krnUnlock();
     }
+
+    initLog("leaving krnClassInitialized for %s", pcszClassName);
 
     return brc;
 }
@@ -958,6 +980,9 @@ VOID krnCreateObjectWindows(VOID)
 
         // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
         G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
+
+        initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
+                G_KernelGlobals.hwndThread1Object);
     }
 
     if (G_KernelGlobals.hwndAPIObject = WinCreateWindow(
@@ -974,6 +999,9 @@ VOID krnCreateObjectWindows(VOID)
     {
         G_pfnwpObjectStatic = WinSubclassWindow(G_KernelGlobals.hwndAPIObject,
                                           fnwpAPIObject);
+
+        initLog("XWorkplace API object window created, HWND 0x%lX",
+                G_KernelGlobals.hwndAPIObject);
     }
 }
 

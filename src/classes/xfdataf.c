@@ -1353,7 +1353,7 @@ SOM_Scope ULONG  SOMLINK xdf_xwpOwnerDrawIcon(XFldDataFile *somSelf,
                                               ULONG flOwnerDraw,
                                               PRECTL prcl)
 {
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_xwpOwnerDrawIcon");
 
     if (    (flOwnerDraw & OWDRFL_LAZYLOADTHUMBNAIL)

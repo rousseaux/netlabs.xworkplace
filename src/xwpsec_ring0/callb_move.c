@@ -3,7 +3,8 @@
  *@@sourcefile callb_move.c:
  *      SES kernel hook code.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -33,7 +34,7 @@
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\devhlp32.h"
 
-#include "security\ring0api.h"
+// #include "security\ring0api.h"
 
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
@@ -47,11 +48,9 @@
  *
  *      This is a "pre" event. Required privileges:
  *
- *      --  for source directory: XWPACCESS_DELETE.
+ *      --  for source file: XWPACCESS_WRITE | XWPACCESS_DELETE.
  *
- *      --  for target directory: XWPACCESS_WRITE.
- *
- *      --  for file: XWPACCESS_WRITE.
+ *      --  for target file: XWPACCESS_WRITE.
  *
  *      Context: Possibly any ring-3 thread on the system.
  */
@@ -59,7 +58,9 @@
 ULONG CallType MOVE_PRE(PSZ pszNewPath,
                         PSZ pszOldPath)
 {
-    return NO_ERROR;
+    APIRET  rc = NO_ERROR;
+
+    return rc;
 }
 
 /*

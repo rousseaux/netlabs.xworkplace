@@ -37,10 +37,11 @@
  *          If this is not specified, this defaults to ?:\home on the
  *          boot drive.
  *
- *      3.  In CONFIG.SYS, set XWPUSERDB to the directory where
- *          XWPShell should keep its user data base files (xwpusers.xml
- *          and xwpusers.acc). If this is not specified, this defaults
- *          to ?:\OS2 on the boot drive.
+ *      3.  In CONFIG.SYS, set ETC to the directory where XWPShell
+ *          should keep its user data base files (xwpusers.xml
+ *          and xwpusers.acc; on a typical OS/2 installation, this
+ *          will be ?:\mptn\etc). If this is not specified, this
+ *          defaults to ?:\OS2 on the boot drive.
  *
  *@@added V0.9.5 [umoeller]
  *@@header "helpers\xwpsecty.h"
@@ -68,6 +69,7 @@
 #define INCL_DOSMISC
 #define INCL_DOSERRORS
 
+#define INCL_WINWINDOWMGR
 #define INCL_WINPOINTERS
 #define INCL_WINPROGRAMLIST
 #define INCL_WINWORKPLACE
@@ -83,14 +85,20 @@
 #include "setup.h"
 
 #include "helpers\apps.h"
+#include "helpers\dialog.h"
 #include "helpers\dosh.h"
 #include "helpers\except.h"
+#include "helpers\lan.h"
 #include "helpers\prfh.h"
+#include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\winh.h"
+#include "helpers\standards.h"
 #include "helpers\stringh.h"
 #include "helpers\threads.h"
 
 #include "helpers\xwpsecty.h"
+
+#include "security\ring0api.h"
 #include "security\xwpshell.h"
 
 /* ******************************************************************
@@ -99,22 +107,41 @@
  *
  ********************************************************************/
 
-HWND        G_hwndShellObject = NULLHANDLE;
-    // object window for communication
+HPOINTER        G_hptrIcon = NULLHANDLE;
 
 // user shell currently running:
 // this must only be modified by thread-1!!
-HAPP        G_happWPS = NULLHANDLE;
+HAPP            G_happWPS = NULLHANDLE;
     // HAPP of WPS process or NULLHANDLE if the WPS is not running
-PSZ         G_pszEnvironment = NULL;
+PSZ             G_pszEnvironment = NULL;
     // environment of user shell
+PPROCESSLIST    G_paPIDsLocalLogon = NULL;
 
-extern PXFILE G_LogFile = NULL;
+extern PXFILE   G_LogFile = NULL;
 
 PXWPSHELLSHARED G_pXWPShellShared = 0;
 
-HQUEUE      G_hqXWPShell = 0;
-THREADINFO  G_tiQueueThread = {0};
+HQUEUE          G_hqXWPShell = 0;
+THREADINFO      G_tiQueueThread = {0},
+                G_tiLanThread = {0};
+
+HWND            G_hwndShellObject = NULLHANDLE,
+                G_hwndLanObject = NULLHANDLE;
+    // object windows for communication
+
+MSGBOXSTRINGS   G_MsgBoxStrings =
+    {
+        "~Yes",
+        "~No",
+        "~OK",
+        "~Cancel",
+        "~Abort",
+        "~Retry",
+        "~Ignore",
+        "~Help",
+        "Yes to ~all",
+        "~Help"
+    };
 
 /* ******************************************************************
  *
@@ -159,15 +186,14 @@ VOID Error(const char* pcszFormat,
 
 STATIC MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    static PXWPUSERDBENTRY puiLogon = NULL;
+    static PXWPLOGGEDON *ppLoggedOn = NULL;
 
     switch (msg)
     {
         case WM_INITDLG:
             winhSetControlsFont(hwnd, 0, 1000, NULL);
             winhCenterWindow(hwnd);
-            puiLogon = (PXWPUSERDBENTRY)mp2;
-            memset(puiLogon, 0, sizeof(XWPUSERDBENTRY));
+            ppLoggedOn = (PXWPLOGGEDON*)mp2;
         break;
 
         case WM_COMMAND:
@@ -176,23 +202,72 @@ STATIC MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
             {
                 case DID_OK:
                 {
-                    HWND hwndUserID = WinWindowFromID(hwnd, IDDI_USERENTRY);
-                    HWND hwndPassword = WinWindowFromID(hwnd, IDDI_PASSWORDENTRY);
+                    HWND    hwndUserID = WinWindowFromID(hwnd, IDDI_USERENTRY);
+                    HWND    hwndPassword = WinWindowFromID(hwnd, IDDI_PASSWORDENTRY);
+                    CHAR    szUserName[XWPSEC_NAMELEN],
+                            szPassword[XWPSEC_NAMELEN];
+
+                    HPOINTER hptrOld = winhSetWaitPointer();
+
                     if (WinQueryWindowText(hwndUserID,
-                                           sizeof(puiLogon->User.szUserName),
-                                           puiLogon->User.szUserName))
+                                           sizeof(szUserName),
+                                           szUserName))
                     {
-                        WinQueryWindowText(hwndPassword,
-                                           sizeof(puiLogon->szPassword),
-                                           puiLogon->szPassword);
+                        APIRET arc;
 
-                        WinDismissDlg(hwnd, DID_OK);
+                        if (!strcmp(szUserName, "exit"))
+                            WinDismissDlg(hwnd, 999);
+                        else
+                        {
+                            static const ULONG aIDs[] =
+                            {
+                                DID_OK,
+                                IDDI_USERENTRY,
+                                IDDI_PASSWORDENTRY
+                            };
 
+                            WinQueryWindowText(hwndPassword,
+                                               sizeof(szPassword),
+                                               szPassword);
+
+                            winhEnableControls2(hwnd,
+                                                aIDs,
+                                                ARRAYITEMCOUNT(aIDs),
+                                                FALSE);
+
+                            if (!(arc = slogLogOn(szUserName,
+                                                  szPassword,
+                                                  TRUE,                 // mark as local user
+                                                  ppLoggedOn)))            // receives subject handles
+                                WinDismissDlg(hwnd, DID_OK);
+
+                            memset(szPassword,
+                                   0,
+                                   sizeof(szPassword));
+
+                            WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                            if (arc)
+                            {
+                                dlghMessageBox(hwnd,
+                                               G_hptrIcon,
+                                               "XWorkplace Security",
+                                               "Error: Invalid user name and/or password given.",
+                                               NULL,
+                                               MB_OK | MB_SYSTEMMODAL | MB_MOVEABLE,
+                                               "9.WarpSans",
+                                               &G_MsgBoxStrings);
+                            }
+
+                            winhEnableControls2(hwnd,
+                                                aIDs,
+                                                ARRAYITEMCOUNT(aIDs),
+                                                TRUE);
+                        }
                     }
                 }
                 break;
             }
-
         break;
 
         case WM_CONTROL:        // Dialogkommando
@@ -298,12 +373,11 @@ APIRET SetNewUserProfile(HAB hab,                       // in: XWPSHELL anchor b
             } while (FALSE);
 
             if (!arc)
-            {
                 // user profile exists:
                 // call PrfReset
                 arc = prfhSetUserProfile(hab,
                                          szNewProfile);
-            }
+
         } // end if (access(szNewProfile, 0) == 0)
 
         appFreeEnvironment(&Env);
@@ -329,21 +403,23 @@ APIRET StartUserShell(VOID)
     APIRET      arc = NO_ERROR;
 
     XWPSECID    uidLocal;
-    if (!(arc = slogQueryLocalUser(&uidLocal)))
+    PXWPUSERDBENTRY pUser;
+
+    if (    (!(arc = slogQueryLocalUser(&uidLocal)))
+         && (!(arc = sudbQueryUser(uidLocal, &pUser)))
+       )
     {
         PROGDETAILS pd;
 
-        PSZ pszShell = getenv("XWPSHELL");
-
-        if (pszShell == NULL)
-            pszShell = "PMSHELL.EXE";
+        if (pUser->User.szUserShell[0] == '?')
+            pUser->User.szUserShell[0] = doshQueryBootDrive();
 
         memset(&pd, 0, sizeof(pd));
         pd.Length = sizeof(PROGDETAILS);
         pd.progt.progc = PROG_DEFAULT;
         pd.progt.fbVisible = SHE_VISIBLE;
         pd.pszTitle = "Workplace Shell";
-        pd.pszExecutable = pszShell;
+        pd.pszExecutable = pUser->User.szUserShell;
         pd.pszParameters = 0;
         pd.pszStartupDir = 0;
         pd.pszEnvironment = G_pszEnvironment;
@@ -358,14 +434,11 @@ APIRET StartUserShell(VOID)
                                       SAF_INSTALLEDCMDLINE | SAF_STARTCHILDAPP)))
         {
             Error("WinStartApp returned FALSE for starting %s",
-                    pszShell);
+                  pUser->User.szUserShell);
             arc = XWPSEC_CANNOT_START_SHELL;
         }
-        else
-        {
-            // in case ring-0 support is not running,
-            // change our own security context @@todo
-        }
+
+        DosFreeMem(pUser);
     }
 
     return arc;
@@ -390,93 +463,202 @@ APIRET LocalLogon(VOID)
 {
     APIRET      arc = NO_ERROR;
 
-    XWPUSERDBENTRY  uiLogon;
-    XWPLOGGEDON     LoggedOnUser;
-    memset(&uiLogon, 0, sizeof(XWPUSERDBENTRY));
-    memset(&LoggedOnUser, 0, sizeof(XWPLOGGEDON));
-
-    _PmpfF(("entering"));
-
-    if (WinDlgBox(HWND_DESKTOP,
-                  NULLHANDLE,      // owner
-                  fnwpLogonDlg,
-                  NULLHANDLE,
-                  IDD_LOGON,
-                  &uiLogon)         // puts szUserName, szPassword
-            != DID_OK)
-        arc = XWPSEC_NOT_AUTHENTICATED;
-    else
+    PXWPLOGGEDON pLogon = NULL;
+    switch (WinDlgBox(HWND_DESKTOP,
+                      NULLHANDLE,      // owner
+                      fnwpLogonDlg,
+                      NULLHANDLE,
+                      IDD_LOGON,
+                      &pLogon))
     {
 #ifdef __DEBUG__
-        // in debug builds, allow exit
-        if (!strcmp(uiLogon.User.szUserName, "exit"))
-            // exit:
+        case 999:
+            // in debug builds, allow exit
             WinPostMsg(G_hwndShellObject, WM_QUIT, 0, 0);
-        else
+        break;
 #endif
+
+        case DID_OK:
         {
-            HPOINTER hptrOld = winhSetWaitPointer();
+            // now go switch the security context of XWPShell
+            // itself (and that of our parent process, which
+            // might be another PMSHELL)
+            ULONG pid;
+            arc = scxtSetSecurityContext((pid = doshMyPID()),
+                                         pLogon->cSubjects,
+                                         pLogon->aSubjects);
+            _Pmpf(("Got %d for setting context for PID 0x%lX", arc, pid));
 
-            arc = slogLogOn(uiLogon.User.szUserName,
-                            uiLogon.szPassword,
-                            TRUE,                // mark as local user
-                            &uiLogon.User.uid);      // store uid
-                // creates subject handles
-
-            // nuke the password buffer
-            memset(uiLogon.szPassword,
-                   0,
-                   sizeof(uiLogon.szPassword));
-
-            switch (arc)
+            if (!arc)
             {
-                case XWPSEC_NOT_AUTHENTICATED:
-                    WinMessageBox(HWND_DESKTOP,
-                                  NULLHANDLE,
-                                  "Error: Invalid user name and/or password given.",
-                                  "XWorkplace Security",
-                                  0,
-                                  MB_OK | MB_SYSTEMMODAL | MB_MOVEABLE);
-                break;
-
-                case NO_ERROR:
-                    // user logged on, authenticated,
-                    // subject handles created,
-                    // registered with logged-on users:
-                    G_pszEnvironment = NULL;
-
-                    if (arc = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
-                                                uiLogon.User.uid,
-                                                uiLogon.User.szUserName,
-                                                &G_pszEnvironment))
-                    {
-                        Error("SetNewUserProfile returned %d.", arc);
-                        arc = XWPSEC_INVALID_PROFILE;
-                    }
-                    else
-                    {
-                        // success:
-                        // store local user
-                        // (we must do this before the shell starts)
-                        arc = StartUserShell();
-                    }
-
-                    if (arc)
-                        slogLogOff(LoggedOnUser.uid);
-                break;
-
-                default:
-                    // some other error:
-                    Error("LocalLogon: slogLogOn returned arc %d", arc);
+                arc = scxtSetSecurityContext((pid = doshMyParentPID()),
+                                             pLogon->cSubjects,
+                                             pLogon->aSubjects);
+                _Pmpf(("Got %d for setting context for parent PID 0x%lX", arc, pid));
             }
 
-            WinSetPointer(HWND_DESKTOP, hptrOld);
+            if (!arc)
+            {
+                G_pszEnvironment = NULL;
+
+                if (arc = scxtGetRunningPIDs(&G_paPIDsLocalLogon))
+                    Error("scxtGetRunningPIDs returned %d.", arc);
+
+                if (arc = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
+                                            pLogon->uid,
+                                            pLogon->szUserName,
+                                            &G_pszEnvironment))
+                {
+                    Error("SetNewUserProfile returned %d.", arc);
+                    arc = XWPSEC_INVALID_PROFILE;
+                }
+                else
+                {
+                    // success:
+                    // start the user's shell, which will switch the
+                    // XWPShell security context first
+                    arc = StartUserShell();
+                }
+
+                if (arc)
+                    slogLogOff(pLogon->uid);
+            }
+        }
+        break;
+
+        default:
+            arc = XWPSEC_NOT_AUTHENTICATED;
+        break;
+    }
+
+    if (pLogon)
+        free(pLogon);
+
+    return arc;
+}
+
+/*
+ *@@ LocalLogoff:
+ *      logs off the current local user. Shuts down the
+ *      system if we run into any errors.
+ *
+ *      This kills all processes that were started in
+ *      the user's session, so beware.
+ *
+ */
+
+VOID LocalLogoff(VOID)
+{
+    APIRET arc;
+    XWPSECID    uidLocal;
+    if (arc = slogQueryLocalUser(&uidLocal))
+        Error("slogQueryLocalUser returned %d", arc);
+    else
+    {
+        PQTOPLEVEL32    pInfo;
+        USHORT          pidSelf = doshMyPID();
+        _Pmpf(("uidLocal is 0x%lX", uidLocal));
+
+        // now kill each process that
+        // 1) matches the user ID that is logging off locally --and--
+        // 2) was not running when the user logged on locally
+        if (    (pInfo = prc32GetInfo(&arc))
+             && (G_paPIDsLocalLogon)
+           )
+        {
+
+#if 0
+            PQPROCESS32 pProcThis = pInfo->pProcessData;
+            while (pProcThis && pProcThis->ulRecType == 1)
+            {
+                PQTHREAD32  t = pProcThis->pThreads;
+
+                if (pProcThis->usPID != pidSelf)
+                {
+                    PXWPSECURITYCONTEXTCORE pContext;
+                    if (!scxtFindSecurityContext(pProcThis->usPID,
+                                                 &pContext))
+                    {
+                        XWPSUBJECTINFO  si;
+                        si.hSubject = pContext->aSubjects[0];
+                        if (!scxtQuerySubjectInfo(&si))
+                        {
+                            _Pmpf(("pid 0x%lX -> uid 0x%lX", pProcThis->usPID, si.id));
+                            if (si.bType == SUBJ_USER)
+                                if (si.id == uidLocal)
+                                {
+                                    // alright, this process was running on behalf
+                                    // of the user who's logging off:
+                                    // kill it if it wasn't running when he logged on
+                                    BOOL fWasRunning = FALSE;
+                                    ULONG ul;
+
+                                    for (ul = 0;
+                                         ul < G_paPIDsLocalLogon->cTrusted;
+                                         ++ul)
+                                    {
+                                        if (G_paPIDsLocalLogon->apidTrusted[ul] == pProcThis->usPID)
+                                        {
+                                            fWasRunning = TRUE;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!fWasRunning)
+                                    {
+                                        PQMODULE32  pMod;
+                                        PCSZ        pcszModule = "?";
+                                        arc = DosKillProcess(DKP_PROCESS,
+                                                             pProcThis->usPID);
+                                        if (pMod = prc32FindModule(pInfo,
+                                                                   pProcThis->usHModule))
+                                            pcszModule = pMod->pcName;
+
+                                        doshWriteLogEntry(G_LogFile,
+                                                          "DosKillProcess for 0x%lX (%s) returned %d",
+                                                          pProcThis->usPID,
+                                                          pcszModule,
+                                                          arc);
+                                    }
+                                 }
+                        }
+
+                        free(pContext);
+                    }
+                }
+
+                // next process block comes after the
+                // threads
+                t += pProcThis->usThreadCount;
+                pProcThis = (PQPROCESS32)t;
+            }
+#endif
+
+            prc32FreeInfo(pInfo);
+        }
+
+        if (G_paPIDsLocalLogon)
+        {
+            free(G_paPIDsLocalLogon);
+            G_paPIDsLocalLogon = NULL;
+        }
+
+        // log off the local user
+        // (this deletes the subject handles)
+        arc = slogLogOff(uidLocal);
+
+        if (G_pszEnvironment)
+        {
+            free(G_pszEnvironment);
+            G_pszEnvironment = NULL;
         }
     }
 
-    _PmpfF(("leaving, returning %d", arc));
+    if (arc != NO_ERROR)
+        Error("WM_APPTERMINATENOTIFY: arc %d on logoff",
+            arc);
 
-    return arc;
+
 }
 
 /* ******************************************************************
@@ -534,7 +716,7 @@ APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pQD,
         // prepare security context so we can check if the
         // calling process has sufficient authority for
         // processing this request
-        PXWPSECURITYCONTEXT psc;
+        PXWPSECURITYCONTEXTCORE psc;
         if (!(arc = scxtFindSecurityContext(pid,
                                             &psc)))
         {
@@ -589,9 +771,30 @@ APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pQD,
                     }
                 break;
 
+                case QUECMD_QUERYUSERNAME:
+                    arc = sudbQueryUserName(pQD->Data.QueryUserName.uid,
+                                            pQD->Data.QueryUserName.szUserName);
+                break;
+
                 case QUECMD_QUERYPROCESSOWNER:
-                    // @@todo
-                    arc = XWPSEC_QUEUE_INVALID_CMD;
+                {
+                    PXWPSECURITYCONTEXTCORE psc2;
+                    XWPSUBJECTINFO  si;
+
+                    if (!(arc = scxtFindSecurityContext(pQD->Data.QueryProcessOwner.pid,
+                                                        &psc2)))  // queried process
+                    {
+                        pQD->Data.QueryProcessOwner.hsubj0
+                        = si.hSubject
+                        = psc2->aSubjects[0];
+
+                        if (!(arc = scxtQuerySubjectInfo(&si)))
+                            if (si.bType == SUBJ_USER)
+                                pQD->Data.QueryProcessOwner.uid = si.id;
+                            else
+                                pQD->Data.QueryProcessOwner.uid = -1;        // @@todo privileged process
+                    }
+                }
                 break;
 
                 case QUECMD_CREATEUSER:
@@ -613,6 +816,24 @@ APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pQD,
                                                psc->cSubjects,
                                                psc->aSubjects,
                                                &pQD->Data.QueryPermissions.flAccess);
+                break;
+
+                case QUECMD_SWITCHUSER:
+                {
+                    PXWPLOGGEDON pLogon;
+                    if (!(arc = slogLogOn(pQD->Data.SwitchUser.szUserName,
+                                          pQD->Data.SwitchUser.szPassword,
+                                          FALSE,        // not local
+                                          &pLogon)))
+                    {
+                        if (!(arc = scxtSetSecurityContext(pid,
+                                                           pLogon->cSubjects,
+                                                           pLogon->aSubjects)))
+                            pQD->Data.SwitchUser.uid = pLogon->uid;
+
+                        free(pLogon);
+                    }
+                }
                 break;
 
                 default:
@@ -672,8 +893,8 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
             PXWPSHELLQUEUEDATA  pQD = (PXWPSHELLQUEUEDATA)(rq.ulData);
             HEV hev = pQD->hevData;
 
-            _PmpfF(("got queue item, pQD->ulCommand: %d",
-                        pQD->ulCommand));
+            /* _PmpfF(("got queue item, pQD->ulCommand: %d",
+                        pQD->ulCommand)); */
 
             if (!DosOpenEventSem(NULL,
                                  &hev))
@@ -699,6 +920,136 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
         }
         else
             _PmpfF(("DosReadQueue returned %d", arc));
+    }
+}
+
+/* ******************************************************************
+ *
+ *   LAN thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ fnwpLanObject:
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpLanObject(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+    SERVICEBUF2 buf2;
+
+    switch (msg)
+    {
+        /*
+         *@@ LANM_STARTREQ:
+         *      ensures that at least the requester is running. Note
+         *      that if the REQUESTER service is started, this will
+         *      usually start PEER (or even SERVER) as well.
+         */
+
+        case LANM_STARTREQ:
+        {
+            BOOL fNeedsStart = FALSE;
+            APIRET rc;
+
+            doshWriteLogEntry(G_LogFile,
+                              "processing LANM_STARTREQ");
+            // if requester is not running, then this will yield an error
+            rc = lanServiceControl("REQUESTER",
+                                   SERVICE_CTRL_INTERROGATE,
+                                   &buf2);
+            doshWriteLogEntry(G_LogFile,
+                              "SERVICE_CTRL_INTERROGATE(REQUESTER) -> rc %d",
+                              rc);
+
+            switch (rc)
+            {
+                case NERR_WkstaNotStarted:      // 2138
+                case NERR_ServiceNotInstalled:  // 2184
+                    fNeedsStart = TRUE;
+            }
+
+            doshWriteLogEntry(G_LogFile,
+                              "Needs start: %d",
+                              fNeedsStart);
+
+            if (fNeedsStart)
+            {
+                rc = lanServiceInstall("REQUESTER", &buf2);
+
+                doshWriteLogEntry(G_LogFile,
+                                  "lanServiceInstall(REQUESTER) -> rc %d",
+                                  rc);
+
+                if (!rc)
+                {
+                    // wait until status is no longer "starting"
+                    while (1)
+                    {
+                        DosSleep(1000);
+                        if (    (lanServiceControl("REQUESTER",
+                                                   SERVICE_CTRL_INTERROGATE,
+                                                   &buf2))
+                             || ((buf2.svci2_status & SERVICE_INSTALL_STATE) != SERVICE_INSTALL_PENDING)
+                           )
+                            break;
+                    }
+                }
+            }
+
+            doshWriteLogEntry(G_LogFile,
+                              "done with LANM_STARTREQ",
+                              rc);
+        }
+        break;
+
+        default:
+            mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+/*
+ *@@ fntLanThread:
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+void _Optlink fntLanThread(PTHREADINFO ptiMyself)
+{
+    APIRET rc = lanInit();
+
+    doshWriteLogEntry(G_LogFile,
+                      "lanInit -> rc %d",
+                      rc);
+
+    // if this system doesn't have LAN requester or peer installed,
+    // then just quit this thread!
+    if (!rc)
+    {
+        // LAN present:
+        // only then create object window
+
+        if (G_hwndLanObject = winhCreateObjectWindow(WC_LAN_OBJECT,
+                                                     NULL))
+        {
+            QMSG qmsg;
+
+            doshWriteLogEntry(G_LogFile,
+                              "LAN thread object window is 0x%lX",
+                              G_hwndLanObject);
+
+            WinPostMsg(G_hwndLanObject,
+                       LANM_STARTREQ,
+                       NULL,
+                       NULL);
+
+            while (WinGetMsg(ptiMyself->hab, &qmsg, NULLHANDLE, 0, 0))
+                WinDispatchMsg(ptiMyself->hab, &qmsg);
+        }
     }
 }
 
@@ -740,11 +1091,11 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
     switch (msg)
     {
         /*
-         *@@ XM_LOGON:
+         *@@ SHM_LOGON:
          *
          */
 
-        case XM_LOGON:
+        case SHM_LOGON:
         {
             // display logon dialog, create subject handles,
             // set environment, start shell, ...
@@ -755,7 +1106,7 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 // error:
                 // repost to try again
                 WinPostMsg(hwndObject,
-                           XM_LOGON,
+                           SHM_LOGON,
                            0, 0);
             }
         }
@@ -783,39 +1134,22 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 // a new logon
                 if (G_pXWPShellShared->fNoLogonButRestart)
                 {
-                    arc = StartUserShell();
+                    StartUserShell();
                 }
                 else
                 {
-                    XWPSECID    uidLocal;
-                    if (arc = slogQueryLocalUser(&uidLocal))
-                        Error("slogQueryLocalUser returned %d", arc);
-                    else
-                    {
-                        // log off the local user
-                        // (this deletes the subject handles)
-                        arc = slogLogOff(uidLocal);
-                        if (G_pszEnvironment)
-                        {
-                            free(G_pszEnvironment);
-                            G_pszEnvironment = NULL;
-                        }
-                    }
-
-                    if (arc != NO_ERROR)
-                        Error("WM_APPTERMINATENOTIFY: arc %d on logoff",
-                            arc);
+                    LocalLogoff();
 
                     // show logon dlg again
                     WinPostMsg(hwndObject,
-                               XM_LOGON,
+                               SHM_LOGON,
                                0, 0);
                 }
             }
         }
         break;
 
-        case XM_ERROR:
+        case SHM_ERROR:
         {
             PSZ     pszError = "Unknown error.";
 
@@ -832,7 +1166,7 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
         }
         break;
 
-        case XM_MESSAGE:
+        case SHM_MESSAGE:
             winhDebugBox(0,
                      "XWPShell Message",
                      (PSZ)mp1);
@@ -921,6 +1255,8 @@ int main(int argc, char *argv[])
             // sure we survive even shutdown
             WinCancelShutdown(hmq, TRUE);
 
+            G_hptrIcon = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
+
             // allocate XWPSHELLSHARED
             if (arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
                                         SHMEM_XWPSHELL,
@@ -935,10 +1271,10 @@ int main(int argc, char *argv[])
             // initialize subsystems
             else if (arc = scxtInit())
                 Error("Error %d initializing security contexts.", arc);
-            else if (    (arc = sudbInit())
-                      || (arc = slogInit())
-                    )
-                Error("Initialization error %d.", arc);
+            else if (arc = sudbInit())
+                Error("Error %d initializing user database.", arc);
+            else if (arc = slogInit())
+                Error("Error %d initializing logon management.", arc);
             // create shell object (thread 1)
             else if (!WinRegisterClass(hab,
                                        WC_SHELL_OBJECT,
@@ -946,21 +1282,20 @@ int main(int argc, char *argv[])
                                        0,
                                        sizeof(ULONG)))
                 arc = -1;
-            else if (!(G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
-                                                           WC_SHELL_OBJECT,
-                                                           "XWPShellObject",
-                                                           0,             // style
-                                                           0, 0, 0, 0,
-                                                           NULLHANDLE,    // owner
-                                                           HWND_BOTTOM,
-                                                           0,             // ID
-                                                           NULL,
-                                                           NULL)))
+            else if (!(G_hwndShellObject = winhCreateObjectWindow(WC_SHELL_OBJECT,
+                                                                  NULL)))
+                arc = -1;
+            else if (!WinRegisterClass(hab,
+                                       WC_LAN_OBJECT,
+                                       fnwpLanObject,       // obj window only created on LAN thread
+                                       0,
+                                       sizeof(ULONG)))
                 arc = -1;
             else
             {
-                // OK:
                 QMSG qmsg;
+                // OK:
+
                 // create the queue thread
                 thrCreate(&G_tiQueueThread,
                           fntQueueThread,
@@ -969,9 +1304,17 @@ int main(int argc, char *argv[])
                           THRF_WAIT,
                           0);
 
+                // create the LAN thread
+                thrCreate(&G_tiLanThread,
+                          fntLanThread,
+                          NULL,
+                          "Lan thread",
+                          THRF_WAIT | THRF_PMMSGQUEUE,
+                          0);
+
                 // do a logon first
                 WinPostMsg(G_hwndShellObject,
-                           XM_LOGON,
+                           SHM_LOGON,
                            0, 0);
 
                 // enter standard PM message loop

@@ -34,11 +34,14 @@
      ********************************************************************/
 
     #define WC_SHELL_OBJECT         "XWPShellObject"
+    #define WC_LAN_OBJECT           "XWPLanObject"
 
-    #define XM_LOGON                (WM_USER + 1)
-    #define XM_LOGOFF               (WM_USER + 2)
-    #define XM_ERROR                (WM_USER + 3)
-    #define XM_MESSAGE              (WM_USER + 4)
+    #define SHM_LOGON                (WM_USER + 1)
+    #define SHM_LOGOFF               (WM_USER + 2)
+    #define SHM_ERROR                (WM_USER + 3)
+    #define SHM_MESSAGE              (WM_USER + 4)
+
+    #define LANM_STARTREQ            (WM_USER + 50)
 
     #define IDD_LOGON               200
     #define IDDI_USERENTRY          201
@@ -113,6 +116,9 @@
     APIRET sudbQueryUser(XWPSECID uid,
                          PXWPUSERDBENTRY *ppUser);
 
+    APIRET sudbQueryUserName(XWPSECID uid,
+                             PSZ pszUserName);
+
     APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo);
 
     APIRET sudbDeleteUser(XWPSECID uid);
@@ -134,15 +140,21 @@
 
     VOID scxtExit(VOID);
 
+    #ifdef RING0API_HEADER_INCLUDED
+        APIRET scxtGetRunningPIDs(PPROCESSLIST *ppList);
+    #endif
+
     APIRET scxtQueryStatus(PXWPSECSTATUS pStatus);
 
     #ifdef XWPTREE_INCLUDED
         APIRET scxtCreateACLEntry(PACLDBTREENODE pNewEntry);
     #endif
 
-    APIRET scxtCreateSubject(PXWPSUBJECTINFO pSubjectInfo);
+    APIRET scxtCreateSubject(PXWPSUBJECTINFO pSubjectInfo,
+                             BOOL *pfNeedsRefresh);
 
-    APIRET scxtDeleteSubject(HXSUBJECT hSubject);
+    APIRET scxtDeleteSubject(HXSUBJECT hSubject,
+                             BOOL *pfNeedsRefresh);
 
     APIRET scxtQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo);
 
@@ -150,14 +162,14 @@
                            XWPSECID id,
                            HXSUBJECT *phSubject);
 
-    APIRET scxtCreateSecurityContext(ULONG ulPID,
-                                     ULONG cSubjects,
-                                     HXSUBJECT *paSubjects);
+    APIRET scxtFindSecurityContext(USHORT pid,
+                                   PXWPSECURITYCONTEXTCORE *ppContext);
 
-    APIRET scxtFindSecurityContext(ULONG ulPID,
-                                   PXWPSECURITYCONTEXT *ppContext);
+    APIRET scxtSetSecurityContext(USHORT pid,
+                                  ULONG cSubjects,
+                                  HXSUBJECT *paSubjects);
 
-    APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXT pContext,
+    APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXTCORE pContext,
                                ULONG flActions);
 
     APIRET scxtRefresh(VOID);
@@ -178,7 +190,7 @@
     APIRET slogLogOn(PCSZ pcszUserName,
                      PCSZ pcszPassword,
                      BOOL fLocal,
-                     XWPSECID *puid);
+                     PXWPLOGGEDON *ppLogon);
 
     APIRET slogLogOff(XWPSECID uid);
 

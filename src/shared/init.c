@@ -154,7 +154,7 @@ BOOL cmnTurboFoldersEnabled(VOID);
  *
  ********************************************************************/
 
-extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
+// extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 
 // Desktop startup date and time (initMain) moved here V1.0.1 (2002-12-20) [umoeller]
 static DATETIME         G_StartupDateTime = {0};
@@ -368,13 +368,14 @@ STATIC ULONG WaitForApp(PCSZ pcszTitle,
         // enter a modal message loop until we get the
         // WM_APPTERMINATENOTIFY for happ. Then we
         // know the app is done.
-        HAB     hab = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
+        HWND    hwndThread1Object = krnQueryGlobals()->hwndThread1Object;
+        HAB     hab = WinQueryAnchorBlock(hwndThread1Object);
         QMSG    qmsg;
         // ULONG   ulXFixReturnCode = 0;
         while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
         {
             if (    (qmsg.msg == WM_APPTERMINATENOTIFY)
-                 && (qmsg.hwnd == G_KernelGlobals.hwndThread1Object)
+                 && (qmsg.hwnd == hwndThread1Object)
                  && (qmsg.mp1 == (MPARAM)happ)
                )
             {
@@ -538,7 +539,7 @@ STATIC BOOL RunXFix(VOID)
     pd.progt.progc = PROG_PM;
     pd.progt.fbVisible = SHE_VISIBLE;
     pd.pszExecutable = szXfix;
-    if (!appStartApp(G_KernelGlobals.hwndThread1Object,
+    if (!appStartApp(krnQueryGlobals()->hwndThread1Object,
                      &pd,
                      0, // V0.9.14
                      &happXFix,
@@ -696,7 +697,7 @@ STATIC VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                 case ID_XFDI_PANIC_CMD:         // run cmd.exe
                 {
                     HAPP happCmd;
-                    if (!StartCmdExe(G_KernelGlobals.hwndThread1Object,
+                    if (!StartCmdExe(krnQueryGlobals()->hwndThread1Object,
                                      &happCmd))
                         WaitForApp(getenv("OS2_SHELL"),
                                    happCmd);
@@ -929,6 +930,7 @@ STATIC VOID ReplaceWheelWatcher(VOID)
 
         if (arc == NO_ERROR)
         {
+            PKERNELGLOBALS pGlobals;
             // we got the queue: then our assumption was valid
             // that we are indeed running _before_ WheelWatcher here...
             // create our own thread instead
@@ -942,7 +944,11 @@ STATIC VOID ReplaceWheelWatcher(VOID)
             initLog("  Started XWP Sentinel thread, TID: %d",
                               G_tiSentinel.tid);
 
-            G_KernelGlobals.fAutoRefreshReplaced = TRUE;
+            if (pGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
+            {
+                pGlobals->fAutoRefreshReplaced = TRUE;
+                krnUnlockGlobals();
+            }
         }
     }
     CATCH(excpt1) {} END_CATCH();
@@ -1366,10 +1372,9 @@ BOOL initMain(VOID)
     G_tidWorkplaceThread = doshMyTID();
     DosGetDateTime(&G_StartupDateTime);
 
-    winhInitGlobals();            // V1.0.1 (2002-11-30) [umoeller]
+    winhInitGlobals();          // V1.0.1 (2002-11-30) [umoeller]
 
-    // zero KERNELGLOBALS
-    memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
+    krnInit();                  // V1.0.2 (2003-11-13) [umoeller]
 
     // Alright, the rest of this code was greatly reordered to
     // allow for getting as much code as possible into the
@@ -1445,10 +1450,6 @@ BOOL initMain(VOID)
         // force loading of _all_ the global settings
         cmnLoadGlobalSettings();
 
-        // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
-        winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
-                               &G_KernelGlobals.hwndSysError);
-
         cmnInitEntities();
 
         // wpclsInitData calls exactly once and then never again,
@@ -1492,12 +1493,6 @@ BOOL initMain(VOID)
 
             krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
                         // sets G_habThread1 as well
-
-            initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
-                              G_KernelGlobals.hwndThread1Object);
-
-            initLog("XWorkplace API object window created, HWND 0x%lX",
-                              G_KernelGlobals.hwndAPIObject);
 
             // if shift is pressed, show "Panic" dialog
             // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
@@ -1676,7 +1671,7 @@ BOOL initMain(VOID)
             if (cmnQuerySetting(sfReplaceArchiving))
 #endif
                 // check whether we need a WPS backup (archives.c)
-                arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,
+                arcCheckIfBackupNeeded(krnQueryGlobals()->hwndThread1Object,
                                        T1M_DESTROYARCHIVESTATUS);
 
             /*
@@ -1736,8 +1731,8 @@ BOOL initMain(VOID)
                     memset(G_pXwpGlobalShared, 0, sizeof(XWPGLOBALSHARED));
                     // store the thread-1 object window, which
                     // gets messages from the daemon
-                    G_pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
-                    G_pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
+                    G_pXwpGlobalShared->hwndThread1Object = krnQueryGlobals()->hwndThread1Object;
+                    G_pXwpGlobalShared->hwndAPIObject = krnQueryGlobals()->hwndAPIObject;
                             // V0.9.9 (2001-03-23) [umoeller]
                     G_pXwpGlobalShared->ulWPSStartupCount = 1;
                     // at the first Desktop start, always process startup folder
@@ -1758,8 +1753,8 @@ BOOL initMain(VOID)
                 initLog("--> XWPDAEMN already running, refreshing.");
 
                 // store new thread-1 object wnd
-                G_pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
-                G_pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
+                G_pXwpGlobalShared->hwndThread1Object = krnQueryGlobals()->hwndThread1Object;
+                G_pXwpGlobalShared->hwndAPIObject = krnQueryGlobals()->hwndAPIObject;
                             // V0.9.9 (2001-03-23) [umoeller]
 
                 // increase Desktop startup count

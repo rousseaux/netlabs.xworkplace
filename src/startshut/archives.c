@@ -955,7 +955,10 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
         xstrClear(&strMsg);
 
         if (G_ArcSettings.fShowStatus)
-            WinPostMsg(hwndNotify, ulMsg, (MPARAM)hwndStatus, (MPARAM)NULL);
+            WinPostMsg(hwndNotify,
+                       ulMsg,
+                       (MPARAM)hwndStatus,
+                       (MPARAM)NULL);
     }
 
     arcSwitchArchivingOn(fBackup); // moved V0.9.4 (2000-07-22) [umoeller]

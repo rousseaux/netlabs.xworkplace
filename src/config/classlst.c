@@ -93,6 +93,7 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -536,7 +537,7 @@ STATIC BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions 
                         // p2 now has end of description
                         strlcpy(pszDescription,
                                 p1 + 1,
-                                min((p2 - p1 - 1), cbDescription));
+                                min((p2 - p1), cbDescription));
                     }
                     else
                         strlcat(pszDescription,
@@ -1546,7 +1547,7 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
     BOOL        fAllowDeregister = FALSE,
                 fAllowReplace = FALSE,
                 fAllowUnreplace = FALSE,
-                fAllowCreate = FALSE;
+                fAllowCreate = TRUE;
 
     if (pscd->preccSource->pwps)
     {
@@ -1563,7 +1564,7 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
         fAllowCreate = TRUE;
 
         // allow deregistering?
-        if (   (pscd->preccSource->pwps->pszModName == NULL)
+        if (   (!pscd->preccSource->pwps->pszModName)
                        // DLL == NULL: not in WPS class list,
                        // so we better not allow touching this
             || (pscd->preccSource->pwps->pszReplacesClass)
@@ -1581,32 +1582,35 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
         {
             CHAR szDummy[2000];
 
-            ULONG ulFlagsSelected = 0;
+            ULONG flSelected = 0;
             // parse class info text whether this
             // class may be deregistered
             if (ParseDescription(pszClassInfo,
                                  pscd->preccSource->pwps->pszClassName,
-                                 &ulFlagsSelected,
+                                 &flSelected,
                                  szDummy,
                                  sizeof(szDummy)))
             {
+                _Pmpf(("flSelected: 0x%lX", flSelected));
+
                 // bit 0 signifies whether this class may
                 // be deregistered
-                if ((ulFlagsSelected & 1) == 0)
+                if (!(flSelected & 1))
                     fAllowDeregister = FALSE;
 
                 // bit 2 signifies whether this class
                 // can have instances created from it
-                if ((ulFlagsSelected & 4) != 0)
+                if (flSelected & 4)
                                 // bit set
                     fAllowCreate = FALSE;
+
+                _Pmpf(("1: fAllowCreate == %d", fAllowCreate));
             }
         }
 
-        if (   (pscd->preccSource->pwps->pszModName == NULL)
+        if (   (!pscd->preccSource->pwps->pszModName)
             || (pscd->preccSource->pwps->pszReplacesClass)
-            || (pscd->preccSource->pwps->pClassObject
-                   == 0)   // class object invalid
+            || (!pscd->preccSource->pwps->pClassObject) // class object invalid?
             || (pscd->preccSource->pwps->pszReplacesClass)
                        // or replacement class;
                        // we'll only allow creation
@@ -1615,7 +1619,15 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
             || (!fIsWPSClass)
                        // no WPS class:
            )
+        {
             fAllowCreate = FALSE;
+            _Pmpf(("2: fAllowCreate == %d", fAllowCreate));
+            _Pmpf(("    pszModName: %s", STRINGORNULL(pscd->preccSource->pwps->pszModName)));
+            _Pmpf(("    pszReplacesClass: %s", STRINGORNULL(pscd->preccSource->pwps->pszReplacesClass)));
+            _Pmpf(("    pClassObject: 0x%lX", pscd->preccSource->pwps->pClassObject));
+            _Pmpf(("    pszReplacesClass: %s", STRINGORNULL(pscd->preccSource->pwps->pszReplacesClass)));
+            _Pmpf(("    fIsWPSClass: %d", fIsWPSClass));
+        }
 
         // allow replacements only if the
         // class has subclasses
@@ -1640,6 +1652,8 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
             fAllowUnreplace = FALSE;
 
     } // end if (pscd->preccSource->pwps)
+
+    _Pmpf(("3: fAllowCreate == %d", fAllowCreate));
 
     WinEnableMenuItem(hPopupMenu, ID_XLMI_DEREGISTER, fAllowDeregister);
     WinEnableMenuItem(hPopupMenu, ID_XLMI_REPLACE, fAllowReplace);

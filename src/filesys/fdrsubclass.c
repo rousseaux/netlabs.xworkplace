@@ -598,6 +598,7 @@ STATIC VOID PostWMChar(HWND hwnd,
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.18 (2002-03-24) [umoeller]: fixed stupid scroll bars when always sort is off
+ *@@changed V1.0.2 (2003-11-05) [bvl]: changed usage of folder size to use the SWP array other fram controls work now as well @@fixes 481
  */
 
 VOID fdrFormatFrame(HWND hwndFrame,
@@ -622,13 +623,14 @@ VOID fdrFormatFrame(HWND hwndFrame,
         {
             // container found: reduce size of container by
             // status bar height
-            POINTL      ptlBorderSizes;
+            // POINTL      ptlBorderSizes;
             ULONG       ulStatusBarHeight = cmnQueryStatusBarHeight();
 
-            WinSendMsg(hwndFrame,
-                       WM_QUERYBORDERSIZE,
-                       (MPARAM)&ptlBorderSizes,
-                       0);
+            // redundant now V1.0.2 (2004-01-08) [umoeller]
+            // WinSendMsg(hwndFrame,
+            //            WM_QUERYBORDERSIZE,
+            //            (MPARAM)&ptlBorderSizes,
+            //            0);
 
             // first initialize the _new_ SWP for the status bar.
             // Since the SWP array for the std frame controls is
@@ -636,8 +638,10 @@ VOID fdrFormatFrame(HWND hwndFrame,
             // indices 0 thru ulCount-1 (where ulCount is the total
             // count), we use ulCount for our static text control.
             swpArr[ulCount].fl = SWP_MOVE | SWP_SIZE | SWP_NOADJUST | SWP_ZORDER;
-            swpArr[ulCount].x  = ptlBorderSizes.x;
-            swpArr[ulCount].y  = ptlBorderSizes.y;
+            // swpArr[ulCount].x  = ptlBorderSizes.x;
+            // use swpArr[ul].x to allow other frame controls to exist V1.0.2 (2003-11-05) [bvl]
+            swpArr[ulCount].x = swpArr[ul].x;
+            swpArr[ulCount].y  = swpArr[ul].y; // ptlBorderSizes.y;
             swpArr[ulCount].cx = swpArr[ul].cx;  // same as cnr's width
             swpArr[ulCount].cy = ulStatusBarHeight;
             swpArr[ulCount].hwndInsertBehind = HWND_BOTTOM; // HWND_TOP;

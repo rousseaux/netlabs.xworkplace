@@ -308,12 +308,15 @@ char* __strtok (char *string1, const char *string2)
 
 char* __strupr (char *string)
 {
-  unsigned char *p;
+    unsigned char *p;
 
-  for (p = (unsigned char *)string; *p != 0; ++p)
-    if (islower (*p))
-      *p = (unsigned char)_toupper (*p);
-  return string;
+    for (p = (unsigned char *)string;
+         *p != 0;
+         ++p)
+        if (islower (*p))
+            *p = (unsigned char)_toupper (*p);
+
+    return string;
 }
 
 /*

@@ -378,5 +378,7 @@
     #define ID_XSH_SETTINGS_TOOLBARS1       239     // V1.0.1 (2002-12-08) [umoeller]
 
     #define ID_XSH_SETTINGS_FILEPAGE3       240     // V1.0.1 (2003-01-10) [umoeller]
+
+    #define ID_XSH_ADMIN_PROCESSES          241     // V1.0.2 (2003-11-13) [umoeller]
 #endif
 

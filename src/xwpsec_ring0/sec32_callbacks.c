@@ -3,15 +3,16 @@
  *@@sourcefile sec32_callbacks.c:
  *      SES kernel hook code.
  *
- *      This contains the table of security callbacks which
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
+ *
+ *      This file contains the table of security callbacks which
  *      are passed to the OS/2 kernel at system bootup. This is
  *      done by calling DevHlp32_Security in sec32_init_base().
  *
  *      After that call, the OS/2 kernel calls the specified
  *      callbacks before certain API calls. This allows us to
  *      intercept API calls like DosOpen.
- *
- *      See strat_init_base.c for an introduction.
  */
 
 /*
@@ -103,13 +104,13 @@ struct SecImp_s G_SecurityHooks =
                         //                                ULONG RC);
                         //      notifies ISS of DosDelete completion
 
-   0, // MOVE_PRE,            // ULONG (* CallType MOVE_PRE)  (PSZ pszNewPath,
+   MOVE_PRE,            // ULONG (* CallType MOVE_PRE)  (PSZ pszNewPath,
                         //                               PSZ pszOldPath);
                         //      lets ISS authorize DosMove;
                         //      will only get called when source and dest
                         //      are on same volume
 
-   0, // MOVE_POST,           // VOID  (* CallType MOVE_POST) (PSZ pszNewPath,
+   MOVE_POST,           // VOID  (* CallType MOVE_POST) (PSZ pszNewPath,
                         //                               PSZ pszOldPath,
                         //                               ULONG RC);
                         //      notifies ISS of DosMove completion
@@ -132,7 +133,7 @@ struct SecImp_s G_SecurityHooks =
                         //      (including DosStartSession, WinStartApp)
                         //      (see also: EXECPGMPOST below)
 
-   0, // FINDFIRST,           // ULONG (* CallType FINDFIRST) (PFINDPARMS pParms);
+   FINDFIRST,           // ULONG (* CallType FINDFIRST) (PFINDPARMS pParms);
                         //          typedef struct {
                         //              PSZ    pszPath;      // well formed path
                         //              ULONG  ulHandle;     // search handle
@@ -179,7 +180,7 @@ struct SecImp_s G_SecurityHooks =
                         //      called only after internal FindNext has
                         //      completed successfully
 
-   0,                   // ULONG (* CallType FINDFIRST3X) (ULONG ulSrchHandle,
+   FINDFIRST3X,         // ULONG (* CallType FINDFIRST3X) (ULONG ulSrchHandle,
                         //                                 PSZ pszPath);  //DGE02
                         //      lets ISS authorize DOS SearchFirst;
                         //      has fully qualified name with metacharacters
@@ -200,11 +201,11 @@ struct SecImp_s G_SecurityHooks =
                         //      notifies ISS of DosExecPgm completion
                         //      (see also: EXECPGM)
 
-   0,                   // ULONG (* CallType CREATEVDM)   (PSZ pszProgram,
+   CREATEVDM,           // ULONG (* CallType CREATEVDM)   (PSZ pszProgram,
                         //                                 PSZ pszArgs);
                         //      lets ISS authorize creation of a VDM
 
-   0,                   // VOID  (* CallType CREATEVDM_POST) (int rc);
+   CREATEVDM_POST,      // VOID  (* CallType CREATEVDM_POST) (int rc);
                         //      notifies ISS of completion of creation of a VDM
 
    0,                   // ULONG (* CallType SETDATETIME) (PDATETIME pDateTimeBuf);
@@ -239,7 +240,7 @@ struct SecImp_s G_SecurityHooks =
                         //                              ULONG  cbDataArea,
                         //                              ULONG  PhysicalDiskNumber); /* Category 9 only */
 
-   0,                   // ULONG (* CallType TRUSTEDPATHCONTROL) (VOID);
+   TRUSTEDPATHCONTROL,  // ULONG (* CallType TRUSTEDPATHCONTROL) (VOID);
                         //      notification of Ctrl-Alt-Del
 
    /*

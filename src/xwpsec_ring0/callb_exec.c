@@ -3,7 +3,8 @@
  *@@sourcefile callb_exec.c:
  *      SES kernel hook code.
  *
- *      See strat_init_base.c for an introduction.
+ *      See strat_init_base.c for an introduction to the driver
+ *      structure in general.
  */
 
 /*
@@ -29,6 +30,9 @@
 
 #include <string.h>
 
+#include "helpers\tree.h"
+#include "helpers\xwpsecty.h"
+
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\devhlp32.h"
@@ -36,6 +40,14 @@
 #include "security\ring0api.h"
 
 #include "xwpsec32.sys\xwpsec_callbacks.h"
+
+/* ******************************************************************
+ *
+ *   Globals
+ *
+ ********************************************************************/
+
+extern PXWPSECURITYCONTEXT G_pContextCreateVDM = NULL;
 
 /* ******************************************************************
  *
@@ -66,13 +78,19 @@
  *          3)  GETMODULE
  *          4)  EXEC_PRE, EXEC_POST (which returns the new PID)
  *
+ *          Note that DosStartSession and WinStartApp are special
+ *          cases. The callbacks apparently appear on the process
+ *          that actually calls these APIs, but the parent process
+ *          is somehow magically switched to be that of the first
+ *          PMSHELL (or whatever process owns the session manager).
+ *
  *      --  For unqualified DLL names that have not yet been loaded,
  *          we get:
  *
  *          1)  GETMODULE short name
  *          2)  OPEN_PRE, OPEN_POST with the long name for every
  *              directory along the LIBPATH
- *          3)  LOADEROPEN with the long name that was found
+ *          3)  LOADEROPEN with the long name and SFN that was found
  *
  *      --  For unqualified DLL names that are already loaded, we get:
  *
@@ -102,16 +120,24 @@ ULONG LOADEROPEN(PSZ pszPath,
        )
     {
         // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
         if (G_pidShell != G_pLDT->LIS_CurProcID)
         {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+                ;
         }
+        else
+            pThisContext = NULL;
 
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_LOADEROPEN pBuf;
             ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_LOADEROPEN,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_LOADEROPEN,
                                     sizeof(EVENTBUF_LOADEROPEN) + ulPathLen))
             {
                 pBuf->SFN = SFN;
@@ -161,16 +187,24 @@ ULONG GETMODULE(PSZ pszPath)
        )
     {
         // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
         if (G_pidShell != G_pLDT->LIS_CurProcID)
         {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+                ;
         }
+        else
+            pThisContext = NULL;
 
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
             ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_GETMODULE,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_GETMODULE,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = rc;
@@ -207,25 +241,50 @@ ULONG EXECPGM(PSZ pszPath,
 {
     APIRET  rc = NO_ERROR;
 
+    // reset global ptr that might be dangling from
+    // last createvdm
+    G_pContextCreateVDM = NULL;
+
     if (    (G_pidShell)
          && (!DevHlp32_GetInfoSegs(&G_pGDT,
                                    &G_pLDT))
        )
     {
         // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsGranted = 0;
+        ULONG   ulPathLen = strlen(pszPath);
+
         if (G_pidShell != G_pLDT->LIS_CurProcID)
         {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                fsGranted = ctxtQueryPermissions(pszPath,
+                                                 ulPathLen,
+                                                 pThisContext->ctxt.cSubjects,
+                                                 pThisContext->ctxt.aSubjects);
+
+                // all bits of fsRequired must be set in fsGranted
+                if ((fsGranted & XWPACCESS_EXEC) != XWPACCESS_EXEC)
+                    rc = ERROR_ACCESS_DENIED;
+            }
         }
+        else
+            pThisContext = NULL;
 
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
-            ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_EXECPGM_PRE,
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_EXECPGM_PRE,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = rc;
+                pBuf->fsRequired = XWPACCESS_EXEC;
+                pBuf->fsGranted = fsGranted;
                 pBuf->ulPathLen = ulPathLen;
                 memcpy(pBuf->szPath,
                        pszPath,
@@ -249,6 +308,15 @@ ULONG EXECPGM(PSZ pszPath,
  *      (sec32_callbacks.c) force the OS/2 kernel to call us for
  *      each such event.
  *
+ *      Comes in for EXE files only, after a new process has been
+ *      created.
+ *
+ *      This call is somewhat special because whenever a new process
+ *      has been created on the system, we must create a new security
+ *      context and copy the current credentials (security handles)
+ *      into it. The parent process to copy the credentials from is
+ *      the current one on which this callback gets called.
+ *
  *      Context: Possibly any ring-3 thread on the system.
  */
 
@@ -261,12 +329,31 @@ VOID EXECPGM_POST(PSZ pszPath,
                                    &G_pLDT))
        )
     {
+        // find the current security context
+        // (i.e. the parent process of new process)
+        PXWPSECURITYCONTEXT pThisContext,
+                            pNewContext = NULL;
+
+        // alloc a new security context for this process
+        // and copy the parent's (current) credentials into it
+        if (    (pThisContext = ctxtFind(G_pLDT->LIS_CurProcID))
+             && ((pNewContext = ctxtCreate(NewPID,
+                                           G_pLDT->LIS_CurProcID,        // parent PID
+                                           pThisContext->ctxt.cSubjects)))
+           )
+        {
+            memcpy(&pNewContext->ctxt.aSubjects,
+                   &pThisContext->ctxt.aSubjects,
+                   sizeof(HXSUBJECT) * pThisContext->ctxt.cSubjects);
+        }
+
         if (G_bLog == LOG_ACTIVE)
         {
             PEVENTBUF_FILENAME pBuf;
             ULONG   ulPathLen = strlen(pszPath);
 
-            if (pBuf = ctxtLogEvent(EVENT_EXECPGM_POST,
+            if (pBuf = ctxtLogEvent(pNewContext,
+                                    EVENT_EXECPGM_POST,
                                     sizeof(EVENTBUF_FILENAME) + ulPathLen))
             {
                 pBuf->rc = NewPID;
@@ -279,4 +366,108 @@ VOID EXECPGM_POST(PSZ pszPath,
     }
 }
 
+/*
+ *@@ CREATEVDM:
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
 
+ULONG CREATEVDM(PSZ pszProgram,
+                PSZ pszArgs)
+{
+    APIRET  rc = NO_ERROR;
+
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        // authorize event if it is not from XWPShell
+        PXWPSECURITYCONTEXT pThisContext;
+        USHORT  fsGranted = 0;
+        ULONG   ulPathLen = 0;      // can come in as null!
+
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+            if (!(pThisContext = ctxtFind(G_pLDT->LIS_CurProcID)))
+                rc = G_rcUnknownContext;
+            else
+            {
+                if (    (pszProgram)        // can be NULL!
+                     && (ulPathLen = strlen(pszProgram))
+                   )
+                {
+                    fsGranted = ctxtQueryPermissions(pszProgram,
+                                                     ulPathLen,
+                                                     pThisContext->ctxt.cSubjects,
+                                                     pThisContext->ctxt.aSubjects);
+
+                    // all bits of fsRequired must be set in fsGranted
+                    if ((fsGranted & XWPACCESS_EXEC) != XWPACCESS_EXEC)
+                        rc = ERROR_ACCESS_DENIED;
+                }
+                // else @@todo?!?
+            }
+        }
+        else
+            pThisContext = NULL;
+
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_FILENAME pBuf;
+
+            if (pBuf = ctxtLogEvent(pThisContext,
+                                    EVENT_CREATEVDM_PRE,
+                                    sizeof(EVENTBUF_FILENAME) + ulPathLen))
+            {
+                pBuf->rc = rc;
+                pBuf->fsRequired = XWPACCESS_EXEC;
+                pBuf->fsGranted = fsGranted;
+                if (pBuf->ulPathLen = ulPathLen)
+                    memcpy(pBuf->szPath,
+                           pszProgram,
+                           ulPathLen + 1);
+                else
+                    pBuf->szPath[0] = 0;
+
+                // log arguments in a second buffer because
+                // this can be up to 64K in itself @@todo
+                // EVENT_EXECPGM_ARGS
+            }
+        }
+    }
+
+    return rc;
+}
+
+/*
+ *@@ CREATEVDM_POST:
+ *
+ *@@added V1.0.2 (2003-11-13) [umoeller]
+ */
+
+VOID CREATEVDM_POST(int rc)
+{
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        // find the current security context
+        // (i.e. the parent process of new process)
+        PXWPSECURITYCONTEXT pThisContext,
+                            pNewContext = NULL;
+
+        if (G_bLog == LOG_ACTIVE)
+        {
+            PEVENTBUF_CLOSE pBuf;
+
+            if (pBuf = ctxtLogEvent(pNewContext,
+                                    EVENT_CREATEVDM_POST,
+                                    sizeof(EVENTBUF_CLOSE)))
+            {
+                pBuf->SFN = rc;
+            }
+        }
+    }
+}

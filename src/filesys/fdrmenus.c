@@ -407,6 +407,7 @@ typedef struct _MENUITEMDEF
  *      order as they appear in the menus.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.2 (2004-1-6) [pr]: removed "Folder contents" item in eWP @@fixes 493
  */
 
 static const MENUITEMDEF G_MenuItemsWithIDs[] =
@@ -585,10 +586,13 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
                 CONFFL_WPFOLDER,
                 XWPCTXT_HIGHBIT | XWPCTXT_REFRESH_IN_MAIN,
 #endif
+// V1.0.2 (2004-1-6) [pr]: @@fixes 493
+#ifndef __NOFOLDERCONTENTS__
         // "F~older contents"
         ID_XSSI_FLDRCONTENT, 0,
                 CONFFL_WPFOLDER,
                 XWPCTXT_HIGHBIT | XWPCTXT_FOLDERCONTENTS,
+#endif
     };
 
 /*
@@ -2658,6 +2662,7 @@ static const XWPSETTING G_MenuItemsBackup[] =
  *      before, and adds a few new features as well.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.2 (2004-1-6) [pr]: removed "Folder contents" item in eWP @@fixes 493
  */
 
 STATIC VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
