@@ -305,7 +305,7 @@
 #define ID_XFDI_PANIC_DISABLEREPLICONS  406
 #endif
 #define ID_XFDI_PANIC_REMOVEHOTKEYS     407
-#define ID_XFDI_PANIC_DISABLEPAGEMAGE   408
+#define ID_XFDI_PANIC_DISABLEPAGER   408
 #define ID_XFDI_PANIC_DISABLEMULTIMEDIA 409
 #define ID_XFDI_PANIC_CONTINUE          410     // V0.9.16 (2001-10-08) [umoeller]
 #define ID_XFDI_PANIC_CONTINUE_TXT      411     // V0.9.16 (2001-10-08) [umoeller]
@@ -732,15 +732,15 @@
 #define ID_XCD_CLASSES_NEW              1282
 
 /******************************************
- * XWPScreen ("Screen", PageMage) >= 1400 *
+ * XWPScreen ("Screen", XPager) >= 1400 *
  ******************************************/
 
-#define ID_SCD_PAGEMAGE_GENERAL         1400
+#define ID_SCD_PAGER_GENERAL         1400
 #define ID_SCDI_PGMG1_X_SLIDER          1401
 #define ID_SCDI_PGMG1_X_TEXT2           1402
 #define ID_SCDI_PGMG1_Y_SLIDER          1403
 #define ID_SCDI_PGMG1_Y_TEXT2           1404
-// 1405 to 1414 moved to ID_SCD_PAGEMAGE_WINDOW
+// 1405 to 1414 moved to ID_SCD_PAGER_WINDOW
 #define ID_SCDI_PGMG1_ARROWHOTKEYS      1415
 #define ID_SCDI_PGMG1_HOTKEYS_CTRL      1416
 #define ID_SCDI_PGMG1_HOTKEYS_SHIFT     1417
@@ -748,7 +748,7 @@
 #define ID_SCDI_PGMG1_WRAPAROUND        1419
 #define ID_SCDI_PGMG1_VALUESET          1420
 
-#define ID_SCD_PAGEMAGE_COLORS          1430
+#define ID_SCD_PAGER_COLORS          1430
 #define ID_SCDI_PGMG2_DTP_INACTIVE      1431
 #define ID_SCDI_PGMG2_DTP_ACTIVE        1432
 #define ID_SCDI_PGMG2_DTP_BORDER        1433
@@ -758,13 +758,13 @@
 #define ID_SCDI_PGMG2_TXT_INACTIVE      1437
 #define ID_SCDI_PGMG2_TXT_ACTIVE        1438
 
-#define ID_SCD_PAGEMAGE_STICKY          1450
+#define ID_SCD_PAGER_STICKY          1450
 #define ID_SCDI_PGMG_STICKY_CNR         1451
 
-#define ID_SCD_PAGEMAGE_NEWSTICKY       1460
-#define ID_SCD_PAGEMAGE_COMBO_STICKIES  1461
+#define ID_SCD_PAGER_NEWSTICKY       1460
+#define ID_SCD_PAGER_COMBO_STICKIES  1461
 
-#define ID_SCD_PAGEMAGE_WINDOW          1470
+#define ID_SCD_PAGER_WINDOW          1470
 #define ID_SCDI_PGMG1_SHOWWINDOWS       1471
 #define ID_SCDI_PGMG1_SHOWWINTITLES     1472
 #define ID_SCDI_PGMG1_CLICK2ACTIVATE    1473
@@ -1159,7 +1159,7 @@
 #define ID_XSDI_MOUSE_BRING2TOP         3405
 #define ID_XSDI_MOUSE_IGNORESEAMLESS    3406
 #define ID_XSDI_MOUSE_IGNOREDESKTOP     3407
-#define ID_XSDI_MOUSE_IGNOREPAGEMAGE    3408
+#define ID_XSDI_MOUSE_IGNOREPAGER    3408
 #define ID_XSDI_MOUSE_IGNOREXCENTER     3409    // V0.9.7 (2000-12-08) [umoeller]
 #endif
 // ID_XSDI_MOUSE_AUTOHIDE_* moved to ID_XSD_MOUSE_MOVEMENT2
@@ -1425,7 +1425,7 @@
 #define ID_XSM_FUNCTIONKEYS_NOSEL       (WPMENUID_USER+1133)
 #define ID_XSMI_FUNCK_NEW               (WPMENUID_USER+1134)
 
-// "Sticky windows" context menus on XWPScreen "PageMage Sticky" page
+// "Sticky windows" context menus on XWPScreen "XPager Sticky" page
 // V0.9.4 (2000-07-10) [umoeller]
 #define ID_XSM_STICKY_NOSEL             (WPMENUID_USER+1140)
 #define ID_XSMI_STICKY_NEW              (WPMENUID_USER+1141)
@@ -1463,7 +1463,7 @@
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 
-#define ID_XSM_PAGEMAGECTXTMENU         220
+#define ID_XSM_PAGERCTXTMENU            220
 
 // The following menu ID's (with _OFS_ in their names)
 // are _variable_ menu ID's: XFolder will add the value
@@ -1909,7 +1909,7 @@
 #define ID_MMSI_PAGETITLE_IOPROCS       5951
 #define ID_MMSI_PAGETITLE_CODECS        5952
 
-#define ID_XSSI_PAGETITLE_PAGEMAGE      5953
+#define ID_XSSI_PAGETITLE_PAGER      5953
 
 #define ID_XSSI_XWPSTRING_PAGE          5954
 #define ID_XSSI_XWPSTRING_OPENMENU      5955
@@ -2055,8 +2055,8 @@
 #ifndef __ALWAYSOBJHOTKEYS__
 #define ID_XCSI_GLOBALHOTKEYS           6053
 #endif
-#ifndef __NOPAGEMAGE__
-#define ID_XCSI_PAGEMAGE                6054
+#ifndef __NOPAGER__
+#define ID_XCSI_PAGER                6054
 #endif
 
 /******************************************
@@ -2129,11 +2129,11 @@
 #define ID_XSSI_COLMN_RESOURCESIZE      6155           // "Size"
 #define ID_XSSI_COLMN_RESOURCEFLAGS     6156           // "Flags"
 
-#ifndef __NOPAGEMAGE__
-#define ID_XSSI_SPECIAL_PAGEMAGEUP      6157           // "One screen up"
-#define ID_XSSI_SPECIAL_PAGEMAGERIGHT   6158           // "One screen right"
-#define ID_XSSI_SPECIAL_PAGEMAGEDOWN    6159           // "One screen down"
-#define ID_XSSI_SPECIAL_PAGEMAGELEFT    6160           // "One screen left"
+#ifndef __NOPAGER__
+#define ID_XSSI_SPECIAL_PAGERUP      6157           // "One screen up"
+#define ID_XSSI_SPECIAL_PAGERRIGHT   6158           // "One screen right"
+#define ID_XSSI_SPECIAL_PAGERDOWN    6159           // "One screen down"
+#define ID_XSSI_SPECIAL_PAGERLEFT    6160           // "One screen left"
 #endif
 
 #define ID_XSSI_MB3_AUTOSCROLL          6161           // "AutoScroll"

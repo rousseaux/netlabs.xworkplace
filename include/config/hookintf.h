@@ -103,8 +103,8 @@
 
     BOOL hifXWPHookReady(VOID);
 
-#ifndef __NOPAGEMAGE__
-    BOOL hifEnablePageMage(BOOL fEnable);
+#ifndef __NOPAGER__
+    BOOL hifEnableXPager(BOOL fEnable);
 #endif
 
     BOOL hifHookConfigChanged(PVOID pvdc);

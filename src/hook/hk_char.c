@@ -235,12 +235,12 @@ BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
  *      has been defined for the key (be it a function key or some
  *      other key combo). If so, the message is swallowed.
  *
- *      Third, we check for the PageMage switch-desktop hotkeys.
+ *      Third, we check for the XPager switch-desktop hotkeys.
  *      If one of those is found, we swallow the msg also and
- *      notify PageMage.
+ *      notify XPager.
  *
  *      That is, the msg is swallowed if it's a function key or
- *      a global hotkey or a PageMage hotkey.
+ *      a global hotkey or a XPager hotkey.
  *
  *@@added V0.9.3 (2000-04-20) [umoeller]
  *@@changed V0.9.16 (2001-12-08) [umoeller]: added G_HookData.fHotkeysDisabledTemp check
@@ -282,7 +282,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                             // returns TRUE if ucScanCode represents one of the
                             // function keys
 
-                // global hotkeys enabled? This also gets called if PageMage hotkeys are on!
+                // global hotkeys enabled? This also gets called if XPager hotkeys are on!
 #ifndef __ALWAYSOBJHOTKEYS__
                 if (G_HookData.HookConfig.__fGlobalHotkeys)
 #endif
@@ -429,24 +429,24 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
         } // end if DosOpenMutexSem
     } // end if (!G_HookData.fHotkeysDisabledTemp)
 
-#ifndef __NOPAGEMAGE__
-    // PageMage hotkeys:
+#ifndef __NOPAGER__
+    // XPager hotkeys:
     // moved all the following out of the mutex block above
     if (!brc)       // message not swallowed yet:
     {
-        if (    (G_HookData.PageMageConfig.fEnableArrowHotkeys)
+        if (    (G_HookData.XPagerConfig.fEnableArrowHotkeys)
                     // arrow hotkeys enabled?
-             && (G_HookData.hwndPageMageClient)
-                    // PageMage active?
+             && (G_HookData.hwndXPagerClient)
+                    // XPager active?
            )
         {
-            // PageMage hotkeys enabled:
+            // XPager hotkeys enabled:
             // key-up only
             if ((usFlags & KC_KEYUP) == 0)
             {
                 // check KC_CTRL etc. flags
-                if (   (G_HookData.PageMageConfig.ulKeyShift | KC_SCANCODE)
-                            == (usFlags & (G_HookData.PageMageConfig.ulKeyShift
+                if (   (G_HookData.XPagerConfig.ulKeyShift | KC_SCANCODE)
+                            == (usFlags & (G_HookData.XPagerConfig.ulKeyShift
                                            | KC_SCANCODE))
                    )
                     // OK: check scan codes
@@ -460,7 +460,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                         /* ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
                                                       ucScanCode,
                                                       ucScanCode); */
-                        WinPostMsg(G_HookData.hwndPageMageMoveThread,
+                        WinPostMsg(G_HookData.hwndXPagerMoveThread,
                                    PGOM_HOOKKEY,
                                    (MPARAM)ucScanCode,
                                    0);

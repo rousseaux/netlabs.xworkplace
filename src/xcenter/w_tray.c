@@ -292,7 +292,7 @@ static BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
         {
             if (!(pClass->ulClassFlags & WGTF_TRAYABLE))
             {
-                PSZ     apsz[2];
+                PCSZ     apsz[2];
                 apsz[0] = (PSZ)pcszWidgetClass;
                 if (cmnMessageBoxMsgExt(NULLHANDLE,
                                         194,        // XCenter Error
@@ -1435,7 +1435,7 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
             case ID_CRMI_REMOVETRAY:
                 if (pCurrentTray = FindCurrentTray(pPrivate))
                 {
-                    PSZ apsz = pCurrentTray->pszTrayName;
+                    PCSZ apsz = pCurrentTray->pszTrayName;
                     if (cmnMessageBoxMsgExt(pGlobals->hwndClient,
                                             220,        // delete tray
                                             &apsz,

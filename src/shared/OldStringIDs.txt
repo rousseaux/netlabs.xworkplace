@@ -442,8 +442,8 @@
         ID_MMSI_PAGETITLE_CODECS,
                 FIELDOFFSET(NLSSTRINGS, pszPagetitleCodecs),
 
-        ID_XSSI_PAGETITLE_PAGEMAGE,
-                FIELDOFFSET(NLSSTRINGS, pszPagetitlePageMage),
+        ID_XSSI_PAGETITLE_PAGER,
+                FIELDOFFSET(NLSSTRINGS, pszPagetitleXPager),
 
         ID_XSSI_XWPSTRING_PAGE,
                 FIELDOFFSET(NLSSTRINGS, pszXWPStringPage),
@@ -649,14 +649,14 @@
                 FIELDOFFSET(NLSSTRINGS, pszColmnResourceFlags),
 
     // new special functions on XWPMouse "Movement" page V0.9.9 (2001-03-11) [lafaix]
-        ID_XSSI_SPECIAL_PAGEMAGEUP,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageUp),
-        ID_XSSI_SPECIAL_PAGEMAGERIGHT,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageRight),
-        ID_XSSI_SPECIAL_PAGEMAGEDOWN,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageDown),
-        ID_XSSI_SPECIAL_PAGEMAGELEFT,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageLeft),
+        ID_XSSI_SPECIAL_PAGERUP,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialXPagerUp),
+        ID_XSSI_SPECIAL_PAGERRIGHT,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialXPagerRight),
+        ID_XSSI_SPECIAL_PAGERDOWN,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialXPagerDown),
+        ID_XSSI_SPECIAL_PAGERLEFT,
+                FIELDOFFSET(NLSSTRINGS, pszSpecialXPagerLeft),
 
     // new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller]
         ID_XSSI_MB3_AUTOSCROLL,
@@ -941,7 +941,7 @@
                 pszPagetitleIOProcs,
                 pszPagetitleCodecs,
 
-                pszPagetitlePageMage,
+                pszPagetitleXPager,
 
                 pszXWPStringPage,
                 pszXWPStringOpenMenu,
@@ -1064,10 +1064,10 @@
                 pszColmnResourceFlags,  // "Flags"
 
     // new special functions on XWPMouse "Movement" page V0.9.9 (2001-03-11) [lafaix]
-                pszSpecialPageMageUp,   // "One screen up"
-                pszSpecialPageMageRight,// "One screen right"
-                pszSpecialPageMageDown, // "One screen down"
-                pszSpecialPageMageLeft, // "One screen left"
+                pszSpecialXPagerUp,   // "One screen up"
+                pszSpecialXPagerRight,// "One screen right"
+                pszSpecialXPagerDown, // "One screen down"
+                pszSpecialXPagerLeft, // "One screen left"
 
     // new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller]
                 pszMB3AutoScroll,       // "AutoScroll"

@@ -143,8 +143,8 @@ static HMTX             G_hmtxCommonLock = NULLHANDLE;
 // static HWND             G_hwndQuickStatus = NULLHANDLE;
 // static BOOL             G_fQuickOpenCancelled = FALSE;
 
-// flags passed with mp1 of XDM_PAGEMAGECONFIG
-static ULONG            G_PageMageConfigFlags = 0;
+// flags passed with mp1 of XDM_PAGERCONFIG
+static ULONG            G_XPagerConfigFlags = 0;
 
 // global structure with data needed across threads
 // (see kernel.h)
@@ -164,7 +164,7 @@ extern USHORT           G_usHiwordAbstract = 0;
 extern USHORT           G_usHiwordFileSystem = 0;
 
 // V0.9.11 (2001-04-25) [umoeller]
-static HWND             G_hwndPageMageContextMenu = NULLHANDLE;
+static HWND             G_hwndXPagerContextMenu = NULLHANDLE;
 
 // resize information for ID_XFD_CONTAINERPAGE, which is used
 // by many settings pages
@@ -870,14 +870,14 @@ static VOID T1M_DaemonReady(VOID)
                                  (MPARAM)hwndActiveDesktop,
                                  (MPARAM)0);
 
-                // _Pmpf(("    cmnQuerySetting(sfPageMageEnabled:) %d",
-                //        cmnQuerySetting(sfEnablePageMage)));
+                // _Pmpf(("    cmnQuerySetting(sfXPagerEnabled:) %d",
+                //        cmnQuerySetting(sfEnableXPager)));
 
-#ifndef __NOPAGEMAGE__
-                if (cmnQuerySetting(sfEnablePageMage))
-                    // PageMage is enabled too:
+#ifndef __NOPAGER__
+                if (cmnQuerySetting(sfEnableXPager))
+                    // XPager is enabled too:
                     WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                               XDM_STARTSTOPPAGEMAGE,
+                               XDM_STARTSTOPPAGER,
                                (MPARAM)TRUE,
                                0);
 #endif
@@ -1120,8 +1120,8 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.0 [umoeller]: T1M_QUERYXFOLDERVERSION message handling
  *@@changed V0.9.0 [umoeller]: T1M_OPENOBJECTFROMHANDLE added
  *@@changed V0.9.1 (99-12-19) [umoeller]: added "show Desktop menu" to T1M_OPENOBJECTFROMHANDLE
- *@@changed V0.9.2 (2000-02-23) [umoeller]: added T1M_PAGEMAGECLOSED
- *@@changed V0.9.3 (2000-04-09) [umoeller]: added T1M_PAGEMAGECONFIGDELAYED
+ *@@changed V0.9.2 (2000-02-23) [umoeller]: added T1M_PAGERCLOSED
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: added T1M_PAGERCONFIGDELAYED
  *@@changed V0.9.3 (2000-04-09) [umoeller]: fixed timer problem, which was never stopped... this solves the "disappearing windows" problem!!
  *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
  *@@changed V0.9.4 (2000-06-05) [umoeller]: added exception handling
@@ -1151,8 +1151,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         WinDestroyWindow(hwndArchiveStatus);
                     break;
 
-#ifndef __NOPAGEMAGE__
-                    case 2: // started from T1M_PAGEMAGECONFIGDELAYED
+#ifndef __NOPAGER__
+                    case 2: // started from T1M_PAGERCONFIGDELAYED
                     {
                         PXWPGLOBALSHARED   pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
 
@@ -1163,11 +1163,11 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                 // does not return until the daemon
                                 // has re-read the data
                                 BOOL brc = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                                                            XDM_PAGEMAGECONFIG,
-                                                            (MPARAM)G_PageMageConfigFlags,
+                                                            XDM_PAGERCONFIG,
+                                                            (MPARAM)G_XPagerConfigFlags,
                                                             0);
                                 // reset flags
-                                G_PageMageConfigFlags = 0;
+                                G_XPagerConfigFlags = 0;
                             }
                     }
                     break;
@@ -1463,48 +1463,48 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 T1M_DaemonReady();
             break;
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
             /*
-             *@@ T1M_PAGEMAGECLOSED:
-             *      this gets posted by dmnKillPageMage when
-             *      the user has closed the PageMage window.
-             *      We then disable PageMage in the GLOBALSETTINGS.
+             *@@ T1M_PAGERCLOSED:
+             *      this gets posted by dmnKillXPager when
+             *      the user has closed the XPager window.
+             *      We then disable XPager in the GLOBALSETTINGS.
              *
              *      Parameters:
-             *      -- BOOL mp1: if TRUE, PageMage will be disabled
+             *      -- BOOL mp1: if TRUE, XPager will be disabled
              *                   in the global settings.
              *
              *@@added V0.9.2 (2000-02-23) [umoeller]
              *@@changed V0.9.3 (2000-04-25) [umoeller]: added mp1 parameter
              */
 
-            case T1M_PAGEMAGECLOSED:
+            case T1M_PAGERCLOSED:
                 if (mp1)
-                    cmnSetSetting(sfEnablePageMage, FALSE);
+                    cmnSetSetting(sfEnableXPager, FALSE);
 
                 // update "Features" page, if open
                 ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
             break;
 
             /*
-             *@@ T1M_PAGEMAGECONFIGDELAYED:
-             *      posted by XWPScreen when any PageMage configuration
-             *      has changed. We delay sending XDM_PAGEMAGECONFIG to
+             *@@ T1M_PAGERCONFIGDELAYED:
+             *      posted by XWPScreen when any XPager configuration
+             *      has changed. We delay sending XDM_PAGERCONFIG to
              *      the daemon for a little while in order not to overload
-             *      the system, because PageMage needs to reconfigure itself
+             *      the system, because XPager needs to reconfigure itself
              *      every time.
              *
              *      Parameters:
-             *      -- ULONG mp1: same flags as with XDM_PAGEMAGECONFIG
+             *      -- ULONG mp1: same flags as with XDM_PAGERCONFIG
              *              mp1.
              *
              *@@added V0.9.3 (2000-04-09) [umoeller]
              */
 
-            case T1M_PAGEMAGECONFIGDELAYED:
+            case T1M_PAGERCONFIGDELAYED:
                 // add flags to global variable which will be
                 // passed (and reset) when timer elapses
-                G_PageMageConfigFlags |= (ULONG)mp1;
+                G_XPagerConfigFlags |= (ULONG)mp1;
                 // start timer 2
                 WinStartTimer(WinQueryAnchorBlock(hwndObject),
                               hwndObject,
@@ -1551,15 +1551,15 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 #endif
 
             /*
-             *@@ T1M_PAGEMAGECTXTMENU:
-             *      gets posted from PageMage if the user
+             *@@ T1M_PAGERCTXTMENU:
+             *      gets posted from XPager if the user
              *      right-clicked onto an empty space in the pager
              *      window (and not on a mini-window).
              *
-             *      We should then display the PageMage context
+             *      We should then display the XPager context
              *      menu here because
              *
-             *      1)  PageMage cannot handle the commands in
+             *      1)  XPager cannot handle the commands in
              *          the first place (such as open settings)
              *
              *      2)  we don't want NLS stuff in the daemon.
@@ -1574,15 +1574,15 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              *@@added V0.9.11 (2001-04-25) [umoeller]
              */
 
-            case T1M_PAGEMAGECTXTMENU:
-                if (!G_hwndPageMageContextMenu)
-                    G_hwndPageMageContextMenu = WinLoadMenu(hwndObject,
+            case T1M_PAGERCTXTMENU:
+                if (!G_hwndXPagerContextMenu)
+                    G_hwndXPagerContextMenu = WinLoadMenu(hwndObject,
                                                             cmnQueryNLSModuleHandle(FALSE),
-                                                            ID_XSM_PAGEMAGECTXTMENU);
+                                                            ID_XSM_PAGERCTXTMENU);
 
                 WinPopupMenu(HWND_DESKTOP,      // parent
                              hwndObject,        // owner
-                             G_hwndPageMageContextMenu,
+                             G_hwndXPagerContextMenu,
                              SHORT1FROMMP(mp1),
                              SHORT2FROMMP(mp1),
                              0,
@@ -1593,7 +1593,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
             /*
              * WM_COMMAND:
-             *      handle commands from the PageMage context menu
+             *      handle commands from the XPager context menu
              *      here (thread-1 object window was specified as
              *      menu's owner above).
              * added V0.9.11 (2001-04-25) [umoeller]
@@ -1615,7 +1615,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
                     case ID_CRMI_HELP:
                         cmnDisplayHelp(NULL,        // active desktop
-                                       ID_XSH_PAGEMAGE_INTRO);
+                                       ID_XSH_PAGER_INTRO);
                     break;
                 }
             break;

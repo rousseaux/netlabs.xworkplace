@@ -500,10 +500,10 @@ BEGIN
     DIALOG  "", ID_SCD_PAGEMAGE_COLORS, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "PageMage colors", -1, 6, 24, 206, 98
+        GROUPBOX        "XPager colors", -1, 6, 24, 206, 98
         LTEXT           "Drop any color from the color palettes onto the rec"
-                        "tangles below. To change the font for the PageMage "
-                        "window titles, drop a font on the PageMage window d"
+                        "tangles below. To change the font for the XPager "
+                        "window titles, drop a font on the XPager window d"
                         "irectly.", -1, 12, 92, 194, 22, DT_WORDBREAK
         LTEXT           "Inactive", -1, 86, 82, 34, 8
         LTEXT           "Active", -1, 126, 82, 32, 8, NOT WS_GROUP
@@ -533,7 +533,7 @@ BEGIN
     DIALOG  "", ID_SCD_PAGEMAGE_WINDOW, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "PageMage control window", -1, 4, 19, 192, 89
+        GROUPBOX        "XPager control window", -1, 4, 19, 192, 89
         AUTOCHECKBOX    "T~itlebar", ID_SCDI_PGMG1_TITLEBAR, 13, 88, 154, 8
         AUTOCHECKBOX    "F~orce screen proportions",
                         ID_SCDI_PGMG1_PRESERVEPROPS, 13, 80, 154, 8
@@ -1730,7 +1730,7 @@ BEGIN
     DIALOG  "", ID_SCD_PAGEMAGE_GENERAL, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "PageMage virtual desktops", -1, 4, 19, 206, 126
+        GROUPBOX        "XPager virtual desktops", -1, 4, 19, 206, 126
         CTEXT           "~X:", -1, 40, 122, 12, 14, DT_VCENTER | DT_MNEMONIC
         SLIDER          ID_SCDI_PGMG1_X_SLIDER, 54, 122, 127, 14,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP

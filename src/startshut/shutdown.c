@@ -2110,7 +2110,7 @@ BOOL xsdInitiateShutdown(VOID)
                 // if we have any, issue a warning message and
                 // tell the user to remove print jobs
                 CHAR szTemp[20];
-                PSZ pTable[1];
+                PCSZ pTable[1];
                 sprintf(szTemp, "%d", ulSpooled);
                 pTable[0] = szTemp;
                 cmnMessageBoxMsgExt(HWND_DESKTOP,
@@ -3993,7 +3993,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.9 (2001-04-04) [umoeller]: rewrote "save Desktop objects" to use dirty list from object.c
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed logoff
  *@@changed V0.9.12 (2001-04-29) [umoeller]: deferred update thread startup to fnwpShutdownThread; this fixes shutdown folder
- *@@changed V0.9.12 (2001-05-15) [umoeller]: now telling PageMage to recover windows first
+ *@@changed V0.9.12 (2001-05-15) [umoeller]: now telling XPager to recover windows first
  *@@changed V0.9.12 (2001-05-29) [umoeller]: now broadcasting WM_SAVEAPPLICATION here
  *@@changed V0.9.12 (2001-05-29) [umoeller]: StartShutdownThread now uses THRF_PMMSGQUEUE so Wininitialize etc. has been removed here
  *@@changed V0.9.13 (2001-06-17) [umoeller]: no longer broadcasting WM_SAVEAPPLICATION, going back to old code
@@ -4258,7 +4258,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         doshWriteLogEntry(LogFile,
                __FUNCTION__ ": Now entering shutdown message loop...");
 
-        // tell PageMage to recover all windows to the current screen
+        // tell XPager to recover all windows to the current screen
         // V0.9.12 (2001-05-15) [umoeller]
         if (pShutdownData->SDConsts.pKernelGlobals)
         {
@@ -4267,7 +4267,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             if (pXwpGlobalShared)
             {
                 doshWriteLogEntry(LogFile,
-                       __FUNCTION__ ": Recovering all PageMage windows...");
+                       __FUNCTION__ ": Recovering all XPager windows...");
 
                 if (pXwpGlobalShared->hwndDaemonObject)
                     WinSendMsg(pXwpGlobalShared->hwndDaemonObject,

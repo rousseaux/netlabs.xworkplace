@@ -238,7 +238,7 @@ BEGIN
     MENUITEM "~New function key...", ID_XSMI_FUNCK_NEW
 END
 
-/*  "Sticky windows" context menus on XWPScreen "PageMage Sticky" page
+/*  "Sticky windows" context menus on XWPScreen "XPager Sticky" page
     new with V0.9.4 (2000-07-10) [umoeller]*/
 
 MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
@@ -276,8 +276,8 @@ BEGIN
     MENUITEM "~Remove widget", ID_CRMI_REMOVEWGT
 END
 
-/* PageMage context menu V0.9.11 (2001-04-25) [umoeller] */
-MENU ID_XSM_PAGEMAGECTXTMENU LOADONCALL MOVEABLE DISCARDABLE
+/* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
+MENU ID_XSM_PAGERCTXTMENU LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Propertie~s", ID_CRMI_PROPERTIES
     MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
@@ -639,7 +639,7 @@ BEGIN
     ID_MMSI_PAGETITLE_IOPROCS           "~IOProcs"
     ID_MMSI_PAGETITLE_CODECS            "~Codecs"
 
-    ID_XSSI_PAGETITLE_PAGEMAGE          "~PageMage"
+    ID_XSSI_PAGETITLE_PAGEMAGE          "~XPager"
 
     ID_XSSI_XWPSTRING_PAGE              "~Setup string"
     ID_XSSI_XWPSTRING_OPENMENU          "~Invoke setup string"
@@ -723,7 +723,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
     ID_XCSI_XWPHOOK                     "Enable &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
-    ID_XCSI_PAGEMAGE                    "PageMage: virtual desktops"
+    ID_XCSI_PAGEMAGE                    "XPager: virtual desktops"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace Desktop archiving"
@@ -825,7 +825,7 @@ BEGIN
     ID_XSSI_COLMN_RESOURCESIZE          "Size"
     ID_XSSI_COLMN_RESOURCEFLAGS         "Flags"
 
-    /* pagemage special functions in XWPMouse "Movement" page V0.9.9 (2001-03-11 [lafaix] */
+    /* XPager special functions in XWPMouse "Movement" page V0.9.9 (2001-03-11 [lafaix] */
     ID_XSSI_SPECIAL_PAGEMAGEUP          "One screen up"
     ID_XSSI_SPECIAL_PAGEMAGERIGHT       "One screen right"
     ID_XSSI_SPECIAL_PAGEMAGEDOWN        "One screen down"
@@ -1066,7 +1066,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Permanently ~disable all features"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Permanently disable ~icon replacements"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "~Remove all object hotkeys"
-    ID_XFDI_PANIC_DISABLEPAGEMAGE       "Disable ~PageMage"
+    ID_XFDI_PANIC_DISABLEPAGEMAGE       "Disable X~Pager"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "Disable ~multimedia"
     ID_XFDI_PANIC_CONTINUE              "C~ontinue"
     ID_XFDI_PANIC_CONTINUE_TXT          "This will continue Desktop startup."

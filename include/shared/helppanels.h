@@ -149,9 +149,9 @@
     #define ID_XSH_MOUSE_CORNERS             70     // V0.9.2: XWPMouse "Movement" page 2
     #define ID_XSH_SETTINGS_TRASH_DRIVES     71     // V0.9.2: XWPTrashCan "Drives" page
     #define ID_XSH_SETTINGS_SYSLEVEL         72     // V0.9.3: XFldSystem "Syslevel" page
-    #define ID_XSH_SETTINGS_PAGEMAGE_GENERAL 73     // V0.9.3: XWPScreen "PageMage General" page
-    #define ID_XSH_SETTINGS_PAGEMAGE_COLORS  74     // V0.9.3: XWPScreen "PageMage Colors" page
-    #define ID_XSH_SETTINGS_PAGEMAGE_MOUSE   75
+    #define ID_XSH_SETTINGS_PAGER_GENERAL 73     // V0.9.3: XWPScreen "XPager General" page
+    #define ID_XSH_SETTINGS_PAGER_COLORS  74     // V0.9.3: XWPScreen "XPager Colors" page
+    #define ID_XSH_SETTINGS_PAGER_MOUSE   75
     #define ID_XSH_SETTINGS_FUNCTIONKEYS     76     // V0.9.3: XWPKeyboard "Function keys" page
     #define ID_XSH_SETTINGS_FUNCTIONKEYSDLG  77
     #define ID_XSH_SETTINGS_XWPSTRING_MAIN   78     // V0.9.3: XWPString main help
@@ -162,9 +162,9 @@
     #define ID_XSH_SETTINGS_TRASHCAN_DRIVES  83     // V0.9.4: XWPTrashCan "Drives" page
     #define ID_XSH_XWP_INSTALL_FOLDER        84     // installation folder default help;
                                                     // set by install script, do not change
-    #define ID_XSH_SETTINGS_PAGEMAGE_STICKY  85     // V0.9.3: XWPScreen "PageMage Sticky" page;
-    #define ID_XSH_SETTINGS_PAGEMAGE_STICKY2 86     // V0.9.3: XWPScreen "PageMage Sticky" page;
-    #define ID_XSH_SETTINGS_PAGEMAGE_STICKY3 87     // V0.9.3: XWPScreen "PageMage Sticky" page;
+    #define ID_XSH_SETTINGS_PAGER_STICKY  85     // V0.9.3: XWPScreen "XPager Sticky" page;
+    #define ID_XSH_SETTINGS_PAGER_STICKY2 86     // V0.9.3: XWPScreen "XPager Sticky" page;
+    #define ID_XSH_SETTINGS_PAGER_STICKY3 87     // V0.9.3: XWPScreen "XPager Sticky" page;
     #define ID_XSH_SETTINGS_TRASHCAN_ICON    88     // V0.9.4: XWPTrashCan "Icon" page
     #define ID_XSH_XSHUTDOWN_CONFIRM         89     // V0.9.4: shutdown confirm dlg
     #define ID_XFH_SELECTSOME                90     // V0.9.4: changed this to have it assigned a fixed no. finally
@@ -213,13 +213,13 @@
     #define ID_XSH_SETTINGS_PGMFILE_MODULE1 123
     #define ID_XSH_SETTINGS_PGMFILE_MODULE2 124
 
-    #define ID_XSH_SETTINGS_PAGEMAGE_WINDOW 125     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
+    #define ID_XSH_SETTINGS_PAGER_WINDOW 125     // V0.9.9: XWPScreen "XPager" page V0.9.9 (2001-03-15) [lafaix]
 
     #define ID_XSH_DATAFILE_TYPES           126     // V0.9.9: data file types page
 
     #define ID_XSH_ADMIN_USER               127     // V0.9.11: XWPAdmin "Users" page
 
-    #define ID_XSH_PAGEMAGE_INTRO           128     // V0.9.11: XWPAdmin "Users" page
+    #define ID_XSH_PAGER_INTRO           128     // V0.9.11: XWPAdmin "Users" page
 
     #define ID_XSH_SORTPAGE                 129     // V0.9.12: sort page (instance or global)
 

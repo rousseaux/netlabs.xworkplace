@@ -654,7 +654,7 @@ typedef struct _MENULISTITEM
  *      This sorts the folder content menu items alphabetically.
  */
 
-SHORT EXPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
+SHORT XWPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
 {
     switch (WinCompareStrings((HAB)hab, 0, 0,
                               ((PMENULISTITEM)pItem1)->szItemString,

@@ -53,14 +53,14 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
-# The PGMGDMNOBJS macro contains all the PageMage .OBJ files,
+# The PGMGDMNOBJS macro contains all the XPager .OBJ files,
 # which go into XWPDAEMN.EXE.
 PGMGDMNOBJS = \
 !ifndef XWPLITE
-$(OUTPUTDIR)\pgmg_control.obj \
-$(OUTPUTDIR)\pgmg_move.obj \
-$(OUTPUTDIR)\pgmg_settings.obj \
-$(OUTPUTDIR)\pgmg_winscan.obj
+$(OUTPUTDIR)\pg_control.obj \
+$(OUTPUTDIR)\pg_move.obj \
+$(OUTPUTDIR)\pg_settings.obj \
+$(OUTPUTDIR)\pg_winscan.obj
 !endif
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;

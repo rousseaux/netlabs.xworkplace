@@ -571,8 +571,8 @@ PCSZ cmnQueryHelpLibrary(VOID)
 VOID cmnHelpNotFound(ULONG ulPanelID)
 {
     CHAR sz[100];
-    PSZ psz = (PSZ)cmnQueryHelpLibrary();
-    PSZ apsz[] =
+    PCSZ psz = cmnQueryHelpLibrary();
+    PCSZ apsz[] =
         {  sz,
            psz };
     sprintf(sz, "%d", ulPanelID);
@@ -2347,9 +2347,9 @@ typedef struct _OLDGLOBALSETTINGS
     BYTE        fNumLockStartup;
                     // XFldDesktop "Startup": set NumLock to ON on Desktop startup
 
-    BYTE        fEnablePageMage;
-                    // XWPSetup "PageMage virtual desktops"; this will cause
-                    // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
+    BYTE        fEnableXPager;
+                    // XWPSetup "XPager virtual desktops"; this will cause
+                    // XDM_STARTSTOPPAGER to be sent to the daemon
 
     BYTE        fShowHotkeysInMenus;
                     // on XFldWPS "Hotkeys" page
@@ -2639,10 +2639,10 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_SETUP_FEATURES, 0,
             "fXWPHook",
 #endif
-#ifndef __NOPAGEMAGE__
-        sfEnablePageMage, FIELDOFFSET(OLDGLOBALSETTINGS, fEnablePageMage), 1,
+#ifndef __NOPAGER__
+        sfEnableXPager, FIELDOFFSET(OLDGLOBALSETTINGS, fEnableXPager), 1,
             SP_SETUP_FEATURES, 0,
-            "fEnablePageMage",
+            "fEnableXPager",
 #endif
 #ifndef __NEVEREXTASSOCS__
         sfExtAssocs, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtAssocs), 4,
@@ -5531,7 +5531,7 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
  *@@changed V0.9.16 (2001-10-08) [umoeller]: now using XSTRING
  */
 
-APIRET cmnGetMessageExt(PCHAR *pTable,     // in: replacement PSZ table or NULL
+APIRET cmnGetMessageExt(PCSZ *pTable,     // in: replacement PSZ table or NULL
                         ULONG ulTable,     // in: size of that table or 0
                         PXSTRING pstr,     // in/out: string
                         PCSZ pcszMsgID)    // in: msg ID to retrieve
@@ -5607,7 +5607,7 @@ APIRET cmnGetMessageExt(PCHAR *pTable,     // in: replacement PSZ table or NULL
  *@@changed V0.9.16 (2001-10-08) [umoeller]: now using XSTRING
  */
 
-APIRET cmnGetMessage(PCHAR *pTable,     // in: replacement PSZ table or NULL
+APIRET cmnGetMessage(PCSZ *pTable,     // in: replacement PSZ table or NULL
                      ULONG ulTable,     // in: size of that table or 0
                      PXSTRING pstr,     // in/out: string
                      ULONG ulMsgNumber) // in: msg number to retrieve
@@ -5666,7 +5666,7 @@ ULONG cmnMessageBoxMsg(HWND hwndOwner,
 
 ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
                           ULONG ulTitle,    // in: msg number for title
-                          PCHAR *pTable,    // in: replacement table for ulMessage
+                          PCSZ *pTable,    // in: replacement table for ulMessage
                           ULONG ulTable,    // in: array count in *pTable
                           ULONG ulMessage,  // in: msg number for message
                           ULONG flStyle)    // in: msg box style flags (cmnMessageBox)
@@ -5758,7 +5758,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
     {
         // cannot find msg:
         CHAR szError3[20];
-        PSZ apsz = szError3;
+        PCSZ apsz = szError3;
         sprintf(szError3, "%d", arc);
         cmnGetMessage(&apsz,
                       1,
@@ -5797,7 +5797,7 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
     XSTRING strTitle,
             strPrefix,
             strSuffix;
-    PSZ     psz = _wpQueryTitle(pProgram);
+    PCSZ     psz = _wpQueryTitle(pProgram);
     ULONG   ulrc;
 
     xstrInit(&strTitle, 0);

@@ -31,7 +31,7 @@ leave the &warpcenter; alone, if this lead to scroll bars on the desktop. Hope t
 <P><LI>Added more error checking to "Empty trash" on shutdown.
 <P><LI>Reworked WPS command interception for file engines command to avoid
 duplicate code... hope I didn't break anything.
-<P><LI>Optimized PageMage window procedure to use less PM resources. Also improved
+<P><LI>Optimized &pgr; window procedure to use less PM resources. Also improved
 cache locality.
 <P><LI>Martin Lafaix contributed some patches for the display of the folder content
 menus to make them look more like standard menus. Thanks.
@@ -85,12 +85,12 @@ folder. Preventing template creation now.
 <P><LI>Extended system sounds broke completely with V0.9.6. Fixed. Duh.
 <P><LI>Pages in "Multimedia" hung the system if the object was closed while the
 data was still being inserted by the background threads. Fixed.
-<P><LI>PageMage has been rewritten in considerable parts.
+<P><LI>&pgr; has been rewritten in considerable parts.
 We are now using a linked list instead of a global array for the internal window list;
 wrong sticky windows (newly created ones, Odin and EPM windows) have been fixed;
 maximized window handling has been redone.
 Dmitry Kubov helped doing all this -- thanks very much, Dmitry.
-<P><LI>PageMage "move thread" now has a higher priority. This should fix problems
+<P><LI>&pgr; "move thread" now has a higher priority. This should fix problems
 during desktop switches when other processes hog the CPU.
 <P><LI>&xshutdown; would sometimes crash if "Empty trash" was enabled. Fixed.
 

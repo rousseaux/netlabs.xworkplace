@@ -156,17 +156,17 @@
         // this gets loaded from OS2.INI
         HOOKCONFIG  HookConfig;
 
-#ifndef __NOPAGEMAGE__
-        // PageMage configuration data shared by daemon and the hook;
+#ifndef __NOPAGER__
+        // XPager configuration data shared by daemon and the hook;
         // this gets loaded from OS2.INI also
-        PAGEMAGECONFIG PageMageConfig;
+        PAGERCONFIG XPagerConfig;
 
-        HWND        hwndPageMageClient;
-                // PageMage client window, created by pgmcCreateMainControlWnd
-        HWND        hwndPageMageFrame;
-                // PageMage frame window, created by pgmcCreateMainControlWnd
-        HWND        hwndPageMageMoveThread;
-                // PageMage move thread (fnwpMoveThread)
+        HWND        hwndXPagerClient;
+                // XPager client window, created by pgmcCreateMainControlWnd
+        HWND        hwndXPagerFrame;
+                // XPager frame window, created by pgmcCreateMainControlWnd
+        HWND        hwndXPagerMoveThread;
+                // XPager move thread (fnwpMoveThread)
 
         BOOL        fDisablePgmgSwitching;
         BOOL        fDisableMouseSwitch;
@@ -250,11 +250,11 @@
 
     /* ******************************************************************
      *                                                                  *
-     *   PageMage definitions needed by the hook                        *
+     *   XPager definitions needed by the hook                        *
      *                                                                  *
      ********************************************************************/
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
     #define PGMG_INVALIDATECLIENT   (WM_USER + 300)
     #define PGMG_ZAPPO              (WM_USER + 301)
     // #define PGMG_LOCKUP             (WM_USER + 302)

@@ -202,7 +202,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
                                                             // out: ignore subsequent errors of the same type
 {
     CHAR    szMsg[1000];
-    PSZ     apsz[5] = {0};
+    PCSZ     apsz[5] = {0};
     ULONG   cpsz = 0,
             ulMsg = 0,
             flFlags = 0;
@@ -763,7 +763,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
 
                         if (pConfirm)
                         {
-                            PSZ     apsz = NULL;
+                            PCSZ     apsz = NULL;
                             ULONG   ulMsg;
                             // yes:
                             if (cObjects == 1)
@@ -772,13 +772,13 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                                 // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
                                 apsz = _wpQueryTitle(pSourceObject);
                                 apsz = strdup(apsz ? apsz : "");
-                                strhBeautifyTitle(apsz);
+                                strhBeautifyTitle((PSZ)apsz);
                                 ulMsg = pConfirm->ulMsgSingle;
                             }
                             else
                             {
                                 apsz = malloc(30);
-                                sprintf(apsz, "%d", cObjects);
+                                sprintf((PSZ)apsz, "%d", cObjects);
                                 ulMsg = pConfirm->ulMsgMultiple;
                             }
 
@@ -791,7 +791,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                                         != MBID_YES)
                                 frc = FOPSERR_CANCELLEDBYUSER;
 
-                            free(apsz);
+                            free((PSZ)apsz);
                         }
                     }
                 } // end if (frc == NO_ERROR)

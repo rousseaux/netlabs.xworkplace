@@ -2042,7 +2042,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             {
                                 BOOL fAllow = FALSE;
                                 CHAR szTemp[CCHMAXPATH];
-                                PSZ pTable[2];
+                                PCSZ pTable[2];
                                 pTable[0] = szTemp;
                                 pTable[1] = pscd->preccSource->pwps->pszReplacedWithClasses;
 
@@ -2122,7 +2122,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         if (pscd->preccSource)
                         {
                             SELECTCLASSDATA         scd;
-                            PSZ                     pszClassName =
+                            PCSZ                     pszClassName =
                                         pscd->preccSource->pwps->pszClassName;
 
                             XSTRING strTitle,
@@ -2155,7 +2155,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                                      ID_XLD_SELECTCLASS,
                                                      &scd) == DID_OK)
                             {
-                                PSZ pTable[2];
+                                PCSZ pTable[2];
                                 pTable[0] = pscd->preccSource->pwps->pszClassName;
                                 pTable[1] = scd.szClassSelected;
                                 if (cmnMessageBoxMsgExt(hwndDlg,
@@ -2192,7 +2192,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             if (pscd->preccSource->pwps)
                             {
                                 BOOL fAllow = FALSE;
-                                PSZ pTable[2];
+                                PCSZ pTable[2];
                                 pTable[0] = pscd->preccSource->pwps->pszReplacesClass;
                                 pTable[1] = pscd->preccSource->pwps->pszClassName;
 
@@ -2248,7 +2248,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             if (pscd->preccSource->pwps)
                             {
                                 // BOOL fAllow = FALSE;
-                                PSZ pTable[2];
+                                PCSZ pTable[2];
                                 pTable[0] = pscd->preccSource->pwps->pszClassName;
                                 pTable[1] = _wpclsQueryTitle(pscd->preccSource->pwps->pClassObject);
 
@@ -3127,7 +3127,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                 HPOINTER hptrOld = winhSetWaitPointer();
                 CHAR    szErrorCode[10] = "?",
                         szModuleError[500] = "none";
-                PSZ pTable[3] = {
+                PCSZ pTable[3] = {
                             rcd.szClassName,
                             szErrorCode,
                             szModuleError

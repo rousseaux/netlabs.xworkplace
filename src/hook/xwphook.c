@@ -472,7 +472,7 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
         G_HookData.hwndDaemonObject = hwndDaemonObject;
         G_HookData.habDaemonObject = WinQueryAnchorBlock(hwndDaemonObject);
 
-        // G_HookData.hmtxPageMage = hmtxPageMage;
+        // G_HookData.hmtxXPager = hmtxXPager;
 
         _Pmpf(("  Done storing data"));
 
@@ -934,22 +934,22 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
  *
  ******************************************************************/
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
 
 /*
- *@@ ProcessMsgsForPageMage:
+ *@@ ProcessMsgsForXPager:
  *      message processing which is needed for both
  *      hookInputHook and hookSendMsgHook.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
  *@@changed V0.9.7 (2001-01-15) [dk]: WM_SETWINDOWPARAMS added
- *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pagemage doesn't need this
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pager doesn't need this
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky odin windows
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky EPM
  */
 
-VOID ProcessMsgsForPageMage(HWND hwnd,
+VOID ProcessMsgsForXPager(HWND hwnd,
                             ULONG msg,
                             MPARAM mp1,
                             MPARAM mp2)
@@ -966,7 +966,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
        )
     {
         if (    (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
-             && (hwnd != G_HookData.hwndPageMageFrame)
+             && (hwnd != G_HookData.hwndXPagerFrame)
                     // V0.9.7 (2001-01-23) [umoeller]
            )
         {
@@ -989,7 +989,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                         case WM_CREATE:
                         case WM_DESTROY:
                         case WM_SETWINDOWPARAMS:
-                            WinPostMsg(G_HookData.hwndPageMageClient,
+                            WinPostMsg(G_HookData.hwndXPagerClient,
                                        PGMG_WNDCHANGE,
                                        MPFROMHWND(hwnd),
                                        MPFROMLONG(msg));
@@ -999,11 +999,11 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                             if (mp1)        // window being activated:
                             {
                                 // it's a top-level window:
-                                WinPostMsg(G_HookData.hwndPageMageMoveThread,
+                                WinPostMsg(G_HookData.hwndXPagerMoveThread,
                                            PGOM_FOCUSCHANGE,
                                            0,
                                            0);
-                                WinPostMsg(G_HookData.hwndPageMageClient,
+                                WinPostMsg(G_HookData.hwndXPagerClient,
                                            PGMG_INVALIDATECLIENT,
                                            (MPARAM)FALSE,   // delayed
                                            0);
@@ -1011,7 +1011,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                         break;
 
                         case WM_WINDOWPOSCHANGED:
-                            WinPostMsg(G_HookData.hwndPageMageClient,
+                            WinPostMsg(G_HookData.hwndXPagerClient,
                                        PGMG_INVALIDATECLIENT,
                                        (MPARAM)FALSE,   // delayed
                                        0);
@@ -1057,7 +1057,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
  *@@changed V0.9.9 (2001-03-10) [umoeller]: fixed errant sliding menu behavior
  *@@changed V0.9.14 (2001-08-01) [lafaix]: added menu mode check for auto hide
  *@@changed V0.9.14 (2001-08-02) [lafaix]: added auto move to default button
- *@@changed V0.9.16 (2001-11-22) [umoeller]: hotkeys stopped working after lockup if PageMage wasn't running; fixed
+ *@@changed V0.9.16 (2001-11-22) [umoeller]: hotkeys stopped working after lockup if XPager wasn't running; fixed
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1065,13 +1065,13 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                               BOOL fInterTask)
 {
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
 
-    if (    // PageMage running?
-            (G_HookData.hwndPageMageFrame)
+    if (    // XPager running?
+            (G_HookData.hwndXPagerFrame)
             // switching not disabled?
          && (!G_HookData.fDisablePgmgSwitching)
-                // this flag is set frequently when PageMage
+                // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
        )
@@ -1079,16 +1079,16 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
         // OK, go ahead:
         PSWP pswp;
 
-        ProcessMsgsForPageMage(psmh->hwnd,
+        ProcessMsgsForXPager(psmh->hwnd,
                                psmh->msg,
                                psmh->mp1,
                                psmh->mp2);
 
         // V0.9.7 (2001-01-23) [umoeller]
-        if (    (G_HookData.PageMageConfig.fStayOnTop)
+        if (    (G_HookData.XPagerConfig.fStayOnTop)
              // && (psmh->msg == WM_ADJUSTWINDOWPOS)        doesn't work
              && (psmh->msg == WM_WINDOWPOSCHANGED)
-             && (WinIsWindowVisible(G_HookData.hwndPageMageFrame))
+             && (WinIsWindowVisible(G_HookData.hwndXPagerFrame))
              && (pswp = (PSWP)psmh->mp1)
              && (pswp->fl & SWP_ZORDER)
              && (pswp->hwndInsertBehind == HWND_TOP)
@@ -1097,11 +1097,11 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
            )
         {
             /* DosBeep(1000, 20);
-            pswp->hwndInsertBehind = G_HookData.hwndPageMageFrame; */
+            pswp->hwndInsertBehind = G_HookData.hwndXPagerFrame; */
 
-            // notify PageMage that it should go back to
+            // notify XPager that it should go back to
             // top by itself
-            /* WinPostMsg(G_HookData.hwndPageMageClient,
+            /* WinPostMsg(G_HookData.hwndXPagerClient,
                        PGMG_INVALIDATECLIENT,
                        (MPARAM)FALSE,   // delayed
                        0); */
@@ -1109,7 +1109,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
             // but disable switching V0.9.12 (2001-05-31) [umoeller]
             BOOL fOld = G_HookData.fDisablePgmgSwitching;
             G_HookData.fDisablePgmgSwitching = TRUE;
-            WinSetWindowPos(G_HookData.hwndPageMageFrame,
+            WinSetWindowPos(G_HookData.hwndXPagerFrame,
                             HWND_TOP,
                             0, 0, 0, 0,
                             SWP_ZORDER | SWP_SHOW);
@@ -1200,8 +1200,8 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
     }
 #endif
 
-    // moved this here from ProcessMsgsForPageMage;
-    // otherwise this is not picked up if PageMage
+    // moved this here from ProcessMsgsForXPager;
+    // otherwise this is not picked up if XPager
     // isn't running V0.9.16 (2001-11-22) [umoeller]
     if (    (psmh->msg == WM_DESTROY)
          && (psmh->hwnd == G_HookData.hwndLockupFrame)
@@ -1245,7 +1245,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.6 (2000-11-05) [pr]: fix for hotkeys not working after Lockup
- *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pagemage doesn't need this
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pager doesn't need this
  *@@changed V0.9.14 (2001-08-21) [umoeller]: now always storing lockup window, we need this in various places
  */
 
@@ -1254,18 +1254,18 @@ VOID EXPENTRY hookLockupHook(HAB hab,
 {
     G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
 
-    /* if (G_HookData.hwndPageMageFrame)
+    /* if (G_HookData.hwndXPagerFrame)
     {
 
-        WinPostMsg(G_HookData.hwndPageMageClient,
+        WinPostMsg(G_HookData.hwndXPagerClient,
                    PGMG_LOCKUP,
                    MPFROMLONG(TRUE),
                    MPVOID);
-            // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
+            // removed V0.9.7 (2001-01-18) [umoeller], XPager doesn't
             // need this
     } */
     /* G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
-    WinPostMsg(G_HookData.hwndPageMageClient,
+    WinPostMsg(G_HookData.hwndXPagerClient,
                PGMG_LOCKUP,
                MPFROMLONG(TRUE),
                MPVOID); */
@@ -1334,7 +1334,7 @@ HWND GetFrameWindow(HWND hwndTemp)
  *
  *@@changed V0.9.1 (99-12-03) [umoeller]: added MB3 mouse scroll
  *@@changed V0.9.1 (2000-01-31) [umoeller]: fixed end-scroll bug
- *@@changed V0.9.2 (2000-02-21) [umoeller]: added PageMage processing
+ *@@changed V0.9.2 (2000-02-21) [umoeller]: added XPager processing
  *@@changed V0.9.2 (2000-02-25) [umoeller]: HScroll not working when VScroll disabled; fixed
  *@@changed V0.9.2 (2000-02-25) [umoeller]: added checks for mouse capture
  *@@changed V0.9.4 (2000-06-11) [umoeller]: changed MB3 scroll to WM_BUTTON3MOTIONSTART/END
@@ -1362,18 +1362,18 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     if (pqmsg == NULL)
         return (FALSE);
 
-#ifndef __NOPAGEMAGE__
-    if (    // PageMage running?
-            (G_HookData.hwndPageMageFrame)
+#ifndef __NOPAGER__
+    if (    // XPager running?
+            (G_HookData.hwndXPagerFrame)
             // switching not disabled?
          && (!G_HookData.fDisablePgmgSwitching)
-                // this flag is set frequently when PageMage
+                // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
        )
     {
         // OK, go ahead:
-        ProcessMsgsForPageMage(pqmsg->hwnd, pqmsg->msg, pqmsg->mp1, pqmsg->mp2);
+        ProcessMsgsForXPager(pqmsg->hwnd, pqmsg->msg, pqmsg->mp1, pqmsg->mp2);
     }
 #endif
 
@@ -1619,7 +1619,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
  *      message.
  *
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added check for system lockup
- *@@changed V0.9.3 (2000-04-09) [umoeller]: added PageMage hotkeys
+ *@@changed V0.9.3 (2000-04-09) [umoeller]: added XPager hotkeys
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added KC_SCANCODE check
  *@@changed V0.9.3 (2000-04-10) [umoeller]: moved debug code to hook
  */
@@ -1652,9 +1652,9 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
 #else
                    (    (TRUE)
 #endif
-#ifndef __NOPAGEMAGE__
-                        // b) pagemage switch-screen hotkeys are enabled
-                    ||  (G_HookData.PageMageConfig.fEnableArrowHotkeys)
+#ifndef __NOPAGER__
+                        // b) pager switch-screen hotkeys are enabled
+                    ||  (G_HookData.XPagerConfig.fEnableArrowHotkeys)
 #else
                     ||  (FALSE)
 #endif

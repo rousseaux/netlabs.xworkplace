@@ -238,7 +238,7 @@ BEGIN
     MENUITEM "~Neue Funktionstaste...", ID_XSMI_FUNCK_NEW
 END
 
-/*  "Sticky windows" context menus on XWPScreen "PageMage Sticky" page
+/*  "Sticky windows" context menus on XWPScreen "XPager Sticky" page
     new with V0.9.4 (2000-07-10) [umoeller]*/
 
 MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
@@ -276,7 +276,7 @@ BEGIN
     MENUITEM "Widget ~entfernen", ID_CRMI_REMOVEWGT
 END
 
-/* PageMage context menu V0.9.11 (2001-04-25) [umoeller] */
+/* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
 MENU ID_XSM_PAGEMAGECTXTMENU LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Einstell~ungen", ID_CRMI_PROPERTIES
@@ -639,7 +639,7 @@ BEGIN
     ID_MMSI_PAGETITLE_IOPROCS           "~IOProcs"
     ID_MMSI_PAGETITLE_CODECS            "~Codecs"
 
-    ID_XSSI_PAGETITLE_PAGEMAGE          "~PageMage"
+    ID_XSSI_PAGETITLE_PAGEMAGE          "X~Pager"
 
     ID_XSSI_XWPSTRING_PAGE              "~Konfigurationsstring"
     ID_XSSI_XWPSTRING_OPENMENU          "Konfigurations~string aufrufen"
@@ -723,7 +723,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger"
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
     ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
-    ID_XCSI_PAGEMAGE                    "PageMage: Virtuelle ArbeitsoberflÑchen"
+    ID_XCSI_PAGEMAGE                    "XPager: Virtuelle ArbeitsoberflÑchen"
 
     ID_XCSI_STARTSHUTFEATURES           "Systemstart/abschlu·-Funktionen"
     ID_XCSI_ARCHIVING                   "Archivierung der ArbeitsoberflÑche ersetzen"
@@ -825,7 +825,7 @@ BEGIN
     ID_XSSI_COLMN_RESOURCESIZE          "Grî·e"
     ID_XSSI_COLMN_RESOURCEFLAGS         "Flags"
 
-    /* pagemage special functions in XWPMouse "Movement" page V0.9.9 (2001-03-11 [lafaix] */
+    /* XPager special functions in XWPMouse "Movement" page V0.9.9 (2001-03-11 [lafaix] */
     ID_XSSI_SPECIAL_PAGEMAGEUP          "Einen Seite nach oben"
     ID_XSSI_SPECIAL_PAGEMAGERIGHT       "Einen Seite nach rechts"
     ID_XSSI_SPECIAL_PAGEMAGEDOWN        "Eine Seite nach unten"
@@ -1066,7 +1066,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Alle Funktionen permanent ~deaktivieren"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Ersetzung der Symbole permanent deaktiv~ieren"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "Alle TastenkÅ~rzel entfernen"
-    ID_XFDI_PANIC_DISABLEPAGEMAGE       "~PageMage deaktivieren"
+    ID_XFDI_PANIC_DISABLEPAGEMAGE       "~XPager deaktivieren"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "~Multimedia deaktivieren"
     ID_XFDI_PANIC_CONTINUE              "F~ortfahren"
     ID_XFDI_PANIC_CONTINUE_TXT          "Hiermit wird mit dem Start der WPS fortgefahren."

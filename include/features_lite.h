@@ -51,7 +51,7 @@
 
 // hook features
 #define __ALWAYSHOOK__                          1
-#define __NOPAGEMAGE__                          1
+#define __NOPAGER__                             1
 #define __ALWAYSOBJHOTKEYS__                    1
 #define __NOSLIDINGFOCUS__                      1
 #define __NOMOVEMENT2FEATURES__                 1

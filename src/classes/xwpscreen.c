@@ -6,16 +6,16 @@
  *      --  XWPScreen (WPSystem subclass)
  *
  *      XFldSystem implements the "Screen" settings object
- *      for PM manipulation and PageMage configuration.
+ *      for PM manipulation and XPager configuration.
  *
  *      Installation of this class is optional, but you cannot
- *      configure PageMage without it.
+ *      configure XPager without it.
  *
  *      This is all new with V0.9.2 (2000-02-23) [umoeller].
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.
- *      The implementation for this class is mostly in config\pagemage.c.
+ *      The implementation for this class is mostly in config\pager.c.
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
  *@@somclass XWPScreen xwpscr_
@@ -85,7 +85,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "config\hookintf.h"            // daemon/hook interface
-#include "config\pagemage.h"            // PageMage interface
+#include "config\pager.h"            // XPager interface
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -99,10 +99,10 @@
 
 /*
  *@@ xwpAddXWPScreenPages:
- *      adds the "PageMage" pages to the "Screen" notebook.
+ *      adds the "XPager" pages to the "Screen" notebook.
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
- *@@changed V0.9.9 (2001-03-15) [lafaix]: added a new 'pagemage window' page
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: added a new 'pager window' page
  *@@changed V0.9.9 (2001-03-27) [umoeller]: moved "Corners" from XWPMouse to XWPScreen
  *@@changed V0.9.9 (2001-04-04) [lafaix]: renamed to "Screen borders" page
  */
@@ -136,75 +136,75 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
         inbp.pfncbItemChanged = hifMouseCornersItemChanged;
         ulrc = ntbInsertPage(&inbp);
 
-#ifndef __NOPAGEMAGE__
-        if (cmnQuerySetting(sfEnablePageMage))
+#ifndef __NOPAGER__
+        if (cmnQuerySetting(sfEnableXPager))
         {
-            // "PageMage" colors
+            // "XPager" colors
             memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
             inbp.somSelf = somSelf;
             inbp.hwndNotebook = hwndDlg;
             inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiPageMageColorsInitPage;
-            inbp.pfncbItemChanged = pgmiPageMageColorsItemChanged;
+            inbp.pfncbInitPage    = pgmiXPagerColorsInitPage;
+            inbp.pfncbItemChanged = pgmiXPagerColorsItemChanged;
             inbp.usPageStyleFlags = BKA_MINOR;
             inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~PageMage";
-            inbp.ulDlgID = ID_SCD_PAGEMAGE_COLORS;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_COLORS;
+            inbp.pcszName = "~XPager";
+            inbp.ulDlgID = ID_SCD_PAGER_COLORS;
+            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_COLORS;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGEMAGE_COLORS;
+            inbp.ulPageID = SP_PAGER_COLORS;
             ntbInsertPage(&inbp);
 
-            // "PageMage" sticky windows
+            // "XPager" sticky windows
             memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
             inbp.somSelf = somSelf;
             inbp.hwndNotebook = hwndDlg;
             inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiPageMageStickyInitPage;
-            inbp.pfncbItemChanged = pgmiPageMageStickyItemChanged;
+            inbp.pfncbInitPage    = pgmiXPagerStickyInitPage;
+            inbp.pfncbItemChanged = pgmiXPagerStickyItemChanged;
             inbp.usPageStyleFlags = BKA_MINOR;
             inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~PageMage";
-            inbp.ulDlgID = ID_SCD_PAGEMAGE_STICKY;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_STICKY;
+            inbp.pcszName = "~XPager";
+            inbp.ulDlgID = ID_SCD_PAGER_STICKY;
+            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGEMAGE_STICKY;
+            inbp.ulPageID = SP_PAGER_STICKY;
             ntbInsertPage(&inbp);
 
-            // "PageMage" window settings V0.9.9 (2001-03-15) [lafaix]
+            // "XPager" window settings V0.9.9 (2001-03-15) [lafaix]
             memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
             inbp.somSelf = somSelf;
             inbp.hwndNotebook = hwndDlg;
             inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiPageMageWindowInitPage;
-            inbp.pfncbItemChanged = pgmiPageMageWindowItemChanged;
+            inbp.pfncbInitPage    = pgmiXPagerWindowInitPage;
+            inbp.pfncbItemChanged = pgmiXPagerWindowItemChanged;
             inbp.usPageStyleFlags = BKA_MINOR;
             inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~PageMage";
-            inbp.ulDlgID = ID_SCD_PAGEMAGE_WINDOW;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_WINDOW;
+            inbp.pcszName = "~XPager";
+            inbp.ulDlgID = ID_SCD_PAGER_WINDOW;
+            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_WINDOW;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGEMAGE_WINDOW;
+            inbp.ulPageID = SP_PAGER_WINDOW;
             ntbInsertPage(&inbp);
 
-            // "PageMage" general settings
+            // "XPager" general settings
             memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
             inbp.somSelf = somSelf;
             inbp.hwndNotebook = hwndDlg;
             inbp.hmod = savehmod;
-            inbp.pfncbInitPage    = pgmiPageMageGeneralInitPage;
-            inbp.pfncbItemChanged = pgmiPageMageGeneralItemChanged;
+            inbp.pfncbInitPage    = pgmiXPagerGeneralInitPage;
+            inbp.pfncbItemChanged = pgmiXPagerGeneralItemChanged;
             inbp.usPageStyleFlags = BKA_MAJOR;
             inbp.fEnumerate = TRUE;
-            inbp.pcszName = "~PageMage";
-            inbp.ulDlgID = ID_SCD_PAGEMAGE_GENERAL;
-            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_GENERAL;
+            inbp.pcszName = "~XPager";
+            inbp.ulDlgID = ID_SCD_PAGER_GENERAL;
+            inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_GENERAL;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            inbp.ulPageID = SP_PAGEMAGE_MAIN;
+            inbp.ulPageID = SP_PAGER_MAIN;
             ulrc = ntbInsertPage(&inbp);
         }
 #endif
@@ -359,7 +359,7 @@ SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
                                                                    pSizl);
     if (brc)
     {
-        LONG lCompCY = 160;     // this is the height of the "PageMage General" page
+        LONG lCompCY = 160;     // this is the height of the "XPager General" page
                                 // which seems to be the largest
         if (doshIsWarp4())
             // on Warp 4, reduce again, because we're moving

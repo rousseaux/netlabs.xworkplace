@@ -206,8 +206,8 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSOBJHOTKEYS__
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
-#ifndef __NOPAGEMAGE__
-            ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifndef __NOPAGER__
+            ID_XCSI_PAGER, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
 
             // startup/shutdown features
@@ -1072,9 +1072,10 @@ static BOOL HandleOKButton(HWND hwndDlg)
             // errors?
             if (strFailing.ulLength)
             {
+                PCSZ pcsz = strFailing.psz;
                 cmnMessageBoxMsgExt(hwndDlg,
                                     148, // "XWorkplace Setup",
-                                    &strFailing.psz, 1,
+                                    &pcsz, 1,
                                     149,  // "errors... %1"
                                     MB_OK);
             }
@@ -1729,8 +1730,8 @@ static const XWPSETTING G_FeaturesBackup[] =
 #ifndef __ALWAYSHOOK__
         sfXWPHook,
 #endif
-#ifndef __NOPAGEMAGE__
-        sfEnablePageMage,
+#ifndef __NOPAGER__
+        sfEnableXPager,
 #endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
@@ -1990,9 +1991,9 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifObjectHotkeysEnabled());
 #endif
-#ifndef __NOPAGEMAGE__
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
-                cmnQuerySetting(sfEnablePageMage));
+#ifndef __NOPAGER__
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGER,
+                cmnQuerySetting(sfEnableXPager));
 #endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
@@ -2095,8 +2096,8 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifXWPHookReady());
 #endif
-#ifndef __NOPAGEMAGE__
-        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
+#ifndef __NOPAGER__
+        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_PAGER,
                 hifXWPHookReady());
 #endif
 
@@ -2138,7 +2139,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.1 (2000-02-09) [umoeller]: fixed mutex hangs while dialogs were displayed
  *@@changed V0.9.2 (2000-03-19) [umoeller]: "Undo" and "Default" created duplicate records; fixed
  *@@changed V0.9.6 (2000-11-11) [umoeller]: removed extassocs warning
- *@@changed V0.9.7 (2001-01-18) [umoeller]: removed pagemage warning
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed pager warning
  *@@changed V0.9.7 (2001-01-22) [umoeller]: now enabling "object" page with hotkeys automatically
  *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  *@@changed V0.9.9 (2001-03-27) [umoeller]: adjusted for notebook.c change with CHECKBOXRECORDCORE notifications
@@ -2325,11 +2326,11 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 #endif
 
-#ifndef __NOPAGEMAGE__
-            case ID_XCSI_PAGEMAGE:
-                if (hifEnablePageMage(precc->usCheckState) == precc->usCheckState)
+#ifndef __NOPAGER__
+            case ID_XCSI_PAGER:
+                if (hifEnableXPager(precc->usCheckState) == precc->usCheckState)
                 {
-                    cmnSetSetting(sfEnablePageMage, precc->usCheckState);
+                    cmnSetSetting(sfEnableXPager, precc->usCheckState);
                     // update "Mouse movement" page
                     fUpdateMouseMovementPage = TRUE;
                 }
@@ -2478,10 +2479,10 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                 cmnSetSetting(s__fReplaceIconPage, TRUE);
 #endif
 
-#ifndef __NOPAGEMAGE__
-            if (hifEnablePageMage(pGSBackup->fEnablePageMage) == pGSBackup->fEnablePageMage)
+#ifndef __NOPAGER__
+            if (hifEnableXPager(pGSBackup->fEnableXPager) == pGSBackup->fEnableXPager)
             {
-                cmnSetSetting(sfEnablePageMage, pGSBackup->fEnablePageMage);
+                cmnSetSetting(sfEnableXPager, pGSBackup->fEnableXPager);
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
             }
@@ -2534,8 +2535,8 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
 #ifndef __ALWAYSOBJHOTKEYS__
             hifEnableObjectHotkeys(0);
 #endif
-#ifndef __NOPAGEMAGE__
-            if (hifEnablePageMage(cmnQuerySetting(sfEnablePageMage)) == cmnQuerySetting(sfEnablePageMage))
+#ifndef __NOPAGER__
+            if (hifEnableXPager(cmnQuerySetting(sfEnableXPager)) == cmnQuerySetting(sfEnableXPager))
             {
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
@@ -3338,7 +3339,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
         {
             CHAR    szSetupString[2000],
                     szLocationPath[CCHMAXPATH];
-            PSZ     apsz[3] = {  NULL,              // will be title
+            PCSZ     apsz[3] = {  NULL,              // will be title
                                  szLocationPath,
                                  szSetupString
                               };
@@ -3385,7 +3386,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                          == MBID_YES)
             {
                 HOBJECT hobj = WinCreateObject(pszClassName,
-                                               apsz[0],                     // title
+                                               (PSZ)apsz[0],                     // title
                                                szSetupString,               // setup
                                                (PSZ)pcszLocation,           // location
                                                CO_FAILIFEXISTS);

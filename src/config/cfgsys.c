@@ -2050,7 +2050,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                 == NO_ERROR)
                     {
                         // "file written" msg
-                        PSZ apsz = szBackup;
+                        PCSZ apsz = szBackup;
                         cmnMessageBoxMsgExt(pnbp->hwndFrame,
                                             100,
                                             &apsz, 1,

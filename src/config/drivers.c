@@ -1147,7 +1147,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
             if (!strcmp(precc->szConfigSysLine, szNewLine))
             {
                 // no changes made:
-                PSZ  apszTable = precc->szDriverNameOnly;
+                PCSZ  apszTable = precc->szDriverNameOnly;
                 cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
                                     100,
                                     &apszTable,
@@ -1157,7 +1157,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
             }
             else
             {
-                PSZ  apszTable[2];
+                PCSZ  apszTable[2];
                 // have the user confirm this
                 apszTable[0] = precc->szConfigSysLine;
                 apszTable[1] = szNewLine;
@@ -1194,7 +1194,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                                 == NO_ERROR)
                         {
                             // "file written" msg
-                            PSZ apsz = szBackup;
+                            PCSZ apsz = szBackup;
                             cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
                                                 100,
                                                 &apsz, 1,

@@ -30,8 +30,8 @@
     #define INIAPP_XWPHOOK              "XWorkplace:Hook"   // added V0.9.0
     #define INIKEY_HOOK_HOTKEYS         "Hotkeys"           // added V0.9.0
     #define INIKEY_HOOK_CONFIG          "Config"            // added V0.9.0
-    #define INIKEY_HOOK_PGMGCONFIG      "PageMageConfig"    // V0.9.2 (2000-02-25) [umoeller]
-    #define INIKEY_HOOK_PGMGWINPOS      "PageMageWinPos"    // V0.9.4 (2000-08-08) [umoeller]
+    #define INIKEY_HOOK_PGMGCONFIG      "XPagerConfig"    // V0.9.2 (2000-02-25) [umoeller]
+    #define INIKEY_HOOK_PGMGWINPOS      "XPagerWinPos"    // V0.9.4 (2000-08-08) [umoeller]
     #define INIKEY_HOOK_FUNCTIONKEYS    "FuncKeys"          // added V0.9.3 (2000-04-19) [umoeller]
 
     /* ******************************************************************
@@ -41,16 +41,16 @@
      ********************************************************************/
 
     // do not change the following, or this will break
-    // binary compatibility of the PageMage OS2.INI data
+    // binary compatibility of the XPager OS2.INI data
     #define MAX_STICKYS         64
     // #define MAX_WINDOWS         256
     #define PGMG_TEXTLEN        30
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
 
     /*
-     *@@ PAGEMAGECONFIG:
-     *      PageMage configuration data.
+     *@@ PAGERCONFIG:
+     *      XPager configuration data.
      *      This is stored within the HOOKDATA structure
      *      (statically in the hook DLL) so that both
      *      the daemon and the hook have access to this.
@@ -58,7 +58,7 @@
      *@@added V0.9.2 (2000-02-25) [umoeller]
      */
 
-    typedef struct _PAGEMAGECONFIG
+    typedef struct _PAGERCONFIG
     {
         /* Desktops */
         POINTL       ptlMaxDesktops;
@@ -68,11 +68,11 @@
 
         /* Display */
         BOOL         fShowTitlebar;
-                // if TRUE, PageMage has a titlebar
+                // if TRUE, XPager has a titlebar
         BOOL         _fStartMinimized;
                 // start minimized?
         BOOL         fPreserveProportions;
-                // preserve proportions of PageMage win when resizing?
+                // preserve proportions of XPager win when resizing?
 
         BOOL         fStayOnTop;
                 // stay on top
@@ -81,16 +81,16 @@
                 // "flash" (temporarily show)
 
         BOOL         fMirrorWindows;
-                // show windows in PageMage?
+                // show windows in XPager?
 
         BOOL         fShowWindowText;
-                // show window titles in PageMage?
+                // show window titles in XPager?
 
         BOOL         fClick2Activate;
                 // allow activate/lower by mouse clicks?
 
         BOOL         fRecoverOnShutdown;
-                // if TRUE, windows are restored when PageMage is exited
+                // if TRUE, windows are restored when XPager is exited
 
         /* Sticky */
         CHAR         aszSticky[MAX_STICKYS][PGMG_TEXTLEN];
@@ -122,7 +122,7 @@
         ULONG        ulKeyShift;        // KC_* values
         /* BOOL         bReturnKeystrokes;
         BOOL         bHotkeyGrabFocus; */
-    } PAGEMAGECONFIG, *PPAGEMAGECONFIG;
+    } PAGERCONFIG, *PPAGERCONFIG;
 
 #endif
 
@@ -243,9 +243,9 @@
         // in shared memory
         BOOL            __fGlobalHotkeys;
 
-        // PageMage configuration
-        BOOL            fRemoved1, // _fPageMageStayOnTop,
-                        __fSlidingIgnorePageMage;
+        // XPager configuration
+        BOOL            fRemoved1, // _fXPagerStayOnTop,
+                        __fSlidingIgnoreXPager;
                                 // on sliding focus
 
         // Sliding menus
@@ -291,7 +291,7 @@
                             // Currently the following exist:
                             //      0xFFFF0000 = show window list;
                             //      0xFFFF0001 = show Desktop's context menu.
-                            //      0xFFFF0002 = show PageMage.
+                            //      0xFFFF0002 = show XPager.
                             //      (2001-01-26) [lafaix]
                             //      0xFFFF0003 = up one screen
                             //      0xFFFF0004 = right one screen
@@ -307,7 +307,7 @@
         // using sliding menus (V0.9.6 (2000-10-27) [umoeller])
         BOOL            fConditionalCascadeSensitive;
 
-        // more PageMage configuration V0.9.7 (2000-12-08) [umoeller]
+        // more XPager configuration V0.9.7 (2000-12-08) [umoeller]
         BOOL            __fSlidingIgnoreXCenter;
                             // on sliding focus
 
@@ -416,14 +416,14 @@
 
     #define XDM_HOOKCONFIG          (WM_USER + 402)
 
-#ifndef __NOPAGEMAGE__
-    #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 403)
+#ifndef __NOPAGER__
+    #define XDM_STARTSTOPPAGER   (WM_USER + 403)
 
-    #define XDM_PAGEMAGECONFIG      (WM_USER + 404)
-        // flags for XDM_PAGEMAGECONFIG:
+    #define XDM_PAGERCONFIG      (WM_USER + 404)
+        // flags for XDM_PAGERCONFIG:
         #define PGMGCFG_REPAINT     0x0001  // causes PGMG_INVALIDATECLIENT
         #define PGMGCFG_REFORMAT    0x0002  // causes pgmcSetPgmgFramePos
-        #define PGMGCFG_ZAPPO       0x0004  // reformats the PageMage title bar
+        #define PGMGCFG_ZAPPO       0x0004  // reformats the XPager title bar
         #define PGMGCFG_STICKIES    0x0008  // sticky windows have changed, rescan winlist
 #endif
 

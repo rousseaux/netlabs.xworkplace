@@ -3298,7 +3298,7 @@ static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
     {
         // create XML document then
         CHAR szErrorBuf[1000];
-        PSZ apsz[2] = { szFilename, szErrorBuf };
+        PCSZ apsz[2] = { szFilename, szErrorBuf };
 
         HPOINTER hptrOld = winhSetWaitPointer();
         APIRET arc = ftypImportTypes(szFilename,
@@ -3739,7 +3739,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                         PFILETYPERECORD pRecord = (PFILETYPERECORD)pced->pRecord;
                         PSZ     pszSet;
                         ULONG   ulMsg = 0;
-                        PSZ     pszMsg;
+                        PCSZ     pszMsg;
                         APIRET arc = ftypRenameFileType(pftpd->pszFileTypeOld,
                                                         *(pced->ppszText));
 
@@ -3867,7 +3867,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                             (PFILETYPERECORD)pnbp->preccSource))
                                                  // can be NULL
                         {
-                            PSZ pTable = pszNewType;
+                            PCSZ pTable = pszNewType;
                             cmnMessageBoxMsgExt(pnbp->hwndFrame,  // owner
                                                 104,        // xwp error
                                                 &pTable,
@@ -4487,7 +4487,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
             {
                 // check if file exists
                 CHAR szError[30];
-                PSZ apsz[2] = { szFilename, szError };
+                PCSZ apsz[2] = { szFilename, szError };
 
                 if (    (access(szFilename, 0) != 0)
                         // confirm if file exists

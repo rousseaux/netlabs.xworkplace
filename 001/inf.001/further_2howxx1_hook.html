@@ -68,7 +68,7 @@ for the first time and keeps running until the system is shut down. That is, the
 daemon even keeps running between Desktop restarts.
 
 <P>Even though the daemon is a PM program, it doesn't create any windows (except for
-the PageMage window, see below).
+the &pgr; window, see below).
 
 <P>All this is pretty complex in detail
 because this involves using shared memory and proper serialization techniques such
@@ -91,16 +91,16 @@ the WPS, you'll see that the &xwp; startup folder will get processed again, beca
 the &xwp; WPS classes see that the daemon is not running and
 then think that the WPS is starting up for the first time.
 
-<P><LI>PageMage is part of the daemon as well and is thus independent of the WPS.
-PageMage requires lots of message monitoring as well since it needs to know
-about window creation and destruction. At any point in time, PageMage knows about
+<P><LI>&pgr; is part of the daemon as well and is thus independent of the WPS.
+&pgr; requires lots of message monitoring as well since it needs to know
+about window creation and destruction. At any point in time, &pgr; knows about
 every single window on the system.
-It's much easier for PageMage to keep its own windows apart from the rest of the
+It's much easier for &pgr; to keep its own windows apart from the rest of the
 system when it's running in a separate process.
 
-<P>For details about PageMage, see
+<P>For details about &pgr;, see
 <A HREF="pgmg_8howwork.html">"How it works"</A> in the
-<A HREF="06342intro_pagemage.html">PageMage section.</A>
+<A HREF="06342intro_pagemage.html">&pgr; section.</A>
 </OL>
 </BODY>
 </HTML>

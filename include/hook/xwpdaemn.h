@@ -1,7 +1,7 @@
 
 /*
  * xwpdaemn.h:
- *      PageMage and daemon declarations.
+ *      XPager and daemon declarations.
  *      These are not visible to the hook nor
  *      to XFLDR.DLL.
  *
@@ -27,10 +27,10 @@
  *      GNU General Public License for more details.
  */
 
-#ifndef PAGEMAGE_HEADER_INCLUDED
-    #define PAGEMAGE_HEADER_INCLUDED
+#ifndef PAGER_HEADER_INCLUDED
+    #define PAGER_HEADER_INCLUDED
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
 
     #define TIMEOUT_HMTX_WINLIST    20*1000
                 // raised V0.9.12 (2001-05-31) [umoeller]
@@ -41,14 +41,14 @@
     #define MOVE_UP             4
     #define MOVE_DOWN           8
 
-    // font ID to use for the PageMage window titles;
+    // font ID to use for the XPager window titles;
     // we always use the same one, because there's only one
     // in the daemon process
-    #define LCID_PAGEMAGE_FONT  ((ULONG)1)
+    #define LCID_PAGER_FONT  ((ULONG)1)
 
     // window types
     #define WINDOW_NORMAL       0x0000
-    #define WINDOW_PAGEMAGE     0x0001      // some PageMage window, always sticky
+    #define WINDOW_PAGER     0x0001      // some XPager window, always sticky
     #define WINDOW_WPSDESKTOP   0x0002      // WPS desktop, always sticky
     #define WINDOW_STICKY       0x0003      // window is on sticky list
     #define WINDOW_MINIMIZE     0x0005      // window is minimized, treat as sticky
@@ -58,13 +58,13 @@
     /*
      *@@ PGMGWININFO:
      *      one of these exists for every window
-     *      which is currently handled by PageMage.
+     *      which is currently handled by XPager.
      *
      *      This was completely revamped with V0.9.7.
-     *      PageMage no longer uses a global fixed
+     *      XPager no longer uses a global fixed
      *      array of these items, but maintains a
      *      linked list now. I believe some of the
-     *      pagemage hangs we had previously were
+     *      XPager hangs we had previously were
      *      due to an overflow of the global array.
      *
      *@@added V0.9.7 (2001-01-21) [umoeller]
@@ -82,9 +82,9 @@
     } PGMGWININFO, *PPGMGWININFO;
 
     // xwpdaemn.c
-    VOID                dmnKillPageMage(BOOL fNotifyKernel);
+    VOID                dmnKillXPager(BOOL fNotifyKernel);
 
-    // pgmg_control.c
+    // pg_control.c
     BOOL pgmcDisableSwitching(VOID);
     VOID pgmcReenableSwitching(VOID);
 
@@ -92,10 +92,10 @@
     LONG pgmcCalcNewFrameCY(LONG cx);
     VOID pgmcSetPgmgFramePos(HWND);
     USHORT pgmgcStartFlashTimer(VOID);
-    MRESULT EXPENTRY fnwpPageMageClient(HWND, ULONG, MPARAM, MPARAM);
-    MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND, ULONG, MPARAM, MPARAM);
+    MRESULT EXPENTRY fnwpXPagerClient(HWND, ULONG, MPARAM, MPARAM);
+    MRESULT EXPENTRY fnwpSubclXPagerFrame(HWND, ULONG, MPARAM, MPARAM);
 
-    // pgmg_move.c
+    // pg_move.c
     #ifdef THREADS_HEADER_INCLUDED
         VOID _Optlink fntMoveThread(PTHREADINFO pti);
     #endif
@@ -103,12 +103,12 @@
     // BOOL pgmmZMoveIt(LONG, LONG);
     VOID pgmmRecoverAllWindows(VOID);
 
-    // pgmg_settings.c
+    // pg_settings.c
     VOID pgmsSetDefaults(VOID);
     BOOL pgmsLoadSettings(ULONG flConfig);
     BOOL pgmsSaveSettings(VOID);
 
-    // pgmg_winscan.c
+    // pg_winscan.c
     APIRET pgmwInit(VOID);
 
     BOOL pgmwLock(VOID);
@@ -181,7 +181,7 @@
 
     extern POINTL       G_ptlCurrPos;
     extern SIZEL        G_szlEachDesktopReal;
-    extern SIZEL        G_szlPageMageClient;
+    extern SIZEL        G_szlXPagerClient;
     extern BOOL         G_bConfigChanged;
     extern SWP          G_swpPgmgFrame;
 #endif

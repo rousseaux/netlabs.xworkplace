@@ -222,7 +222,7 @@ static ULONG WaitForApp(PCSZ pcszTitle,
     if (!happ)
     {
         // error:
-        PSZ apsz[] = {(PSZ)pcszTitle};
+        PCSZ apsz[] = {pcszTitle};
         cmnMessageBoxMsgExt(NULLHANDLE,
                             121,       // xwp
                             apsz,
@@ -340,10 +340,10 @@ static CONTROLDEF
                             ID_XFDI_PANIC_REMOVEHOTKEYS,
                             -1,
                             -1),
-#ifndef __NOPAGEMAGE__
-    DisablePageMageCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Disable ~PageMage",
-                            ID_XFDI_PANIC_DISABLEPAGEMAGE,
+#ifndef __NOPAGER__
+    DisableXPagerCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,    // "Disable ~XPager",
+                            ID_XFDI_PANIC_DISABLEPAGER,
                             -1,
                             -1),
 #endif
@@ -426,9 +426,9 @@ static const DLGHITEM dlgPanic[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&RemoveHotkeysCB),
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
             START_ROW(0),
-                CONTROL_DEF(&DisablePageMageCB),
+                CONTROL_DEF(&DisableXPagerCB),
 #endif
             START_ROW(0),
                 CONTROL_DEF(&DisableMultimediaCB),
@@ -567,9 +567,9 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                               cmnQuerySetting(sfIconReplacements));
 #endif
-#ifndef __NOPAGEMAGE__
-            winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
-                              cmnQuerySetting(sfEnablePageMage));
+#ifndef __NOPAGER__
+            winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER,
+                              cmnQuerySetting(sfEnableXPager));
 #endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                               (xmmQueryStatus() == MMSTAT_WORKING));
@@ -612,9 +612,9 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
                         cmnSetSetting(sfIconReplacements, FALSE);
 #endif
-#ifndef __NOPAGEMAGE__
-                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
-                        cmnSetSetting(sfEnablePageMage, FALSE);  // @@todo
+#ifndef __NOPAGER__
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER))
+                        cmnSetSetting(sfEnableXPager, FALSE);  // @@todo
 #endif
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
                     {
@@ -1271,7 +1271,7 @@ VOID initMain(VOID)
                                                       TRUE))        // fail on errors
                     {
                         CHAR sz[30];
-                        PSZ psz = sz;
+                        PCSZ psz = sz;
                         doshWriteLogEntry(pLogFile,
                                           "WARNING: wphRebuildNodeHashTable returned %d", arc);
                         sprintf(sz, "%d", arc);

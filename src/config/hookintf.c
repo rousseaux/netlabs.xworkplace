@@ -232,24 +232,24 @@ BOOL hifXWPHookReady(VOID)
 }
 
 /*
- *@@ hifEnablePageMage:
- *      enables or disables PageMage by sending
- *      XDM_STARTSTOPPAGEMAGE to the daemon.
+ *@@ hifEnableXPager:
+ *      enables or disables XPager by sending
+ *      XDM_STARTSTOPPAGER to the daemon.
  *
  *      This does not change the GLOBALSETTINGS.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  */
 
-BOOL hifEnablePageMage(BOOL fEnable)
+BOOL hifEnableXPager(BOOL fEnable)
 {
     BOOL    brc = FALSE;
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
-    _Pmpf(("hifEnablePageMage: %d", fEnable));
+    _Pmpf(("hifEnableXPager: %d", fEnable));
 
     // (de)install the hook by notifying the daemon
     if (!pXwpGlobalShared)
@@ -262,12 +262,12 @@ BOOL hifEnablePageMage(BOOL fEnable)
                    "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE. XWPDAEMN.EXE is probably not running.");
         else
         {
-            _Pmpf(("hifEnablePageMage: Sending XDM_STARTSTOPPAGEMAGE"));
+            _Pmpf(("hifEnableXPager: Sending XDM_STARTSTOPPAGER"));
             if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                           XDM_STARTSTOPPAGEMAGE,
+                           XDM_STARTSTOPPAGER,
                            (MPARAM)(fEnable),
                            0))
-                // PageMage installed:
+                // XPager installed:
                 brc = TRUE;
 
             // else: hook not installed
@@ -1041,7 +1041,7 @@ MRESULT hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
             if (precc)
             {
                 // string replacements
-                PSZ apsz[2] = {
+                PCSZ apsz[2] = {
                                     precc->szHotkey,        // %1: hotkey
                                     precc->recc.pszIcon     // %2: object title
                               };
@@ -1996,9 +1996,9 @@ static CONTROLDEF
                             ID_XSDI_MOUSE_IGNOREDESKTOP,
                             -1,
                             -1),
-    IgnorePageMageCB = CONTROLDEF_AUTOCHECKBOX(
+    IgnoreXPagerCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
-                            ID_XSDI_MOUSE_IGNOREPAGEMAGE,
+                            ID_XSDI_MOUSE_IGNOREPAGER,
                             -1,
                             -1),
     IgnoreXCenterCB = CONTROLDEF_AUTOCHECKBOX(
@@ -2073,7 +2073,7 @@ static const DLGHITEM dlgMovement1[] =
                     START_ROW(0),
                         CONTROL_DEF(&IgnoreDesktopCB),
                     START_ROW(0),
-                        CONTROL_DEF(&IgnorePageMageCB),
+                        CONTROL_DEF(&IgnoreXPagerCB),
                     START_ROW(0),
                         CONTROL_DEF(&IgnoreXCenterCB),
                 END_TABLE,
@@ -2165,8 +2165,8 @@ VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               pdc->__fSlidingIgnoreSeamless);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                               pdc->__fSlidingIgnoreDesktop);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
-                              pdc->__fSlidingIgnorePageMage);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGER,
+                              pdc->__fSlidingIgnoreXPager);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
                               pdc->__fSlidingIgnoreXCenter);
 
@@ -2203,9 +2203,9 @@ VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                           pdc->__fSlidingFocus);
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                           pdc->__fSlidingFocus);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGER,
                           (pdc->__fSlidingFocus)
-                          && (cmnQuerySetting(sfEnablePageMage))
+                          && (cmnQuerySetting(sfEnableXPager))
                          );
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
                           pdc->__fSlidingFocus);
@@ -2284,9 +2284,9 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
             pdc->__fSlidingIgnoreDesktop = ulExtra;
         break;
 
-        case ID_XSDI_MOUSE_IGNOREPAGEMAGE:
+        case ID_XSDI_MOUSE_IGNOREPAGER:
             hifLoadHookConfig(pdc);
-            pdc->__fSlidingIgnorePageMage = ulExtra;
+            pdc->__fSlidingIgnoreXPager = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNOREXCENTER:
@@ -2358,7 +2358,7 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
             pdc->__fSlidingBring2Top = 0;
             pdc->__fSlidingIgnoreSeamless = 0;
             pdc->__fSlidingIgnoreDesktop = 0;
-            pdc->__fSlidingIgnorePageMage = 0;
+            pdc->__fSlidingIgnoreXPager = 0;
             pdc->__fSlidingIgnoreXCenter = 0;  // V0.9.9 (2001-04-07) [pr]
             pdc->__ulSlidingFocusDelay = 0;
 #endif
@@ -2391,7 +2391,7 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
                 pdc->__fSlidingBring2Top = pBackup->__fSlidingBring2Top;
                 pdc->__fSlidingIgnoreSeamless = pBackup->__fSlidingIgnoreSeamless;
                 pdc->__fSlidingIgnoreDesktop = pBackup->__fSlidingIgnoreDesktop;
-                pdc->__fSlidingIgnorePageMage = pBackup->__fSlidingIgnorePageMage;
+                pdc->__fSlidingIgnoreXPager = pBackup->__fSlidingIgnoreXPager;
                 pdc->__fSlidingIgnoreXCenter = pBackup->__fSlidingIgnoreXCenter;  // V0.9.9 (2001-04-07) [pr]
                 pdc->__ulSlidingFocusDelay = pBackup->__ulSlidingFocusDelay;
 #endif
@@ -2733,8 +2733,8 @@ static VOID UpdateScreenCornerIndex(USHORT usItemID)
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
- *@@changed V0.9.4 (2000-08-08) [umoeller]: added PageMage to special functions
- *@@changed V0.9.9 (2001-01-25) [lafaix]: added more PageMage special functions
+ *@@changed V0.9.4 (2000-08-08) [umoeller]: added XPager to special functions
+ *@@changed V0.9.9 (2001-01-25) [lafaix]: added more XPager special functions
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added Corner sensitivity setting
  *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
  *@@changed V0.9.18 (2002-02-12) [pr]: added Screen Wrap option to special functions
@@ -2779,13 +2779,13 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_WINDOWLIST)) ; // pszSpecialWindowList
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_DESKTOPPOPUP)) ; // pszSpecialDesktopPopup
 
-#ifndef __NOPAGEMAGE__
-            WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
+#ifndef __NOPAGER__
+            WinInsertLboxItem(hwndDrop, LIT_END, "XPager");
             // V0.9.9 (2001-01-25) [lafaix] (clockwise)
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEUP)) ; // pszSpecialPageMageUp
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGERIGHT)) ; // pszSpecialPageMageRight
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEDOWN)) ; // pszSpecialPageMageDown
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGELEFT)) ; // pszSpecialPageMageLeft
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERUP)) ; // pszSpecialXPagerUp
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERRIGHT)) ; // pszSpecialXPagerRight
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERDOWN)) ; // pszSpecialXPagerDown
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERLEFT)) ; // pszSpecialXPagerLeft
 #endif
 
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_SCREENWRAP));

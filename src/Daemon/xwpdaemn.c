@@ -56,13 +56,13 @@
  *
  *             krn_fnwpThread1Object will then send XDM_HOOKINSTALL
  *             to the daemon object window to install the hook (if
- *             the hook is enabled in XWPSetup). If PageMage has
- *             been enabled also, XDM_STARTSTOPPAGEMAGE will also
- *             be sent to start PageMage (see below).
+ *             the hook is enabled in XWPSetup). If XPager has
+ *             been enabled also, XDM_STARTSTOPPAGER will also
+ *             be sent to start XPager (see below).
  *
  *             After the Desktop has been opened, XFLDR.DLL will
  *             post XDM_DESKTOPREADY to the Daemon because both
- *             the hook and PageMage will need the window handle
+ *             the hook and XPager will need the window handle
  *             of the currently active Desktop.
  *
  *             This situation persists while the WPS is running
@@ -116,7 +116,7 @@
  *              the daemon to have the hook reloaded, instead of
  *              having to restart the WPS all the time.
  *
- *      3.  The PageMage window for virtual desktops. See pgmg_control.c
+ *      3.  The XPager window for virtual desktops. See pg_control.c
  *          for details.
  *
  *      4.  Mouse helpers.  Sliding focus, pointer hidding and
@@ -193,7 +193,7 @@
 
 #include "hook\xwphook.h"               // hook and daemon definitions
 #include "hook\hook_private.h"          // private hook and daemon definitions
-#include "hook\xwpdaemn.h"              // PageMage and daemon declarations
+#include "hook\xwpdaemn.h"              // XPager and daemon declarations
 
 #include "bldlevel.h"
 
@@ -277,19 +277,19 @@ POINTL          G_ptlMovingPtrStart,
                 G_ptlMovingPtrEnd;
 LONG            G_lLastMovingPtrRadius = 0;
 
-// pagemage
-HWND            G_hwndPageMageClient = NULLHANDLE;
+// pager
+HWND            G_hwndXPagerClient = NULLHANDLE;
 POINTL          G_ptlCurrPos = {0};
 SIZEL           G_szlEachDesktopReal = {0};
-            // "real" size of each desktop; this is faked by pagemage to be
+            // "real" size of each desktop; this is faked by pager to be
             // the screen dimension plus 8 pixels so we get rid of the maximized
             // window borders on adjacent screens
 //SIZEL           G_szlEachDesktopInClient = {0};
-            // size of each desktop's representation in the pagemage client,
+            // size of each desktop's representation in the pager client,
             // recalculated on each WM_SIZE
             // removed V0.9.18 (2002-02-19) [lafaix]
-SIZEL           G_szlPageMageClient = {0};
-            // size of the pagemage client window; used to precisely locate
+SIZEL           G_szlXPagerClient = {0};
+            // size of the client window; used to precisely locate
             // mini windows in the client area
             // V0.9.18 (2002-02-19) [lafaix]
 BOOL            G_bConfigChanged = FALSE;
@@ -416,18 +416,18 @@ VOID APIENTRY dmnExceptError(const char *pcszFile,
  ********************************************************************/
 
 /*
- *@@ dmnStartPageMage:
- *      starts PageMage by calling pgmwScanAllWindows
+ *@@ dmnStartXPager:
+ *      starts XPager by calling pgmwScanAllWindows
  *      and pgmcCreateMainControlWnd and starting
  *      fntMoveThread.
  *
- *      This gets called when XDM_STARTSTOPPAGEMAGE is
+ *      This gets called when XDM_STARTSTOPPAGER is
  *      received by fnwpDaemonObject.
  *
- *      Call dmnKillPageMage to stop PageMage again.
+ *      Call dmnKillXPager to stop XPager again.
  *
  *      This function does not affect the operation of
- *      the daemon in general; it is only the PageMage
+ *      the daemon in general; it is only the XPager
  *      which is affected. However, the hooks will
  *      notice this and process more messages.
  *
@@ -435,11 +435,11 @@ VOID APIENTRY dmnExceptError(const char *pcszFile,
  *@@changed V0.9.3 (2000-05-21) [umoeller]: fixed startup problems, added new thread flags
  */
 
-BOOL dmnStartPageMage(VOID)
+BOOL dmnStartXPager(VOID)
 {
     BOOL brc = FALSE;
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
 
     if (G_pHookData)
         if (    (G_pHookData->fInputHooked)
@@ -450,10 +450,10 @@ BOOL dmnStartPageMage(VOID)
             brc = pgmcCreateMainControlWnd();
                // this sets the global window handles;
                // the hook sees this and will start processing
-               // PageMage messages
+               // XPager messages
             // _Pmpf(("      returned %d", brc));
 
-            // _Pmpf(("dmnStartPageMage: calling pgmwScanAllWindows"));
+            // _Pmpf(("dmnStartXPager: calling pgmwScanAllWindows"));
             pgmwScanAllWindows();
 
             // _Pmpf(("  starting Move thread"));
@@ -463,67 +463,67 @@ BOOL dmnStartPageMage(VOID)
                       "PgmgMove",
                       THRF_WAIT | THRF_PMMSGQUEUE,    // PM msgq
                       0);
-                // this creates the PageMage object window
+                // this creates the XPager object window
         }
 #endif
 
     return (brc);
 }
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
 
 /*
- *@@ dmnKillPageMage:
- *      destroys the PageMage control window and
- *      stops the additional PageMage threads.
- *      This is the reverse to dmnStartPageMage and
+ *@@ dmnKillXPager:
+ *      destroys the XPager control window and
+ *      stops the additional XPager threads.
+ *      This is the reverse to dmnStartXPager and
  *      calls pgmmRecoverAllWindows in turn.
  *
- *      This gets called when XDM_STARTSTOPPAGEMAGE is
+ *      This gets called when XDM_STARTSTOPPAGER is
  *      received by fnwpDaemonObject.
  *
  *      This function does not affect the operation of
- *      the daemon in general; it is only the PageMage
+ *      the daemon in general; it is only the XPager
  *      which is affected. However, the hooks will
  *      notice this and process fewer messages.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
- *@@changed V0.9.3 (2000-04-25) [umoeller]: adjusted for new T1M_PAGEMAGECLOSED
+ *@@changed V0.9.3 (2000-04-25) [umoeller]: adjusted for new T1M_PAGERCLOSED
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed trap
  */
 
-VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGECLOSED (TRUE) to the kernel
+VOID dmnKillXPager(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGERCLOSED (TRUE) to the kernel
 {
     if (   G_pHookData
-        && G_pHookData->hwndPageMageFrame
-        && G_pHookData->hwndPageMageMoveThread
+        && G_pHookData->hwndXPagerFrame
+        && G_pHookData->hwndXPagerMoveThread
        )
     {
-        // PageMage running:
+        // XPager running:
         // ULONG   ulRequest;
         // save page mage frame
-        HWND    hwndPageMageFrame = G_pHookData->hwndPageMageFrame;
+        HWND    hwndXPagerFrame = G_pHookData->hwndXPagerFrame;
 
         // stop move thread
-        WinPostMsg(G_pHookData->hwndPageMageMoveThread, WM_QUIT, 0, 0);
+        WinPostMsg(G_pHookData->hwndXPagerMoveThread, WM_QUIT, 0, 0);
 
-        if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
+        if (G_pHookData->XPagerConfig.fRecoverOnShutdown)
             pgmmRecoverAllWindows();
 
         // set global window handles to NULLHANDLE;
         // the hook sees this and will stop processing
-        // PageMage messages
-        G_pHookData->hwndPageMageClient = NULLHANDLE;
-        G_pHookData->hwndPageMageFrame = NULLHANDLE;
+        // XPager messages
+        G_pHookData->hwndXPagerClient = NULLHANDLE;
+        G_pHookData->hwndXPagerFrame = NULLHANDLE;
 
-        // then destroy the PageMage window
-        WinDestroyWindow(hwndPageMageFrame);
+        // then destroy the XPager window
+        WinDestroyWindow(hwndXPagerFrame);
 
-        // notify kernel that PageMage has been closed
+        // notify kernel that XPager has been closed
         // so that the global settings can be updated
         WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
-                   T1M_PAGEMAGECLOSED,
-                   (MPARAM)fNotifyKernel,       // if TRUE, PageMage will be disabled
+                   T1M_PAGERCLOSED,
+                   (MPARAM)fNotifyKernel,       // if TRUE, XPager will be disabled
                    0);
     }
 }
@@ -634,13 +634,13 @@ VOID LoadHotkeysForHook(VOID)
  */
 
 BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
-                    BOOL fPageMage)     // in: reload PageMage settings
+                    BOOL fXPager)     // in: reload XPager settings
 {
     BOOL brc = FALSE;
 
     // _Pmpf(("XWPDAEMON: LoadHookConfig, pHookData: 0x%lX", G_pHookData));
     // _Pmpf(("    fHook: %d", fHook));
-    // _Pmpf(("    fPageMage: %d", fPageMage));
+    // _Pmpf(("    fXPager: %d", fXPager));
 
     if (G_pHookData)
     {
@@ -658,8 +658,8 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
                                       &cb);
         }
 
-#ifndef __NOPAGEMAGE__
-        if (fPageMage)
+#ifndef __NOPAGER__
+        if (fXPager)
         {
             // safe defaults
             pgmsSetDefaults();
@@ -684,9 +684,9 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
  *      This gets called when fnwpDaemonObject receives XDM_HOOKINSTALL.
  *
  *      At this point, if this is the first call, only the daemon
- *      object window has been created in main(). PageMage
+ *      object window has been created in main(). XPager
  *      doesn't exist yet and will only be started later
- *      when a separate XDM_STARTSTOPPAGEMAGE message is
+ *      when a separate XDM_STARTSTOPPAGER message is
  *      received by fnwpDaemonObject.
  */
 
@@ -728,7 +728,7 @@ VOID InstallHook(VOID)
 /*
  *@@ DeinstallHook:
  *      this removes the hooks by calling hookKill
- *      in XWPHOOK.DLL and also calls dmnKillPageMage.
+ *      in XWPHOOK.DLL and also calls dmnKillXPager.
  *
  *      This gets called when fnwpDaemonObject receives
  *      XDM_HOOKINSTALL. Also, this gets called on the
@@ -749,8 +749,8 @@ VOID DeinstallHook(VOID)
                 WinShowPointer(HWND_DESKTOP, TRUE);
 #endif
 
-#ifndef __NOPAGEMAGE__
-        dmnKillPageMage(FALSE);
+#ifndef __NOPAGER__
+        dmnKillXPager(FALSE);
 #endif
 
         hookKill();
@@ -904,10 +904,10 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
             // target is WPS desktop:
             return;
 
-#ifndef __NOPAGEMAGE__
-    // rule out PageMage, if "ignore PageMage" is on
-    if (G_pHookData->HookConfig.__fSlidingIgnorePageMage)
-        if (hwnd2Activate == G_pHookData->hwndPageMageFrame)
+#ifndef __NOPAGER__
+    // rule out XPager, if "ignore XPager" is on
+    if (G_pHookData->HookConfig.__fSlidingIgnoreXPager)
+        if (hwnd2Activate == G_pHookData->hwndXPagerFrame)
             return;
 #endif
 
@@ -1150,21 +1150,21 @@ VOID ProcessHotCorner(MPARAM mp1)
 
         switch (hobjIndex)
         {
-            // PageMage?
-#ifndef __NOPAGEMAGE__
+            // XPager?
+#ifndef __NOPAGER__
             case 0xFFFF0002:
-                // yes: bring up PageMage window
-                WinSetWindowPos(G_pHookData->hwndPageMageFrame,
+                // yes: bring up XPager window
+                WinSetWindowPos(G_pHookData->hwndXPagerFrame,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
                 // start or restart timer for flashing
                 // fixed V0.9.4 (2000-07-10) [umoeller]
-                if (G_pHookData->PageMageConfig.fFlash)
+                if (G_pHookData->XPagerConfig.fFlash)
                     pgmgcStartFlashTimer();
             break;
 
-            // PageMage screen change?
+            // XPager screen change?
             case 0xFFFF0003:
                 ucScanCode = 0x61;
             break;
@@ -1222,15 +1222,15 @@ VOID ProcessHotCorner(MPARAM mp1)
                            (MPARAM)(lIndex + 1));
         } // end switch
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
         if (ucScanCode)
         {
             POINTL ptlCurrScreen;
-            // shortcuts to global pagemage config
-            PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
-            PPOINTL pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+            // shortcuts to global config
+            PPAGERCONFIG pXPagerConfig = &G_pHookData->XPagerConfig;
+            PPOINTL pptlMaxDesktops = &pXPagerConfig->ptlMaxDesktops;
 
-            // we had a PageMage screen change above:
+            // we had a XPager screen change above:
             // where are we right now ?
             // (0,0) is _upper_ left, not bottom left
             ptlCurrScreen.x = G_ptlCurrPos.x / G_szlEachDesktopReal.cx;
@@ -1238,14 +1238,14 @@ VOID ProcessHotCorner(MPARAM mp1)
 
             // if we do move, wrap the pointer too so
             // that we don't move too much
-            if (   (pPageMageConfig->bWrapAround)
+            if (   (pXPagerConfig->bWrapAround)
                 || ((ucScanCode == 0x61) && (ptlCurrScreen.y > 0))
                 || ((ucScanCode == 0x66) && (ptlCurrScreen.y < (pptlMaxDesktops->y - 1)))
                 || ((ucScanCode == 0x64) && (ptlCurrScreen.x < (pptlMaxDesktops->x - 1)))
                 || ((ucScanCode == 0x63) && (ptlCurrScreen.x > 0)))
             {
                 // we must send this message, not post it @@@
-                WinSendMsg(G_pHookData->hwndPageMageMoveThread,
+                WinSendMsg(G_pHookData->hwndXPagerMoveThread,
                            PGOM_MOUSESWITCH,
                            (MPARAM)ucScanCode,
                            0);
@@ -1502,11 +1502,11 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
  *
  *      --  XDM_HOOKCONFIG (update hook configuration);
  *
- *      --  XDM_STARTSTOPPAGEMAGE;
+ *      --  XDM_STARTSTOPPAGER;
  *
  *      --  XDM_RECOVERWINDOWS;
  *
- *      --  XDM_PAGEMAGECONFIG;
+ *      --  XDM_PAGERCONFIG;
  *
  *      --  XDM_HOTKEYSCHANGED;
  *
@@ -1582,7 +1582,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      so that the daemon/hook knows about the
              *      HWND of the WPS desktop. This is necessary
              *      for the sliding focus feature and for
-             *      PageMage.
+             *      XPager.
              *
              *      Parameters:
              *      -- HWND mp1: desktop frame HWND.
@@ -1597,8 +1597,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 if (G_pHookData)
                 {
                     G_pHookData->hwndWPSDesktop = (HWND)mp1;
-#ifndef __NOPAGEMAGE__
-                    // give PageMage a chance to recognize the Desktop
+#ifndef __NOPAGER__
+                    // give XPager a chance to recognize the Desktop
                     // V0.9.4 (2000-08-08) [umoeller]
                     pgmwAppendNewWinInfo(G_pHookData->hwndWPSDesktop);
 #endif
@@ -1622,33 +1622,33 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // _Pmpf(("fnwpDaemonObject: got XDM_HOOKCONFIG"));
                 // load config from OS2.INI
                 mrc = (MRESULT)LoadHookConfig(TRUE,     // hook
-                                             FALSE);    // PageMage
+                                             FALSE);    // XPager
 
             break;
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
             /*
-             *@@ XDM_STARTSTOPPAGEMAGE:
-             *      starts or stops PageMage.
+             *@@ XDM_STARTSTOPPAGER:
+             *      starts or stops XPager.
              *
-             *      If (mp1 == TRUE), dmnStartPageMage is called.
-             *      If (mp1 == FALSE), dmnKillPageMage is called.
+             *      If (mp1 == TRUE), dmnStartXPager is called.
+             *      If (mp1 == FALSE), dmnKillXPager is called.
              *
              *@@added V0.9.2 (2000-02-21) [umoeller]
              */
 
-            case XDM_STARTSTOPPAGEMAGE:
-                // _Pmpf(("fnwpDaemonObject: got XDM_STARTSTOPPAGEMAGE (%d)", mp1));
+            case XDM_STARTSTOPPAGER:
+                // _Pmpf(("fnwpDaemonObject: got XDM_STARTSTOPPAGER (%d)", mp1));
                 if (mp1)
                     // install the hook:
-                    dmnStartPageMage();
+                    dmnStartXPager();
                         // this sets the global pHookData pointer
                         // to the HOOKDATA in the DLL
                 else
-                    dmnKillPageMage(FALSE); // no notify
+                    dmnKillXPager(FALSE); // no notify
 
                 if (G_pHookData)
-                    mrc = (MRESULT)(G_pHookData->hwndPageMageFrame != NULLHANDLE);
+                    mrc = (MRESULT)(G_pHookData->hwndXPagerFrame != NULLHANDLE);
             break;
 
             /*
@@ -1664,20 +1664,20 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             case XDM_RECOVERWINDOWS:
                 if (G_pHookData)        // V0.9.13 (2001-06-14) [umoeller]
-                    if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
+                    if (G_pHookData->XPagerConfig.fRecoverOnShutdown)
                         pgmmRecoverAllWindows();
             break;
 
             /*
-             *@@ XDM_PAGEMAGECONFIG:
+             *@@ XDM_PAGERCONFIG:
              *      this gets _sent_ from XFLDR.DLL when
-             *      PageMage settings have changed.
-             *      This causes the global PAGEMAGECONFIG
+             *      XPager settings have changed.
+             *      This causes the global PAGERCONFIG
              *      data to be updated from OS2.INI.
              *
              *      Parameters:
              *      -- ULONG mp1: any of the following flags:
-             *          -- PGMGCFG_REPAINT: repaint PageMage client
+             *          -- PGMGCFG_REPAINT: repaint XPager client
              *          -- PGMGCFG_REFORMAT: reformat whole window (e.g.
              *                  because Desktops have changed)
              *          -- PGMGCFG_ZAPPO: reformat title bar.
@@ -1688,8 +1688,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      -- BOOL TRUE if successful.
              */
 
-            case XDM_PAGEMAGECONFIG:
-                // _Pmpf(("fnwpDaemonObject: got XDM_PAGEMAGECONFIG"));
+            case XDM_PAGERCONFIG:
+                // _Pmpf(("fnwpDaemonObject: got XDM_PAGERCONFIG"));
                 // load config from OS2.INI
                 mrc = (MRESULT)pgmsLoadSettings((ULONG)mp1);
             break;
@@ -1838,7 +1838,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      -- BYTE mp1: corner reached; see hook\xwphook.h for definitions
              *      -- mp2: unused, always 0.
              *
-             *@@changed V0.9.9 (2001-01-25) [lafaix]: PageMage movements actions added
+             *@@changed V0.9.9 (2001-01-25) [lafaix]: XPager movements actions added
              *@@changed V0.9.14 (2001-08-20) [umoeller]: optimizations
              */
 
@@ -2068,7 +2068,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             /* case XDM_PGMGWINLISTFULL:
                 winhDebugBox(NULLHANDLE,
                              "XWorkplace Daemon",
-                             "The PageMage window list is full.");
+                             "The XPager window list is full.");
             break; */
 
             /*
@@ -2589,7 +2589,7 @@ int main(int argc, char *argv[])
                 G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
                         // V0.9.11 (2001-04-25) [umoeller]
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
                 pgmwInit();
 #endif
 

@@ -49,7 +49,7 @@
 #include "filesys\disk.h"               // XFldDisk implementation
 
 #include "hook\xwphook.h"               // hook and daemon definitions
-#include "hook\xwpdaemn.h"              // PageMage and daemon declarations
+#include "hook\xwpdaemn.h"              // XPager and daemon declarations
 
 #include "bldlevel.h"
 

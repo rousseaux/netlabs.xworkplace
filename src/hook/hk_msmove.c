@@ -256,7 +256,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
 {
     BOOL    fStopTimers = FALSE;    // setting this to TRUE will stop timers
 
-#ifndef __NOPAGEMAGE__
+#ifndef __NOPAGER__
     if (G_HookData.fDisableMouseSwitch)
         return;
 #endif

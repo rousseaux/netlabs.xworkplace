@@ -606,7 +606,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
                             XSTRING strObjects;
                             ULONG   ulMsg;
 
-                            PSZ apsz[2];
+                            PCSZ apsz[2];
                             apsz[0] = _pWszSetupString;
 
                             xstrInit(&strObjects, 300);

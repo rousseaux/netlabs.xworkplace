@@ -465,7 +465,7 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
             // scheme exists already
             if (sndDoesSchemeExist(szNewScheme))
             {
-                PSZ     psz = szNewScheme;
+                PCSZ     psz = szNewScheme;
                 // exists: have user confirm this
                 if (cmnMessageBoxMsgExt(pnbp->hwndFrame,
                                         151,  // "Sound"
@@ -1222,7 +1222,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
         case ID_XSDI_SOUND_SCHEMES_DELETE:
         {
             CHAR    szCurrentScheme[200];
-            PSZ     // pszCorrespondingINIApp = 0,
+            PCSZ     // pszCorrespondingINIApp = 0,
                     pszTemp = szCurrentScheme;
             WinQueryWindowText(pspd->hwndSchemesDropDown,
                                sizeof(szCurrentScheme),

@@ -2962,7 +2962,7 @@ static ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
         else
         {
             // error creating window: V0.9.9 (2001-02-01) [umoeller]
-            PSZ     apsz[2];
+            PCSZ     apsz[2];
             apsz[0] = (PSZ)pSetting->Public.pszWidgetClass;
             if (cmnMessageBoxMsgExt(NULLHANDLE,
                                     194,        // XCenter Error

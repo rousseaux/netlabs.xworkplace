@@ -76,7 +76,7 @@ $(OUTPUTDIR)\drivers.obj \
 $(OUTPUTDIR)\fonts.obj \
 $(OUTPUTDIR)\hookintf.obj \
 !ifndef XWPLITE
-$(OUTPUTDIR)\pagemage.obj \
+$(OUTPUTDIR)\pager.obj \
 !endif
 #$(OUTPUTDIR)\partitions.obj \
 $(OUTPUTDIR)\sound.obj

@@ -365,14 +365,14 @@
 
     #define T1M_DAEMONREADY             (WM_USER+281)    // added V0.9.0
 
-    #define T1M_PAGEMAGECLOSED          (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
+    #define T1M_PAGERCLOSED          (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
 
     #define T1M_QUERYXFOLDERVERSION     (WM_USER+283)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
-#ifndef __NOPAGEMAGE__
-    #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+284)
+#ifndef __NOPAGER__
+    #define T1M_PAGERCONFIGDELAYED   (WM_USER+284)
 #endif
 
     /*
@@ -399,7 +399,7 @@
 
     #define T1M_MENUITEMSELECTED        (WM_USER+288)    // added V0.9.11 (2001-04-18) [umoeller]
 
-    #define T1M_PAGEMAGECTXTMENU        (WM_USER+289)    // V0.9.11 (2001-04-25) [umoeller]
+    #define T1M_PAGERCTXTMENU        (WM_USER+289)    // V0.9.11 (2001-04-25) [umoeller]
 
     #define T1M_INITIATEXSHUTDOWN       (WM_USER+290)    // V0.9.12 (2001-04-28) [umoeller]
 

@@ -696,9 +696,9 @@ typedef struct _CLASSTOINSERT
     ULONG               ulAttr;
 } CLASSTOINSERT, *PCLASSTOINSERT;
 
-static signed short _System SortClasses(void* pItem1,
-                                        void* pItem2,
-                                        void* pStorage)       // HAB really
+static signed short XWPENTRY SortClasses(void* pItem1,
+                                         void* pItem2,
+                                         void* pStorage)       // HAB really
 {
     switch (WinCompareStrings((HAB)pStorage,
                               0,
@@ -726,6 +726,7 @@ static signed short _System SortClasses(void* pItem1,
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
  *@@changed V0.9.16 (2002-02-02) [umoeller]: now sorting alphabetically
+ *@@changed V0.9.18 (2002-03-08) [umoeller]: now never adding object buttons
  */
 
 HWND ctrpAddWidgetsMenu(XCenter *somSelf,
@@ -761,10 +762,11 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
         ULONG ulAttr = 0;
         PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)pClassNode->pItemData;
 
-        // should this be added?
-        if (pClass->Public.ulClassFlags & WGTF_NOUSERCREATE)
-            ulAttr |= MIA_DISABLED;
-        else
+        // WGTF_NOUSERCREATE means user cannot add this from
+        // the widgets menu (e.g. object buttons) --> skip
+        // (we used to disable only, but that's confusing)
+        // V0.9.18 (2002-03-08) [umoeller]
+        if (!(pClass->Public.ulClassFlags & WGTF_NOUSERCREATE))
         {
             // if caller wants trayable widgets only,
             // disable non-trayable classes
@@ -795,18 +797,18 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                         pNode = pNode->pNext;
                     }
                 }
-        }
 
-        if (pClass2Insert = NEW(CLASSTOINSERT))
-        {
-            pClass2Insert->ulMenuID =    cmnQuerySetting(sulVarMenuOffset)
-                                       + ID_XFMI_OFS_VARIABLE
-                                       + (ulIndex++);
-            pClass2Insert->pClass = pClass;
-            pClass2Insert->ulAttr = ulAttr;
+            if (pClass2Insert = NEW(CLASSTOINSERT))
+            {
+                pClass2Insert->ulMenuID =    cmnQuerySetting(sulVarMenuOffset)
+                                           + ID_XFMI_OFS_VARIABLE
+                                           + (ulIndex++);
+                pClass2Insert->pClass = pClass;
+                pClass2Insert->ulAttr = ulAttr;
 
-            lstAppendItem(&llClasses,
-                          pClass2Insert);
+                lstAppendItem(&llClasses,
+                              pClass2Insert);
+            }
         }
 
         pClassNode = pClassNode->pNext;

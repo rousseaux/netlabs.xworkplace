@@ -2777,7 +2777,7 @@ static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-SHORT EXPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
+SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
 {
     /* #ifdef DEBUG_ORDEREDLIST
         _Pmpf(("    Comparing %s and %s...",

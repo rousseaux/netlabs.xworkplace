@@ -23,16 +23,18 @@
 
 #define OS2EMX_PLAIN_CHAR
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <setjmp.h>
-
 #define INCL_DOS
 #define INCL_DOSERRORS
 #define INCL_WIN
 #include <os2.h>
 
+// C library headers
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <setjmp.h>
+
+// generic headers
 #include "setup.h"
 
 #include "xwpapi.h"
@@ -284,7 +286,9 @@ APIRET APIENTRY ParseExternal(PXMLDOM pDom,
     if (pcszSystemID)
     {
         PSZ pszContents = NULL;
-        if (!(arc = doshLoadTextFile(pcszSystemID, &pszContents)))
+        if (!(arc = doshLoadTextFile(pcszSystemID,
+                                     &pszContents,
+                                     NULL)))
         {
             if (!XML_Parse(pSubParser,
                            pszContents,
@@ -320,7 +324,9 @@ APIRET LoadXMLFile(const char *pcszFilename,    // in: file:/K:\...
 
     PSZ     pszContents = NULL;
 
-    arc = doshLoadTextFile(pcszFilename, &pszContents);
+    arc = doshLoadTextFile(pcszFilename,
+                           &pszContents,
+                           NULL);
 
     if (arc == NO_ERROR)
     {

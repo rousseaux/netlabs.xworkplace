@@ -503,7 +503,7 @@
      *      WM_USER+200 ... WM_USER+249:    File thread, xthreads.h
      *      WM_USER+250 ... WM_USER+269:    media thread, media.h
      *      WM_USER+270 ... WM_USER+299:    thread-1 obj wnd, kernel.h
-     *      WM_USER+300 ... WM_USER+499:    hook, Daemon and PageMage
+     *      WM_USER+300 ... WM_USER+499:    hook, Daemon and XPager
      */
 
     // common dlg msgs for settings notebook dlg funcs
@@ -656,10 +656,10 @@
     #define SP_MOUSE_MOVEMENT2      133     // new with V0.9.14 (2001-08-02) [lafaix]
 
     // 14) XWPScreen
-    #define SP_PAGEMAGE_MAIN        140     // new with V0.9.3 (2000-04-09) [umoeller]
-    #define SP_PAGEMAGE_WINDOW      141     // new with V0.9.9 (2001-03-27) [umoeller]
-    #define SP_PAGEMAGE_STICKY      142     // new with V0.9.3 (2000-04-09) [umoeller]
-    #define SP_PAGEMAGE_COLORS      143     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_MAIN        140     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_WINDOW      141     // new with V0.9.9 (2001-03-27) [umoeller]
+    #define SP_PAGER_STICKY      142     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_COLORS      143     // new with V0.9.3 (2000-04-09) [umoeller]
 
     // 15) XWPString
     #define SP_XWPSTRING            150     // new with V0.9.3 (2000-04-27) [umoeller]
@@ -849,10 +849,10 @@
 #ifndef __ALWAYSHOOK__
         sfXWPHook,
 #endif
-#ifndef __NOPAGEMAGE__
-        sfEnablePageMage,
-            // XWPSetup "PageMage virtual desktops"; this will cause
-            // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
+#ifndef __NOPAGER__
+        sfEnableXPager,
+            // XWPSetup "XPager virtual desktops"; this will cause
+            // XDM_STARTSTOPPAGER to be sent to the daemon
 #endif
 #ifndef __NEVEREXTASSOCS__
         sfExtAssocs,
@@ -1501,12 +1501,12 @@
                                  ULONG flStyle);
 
     #ifdef XSTRING_HEADER_INCLUDED
-    APIRET XWPENTRY cmnGetMessageExt(PCHAR *pTable,
+    APIRET XWPENTRY cmnGetMessageExt(PCSZ *pTable,
                                      ULONG ulTable,
                                      PXSTRING pstr,
                                      PCSZ pcszMsgID);
 
-    APIRET XWPENTRY cmnGetMessage(PCHAR *pTable,
+    APIRET XWPENTRY cmnGetMessage(PCSZ *pTable,
                                   ULONG ulTable,
                                   PXSTRING pstr,
                                   ULONG ulMsgNumber);
@@ -1522,7 +1522,7 @@
 
     ULONG XWPENTRY cmnMessageBoxMsgExt(HWND hwndOwner,
                                        ULONG ulTitle,
-                                       PCHAR *pTable,
+                                       PCSZ *pTable,
                                        ULONG ulTable,
                                        ULONG ulMessage,
                                        ULONG flStyle);
