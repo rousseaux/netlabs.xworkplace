@@ -298,13 +298,12 @@
      *
      ********************************************************************/
 
-    #define T1M_BEGINSTARTUP            (WM_USER+270)
-
-    #define T1M_STARTCONTENT            (WM_USER+271)
-    #define T1M_POCCALLBACK             (WM_USER+272)
-
-    #define T1M_BEGINQUICKOPEN          (WM_USER+273)
-    #define T1M_NEXTQUICKOPEN           (WM_USER+274)
+    // #define T1M_BEGINSTARTUP            (WM_USER+270)
+    // #define T1M_STARTCONTENT            (WM_USER+271)
+    // #define T1M_POCCALLBACK             (WM_USER+272)
+    // #define T1M_BEGINQUICKOPEN          (WM_USER+273)
+    // #define T1M_NEXTQUICKOPEN           (WM_USER+274)
+            // all removed V0.9.12 (2001-04-29) [umoeller]
 
     #define T1M_LIMITREACHED            (WM_USER+275)
 

@@ -44,7 +44,9 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINFRAMEMGR
@@ -74,6 +76,7 @@
 
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
@@ -82,6 +85,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
 #include "helpers\xstring.h"            // extended string helpers
@@ -213,7 +217,8 @@ BOOL fdrSetup(WPFolder *somSelf,
             _xwpSetQuickOpen(somSelf, TRUE);
         else if (strnicmp(szValue, "IMMEDIATE", 3) == 0)  // V0.9.6 (2000-10-16) [umoeller]
             fdrQuickOpen(somSelf,
-                         NULL);     // no callback
+                         NULL,
+                         0);     // no callback
     }
 
     if (somSelf != cmnQueryActiveDesktop())
@@ -1082,7 +1087,8 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
  */
 
 BOOL fdrQuickOpen(WPFolder *pFolder,
-                  PFNWP pfnwpCallback)
+                  PFNCBQUICKOPEN pfnCallback,
+                  ULONG ulCallbackParam)
 {
     BOOL        brc = TRUE;
     WPObject    *pObject = NULL;
@@ -1122,14 +1128,17 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
                 pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
             )
         {
+            // get the icon
             _wpQueryIcon(pObject);
-            if (pfnwpCallback)
+
+            if (pfnCallback)
             {
                 // callback
-                brc = (BOOL)pfnwpCallback((HWND)pFolder,
-                                          (ULONG)pObject,
-                                          (MPARAM)ulNow,
-                                          (MPARAM)ulMax);
+                brc = pfnCallback(pFolder,
+                                  pObject,
+                                  ulNow,
+                                  ulMax,
+                                  ulCallbackParam);
                 if (!brc)
                     break;
             }
@@ -3197,7 +3206,9 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
 /*
  *@@ fdrQueryContentArray:
  *      returns an array of WPObject* pointers representing
- *      the folder contents.
+ *      the folder contents. This does NOT populate the
+ *      folder, but will only return the objects that are
+ *      presently awake.
  *
  *      Returns NULL if the folder is empty. Otherwise
  *      *pulItems receives the array item count (NOT the
@@ -3310,43 +3321,43 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
 
 BOOL fdrCnrInsertObject(WPObject *pObject)
 {
-    BOOL brc = FALSE;
-    if (pObject)
+    BOOL        brc = FALSE;
+    WPFolder    *pFolder;
+
+    if (    (pObject)
+         && (pFolder = _wpQueryFolder(pObject))
+       )
     {
-        WPFolder *pFolder = _wpQueryFolder(pObject);
-        if (pFolder)
+        WPSHLOCKSTRUCT Lock;
+        if (wpshLockObject(&Lock, pFolder))
         {
-            WPSHLOCKSTRUCT Lock;
-            if (wpshLockObject(&Lock, pFolder))
+            PVIEWITEM   pViewItem;
+            for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+                 pViewItem;
+                 pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
             {
-                PVIEWITEM   pViewItem;
-                for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
-                     pViewItem;
-                     pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+                switch (pViewItem->view)
                 {
-                    switch (pViewItem->view)
+                    case OPEN_CONTENTS:
+                    case OPEN_TREE:
+                    case OPEN_DETAILS:
                     {
-                        case OPEN_CONTENTS:
-                        case OPEN_TREE:
-                        case OPEN_DETAILS:
+                        HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
+                        if (hwndCnr)
                         {
-                            HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
-                            if (hwndCnr)
-                            {
-                                PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
-                                if (_wpCnrInsertObject(pObject,
-                                                       hwndCnr,
-                                                       pptlIcon,
-                                                       NULL,     // parent record
-                                                       NULL))     // RECORDINSERT, next pos.
-                                    brc = TRUE;
-                            }
+                            PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
+                            if (_wpCnrInsertObject(pObject,
+                                                   hwndCnr,
+                                                   pptlIcon,
+                                                   NULL,     // parent record
+                                                   NULL))     // RECORDINSERT, next pos.
+                                brc = TRUE;
                         }
                     }
                 }
             }
-            wpshUnlockObject(&Lock);
         }
+        wpshUnlockObject(&Lock);
     }
 
     return (brc);
@@ -3408,22 +3419,26 @@ ULONG fdrInsertAllContents(WPFolder *pFolder)
  *@@ fdrNukeContents:
  *      deletes all the folder contents without any
  *      confirmations by invoking wpFree on each awake
- *      object.
+ *      object. This does NOT populate the folder.
  *
  *      Note that this is not a polite way of cleaning
  *      a folder. This is ONLY used by
  *      XWPFontFolder::wpDeleteContents and
  *      XWPTrashCan::wpDeleteContents to nuke all the
  *      transient objects before those special folders
- *      get deleted themselves.
+ *      get deleted themselves. This avoids the stupid
+ *      "cannot delete object" messages the WPS would
+ *      otherwise produce for each transient objects.
  *
- *      DO NOT INVOKE THIS METHOD ON REGULAR FOLDERS.
+ *      DO NOT INVOKE THIS FUNCTION ON REGULAR FOLDERS.
  *      THERE'S NO WAY TO INTERRUPT THIS PROCESSING.
+ *      THIS WOULD ALSO DELETE ALL FILES IN THE FOLDER.
  *
  *      Returns FALSE if killing one of the objects
  *      failed.
  *
  *@@added V0.9.9 (2001-02-08) [umoeller]
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: removed wpQueryContent calls
  */
 
 BOOL fdrNukeContents(WPFolder *pFolder)
@@ -3436,23 +3451,20 @@ BOOL fdrNukeContents(WPFolder *pFolder)
         fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
         if (fFolderLocked)
         {
-            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                    = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
-                                                                    NULL,
-                                                                    "wpQueryContent");
-            WPObject *pObject;
-
+            ULONG   cObjects = 0,
+                    ul;
+            // now querying content array... we can't use wpQueryContent
+            // while we're deleting the objects! V0.9.12 (2001-04-29) [umoeller]
+            WPObject** papObjects = fdrQueryContentArray(pFolder,
+                                                         0,     // no filter
+                                                         &cObjects);
             brc = TRUE;
 
-            for (   pObject = rslv_wpQueryContent(pFolder,
-                                                  NULL,
-                                                  QC_FIRST);
-                    pObject;
-                    pObject = rslv_wpQueryContent(pFolder,
-                                                  pObject,
-                                                  QC_NEXT)
-                )
+            for (ul = 0;
+                 ul < cObjects;
+                 ul++)
             {
+                WPObject *pObject = papObjects[ul];
                 if (!_wpFree(pObject))
                 {
                     // error:
@@ -3470,4 +3482,347 @@ BOOL fdrNukeContents(WPFolder *pFolder)
 
     return (brc);
 }
+
+/* ******************************************************************
+ *
+ *   Start folder contents
+ *
+ ********************************************************************/
+
+/*
+ *@@ PROCESSFOLDER:
+ *      structure on the stack of fdrStartFolderContents
+ *      while the "start folder contents" thread is
+ *      running synchronously.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ */
+
+typedef struct _PROCESSFOLDER
+{
+    // input parameters:
+    WPFolder        *pFolder;
+    ULONG           ulTiming;
+    HWND            hwndStatus;             // status window or NULLHANDLE
+
+    BOOL            fCancelled;
+
+    // private data:
+    WPObject        *pObject;
+    ULONG           henum;
+    ULONG           cTotalObjects;
+    ULONG           ulObjectThis;
+    ULONG           ulFirstTime;            // sysinfo first time
+} PROCESSFOLDER, *PPROCESSFOLDER;
+
+/*
+ *@@ fnwpStartupDlg:
+ *      dlg proc for the Startup status window, which
+ *      runs on the main PM thread (fnwpThread1Object).
+ */
+
+MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+        {
+            // WinSetWindowULong(hwnd, QWL_USER, (ULONG)mp2);
+                // we don't need this here, it's done by fnwpThread1Object
+            ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
+                                     PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+        break; }
+
+        case WM_COMMAND:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case DID_CANCEL:
+                {
+                    PPROCESSFOLDER ppf = (PPROCESSFOLDER)WinQueryWindowULong(hwnd, QWL_USER);
+                    if (ppf)
+                        ppf->fCancelled = TRUE;
+                break; }
+            }
+        break;
+
+        case WM_SYSCOMMAND:
+        {
+            switch (SHORT1FROMMP(mp1))
+            {
+                case SC_CLOSE:
+                case SC_HIDE:
+                {
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings)
+                    {
+                        pGlobalSettings->ShowStartupProgress = 0;
+                        cmnUnlockGlobalSettings();
+                        cmnStoreGlobalSettings();
+                    }
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+                break; }
+
+                default:
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+            }
+        break; }
+
+        default:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ fntProcessStartupFolder:
+ *      synchronous thread started from fntStartupThread
+ *      for each startup folder that is to be processed.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ */
+
+void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
+{
+    PPROCESSFOLDER      ppf = (PPROCESSFOLDER)ptiMyself->ulData;
+    WPFolder            *pFolder = ppf->pFolder;
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+
+    while (!ppf->fCancelled)
+    {
+        BOOL    fOKGetNext = FALSE;
+        HWND    hwndCurrentView = NULLHANDLE;       // for wait mode
+
+        if (ppf->ulObjectThis == 0)
+        {
+            // first iteration: initialize structure
+            ppf->cTotalObjects = 0;
+            wpshCheckIfPopulated(pFolder,
+                                 FALSE);        // full populate
+            // now count objects
+            for (   ppf->pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
+                    (ppf->pObject);
+                    ppf->pObject = _wpQueryContent(pFolder, ppf->pObject, QC_NEXT)
+                )
+            {
+                ppf->cTotalObjects++;
+            }
+
+            // get first object
+            ppf->henum = _xwpBeginEnumContent(pFolder);
+            if (ppf->henum)
+                ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
+        }
+        else
+        {
+            // subsequent calls: get next object
+            ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
+        }
+
+        ppf->ulObjectThis++;
+
+        // now process that object
+        if (ppf->pObject)
+        {
+            // this is not the last object: start it
+
+            // resolve shadows... this never worked for
+            // shadows V0.9.12 (2001-04-29) [umoeller]
+            if (_somIsA(ppf->pObject, _WPShadow))
+                ppf->pObject = _wpQueryShadowedObject(ppf->pObject, TRUE);
+
+            if (wpshCheckObject(ppf->pObject))
+            {
+                // open the object:
+
+                // 1) update the status window
+                if (pGlobalSettings->ShowStartupProgress)
+                {
+                    CHAR szStarting2[500], szTemp[500];
+                    // update status text ("Starting xxx")
+                    strcpy(szTemp, _wpQueryTitle(ppf->pObject));
+                    strhBeautifyTitle(szTemp);
+                    sprintf(szStarting2,
+                            cmnGetString(ID_SDSI_STARTING), // ->pszStarting,
+                            szTemp);
+                    WinSetDlgItemText(ppf->hwndStatus, ID_SDDI_STATUS, szStarting2);
+                }
+
+                // have the object opened on thread-1
+                hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                                               (MPARAM)ppf->pObject,
+                                                               (MPARAM)OPEN_DEFAULT);
+
+                // update status bar
+                if (pGlobalSettings->ShowStartupProgress)
+                    WinSendMsg(WinWindowFromID(ppf->hwndStatus, ID_SDDI_PROGRESSBAR),
+                               WM_UPDATEPROGRESSBAR,
+                               MPFROMLONG(ppf->ulObjectThis),
+                               MPFROMLONG(ppf->cTotalObjects));
+            }
+
+            DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                            &ppf->ulFirstTime,
+                            sizeof(ppf->ulFirstTime));
+        }
+        else
+            // no more objects:
+            // break out of the while loop
+            break;
+
+        // now wait until we should process the
+        // next object
+        while (    (!fOKGetNext)
+                && (!ppf->fCancelled)
+              )
+        {
+            if (ppf->ulTiming == 0)
+            {
+                // "wait for close" mode:
+                // check if the view we opened is still alive
+
+                // now, for all XFolder versions up to now
+                // we used wpWaitForClose... I am very unsure
+                // what this method does, so I have now replaced
+                // this with my own loop here.
+                // V0.9.12 (2001-04-28) [umoeller]
+                BOOL fStillOpen = FALSE;
+                WPSHLOCKSTRUCT Lock;
+
+                if (wpshLockObject(&Lock,
+                                   ppf->pObject))
+                {
+                    PUSEITEM    pUseItem = NULL;
+
+                    #ifdef DEBUG_STARTUP
+                        _Pmpf(("  WOM_WAITFORPROCESSNEXT: checking open views"));
+                        _Pmpf(("  obj %s, hwnd 0x%lX",
+                                    _wpQueryTitle(ppf->pObject),
+                                    ppf->hwndView));
+                    #endif
+
+                    for (pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, NULL);
+                         pUseItem;
+                         pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, pUseItem))
+                    {
+                        PVIEWITEM pvi = (PVIEWITEM)(pUseItem + 1);
+
+                        _Pmpf(("    got view 0x%lX", pvi->handle));
+
+                        if (pvi->handle == hwndCurrentView)
+                        {
+                            fStillOpen = TRUE;
+                            break;
+                        }
+                    }
+                }
+                wpshUnlockObject(&Lock);
+
+                fOKGetNext = !fStillOpen;
+            } // end if (ppf->ulTiming == 0)
+            else
+            {
+                // timing mode
+                ULONG ulNowTime;
+                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                &ulNowTime,
+                                sizeof(ulNowTime));
+                if (ulNowTime > (ppf->ulFirstTime + ppf->ulTiming))
+                    fOKGetNext = TRUE;
+            }
+
+            // fOKGetNext is TRUE if the next object should be
+            // processed now
+            if (fOKGetNext)
+            {
+                // removed lock here V0.9.12 (2001-04-28) [umoeller]
+                PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+                if (pKernelGlobals)
+                {
+                    // ready to go for next object:
+                    // make sure the damn PM hard error windows are not visible,
+                    // because this locks any other PM activity
+                    if (    (WinIsWindowVisible(pKernelGlobals->hwndHardError))
+                         || (WinIsWindowVisible(pKernelGlobals->hwndSysError))
+                       )
+                    {
+                        DosBeep(250, 100);
+                        // wait a little more and try again
+                        fOKGetNext = FALSE;
+                    }
+                }
+            }
+
+            if (!fOKGetNext)
+                // not ready yet:
+                // sleep awhile (we could simply sleep for the
+                // wait time, but then "cancel" would not be
+                // very responsive)
+                DosSleep(100);
+        }
+    } // end while !ppf->fCancelled
+
+    // done or cancelled:
+    _xwpEndEnumContent(pFolder, ppf->henum);
+
+    // tell thrRunSync that we're done
+    WinPostMsg(ptiMyself->hwndNotify,
+               WM_USER,
+               0, 0);
+}
+
+/*
+ *@@ fdrStartFolderContents:
+ *      implementation for XFolder::xwpStartFolderContents.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ */
+
+ULONG fdrStartFolderContents(WPFolder *pFolder,
+                             ULONG ulTiming)
+{
+    ULONG ulrc = 0;
+
+    PROCESSFOLDER       pf;
+    HAB                 hab = winhMyAnchorBlock();
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+
+    memset(&pf, 0, sizeof(pf));
+
+    pf.ulTiming = ulTiming;
+
+    pf.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                               fnwpStartupDlg,
+                               cmnQueryNLSModuleHandle(FALSE),
+                               ID_XFD_STARTUPSTATUS,
+                               NULL);
+    // store struct in window words so the dialog can cancel
+    WinSetWindowPtr(pf.hwndStatus, QWL_USER, &pf);
+
+    if (pGlobalSettings->ShowStartupProgress)
+    {
+        // get last window position from INI
+        winhRestoreWindowPos(pf.hwndStatus,
+                             HINI_USER,
+                             INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
+                             // move only, no resize
+                             SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+    }
+
+    pf.pFolder = pFolder;
+
+    ulrc = thrRunSync(hab,
+                      fntProcessStartupFolder,
+                      "ProcessStartupFolder",
+                      (ULONG)&pf);
+
+    winhSaveWindowPos(pf.hwndStatus, HINI_USER, INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
+    WinDestroyWindow(pf.hwndStatus);
+
+    return (ulrc);
+}
+
 

@@ -22,10 +22,6 @@ NOT-SO-SERIOUS PROBLEMS
     status bar) and the active Object in the folder is the "Drive A" object the
     WPS hangs after inserting a non-DOS formated Disk.
 
---  startup/shutdown folders:
-    --  wait for objs in shutdown folder doesn't work.
-    --  startup folders loop forever.
-
 --  In the "keyboard" object, looking at the "hotkeys" page I see an object
     associated with "LeftWin" key. This is one of 3 key mappings I defined
     to use the new "Windows" keys on my keyboard. The (little) problem is
@@ -39,8 +35,6 @@ tooltips:
     -- rewrite auto-pop
 
 XCenter:
-    -- do not use XCenter thread for starting shutdown etc.
-
     -- check wpClose again... this hangs the system somewhere
 
     -- put menus on object buttons on top of the bar, not on top of the button.

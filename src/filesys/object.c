@@ -630,7 +630,7 @@ BOOL objAddToList(WPObject *somSelf,
                         *pobjFound = NULL;
 
             if (!pll->fLoaded)
-                // if the list of favorite folders has not yet been built
+                // if the list has not yet been built
                 // yet, we will do this now
                 LoadObjectsList(pll,
                                 ulListFlag,
@@ -1975,6 +1975,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 case OPEN_PALETTE:  strcpy(szTemp1, "Palette"); break;
                 default:            sprintf(szTemp1, "unknown (0x%lX)", pViewItem->view); break;
             }
+
             if (pViewItem->view != OPEN_RUNNING)
             {
                 PID pid;
@@ -1988,10 +1989,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 sprintf(szText, "%s (HAPP: 0x%lX)",
                         szTemp1, pViewItem->handle);
             }
-            /* if (fdrQueryPSLI(pViewItem->handle, &ulSLIIndex))
-                sprintf(szText + strlen(szText), "\nSubclassed: index %d in list", ulSLIIndex);
-            else
-                sprintf(szText + strlen(szText), "\nNot subclassed"); */
+
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                                                  "Currently open views",

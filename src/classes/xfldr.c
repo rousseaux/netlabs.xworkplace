@@ -517,9 +517,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         WPObject             *pObj;
         BOOL                 fFolderLocked = FALSE;
 
-        ULONG ulNesting = 0;
-        DosEnterMustComplete(&ulNesting);
-
         memset(pec, 0, sizeof(ENUMCONTENT));
 
         wpshCheckIfPopulated(somSelf,
@@ -596,8 +593,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 
         if (fFolderLocked)
             wpshReleaseFolderMutexSem(somSelf);
-
-        DosExitMustComplete(&ulNesting);
 
         if (!fItemsFound)
         {
@@ -734,131 +729,44 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
 }
 
 /*
- *@@ xwpBeginProcessOrderedContent:
- *      this new instance method uses XFolder::xwpBeginEnumContent etc.
- *      to open all the objects in the given folder. This is used
- *      by the XWorkplace Startup and Shutdown folders.
+ *@@ xwpStartFolderContents:
+ *      starts the contents of the folder with a
+ *      specified delay for each object.
  *
- *      This method returns immediately; further processing is done in the
- *      background Worker thread.
+ *      This displays a progress status window if
+ *      the respective global setting is enabled.
  *
- *      However, this method returns a handle which may be used in
- *      XFolder::xwpCancelProcessOrderedContent to abort processing.
- *      Upon errors, null is returned.
+ *      If (ulTiming == 0), this operates in "wait"
+ *      mode, i.e. the next object is only started
+ *      after the previous one has been closed.
  *
- *      Parameters:
- *      -- BOOL fStartAll      indicates whether we are processing all
- *                                  startup folders or not.
- *      -- ULONG ulTiming:     the time to wait between starting objects
- *                                  in milliseconds; if set to 0, this function
- *                                  will work in "Wait" mode, i.e. the next
- *                                  object will open the next object only if
- *                                  the previous one has been closed again
- *                                  (e.g. for XShutdown folder).
- *      -- PFNWP pfnwpCallback: a callback routine which will be called on
- *                                  every object which is started.
- *      -- ULONG ulCallbackParam: the first parameter to pass to this proc.
+ *      Otherwise ulTiming must specify a delay in
+ *      milliseconds, being the time to wait after
+ *      each object has been started.
  *
- *      You will be notified of the progress thru the pfnwpCallback function,
- *      which gets passed the the following parameters:
- *      -- HWND  hwnd:     will not be a hwnd, but ulCallbackParam
- *                              specified above (which might be a window though);
- *      -- ULONG msg:      will contain the current object of the
- *                              folder on which this mthd is invoked;
- *                              this must be cast manually to (WPObject*);
- *      -- MPARAM mp1:     contains a pointer to the PROCESSCONTENTINFO structure
- *                         which is used by the callback function
+ *      This replaces the terrible "process ordered
+ *      content" methods with three threads bombing
+ *      each other with messages that nobody was
+ *      able to follow. That code was still from
+ *      the XFolder days and about due for retirement.
  *
- *      This callback func may be used for implementing a progress bar.
- *      You can use ulCallbackParam for the msg window handle and display
- *      the progress according to fields in the PROCESSCONTENTINFO structure
- *      pointed to by mp1; the object title may be obtained by calling
- *      _wpQueryTitle((WPObject*)msg).
+ *      As opposed to the old implementation, this
+ *      method DOES NOT RETURN until all objects have
+ *      been processed or the user cancelled the
+ *      operation. This does process the caller's
+ *      message queue though... and therefore
+ *      requires the caller to have one.
  *
- *      Note that even though the processing of the folder is done in the
- *      Worker thread, the callback func is actually called on thread 1
- *      (Workplace thread), so you can create your window there and have
- *      work done on it without having to worry about thread safety. This
- *      is implemented because wpViewObject is having problems when not
- *      being called in the Workplace thread.
- *
- *      In detail, the thread interaction works as follows:
- *
- *      1)   Calling this function posts WOM_PROCESSORDEREDCONTENT to
- *                the Worker thread (fnwpWorkerObject), which takes over.
- *
- *      2)   The Worker thread then goes thru the (ordered) contents of
- *                the specified folder. For each object found, it posts
- *                T1M_POCCALLBACK to fnwpThread1Object, which will then in
- *                turn call your callback on thread 1.
- *
- *      3)   The Worker thread then either waits for the object to
- *                be closed (in "Wait" mode) or the specified time.
- *
- *      After all objects have been processed, the callback will called
- *      once more with msg == 0 to allow cleaning up. If the folder does
- *      not contain any objects, the callback will only be called this one
- *      time.
- *
- *      If you're running in "Wait" mode, the callback must return the
- *      hwnd of the object which you must have opened with wpViewObject,
- *      so that the Worker thread can wait for this window to be closed.
- *
- *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
- *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folder mods.
+ *@@added V0.9.12 (2001-04-29) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xf_xwpBeginProcessOrderedContent(XFolder *somSelf,
-                                                          BOOL fStartAll,
-                                                          ULONG ulTiming,
-                                                          PFNWP pfnwpCallback,
-                                                          ULONG ulCallbackParam)
-{
-    PPROCESSCONTENTINFO pPCI;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpBeginProcessOrderedContent");
-
-    pPCI = (PPROCESSCONTENTINFO)malloc(sizeof(PROCESSCONTENTINFO));
-
-    if (pPCI)
-    {
-        pPCI->ulObjectNow = 0;
-        pPCI->ulTiming = ulTiming;
-        pPCI->pfnwpCallback = pfnwpCallback;
-        pPCI->ulCallbackParam = ulCallbackParam;
-        pPCI->pFolder = somSelf;
-        pPCI->fStartAll = fStartAll;
-        pPCI->fCancelled = FALSE;
-
-        xthrPostWorkerMsg(WOM_PROCESSORDEREDCONTENT, (MPARAM)somSelf, pPCI);
-
-        return ((ULONG)pPCI);
-    }
-    return (0);
-}
-
-/*
- *@@ xwpCancelProcessOrderedContent:
- *      this method cancels a folder content process started with
- *      XFolder::xwpBeginProcessOrderedContent; hPOC must the handle
- *      returned by that function.
- *
- *      Warning: After folder content processing has finished, hPOC is
- *      no longer valid, and calling this function then will simply
- *      crash the WPS. As a result, your callback function MUST keep
- *      track if hPOC is still valid; after the callback func has been
- *      called with msg == 0, calling this function is no longer allowed.
- */
-
-SOM_Scope BOOL  SOMLINK xf_xwpCancelProcessOrderedContent(XFolder *somSelf,
-                                                          ULONG hPOC)
+SOM_Scope ULONG  SOMLINK xf_xwpStartFolderContents(XFolder *somSelf,
+                                                   ULONG ulTiming)
 {
     // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpCancelProcessOrderedContent");
+    XFolderMethodDebug("XFolder","xf_xwpStartFolderContents");
 
-    ((PPROCESSCONTENTINFO)hPOC)->fCancelled = TRUE;
-
-    return (TRUE);
+    return (fdrStartFolderContents(somSelf, ulTiming));
 }
 
 /*
@@ -875,8 +783,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
                                                   BOOL fInsert)
 {
     // XFolderData     *somThis = XFolderGetData(somSelf);
-    // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
-
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
     return (objAddToList(somSelf,
@@ -897,7 +803,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
 SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
 {
     // XFolderData     *somThis = XFolderGetData(somSelf);
-    // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
     return (objIsOnList(somSelf,
@@ -918,7 +823,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
                                             BOOL fQuickOpen)
 {
     // XFolderData     *somThis = XFolderGetData(somSelf);
-    // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
     return (objAddToList(somSelf,
@@ -939,7 +843,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
 SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
 {
     // XFolderData     *somThis = XFolderGetData(somSelf);
-    // M_XFolderData   *somThat = M_XFolderGetData(_XFolder);
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
     return (objIsOnList(somSelf,

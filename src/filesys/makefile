@@ -248,7 +248,7 @@ $(OUTPUTDIR)\filetype.obj: \
 
 $(OUTPUTDIR)\folder.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h \
         $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
         $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
         $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
@@ -334,7 +334,7 @@ $(OUTPUTDIR)\xthreads.obj: \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
             $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\tree.h $(HLPINC)\winh.h \
-    $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
+    $(INC)\classes\xfldr.h $(INC)\classes\xfstart.h $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\dlgids.h \
     $(INC)\hook\xwphook.h \

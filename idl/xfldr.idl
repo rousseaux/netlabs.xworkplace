@@ -205,11 +205,7 @@ interface XFolder : WPFolder
     WPObject xwpEnumNext(in ULONG henum);
     BOOL xwpEndEnumContent(in ULONG henum);
 
-    ULONG xwpBeginProcessOrderedContent(in BOOL fStartAll,
-                                        in ULONG ulTiming,
-                                        in PFNWP pfnwpCallback,
-                                        in ULONG ulCallbackParam);
-    BOOL xwpCancelProcessOrderedContent(in ULONG hPOC);
+    ULONG xwpStartFolderContents(in ULONG ulTiming);
 
     ULONG xwpMakeFavoriteFolder(in BOOL fInsert);
     BOOL xwpIsFavoriteFolder();
@@ -247,8 +243,7 @@ interface XFolder : WPFolder
         xwpSetFldrSort,
         xwpSortViewOnce,
         xwpGetIconPos,
-        xwpBeginProcessOrderedContent,
-        xwpCancelProcessOrderedContent,
+        xwpStartFolderContents,
         xwpMakeFavoriteFolder,
         xwpIsFavoriteFolder,
         xwpSetQuickOpen,

@@ -1579,10 +1579,10 @@ BEGIN
         ENTRYFIELD      "", ID_XSDI_DISK_LABEL, 112, 128, 91, 8, ES_MARGIN
         LTEXT           "File system:", -1, 15, 114, 85, 8
         LTEXT           "unknown", ID_XSDI_DISK_FILESYSTEM, 110, 114, 85, 8
-        LTEXT           "Bytes per sector:", -1, 15, 105, 85, 8
+        LTEXT           "Block size:", -1, 15, 105, 85, 8
         LTEXT           "unknown", ID_XSDI_DISK_SECTORSIZE, 110, 105, 85, 8
         GROUPBOX        "Allocation", -1, 10, 21, 200, 75
-        RTEXT           "Sectors", -1, 160, 81, 40, 8
+        RTEXT           "Blocks", -1, 160, 81, 40, 8
         RTEXT           "Bytes", -1, 105, 81, 40, 8
         LTEXT           "Total size:", -1, 15, 72, 50, 8
         RTEXT           "0", ID_XSDI_DISK_TOTAL_SECTORS, 150, 72, 50, 8

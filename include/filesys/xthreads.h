@@ -70,15 +70,16 @@
     #define WOM_SHOWFOLDERDATA          (WM_USER+153)
     #define WOM_REFRESHFOLDERVIEWS      (WM_USER+154)
 
-    #define WOM_PROCESSORDEREDCONTENT   (WM_USER+155)
-    #define WOM_WAITFORPROCESSNEXT      (WM_USER+156)
-
+    // #define WOM_PROCESSORDEREDCONTENT   (WM_USER+155)
+    // #define WOM_WAITFORPROCESSNEXT      (WM_USER+156)
+        // removed V0.9.12 (2001-04-29) [umoeller]
     // #define WOM_INVALIDATEORDEREDCONTENT WM_USER+120 removed V0.9.0
     #define WOM_DELETEICONPOSEA         (WM_USER+161)
     #define WOM_DELETEFOLDERPOS         (WM_USER+162)
 
     #define WOM_UPDATEALLSTATUSBARS     (WM_USER+163)
-    #define WOM_QUICKOPEN               (WM_USER+164)
+    // #define WOM_QUICKOPEN               (WM_USER+164)
+            // removed V0.9.12 (2001-04-29) [umoeller]
 
     #define WOM_STOREGLOBALSETTINGS     (WM_USER+165)
 
@@ -119,9 +120,9 @@
 
     #define FIM_RECREATECONFIGFOLDER    (WM_USER+201)
 
-    #define FIM_STARTUP                 (WM_USER+202)
-
-    #define FIM_STARTUPFOLDERDONE       (WM_USER+203)
+    // #define FIM_STARTUP                 (WM_USER+202)
+    // #define FIM_STARTUPFOLDERDONE       (WM_USER+203)
+            // removed V0.9.12 (2001-04-29) [umoeller]
 
     #define FIM_PROCESSTASKLIST         (WM_USER+204)
 

@@ -1373,14 +1373,15 @@
         } ORDEREDLISTITEM, *PORDEREDLISTITEM;
 
         /*
-         *@@ PROCESSCONTENTINFO:
+         * PROCESSCONTENTINFO:
          *      structure needed for processing the ordered content
          *      of a folder (Startup, Shutdown folders).
          *
-         *@@changed V0.9.0 [umoeller]: updated for new XFolder::xwpBeginEnumContent
+         *changed V0.9.0 [umoeller]: updated for new XFolder::xwpBeginEnumContent
+         *  removed V0.9.12 (2001-04-29) [umoeller]
          */
 
-        typedef struct _PROCESSCONTENTINFO
+        /* typedef struct _PROCESSCONTENTINFO
         {
             ULONG          henum;     // xwpBeginEnumContent handle
             WPObject       *pObject;  // current object in this folder
@@ -1394,7 +1395,9 @@
             BOOL           fStartAll;
             WPFolder        *pFolder;
             BOOL           fCancelled;
+            ULONG          tid;         // tid of poc threaed V0.9.12 (2001-04-29) [umoeller]
         } PROCESSCONTENTINFO, *PPROCESSCONTENTINFO;
+        */
     #endif
 
     #ifdef SOM_WPFolder_h

@@ -170,6 +170,7 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
  *      characteristics.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: fixed wrong sector display
  */
 
 VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
@@ -239,18 +240,25 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                                 0x0000FF00      // color for free
                                           };
 
+                ULONG       ulBlockSize = fsa.cbSector * fsa.cSectorUnit;
+                            // V0.9.12 (2001-04-29) [umoeller]
+                            // this page always reported fsa.cbSector
+                            // only, which is always 512
+
                 // bytes per sector
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_SECTORSIZE,
                                   strhThousandsULong(szTemp,
-                                                     fsa.cbSector,
+                                                     ulBlockSize,
+                                                            // fixed V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
 
                 // total size
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_TOTAL_SECTORS,
                                   strhThousandsULong(szTemp,
-                                                     fsa.cSectorUnit * fsa.cUnit,
+                                                     fsa.cUnit,
+                                                            // fixed V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
                 dTotal = (double)fsa.cbSector
                               * fsa.cSectorUnit
@@ -265,7 +273,8 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_AVAILABLE_SECTORS,
                                   strhThousandsULong(szTemp,
-                                                     fsa.cSectorUnit * fsa.cUnitAvail,
+                                                     fsa.cUnitAvail,
+                                                            // fixed V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
                 dAvailable = (double)fsa.cbSector
                                   * fsa.cSectorUnit
@@ -280,8 +289,8 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_DISK_ALLOCATED_SECTORS,
                                   strhThousandsULong(szTemp,
-                                                     fsa.cSectorUnit
-                                                        * (fsa.cUnit - fsa.cUnitAvail),
+                                                     (fsa.cUnit - fsa.cUnitAvail),
+                                                            // V0.9.12 (2001-04-29) [umoeller]
                                                      cThousands));
                 dAllocated = dTotal - dAvailable;  // allocated
                 WinSetDlgItemText(pcnbp->hwndDlgPage,

@@ -1148,7 +1148,7 @@
 // #define ID_SDMI_PREPARESAVEWPS          4406     removed V0.9.9 (2001-04-04) [umoeller]
 // #define ID_SDMI_SAVEWPSITEM             4407     removed V0.9.9 (2001-04-04) [umoeller]
 // #define ID_SDMI_SAVEWPS                 4407     removed V0.9.9 (2001-04-04) [umoeller]
-#define ID_SDMI_BEGINCLOSINGITEMS       4408
+// #define ID_SDMI_BEGINCLOSINGITEMS       4408     removed V0.9.12 (2001-04-29) [umoeller]
 // #define ID_SDMI_CLEANUPANDQUIT          4409     removed V0.9.9 (2001-04-04) [umoeller]
 
 /******************************************

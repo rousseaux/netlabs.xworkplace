@@ -415,7 +415,8 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                              MB_YESNO | MB_DEFBUTTON2)
                 == MBID_YES)
         {
-            krnPostThread1ObjectMsg(T1M_STARTCONTENT, (MPARAM)somSelf, MPFROMSHORT(FALSE));
+            // krnPostThread1ObjectMsg(T1M_STARTCONTENT, (MPARAM)somSelf, MPFROMSHORT(FALSE));
+                // @@todo
         }
         return (TRUE);
     }

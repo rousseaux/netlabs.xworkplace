@@ -58,6 +58,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINDIALOGS
 #define INCL_WINTIMER
@@ -80,6 +81,7 @@
 // headers in /helpers
 #include "helpers\animate.h"            // icon and other animations
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
@@ -95,6 +97,9 @@
 
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 // SOM headers which don't crash with prec. header files
+#include "xfstart.ih"
+#include "xtrash.ih"                    // XWPTrashCan
+#include "xtrashobj.ih"                 // XWPTrashCan
 #include "xfldr.h"
 
 // headers in /folder
@@ -108,6 +113,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "config\hookintf.h"             // daemon/hook interface
@@ -117,10 +123,6 @@
 
 // other SOM headers
 #include <wpshadow.h>                   // WPShadow
-// #include <wpdesk.h>                     // WPDesktop
-#include "classes\xtrash.h"             // XWPTrashCan
-#include "classes\xtrashobj.h"             // XWPTrashCan
-#include "filesys\trash.h"              // trash can implementation
 
 /* ******************************************************************
  *
@@ -130,45 +132,45 @@
 
 // thread infos: moved these here from KERNELGLOBALS
 // V0.9.9 (2001-03-07) [umoeller]
-THREADINFO          G_tiWorkerThread,
+static THREADINFO   G_tiWorkerThread,
                     G_tiSpeedyThread,
                     G_tiFileThread;
 
 // Worker thread -- awake objects
-HMTX                G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
-TREE                *G_AwakeObjectsTree;
-LONG                G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
-Heap_t              G_AwakeObjectsHeap;                 // user heap for _ucreate
+static HMTX         G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+static TREE         *G_AwakeObjectsTree;
+static LONG         G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
+static Heap_t       G_AwakeObjectsHeap;                 // user heap for _ucreate
                                                         // V0.9.9 (2001-04-04) [umoeller]
-char                G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
+static char         G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
 
 // Worker thread -- other data
-HWND                G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
-HAB                 G_habWorkerThread = NULLHANDLE;
-HMQ                 G_hmqWorkerThread = NULLHANDLE;
+static HWND         G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+static HAB          G_habWorkerThread = NULLHANDLE;
+static HMQ          G_hmqWorkerThread = NULLHANDLE;
 
 // currently waiting messages for Worker thread;
 // if this gets too large, its priority will be raised
-HMTX                G_hmtxWorkerThreadData = NULLHANDLE;
-ULONG               G_ulWorkerMsgCount;         // V0.9.9 (2001-04-04) [umoeller]
-BOOL                G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
+static HMTX         G_hmtxWorkerThreadData = NULLHANDLE;
+static ULONG        G_ulWorkerMsgCount = 0;     // V0.9.9 (2001-04-04) [umoeller]
+static BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
 
 // Speedy thread
-HAB                 G_habSpeedyThread = NULLHANDLE;
-HMQ                 G_hmqSpeedyThread = NULLHANDLE;
-CHAR                G_szBootupStatus[256];
-HWND                G_hwndBootupStatus = NULLHANDLE;
+static HAB          G_habSpeedyThread = NULLHANDLE;
+static HMQ          G_hmqSpeedyThread = NULLHANDLE;
+static CHAR         G_szBootupStatus[256];
+static HWND         G_hwndBootupStatus = NULLHANDLE;
 
 // File thread
-HAB                 G_habFileThread = NULLHANDLE;
-HMQ                 G_hmqFileThread = NULLHANDLE;
-ULONG               G_CurFileThreadMsg = 0;
+static HAB          G_habFileThread = NULLHANDLE;
+static HMQ          G_hmqFileThread = NULLHANDLE;
+static ULONG        G_CurFileThreadMsg = 0;
             // current message that File thread is processing,
             // or null if none
 
 /* ******************************************************************
  *
- *   Awake objects list
+ *   Awake objects list for Worker thread
  *
  ********************************************************************/
 
@@ -452,7 +454,7 @@ VOID WorkerRemoveObject(WPObject *pObj)
 
 /* ******************************************************************
  *
- *   XFolder Worker thread functions
+ *   Worker thread
  *
  ********************************************************************/
 
@@ -525,7 +527,6 @@ VOID xthrResetWorkerThreadPriority(VOID)
     if (LockWorkerThreadData())
     {
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
         ULONG   ulPrty, ulDelta;
 
         if (G_fWorkerThreadHighPriority)
@@ -718,6 +719,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.7 (2000-12-08) [umoeller]: fixed crash when kernel globals weren't returned
  *@@changed V0.9.7 (2000-12-08) [umoeller]: got rid of dtGetULongTime
  *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
+ *@@changed V0.9.12 (2001-04-28) [umoeller]: moved all the startup crap out of here
  */
 
 MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -790,9 +792,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *          ULONG   current object therein
          *          MPARAM  current object count
          *          MPARAM  maximum object count
+         *  removed V0.9.12 (2001-04-29) [umoeller]
          */
 
-        case WOM_QUICKOPEN:
+        /* case WOM_QUICKOPEN:
         {
             XFolder *pFolder = (XFolder*)mp1;
             PFNWP   pfncb = (PFNWP)mp2;
@@ -814,7 +817,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
 
             krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, NULL, MPNULL);
-        break; }
+        break; } */
 
         /*
          * WOM_PROCESSORDEREDCONTENT:
@@ -827,9 +830,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *          PPROCESSCONTENTINFO
          *                  *mp2    structure with process info,
          *                          composed by xfProcessOrderedContent
+         * removed V0.9.12 (2001-04-29) [umoeller]
          */
 
-        case WOM_PROCESSORDEREDCONTENT:
+        /* case WOM_PROCESSORDEREDCONTENT:
         {
             XFolder             *pFolder = (XFolder*)mp1;
             PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO)mp2;
@@ -838,164 +842,18 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 _Pmpf(("Entering WOM_PROCESSORDEREDCONTENT..."));
             #endif
 
-            if (wpshCheckObject(pFolder))
-            {
-                if (pPCI)
-                {
-                    if (pPCI->ulObjectNow == 0)
-                    {
-                        // first call: initialize structure
-                        pPCI->ulObjectMax = 0;
-                        wpshCheckIfPopulated(pFolder,
-                                             FALSE);        // full populate
-                        // now count objects
-                        for (   pPCI->pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
-                                (pPCI->pObject);
-                                pPCI->pObject = _wpQueryContent(pFolder, pPCI->pObject, QC_NEXT)
-                            )
-                        {
-                            pPCI->ulObjectMax++;
-                        }
 
-                        #ifdef DEBUG_STARTUP
-                            _Pmpf(("  Found %d objects", pPCI->ulObjectMax));
-                        #endif
+        break; } */
 
-                        // get first object
-                        pPCI->henum = _xwpBeginEnumContent(pFolder);
-                        if (pPCI->henum)
-                            pPCI->pObject = _xwpEnumNext(pFolder, pPCI->henum);
-                    }
-                    else
-                    {
-                        // subsequent calls: get next object
-                        pPCI->pObject = _xwpEnumNext(pFolder, pPCI->henum);
-                    }
-
-                    // now process that object
-                    pPCI->ulObjectNow++;
-                    if (pPCI->pObject)
-                    {
-                        // this is not the last object: start it
-                        if (pPCI->pfnwpCallback)
-                        {
-                            if (wpshCheckObject(pPCI->pObject))
-                            {
-                                #ifdef DEBUG_STARTUP
-                                    _Pmpf(("  Sending T1M_POCCALLBACK"));
-                                #endif
-                                // the thread-1 object window will
-                                // then call the callback on thread one
-                                krnSendThread1ObjectMsg(T1M_POCCALLBACK,
-                                                         (MPARAM)pPCI,  // contains the object
-                                                         MPNULL);
-                            }
-                        }
-                        DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                        &pPCI->ulFirstTime,
-                                        sizeof(pPCI->ulFirstTime));
-
-                        // wait for next object
-                        xthrPostWorkerMsg(WOM_WAITFORPROCESSNEXT,
-                                          mp1, mp2);
-                    }
-                    else
-                    {
-                        // pPCI->pObject == NULL:
-                        // no more objects, call callback with NULL, clean up and stop
-                        if (pPCI->pfnwpCallback)
-                        {
-                            #ifdef DEBUG_STARTUP
-                                _Pmpf(("  Sending T1M_POCCALLBACK, pObject == NULL"));
-                            #endif
-                            krnSendThread1ObjectMsg(T1M_POCCALLBACK,
-                                                     (MPARAM)pPCI,  // pObject == NULL now
-                                                     MPNULL);
-                        }
-
-                        _xwpEndEnumContent(pFolder, pPCI->henum);
-                        free(pPCI);
-                    }
-                }
-            }
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("  Done with WOM_PROCESSORDEREDCONTENT"));
-            #endif
-
-        break; }
-
-        case WOM_WAITFORPROCESSNEXT:
+        /* case WOM_WAITFORPROCESSNEXT:
         {
             PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO)mp2;
             BOOL                OKGetNext = FALSE;
 
             if (pPCI)
             {
-                if (!pPCI->fCancelled)
-                {
-                    if (pPCI->ulTiming == 0)
-                    {
-                        // "wait for close" mode
-                        if (_wpWaitForClose(pPCI->pObject,
-                                            pPCI->hwndView,
-                                            0,
-                                            SEM_IMMEDIATE_RETURN,
-                                            FALSE) == 0)
-                            OKGetNext = TRUE;
-                    }
-                    else
-                    {
-                        // timing mode
-                        ULONG ulNowTime;
-                        DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                        &ulNowTime,
-                                        sizeof(ulNowTime));
-                        if (ulNowTime > (pPCI->ulFirstTime + pPCI->ulTiming))
-                            OKGetNext = TRUE;
-                    }
-
-                    if (OKGetNext)
-                    {
-                        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-                        if (pKernelGlobals)
-                        {
-                            // ready to go for next object:
-                            // make sure the damn PM hard error windows are not visible,
-                            // because this locks any other PM activity
-                            if (    (WinIsWindowVisible(pKernelGlobals->hwndHardError))
-                                 || (WinIsWindowVisible(pKernelGlobals->hwndSysError))
-                               )
-                            {
-                                DosBeep(250, 100);
-                                // wait a little more and try again
-                                OKGetNext = FALSE;
-                            }
-
-                            krnUnlockGlobals();
-                        }
-                    }
-
-                    if (OKGetNext)
-                        xthrPostWorkerMsg(WOM_PROCESSORDEREDCONTENT, mp1, mp2);
-                    else
-                    {
-                        // not ready yet:
-                        // sleep awhile
-                        DosSleep(100);
-                        // and repost
-                        xthrPostWorkerMsg(WOM_WAITFORPROCESSNEXT, mp1, mp2);
-                    }
-                } // end if (!pPCI->fCancelled)
-                else
-                {
-                    // cancelled: notify that we're done (V0.9.0)
-                    pPCI->pObject = NULL;
-                    krnSendThread1ObjectMsg(T1M_POCCALLBACK,
-                                            (MPARAM)pPCI, MPNULL);
-                    free(pPCI);
-                }
             }
-        break; }
+        break; } */
 
         /*
          * WOM_ADDAWAKEOBJECT:
@@ -1352,7 +1210,419 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
 
 /* ******************************************************************
  *
- *   here come the File thread functions
+ *   Startup thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ QUICKOPENDATA:
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ */
+
+typedef struct _QUICKOPENDATA
+{
+    LINKLIST    llQuicks;            // linked list of quick-open folders,
+                                    // plain WPFolder* pointers
+    HWND        hwndStatus;
+
+    ULONG       cQuicks,
+                ulQuickThis;
+
+    BOOL        fCancelled;
+
+} QUICKOPENDATA, *PQUICKOPENDATA;
+
+/*
+ *@@ fnwpQuickOpenDlg:
+ *      dlg proc for the QuickOpen status window.
+ *
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: moved this here from kernel.c
+ */
+
+MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+        {
+            WinSetWindowPtr(hwnd, QWL_USER, mp2);       // ptr to QUICKOPENDATA
+            ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
+                                     PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+        break; }
+
+        case WM_COMMAND:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case DID_CANCEL:
+                {
+                    PQUICKOPENDATA pqod = (PQUICKOPENDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                    pqod->fCancelled = TRUE;
+                    // this will cause the callback below to
+                    // return FALSE
+                break; }
+
+                default:
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+            }
+        break;
+
+        case WM_SYSCOMMAND:
+        {
+            switch (SHORT1FROMMP(mp1))
+            {
+                case SC_HIDE:
+                {
+                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    if (pGlobalSettings)
+                    {
+                        pGlobalSettings->ShowStartupProgress = 0;
+                        cmnUnlockGlobalSettings();
+                        cmnStoreGlobalSettings();
+                    }
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+                break; }
+
+                default:
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+            }
+        break; }
+
+        case WM_DESTROY:
+        {
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+        break; }
+
+        default:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ fncbQuickOpen:
+ *      callback func for fdrQuickOpen.
+ *
+ *      If this returns FALSE, processing is
+ *      terminated.
+ *
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: adjusted parameters for new prototype
+ */
+
+BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
+                            WPObject *pObject,
+                            ULONG ulNow,
+                            ULONG ulMax,
+                            ULONG ulCallbackParam)
+{
+    PQUICKOPENDATA pqod = (PQUICKOPENDATA)ulCallbackParam;
+
+    WinSendMsg(WinWindowFromID(pqod->hwndStatus, ID_SDDI_PROGRESSBAR),
+               WM_UPDATEPROGRESSBAR,
+               (MPARAM)(
+                           pqod->ulQuickThis * 100
+                            + ( (100 * ulNow) / ulMax )
+                       ),
+               (MPARAM)(pqod->cQuicks * 100));
+
+    // if "Cancel" has been pressed, return FALSE
+    return (!pqod->fCancelled);
+}
+
+/*
+ *@@ fntQuickOpenFolders:
+ *      synchronous thread created from fntStartupThread
+ *      to process the quick-open folders.
+ *
+ *      The thread data is a PQUICKOPENDATA.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ */
+
+void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
+{
+    PQUICKOPENDATA pqod = (PQUICKOPENDATA)ptiMyself->ulData;
+    PLISTNODE pNode;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    for (pNode = lstQueryFirstNode(&pqod->llQuicks);
+         pNode;
+         pNode = pNode->pNext)
+    {
+        WPFolder *pFolder = (WPFolder*)pNode->pItemData;
+
+        if (    (pFolder)
+             && (_somIsA(pFolder, _WPFolder))
+           )
+        {
+            if (pGlobalSettings->ShowStartupProgress)
+            {
+                CHAR szTemp[256];
+                _wpQueryFilename(pFolder, szTemp, TRUE);
+                WinSetDlgItemText(pqod->hwndStatus, ID_SDDI_STATUS, szTemp);
+
+                if (pGlobalSettings->ShowStartupProgress)
+                    WinSendMsg(WinWindowFromID(pqod->hwndStatus, ID_SDDI_PROGRESSBAR),
+                               WM_UPDATEPROGRESSBAR,
+                               (MPARAM)(pqod->ulQuickThis * 100),
+                               (MPARAM)(pqod->cQuicks * 100));
+            }
+
+            fdrQuickOpen(pFolder,
+                         fncbQuickOpen,
+                         (ULONG)pqod);
+        }
+
+        pqod->ulQuickThis++;
+    }
+
+    // done: set 100%
+    if (pGlobalSettings->ShowStartupProgress)
+        WinSendMsg(WinWindowFromID(pqod->hwndStatus, ID_SDDI_PROGRESSBAR),
+                   WM_UPDATEPROGRESSBAR,
+                   (MPARAM)1,
+                   (MPARAM)1);
+
+    DosSleep(500);
+
+    // tell thrRunSync that we're done
+    WinPostMsg(ptiMyself->hwndNotify,
+               WM_USER,
+               0, 0);
+}
+
+/*
+ *@@ fntStartupThread:
+ *      startup thread, which does the XWorkplace startup
+ *      processing.
+ *
+ *      This is a transient thread created from the File
+ *      thread after the desktop window has been opened
+ *      (FIM_DESKTOPPOPULATED). This thread now does
+ *      all the startup processing (V0.9.12), replacing
+ *      the ugly messaging in the file and worker threads
+ *      and with the thread-1 object window we had
+ *      previously. The file thread now just starts
+ *      this thread and need not worry about anything
+ *      else... it doesn't even wait for this to finish.
+ *
+ *      In detail, this does:
+ *
+ *      --  startup folder processing;
+ *
+ *      --  quick-open populate;
+ *
+ *      --  post-installation processing, i.e. after install,
+ *          create the objects and such.
+ *
+ *      This thread is created with a PM message queue
+ *      so we can do WinSendMsg in here. Also, the status
+ *      windows are now displayed on this thread.
+ *
+ *      The thread data is the HWND of the desktop just
+ *      opened.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ */
+
+void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
+{
+    HWND                hwndDesktopJustOpened = (HWND)ptiMyself->ulData;
+    PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    CHAR                szDesktopDir[CCHMAXPATH];
+
+    // sleep a little while more
+    // V0.9.4 (2000-08-02) [umoeller]
+    DosSleep(pGlobalSettings->ulStartupInitialDelay);
+
+    // notify daemon of WPS desktop window handle
+    // V0.9.9 (2001-03-27) [umoeller]: moved this up,
+    // we don't have to wait here
+    // V0.9.9 (2001-04-08) [umoeller]: wrong, we do
+    // need to wait.. apparently, on some systems,
+    // this doesn't work otherwise
+    krnPostDaemonMsg(XDM_DESKTOPREADY,
+                     (MPARAM)cmnQueryActiveDesktopHWND(),
+                     (MPARAM)0);
+
+    /*
+     *  startup folders
+     *
+     */
+
+    // check if startup folder is to be skipped
+    if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+            // V0.9.3 (2000-04-25) [umoeller]
+    {
+        // OK, process startup folder
+        WPFolder    *pFolder;
+
+        // load XFldStartup class if not already loaded
+        if (!_XFldStartup)
+        {
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("Loading XFldStartup class"));
+            #endif
+            XFldStartupNewClass(XFldStartup_MajorVersion,
+                                XFldStartup_MinorVersion);
+            _wpclsIncUsage(_XFldStartup);
+        }
+
+        // find startup folder(s)
+        for (pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, NULL);
+             pFolder;
+             pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, pFolder))
+        {
+            // pFolder now has the startup folder to be processed
+
+            _Pmpf((__FUNCTION__ ": found startup folder %s",
+                        _wpQueryTitle(pFolder)));
+
+            // skip folders which should only be started on bootup
+            // except if we have specified that we want to start
+            // them again when restarting the WPS
+            if (    (_xwpQueryXStartupType(pFolder) != XSTARTUP_REBOOTSONLY)
+                 || (krnNeed2ProcessStartupFolder())
+               )
+            {
+                ULONG ulTiming = 0;
+                if (_somIsA(pFolder, _XFldStartup))
+                    ulTiming = _xwpQueryXStartupObjectDelay(pFolder);
+                else
+                    ulTiming  = pGlobalSettings->ulStartupObjectDelay;
+
+                // start the folder contents synchronously;
+                // this func now displays the progress dialog
+                // and does not return until the folder was
+                // fully processed (this calls another thrRunSync
+                // internally, so the SIQ is not blocked)
+                _xwpStartFolderContents(pFolder,
+                                        ulTiming);
+            }
+            else
+                _Pmpf(("  skipping this one"));
+        }
+
+        _Pmpf((__FUNCTION__ ": done with startup folders"));
+
+        // done with startup folders:
+        krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
+    } // if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+
+    /*
+     *  quick-open folders
+     *
+     */
+
+    // "quick open" disabled because Shift key pressed?
+    if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+    {
+        // no:
+        // get the quick-open folders
+        XFolder *pQuick = NULL;
+        QUICKOPENDATA qod;
+        memset(&qod, 0, sizeof(qod));
+        lstInit(&qod.llQuicks, FALSE);
+
+        for (pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
+             pQuick;
+             pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick))
+        {
+            lstAppendItem(&qod.llQuicks, pQuick);
+        }
+
+        // if we have any quick-open folders: go
+        if (qod.cQuicks = lstCountItems(&qod.llQuicks))
+        {
+            if (pGlobalSettings->ShowStartupProgress)
+            {
+                qod.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                                            fnwpQuickOpenDlg,
+                                            cmnQueryNLSModuleHandle(FALSE),
+                                            ID_XFD_STARTUPSTATUS,
+                                            &qod);      // param
+                WinSetWindowText(qod.hwndStatus,
+                                 cmnGetString(ID_XFSI_QUICKSTATUS)) ; // pszQuickStatus
+
+                winhRestoreWindowPos(qod.hwndStatus,
+                                     HINI_USER,
+                                     INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
+                                     SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                WinSendMsg(WinWindowFromID(qod.hwndStatus, ID_SDDI_PROGRESSBAR),
+                           WM_UPDATEPROGRESSBAR,
+                           (MPARAM)0,
+                           (MPARAM)qod.cQuicks);
+            }
+
+            // run the Quick Open thread synchronously
+            // which updates the status window
+            thrRunSync(ptiMyself->hab,
+                       fntQuickOpenFolders,
+                       "QuickOpen",
+                       (ULONG)&qod);
+
+            if (pGlobalSettings->ShowStartupProgress)
+            {
+                winhSaveWindowPos(qod.hwndStatus,
+                                  HINI_USER,
+                                  INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
+                WinDestroyWindow(qod.hwndStatus);
+            }
+
+        }
+    } // end if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+
+    /*
+     *  other stuff
+     *
+     */
+
+    // destroy boot logo, if present
+    xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
+
+    // destroy archive marker file, if it exists
+    if (_wpQueryFilename(cmnQueryActiveDesktop(),
+                         szDesktopDir,
+                         TRUE))     // fully q'fied
+    {
+        WPFileSystem *pMarkerFile;
+        strcat(szDesktopDir, "\\");
+        strcat(szDesktopDir, XWORKPLACE_ARCHIVE_MARKER);
+        pMarkerFile
+            = _wpclsQueryObjectFromPath(_WPFileSystem, szDesktopDir);
+        if (pMarkerFile)
+            // exists:
+            _wpFree(pMarkerFile);
+    }
+
+    // if XFolder was just installed, check for
+    // existence of config folders and
+    // display welcome msg
+    if (PrfQueryProfileInt(HINI_USER,
+                           (PSZ)INIAPP_XWORKPLACE,
+                           (PSZ)INIKEY_JUSTINSTALLED,
+                           0x123) != 0x123)
+    {
+        // XWorkplace was just installed:
+        // delete "just installed" INI key
+        PrfWriteProfileString(HINI_USER,
+                              (PSZ)INIAPP_XWORKPLACE,
+                              (PSZ)INIKEY_JUSTINSTALLED,
+                              NULL);
+
+        // say hello on thread 1
+        krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
+    }
+}
+
+/* ******************************************************************
+ *
+ *   File thread
  *
  ********************************************************************/
 
@@ -1531,6 +1801,7 @@ VOID CollectDoubleFiles(MPARAM mp1)
  *@@changed V0.9.3 (2000-04-25) [umoeller]: redid initial desktop open processing
  *@@changed V0.9.9 (2001-03-27) [umoeller]: earlier daemon notification of desktop open
  *@@changed V0.9.10 (2001-04-08) [umoeller]: no earlier daemon notification of desktop open... sigh
+ *@@changed V0.9.12 (2001-04-28) [umoeller]: moved all the startup crap out of here
  */
 
 MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1555,6 +1826,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *@@added V0.9.3 (2000-04-26) [umoeller]
          *@@changed V0.9.4 (2000-08-02) [umoeller]: initial delay now configurable
          *@@changed V0.9.5 (2000-08-26) [umoeller]: reverted to populate from open...
+         *@@changed V0.9.12 (2001-04-29) [umoeller]: now starting fntStartupThread
          */
 
         case FIM_DESKTOPPOPULATED:
@@ -1580,193 +1852,16 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             if (pKernelGlobals)
                 krnUnlockGlobals();
 
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("    Posting XDM_DESKTOPREADY (0x%lX) to daemon",
-                        cmnQueryActiveDesktopHWND()));
-            #endif
+            // create the startup thread which now does the
+            // processing for us V0.9.12 (2001-04-29) [umoeller]
+            thrCreate(NULL,
+                      fntStartupThread,
+                      NULL,
+                      "StartupThread",
+                      THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                      (ULONG)mp2);      // desktop window
 
-            // sleep a little while more
-            // V0.9.4 (2000-08-02) [umoeller]
-            winhSleep(pGlobalSettings->ulStartupInitialDelay);
-
-            // notify daemon of WPS desktop window handle
-            // V0.9.9 (2001-03-27) [umoeller]: moved this up,
-            // we don't have to wait here
-            // V0.9.9 (2001-04-08) [umoeller]: wrong, we do
-            // need to wait.. apparently, on some systems,
-            // this doesn't work otherwise
-            krnPostDaemonMsg(XDM_DESKTOPREADY,
-                             (MPARAM)cmnQueryActiveDesktopHWND(),
-                             (MPARAM)0);
-
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("    Posting FIM_STARTUP (1) to File thread",
-                        cmnQueryActiveDesktopHWND()));
-            #endif
-
-            // go for startup folder
-            xthrPostFileMsg(FIM_STARTUP,
-                            (MPARAM)1,  // startup action indicator: first post
-                            0); // ignored
-        break; }
-
-        /*
-         *@@ FIM_STARTUP:
-         *      this gets posted in turn by FIM_DESKTOPREADY
-         *      initially and several times afterwards with an
-         *      increasing value in mp1, depending on which
-         *      different startup thingies will be processed.
-         *
-         *      Parameters:
-         *          ULONG mp1: startup action indicator.
-         *
-         *      Valid values for mp1:
-         *      -- 1:   initial posting by FIM_DESKTOPREADY.
-         *              This checks for the "just installed" flag
-         *              in OS2.INI.
-         *      -- 2:   start processing XWorkplace Startup folders.
-         *      -- 3:   populate Quick Open folders
-         *      -- 4:   destroy boot logo
-         *      -- 0:   done, post no next FIM_STARTUP.
-         *
-         *      This is maybe the most obscure code in XWorkplace.
-         */
-
-        case FIM_STARTUP:
-        {
-            ULONG   ulAction = (ULONG)mp1;
-            BOOL    fPostNext = FALSE;
-
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("fnwpFileObject: got FIM_STARTUP(%d)", ulAction));
-            #endif
-
-            switch (ulAction)
-            {
-                case 1: // "just installed" check
-                {
-                    // V0.9.9 (2001-03-27) [umoeller]
-                    // this used to be "just installed" check...
-                    // moved this down
-                    fPostNext = TRUE;
-                break; }
-
-                case 2: // startup folder
-                {
-                    fPostNext = TRUE;
-                    // initiate processing of startup folder; this is
-                    // again done by the Thread-1 object window.
-                    // if (krnNeed2ProcessStartupFolder()) // V0.9.9 (2001-03-19) [pr]: check this elsewhere
-                    {
-                        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-                        // check if startup folder is to be skipped
-                        if ((pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP) == 0)
-                                // V0.9.3 (2000-04-25) [umoeller]
-                        {
-                            // OK, process startup folder
-                            krnPostThread1ObjectMsg(T1M_BEGINSTARTUP, MPNULL, MPNULL);
-                                // this will continue asynchronously and
-                                // post FIM_STARTUPFOLDERDONE when done
-                            fPostNext = FALSE;
-                        }
-                    }
-                break; }
-
-                case 3: // populate config folders
-                {
-                    // now go for the "Quick open" folders;
-                    krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN, MPNULL, MPNULL);
-                            // this posts FIM_STARTUPFOLDERDONE(2)
-                            // back to us, which in turn posts
-                            // FIM_STARTUP(4)... kinda sick.
-                break; }
-
-                case 4: // done completely:
-                {
-                    CHAR    szDesktopDir[2*CCHMAXPATH];
-                    // stop this posting game
-                    fPostNext = FALSE;
-
-                    // destroy boot logo, if present
-                    xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
-
-                    // destroy archive marker file, if it exists
-                    if (_wpQueryFilename(cmnQueryActiveDesktop(),
-                                         szDesktopDir,
-                                         TRUE))     // fully q'fied
-                    {
-                        WPFileSystem *pMarkerFile;
-                        strcat(szDesktopDir, "\\");
-                        strcat(szDesktopDir, XWORKPLACE_ARCHIVE_MARKER);
-                        pMarkerFile
-                            = _wpclsQueryObjectFromPath(_WPFileSystem, szDesktopDir);
-                        if (pMarkerFile)
-                            // exists:
-                            _wpFree(pMarkerFile);
-                    }
-
-                    // if XFolder was just installed, check for
-                    // existence of config folders and
-                    // display welcome msg
-                    if (PrfQueryProfileInt(HINI_USER,
-                                           (PSZ)INIAPP_XWORKPLACE,
-                                           (PSZ)INIKEY_JUSTINSTALLED,
-                                           0x123) != 0x123)
-                    {
-                        // XWorkplace was just installed:
-                        // delete "just installed" INI key
-                        PrfWriteProfileString(HINI_USER,
-                                              (PSZ)INIAPP_XWORKPLACE,
-                                              (PSZ)INIKEY_JUSTINSTALLED,
-                                              NULL);
-
-                        krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
-                    }
-                break; }
-            } // end switch
-
-            if (fPostNext)
-                // post next startup action
-                xthrPostFileMsg(FIM_STARTUP,
-                                (MPARAM)(ulAction+1),
-                                0);
-        break; }
-
-        /*
-         *@@ FIM_STARTUPFOLDERDONE:
-         *      this gets posted from various locations
-         *      involved in processing the Startup folder
-         *      when processing is complete or has been
-         *      cancelled.
-         *
-         *      Parameters:
-         *          mp1:        if 1, we're done with the startup folder.
-         *                      If 2, we're done with the quick-open folders.
-         */
-
-        case FIM_STARTUPFOLDERDONE:
-        {
-            ULONG ulNextAction = 0;
-
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("fnwpFileObject: got FIM_STARTUPFOLDERDONE(%d)", (ULONG)mp1));
-            #endif
-
-            switch ((ULONG)mp1)
-            {
-                case 1:
-                    krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
-                    ulNextAction = 3;
-                break;
-
-                case 2:
-                    ulNextAction = 4;
-                break;
-            }
-
-            xthrPostFileMsg(FIM_STARTUP,
-                            (MPARAM)ulNextAction,
-                            0);
+            // moved all the rest to fntStartupThread
         break; }
 
         /*

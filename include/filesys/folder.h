@@ -130,8 +130,16 @@
      *
      ********************************************************************/
 
+    typedef BOOL _Optlink FNCBQUICKOPEN(WPFolder *pFolder,
+                                        WPObject *pObject,
+                                        ULONG ulNow,
+                                        ULONG ulMax,
+                                        ULONG ulCallbackParam);
+    typedef FNCBQUICKOPEN *PFNCBQUICKOPEN;
+
     BOOL fdrQuickOpen(WPFolder *pFolder,
-                      PFNWP pfnwpCallback);
+                      PFNCBQUICKOPEN pfnCallback,
+                      ULONG ulCallbackParam);
 
     /* ******************************************************************
      *
@@ -502,6 +510,15 @@
                                       PSMHSTRUCT psmh,
                                       BOOL fInterTask);
     #endif
+
+    /* ******************************************************************
+     *
+     *   Start folder contents
+     *
+     ********************************************************************/
+
+    ULONG fdrStartFolderContents(WPFolder *pFolder,
+                                 ULONG ulTiming);
 
 #endif
 
