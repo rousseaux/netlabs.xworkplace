@@ -169,6 +169,7 @@
 
     #define XFOLDER_CLASSLISTID     "<XWP_CLASSLIST>"
     #define XFOLDER_TRASHCANID      "<XWP_TRASHCAN>"
+    #define XFOLDER_XCENTERID       "<XWP_XCENTER>"
 
     #define XFOLDER_INTROID         "<XWP_INTRO>"
     #define XFOLDER_USERGUIDE       "<XWP_REF>"

@@ -269,6 +269,8 @@ CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
 !else
 # release code
 CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol- /tn+
+# V0.9.7 (2000-12-10) [umoeller]: added /tn+, or we won't get line numbers
+# in the map files for the release version...
 !endif
 
 # DLL code (multi-threaded)

@@ -430,6 +430,6 @@ WPProgramWithEnvironment 1 subclass of WPProgram by Rich Walsh. Unlike DTProgram
 PracticeMooV 1 QuickTime Movie player by Practice, Inc.
 WPZORX 1 WPFolder subclass for the ObjectREXX WPS interface.
 WPZORXINIT 1 WPTransient subclass for the ObjectREXX WPS interface.
-
+ExtendedDesktop 1 "Desktop Extender", WPDesktop replacement class; a classic (version 1.4 is from 1993!) IBM Employee Written Software by Dan Campbell.
 
 

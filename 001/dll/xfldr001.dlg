@@ -2317,59 +2317,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XCD_XWPINSTALLEDCLASSES LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Installed XWorkplace Classes", ID_XCD_XWPINSTALLEDCLASSES, 26,
-            12, 258, 200, , FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        GROUPBOX        "Class replacements", -1, 4, 114, 245, 85, NOT
-                        WS_GROUP
-        AUTOCHECKBOX    "XFldObject (for all WPS objects)",
-                        ID_XCDI_XWPCLS_XFLDOBJECT, 10, 182, 170, 8,
-                        WS_DISABLED
-        AUTOCHECKBOX    "X~Folder (for all folders)", ID_XCDI_XWPCLS_XFOLDER,
-                        10, 174, 170, 8
-        AUTOCHECKBOX    "XFld~Disk (for disk objects)",
-                        ID_XCDI_XWPCLS_XFLDDISK, 20, 166, 170, 8
-        AUTOCHECKBOX    "XFldDes~ktop (Desktop)", ID_XCDI_XWPCLS_XFLDDESKTOP,
-                        10, 158, 170, 8
-        AUTOCHECKBOX    "XFldDa~taFile (all physical files)",
-                        ID_XCDI_XWPCLS_XFLDDATAFILE, 10, 150, 170, 8
-        AUTOCHECKBOX    "XFld~ProgramFile (executable files)",
-                        ID_XCDI_XWPCLS_XFLDPROGRAMFILE, 10, 142, 170, 8
-        AUTOCHECKBOX    "~XWPSound (enhanced ""Sound"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSOUND, 10, 134, 210, 8
-        AUTOCHECKBOX    "XWPMouse (e~nhanced ""Mouse"" settings object)",
-                        ID_XCDI_XWPCLS_XWPMOUSE, 10, 126, 210, 8
-        AUTOCHECKBOX    "XWPKey~board (enhanced ""Keyboard"" settings object"
-                        ")", ID_XCDI_XWPCLS_XWPKEYBOARD, 10, 118, 210, 8
-        GROUPBOX        "New classes", -1, 4, 20, 245, 92, NOT WS_GROUP
-        AUTOCHECKBOX    "XWPSetup (""XWorkplace Setup"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSETUP, 10, 96, 235, 8, WS_DISABLED
-        AUTOCHECKBOX    "XFldS~ystem (""OS/2 Kernel"" settings object)",
-                        ID_XCDI_XWPCLS_XFLDSYSTEM, 10, 88, 230, 8
-        AUTOCHECKBOX    "XFld~WPS (""Workplace Shell"" settings object)",
-                        ID_XCDI_XWPCLS_XFLDWPS, 10, 80, 230, 8
-        AUTOCHECKBOX    "XWPScr~een (""Screen"" settings object)",
-                        ID_XCDI_XWPCLS_XWPSCREEN, 10, 72, 230, 8
-        AUTOCHECKBOX    "XWP~Media (Multimedia settings)",
-                        ID_XCDI_XWPCLS_XWPMEDIA, 10, 64, 230, 8
-        AUTOCHECKBOX    "XFldStart~up (new Startup folder)",
-                        ID_XCDI_XWPCLS_XFLDSTARTUP, 10, 56, 170, 8
-        AUTOCHECKBOX    "XFld~Shutdown (Shutdown folder)",
-                        ID_XCDI_XWPCLS_XFLDSHUTDOWN, 10, 48, 170, 8
-        AUTOCHECKBOX    "XWPClass~List (WPS Class List object)",
-                        ID_XCDI_XWPCLS_XWPCLASSLIST, 10, 40, 170, 8
-        AUTOCHECKBOX    "XWPT~rashCan/XWPTrashObject (trash can)",
-                        ID_XCDI_XWPCLS_XWPTRASHCAN, 10, 32, 235, 8
-        AUTOCHECKBOX    "XWPStr~ing (Setup-strings-as-object class)",
-                        ID_XCDI_XWPCLS_XWPSTRING, 10, 24, 230, 8
-        DEFPUSHBUTTON   "~OK...", DID_OK, 5, 4, 75, 12
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 90, 4, 75, 12
-        PUSHBUTTON      "~Help", DID_HELP, 175, 4, 75, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XFD_CONTAINERPAGE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XFD_CONTAINERPAGE, 0, 0, 254, 146, NOT FS_DLGBORDER |
@@ -2750,7 +2697,8 @@ BEGIN
         AUTOCHECKBOX    "~Pickup", ID_XSDI_PICKUP, 10, 54, 95, 10
         AUTOCHECKBOX    "Lock in place (~Warp 4)", ID_XSDI_LOCKINPLACE, 10,
                         45, 95, 10
-        AUTOCHECKBOX    "No su~bmenu", ID_XSDI_LOCKINPLACE_NOSUB, 20, 36, 82, 10
+        AUTOCHECKBOX    "No su~bmenu", ID_XSDI_LOCKINPLACE_NOSUB, 20, 36, 82,
+                        10
         AUTOCHECKBOX    "Pr~int", ID_XSDI_PRINT, 10, 27, 95, 10
         GROUPBOX        "Folder menu items", -1, 115, 57, 120, 67,
                         DT_MNEMONIC | NOT WS_GROUP
@@ -2769,5 +2717,61 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XCD_XWPINSTALLEDCLASSES LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Installed XWorkplace Classes", ID_XCD_XWPINSTALLEDCLASSES, 26,
+            12, 258, 208, , FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        GROUPBOX        "Class replacements", -1, 4, 122, 245, 85, NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "XFldObject (for all WPS objects)",
+                        ID_XCDI_XWPCLS_XFLDOBJECT, 10, 190, 170, 8,
+                        WS_DISABLED
+        AUTOCHECKBOX    "X~Folder (for all folders)", ID_XCDI_XWPCLS_XFOLDER,
+                        10, 182, 170, 8
+        AUTOCHECKBOX    "XFld~Disk (for disk objects)",
+                        ID_XCDI_XWPCLS_XFLDDISK, 20, 174, 170, 8
+        AUTOCHECKBOX    "XFldDes~ktop (Desktop)", ID_XCDI_XWPCLS_XFLDDESKTOP,
+                        10, 166, 170, 8
+        AUTOCHECKBOX    "XFldDa~taFile (all physical files)",
+                        ID_XCDI_XWPCLS_XFLDDATAFILE, 10, 158, 170, 8
+        AUTOCHECKBOX    "XFld~ProgramFile (executable files)",
+                        ID_XCDI_XWPCLS_XFLDPROGRAMFILE, 10, 150, 170, 8
+        AUTOCHECKBOX    "~XWPSound (enhanced ""Sound"" settings object)",
+                        ID_XCDI_XWPCLS_XWPSOUND, 10, 142, 210, 8
+        AUTOCHECKBOX    "XWPMouse (e~nhanced ""Mouse"" settings object)",
+                        ID_XCDI_XWPCLS_XWPMOUSE, 10, 134, 210, 8
+        AUTOCHECKBOX    "XWPKey~board (enhanced ""Keyboard"" settings object"
+                        ")", ID_XCDI_XWPCLS_XWPKEYBOARD, 10, 126, 210, 8
+        GROUPBOX        "New classes", -1, 4, 20, 245, 100, NOT WS_GROUP
+        AUTOCHECKBOX    "XWPSetup (""XWorkplace Setup"" settings object)",
+                        ID_XCDI_XWPCLS_XWPSETUP, 10, 104, 235, 8,
+                        WS_DISABLED
+        AUTOCHECKBOX    "XFldS~ystem (""OS/2 Kernel"" settings object)",
+                        ID_XCDI_XWPCLS_XFLDSYSTEM, 10, 96, 230, 8
+        AUTOCHECKBOX    "XFld~WPS (""Workplace Shell"" settings object)",
+                        ID_XCDI_XWPCLS_XFLDWPS, 10, 88, 230, 8
+        AUTOCHECKBOX    "XWPScr~een (""Screen"" settings object)",
+                        ID_XCDI_XWPCLS_XWPSCREEN, 10, 80, 230, 8
+        AUTOCHECKBOX    "XWP~Media (Multimedia settings)",
+                        ID_XCDI_XWPCLS_XWPMEDIA, 10, 72, 230, 8
+        AUTOCHECKBOX    "XFldStart~up (new Startup folder)",
+                        ID_XCDI_XWPCLS_XFLDSTARTUP, 10, 64, 170, 8
+        AUTOCHECKBOX    "XFld~Shutdown (Shutdown folder)",
+                        ID_XCDI_XWPCLS_XFLDSHUTDOWN, 10, 56, 170, 8
+        AUTOCHECKBOX    "XWPClass~List (WPS Class List object)",
+                        ID_XCDI_XWPCLS_XWPCLASSLIST, 10, 48, 170, 8
+        AUTOCHECKBOX    "XWPT~rashCan/XWPTrashObject (trash can)",
+                        ID_XCDI_XWPCLS_XWPTRASHCAN, 10, 40, 235, 8
+        AUTOCHECKBOX    "XWPStr~ing (Setup-strings-as-object class)",
+                        ID_XCDI_XWPCLS_XWPSTRING, 10, 32, 230, 8
+        AUTOCHECKBOX    "XCenter (system control b~ar)", ID_XCDI_XWPCLS_XCENTER, 10, 24, 230,
+                        8
+        DEFPUSHBUTTON   "~OK...", DID_OK, 5, 4, 75, 12
+        PUSHBUTTON      "~Cancel", DID_CANCEL, 90, 4, 75, 12
+        PUSHBUTTON      "~Help", DID_HELP, 175, 4, 75, 12, BS_HELP
     END
 END

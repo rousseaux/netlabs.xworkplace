@@ -180,6 +180,8 @@ BEGIN
     MENUITEM "S~hutdown folder", 212
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Trash can", 213
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~XCenter", 214
 END
 
 /* Context menus on XFldSystem "Drivers" page;

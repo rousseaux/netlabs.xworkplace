@@ -97,7 +97,7 @@ MRESULT EXPENTRY AnimatedMousePointerPageProc(HWND hwnd, ULONG msg, MPARAM mp1, 
     MRESULT mrc = 0;
     BOOL    fCallDefault = TRUE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         PWPSWINDOWDATA pwd = WinQueryWindowPtr(hwnd, QWL_USER);
         SOMAny *somSelf;

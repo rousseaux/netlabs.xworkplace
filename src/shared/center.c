@@ -577,9 +577,24 @@ VOID DwgtCommand(HWND hwnd,
                     if (    (pViewData->pcszHelpLibrary)
                          && (pViewData->ulHelpPanelID)
                        )
+                    {
+                        // widget has specified help itself:
                         _wpDisplayHelp(pXCenterData->somSelf,
                                        pViewData->ulHelpPanelID,
                                        (PSZ)pViewData->pcszHelpLibrary);
+                    }
+                    else
+                    {
+                        // use XCenter help
+                        ULONG ulPanel;
+                        CHAR szHelp[CCHMAXPATH];
+                        if (_wpQueryDefaultHelp(pXCenterData->somSelf,
+                                                &ulPanel,
+                                                szHelp))
+                            _wpDisplayHelp(pXCenterData->somSelf,
+                                           ulPanel,
+                                           szHelp);
+                    }
                 break;
 
                 case ID_CRMI_REMOVEWGT:

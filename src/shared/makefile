@@ -70,7 +70,8 @@ all:   \
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
-    $(OBJS) $(OUTPUTDIR)\xwp.res $(OUTPUTDIR)\xwpfonts.res
+    $(OBJS) $(OUTPUTDIR)\xwp.res
+# $(OUTPUTDIR)\xwpfonts.res
     @echo ----- Leaving $(MAKEDIR)
 !endif
 

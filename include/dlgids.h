@@ -533,6 +533,9 @@
 // new classes with V0.9.4
 #define ID_XCDI_XWPCLS_XWPMEDIA         1269
 
+// new classes with V0.9.7
+#define ID_XCDI_XWPCLS_XCENTER          1270
+
 /******************************************
  * XWPScreen ("Screen", PageMage) >= 1400 *
  ******************************************/

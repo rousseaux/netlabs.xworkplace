@@ -337,7 +337,7 @@ ULONG LoadBitmap(HAB hab,           // in: anchor block
 {
     ULONG           ulReturn = LOADBMP_SUCCESS;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         ULONG           ulrc = 0;
 

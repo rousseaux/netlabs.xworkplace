@@ -171,29 +171,39 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MP
 
 /*
  *@@ krnLock:
- *      function to request the global
- *      hmtxCommonLock semaphore to finally
- *      make the kernel functions thread-safe.
+ *      function to request the global hmtxCommonLock
+ *      semaphore to finally make the kernel functions
+ *      thread-safe. While this semaphore is held,
+ *      all other threads are kept from accessing
+ *      XWP kernel data.
  *
- *      Returns TRUE if the semaphore could be
- *      accessed within the specified timeout.
+ *      Returns TRUE if the semaphore could be accessed
+ *      within the specified timeout.
  *
  *      Note: this requires the existence of a message
- *      queue since we use WinRequestMutexSem.
+ *      queue since we use WinRequestMutexSem. Also
+ *      make sure that your code is properly protected
+ *      with exception handlers (see helpers\except.c
+ *      for remarks about that).
  *
  *      Usage:
  *
- +      if (krnLock(4000))
+ +      BOOL fLocked = FALSE;
+ +      ULONG ulNesting;
+ +      DosEnterMustComplete(&ulNesting);
+ +      TRY_LOUD(excpt1)
  +      {
- +          TRY_LOUD(excpt1, cmnOnKillDuringLock)
+ +          fLocked = krnLock(5000);
+ +          if (fLocked)
  +          {
- +                  // ... precious code here
+ +              // ... precious code here
  +          }
- +          CATCH(excpt1) { } END_CATCH();
- +
- +          cmnUnlock();        // NEVER FORGET THIS!!
  +      }
+ +      CATCH(excpt1) { } END_CATCH();
  +
+ +      if (fLocked)
+ +          krnUnlock();        // NEVER FORGET THIS!!
+ +      DosExitMustComplete(&ulNesting);
  *
  *@@added V0.9.0 (99-11-14) [umoeller]
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
@@ -255,19 +265,20 @@ ULONG krnQueryLock(VOID)
 }
 
 /*
- *@@ krnOnKillDuringLock:
+ *krnOnKillDuringLock:
  *      function to be used with the TRY_xxx
  *      macros to release the mutex semaphore
  *      on thread kills.
  *
- *@@added V0.9.0 (99-11-14) [umoeller]
- *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ *added V0.9.0 (99-11-14) [umoeller]
+ *changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
+ *removed V0.9.7 (2000-12-10) [umoeller]
  */
 
-VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
+/* VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
 {
     DosReleaseMutexSem(G_hmtxCommonLock);
-}
+} */
 
 /********************************************************************
  *

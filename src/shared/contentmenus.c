@@ -235,7 +235,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
         pfnwpOrig = WinDefWindowProc;
     }
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         USHORT  sSelected;
         POINTL  ptlMouse;
@@ -594,7 +594,7 @@ SHORT EXPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
 
 /*
  *@@ cmnuInsertObjectsIntoMenu:
- *      this does the grunt work for mnuFillContentSubmenu:
+ *      this does the real work for mnuFillContentSubmenu:
  *      collecting the folder's contents, sorting that into
  *      folders and objects and reformatting the submenu in
  *      columns.
@@ -659,7 +659,9 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                 // counts items which were left out because
                 // too many are in the folder to be displayed
 
-    TRY_LOUD(excpt1, NULL)
+    ULONG           ulNesting;
+    DosEnterMustComplete(&ulNesting);
+    TRY_LOUD(excpt1)
     {
         WPObject        *pObject, *pObject2;
 
@@ -672,6 +674,9 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         winhRemoveMenuItem(hwndMenu,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY));
 
+        // start collecting stuff; lock the folder contents,
+        // do this in a protected block (exception handler,
+        // must-complete section)
         fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
         if (fFolderLocked)
         {
@@ -757,6 +762,8 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
 
     if (fFolderLocked)
         wpshReleaseFolderMutexSem(pFolder);
+
+    DosExitMustComplete(&ulNesting);
 
     // now sort the lists alphabetically
     lstQuickSort(pllFolders,

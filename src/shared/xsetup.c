@@ -217,7 +217,7 @@ typedef struct _STANDARDOBJECT
 } STANDARDOBJECT, *PSTANDARDOBJECT;
 
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
-#define OBJECTSIDLAST  213      // last object menu ID, inclusive
+#define OBJECTSIDLAST  214      // last object menu ID, inclusive
 
 // array of objects for "Standard WPS objects" menu button
 STANDARDOBJECT  G_WPSObjects[] = {
@@ -267,7 +267,10 @@ STANDARDOBJECT  G_WPSObjects[] = {
                                     XFOLDER_TRASHCANID, "XWPTrashCan",
                                             "DETAILSCLASS=XWPTrashObject;"
                                             "SORTCLASS=XWPTrashObject;",
-                                            213, 0
+                                            213, 0,
+                                    XFOLDER_XCENTERID, "XCenter",
+                                            "",
+                                            214, 0
                                };
 
 /* ******************************************************************
@@ -379,7 +382,8 @@ typedef struct _XWPCLASSES
             fXFldShutdown,
             fXWPClassList,
             fXWPTrashCan,
-            fXWPString;
+            fXWPString,
+            fXCenter;
 
     HWND    hwndTooltip;
     PSZ     pszTooltipString;
@@ -412,6 +416,10 @@ USHORT G_usClassesToolIDs[] =
 
         // new items with V0.9.5
         ID_XCDI_XWPCLS_XWPMEDIA,
+
+        // new items with V0.9.7
+        ID_XCDI_XWPCLS_XWPMEDIA,
+        ID_XCDI_XWPCLS_XCENTER,
 
         DID_OK,
         DID_CANCEL
@@ -477,6 +485,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                      && (winhQueryWPSClass(pObjClass, "XWPTrashObject") != 0)
                                   );
             pxwpc->fXWPString = (winhQueryWPSClass(pObjClass, "XWPString") != 0);
+            pxwpc->fXCenter = (winhQueryWPSClass(pObjClass, "XCenter") != 0);
 
             // copy first structure to second one
             memcpy(pxwpc + 1, pxwpc, sizeof(XWPCLASSES));
@@ -504,6 +513,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST, pxwpc->fXWPClassList);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN, pxwpc->fXWPTrashCan);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING, pxwpc->fXWPString);
+            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XCENTER, pxwpc->fXCenter);
 
             cmnSetControlsFont(hwndDlg, 0, 5000);
                     // added V0.9.3 (2000-04-26) [umoeller]
@@ -634,6 +644,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 pxwpcNew->fXWPClassList = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST);
                 pxwpcNew->fXWPTrashCan = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN);
                 pxwpcNew->fXWPString = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING);
+                pxwpcNew->fXCenter = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XCENTER);
 
                 // compare old and new selections:
                 // if we have a difference, add the class name
@@ -854,6 +865,13 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 else if ((pxwpcNew->fXWPString) && (!pxwpcOld->fXWPString))
                     // register
                     xstrcat(&strReg, "XWPString\n");
+
+                if ((pxwpcOld->fXCenter) && (!pxwpcNew->fXCenter))
+                    // deregister XCenter
+                    xstrcat(&strDereg, "XCenter\n");
+                else if ((pxwpcNew->fXCenter) && (!pxwpcOld->fXCenter))
+                    // register
+                    xstrcat(&strReg, "XCenter\n");
 
                 // check if we have anything to do
                 fReg = (strReg.ulLength != 0);
@@ -2075,6 +2093,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pMsg += sprintf(pMsg, "pXFldShutdown: 0x%lX\n", pKernelGlobals->pXFldShutdown);
             pMsg += sprintf(pMsg, "pXWPClassList: 0x%lX\n", pKernelGlobals->pXWPClassList);
             pMsg += sprintf(pMsg, "pXWPString: 0x%lX\n", pKernelGlobals->pXWPString);
+            pMsg += sprintf(pMsg, "pXCenter: 0x%lX\n", pKernelGlobals->pXCenter);
 
             winhDebugBox("XWorkplace Class Objects", szMsg);
         #endif
