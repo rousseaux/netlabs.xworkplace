@@ -1794,6 +1794,8 @@ static VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
     // DosBeep(3000, 10);
 }
 
+#ifndef __NOMOVEMENT2FEATURES__
+
 /*
  *@@ ProcessMovePtrToButton:
  *      implementation for XDM_MOVEPTRTOBUTTON in fnwpDaemonObject.
@@ -1848,6 +1850,8 @@ static VOID ProcessMovePtrToButton(HWND hwndObject, MPARAM mp1)
                          G_ptlMovingPtrEnd.x,
                          G_ptlMovingPtrEnd.y);
 }
+
+#endif
 
 /*
  *@@ ProcessStartApp:

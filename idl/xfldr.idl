@@ -537,10 +537,10 @@ interface M_XFolder : M_WPFolder
     wpclsQueryDefaultView: override;
 
     wpclsQueryTitle: override;
+    wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;
-
     wpclsQueryIconN: override;
   };
 #endif /* __SOMIDL__ */

@@ -257,6 +257,7 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpOpen");
 
+#ifndef __NOTURBOFOLDERS__
     if (    (ulView == OPEN_SETTINGS)
          // do this only if turbo folders are on!
          // V0.9.19 (2002-04-14) [umoeller]
@@ -280,6 +281,7 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
             return pwpOpen(somSelf, hwndCnr, ulView, param);
         }
     }
+#endif
 
     return (XWPFileSystem_parent_WPFileSystem_wpOpen(somSelf,
                                                      hwndCnr,

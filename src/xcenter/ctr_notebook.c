@@ -87,6 +87,9 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
 
+#include "hook\xwphook.h"
+#include "config\hookintf.h"            // daemon/hook interface
+
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -1138,6 +1141,7 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now automatically making XCenter screen border object
  */
 
 MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1165,10 +1169,22 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_CRDI_VIEW_TOPOFSCREEN:
             _ulPosition = XCENTER_TOP;
+
+            // make sure the XCenter is the current screen
+            // border object for the matching border
+            // V0.9.19 (2002-04-17) [umoeller]
+            hifSetScreenBorderObjectUnique(SCREENCORNER_TOP,
+                                           _wpQueryHandle(pnbp->inbp.somSelf));
         break;
 
         case ID_CRDI_VIEW_BOTTOMOFSCREEN:
             _ulPosition = XCENTER_BOTTOM;
+
+            // make sure the XCenter is the current screen
+            // border object for the matching border
+            // V0.9.19 (2002-04-17) [umoeller]
+            hifSetScreenBorderObjectUnique(SCREENCORNER_BOTTOM,
+                                           _wpQueryHandle(pnbp->inbp.somSelf));
         break;
 
         case ID_CRDI_VIEW_ALWAYSONTOP:

@@ -2,7 +2,7 @@
 /*
  *@@sourcefile notebook.c:
  *      this file is new with V0.82 and contains very useful code for
- *      WPS Settings notebooks pages. Most XWorkplace notebook pages
+ *      WPS Settings notebooks pages. All XWorkplace notebook pages
  *      are implemented using these routines.
  *
  *      All the functions in this file have the ntb* prefix.
@@ -14,27 +14,39 @@
  *      (fnwpPageCommon) and call CALLBACKS for certain notebook
  *      events which you can specify in your call to ntbInsertPage.
  *
- *      Callbacks exist for everything you will need on a notebook page;
- *      this saves you from having to rewrite the same dumb window proc
- *      for every notebook page, especially all the dull "Undo" and
- *      "Default" button handling.
- *
  *      See the declaration of CREATENOTEBOOKPAGE in notebook.h for
  *      details about the callbacks.
  *
- *      These routines maintain a list of currently "initialized"
- *      notebook pages, i.e. pages that are currently instantiated
- *      in memory. You can iterate over these pages in order to
- *      have controls on other pages updated, if this is necessary,
- *      using ntbQueryOpenPages and ntbUpdateVisiblePage. This is
- *      useful when a global setting is changed which should affect
- *      other possibly open notebook pages. For example, if status
- *      bars are disabled globally, the status bar checkboxes should
- *      be disabled in folder settings notebooks.
+ *      Advantages of using this code:
  *
- *      All the notebook functions are fully thread-safe and protected
- *      by mutex semaphores. fnwpPageCommon installs an exception
- *      handler, so all the callbacks are protected by that handler too.
+ *      1)  Less typing, less code. Writing the same stupid PM
+ *          code to react to the typical "checkbox pressed"
+ *          notification is really tiresome. fnwpPageCommon has
+ *          callback support for the very large majority of PM
+ *          events that will come into a dialog proc.
+ *
+ *      2)  The separation between "init" and "item changed"
+ *          callbacks allows for less code also when items need
+ *          to be disabled because of certain settings.
+ *
+ *      3)  Easier support for "Undo" and "Default". The NOTEBOOKPAGE
+ *          struct that is maintained for each page has space for
+ *          backing up data so you won't have to deal with QWL_USER
+ *          and that crap yourself. In conjunction with
+ *
+ *      4)  Maintenance of a global list of all currently open
+ *          notebook pages on the system. This allows for refreshing
+ *          the display if settings change from some other place.
+ *          See ntbQueryOpenPages and ntbUpdateVisiblePage.
+ *          For example, if status bars are disabled globally in
+ *          "Workplace Shell", the status bar checkboxes should
+ *          be disabled in open folder instance notebooks.
+ *
+ *      5)  Dialog formatter support. See ntbFormatPage.
+ *
+ *      6)  Thread safety and exception handling. fnwpPageCommon
+ *          installs an exception handler, so all the callbacks are
+ *          protected by that handler too.
  *
  *@@header "shared\notebook.h"
  */
@@ -111,11 +123,11 @@
 
 // root of linked list of opened notebook pages
 // (this holds NOTEBOOKPAGELISTITEM's)
-static PLINKLIST       G_pllOpenPages = NULL;          // this is auto-free
+static LINKLIST        G_llOpenPages;   // this is auto-free
 
 // root of linked list of subclassed notebooks
 // (this holds
-static PLINKLIST       G_pllSubclNotebooks = NULL;     // this is auto-free
+static LINKLIST        G_llSubclNotebooks; // this is auto-free
 
 // mutex semaphore for both lists
 static HMTX            G_hmtxNotebooks = NULLHANDLE;
@@ -147,8 +159,8 @@ static BOOL LockNotebooks(VOID)
                                0,            // unshared
                                TRUE))        // request!
         {
-            G_pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
-            G_pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
+            lstInit(&G_llOpenPages, TRUE); // NOTEBOOKPAGELISTITEMs are freeable
+            lstInit(&G_llSubclNotebooks, TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
 
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
@@ -330,7 +342,7 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
                 if (fSemOwned = LockNotebooks())
                     // WinRequestMutexSem works even if the thread has no message queue
                 {
-                    if (!lstRemoveItem(G_pllOpenPages,
+                    if (!lstRemoveItem(&G_llOpenPages,
                                        pnbp->pnbli))  // this is auto-free!
                                 // this free's the pnbli
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1177,7 +1189,7 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
             if (!hwndCurrent)
                 pnbp->hwndFrame = NULLHANDLE;
 
-            lstAppendItem(G_pllOpenPages,
+            lstAppendItem(&G_llOpenPages,
                           pnbliNew);
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("Appended NOTEBOOKPAGELISTITEM to pages list"));
@@ -1188,7 +1200,7 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
             // into this notebook; if not, subclass the
             // notebook (otherwise it has already been subclassed
             // by this func)
-            pNode = lstQueryFirstNode(G_pllSubclNotebooks);
+            pNode = lstQueryFirstNode(&G_llSubclNotebooks);
             while (pNode)
             {
                 PSUBCLNOTEBOOKLISTITEM psnbliThis;
@@ -1211,7 +1223,7 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
                 if (pSubclNBLINew = (PSUBCLNOTEBOOKLISTITEM)malloc(sizeof(SUBCLNOTEBOOKLISTITEM)))
                 {
                     pSubclNBLINew->hwndNotebook = pnbp->inbp.hwndNotebook;
-                    lstAppendItem(G_pllSubclNotebooks,
+                    lstAppendItem(&G_llSubclNotebooks,
                                   pSubclNBLINew);
                     pSubclNBLINew->pfnwpNotebookOrig
                         = WinSubclassWindow(pnbp->inbp.hwndNotebook,
@@ -1251,7 +1263,7 @@ static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
     {
         if (fSemOwned = LockNotebooks())
         {
-            PLISTNODE   pNode = lstQueryFirstNode(G_pllSubclNotebooks);
+            PLISTNODE   pNode = lstQueryFirstNode(&G_llSubclNotebooks);
             while (pNode)
             {
                 PSUBCLNOTEBOOKLISTITEM psnbliThis;
@@ -1296,7 +1308,7 @@ static VOID DestroyNBLI(HWND hwndNotebook,
     {
         if (fSemOwned = LockNotebooks())
         {
-            PLISTNODE pPageNode = lstQueryFirstNode(G_pllOpenPages);
+            PLISTNODE pPageNode = lstQueryFirstNode(&G_llOpenPages);
 
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("fnwpSubclNotebook: WM_DESTROY"));
@@ -1320,7 +1332,7 @@ static VOID DestroyNBLI(HWND hwndNotebook,
                     #endif
                     _wpFreeMem(pPageLI->pnbp->inbp.somSelf,
                                (PBYTE)pPageLI->pnbp);
-                    lstRemoveNode(G_pllOpenPages,
+                    lstRemoveNode(&G_llOpenPages,
                                   pPageNode);
                 }
 
@@ -1328,7 +1340,7 @@ static VOID DestroyNBLI(HWND hwndNotebook,
             }
 
             // remove notebook control from list
-            lstRemoveItem(G_pllSubclNotebooks,
+            lstRemoveItem(&G_llSubclNotebooks,
                           pSubclNBLI);      // this frees the pSubclNBLI
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("  removed pSubclNBLI"));
@@ -1852,40 +1864,37 @@ PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
 
     TRY_QUIET(excpt1)
     {
-        // list created yet?
-        if (G_pllOpenPages)
+        if (fSemOwned = LockNotebooks())
         {
-            if (fSemOwned = LockNotebooks())
+            pNode = lstQueryFirstNode(&G_llOpenPages);
+
+            if (pnbp == NULL)
             {
-                pNode = lstQueryFirstNode(G_pllOpenPages);
-
-                if (pnbp == NULL)
-                {
-                    // pcnbp == NULL: return first item
-                    if (pNode)
-                        pItemReturn = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
-                }
-                else
-                    // pcnbp given: search for that page
-                    while (pNode)
-                    {
-                        PNOTEBOOKPAGELISTITEM pItem = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
-                        if (pItem->pnbp == pnbp)
-                        {
-                            // page found: return next
-                            pNode = pNode->pNext;
-                            if (pNode)
-                                pItemReturn = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
-                            break;
-                        }
-
-                        pNode = pNode->pNext;
-                    }
-            } // end if (fSemOwned)
+                // pcnbp == NULL: return first item
+                if (pNode)
+                    pItemReturn = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
+            }
             else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxNotebookLists mutex request failed");
-        } // end if (pllOpenPages)
+            {
+                // pcnbp given: search for that page
+                while (pNode)
+                {
+                    PNOTEBOOKPAGELISTITEM pItem = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
+                    if (pItem->pnbp == pnbp)
+                    {
+                        // page found: return next
+                        if (pNode = pNode->pNext)
+                            pItemReturn = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
+                        break;
+                    }
+
+                    pNode = pNode->pNext;
+                }
+            }
+        } // end if (fSemOwned)
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "hmtxNotebookLists mutex request failed");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1939,11 +1948,11 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
     {
         if (pnbp->fPageVisible)
         {
-            if (    (   (ulPageID == 0)     // don't care?
-                     || (pnbp->inbp.ulPageID == ulPageID)
+            if (    (    (ulPageID == 0)     // don't care?
+                      || (pnbp->inbp.ulPageID == ulPageID)
                     )
-                 && (   (somSelf == NULL)   // don't care?
-                     || (pnbp->inbp.somSelf == somSelf)
+                 && (    (somSelf == NULL)   // don't care?
+                      || (pnbp->inbp.somSelf == somSelf)
                     )
                )
             {
@@ -1955,6 +1964,7 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
             }
         }
     } // while (pcnbp = ntbQueryOpenPages(pcnbp))
+
     return (ulrc);
 }
 

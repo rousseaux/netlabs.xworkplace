@@ -48,6 +48,17 @@
     #define CLIPBOARDKEY "%**C"        /* code in program object's parameter list for
                                           inserting clipboard data */
 
+    // Toolkit 4 definitions
+    #ifndef MENUS_SHORT
+    #define MENUS_SHORT     0
+    #define MENUS_LONG      1
+    #define MENUS_DEFAULT   2
+
+    #define MENUBAR_ON      1
+    #define MENUBAR_OFF     0
+    #define MENUBAR_DEFAULT 2
+    #endif
+
     /* ******************************************************************
      *
      *   Global variables
@@ -57,6 +68,16 @@
     // original wnd proc for folder content menus,
     // which we must subclass (var sits in folder.c)
     extern PFNWP G_pfnwpFolderContentMenuOriginal;
+
+    /* ******************************************************************
+     *
+     *   Miscellaneous
+     *
+     ********************************************************************/
+
+    BOOL mnuQueryDefaultMenuBarVisibility(VOID);
+
+    BOOL mnuSetDefaultMenuBarVisibility(BOOL fVisible);
 
     /* ******************************************************************
      *
@@ -135,6 +156,10 @@
      *
      ********************************************************************/
 
+    ULONG mnuAddWPSMenuPages(WPObject *somSelf,
+                             HWND hwndDlg);
+
+    /*
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID XWPENTRY mnuAddMenusInitPage(PNOTEBOOKPAGE pnbp,
                                           ULONG flFlags);
@@ -160,5 +185,5 @@
                                           USHORT usNotifyCode,
                                           ULONG ulExtra);
     #endif
-
+    */
 #endif

@@ -8,11 +8,18 @@
 <BODY>
 &os2;'s Workplace Shell (WPS) is frequently described as
 <B>"object-oriented".</B> This term suggests that -- as opposed to other user
-operating system's user interfaces -- everything the Workplace Shell
-deals with is first considered an <B>"object":</B> this applies, for example,
-to files, folders, printers, drives etc. All these objects have certain common
-characteristics (such as context menus and properties notebooks), but differ in
-certain others: for example, what you see in a context menu depends
+operating system user interfaces -- everything the Workplace Shell
+deals with is first considered an <B>"object":</B> this applies, for example, to
+<!-- V0.9.19: link added -->
+<A HREF="objects/obj_fdr_main.html">folders</A>,
+<!-- V0.9.19: link added -->
+<A HREF="objects/obj_dataf.html">data files</A>,
+printers, drive objects etc. All these objects have certain common
+characteristics (such as
+<!-- V0.9.19: links added -->
+<A HREF="glossary/gls_popmenu.html">&popmenu;s</A> and
+<A HREF="glossary/gls_notebook.html">properties notebooks</A>), but differ in
+certain others: for example, what you see in a &popmenu; depends
 on the selected object.
 
 <P>In order to better handle these common and different
@@ -64,7 +71,7 @@ make the general structure more lucid (where the lines represent parentship):
 <P>You see that all classes are descendants of <CODE>WPObject</CODE>,
 which is therefore called the "root class" of all WPS classes.
 This implements all the features that are
-common to all Desktop objects: as mentioned before, e.g. context menus and
+common to all Desktop objects: as mentioned before, e.g. &popmenu;s and
 properties notebooks. However, the WPObject class is too abstract to have
 instances of it: this class was only implemented to have other descendant
 classes. Objects of this class will not function.
@@ -122,7 +129,7 @@ operating systems.
 <A HREF="clst_main.html">"WPS Class List"</A> object, all of
 the classes installed on your system will be
 displayed. Regularily, these will be more than 100 classes, which will appear
-in a tree structure. Using context menus, you may register and replace
+in a tree structure. Using &popmenu;s, you may register and replace
 classes here and also deregister classes and undo class replacements. Also,
 you can attempt to create an object (that is: an instance) of many classes
 on your Desktop.

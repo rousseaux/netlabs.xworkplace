@@ -83,6 +83,7 @@ COPYTO = $(XWPRUNNING)\help
 BMPS = \
     img\cascade.bmp \
     img\fonthint.bmp \
+    img\folderview.bmp \
     img\nocascade.bmp \
     img\notrunc.bmp \
     img\properties.bmp \

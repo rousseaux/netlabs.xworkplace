@@ -1047,20 +1047,13 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
             {
                 ULONG   ulMenuBarVisibility = _pFolderLongArray->ulMenuBarVisibility;
                             // 0 = off, 1 = on, 2 = default
-                if (ulMenuBarVisibility == 1)
+                if (ulMenuBarVisibility == MENUBAR_ON) // 1)
                     brc = TRUE;
-                else if (ulMenuBarVisibility == 2)
+                else if (ulMenuBarVisibility == MENUBAR_DEFAULT) // 2)
                 {
-                    CHAR    szTemp[20] = "";
                     // default value set: get the default value
-                    PrfQueryProfileString(HINI_USER,
-                                          (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
-                                          (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
-                                          "ON",         // V0.9.9 (2001-03-27) [umoeller]
-                                          szTemp,
-                                          sizeof(szTemp));
-                    if (!strcmp(szTemp, "ON"))
-                        brc = TRUE;
+                    brc = mnuQueryDefaultMenuBarVisibility();
+                            // V0.9.19 (2002-04-17) [umoeller]
                 }
             }
     }
@@ -2552,7 +2545,6 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
                                               PULONG pHelpPanelId,
                                               PSZ HelpLibrary)
 {
-    BOOL        rc;
     XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
 
     // XFolderData *somThis = XFolderGetData(somSelf);
@@ -2564,16 +2556,17 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
     {
         // somSelf is in the config folder hierarchy:
         // display help for config folders
-        strncpy(HelpLibrary, cmnQueryHelpLibrary(), CCHMAXPATH);
+        strhncpy0(HelpLibrary, cmnQueryHelpLibrary(), CCHMAXPATH);
         *pHelpPanelId = ID_XMH_CONFIGFOLDER;
-        rc = TRUE;
+        return TRUE;
     }
-    else
-        rc = (XFolder_parent_WPFolder_wpQueryDefaultHelp(somSelf,
-                                                           pHelpPanelId,
-                                                           HelpLibrary));
 
-    return (rc);
+    // not cfg folder: call parent, which might call our
+    // new V0.9.19 class method to replace the default
+    // folder help
+    return XFolder_parent_WPFolder_wpQueryDefaultHelp(somSelf,
+                                                      pHelpPanelId,
+                                                      HelpLibrary);
 }
 
 /*
@@ -2940,7 +2933,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
-        return (SETTINGS_PAGE_REMOVED);
+        return SETTINGS_PAGE_REMOVED;
 #ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFolder_parent_WPFolder_wpAddFile2Page(somSelf, hwndNotebook));
@@ -2969,7 +2962,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
-        return (SETTINGS_PAGE_REMOVED);
+        return SETTINGS_PAGE_REMOVED;
 #ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFolder_parent_WPFolder_wpAddFile3Page(somSelf, hwndNotebook));
@@ -3908,6 +3901,35 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
 #endif
 
     return (cmnGetString(ID_XSSI_CLASSTITLE_FOLDER));
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method gets called from
+ *      WPObject::wpQueryDefaultHelp if the object does
+ *      not have a custom help panel set in its instance
+ *      data.
+ *
+ *      We replace the default folder help because,
+ *      frankly, it sucks.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfM_wpclsQueryDefaultHelp(M_XFolder *somSelf,
+                                                  PULONG pHelpPanelId,
+                                                  PSZ pszHelpLibrary)
+{
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_FOLDER_MAIN;
+    return TRUE;
+
+    /* return (M_XFolder_parent_M_WPFolder_wpclsQueryDefaultHelp(somSelf,
+                                                              pHelpPanelId,
+                                                              pszHelpLibrary)); */
 }
 
 /*

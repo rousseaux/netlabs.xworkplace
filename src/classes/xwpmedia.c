@@ -1102,7 +1102,7 @@ SOM_Scope ULONG  SOMLINK xwmm_wpAddObjectWindowPage(XWPMedia *somSelf,
     /* XWPMediaData *somThis = XWPMediaGetData(somSelf); */
     XWPMediaMethodDebug("XWPMedia","xwmm_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

@@ -101,6 +101,7 @@ interface XFldDesktop : WPDesktop
     wpPopulate: override;
 
     wpAddDesktopArcRest1Page: override;
+    wpAddFileMenuPage: override;
     wpAddSettingsPages: override;
 
 #ifdef __PRIVATE__

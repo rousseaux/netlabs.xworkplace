@@ -19,7 +19,7 @@
  *
  *      1)  Each object stores its icon in its MINIRECORDCODE
  *          (as returned by WPObject::wpQueryCoreRecord), in
- *          the hptrIcon field. When the object is created,
+ *          the hptrIcon field. When the object is awakened,
  *          this field is initially set to NULLHANDLE.
  *
  *          MINIRECORDCORE.hptrIcon is returned by wpQueryIcon,
@@ -188,13 +188,13 @@
  *      We presently replace the following icon methods:
  *
  *      --  XWPProgram::wpQueryIcon, XWPProgram::wpSetProgIcon,
- *          XWPProgram::wpQueryIconData @@todo
+ *          XWPProgram::wpQueryIconData
  *
- *      --  XWPProgramFile::wpSetProgIcon, XWPProgramFile::wpQueryIconData @@todo
+ *      --  XWPProgramFile::wpSetProgIcon, XWPProgramFile::wpQueryIconData
  *
- *      --  XFldDataFile::wpQueryIcon, XFldDataFile::wpQueryIconData @@todo
+ *      --  XFldDataFile::wpQueryIcon, XFldDataFile::wpQueryIconData
  *
- *      --  XWPFileSystem::wpQueryIcon, XWPFileSystem::wpQueryIconData @@todo
+ *      --  XWPFileSystem::wpQueryIcon, XWPFileSystem::wpQueryIconData
  *
  *      Function prefix for this file:
  *      --  ico*
@@ -756,7 +756,7 @@ typedef struct _WIN16DIBINFO
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
-static struct _DefaultIconHeader
+static const struct _DefaultIconHeader
 {
         // bitmap array file header;
         // includes first BITMAPFILEHEADER for AND and XOR masks
@@ -2539,7 +2539,6 @@ APIRET icoCopyIconFromObject(WPObject *somSelf,       // in: target
             // now set this icon for the target object
             icoSetIconDataN(somSelf, ulIndex, pData);
             free(pData);
-
 
             // the standard WPS behavior is that
             // if a folder icon is copied onto the

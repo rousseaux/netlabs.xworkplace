@@ -365,20 +365,22 @@
      ********************************************************************/
 
     #ifndef __XWPLITE__
-        DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "XWorkplace");
+        #define XWORKPLACE_STRING "XWorkplace"
         DECLARE_CMN_STRING(ENTITY_OS2, "OS/2");
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "WarpCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "XCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
         DECLARE_CMN_STRING(ENTITY_PAGER, "XPager");
     #else
-        DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "eComStation");
+        #define XWORKPLACE_STRING "eComStation"
         DECLARE_CMN_STRING(ENTITY_OS2, "eComStation");
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "eComCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
         DECLARE_CMN_STRING(ENTITY_PAGER, "ePager");
     #endif
+
+    DECLARE_CMN_STRING(ENTITY_XWORKPLACE, XWORKPLACE_STRING);
 
     DECLARE_CMN_STRING(WC_WPFOLDERWINDOW, "wpFolder window");
 
@@ -505,8 +507,10 @@
     // Groups of settings pages:
     // 1) in "Workplace Shell"
     #define SP_1GENERIC             1
-    #define SP_2REMOVEITEMS         2
-    #define SP_25ADDITEMS           3
+    // #define SP_2REMOVEITEMS         2
+    #define SP_MENUS_COMMON         2       // replaced V0.9.19 (2002-04-17) [umoeller]
+    // #define SP_25ADDITEMS           3
+    #define SP_MENUS_FILE           3       // replaced V0.9.19 (2002-04-17) [umoeller]
     #define SP_26CONFIGITEMS        4
     #define SP_27STATUSBAR          5
     #define SP_3SNAPTOGRID          6
@@ -1067,8 +1071,6 @@
     typedef CMNGETSTRING *PCMNGETSTRING;
 
     #ifdef DIALOG_HEADER_INCLUDED
-        #define LOAD_STRING     ((PCSZ)-1)
-
         extern const CONTROLDEF
                           G_OKButton,
                           G_CancelButton,

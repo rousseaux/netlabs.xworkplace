@@ -1,10 +1,10 @@
 /*  freshini.cmd
 
-    Registers the XWorkplace classes (and class replacements)
+    Registers the eWorkplace classes (and class replacements)
     in the specified user INI file. The WPS will pick up the
     changes after the next WPS startup with that INI file.
 
-    (C) 2001 Ulrich M”ller
+    (C) 2002 Ulrich M”ller
  */
 
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
@@ -12,8 +12,8 @@ call SysLoadFuncs
 
 parse arg inifile
 if inifile == "" then do
-    Say "freshini.cmd (C) 2001 Ulrich M”ller"
-    Say "Sets up the INI file for a new XWorkplace installation."
+    Say "freshini.cmd (C) 2001-2002 Ulrich M”ller"
+    Say "Sets up the INI file for a new eWorkplace installation."
 
     Say "Usage: freshini <inifile>";
     Say "with <inifile> being the full path specification of an INI file."
@@ -86,7 +86,7 @@ rc = RegisterClass("XFldWPS");
 rc = RegisterClass("XWPScreen");
 rc = RegisterClass("XFldStartup");
 rc = RegisterClass("XFldShutdown");
-rc = RegisterClass("XWPSetup");
+/* rc = RegisterClass("XWPSetup"); */
 rc = RegisterClass("XWPTrashCan");
 rc = RegisterClass("XWPTrashObject");
 /* rc = RegisterClass("XWPClassList"); */

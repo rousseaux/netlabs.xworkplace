@@ -1465,7 +1465,7 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage2(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage2");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
@@ -1481,7 +1481,28 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderIncludePage(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddFolderIncludePage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
+}
+
+/*
+ *@@ wpAddFolderSelfClosePage:
+ *      this adds the folder "Self close" page to
+ *      the settings notebook. With Warp 4, this
+ *      is "Window" page 2. We remove that.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderSelfClosePage(XWPTrashCan *somSelf,
+                                                       HWND hwndNotebook)
+{
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddFolderSelfClosePage");
+
+    /* return (XWPTrashCan_parent_WPFolder_wpAddFolderSelfClosePage(somSelf,
+                                                                 hwndNotebook)); */
+
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
@@ -1500,7 +1521,7 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderView2Page(XWPTrashCan *somSelf,
 
     /* return (XWPTrashCan_parent_WPFolder_wpAddFolderView2Page(somSelf,
                                                              hwndNotebook)); */
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

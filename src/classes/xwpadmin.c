@@ -646,7 +646,7 @@ SOM_Scope ULONG  SOMLINK adm_wpAddObjectWindowPage(XWPAdmin *somSelf,
     /* XWPAdminData *somThis = XWPAdminGetData(somSelf); */
     XWPAdminMethodDebug("XWPAdmin","adm_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

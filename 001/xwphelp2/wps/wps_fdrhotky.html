@@ -32,7 +32,7 @@ page in every folder's <A HREF="glossary/gls_notebook.html">properties notebook<
 
 <!-- V0.9.2: added this paragraph -->
 <P>If <B>"Show hotkeys in menus"</B> is checked, &xwp; will add a hotkey
-description to context menu items for which a hotkey has been defined. This might
+description to &popmenu; items for which a hotkey has been defined. This might
 be useful to remember all those different hotkeys. This will make the menu display
 consume more screen space though.
 
@@ -53,15 +53,15 @@ from the list box and press the "Clear" button.
 <P><B>Important notes:</B>
 
 <UL><LI>The entry field allows you to define hotkeys very freely.
-It even accepts and remembers keys which will <B>not function</B> as folder hotkeys,
-because they are
-already occupied by the folder container control (the area of the folder window
-where the contents of the folder are displayed).
+It even accepts and remembers keys which might <B>not function</B> as folder hotkeys,
+because they are already occupied by the folder container control (the area of the
+folder window where the contents of the folder are displayed).
+<!-- V0.9.19: remo ved this
 The reason for this is that &xwp; only receives
 a notification for keys that are not processed by the container already.
 So if you try to define keys
 which already have a default function in folders, such as the cursor keys or regular
-characters (like "a"), the assigned function will not work.
+characters (like "a"), the assigned function will not work. -->
 
 <!-- V0.9.16: removed this
 <BR><LI>The keys you define here might <B>conflict with other
@@ -74,7 +74,10 @@ on older OS/2 versions, but cause no harm. -->
 
 <BR><LI>The hotkeys do work even if you have
 <B>removed the respective menu items</B> from the
-folder context menus (on page 3 of "Context menus" in the
+folder &popmenu;s
+(on the
+<!-- V0.9.19: changed this -->
+"Menu" pages in the
 <!-- V0.9.4: link added -->
 <A HREF="objects/obj_wps.html">"Workplace Shell" object</A>).
 For example, you can remove the

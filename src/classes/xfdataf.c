@@ -875,7 +875,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile2Page(XFldDataFile *somSelf,
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
-        return (SETTINGS_PAGE_REMOVED);
+        return SETTINGS_PAGE_REMOVED;
 #ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFldDataFile_parent_WPDataFile_wpAddFile2Page(somSelf,
@@ -905,7 +905,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile3Page(XFldDataFile *somSelf,
 #ifndef __ALWAYSREPLACEFILEPAGE__
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
-        return (SETTINGS_PAGE_REMOVED);
+        return SETTINGS_PAGE_REMOVED;
 #ifndef __ALWAYSREPLACEFILEPAGE__
     else
         return (XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
@@ -955,41 +955,6 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
 #endif
         return (XFldDataFile_parent_WPDataFile_wpAddFileTypePage(somSelf,
                                                                  hwndNotebook));
-}
-
-/*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      We replace the default help panel for data files
- *      because, frankly, it sucks.
- *
- *@@added V0.9.16 (2002-01-13) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xdf_wpQueryDefaultHelp(XFldDataFile *somSelf,
-                                               PULONG pHelpPanelId,
-                                               PSZ HelpLibrary)
-{
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryDefaultHelp");
-
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
-    {
-        strcpy(HelpLibrary, cmnQueryHelpLibrary());
-        *pHelpPanelId = ID_XSH_DATAFILE_MAIN;
-        return (TRUE);
-    }
-#endif
-
-    return (XFldDataFile_parent_WPDataFile_wpQueryDefaultHelp(somSelf,
-                                                              pHelpPanelId,
-                                                              HelpLibrary));
 }
 
 /*
@@ -1695,6 +1660,37 @@ SOM_Scope PSZ  SOMLINK xdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
 #endif
 
     return (cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE));
+}
+
+/*
+ *@@ wpclsQueryDefaultHelp:
+ *      this WPObject class method gets called from
+ *      WPObject::wpQueryDefaultHelp if the object does
+ *      not have a custom help panel set in its instance
+ *      data.
+ *
+ *      We replace the default data file help because,
+ *      frankly, it sucks. The replacement was added
+ *      with V0.9.16, but we should rather override the
+ *      class method instead.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xdfM_wpclsQueryDefaultHelp(M_XFldDataFile *somSelf,
+                                                   PULONG pHelpPanelId,
+                                                   PSZ pszHelpLibrary)
+{
+    /* M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf); */
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_wpclsQueryDefaultHelp");
+
+    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_DATAFILE_MAIN;
+    return (TRUE);
+
+    /* return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryDefaultHelp(somSelf,
+                                                                     pHelpPanelId,
+                                                                     pszHelpLibrary)); */
 }
 
 /*

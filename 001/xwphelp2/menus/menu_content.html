@@ -5,41 +5,59 @@
     </TITLE>
 </HEAD>
 <BODY>
-<!-- Changes for V0.81: see below. -->
-With &xwp;'s folder content menus, you may take a look at the contents of a folder
-without actually having to open the folder. This saves you space on your display.
+With &xwp;'s folder content menus, you may take a look at the contents of a
+<!-- V0.9.19: link added -->
+<A HREF="objects/obj_fdr_main.html">folder</A>
+without actually having to open a folder view. This may save some room on your
+display.
 
-<P>The folder content menus behave pretty similar to those of the &warpcenter;.
-If you click on a folder icon, a submenu will open to show you the folder's
-contents.
-If you click on another icon, the respective object will be opened in its
-default view (as if you had double-clicked on it in a regular folder).
-If you click on a folder menu with mouse button 2, the folder window will be
-opened (instead of the submenu).
+<!-- V0.9.19: rewrote all the following -->
+<IFNDEF __NOFOLDERCONTENTS__>
+<P>Folder content menus are added according to the following:
 
-<P>Please consult the <I>&xwp; User Guide</I> to read more details
-about these functions and how to configure them.
+<UL><LI>If you have enabled "Add folder content menu" on the "Menu" pages in
+the <A HREF="objects/obj_wps.html">"Workplace Shell" object</A>, every folder
+will receive a folder content menu which displays its own content.
 
-<!-- V0.9.7: rewrote the following -->
-<P>To get rid of folder content menus in folder context menus, disable the
-respective setting on the "Context menus" pages in the
-<A HREF="objects/obj_wps.html">"Workplace Shell" object</A>
-and, for "favorite folders", on the
-<!-- V0.9.16: replaced "XFolder" with "View" -->
-"View"
-page in a folder's <A HREF="glossary/gls_notebook.html">properties notebook</A>.
+<P><LI>In addition, you can declare any folder to be a <B>"favorite folder"</B>
+on the "View" page in each folder's
+<A HREF="glossary/gls_notebook.html">properties notebook</A>.
+All such favorite folders will be added to all folder menus on the system as
+well. For example, if you would like the Desktop's contents to show in all
+menus, declare the Desktop to be a "favorite folder".
 
-<P>To enable or disable the display of icons in folder content menus, use
-the respective setting on the aforementioned "Context menus" page.
+<P><LI>Finally, folder content menus are also displayed from the
+<A HREF="xcenter/xc_main.html">&xcenter;</A> for
+<A HREF="xcenter/xc_objbtn.html">object button widgets</A> that represent
+folders. To remove an object button from an &xcenter;,
+click on it with mouse button 2 and select "Remove widget".
 
-<!-- V0.9.7: added the following -->
-<P>To remove an object button from the
-<!-- V0.9.19: added link -->
-<A HREF="xcenter/xc_main.html">&xcenter;</A>,
-right-click on it and
-select "Remove".
+</UL>
+&xwp; can also <B>display icons</B> of the objects that were collected in
+the folder content menus. Whether this happens is determined by the
+respective setting of the "Menu" pages in the "Workplace Shell" objects,
+which affects all content menus on the system.
+</IFNDEF>
 
-<BR>
+<P>Folder content menus behave similar to those of the &warpcenter; that
+was introduced with &warp4;.
+Any object that is contained in the folder whose contents are displayed is turned
+into a menu item. Subfolders of the folder are turned into submenus. As a result,
+you can browse through all of the folders contents, including all subfolders, by
+opening the respective submenus.
+
+<P>The following special <B>mouse actions</B> are available in folder content
+menus:
+
+<UL><LI>If you click on any icon that is not a submenu (that is, not a subfolder),
+the corresponding object will be opened in its default view (as if you had
+double-clicked on it in a regular folder view).
+<P><LI>If you open a submenu, the submenu will fill itself with the corresponding
+subfolder's contents, possibly including more subfolders.
+<P><LI>If you click on a folder menu with mouse button 2, the folder will be
+opened in its default view as a window (as if you had
+double-clicked on it in a regular folder view).
+</UL>
 </BODY>
 </HTML>
 

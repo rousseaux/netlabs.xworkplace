@@ -101,7 +101,6 @@ interface XFldDataFile : WPDataFile
 
     wpAddFileTypePage: override;
 
-    wpQueryDefaultHelp: override;
     wpQueryAssociatedProgram: override;
     wpQueryAssociatedFileIcon: override;
     wpSetAssociatedFileIcon: override;
@@ -160,7 +159,7 @@ interface M_XFldDataFile : M_WPDataFile
     wpclsCreateDefaultTemplates: override;
 
     wpclsQueryTitle: override;
-
+    wpclsQueryDefaultHelp: override;
     wpclsQueryIconData: override;
 
   };

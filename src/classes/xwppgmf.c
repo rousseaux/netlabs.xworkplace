@@ -1335,7 +1335,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XWPProgramFile *somSel
         case PROG_DLL:
         case PROG_PDD:
         case PROG_VDD:
-            return (SETTINGS_PAGE_REMOVED);
+            return SETTINGS_PAGE_REMOVED;
     }
 
 #ifndef __NEVEREXTASSOCS__
@@ -1373,7 +1373,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramPage(XWPProgramFile *somSelf,
         case PROG_DLL:
         case PROG_PDD:
         case PROG_VDD:
-            return (SETTINGS_PAGE_REMOVED);
+            return SETTINGS_PAGE_REMOVED;
     }
 
     return (XWPProgramFile_parent_WPProgramFile_wpAddProgramPage(somSelf,
@@ -1425,7 +1425,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
         case PROG_DLL:
         case PROG_PDD:
         case PROG_VDD:
-            return (SETTINGS_PAGE_REMOVED);
+            return SETTINGS_PAGE_REMOVED;
     }
 
     return (XWPProgramFile_parent_WPProgramFile_wpAddProgramSessionPage(somSelf,

@@ -27,7 +27,7 @@ OS2Win              = "~"||OS2||" window";
 OS2Fullscreen       = OS2||" ~fullscreen";
 DosWin              = "~DOS window";
 DOSFullscreen       = "DOS f~ullscreen";
-CreateAnother       = "Create a~nother";
+CreateAnother       = "Create ~new";
 Folder              = "Folder";
     /* the following three were added with V0.9.16 */
 URLFolder           = "URL Folder";

@@ -362,7 +362,16 @@
  ********************************************************************/
 
 // "Remove menu items" page
-#define ID_XSD_SET2REMOVEMENUS          510
+#define ID_XSDI_MENUS_COMMON            500     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_MENUS_SPECIFIC          501     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_MENU_STYLE_GROUP        502     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_MENUS_BARS              503     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_MENUS_SHORT             504     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_MENUS_LONG              505     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_COMMON_GROUP            506     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_FOLDER_GROUP            507     // V0.9.19 (2002-04-17) [umoeller]
+#define ID_XSDI_DISK_GROUP              508     // V0.9.19 (2002-04-17) [umoeller]
+// #define ID_XSD_SET2REMOVEMENUS          510  // V0.9.19 (2002-04-17) [umoeller]
 #define ID_XSDI_FIND                    511
 #define ID_XSDI_SORT                    512
 #define ID_XSDI_SELECT                  513
@@ -1375,6 +1384,7 @@
 #define ID_SDDI_PROGRESS2               4322
 #define ID_SDDI_COMPLETE                4323
 #define ID_SDDI_SWITCHOFF               4324
+#define ID_SDDI_ARCHIVEONCE             4325    // V0.9.19 (2002-04-17) [umoeller]
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400
@@ -2355,7 +2365,9 @@
 #define ID_CRMI_SEP3                    0x7f11      // added V0.9.19 (2002-04-02) [umoeller]
 #define ID_CRMI_SEP4                    0x7f12      // added V0.9.19 (2002-04-02) [umoeller]
 
-#define ID_CRMI_CLOSE_XCENTER           0x7f13      // added V0.9.19 (2002-04-14) [umoeller]
+#define ID_CRM_XCSUB                    0x7f13      // added V0.9.19 (2002-04-14) [umoeller]
+#define ID_CRMI_XCSUB_PROPERTIES        0x7f14      // added V0.9.19 (2002-04-14) [umoeller]
+#define ID_CRMI_XCSUB_CLOSE             0x7f15      // added V0.9.19 (2002-04-14) [umoeller]
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
 

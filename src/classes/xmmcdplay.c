@@ -835,7 +835,7 @@ SOM_Scope ULONG  SOMLINK cdp_wpAddObjectWindowPage(XMMCDPlayer *somSelf,
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

@@ -946,7 +946,9 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
     CHAR        szLogFileName[100];
     FILE        *fileLog = 0;
 
+#ifndef __NOEXCEPTIONBEEPS__
     DosBeep(100, 50);
+#endif
 
     sprintf(szLogFileName,
             "%c:\\%s",
@@ -2635,7 +2637,7 @@ static const SETTINGINFO G_aSettingInfos[] =
 
 #ifndef __NOMOVEREFRESHNOW__
         sfMoveRefreshNow, FIELDOFFSET(OLDGLOBALSETTINGS, __fMoveRefreshNow), 4,
-            SP_25ADDITEMS, 0,
+            SP_MENUS_FILE, 0,
             "fMoveRefreshNow",
 #endif
 
@@ -2647,10 +2649,10 @@ static const SETTINGINFO G_aSettingInfos[] =
 
 #ifndef __NOFOLDERCONTENTS__
         sfAddFolderContentItem, FIELDOFFSET(OLDGLOBALSETTINGS, __fAddFolderContentItem), 4,
-            SP_25ADDITEMS, 1,
+            SP_MENUS_FILE, 1,
             "fAddFolderContentItem",
         sfFolderContentShowIcons, FIELDOFFSET(OLDGLOBALSETTINGS, __fFolderContentShowIcons), 4,
-            SP_25ADDITEMS, 1,
+            SP_MENUS_FILE, 1,
             "fFolderContentShowIcons",
 #endif
 
@@ -2832,39 +2834,39 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_26CONFIGITEMS, 1,
             "fMenuCascadeMode",
         sflDefaultMenuItems, FIELDOFFSET(OLDGLOBALSETTINGS, DefaultMenuItems), 4,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_COMMON, 0,         // @@todo settings page is wrong
             "flDefaultMenuItems",
 
         sfFileAttribs, FIELDOFFSET(OLDGLOBALSETTINGS, FileAttribs), 4,
-            SP_25ADDITEMS, 1,
+            SP_MENUS_FILE, 1,
             "fFileAttribs",
 
         sfRemoveLockInPlaceItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveLockInPlaceItem), 4,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_COMMON, 0,
             "fRemoveLockInPlaceItem",
         sfRemoveFormatDiskItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveFormatDiskItem), 4,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_FILE, 0,
             "fRemoveFormatDiskItem",
         sfRemoveCheckDiskItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveCheckDiskItem), 4,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_FILE, 0,
             "fRemoveCheckDiskItem",
         sfRemoveViewMenu, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveViewMenu), 4,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_FILE, 0,
             "fRemoveViewMenu",
         sfRemovePasteItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemovePasteItem), 4,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_FILE, 0,
             "fRemovePasteItem",
         sfAddCopyFilenameItem, FIELDOFFSET(OLDGLOBALSETTINGS, AddCopyFilenameItem), 4,
-            SP_25ADDITEMS, 1,
+            SP_MENUS_FILE, 1,
             "fAddCopyFilenameItem",
         sfAddSelectSomeItem, FIELDOFFSET(OLDGLOBALSETTINGS, AddSelectSomeItem), 4,
-            SP_25ADDITEMS, 1,
+            SP_MENUS_FILE, 1,
             "fAddSelectSomeItem",
         sfExtendFldrViewMenu, FIELDOFFSET(OLDGLOBALSETTINGS, ExtendFldrViewMenu), 4,
-            SP_25ADDITEMS, 1,
+            SP_MENUS_FILE, 1,
             "fExtendFldrViewMenu",
         sfFixLockInPlace, FIELDOFFSET(OLDGLOBALSETTINGS, fFixLockInPlace), 1,
-            SP_2REMOVEITEMS, 0,
+            SP_MENUS_COMMON, 0,
             "fFixLockInPlace",
 
         // Desktop menu items

@@ -20,8 +20,8 @@
  *      The implementation for this class is in several files in
  *      filesys\; check the function prefixes to find out where.
  *
- *@@somclass XFldWPS xfwps_
- *@@somclass M_XFldWPS xfwpsM_
+ *@@somclass XFldWPS xwp_
+ *@@somclass M_XFldWPS xwpM_
  */
 
 /*
@@ -64,6 +64,7 @@
  */
 
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSMODULEMGR
 #define INCL_WINMENUS
 #include <os2.h>
 
@@ -103,119 +104,66 @@
 
 /*
  *@@ xwpAddWPSMenuPages:
+ *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
  *
  *@@added V0.9.16 (2001-10-08) [umoeller]
  *@@changed V0.9.16 (2001-10-23) [umoeller]: fixed page subtitles
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: extracted to mnuAddWPSMenuPages
  */
 
-SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
-                                                  HWND hwndDlg)
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSMenuPages(XFldWPS *somSelf,
+                                                HWND hwndDlg)
 {
-    INSERTNOTEBOOKPAGE inbp;
-    HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSMenuPages");
 
-    XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddWPSMenuPages");
-
-    /*
-     * "Menu items" pages
-     */
-
-    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-    inbp.somSelf = somSelf;
-    inbp.hwndNotebook = hwndDlg;
-    inbp.hmod = savehmod;
-    inbp.usPageStyleFlags = BKA_MINOR;
-    inbp.fEnumerate = TRUE;
-    inbp.pcszName = cmnGetString(ID_XSSI_2REMOVEITEMS);  // psz2RemoveItems
-    inbp.ulDlgID = ID_XSD_SET2REMOVEMENUS;
-    // inbp.usFirstControlID = ID_XSDI_FIND;
-    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
-    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_REMOVEMENUS;
-    inbp.ulPageID = SP_2REMOVEITEMS;
-    inbp.pfncbInitPage    = mnuRemoveMenusInitPage;
-    inbp.pfncbItemChanged = mnuRemoveMenusItemChanged;
-    ntbInsertPage(&inbp);
-
-    // insert "Config folder menu items" page
-    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-    inbp.somSelf = somSelf;
-    inbp.hwndNotebook = hwndDlg;
-    inbp.hmod = savehmod;
-    inbp.usPageStyleFlags = BKA_MINOR;
-    inbp.fEnumerate = TRUE;
-    inbp.pcszName = cmnGetString(ID_XSSI_26CONFIGITEMS);  // psz26ConfigFolderMenus
-    inbp.ulDlgID = ID_XSD_SET26CONFIGMENUS;
-    // inbp.usFirstControlID = ID_XSDI_CASCADE;
-    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
-    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_CFGM;
-    inbp.ulPageID = SP_26CONFIGITEMS;
-    inbp.pfncbInitPage    = mnuConfigFolderMenusInitPage;
-    inbp.pfncbItemChanged = mnuConfigFolderMenusItemChanged;
-    ntbInsertPage(&inbp);
-
-    // insert "Add Menu Items" page
-    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-    inbp.somSelf = somSelf;
-    inbp.hwndNotebook = hwndDlg;
-    inbp.hmod = savehmod;
-    inbp.usPageStyleFlags = BKA_MAJOR;
-    inbp.fEnumerate = TRUE;
-    inbp.pcszName
-    = inbp.pcszMinorName              // V0.9.16 (2001-10-23) [umoeller]
-    = cmnGetString(ID_XSSI_25ADDITEMS);  // psz25AddItems
-    // inbp.ulDlgID = ID_XSD_SET25ADDMENUS;
-    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    // inbp.usFirstControlID = ID_XSDI_FILEATTRIBS;
-    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
-    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_ADDMENUS;
-    inbp.ulPageID = SP_25ADDITEMS;
-    inbp.pfncbInitPage    = mnuAddMenusInitPage;
-    inbp.pfncbItemChanged = mnuAddMenusItemChanged;
-    return (ntbInsertPage(&inbp));
+    return mnuAddWPSMenuPages(somSelf, hwndDlg);
 }
 
 /*
- *@@ xwpAddXFldWPSPages:
- *      this actually adds the XWorkplace pages into the
- *      "Workplace Shell" notebook.
+ *@@ xwpAddWPSFdrViewsPage:
+ *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
  *
- *@@changed V0.9.0 [umoeller]: added "File types" page, removed "XFolder" pages
- *@@changed V0.9.6 (2000-10-16) [umoeller]: made "File types" resizeable
+ *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
-                                                 HWND hwndDlg)
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrViewsPage(XFldWPS *somSelf,
+                                                     HWND hwndDlg,
+                                                     BOOL fMajor)
 {
     INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     // XFldWPSData *somThis = XFldWPSGetData(somSelf);
-    XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddXFldWPSPages");
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSFdrViewsPage");
 
-    // insert "Sort" page
-#ifndef __ALWAYSEXTSORT__
-    if (cmnQuerySetting(sfExtendedSorting))
-#endif
-    {
-        // extended sorting enabled:
-        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-        inbp.somSelf = somSelf;
-        inbp.hwndNotebook = hwndDlg;
-        inbp.hmod = savehmod;
-        inbp.ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
-        inbp.usPageStyleFlags = BKA_MAJOR;
-        inbp.pcszName = cmnGetString(ID_XSSI_SORT);  // pszSort
-        inbp.ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
-                        // changed V0.9.12 (2001-05-20) [umoeller]
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = (fMajor) ? BKA_MAJOR : BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_WPSFDRVIEWPAGE);  // V0.9.16(2001-11-04) [umoeller]
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
+    inbp.ulPageID = SP_1GENERIC;
+    inbp.pfncbInitPage    = fdrViewInitPage;
+    inbp.pfncbItemChanged = fdrViewItemChanged;
+    return ntbInsertPage(&inbp);
+}
 
-        // mark this page as "global", because both
-        // the instance settings notebook and the
-        // "Workplace Shell" object use the same
-        // callbacks
-        inbp.ulPageID = SP_FLDRSORT_GLOBAL;
-        inbp.pfncbInitPage    = fdrSortInitPage;
-        inbp.pfncbItemChanged = fdrSortItemChanged;
-        ntbInsertPage(&inbp);
-    }
+/*
+ *@@ xwpAddWPSFdrHotkeysPage:
+ *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrHotkeysPage(XFldWPS *somSelf,
+                                                     HWND hwndDlg)
+{
+    ULONG ulrc = SETTINGS_PAGE_REMOVED;
+    INSERTNOTEBOOKPAGE inbp;
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSFdrHotkeysPage");
 
     // insert "Hotkeys" page
 #ifndef __ALWAYSFDRHOTKEYS__
@@ -225,7 +173,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndDlg;
-        inbp.hmod = savehmod;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
         inbp.ulDlgID = ID_XSD_SET4ACCELS;
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_4ACCELERATORS);  // psz4Accelerators
@@ -233,8 +181,25 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         inbp.ulPageID = SP_4ACCELERATORS;
         inbp.pfncbInitPage    = fdrHotkeysInitPage;
         inbp.pfncbItemChanged = fdrHotkeysItemChanged;
-        ntbInsertPage(&inbp);
+        ulrc = ntbInsertPage(&inbp);
     }
+
+    return ulrc;
+}
+
+/*
+ *@@ xwpAddWPSFdrSnap2GridPage:
+ *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrSnap2GridPage(XFldWPS *somSelf,
+                                                       HWND hwndDlg)
+{
+    INSERTNOTEBOOKPAGE inbp;
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSFdrSnap2GridPage");
 
     // insert "Snap to grid" page
 #ifndef __NOSNAPTOGRID__
@@ -243,7 +208,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndDlg;
-        inbp.hmod = savehmod;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_3SNAPTOGRID);  // psz3SnapToGrid
         inbp.ulDlgID = ID_XSD_SET3SNAPTOGRID;
@@ -251,9 +216,28 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         inbp.ulPageID = SP_3SNAPTOGRID;
         inbp.pfncbInitPage    = fdrGridInitPage;
         inbp.pfncbItemChanged = fdrGridItemChanged;
-        ntbInsertPage(&inbp);
+        return ntbInsertPage(&inbp);
     }
 #endif
+
+    return SETTINGS_PAGE_REMOVED;
+}
+
+/*
+ *@@ xwpAddWPSFdrStatusBarPages:
+ *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrStatusBarPages(XFldWPS *somSelf,
+                                                        HWND hwndDlg)
+{
+    ULONG ulrc = SETTINGS_PAGE_REMOVED;
+    INSERTNOTEBOOKPAGE inbp;
+    HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSFdrStatusBarPages");
 
     /*
      * "Status bar" pages
@@ -305,31 +289,107 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         inbp.ulPageID = SP_27STATUSBAR;
         inbp.pfncbInitPage    = stbStatusBar1InitPage;
         inbp.pfncbItemChanged = stbStatusBar1ItemChanged;
-        ntbInsertPage(&inbp);
+        ulrc = ntbInsertPage(&inbp);
     }
 
-    /*
-     * "View" page (XFolder)
-     */
+    return ulrc;
+}
 
-    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-    inbp.somSelf = somSelf;
-    inbp.hwndNotebook = hwndDlg;
-    inbp.hmod = savehmod;
-    inbp.usPageStyleFlags = BKA_MAJOR;
-    inbp.fEnumerate = TRUE;
-    inbp.pcszName = cmnGetString(ID_XSSI_WPSFDRVIEWPAGE);  // V0.9.16(2001-11-04) [umoeller]
-    // inbp.ulDlgID = ID_XSD_FOLDERVIEWS;
-    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
-    inbp.ulPageID = SP_1GENERIC;
-    inbp.pfncbInitPage    = fdrViewInitPage;
-    inbp.pfncbItemChanged = fdrViewItemChanged;
-    ntbInsertPage(&inbp);
+/*
+ *@@ xwpAddWPSFdrSortPage:
+ *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
 
-    // moved menu pages before "View" page
-    // V0.9.16(2001-11-04) [umoeller]
-    _xwpAddWPSMenuPages(somSelf, hwndDlg);
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrSortPage(XFldWPS *somSelf,
+                                                  HWND hwndDlg)
+{
+    ULONG ulrc = SETTINGS_PAGE_REMOVED;
+    INSERTNOTEBOOKPAGE inbp;
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSFdrSortPage");
+
+    // insert "Sort" page
+#ifndef __ALWAYSEXTSORT__
+    if (cmnQuerySetting(sfExtendedSorting))
+#endif
+    {
+        // extended sorting enabled:
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_SORT);  // pszSort
+        inbp.ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
+                        // changed V0.9.12 (2001-05-20) [umoeller]
+        // mark this page as "global", because both
+        // the instance settings notebook and the
+        // "Workplace Shell" object use the same
+        // callbacks
+        inbp.ulPageID = SP_FLDRSORT_GLOBAL;
+        inbp.pfncbInitPage    = fdrSortInitPage;
+        inbp.pfncbItemChanged = fdrSortItemChanged;
+        ulrc = ntbInsertPage(&inbp);
+    }
+
+    return ulrc;
+}
+
+/*
+ *@@ xwpAddXFldWPSPages:
+ *      called from XFldWPS::wpInsertSettingsPage to have
+ *      a bunch of settings pages inserted into the
+ *      middle of the settings notebook.
+ *
+ *      If our hack in that method failed, this gets called
+ *      from XFldWPS::wpAddSettingsPages (Warp 3 probably).
+ *
+ *      This is only a method so that we don't have to
+ *      duplicate the code. With V0.9.19, this only calls
+ *      the other methods in the correct order any more.
+ *
+ *@@changed V0.9.0 [umoeller]: added "File types" page, removed "XFolder" pages
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: made "File types" resizeable
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: extracted all the other xwpAdd* methods
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: this no longer adds all pages
+ */
+
+SOM_Scope ULONG  SOMLINK xwp_xwpAddXFldWPSPages(XFldWPS *somSelf,
+                                                HWND hwndNotebook)
+{
+    ULONG ulrc;
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddXFldWPSPages");
+
+    if (    (ulrc = _xwpAddWPSMenuPages(somSelf, hwndNotebook))
+         && (ulrc = _xwpAddWPSFdrSortPage(somSelf, hwndNotebook))
+         && (ulrc = _xwpAddWPSFdrHotkeysPage(somSelf, hwndNotebook))
+         && (ulrc = _xwpAddWPSFdrSnap2GridPage(somSelf, hwndNotebook))
+         && (ulrc = _xwpAddWPSFdrStatusBarPages(somSelf, hwndNotebook))
+         && (ulrc = _xwpAddWPSFdrViewsPage(somSelf, hwndNotebook, TRUE))
+       )
+        return (TRUE);
+
+    return FALSE;
+}
+
+/*
+ *@@ xwpAddWPSFileTypesPage:
+ *      called directly from XFldWPS::wpAddSettingsPages
+ *      to have the file types page inserted on top.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFileTypesPage(XFldWPS *somSelf,
+                                                    HWND hwndDlg)
+{
+    INSERTNOTEBOOKPAGE inbp;
+    // XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_xwpAddWPSFileTypesPage");
 
     /*
      * "File types" page (new with V0.9.0)
@@ -341,7 +401,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndDlg;
-        inbp.hmod = savehmod;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
         inbp.ulDlgID = ID_XSD_FILETYPES;
@@ -351,11 +411,11 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         inbp.cControlFlags = G_cFileTypesPage;
         inbp.pfncbInitPage    = ftypFileTypesInitPage;
         inbp.pfncbItemChanged = ftypFileTypesItemChanged;
-        ntbInsertPage(&inbp);
+        return ntbInsertPage(&inbp);
     }
 #endif
 
-    return (TRUE);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
@@ -369,13 +429,13 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
  *@@added V0.9.2 (2000-02-26) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfwps_wpFilterPopupMenu(XFldWPS *somSelf,
-                                                 ULONG ulFlags,
-                                                 HWND hwndCnr,
-                                                 BOOL fMultiSelect)
+SOM_Scope ULONG  SOMLINK xwp_wpFilterPopupMenu(XFldWPS *somSelf,
+                                               ULONG ulFlags,
+                                               HWND hwndCnr,
+                                               BOOL fMultiSelect)
 {
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xfwps_wpFilterPopupMenu");
+    XFldWPSMethodDebug("XFldWPS","xwp_wpFilterPopupMenu");
 
     return (XFldWPS_parent_WPSystem_wpFilterPopupMenu(somSelf,
                                                       ulFlags,
@@ -398,12 +458,12 @@ SOM_Scope ULONG  SOMLINK xfwps_wpFilterPopupMenu(XFldWPS *somSelf,
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfwps_wpQueryDefaultHelp(XFldWPS *somSelf,
-                                                 PULONG pHelpPanelId,
-                                                 PSZ HelpLibrary)
+SOM_Scope BOOL  SOMLINK xwp_wpQueryDefaultHelp(XFldWPS *somSelf,
+                                               PULONG pHelpPanelId,
+                                               PSZ HelpLibrary)
 {
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xfwps_wpQueryDefaultHelp");
+    XFldWPSMethodDebug("XFldWPS","xwp_wpQueryDefaultHelp");
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_XFLDWPS;
@@ -418,13 +478,13 @@ SOM_Scope BOOL  SOMLINK xfwps_wpQueryDefaultHelp(XFldWPS *somSelf,
  *      object instead.
  */
 
-SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemScreenPage(XFldWPS *somSelf,
-                                                     HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xwp_wpAddSystemScreenPage(XFldWPS *somSelf,
+                                                   HWND hwndNotebook)
 {
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xfwps_wpAddSystemScreenPage");
+    XFldWPSMethodDebug("XFldWPS","xwp_wpAddSystemScreenPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
@@ -437,13 +497,13 @@ SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemScreenPage(XFldWPS *somSelf,
  *      but in "Screen" instead.
  */
 
-SOM_Scope ULONG  SOMLINK xfwps_wpAddDMQSDisplayTypePage(XFldWPS *somSelf,
-                                                        HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xwp_wpAddDMQSDisplayTypePage(XFldWPS *somSelf,
+                                                      HWND hwndNotebook)
 {
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xfwps_wpAddDMQSDisplayTypePage");
+    XFldWPSMethodDebug("XFldWPS","xwp_wpAddDMQSDisplayTypePage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
@@ -456,14 +516,16 @@ SOM_Scope ULONG  SOMLINK xfwps_wpAddDMQSDisplayTypePage(XFldWPS *somSelf,
  *@@added V0.9.2 (2000-02-23) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemPrintScreenPage(XFldWPS *somSelf,
+SOM_Scope ULONG  SOMLINK xwp_wpAddSystemPrintScreenPage(XFldWPS *somSelf,
                                                           HWND hwndNotebook)
 {
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xfwps_wpAddSystemPrintScreenPage");
+    XFldWPSMethodDebug("XFldWPS","xwp_wpAddSystemPrintScreenPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
+
+#define PAGE_MENU_ADDED            0x0001
 
 /*
  *@@ wpAddSettingsPages:
@@ -471,25 +533,166 @@ SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemPrintScreenPage(XFldWPS *somSelf,
  *      when the Settings view is opened to have all the
  *      settings page inserted into hwndNotebook.
  *
- *      We add the new XWorkplace pages on top of
- *      the other WPS settings pages from the old "System"
- *      notebook.
+ *      For "Workplace Shell", this is a bit tricky. We
+ *      want some of the settings pages from the "System"
+ *      notebook (from which we inherit), but while we
+ *      can override some pages we don't want to return
+ *      SETTINGS_PAGE_REMOVED, we can't do that with all
+ *      because some pages have method interfaces only
+ *      with V0.9.19. We therefore go for a truly bad
+ *      hack in XFldWPS::wpInsertSettingsPage.
+ *
+ *      With V0.9.19, the pages have been reordered. We
+ *      now have:
+ *
+ *      1)  "File types" on top
+ *
+ *      2)  then a bunch of old WPSystem pages: Confirmations,
+ *          Title, Window 1 and 2 (where 3 is suppressed
+ *          in XFldWPS::wpInsertSettingsPage);
+ *
+ *      3)  Then (since Window 2 is folder-related) our own
+ *          folder-specific pages: Folder views, Status bars,
+ *          Grid, Folder hotkeys, Sort.
+ *
+ *      4)  Then the "Menu" page, which we replace also with
+ *          our bunch of pages.
+ *
+ *      5)  Then the rest of the WPSystem pages: user
+ *          interface, Logo, Icon.
+ *
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: complete revamp of settings pages
  */
 
-SOM_Scope BOOL  SOMLINK xfwps_wpAddSettingsPages(XFldWPS *somSelf,
-                                                 HWND hwndNotebook)
+SOM_Scope BOOL  SOMLINK xwp_wpAddSettingsPages(XFldWPS *somSelf,
+                                               HWND hwndNotebook)
 {
-    /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
-    XFldWPSMethodDebug("XFldWPS","xfwps_wpAddSettingsPages");
+    XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_wpAddSettingsPages");
+
+    // reset for hacks
+    _flPagesAdded = 0;
+
+    // call parent to have some WPSystem pages inserted...
+    // note that we kick out those that should rather be
+    // in "Screen". Besides, we sort of "override" some
+    // methods that are only available on Warp 4 thru
+    // the hacks in our wpInsertSettingsPage override,
+    // see below.
+    // V0.9.19 (2002-04-17) [umoeller]
 
     XFldWPS_parent_WPSystem_wpAddSettingsPages(somSelf,
                                                hwndNotebook);
 
-    // add XFolder pages on top
-    _xwpAddXFldWPSPages(somSelf, hwndNotebook);
+    // check if our hack for the "Menu" page worked
+    if (!(_flPagesAdded & PAGE_MENU_ADDED))
+        // no: insert on top then (Warp 3 probably)
+        _xwpAddXFldWPSPages(somSelf, hwndNotebook);
+
+    // file types on top
+    _xwpAddWPSFileTypesPage(somSelf, hwndNotebook);
 
     return (TRUE);
 }
+
+/*
+ *@@ wpInsertSettingsPage:
+ *      this WPObject method is really only a helper
+ *      for inserting a page into a settings notebook.
+ *      This gets called by all the wpAddSomething
+ *      methods in the WPS.
+ *
+ *      Fortunately, we can say, because via method
+ *      overrides we can hack ourselves into pages
+ *      that we don't have method interfaces for.
+ *      We do this for V0.9.19 now to suppress or
+ *      replace some of the "System" pages. Yes, we
+ *      could also have made wpAddSettingsPages not
+ *      call the parent, but then we make it difficult
+ *      for people to derive from XFldWPS in the future.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwp_wpInsertSettingsPage(XFldWPS *somSelf,
+                                                  HWND hwndNotebook,
+                                                  PPAGEINFO ppageinfo)
+{
+    CHAR    szModule[CCHMAXPATH];
+    ULONG   ulrc = 0;
+
+    XFldWPSData *somThis = XFldWPSGetData(somSelf);
+    XFldWPSMethodDebug("XFldWPS","xwp_wpInsertSettingsPage");
+
+    /*
+        Alright, truly evil hack here. We replace certain
+        Warp 4 settings pages by actually evaluating the
+        PAGEINFO and checking the module. If it's WPCONMRI.DLL,
+        which is the NLS module for WPCONFIG.DLL on both
+        Warp 3 and 4, we then also check the dialog ID to
+        identify the page. I get the following list in
+        this order when opening the XFldWPS settings notebook:
+
+        module   dlgid  title          warp3 warp4
+        WPCONMRI 1201   Logo           X     X
+        WPCONMRI 1302   User intfc.    -     X
+        WPCONMRI 1307   Menu           -     X
+        WPCONMRI 1303   [NULL]         X     X      (is "window 3" page)
+        WPCONMRI 2107   [NULL]         X     X      (is "window 2" page)
+        WPCONMRI 1200   Window         X     X
+        WPCONMRI 3052   Title          X     X
+        WPCONMRI 1202   Confirmations  X     X
+    */
+
+    if (!DosQueryModuleName(ppageinfo->resid, sizeof(szModule), szModule))
+    {
+        PCSZ p;
+
+        if (    (p = strrchr(szModule, '\\'))
+             && (!stricmp(p + 1, "WPCONMRI.DLL"))
+           )
+        {
+            switch (ppageinfo->dlgid)
+            {
+                case 1307:      // "Menu" page... this we want to replace,
+                                // plus add a bunch of others on top
+                    if (_xwpAddXFldWPSPages(somSelf, hwndNotebook))
+                              // this will recurse into this method again,
+                              // because _xwpAddXFldWPSPages calls
+                              // ntbInsertPage which calls this method again,
+                              // but then the above checks will fail, so no worry
+                    {
+                        // mark for wpAddSettingsPages
+                        _flPagesAdded |= PAGE_MENU_ADDED;
+                        // and return -1
+                        ulrc = SETTINGS_PAGE_REMOVED;
+                    }
+                break;
+
+                case 1303:      // "Window 3" page (folder default view)
+                    // remove this, this had the default
+                    // folder view which never works anyway
+                    ulrc = SETTINGS_PAGE_REMOVED;
+                break;
+            }
+        }
+    }
+
+    if (!ulrc)
+        // not hacked:
+        ulrc = XFldWPS_parent_WPSystem_wpInsertSettingsPage(somSelf,
+                                                            hwndNotebook,
+                                                            ppageinfo);
+
+    return ulrc;
+}
+
+
+/* ******************************************************************
+ *
+ *   here come the XFldWPS class methods
+ *
+ ********************************************************************/
 
 /*
  *@@ wpclsInitData:
@@ -501,21 +704,15 @@ SOM_Scope BOOL  SOMLINK xfwps_wpAddSettingsPages(XFldWPS *somSelf,
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */
 
-SOM_Scope void  SOMLINK xfwpsM_wpclsInitData(M_XFldWPS *somSelf)
+SOM_Scope void  SOMLINK xwpM_wpclsInitData(M_XFldWPS *somSelf)
 {
     /* M_XFldWPSData *somThis = M_XFldWPSGetData(somSelf); */
-    M_XFldWPSMethodDebug("M_XFldWPS","xfwpsM_wpclsInitData");
+    M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsInitData");
 
     M_XFldWPS_parent_M_WPSystem_wpclsInitData(somSelf);
 
     krnClassInitialized(G_pcszXFldWPS);
 }
-
-/* ******************************************************************
- *
- *   here come the XFldWPS class methods
- *
- ********************************************************************/
 
 /*
  *@@ wpclsQuerySettingsPageSize:
@@ -527,16 +724,17 @@ SOM_Scope void  SOMLINK xfwpsM_wpclsInitData(M_XFldWPS *somSelf)
  *      truncated settings pages.
  */
 
-SOM_Scope BOOL  SOMLINK xfwpsM_wpclsQuerySettingsPageSize(M_XFldWPS *somSelf,
-                                                          PSIZEL pSizl)
+SOM_Scope BOOL  SOMLINK xwpM_wpclsQuerySettingsPageSize(M_XFldWPS *somSelf,
+                                                        PSIZEL pSizl)
 {
     BOOL brc;
     /* M_XFldWPSData *somThis = M_XFldWPSGetData(somSelf); */
-    M_XFldWPSMethodDebug("M_XFldWPS","xfwpsM_wpclsQuerySettingsPageSize");
+    M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsQuerySettingsPageSize");
 
     brc = M_XFldWPS_parent_M_WPSystem_wpclsQuerySettingsPageSize(somSelf,
                                                                    pSizl);
-    if (brc) {
+    if (brc)
+    {
         pSizl->cy = 170;        // this is the height of the "WPS Classes" page,
                                 // which seems to be the largest in the "Workplace
                                 // Shell" object
@@ -556,10 +754,10 @@ SOM_Scope BOOL  SOMLINK xfwpsM_wpclsQuerySettingsPageSize(M_XFldWPS *somSelf,
  *      for new objects of a class.
  */
 
-SOM_Scope PSZ  SOMLINK xfwpsM_wpclsQueryTitle(M_XFldWPS *somSelf)
+SOM_Scope PSZ  SOMLINK xwpM_wpclsQueryTitle(M_XFldWPS *somSelf)
 {
     // M_XFldWPSData *somThis = M_XFldWPSGetData(somSelf);
-    M_XFldWPSMethodDebug("M_XFldWPS","xfwpsM_wpclsQueryTitle");
+    M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsQueryTitle");
 
     return ("Workplace Shell");
 }
@@ -577,11 +775,11 @@ SOM_Scope PSZ  SOMLINK xfwpsM_wpclsQueryTitle(M_XFldWPS *somSelf)
  *      We give the "Workplace Shell" object a new icon.
  */
 
-SOM_Scope ULONG  SOMLINK xfwpsM_wpclsQueryIconData(M_XFldWPS *somSelf,
-                                                   PICONINFO pIconInfo)
+SOM_Scope ULONG  SOMLINK xwpM_wpclsQueryIconData(M_XFldWPS *somSelf,
+                                                 PICONINFO pIconInfo)
 {
     // M_XFldWPSData *somThis = M_XFldWPSGetData(somSelf);
-    M_XFldWPSMethodDebug("M_XFldWPS","xfwpsM_wpclsQueryIconData");
+    M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsQueryIconData");
 
     if (pIconInfo)
     {

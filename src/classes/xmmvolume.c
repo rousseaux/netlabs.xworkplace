@@ -402,7 +402,7 @@ SOM_Scope ULONG  SOMLINK vol_wpAddObjectWindowPage(XMMVolume *somSelf,
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

@@ -159,6 +159,7 @@ interface XWPTrashCan : WPFolder
     wpAddObjectGeneralPage: override;
     wpAddObjectGeneralPage2: override;
     wpAddFolderIncludePage: override;
+    wpAddFolderSelfClosePage: override;
     wpAddFolderView2Page: override;
 
     wpAddSettingsPages: override;

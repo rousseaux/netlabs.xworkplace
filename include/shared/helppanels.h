@@ -256,5 +256,10 @@
 
     #define ID_XSH_WIDGET_XBUTTON_SETTINGS  152     // V0.9.19 (2002-04-14) [umoeller]
 
+    #define ID_XSH_RESTARTWPS_CONFIRM       153     // V0.9.19 (2002-04-17) [umoeller]
+
+    #define ID_XSH_FOLDER_MAIN              154     // V0.9.19 (2002-04-17) [umoeller]
+    #define ID_XSH_FOLDER_VIEWS             155     // V0.9.19 (2002-04-17) [umoeller]
+
 #endif
 

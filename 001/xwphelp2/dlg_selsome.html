@@ -6,7 +6,10 @@
 </HEAD>
 <BODY>
 The "Select by name" menu item lets you select only some of the objects in a currently
-open folder view.
+open
+<!-- V0.9.19: link added -->
+<A HREF="objects/obj_fdr_main.html">folder</A>
+view.
 
 <!-- V0.9.19: removed this while &os2; per default only knows menu items for selecting all or none
 of the objects in a folder. -->
@@ -29,8 +32,10 @@ by entering a specification and then pressing <B>"Deselect".</B>
 <P><LI>By contrast, if "Regular expressions" is checked, the entry field is assumed to
 contain an <A HREF="glossary/gls_regexps.html">extended regular expression</A>,
 which is evalued when you press "Select" or "Deselect".
-This might be useful for complex criteria. Note however that specifications like
-<CODE>*.txt</CODE> will then provoke an error box.
+This might be useful for complex criteria. Note however that wildcard specifications
+like <CODE>*.txt</CODE> will then provoke an error box because both the <CODE>*</CODE>
+and the dot characters will be interpreted differently. As a regular expression, the
+previous example would have to be specified as <CODE>.*\.txt</CODE>.
 
 </UL>
 

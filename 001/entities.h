@@ -20,5 +20,11 @@
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 
+// V0.9.19: added these two entities. Please replace all occurences
+// in your translation with the entity (i.e. replace "System Setup"
+// with &syssetup;) to allow for dynamic string replacements.
+#define syssetup "System Setup"
+#define cfgfdr "Configuration Folder"
+#define popmenu "pop-up menu"
 
 

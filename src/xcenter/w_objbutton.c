@@ -1727,8 +1727,7 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     // SOOOO.... what we do is make a COPY of the
                     // WPS context menu with only the items that we support.
-                    pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL);
-                    if (pPrivate->hwndObjectPopup)
+                    if (pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL))
                     {
                         HWND hwndWidgetSubmenu;
 
@@ -1757,7 +1756,7 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                                    2000,    // submenu ID
                                                    pPrivate->pWidget->hwndContextMenu);
                         if (hwndWidgetSubmenu)
-                            // disable "Properties"... we have none
+                            // disable "Properties" as we have none
                             WinEnableMenuItem(hwndWidgetSubmenu,
                                               ID_CRMI_PROPERTIES,
                                               FALSE);

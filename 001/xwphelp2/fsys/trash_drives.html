@@ -25,19 +25,22 @@ The trash can will then refuse to accept objects from this drive and only allow 
 <P>Even though they are not listed on this page, drives A: and B: are always unsupported.
 
 <!-- V0.9.13: added JFS -->
-<P>The trash can has been extensively tested with the FAT, HPFS, and JFS file systems, which
+<P>The trash can has been extensively tested with the FAT, HPFS, and JFS
+<!-- V0.9.19: added link -->
+<A HREF="glossary/gls_fs.html">file systems,</A>
+which
 are supported by &os2; by default. You should be careful to use the trash can with other file
 systems which are supplied by third parties, especially if these file systems do not support
 hidden directories or extended attributes. Great care should be taken with the EXT2FS (Linux)
 and VFAT (Windows 95) file systems, if you have drivers for those installed.
 
-<!-- V0.9.13: added this -->
-<P>See <A HREF="glossary/gls_fs.html">"File systems"</A> for introductory information about file systems.
+<!-- V0.9.19: removed this
+See "File systems"</A> for introductory information about file systems. -->
 
-<P><B>Note:</B> Problems have been encountered with VFAT drives (using the VFAT.IFS
-driver by Daniel Steiner) because apparently that driver doesn't support hidden
+<P><B>Note:</B> Problems have been encountered with the <CODE>VFAT.IFS</CODE>
+driver by Daniel Steiner because apparently that driver doesn't support hidden
 directories very well. You should disable support for those drives.
-<!-- end V0.9.13 -->
+<!-- end V0.9.19 -->
 
 <P>To <B>change</B> the trash can support for a drive, select it from the left or right
 list box and press the "Add" or "Remove" button.

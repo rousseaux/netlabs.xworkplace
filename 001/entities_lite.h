@@ -20,3 +20,7 @@
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 
+#define syssetup "System Setup"
+#define cfgfdr "Configuration Folder"
+#define popmenu "pop-up menu"
+

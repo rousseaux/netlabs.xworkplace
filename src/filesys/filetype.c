@@ -1,10 +1,8 @@
 
 /*
- *@@sourcefile filetypes.c:
+ *@@sourcefile filetype.c:
  *      extended file types implementation code. This has
- *      both method implementations for XFldDataFile as
- *      well as notebook pages for the "Workplace Shell"
- *      object (XFldWPS).
+ *      the method implementations for XFldDataFile.
  *
  *      This has the complete engine for the extended
  *      file type associations, i.e. associating filters
@@ -137,26 +135,6 @@
  *   Additional declarations
  *
  ********************************************************************/
-
-/*
- *@@ XWPTYPEWITHFILTERS:
- *      structure representing one entry in "XWorkplace:FileFilters"
- *      from OS2.INI. These are now cached for speed.
- *
- *      A linked list of these exists in G_llTypesWithFilters,
- *      which is built on the first call to
- *      GetCachedTypesWithFilters.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-typedef struct _XWPTYPEWITHFILTERS
-{
-    PSZ         pszType;        // e.g. "C Code" (points to after structure)
-    PSZ         pszFilters;     // e.g. "*.c\0*.h\0\0" (points to after structure)
-            // together with this structure we allocate enough
-            // room for storing the two strings
-} XWPTYPEWITHFILTERS, *PXWPTYPEWITHFILTERS;
 
 /*
  *@@ WPSTYPEASSOCTREENODE:
@@ -573,13 +551,13 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
  ********************************************************************/
 
 /*
- *@@ LockTypeCaches:
+ *@@ ftypLockCaches:
  *      locks the association caches.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-static BOOL LockTypeCaches(VOID)
+BOOL ftypLockCaches(VOID)
 {
     if (G_hmtxAssocsCaches)
         return (!WinRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT));
@@ -602,13 +580,13 @@ static BOOL LockTypeCaches(VOID)
 }
 
 /*
- *@@ UnlockTypeCaches:
+ *@@ ftypUnlockCaches:
  *      unlocks the association caches.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-static VOID UnlockTypeCaches(VOID)
+VOID ftypUnlockCaches(VOID)
 {
     DosReleaseMutexSem(G_hmtxAssocsCaches);
 }
@@ -623,7 +601,7 @@ static VOID UnlockTypeCaches(VOID)
  *      is changed. Otherwise XWP can't pick up the changes.
  *
  *      After the caches have been invalidated, the next
- *      call to GetCachedTypesWithFilters or FindWPSTypeAssoc
+ *      call to ftypGetCachedTypesWithFilters or FindWPSTypeAssoc
  *      will reinitialize the caches automatically.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
@@ -631,7 +609,7 @@ static VOID UnlockTypeCaches(VOID)
 
 VOID ftypInvalidateCaches(VOID)
 {
-    if (LockTypeCaches())
+    if (ftypLockCaches())
     {
         if (G_fTypesWithFiltersValid)
         {
@@ -700,13 +678,13 @@ VOID ftypInvalidateCaches(VOID)
             G_fWPSTypesValid = FALSE;
         }
 
-        UnlockTypeCaches();
+        ftypUnlockCaches();
     }
 }
 
 /*
  *@@ BuildTypesWithFiltersCache:
- *      called from GetCachedTypesWithFilters to build
+ *      called from ftypGetCachedTypesWithFilters to build
  *      the tree of XWPTYPEWITHFILTERS entries.
  *
  *      Preconditions:
@@ -803,7 +781,7 @@ static VOID BuildTypesWithFiltersCache(VOID)
 }
 
 /*
- *@@ GetCachedTypesWithFilters:
+ *@@ ftypGetCachedTypesWithFilters:
  *      returns the LINKLIST containing XWPTYPEWITHFILTERS pointers,
  *      which is built internally if this hasn't been done yet.
  *
@@ -820,7 +798,7 @@ static VOID BuildTypesWithFiltersCache(VOID)
  *@@changed V0.9.16 (2002-01-26) [umoeller]: optimizations
  */
 
-static PLINKLIST GetCachedTypesWithFilters(VOID)
+PLINKLIST ftypGetCachedTypesWithFilters(VOID)
 {
     if (!G_fTypesWithFiltersValid)
         BuildTypesWithFiltersCache();
@@ -1128,12 +1106,12 @@ static ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
 {
     ULONG   ulrc = 0;
 
-    if (LockTypeCaches())
+    if (ftypLockCaches())
     {
         // loop thru all extended file types which have
         // filters assigned to them to check whether the
         // filter matches the object title
-        PLINKLIST pllTypesWithFilters = GetCachedTypesWithFilters();
+        PLINKLIST pllTypesWithFilters = ftypGetCachedTypesWithFilters();
 
         #ifdef DEBUG_ASSOCS
         _Pmpf((__FUNCTION__ ": getting types for objtitle %s", pcszObjectTitle));
@@ -1185,7 +1163,7 @@ static ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
             free(pszUpperTitle);
         }
 
-        UnlockTypeCaches();
+        ftypUnlockCaches();
     }
     return (ulrc);
 }
@@ -1342,7 +1320,7 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
 {
     APIRET arc = FALSE;
 
-    if (LockTypeCaches())       // V0.9.12 (2001-05-31) [umoeller]
+    if (ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
     {
         // check WPS file types... this better exist, or we'll stop
         // right away
@@ -1421,7 +1399,7 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
             ftypInvalidateCaches();
         }
 
-        UnlockTypeCaches();
+        ftypUnlockCaches();
     }
 
     return (arc);
@@ -1552,7 +1530,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
     TRY_LOUD(excpt1)
     {
         // lock out everyone else from messing with the types here
-        if (fLocked = LockTypeCaches())
+        if (fLocked = ftypLockCaches())
         {
             CHAR szHandle[20];
 
@@ -1579,7 +1557,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
     CATCH(excpt1) {} END_CATCH();
 
     if (fLocked)
-        UnlockTypeCaches();
+        ftypUnlockCaches();
 
     return (ulrc);
 }
@@ -1643,7 +1621,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = LockTypeCaches())       // V0.9.12 (2001-05-31) [umoeller]
+        if (fLocked = ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
         {
             BOOL        fDone = FALSE;
 
@@ -1691,7 +1669,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                 //    the object title
                 PLINKLIST pllTypesWithFilters;
 
-                if (pllTypesWithFilters = GetCachedTypesWithFilters())
+                if (pllTypesWithFilters = ftypGetCachedTypesWithFilters())
                 {
                     PCSZ pcszObjectTitle = _wpQueryTitle(somSelf);
                     PLISTNODE pNode = lstQueryFirstNode(pllTypesWithFilters);
@@ -1766,7 +1744,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
     } END_CATCH();
 
     if (fLocked)
-        UnlockTypeCaches();
+        ftypUnlockCaches();
 
     #ifdef DEBUG_ASSOCS
         _Pmpf(("    ftypBuildAssocsList: got %d assocs",
@@ -3534,8 +3512,8 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                             // the operation as a result of d'n'd. But
                             // who cares, source and target are the
                             // same window here anyway, so let's go.
-                            PDRAGITEM   pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0);
-                            if (pdrgItem)
+                            PDRAGITEM   pdrgItem;
+                            if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
                             {
                                 PFILETYPERECORD precDropped = (PFILETYPERECORD)pdrgItem->ulItemID;
                                 PFILETYPERECORD precTarget = (PFILETYPERECORD)pcdi->pRecord;
@@ -3662,8 +3640,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
                     pnbp->hwndSourceCnr = pnbp->hwndControl;
-                    pnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pnbp->preccSource)
+                    if (pnbp->preccSource = (PRECORDCORE)ulExtra)
                     {
                         // popup menu on container recc:
                         hPopupMenu = pftpd->hmenuFileTypeSel;
@@ -3816,9 +3793,9 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_FILETYPES_DELETE:
         {
-            PFILETYPERECORD pftrecc = (PFILETYPERECORD)pnbp->preccSource;
+            PFILETYPERECORD pftrecc;
                         // this has been set in CN_CONTEXTMENU above
-            if (pftrecc)
+            if (pftrecc = (PFILETYPERECORD)pnbp->preccSource)
             {
                 // delete file type from INI
                 PrfWriteProfileString(HINI_USER,
@@ -3845,13 +3822,13 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_FILETYPES_NEW:
         {
-            HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+            HWND hwndDlg;
+            if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
                                       pnbp->hwndFrame,  // owner
                                       WinDefDlgProc,
                                       cmnQueryNLSModuleHandle(FALSE),
                                       ID_XSD_NEWFILETYPE,   // "New File Type" dlg
-                                      NULL);            // pCreateParams
-            if (hwndDlg)
+                                      NULL))
             {
                 winhSetEntryFieldLimit(WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD),
                                        50);
@@ -3861,9 +3838,9 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     // initial data for file type: 1 null-byte,
                     // meaning that no associations have been defined...
                     // get new file type name from dlg
-                    PSZ pszNewType = winhQueryDlgItemText(hwndDlg,
-                                                          ID_XSDI_FT_ENTRYFIELD);
-                    if (pszNewType)
+                    PSZ pszNewType;
+                    if (pszNewType = winhQueryDlgItemText(hwndDlg,
+                                                          ID_XSDI_FT_ENTRYFIELD))
                     {
                         if (!CreateFileType(pftpd,
                                             pszNewType,
@@ -3967,8 +3944,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
                     pnbp->hwndSourceCnr = pnbp->hwndControl;
-                    pnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pnbp->preccSource)
+                    if (pnbp->preccSource = (PRECORDCORE)ulExtra)
                     {
                         // popup menu on container recc:
                         hPopupMenu = pftpd->hmenuFileFilterSel;
@@ -4330,9 +4306,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
                     pnbp->hwndSourceCnr = pnbp->hwndControl;
-                    pnbp->preccSource = (PRECORDCORE)ulExtra;
-
-                    if (ulExtra)
+                    if (pnbp->preccSource = (PRECORDCORE)ulExtra)
                     {
                         // popup menu on record core:
                         hPopupMenu = pftpd->hmenuFileAssocSel;
@@ -4540,7 +4514,7 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
 {
     HPOINTER hptrOld = winhSetWaitPointer();
 
-    if (LockTypeCaches())
+    if (ftypLockCaches())
     {
         HWND        hwndListBox = WinWindowFromID(hwndDlg,
                                                   ID_XSDI_FT_FILTERLIST);
@@ -4548,7 +4522,7 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
         BOOL        fUnknownOnly = winhIsDlgItemChecked(hwndDlg,
                                                         ID_XSDI_FT_UNKNOWNONLY);
 
-        PLINKLIST   pllXWPTypesWithFilters = GetCachedTypesWithFilters();
+        PLINKLIST   pllXWPTypesWithFilters = ftypGetCachedTypesWithFilters();
 
         APIRET      arc;
 
@@ -4624,7 +4598,7 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
 
         } // end if (pszAssocsList)
 
-        UnlockTypeCaches();
+        ftypUnlockCaches();
     }
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -4993,8 +4967,8 @@ typedef struct _INSTANCEFILETYPESPAGE
 static VOID InitInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
                                       PINSTANCEFILETYPESPAGE *pp)  // out: new struct
 {
-    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
-    if (pdftp)
+    PINSTANCEFILETYPESPAGE pdftp;
+    if (pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE)))
     {
         memset(pdftp, 0, sizeof(*pdftp));
         pnbp->pUser = pdftp;
@@ -5029,8 +5003,8 @@ static VOID FillInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
                                       CHAR cSeparator,
                                       PLINKLIST pllDisable)
 {
-    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser;
-    if (pdftp)
+    PINSTANCEFILETYPESPAGE pdftp;
+    if (pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser)
     {
         // build list of explicit types to be passed
         // to FillCnrWithAvailableTypes; all the types
@@ -5068,8 +5042,8 @@ static VOID FillInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
 
 static VOID DestroyInstanceFileTypesPage(PNOTEBOOKPAGE pnbp)
 {
-    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser;
-    if (pdftp)
+    PINSTANCEFILETYPESPAGE pdftp;
+    if (pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser)
     {
         ClearAvailableTypes(pdftp->hwndTypesCnr,
                             &pdftp->llAvailableTypes);
@@ -5102,11 +5076,11 @@ static VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" ca
         {
             // explicit types exist already:
             // append a new one
-            PSZ pszNew = (PSZ)malloc(   pstrTypes->ulLength
+            PSZ pszNew;
+            if (pszNew = (PSZ)malloc(   pstrTypes->ulLength
                                       + 1       // for \n
                                       + strlen(precc->pliFileType->pszFileType)
-                                      + 1);     // for \0
-            if (pszNew)
+                                      + 1)) // for \0
             {
                 ULONG ul = sprintf(pszNew,
                                    "%s%s%s",
@@ -5790,7 +5764,7 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
             {
                 TRY_LOUD(excpt1)
                 {
-                    if (fLocked = LockTypeCaches())
+                    if (fLocked = ftypLockCaches())
                     {
                         PDOMNODE pRootElement;
                         if (pRootElement = xmlGetRootElement(pDom))
@@ -5813,7 +5787,7 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
                 ftypInvalidateCaches();
 
                 if (fLocked)
-                    UnlockTypeCaches();
+                    ftypUnlockCaches();
             }
 
             switch (arc)
@@ -6222,7 +6196,7 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = LockTypeCaches())
+        if (fLocked = ftypLockCaches())
         {
             PDOMDOCUMENTNODE pDocument = NULL;
             PDOMNODE pRootElement = NULL;
@@ -6269,7 +6243,7 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
     } END_CATCH();
 
     if (fLocked)
-        UnlockTypeCaches();
+        ftypUnlockCaches();
 
     return (arc);
 }

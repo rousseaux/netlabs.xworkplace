@@ -136,6 +136,9 @@ typedef struct _GENERICPROGRESSWINDATA
  *      Part of the top layer of the XWorkplace file
  *      operations engine.
  *
+ *      If this returns FALSE, processing is aborted
+ *      in the file thread.
+ *
  *      This assumes that a progress window using
  *      fops_fnwpGenericProgress has been created and
  *      ulUser is a PGENERICPROGRESSWINDATA.
@@ -153,10 +156,13 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
 {
     PGENERICPROGRESSWINDATA ppwd = (PGENERICPROGRESSWINDATA)ulUser;
 
-    return ((BOOL)WinSendMsg(ppwd->hwndProgress,
-                             XM_UPDATE,
-                             (MPARAM)pfu,
-                             (MPARAM)0));
+    if (ppwd->hwndProgress)     // V0.9.19 (2002-04-17) [umoeller]
+        return ((BOOL)WinSendMsg(ppwd->hwndProgress,
+                                 XM_UPDATE,
+                                 (MPARAM)pfu,
+                                 (MPARAM)0));
+
+    return TRUE;
 }
 
 /*
@@ -373,12 +379,12 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
         case XM_UPDATE:
         {
             PGENERICPROGRESSWINDATA ppwd = WinQueryWindowPtr(hwndProgress, QWL_USER);
-            PFOPSUPDATE pfu = (PFOPSUPDATE)mp1;
+            PFOPSUPDATE pfu;
 
             // return value: TRUE means continue
             mrc = (MRESULT)TRUE;
 
-            if (pfu)
+            if (pfu = (PFOPSUPDATE)mp1)
                 if ((pfu->flChanged & FOPSPROG_DONEWITHALL) == 0)
                 {
                     CHAR    szTargetFolder[CCHMAXPATH] = "";
@@ -429,7 +435,6 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     if (pfu->flChanged & FOPSUPD_EXPANDING_SOURCEOBJECT_1ST)
                     {
                         // expanding source objects list:
-                        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                         pszSubObject = cmnGetString(ID_XSSI_POPULATING);  // pszPopulating
                                             // "Collecting objects..."
                     }
@@ -557,63 +562,70 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added NLS
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: no longer displaying progress if disabled in WPSystem
  */
 
 static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
                                         ULONG ulOperation,
                                         HAB hab,  // in: as with fopsStartTask
+                                        WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList
                                         PGENERICPROGRESSWINDATA ppwd)
 {
     FOPSRET frc = NO_ERROR;
     PSZ pszTitle = "unknown task";
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-    // load progress dialog
-    ppwd->hwndProgress = WinLoadDlg(HWND_DESKTOP,        // parent
-                                    NULLHANDLE, // owner
-                                    fops_fnwpGenericProgress,
-                                    cmnQueryNLSModuleHandle(FALSE),
-                                    ID_XFD_FILEOPSSTATUS,
-                                    NULL);
+    memset(ppwd, 0, sizeof(GENERICPROGRESSWINDATA));
 
-    ppwd->fCancelPressed = FALSE;
-    ppwd->hwndProgressBar = WinWindowFromID(ppwd->hwndProgress,
-                                            ID_SDDI_PROGRESSBAR);
-    // store in window words
-    WinSetWindowPtr(ppwd->hwndProgress, QWL_USER, ppwd);
-
-    // determine title for the progress window
-    switch (ulOperation)
+    // V0.9.19 (2002-04-17) [umoeller]
+    // check if progress dialog is enabled in WPSystem
+    if (_wpQueryConfirmations(pSourceFolder) & CONFIRM_PROGRESS)
     {
-        case XFT_MOVE2TRASHCAN:
-            pszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);  // pszFopsMove2TrashCan
-        break;
+        // load progress dialog
+        ppwd->hwndProgress = WinLoadDlg(HWND_DESKTOP,        // parent
+                                        NULLHANDLE, // owner
+                                        fops_fnwpGenericProgress,
+                                        cmnQueryNLSModuleHandle(FALSE),
+                                        ID_XFD_FILEOPSSTATUS,
+                                        NULL);
 
-        case XFT_RESTOREFROMTRASHCAN:
-            pszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);  // pszFopsRestoreFromTrashCan
-        break;
+        ppwd->hwndProgressBar = WinWindowFromID(ppwd->hwndProgress,
+                                                ID_SDDI_PROGRESSBAR);
+        // store in window words
+        WinSetWindowPtr(ppwd->hwndProgress, QWL_USER, ppwd);
 
-        case XFT_TRUEDELETE:
-            pszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);  // pszFopsTrueDelete
-        break;
+        // determine title for the progress window
+        switch (ulOperation)
+        {
+            case XFT_MOVE2TRASHCAN:
+                pszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);
+            break;
 
-        case XFT_INSTALLFONTS:
-            pszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);  // "Installing fonts..."; // pszInstallingFonts
-        break;
+            case XFT_RESTOREFROMTRASHCAN:
+                pszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);
+            break;
+
+            case XFT_TRUEDELETE:
+                pszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);
+            break;
+
+            case XFT_INSTALLFONTS:
+                pszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);
+            break;
+        }
+
+        // set progress window title
+        WinSetWindowText(ppwd->hwndProgress, pszTitle);
+
+        winhCenterWindow(ppwd->hwndProgress);
+        // get last window position from INI
+        winhRestoreWindowPos(ppwd->hwndProgress,
+                             HINI_USER,
+                             INIAPP_XWORKPLACE, INIKEY_FILEOPSPOS,
+                             // move only, no resize
+                             SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+        // *** go!!!
+        WinShowWindow(ppwd->hwndProgress, TRUE);
     }
-
-    // set progress window title
-    WinSetWindowText(ppwd->hwndProgress, pszTitle);
-
-    winhCenterWindow(ppwd->hwndProgress);
-    // get last window position from INI
-    winhRestoreWindowPos(ppwd->hwndProgress,
-                         HINI_USER,
-                         INIAPP_XWORKPLACE, INIKEY_FILEOPSPOS,
-                         // move only, no resize
-                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-    // *** go!!!
-    WinShowWindow(ppwd->hwndProgress, TRUE);
 
     frc = fopsStartTask(hftl,
                         hab);
@@ -802,6 +814,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                     frc = StartWithGenericProgress(hftl,
                                                    ulOperation,
                                                    hab,
+                                                   pSourceFolder,
                                                    ppwd);
                 else
                     // cancel or no success: clean up
@@ -913,10 +926,12 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                 frc = StartWithGenericProgress(hftl,
                                                ulOperation,
                                                hab,
+                                               pSourceFolder,
                                                ppwd);
             else
                 // cancel or no success: clean up
                 fopsDeleteFileTaskList(hftl);
+
         } // end if (!(frc = fopsCreateFileTaskList(&hftl,
 
         if (frc)

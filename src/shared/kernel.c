@@ -481,18 +481,19 @@ FILE* _System krnExceptOpenLogFile(VOID)
     {
         DATETIME    dt;
         DosGetDateTime(&dt);
-        fprintf(file, "\nXWorkplace trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
+        fprintf(file, "\n" XWORKPLACE_STRING " trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
                 dt.year, dt.month, dt.day,
                 dt.hours, dt.minutes, dt.seconds);
 #define LOGFILENAME XFOLDER_CRASHLOG
-        fprintf(file, "-----------------------------------------------------------\n"
-                      "\nAn internal error occurred in XWorkplace (XFLDR.DLL).\n"
-                      "Please send a bug report to " CONTACT_ADDRESS_USER "\n"
-                      "so that this error may be fixed for future XWorkplace versions.\n"
-                      "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
-                      "and describe as exactly as possible the conditions under which\n"
-                      "the error occured.\n"
-                      "\nRunning XWorkplace version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
+        fprintf(file,
+                "-----------------------------------------------------------\n"
+                "\nAn internal error occurred in " XWORKPLACE_STRING " (XFLDR.DLL).\n"
+                "Please send a bug report to " CONTACT_ADDRESS_USER "\n"
+                "so that this error may be fixed for future " XWORKPLACE_STRING " versions.\n"
+                "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
+                "and describe as exactly as possible the conditions under which\n"
+                "the error occured.\n"
+                "\nRunning XFLDR.DLL version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }
     return (file);
@@ -562,7 +563,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
         fprintf(file, __FUNCTION__ ": ptib is NULL.\n");
 
     // running XFolder threads
-    fprintf(file, "\nThe following running XWorkplace threads could be identified:\n");
+    fprintf(file, "\nThe following threads could be identified:\n");
 
     fprintf(file,  "    PMSHELL Workplace thread ID: 0x%lX\n", pKernelGlobals->tidWorkplaceThread);
 

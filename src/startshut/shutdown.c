@@ -132,6 +132,7 @@
 #include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
+#include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // other SOM headers
@@ -640,6 +641,11 @@ static CONTROLDEF
                             -1,
                             -1),
 #endif
+    ArchiveOnceCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SDDI_ARCHIVEONCE,
+                            -1,
+                            -1),
 #ifndef __NOXSHUTDOWN__
     MessageAgainCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
@@ -678,6 +684,8 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
             START_ROW(0),
                 CONTROL_DEF(&StartupFoldersCB),
 #endif
+            START_ROW(0),
+                CONTROL_DEF(&ArchiveOnceCB),
 #ifndef __NOXSHUTDOWN__
             START_ROW(0),
                 CONTROL_DEF(&MessageAgainCB),
@@ -696,6 +704,8 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
  *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
  *@@changed V0.9.16 (2002-01-13) [umoeller]: rewritten to use dialog formatter
+ *@@changed V0.9.19 (2002-04-18) [umoeller]: added "archive once" feature
+ *@@changed V0.9.19 (2002-04-18) [umoeller]: added a decent help panel, finally
  */
 
 ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
@@ -712,7 +722,8 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
     PDLGHITEM   paNew;
 
-    G_ulConfirmHelpPanel = ID_XMH_RESTARTWPS;
+    G_ulConfirmHelpPanel = ID_XSH_RESTARTWPS_CONFIRM; // ID_XMH_RESTARTWPS;
+                                    // changed V0.9.19 (2002-04-18) [umoeller]
 
     if (!cmnLoadDialogStrings(dlgConfirmRestartDesktop,
                               ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
@@ -731,13 +742,6 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                            NULL,
                            cmnQueryDefaultFont()))
         {
-            /* hwndConfirm = WinLoadDlg(HWND_DESKTOP,
-                                     hwndDim,
-                                     fnwpConfirm,
-                                     hmodResource,
-                                     ID_SDD_CONFIRMWPS,
-                                     NULL); */
-
             WinSendMsg(hwndConfirm,
                        WM_SETICON,
                        (MPARAM)hptrShutdown,
@@ -773,7 +777,6 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                                 150,    // delay
                                 TRUE);  // start now
 
-            // cmnSetControlsFont(hwndConfirm, 1, 5000);
             winhCenterWindow(hwndConfirm);      // still hidden
             WinShowWindow(hwndConfirm, TRUE);
 
@@ -814,6 +817,15 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
                 cmnSetSetting(sflXShutdown, fl);
     #endif
+
+                // V0.9.19 (2002-04-17) [umoeller]
+                if (winhIsDlgItemChecked(hwndConfirm,
+                                         ID_SDDI_ARCHIVEONCE))
+                {
+                    PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
+                    pArcSettings->ulArcFlags |= ARCF_NEXT;
+                    arcSaveSettings();
+                }
             }
 
             WinDestroyWindow(hwndConfirm);

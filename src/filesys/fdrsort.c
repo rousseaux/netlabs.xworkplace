@@ -1125,9 +1125,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                     //    this details column (for example,
                     //    the WPS "size" column does this because
                     //    it's CFA_STRING)
-                    psi->pfnCompare = pcfi->pfnSort;
-
-                    if (!psi->pfnCompare)
+                    if (!(psi->pfnCompare = pcfi->pfnSort))
                     {
                         // no special sort function specified:
                         // b) use our standard ones

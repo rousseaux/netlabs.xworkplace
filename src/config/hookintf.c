@@ -2715,6 +2715,64 @@ static VOID UpdateScreenCornerIndex(USHORT usItemID)
 }
 
 /*
+ *@@ hifSetScreenBorderObjectUnique:
+ *      sets a screen border object.
+ *
+ *      ulBorder must be one of:
+ *
+ *      --  SCREENCORNER_TOPLEFT
+ *      --  SCREENCORNER_TOPRIGHT
+ *      --  SCREENCORNER_BOTTOMLEFT
+ *      --  SCREENCORNER_BOTTOMRIGHT
+ *      --  SCREENCORNER_TOP
+ *      --  SCREENCORNER_LEFT
+ *      --  SCREENCORNER_RIGHT
+ *      --  SCREENCORNER_BOTTOM
+ *
+ *      hobj must either be an object handle or
+ *      one of the special SPECIALOBJ_* flags.
+ *
+ *      This makes sure that the object is unique,
+ *      that is, if the function was previously
+ *      set for a different border, the old border
+ *      is unset first.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL hifSetScreenBorderObjectUnique(ULONG ulBorder,       // in: SCREENCORNER_*
+                                    HOBJECT hobj)         // in: hobject or SPECIALOBJ_*
+{
+    if (ulBorder <= SCREENCORNER_MAX)
+    {
+        HOOKCONFIG hc;
+        ULONG ul;
+        hifLoadHookConfig(&hc);
+
+        for (ul = 0;
+             ul <= SCREENCORNER_MAX;
+             ++ul)
+            if (    (hc.ahobjHotCornerObjects[ul] == hobj)
+                 && (ul != ulBorder)
+               )
+                hc.ahobjHotCornerObjects[ul] = NULLHANDLE;
+
+        if (hc.ahobjHotCornerObjects[ulBorder] != hobj)
+        {
+            // changed:
+            hc.ahobjHotCornerObjects[ulBorder] = hobj;
+            hifHookConfigChanged(&hc);
+
+            ntbUpdateVisiblePage(NULL, ID_XSD_MOUSE_CORNERS);
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
  *@@ hifMouseCornersInitPage:
  *      notebook callback function (notebook.c) for the
  *      "Mouse hook" page in the "Screen" settings object.
@@ -2754,11 +2812,10 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         // fill drop-down box
         {
-            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-            // ULONG   ul;
             HWND    hwndDrop = WinWindowFromID(pnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_DROP);
 
+            /*
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_WINDOWLIST)) ; // pszSpecialWindowList
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_DESKTOPPOPUP)) ; // pszSpecialDesktopPopup
 
@@ -2772,6 +2829,43 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #endif
 
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_SCREENWRAP));
+            */
+
+            // above code replaced V0.9.19 (2002-04-17) [umoeller]
+
+            ULONG   ul;
+            struct
+            {
+                ULONG ulStringID;
+                ULONG ulFunction;
+            } aIDsWithFuncs[] =
+                {
+                    ID_XSSI_SPECIAL_WINDOWLIST, SPECIALOBJ_SHOWWINDOWLIST,
+                    ID_XSSI_SPECIAL_DESKTOPPOPUP, SPECIALOBJ_DESKTOPCONTEXTMENU,
+#ifndef __NOPAGER__
+                    ID_XSSI_PAGETITLE_PAGER, SPECIALOBJ_PAGER_SHOW,
+                    // V0.9.9 (2001-01-25) [lafaix] (clockwise)
+                    ID_XSSI_SPECIAL_PAGERUP, SPECIALOBJ_PAGER_UP,
+                    ID_XSSI_SPECIAL_PAGERRIGHT, SPECIALOBJ_PAGER_RIGHT,
+                    ID_XSSI_SPECIAL_PAGERDOWN, SPECIALOBJ_PAGER_DOWN,
+                    ID_XSSI_SPECIAL_PAGERLEFT, SPECIALOBJ_PAGER_LEFT,
+#endif
+                    ID_XSSI_SPECIAL_SCREENWRAP, SPECIALOBJ_SCREENWRAP
+                };
+
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aIDsWithFuncs);
+                 ++ul)
+            {
+                LONG l = WinInsertLboxItem(hwndDrop,
+                                           LIT_END,
+                                           cmnGetString(aIDsWithFuncs[ul].ulStringID));
+                // set handle for each item or the offsets are
+                // all wrong when pager is disabled
+                winhSetLboxItemHandle(hwndDrop,
+                                      l,
+                                      aIDsWithFuncs[ul].ulFunction);
+            }
         }
 
         // set up container
@@ -2827,9 +2921,11 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_CHECK, TRUE);
             winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CHECK, FALSE);
             cnrhRemoveAll(hwndCnr);
+
             winhSetLboxSelectedItem(hwndDrop,
-                                    (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
-                                         & 0xFFFF),
+                                    // V0.9.19 (2002-04-17) [umoeller]
+                                    winhLboxFindItemFromHandle(hwndDrop,
+                                                               pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]),
                                     TRUE);
         }
         else
@@ -2847,9 +2943,9 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             cnrhRemoveAll(hwndCnr);
             if (hobj != 1)
             {
-                WPObject *pobj = _wpclsQueryObject(_WPObject,
-                                                   hobj);
-                if (pobj)
+                WPObject *pobj;
+                if (pobj = _wpclsQueryObject(_WPObject,
+                                             hobj))
                 {
                     PRECORDCORE precc = cnrhAllocRecords(hwndCnr,
                                                          sizeof(RECORDCORE),
@@ -3025,8 +3121,10 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
                 pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0;
             else
                 // store special function, which has the hiword as FFFF
+                // use item handle V0.9.19 (2002-04-17) [umoeller]
                 pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
-                    = SPECIALOBJ_FIRST | lIndex;
+                    = winhQueryLboxItemHandle(hwndDrop, lIndex);
+                        // SPECIALOBJ_FIRST | lIndex;
                             // 0xFFFF0000
         }
         break;

@@ -185,7 +185,19 @@ static const CONTROLDEF
 static const DLGHITEM dlgView[] =
     {
         START_TABLE,            // root table, required
-            START_ROW(0),       // row 1 in the root table, required
+            // ordering changed V0.9.19 (2002-04-17) [umoeller]
+            START_ROW(0),
+                START_GROUP_TABLE(&FdrDefaultViewGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewInheritCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewIconCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewTreeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewDetailsCB),
+                END_TABLE,
+            START_ROW(0),
                 // create group on top
                 START_GROUP_TABLE(&FolderViewGroup),
                     START_ROW(0),
@@ -209,17 +221,6 @@ static const DLGHITEM dlgView[] =
 #endif
                     START_ROW(0),
                         CONTROL_DEF(&FdrAutoRefreshCB),
-                END_TABLE,
-            START_ROW(0),
-                START_GROUP_TABLE(&FdrDefaultViewGroup),
-                    START_ROW(0),
-                        CONTROL_DEF(&FdrViewInheritCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&FdrViewIconCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&FdrViewTreeCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&FdrViewDetailsCB),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // common.c

@@ -106,6 +106,7 @@
 #define INCL_WINCLIPBOARD
 #define INCL_WINSYS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+#define INCL_WINSHELLDATA       // Prf* functions
 
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIPRIMITIVES
@@ -189,7 +190,114 @@ static POINTL   G_ptlMouseMenu;              // ptr position when menu was opene
 
 /* ******************************************************************
  *
- *   Various helper funcs
+ *   Miscellaneous
+ *
+ ********************************************************************/
+
+/*
+ *@@ mnuQueryDefaultMenuBarVisibility:
+ *      returns TRUE iff menu bars are presently
+ *      enabled for the system (globally).
+ *      On Warp 3, returns FALSE always.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL mnuQueryDefaultMenuBarVisibility(VOID)
+{
+    if (doshIsWarp4())
+    {
+        CHAR    szTemp[20] = "";
+        PrfQueryProfileString(HINI_USER,
+                              (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                              (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
+                              "ON",         // V0.9.9 (2001-03-27) [umoeller]
+                              szTemp,
+                              sizeof(szTemp));
+        if (!strcmp(szTemp, "ON"))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ mnuSetDefaultMenuBarVisibility:
+ *      reversely to mnuQueryDefaultMenuBarVisibility,
+ *      sets the default setting for folder menu bars.
+ *      Returns FALSE if an error occured, most importantly,
+ *      if we're running on Warp 3.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL mnuSetDefaultMenuBarVisibility(BOOL fVisible)
+{
+    if (doshIsWarp4())
+    {
+        return PrfWriteProfileString(HINI_USER,
+                                     (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                     (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
+                                     fVisible ? "ON" : "OFF");
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ mnuQueryShortMenuStyle:
+ *      returns TRUE iff short menus are
+ *      presently enabled for the system (globally).
+ *      On Warp 3, returns FALSE always.
+ *
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL mnuQueryShortMenuStyle(VOID)
+{
+    if (doshIsWarp4())
+    {
+        CHAR    szTemp[20] = "";
+        PrfQueryProfileString(HINI_USER,
+                              (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                              (PSZ)WPINIKEY_SHORTMENUS, // "FolderMenus"
+                              "",
+                              szTemp,
+                              sizeof(szTemp));
+        if (!strcmp(szTemp, "SHORT"))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ mnuSetShortMenuStyle:
+ *      reversely to mnuQueryShortMenuStyle,
+ *      sets the default setting for short menus.
+ *      Returns FALSE if an error occured, most
+ *      importantly, if we're running on Warp 3.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL mnuSetShortMenuStyle(BOOL fShort)
+{
+    if (doshIsWarp4())
+    {
+        return PrfWriteProfileString(HINI_USER,
+                                     (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                     (PSZ)WPINIKEY_SHORTMENUS, // "FolderMenus"
+                                     fShort ? "SHORT" : NULL);
+    }
+
+    return FALSE;
+}
+
+/* ******************************************************************
+ *
+ *   Functions for manipulating context menus
  *
  ********************************************************************/
 
@@ -2662,96 +2770,221 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *
  ********************************************************************/
 
+#pragma pack(1)
+typedef struct _DLGIDWITHFLAG
+{
+    USHORT  usID;
+    BYTE    bDisabledIfShortMenus;
+    ULONG   flMenu;
+} DLGIDWITHFLAG, *PDLGIDWITHFLAG;
+#pragma pack()
+
+typedef struct _MOREBACKUP
+{
+    BOOL        fShortMenus;
+    BOOL        fFolderBars;
+    ULONG       flDefaultMenuItems;
+} COMMONMOREBACKUP, *PCOMMONMOREBACKUP;
+
+/*
+ *  common menu items page
+ *
+ */
+
 static const CONTROLDEF
-    FileMenusGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING, // "File menus",
-                            ID_XSDI_FILEMENUS_GROUP,
-                            -1,
-                            -1),
-    AttributesCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Add \"A~ttributes\" menu",
-                            ID_XSDI_FILEATTRIBS,
-                            -1,
-                            -1),
-    CopyFilenameCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "~Add \"Copy filename\"",
-                            ID_XSDI_COPYFILENAME,
-                            -1,
-                            -1),
+    MenuStyleGroup = CDEF_GROUP_AUTO(ID_XSDI_MENU_STYLE_GROUP),
+    LongRadio = CONTROLDEF_FIRST_AUTORADIO(LOAD_STRING, ID_XSDI_MENUS_LONG, -1, -1),
+    ShortRadio = CONTROLDEF_NEXT_AUTORADIO(LOAD_STRING, ID_XSDI_MENUS_SHORT, -1, -1),
+    BarsCB = CDEF_AUTOCB_AUTO(ID_XSDI_MENUS_BARS),
+    CommonItemsGroup = CDEF_GROUP_AUTO(ID_XSDI_COMMON_GROUP),
+    HelpCB = CDEF_AUTOCB_AUTO(ID_XSDI_HELP),
+    CrAnotherCB = CDEF_AUTOCB_AUTO(ID_XSDI_CRANOTHER),
+    CopyCB = CDEF_AUTOCB_AUTO(ID_XSDI_COPY),
+    MoveCB = CDEF_AUTOCB_AUTO(ID_XSDI_MOVE),
+    ShadowCB = CDEF_AUTOCB_AUTO(ID_XSDI_SHADOW),
+    DeleteCB = CDEF_AUTOCB_AUTO(ID_XSDI_DELETE),
+    PickupCB = CDEF_AUTOCB_AUTO(ID_XSDI_PICKUP),
+    LockInPlaceCB = CDEF_AUTOCB_AUTO(ID_XSDI_LOCKINPLACE),
+    LockInPlaceNoSubCB = CDEF_AUTOCB_AUTO(ID_XSDI_LOCKINPLACE_NOSUB),
+    PrintCB = CDEF_AUTOCB_AUTO(ID_XSDI_PRINT);
 
-    FolderMenusGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING, // "Folder menus",
-                            ID_XSDI_FOLDERMENUS_GROUP,
-                            -1,
-                            -1),
-#ifndef __NOMOVEREFRESHNOW__
-    RefreshNowCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Add \"~Refresh now\" to main menu",
-                            ID_XSDI_MOVE4REFRESH,
-                            -1,
-                            -1),
-#endif
-    SelectSomeCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Add ""Se~lect by name""",
-                            ID_XSDI_SELECTSOME,
-                            -1,
-                            -1),
-    FolderViewsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Extend ""~View"" menu",
-                            ID_XSDI_FLDRVIEWS,
-                            -1,
-                            -1)
-#ifndef __NOFOLDERCONTENTS__
-    ,
-    FolderContentsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Add f~older content menus",
-                            ID_XSDI_FOLDERCONTENT,
-                            -1,
-                            -1),
-    FolderContentsIconsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Show ~icons",
-                            ID_XSDI_FC_SHOWICONS,
-                            -1,
-                            -1)
-#endif
-    ;
-
-static const DLGHITEM dlgAddMenus[] =
+static const DLGHITEM G_dlgCommon[] =
     {
-        START_TABLE,            // root table, required
-            START_ROW(0),       // row 1 in the root table, required
-                // create group on top
-                START_GROUP_TABLE(&FileMenusGroup),
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&MenuStyleGroup),
                     START_ROW(0),
-                        CONTROL_DEF(&AttributesCB),
+                        CONTROL_DEF(&LongRadio),
                     START_ROW(0),
-                        CONTROL_DEF(&CopyFilenameCB),
-                END_TABLE,      // end of group
-            START_ROW(0),       // row 2 in the root table
-                START_GROUP_TABLE(&FolderMenusGroup),
-#ifndef __NOMOVEREFRESHNOW__
+                        CONTROL_DEF(&ShortRadio),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&CommonItemsGroup),
                     START_ROW(0),
-                        CONTROL_DEF(&RefreshNowCB),
-#endif
-                    START_ROW(0),
-                        CONTROL_DEF(&SelectSomeCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&FolderViewsCB),
-#ifndef __NOFOLDERCONTENTS__
-                    START_ROW(0),
-                        CONTROL_DEF(&FolderContentsCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&FolderContentsIconsCB),
-#endif
-                END_TABLE,      // end of group
-            START_ROW(0),       // notebook buttons (will be moved)
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&HelpCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&CrAnotherCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&CopyCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&MoveCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&ShadowCB),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&DeleteCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&PickupCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&LockInPlaceCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&G_Spacing),
+                                CONTROL_DEF(&LockInPlaceNoSubCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&PrintCB),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&BarsCB),
+            START_ROW(0),
                 CONTROL_DEF(&G_UndoButton),         // common.c
                 CONTROL_DEF(&G_DefaultButton),      // common.c
                 CONTROL_DEF(&G_HelpButton),         // common.c
         END_TABLE
     };
 
-static const XWPSETTING G_AddMenusBackup[] =
+// correlate dialog item IDs to flags for wpFilterMenu
+static const DLGIDWITHFLAG G_CommonDlgIdsWithFlags[] =
+    {
+        ID_XSDI_HELP, TRUE, CTXT_HELP,
+        ID_XSDI_CRANOTHER, TRUE, CTXT_CRANOTHER,
+        ID_XSDI_COPY, TRUE, CTXT_COPY,
+        ID_XSDI_MOVE, TRUE, CTXT_MOVE,
+        ID_XSDI_SHADOW, TRUE, CTXT_SHADOW,
+        ID_XSDI_DELETE, TRUE, CTXT_DELETE,
+        ID_XSDI_PICKUP, TRUE, CTXT_PICKUP,
+        ID_XSDI_PRINT, TRUE, CTXT_PRINT
+    };
+
+static const XWPSETTING G_CommonBackup[] =
+    {
+        sfRemoveLockInPlaceItem,
+        sfFixLockInPlace
+    };
+
+/*
+ *  file-system menu items page
+ *
+ */
+
+#define RIGHT_BOX_WIDTH     200
+
+static const CONTROLDEF
+    FileMenusGroup = CONTROLDEF_GROUP(LOAD_STRING, ID_XSDI_FILEMENUS_GROUP, RIGHT_BOX_WIDTH, -1),
+    FileAttribsCB = CDEF_AUTOCB_AUTO(ID_XSDI_FILEATTRIBS),
+    CopyFilenameCB = CDEF_AUTOCB_AUTO(ID_XSDI_COPYFILENAME),
+
+    FolderGroup = CDEF_GROUP_AUTO(ID_XSDI_FOLDER_GROUP),
+    FindCB = CDEF_AUTOCB_AUTO(ID_XSDI_FIND),
+    SortCB = CDEF_AUTOCB_AUTO(ID_XSDI_SORT),
+    SelectCB = CDEF_AUTOCB_AUTO(ID_XSDI_SELECT),
+    ViewCB = CDEF_AUTOCB_AUTO(ID_XSDI_WARP4DISPLAY),
+#ifndef __NOMOVEREFRESHNOW__
+    RefreshNowCB = CDEF_AUTOCB_AUTO(ID_XSDI_MOVE4REFRESH),
+#endif
+    SelectSomeCB = CDEF_AUTOCB_AUTO(ID_XSDI_SELECTSOME),
+    FolderViewsCB = CDEF_AUTOCB_AUTO(ID_XSDI_FLDRVIEWS),
+    ArrangeCB = CDEF_AUTOCB_AUTO(ID_XSDI_ARRANGE),
+    PasteCB = CDEF_AUTOCB_AUTO(ID_XSDI_INSERT),
+#ifndef __NOFOLDERCONTENTS__
+    FolderContentsCB = CDEF_AUTOCB_AUTO(ID_XSDI_FOLDERCONTENT),
+    FolderContentsIconsCB = CDEF_AUTOCB_AUTO(ID_XSDI_FC_SHOWICONS),
+#endif
+
+    DiskGroup = CONTROLDEF_GROUP(LOAD_STRING, ID_XSDI_DISK_GROUP, RIGHT_BOX_WIDTH, -1),
+    CheckDiskCB = CDEF_AUTOCB_AUTO(ID_XSDI_CHECKDISK),
+    FormatDiskCB = CDEF_AUTOCB_AUTO(ID_XSDI_FORMATDISK);
+
+static const DLGHITEM
+    G_dlgFileFront[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&FolderGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&PasteCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FindCB),
+    },
+    G_dlgFileWarp3[] =
+    {
+                    START_ROW(0),
+                        CONTROL_DEF(&SelectCB),
+    },
+    G_dlgFileWarp4[] =
+    {
+                    START_ROW(0),
+                        CONTROL_DEF(&ViewCB),
+    },
+    G_dlgFileTail[] =
+    {
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&FolderViewsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&SelectSomeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&SortCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&ArrangeCB),
+#ifndef __NOMOVEREFRESHNOW__
+                    START_ROW(0),
+                        CONTROL_DEF(&RefreshNowCB),
+#endif
+#ifndef __NOFOLDERCONTENTS__
+                    START_ROW(0),
+                        CONTROL_DEF(&FolderContentsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&FolderContentsIconsCB),
+#endif
+                END_TABLE,
+                START_TABLE,
+                    START_ROW(0),
+                        START_GROUP_TABLE(&FileMenusGroup),
+                            START_ROW(0),
+                                CONTROL_DEF(&FileAttribsCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&CopyFilenameCB),
+                        END_TABLE,
+                    START_ROW(0),
+                        START_GROUP_TABLE(&DiskGroup),
+                            START_ROW(0),
+                                CONTROL_DEF(&CheckDiskCB),
+                            START_ROW(0),
+                                CONTROL_DEF(&FormatDiskCB),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+static const DLGIDWITHFLAG G_FileDlgIdsWithFlags[] =
+    {
+        ID_XSDI_FIND, FALSE, CTXT_FIND,
+        ID_XSDI_SELECT, FALSE, CTXT_SELECT,
+        ID_XSDI_SORT, FALSE, CTXT_SORT,
+        ID_XSDI_ARRANGE, FALSE, CTXT_ARRANGE
+    };
+
+static const XWPSETTING G_FileBackup[] =
     {
         sfFileAttribs,
         sfAddCopyFilenameItem,
@@ -2767,102 +3000,257 @@ static const XWPSETTING G_AddMenusBackup[] =
     };
 
 /*
- *@@ mnuAddMenusInitPage:
- *      notebook callback function (notebook.c) for the
- *      first "Context Menus" page in "Workplace Shell"
- *      object ("Add menu items").
- *      Sets the controls on the page according to the
- *      Global Settings.
+ *@@ GetArray:
  *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.16 (2001-09-29) [umoeller]: now using dialog formatter
+ *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-VOID mnuAddMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                             ULONG flFlags)        // CBI_* flags (notebook.h)
+static const DLGIDWITHFLAG* GetArray(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                                     PULONG pcArray)       // out: array item count
 {
+    switch (pnbp->inbp.ulPageID)
+    {
+        case SP_MENUS_COMMON:
+            *pcArray = ARRAYITEMCOUNT(G_CommonDlgIdsWithFlags);
+            return G_CommonDlgIdsWithFlags;
+
+        case SP_MENUS_FILE:
+            *pcArray = ARRAYITEMCOUNT(G_FileDlgIdsWithFlags);
+            return G_FileDlgIdsWithFlags;
+    }
+
+    return NULL;
+}
+
+/*
+ *@@ mnuCommonInitPage:
+ *
+ *      Note that this page is shared between menu
+ *      pages 1 and 2 now.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+static VOID mnuCommonInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                              ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    const DLGIDWITHFLAG *pArray = NULL;
+    ULONG cArray = 0;
+
     if (flFlags & CBI_INIT)
     {
         // first call: backup Global Settings for "Undo" button;
         // this memory will be freed automatically by the
         // common notebook window function (notebook.c) when
         // the notebook page is destroyed
-        pnbp->pUser = cmnBackupSettings(G_AddMenusBackup,
-                                        ARRAYITEMCOUNT(G_AddMenusBackup));
+
         // insert the controls using the dialog formatter
         // V0.9.16 (2001-09-29) [umoeller]
-        ntbFormatPage(pnbp->hwndDlgPage,
-                      dlgAddMenus,
-                      ARRAYITEMCOUNT(dlgAddMenus));
+        switch (pnbp->inbp.ulPageID)
+        {
+            case SP_MENUS_COMMON:
+                pnbp->pUser = cmnBackupSettings(G_CommonBackup,
+                                                ARRAYITEMCOUNT(G_CommonBackup));
+                ntbFormatPage(pnbp->hwndDlgPage,
+                              G_dlgCommon,
+                              ARRAYITEMCOUNT(G_dlgCommon));
+            break;
+
+            case SP_MENUS_FILE:
+            {
+                APIRET arc;
+                PDLGARRAY pArrayFile = NULL;
+                pnbp->pUser = cmnBackupSettings(G_FileBackup,
+                                                ARRAYITEMCOUNT(G_FileBackup));
+
+                if (!(arc = dlghCreateArray(   ARRAYITEMCOUNT(G_dlgFileFront)
+                                             + ARRAYITEMCOUNT(G_dlgFileWarp3)
+                                             + ARRAYITEMCOUNT(G_dlgFileWarp4)
+                                             + ARRAYITEMCOUNT(G_dlgFileTail),
+                                            &pArrayFile)))
+                {
+                    if (!(arc = dlghAppendToArray(pArrayFile,
+                                                  G_dlgFileFront,
+                                                  ARRAYITEMCOUNT(G_dlgFileFront))))
+                        if (doshIsWarp4())
+                            arc = dlghAppendToArray(pArrayFile,
+                                                    G_dlgFileWarp4,
+                                                    ARRAYITEMCOUNT(G_dlgFileWarp4));
+                        else
+                            arc = dlghAppendToArray(pArrayFile,
+                                                    G_dlgFileWarp3,
+                                                    ARRAYITEMCOUNT(G_dlgFileWarp3));
+
+                    if (    (!arc)
+                         && (!(arc = dlghAppendToArray(pArrayFile,
+                                                       G_dlgFileTail,
+                                                       ARRAYITEMCOUNT(G_dlgFileTail))))
+                       )
+                    {
+                        ntbFormatPage(pnbp->hwndDlgPage,
+                                      pArrayFile->paDlgItems,
+                                      pArrayFile->cDlgItemsNow);
+                    }
+                }
+
+                dlghFreeArray(&pArrayFile);
+            }
+            break;
+        }
+
+        if (pnbp->pUser2 = NEW(COMMONMOREBACKUP))
+        {
+            PCOMMONMOREBACKUP p2 = (PCOMMONMOREBACKUP)pnbp->pUser2;
+            p2->fShortMenus = mnuQueryShortMenuStyle();
+            p2->fFolderBars = mnuQueryDefaultMenuBarVisibility();
+            p2->flDefaultMenuItems = cmnQuerySetting(sflDefaultMenuItems);
+        }
     }
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FILEATTRIBS,
-                              cmnQuerySetting(sfFileAttribs));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_COPYFILENAME,
-                              cmnQuerySetting(sfAddCopyFilenameItem));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS,
-                              cmnQuerySetting(sfExtendFldrViewMenu));
-#ifndef __NOMOVEREFRESHNOW__
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOVE4REFRESH,
-                              cmnQuerySetting(sfMoveRefreshNow));
-#endif
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SELECTSOME,
-                              cmnQuerySetting(sfAddSelectSomeItem));
-#ifndef __NOFOLDERCONTENTS__
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                              cmnQuerySetting(sfAddFolderContentItem));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                              cmnQuerySetting(sfFolderContentShowIcons));
-#endif
+        CHAR szTemp[20];
+        ULONG ulRadio = ID_XSDI_MENUS_LONG;
 
-        /* winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_EXTENDCLOSEMENU,
-                              cmnQuerySetting(sfExtendCloseMenu));
-                // V0.9.12 (2001-05-22) [umoeller]
-                */
+        switch (pnbp->inbp.ulPageID)
+        {
+            case SP_MENUS_COMMON:
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE,
+                                      !cmnQuerySetting(sfRemoveLockInPlaceItem));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+                                      cmnQuerySetting(sfFixLockInPlace));  // V0.9.7 (2000-12-10) [umoeller]
+
+                if (mnuQueryShortMenuStyle())
+                    ulRadio = ID_XSDI_MENUS_SHORT;
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ulRadio, TRUE);
+
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MENUS_BARS,
+                                      mnuQueryDefaultMenuBarVisibility());
+            break;
+
+            case SP_MENUS_FILE:
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY,
+                                      !cmnQuerySetting(sfRemoveViewMenu));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_INSERT,
+                                      !cmnQuerySetting(sfRemovePasteItem));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_CHECKDISK,
+                                      !cmnQuerySetting(sfRemoveCheckDiskItem));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FORMATDISK,
+                                      !cmnQuerySetting(sfRemoveFormatDiskItem));
+
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FILEATTRIBS,
+                                      cmnQuerySetting(sfFileAttribs));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_COPYFILENAME,
+                                      cmnQuerySetting(sfAddCopyFilenameItem));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS,
+                                      cmnQuerySetting(sfExtendFldrViewMenu));
+        #ifndef __NOMOVEREFRESHNOW__
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOVE4REFRESH,
+                                      cmnQuerySetting(sfMoveRefreshNow));
+        #endif
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SELECTSOME,
+                                      cmnQuerySetting(sfAddSelectSomeItem));
+        #ifndef __NOFOLDERCONTENTS__
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
+                                      cmnQuerySetting(sfAddFolderContentItem));
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
+                                      cmnQuerySetting(sfFolderContentShowIcons));
+        #endif
+            break;
+        }
+
+        if (pArray = GetArray(pnbp, &cArray))
+        {
+            ULONG ul;
+            ULONG fl = cmnQuerySetting(sflDefaultMenuItems);
+
+            for (ul = 0;
+                 ul < cArray;
+                 ++ul)
+            {
+                winhSetDlgItemChecked(pnbp->hwndDlgPage,
+                                      pArray[ul].usID,
+                                      (0 == (fl & pArray[ul].flMenu)));
+            }
+        }
     }
 
     if (flFlags & CBI_ENABLE)
     {
-        BOOL fViewVisible =
-        G_fIsWarp4 = doshIsWarp4();
-        fViewVisible =
-               (    ( (G_fIsWarp4)  && (cmnQuerySetting(sfRemoveViewMenu) == 0) )
-                 || ( (!G_fIsWarp4) && ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT) == 0)
-               ));
+        BOOL fViewMenu = !cmnQuerySetting(sfRemoveViewMenu);
+        BOOL fShort = mnuQueryShortMenuStyle();
+
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+                          !cmnQuerySetting(sfRemoveLockInPlaceItem));
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewMenu);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewMenu);
 #ifndef __NOFOLDERCONTENTS__
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                         !cmnQuerySetting(sfNoSubclassing));
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                         !cmnQuerySetting(sfNoSubclassing));
+                          cmnQuerySetting(sfAddFolderContentItem));
 #endif
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
+
+        // disable items for Warp 3/4
+        if (doshIsWarp4())
+        {
+            if (pArray = GetArray(pnbp, &cArray))
+            {
+                ULONG ul;
+                ULONG fl = cmnQuerySetting(sflDefaultMenuItems);
+
+                for (ul = 0;
+                     ul < cArray;
+                     ++ul)
+                {
+                    if (pArray[ul].bDisabledIfShortMenus)
+                        winhEnableDlgItem(pnbp->hwndDlgPage,
+                                          pArray[ul].usID,
+                                          !fShort);
+                }
+            }
+
+        }
+        else
+        {
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
+            /* winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE); */
+        }
     }
 }
 
 /*
- *@@ mnuAddMenusItemChanged:
- *      notebook callback function (notebook.c) for the
- *      first "Context Menus" page in "Workplace Shell"
- *      object ("Add menu items").
- *      Reacts to changes of any of the dialog controls.
+ *@@ mnuCommonItemChanged:
  *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *      Note that this page is shared between menu
+ *      pages 1 and 2 now.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-MRESULT mnuAddMenusItemChanged(PNOTEBOOKPAGE pnbp,
-                               ULONG ulItemID,
-                               USHORT usNotifyCode,
-                               ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT mnuCommonItemChanged(PNOTEBOOKPAGE pnbp,
+                                    ULONG ulItemID,
+                                    USHORT usNotifyCode,
+                                    ULONG ulExtra)
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    const DLGIDWITHFLAG *pArray = NULL;
+    ULONG cArray = 0;
+
     MRESULT mrc = (MRESULT)0;
-    BOOL fSave = TRUE;
 
     switch (ulItemID)
     {
+        case ID_XSDI_MENUS_SHORT:
+        case ID_XSDI_MENUS_LONG:
+            mnuSetShortMenuStyle((ulItemID == ID_XSDI_MENUS_SHORT));
+            // update the display by calling the INIT callback
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_MENUS_BARS:
+            mnuSetDefaultMenuBarVisibility(ulExtra);
+        break;
+
         case ID_XSDI_FILEATTRIBS:
             cmnSetSetting(sfFileAttribs, ulExtra);
         break;
@@ -2888,50 +3276,146 @@ MRESULT mnuAddMenusItemChanged(PNOTEBOOKPAGE pnbp,
 #ifndef __NOFOLDERCONTENTS__
         case ID_XSDI_FOLDERCONTENT:
             cmnSetSetting(sfAddFolderContentItem, ulExtra);
+            // update the display by calling the INIT callback
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_FC_SHOWICONS:
             cmnSetSetting(sfFolderContentShowIcons, ulExtra);
         break;
 #endif
-
-        /* case ID_XSDI_EXTENDCLOSEMENU:
-            cmnSetSetting(sfExtendCloseMenu, ulExtra);
-                // V0.9.12 (2001-05-22) [umoeller]
-        break; */
-
-        case DID_UNDO:
-        {
-            // "Undo" button: restore the settings for this page
-            cmnRestoreSettings(pnbp->pUser,
-                               ARRAYITEMCOUNT(G_AddMenusBackup));
-
+        case ID_XSDI_WARP4DISPLAY:
+            cmnSetSetting(sfRemoveViewMenu, 1 - ulExtra);
             // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        }
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break;
 
+        case ID_XSDI_INSERT:
+            cmnSetSetting(sfRemovePasteItem, 1 - ulExtra);
+        break;
+
+        case ID_XSDI_LOCKINPLACE:
+            cmnSetSetting(sfRemoveLockInPlaceItem, 1 - ulExtra);
+            // update the display by calling the INIT callback
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_LOCKINPLACE_NOSUB:  // V0.9.7 (2000-12-10) [umoeller]
+            cmnSetSetting(sfFixLockInPlace, ulExtra);
+        break;
+
+        case ID_XSDI_CHECKDISK:
+            cmnSetSetting(sfRemoveCheckDiskItem, 1 - ulExtra);
+        break;
+
+        case ID_XSDI_FORMATDISK:
+            cmnSetSetting(sfRemoveFormatDiskItem, 1 - ulExtra);
+        break;
+
+        case DID_UNDO:
         case DID_DEFAULT:
         {
-            // set the default settings for this settings page
-            // (this is in common.c because it's also used at
-            // Desktop startup)
-            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
+            ULONG fl = cmnQuerySetting(sflDefaultMenuItems);
+            ULONG flMaskPage = 0;
+            ULONG cRestore = 0;
+
+            switch (pnbp->inbp.ulPageID)
+            {
+                case SP_MENUS_COMMON:
+                    cRestore = ARRAYITEMCOUNT(G_CommonBackup);
+                break;
+
+                case SP_MENUS_FILE:
+                    cRestore = ARRAYITEMCOUNT(G_FileBackup);
+                break;
+            }
+
+            // now this is slightly sick... since we affect
+            // the bits in sflDefaultMenuItems on both pages
+            // now, we must build a mask of the flags affected
+            // for the current page in order not to mess with
+            // the other page for undo and default
+            if (pArray = GetArray(pnbp, &cArray))
+            {
+                ULONG ul;
+
+                for (ul = 0;
+                     ul < cArray;
+                     ++ul)
+                {
+                    flMaskPage |= pArray[ul].flMenu;
+                }
+            }
+
+            if (ulItemID == DID_DEFAULT)
+            {
+                // set defaults:
+                cmnSetDefaultSettings(pnbp->inbp.ulPageID);
+                // clear the respective bit flags
+                // for the default menu items,
+                // cmnSetDefaultSettings has probably
+                // reset the ones from the other page too
+                cmnSetSetting(sflDefaultMenuItems,
+                              fl & ~flMaskPage);
+
+                mnuSetShortMenuStyle(FALSE);
+                mnuSetDefaultMenuBarVisibility(TRUE);
+            }
+            else
+            {
+                // undo:
+                PCOMMONMOREBACKUP p2 = (PCOMMONMOREBACKUP)pnbp->pUser2;
+                cmnRestoreSettings(pnbp->pUser,
+                                   cRestore);
+                cmnSetSetting(sflDefaultMenuItems,
+                              // current flags
+                              fl
+                              // clear the bits not in our mask
+                              & ~flMaskPage
+                              // set the bits from the backup
+                              | (p2->flDefaultMenuItems & flMaskPage));
+
+                mnuSetShortMenuStyle(p2->fShortMenus);
+                mnuSetDefaultMenuBarVisibility(p2->fFolderBars);
+            }
+
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
         default:
-            fSave = FALSE;
+        {
+            // any other control: go thru the array
+            // for the page and check if it's one of
+            // the controls that needs a CTXT_* flag
+            // update in sflDefaultMenuItems
+            if (pArray = GetArray(pnbp, &cArray))
+            {
+                ULONG ul;
+
+                for (ul = 0;
+                     ul < cArray;
+                     ++ul)
+                {
+                    if (pArray[ul].usID == ulItemID)
+                    {
+                        ULONG flChange = pArray[ul].flMenu;
+                        ULONG fl = cmnQuerySetting(sflDefaultMenuItems);
+                        // note, these are reverse
+                        if (ulExtra)
+                            fl &= ~flChange;
+                        else
+                            fl |= flChange;
+                        cmnSetSetting(sflDefaultMenuItems, fl);
+                        break; // for
+                    }
+                }
+            }
+        }
     }
 
-    // cmnUnlockGlobalSettings();
-
-    // if (fSave)
-        // cmnStoreGlobalSettings();
-
-    return (mrc);
+    return mrc;
 }
 
 static const XWPSETTING G_ConfigFolderMenusBackup[] =
@@ -2951,11 +3435,13 @@ static const XWPSETTING G_ConfigFolderMenusBackup[] =
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
+ *      With V0.9.19, this is now under "Menus" page 3.
+ *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                                      ULONG flFlags)        // CBI_* flags (notebook.h)
+static VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -2995,13 +3481,15 @@ VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *      object ("Config folder items").
  *      Reacts to changes of any of the dialog controls.
  *
+ *      With V0.9.19, this is now under "Menus" page 3.
+ *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
-                                        ULONG ulItemID,
-                                        USHORT usNotifyCode,
-                                        ULONG ulExtra)      // for checkboxes: contains new state
+static MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
+                                               ULONG ulItemID,
+                                               USHORT usNotifyCode,
+                                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
@@ -3073,243 +3561,69 @@ MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
     return (mrc);
 }
 
-static const XWPSETTING G_RemoveMenusBackup[] =
-    {
-        sflDefaultMenuItems,
-        sfRemoveViewMenu,
-        sfRemovePasteItem,
-        sfRemoveLockInPlaceItem,
-        sfFixLockInPlace,
-        sfRemoveCheckDiskItem,
-        sfRemoveFormatDiskItem
-    };
-
 /*
- *@@ mnuRemoveMenusInitPage:
- *      notebook callback function (notebook.c) for the
- *      third "Context Menus" page in "Workplace Shell"
- *      object ("Remove menu items").
- *      Sets the controls on the page according to the
- *      Global Settings.
+ *@@ mnuAddWPSMenuPages:
+ *      implementation for XFldWPS::xwpAddWPSMenuPages
+ *      so we won't have to export all the notebook
+ *      callbacks.
  *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
+ *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-VOID mnuRemoveMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                                ULONG flFlags)        // CBI_* flags (notebook.h)
+ULONG mnuAddWPSMenuPages(WPObject *somSelf,     // in: XFldWPS* object
+                         HWND hwndDlg)          // in: dialog
 {
-    if (flFlags & CBI_INIT)
-    {
-        // first call: backup Global Settings for "Undo" button;
-        // this memory will be freed automatically by the
-        // common notebook window function (notebook.c) when
-        // the notebook page is destroyed
-        pnbp->pUser = cmnBackupSettings(G_RemoveMenusBackup,
-                                         ARRAYITEMCOUNT(G_RemoveMenusBackup));
-    }
+    INSERTNOTEBOOKPAGE inbp;
+    HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
+    ULONG           ulrc;
 
-    if (flFlags & CBI_SET)
-    {
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_HELP  ,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_HELP) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_CRANOTHER,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_CRANOTHER) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_COPY  ,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_COPY     ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOVE  ,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_MOVE     ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SHADOW,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SHADOW   ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DELETE,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_DELETE   ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_PICKUP,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_PICKUP   ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FIND  ,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_FIND     ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SELECT,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT   ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SORT  ,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SORT     ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARRANGE,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_ARRANGE ) == 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_PRINT  ,
-                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_PRINT   ) == 0);
+    // insert "Config folder menu items" page (bottom)
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName =
+    inbp.pcszMinorName = cmnGetString(ID_XSSI_26CONFIGITEMS);
+    inbp.ulDlgID = ID_XSD_SET26CONFIGMENUS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_CFGM;
+    inbp.ulPageID = SP_26CONFIGITEMS;
+    inbp.pfncbInitPage    = mnuConfigFolderMenusInitPage;
+    inbp.pfncbItemChanged = mnuConfigFolderMenusItemChanged;
+    ntbInsertPage(&inbp);
 
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY,
-                              !cmnQuerySetting(sfRemoveViewMenu));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_INSERT,
-                              !cmnQuerySetting(sfRemovePasteItem));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE,
-                              !cmnQuerySetting(sfRemoveLockInPlaceItem));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
-                              cmnQuerySetting(sfFixLockInPlace));  // V0.9.7 (2000-12-10) [umoeller]
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_CHECKDISK,
-                              !cmnQuerySetting(sfRemoveCheckDiskItem));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FORMATDISK,
-                              !cmnQuerySetting(sfRemoveFormatDiskItem));
-    }
+    // specific menu items above that
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_DTPMENUPAGE);
+    inbp.pcszMinorName = cmnGetString(ID_XSDI_MENUS_SPECIFIC);
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_ADDMENUS;
+    inbp.ulPageID = SP_MENUS_FILE;
+    inbp.pfncbInitPage    = mnuCommonInitPage;
+    inbp.pfncbItemChanged = mnuCommonItemChanged;
+    ulrc = ntbInsertPage(&inbp);
 
-    if (flFlags & CBI_ENABLE)
-    {
-        // disable items for Warp 3/4
-        if (doshIsWarp4())
-        {
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
-                             !cmnQuerySetting(sfRemoveLockInPlaceItem));
-        }
-        else
-        {
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE);
-        }
-    }
+    // common menu items on top
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR | BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_DTPMENUPAGE);
+    inbp.pcszMinorName = cmnGetString(ID_XSDI_MENUS_COMMON); // common menu settings
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_REMOVEMENUS;
+    inbp.ulPageID = SP_MENUS_COMMON;
+    inbp.pfncbInitPage    = mnuCommonInitPage;
+    inbp.pfncbItemChanged = mnuCommonItemChanged;
+    ulrc = ntbInsertPage(&inbp);
+
+    return ulrc;
 }
-
-/*
- *@@ mnuRemoveMenusItemChanged:
- *      notebook callback function (notebook.c) for the
- *      third "Context Menus" page in "Workplace Shell"
- *      object ("Remove menu items").
- *      Reacts to changes of any of the dialog controls.
- *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
- */
-
-MRESULT mnuRemoveMenusItemChanged(PNOTEBOOKPAGE pnbp,
-                                  ULONG ulItemID,
-                                  USHORT usNotifyCode,
-                                  ULONG ulExtra)      // for checkboxes: contains new state
-{
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-    MRESULT mrc = (MRESULT)0;
-    BOOL fSave = TRUE;
-
-    ULONG flChange = 0;
-
-    switch (ulItemID)
-    {
-        case ID_XSDI_HELP:
-            flChange = CTXT_HELP;
-        break;
-
-        case ID_XSDI_CRANOTHER:
-            flChange = CTXT_CRANOTHER;
-        break;
-
-        case ID_XSDI_COPY:
-            flChange = CTXT_COPY;
-        break;
-
-        case ID_XSDI_MOVE:
-            flChange = CTXT_MOVE;
-        break;
-
-        case ID_XSDI_SHADOW:
-            flChange = CTXT_SHADOW;
-        break;
-
-        case ID_XSDI_DELETE:
-            flChange = CTXT_DELETE;
-        break;
-
-        case ID_XSDI_PICKUP:
-            flChange = CTXT_PICKUP;
-        break;
-
-        case ID_XSDI_FIND:
-            flChange = CTXT_FIND;
-        break;
-
-        case ID_XSDI_SELECT:
-            flChange = CTXT_SELECT;
-        break;
-
-        case ID_XSDI_SORT:
-            flChange = CTXT_SORT;
-        break;
-
-        case ID_XSDI_ARRANGE:
-            flChange = CTXT_ARRANGE;
-        break;
-
-        case ID_XSDI_PRINT:
-            flChange = CTXT_PRINT;
-        break;
-
-        case ID_XSDI_WARP4DISPLAY:
-            cmnSetSetting(sfRemoveViewMenu, 1-ulExtra);
-        break;
-
-        case ID_XSDI_INSERT:
-            cmnSetSetting(sfRemovePasteItem, 1-ulExtra);
-        break;
-
-        case ID_XSDI_LOCKINPLACE:
-            cmnSetSetting(sfRemoveLockInPlaceItem, 1-ulExtra);
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE); // V0.9.7 (2000-12-10) [umoeller]
-        break;
-
-        case ID_XSDI_LOCKINPLACE_NOSUB:  // V0.9.7 (2000-12-10) [umoeller]
-            cmnSetSetting(sfFixLockInPlace, ulExtra);
-        break;
-
-        case ID_XSDI_CHECKDISK:
-            cmnSetSetting(sfRemoveCheckDiskItem, 1-ulExtra);
-        break;
-
-        case ID_XSDI_FORMATDISK:
-            cmnSetSetting(sfRemoveFormatDiskItem, 1-ulExtra);
-        break;
-
-        case DID_UNDO:
-        {
-            // "Undo" button: get pointer to backed-up Global Settings
-            // and restore the settings for this page
-            cmnRestoreSettings(pnbp->pUser,
-                               ARRAYITEMCOUNT(G_RemoveMenusBackup));
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        }
-        break;
-
-        case DID_DEFAULT:
-        {
-            // set the default settings for this settings page
-            // (this is in common.c because it's also used at
-            // Desktop startup)
-            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        }
-        break;
-
-        default:
-            fSave = FALSE;
-    }
-
-    if (flChange)
-    {
-        ULONG fl = cmnQuerySetting(sflDefaultMenuItems);
-        // note, these are reverse
-        if (ulExtra)
-            fl &= ~flChange;
-        else
-            fl |= flChange;
-        cmnSetSetting(sflDefaultMenuItems, fl);
-    }
-
-    // cmnUnlockGlobalSettings();
-
-    /* if (fSave)
-        cmnStoreGlobalSettings(); */
-
-    return (mrc);
-}
-
-

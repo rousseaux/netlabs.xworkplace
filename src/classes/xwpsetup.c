@@ -319,7 +319,7 @@ SOM_Scope ULONG  SOMLINK xwset_wpAddObjectWindowPage(XWPSetup *somSelf,
     /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

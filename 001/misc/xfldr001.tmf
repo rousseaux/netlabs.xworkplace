@@ -20,7 +20,8 @@
 ; Also, make sure to keep all those "%1", "%c", "%s" etc. thingies in
 ; place, because those placeholders will be replaced at run-time with
 ; variable information. XWorkplace might crash if these placeholders
-; are not found.
+; are not found or, even worse, if a "%s" key doesn't get a string but
+; a decimal number in sprintf.
 ;
 ;       Copyright (C) 1997-2002 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.

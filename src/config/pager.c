@@ -2026,6 +2026,7 @@ static MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
  *      as far as the pager config pages are concerned.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V0.9.19 (2002-04-19) [pr]: page wasn't showing "page 2/4" etc; fixed
  */
 
 ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
@@ -2043,7 +2044,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerColorsItemChanged;
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
-    inbp.pcszName = "~XPager";
+    // inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_SCD_PAGER_COLORS;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_COLORS;
     // give this page a unique ID, which is
@@ -2060,7 +2061,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerStickyItemChanged;
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
-    inbp.pcszName = "~XPager";
+    // inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_STICKY; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
     // make this sizeable V0.9.19 (2002-04-17) [umoeller]
@@ -2080,7 +2081,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerWindowItemChanged;
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
-    inbp.pcszName = "~XPager";
+    // inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_WINDOW; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_WINDOW;
     // give this page a unique ID, which is

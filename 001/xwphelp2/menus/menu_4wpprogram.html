@@ -7,21 +7,23 @@
 <!-- This is all new with V0.9.16 -->
 <BODY>
 Whenever &xwp; starts a program object
-from the Configuration Folders (that is, when you select the respective menu item
-in a folder context menu), it can perform a few tricks on them.
+from the &cfgfdr; (that is, when you select the respective menu item
+in a folder <!-- V0.9.19: link added -->
+<A HREF="glossary/gls_popmenu.html">&popmenu;</A>),
+it can perform a few tricks on them.
 
 <P>These tricks are the following:
 
 <OL><LI>If the <B>startup directory</B> of the program object is empty, &xwp;
-will temporarily set the directory of the folder whose context menu was used
+will temporarily set the directory of the folder whose &popmenu; was used
 before actually starting the program.
-This means that you can start the same program from all folders' context menus,
+This means that you can start the same program from all folders' &popmenu;s,
 but with a variable startup directory, being the directory of the folder whose
-context menu was used.
+&popmenu; was used.
 
 <P>For example, with the default configuration, the command line objects have
 empty startup directories. This is why you can start command lines "in" the folder
-whose context menu was used.
+whose &popmenu; was used.
 
 <P>If you wish to disable this behaviour, simply specify a startup directory in a
 program object (e.g. <CITE>"C:\"</CITE>), and &xwp; will leave it alone.
@@ -32,7 +34,7 @@ trailing <CITE>"%"</CITE> sign, the directory of the folder you used will be
 passed as a parameter to the program.
 
 <P>This allows you to pass a fully qualified directory name as an argument to
-a program. You can disable this feature completely on the "Context menus" pages
+a program. You can disable this feature completely on the "&popmenu;s" pages
 <A HREF="objects/obj_wps.html">"Workplace Shell" object.</A>
 
 <P>If you wish to disable this behaviour for one menu item only
@@ -67,7 +69,7 @@ switch off this behavior in the
 (A separator is a
 horizontal line to optically separate groups of menu items.) In this case, &xwp;
 will ignore the program object's settings (such as the executable, parameters etc.) and
-simply insert a separator into the menu. This works for the main context menu as well as
+simply insert a separator into the menu. This works for the main &popmenu; as well as
 submenus.
 
 </OL>&xwp; implements the features 1.-4. by actually changing the program object's
@@ -75,13 +77,13 @@ settings for a fraction of a second: the settings are changed, the program objec
 opened, and then the settings are reset to the original values.
 
 <P>Please note that &xwp; only performs these described actions on "real" program objects
-in the Configuration Folders, <I>not</I> on shadows pointing to other program objects.
+in the &cfgfdr;, <I>not</I> on shadows pointing to other program objects.
 This was done intentionally
 to make sure that objects which are situated elsewhere in your Desktop hierarchy
 are not changed by &xwp;. Shadows will be opened too, but without performing the
 special features described above.
 As a consequence, you ought to put <I>copies</I> of your program objects
-into the Configuration Folders, instead of creating shadows for them.
+into the &cfgfdr;, instead of creating shadows for them.
 <BR>
 </BODY>
 </HTML>

@@ -109,6 +109,7 @@
  *
  *@@changed V0.9.9 (2001-03-27) [umoeller]: moved "Corners" from XWPMouse to XWPScreen
  *@@changed V0.9.14 (2001-08-02) [lafaix]: added a second movement page
+ *@@changed V0.9.19 (2002-04-19) [pr]: page wasn't showing "page 2/2"; fixed
  */
 
 SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
@@ -134,7 +135,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         inbp.hmod = savehmod;
         inbp.ulDlgID = ID_XSD_MOUSE_MOVEMENT2;
         inbp.usPageStyleFlags = BKA_MINOR;
-        inbp.pcszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
+        // inbp.pcszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
         inbp.fEnumerate = TRUE;
         inbp.ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT2;
         inbp.ulPageID = SP_MOUSE_MOVEMENT2;
@@ -171,6 +172,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
  *
  *@@added V0.9.1 [umoeller]
  *@@changed V0.9.3 (2000-04-01) [umoeller]: page wasn't showing "page 2/2"; fixed
+ *@@changed V0.9.19 (2002-04-19) [pr]: page wasn't showing "page 2/2"; fixed again
  */
 
 SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
@@ -193,7 +195,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         inbp.ulDlgID = ID_XSD_MOUSEMAPPINGS2;
         inbp.usPageStyleFlags = BKA_MINOR;
         inbp.fEnumerate = TRUE;
-        inbp.pcszName = cmnGetString(ID_XSSI_MAPPINGSPAGE);  // pszMappingsPage
+        // inbp.pcszName = cmnGetString(ID_XSSI_MAPPINGSPAGE);  // pszMappingsPage
         inbp.ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
         inbp.ulPageID = SP_MOUSE_MAPPINGS2;
         inbp.pfncbInitPage    = hifMouseMappings2InitPage;

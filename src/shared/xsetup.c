@@ -3686,11 +3686,13 @@ static const CONTROLDEF
                             ID_XCDI_VARMENUOFFSET,
                             100,
                             -1),
+#ifndef __ALWAYSSUBCLASS__
     NoSubclassingCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XCDI_NOSUBCLASSING,
                             -1,
                             -1),
+#endif
     NoFreakyMenusCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XCDI_NOFREAKYMENUS,
@@ -3742,8 +3744,10 @@ static const DLGHITEM dlgParanoia[] =
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&VarMenuOfsTxt),
                         CONTROL_DEF(&VarMenuSpin),
+#ifndef __ALWAYSSUBCLASS__
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&NoSubclassingCB),
+#endif
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&NoFreakyMenusCB),
                     START_ROW(ROW_VALIGN_CENTER),

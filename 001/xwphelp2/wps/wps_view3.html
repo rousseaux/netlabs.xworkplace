@@ -1,46 +1,63 @@
 <HTML RESID=&ID_XSH_SETTINGS_ADDMENUS;>
 <HEAD>
     <TITLE>
-        &xwp;: Add New Menu Items
+        Specific Menu Settings
     </TITLE>
 </HEAD>
+<!-- rewritten with V0.9.19 -->
 <BODY>
-<!-- Changes in this file:
-     V0.81:
-        -- Added "set_254x*" files at bottom to make room for
-           future extensions.
-        -- Added one link, changed one link.
-        -- Removed the A HREF="set_252x2sortbyext.html"/A
-           reference.
-
-        Note: because the link order has changed, the resulting
-              help panels have also changed. If this file is
-              not updated properly, &xwp; will display wrong
-              help panels.
--->
-On this notebook page you can add new menu
-items to the context menus of all folders.
-Changing the settings will
-take effect immediately.
+On this notebook page you can set more global options for
+certain object menus on the system. However, while the options
+on the previous page affect all object menus, the items on
+this page affect folders, files, and disk objects only.
 <P>Press <B>"Undo"</B> to restore the settings
 that were in use before you opened this notebook page.
 <P>Press <B>"Default"</B> to restore the settings
 to the installation state.
-<!-- V0.9.4: changed the following line -->
-<P>For a detailed explanation of each field, select from the list below:
-<!-- the following link was changed with V0.81 -->
-<UL><LI><A HREF="wps/wps_v3_fattrs.html">Add "Attributes" menu</A>
-<LI><A HREF="wps/wps_v3_cpyfname.html">Add "Copy filename"</A>
+
+<P>For a detailed explanation of each field, select from the lists below.
+
+<UL><LI><B>Folder menu items</B> affect all
+<A HREF="objects/obj_fdr_main.html">folder</A>
+menus on the
+system. <B>Note:</B> "Sort" and "Arrange" have no effect
+on the Desktop because the Desktop has its own settings for
+these two menu items in its
+<A HREF="glossary/gls_notebook.html">properties notebook</A>.
+<BR><UL>
+<LI><A HREF="wps/wps_v2_paste.html">"Paste"</A>
+<LI><A HREF="wps/wps_v2_find.html">"Find"</A>
+<IFNDEF __EWORKPLACE__>
+<LI><A HREF="wps/wps_v2_select.html">"Select" menu</A>
+</IFNDEF>
+<LI><A HREF="wps/wps_v2_view.html">"View" menu</A>
+<LI><A HREF="wps/wps_v3_xviewmenu.html">Layout items</A>
+<LI><A HREF="dlg_selsome.html">"Select by name"</A>
+<LI><A HREF="wps/wps_v2_sort.html">"Sort" menu</A>
+<LI><A HREF="wps/wps_v2_arrng.html">"Arrange" menu</A>
 <IFNDEF __NOMOVEREFRESHNOW__>
-<LI><A HREF="wps/wps_v3_moverefresh.html">Add "Refresh now" to main menu</A>
+<LI><A HREF="wps/wps_v3_moverefresh.html">"Refresh now" in main menu</A>
 </IFNDEF>
-<LI><A HREF="dlg_selsome.html">Add "Select by name"</A>
-<!-- the following link was added with V0.81 -->
-<LI><A HREF="wps/wps_v3_xviewmenu.html">Extend "View" menu</A>
 <IFNDEF __NOFOLDERCONTENTS__>
-<LI><A HREF="wps/wps_v3_fdrcontents.html">Add Folder content to context menu</A>
-<LI><A HREF="wps/wps_v3_fdrc_icons.html">Show icons</A>
+<LI><A HREF="wps/wps_v3_fdrcontents.html">Add folder content menus</A>
+<LI><A HREF="wps/wps_v3_fdrc_icons.html">Display icons</A>
 </IFNDEF>
+
+</UL><P>Note that more menu items may be added to folder menus according to
+the contents of the special &cfgfdr;.
+See <A HREF="menus/menu_3config.html">Configuring &popmenu;s</A> for details.
+
+<P><LI><B>File menu items</B> affect all file menus.
+<BR><UL><LI><A HREF="wps/wps_v3_fattrs.html">"Attributes" menu</A>
+<LI><A HREF="wps/wps_v3_cpyfname.html">"Copy filename"</A>
+
+</UL><LI><B>Disk menu items</B> affect disk objects
+in the "Drives" folder only.
+
+<BR><UL>
+<LI><A HREF="wps/wps_v2_chkdsk.html">"Check disk"</A>
+<LI><A HREF="wps/wps_v2_format.html">"Format disk"</A>
+</UL>
 </UL>
 <BR>
 </BODY>

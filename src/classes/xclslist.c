@@ -466,7 +466,7 @@ SOM_Scope ULONG  SOMLINK xwlist_wpAddObjectWindowPage(XWPClassList *somSelf,
 
     /* return (XWPClassList_parent_WPAbstract_wpAddObjectWindowPage(somSelf,
                                                                  hwndNotebook)); */
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

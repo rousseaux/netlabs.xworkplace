@@ -46,22 +46,41 @@ interface XFldWPS : WPSystem
      *
      */
 
-    ULONG xwpAddWPSMenuPages(in HWND hwndDlg);
+    ULONG xwpAddWPSMenuPages(in HWND hwndNotebook);
+
+    ULONG xwpAddWPSFdrViewsPage(in HWND hwndDlg, in BOOL fMajor);
+
+    ULONG xwpAddWPSFdrHotkeysPage(in HWND hwndDlg);
+
+    ULONG xwpAddWPSFdrSnap2GridPage(in HWND hwndDlg);
+
+    ULONG xwpAddWPSFdrStatusBarPages(in HWND hwndDlg);
+
+    ULONG xwpAddWPSFdrSortPage(in HWND hwndDlg);
 
     ULONG xwpAddXFldWPSPages(in HWND hwndDlg);
+
+    ULONG xwpAddWPSFileTypesPage(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddXFldWPSPages, xwpAddWPSMenuPages;
+    releaseorder: xwpAddXFldWPSPages,
+                  xwpAddWPSMenuPages,
+                  xwpAddWPSFdrViewsPage,
+                  xwpAddWPSFdrHotkeysPage,
+                  xwpAddWPSFdrSnap2GridPage,
+                  xwpAddWPSFdrStatusBarPages,
+                  xwpAddWPSFdrSortPage,
+                  xwpAddWPSFileTypesPage;
 
     /*
      * Class Modifiers:
      *
      */
 
-    externalprefix = xfwps_;
-    externalstem = xfwps;
+    externalprefix = xwp_;
+    externalstem = xwp;
     majorversion = 1;
     minorversion = 1;
     filestem = xfwps;           //# specifies the filestem for sc-generated files
@@ -73,6 +92,8 @@ interface XFldWPS : WPSystem
      * Internal instance variables for XFldWPS:
      *
      */
+
+    ULONG       flPagesAdded;
 
     /*
      * WPSystem methods overridden by XFldWPS:
@@ -90,6 +111,8 @@ interface XFldWPS : WPSystem
     wpAddSystemPrintScreenPage: override;
 
     wpAddSettingsPages: override;
+
+    wpInsertSettingsPage: override;
 
 #ifdef __PRIVATE__
 
@@ -116,9 +139,9 @@ interface M_XFldWPS : M_WPSystem
      *
      */
 
-    externalprefix = xfwpsM_;
-    externalstem = xfwpsM;
-    functionprefix = xfwpsM_;
+    externalprefix = xwpM_;
+    externalstem = xwpM;
+    functionprefix = xwpM_;
     majorversion = 1;
     minorversion = 1;
     filestem = xfwps;           //# specifies the filestem for sc-generated files

@@ -863,7 +863,7 @@ static VOID DwgtMenuEnd(HWND hwnd,
  *@@ DwgtCommand:
  *      implementation for WM_COMMAND in ctrDefWidgetProc.
  *
- *@@changed V0.9.19 (2002-04-14) [umoeller]: added "Close" menu item to def. widget context menu
+ *@@changed V0.9.19 (2002-04-14) [umoeller]: added "Properties" and "Close" items to def. widget context menu
  */
 
 static VOID DwgtCommand(HWND hwnd,
@@ -952,7 +952,11 @@ static VOID DwgtCommand(HWND hwnd,
             }
             break;
 
-            case ID_CRMI_CLOSE_XCENTER:
+            case ID_CRMI_XCSUB_PROPERTIES:  // V0.9.19 (2002-04-17) [umoeller]
+                _wpViewObject(pXCenterData->somSelf, NULLHANDLE, OPEN_SETTINGS, 0);
+            break;
+
+            case ID_CRMI_XCSUB_CLOSE:       // V0.9.19 (2002-04-17) [umoeller]
                 WinPostMsg(pXCenterData->Globals.hwndFrame,
                            WM_SYSCOMMAND,
                            (MPARAM)SC_CLOSE, 0);

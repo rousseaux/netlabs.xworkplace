@@ -10,13 +10,11 @@
 <!-- V0.9.9: added corner sensitivity setting -->
 <!-- V0.9.9: changed title -->
 <BODY>
-<!-- V0.9.9: changed the following paragraph -->
-The "Screen borders" page is inserted by &xwp; into the "Screen" properties notebook
-to allow for configuration of the screen-related features of the
-<!-- V0.9.13: added link -->
-<A HREF="glossary/gls_hook.html" TARGET="_top">&xwp; PM hook.</A>
-<!-- V0.9.13: removed this For an introduction to the features of the &xwp; PM hook,
-please refer to the &xwp;_User_Guide. -->
+<!-- V0.9.19: changed the following paragraph -->
+The "Screen borders" allows you to have a special action take place if the
+mouse is moved to one of the screen corners or borders. For example, you
+can tell the system to automatically open the "Drives" folder if the mouse
+is moved to the top right corner of the screen.
 
 <P>All settings on this page take effect immediately.
 
@@ -26,12 +24,12 @@ you opened this notebook page.
 <P>Press <B>"Default"</B> to restore the settings to the installation state.
 This will disable all features on this page.
 
+<!-- V0.9.19: removed this
 <P>The settings on this page affect the &xwp; "screen border objects" feature.
-<!-- V0.9.4: added the following -->
 This allows you to have a special action take place if the mouse is moved to one of
-the screen corners or borders.
+the screen corners or borders. -->
 
-<P>In order to configure this feature, two steps are required:
+<P>In order to configure screen borders, two steps are required:
 
 <OL><LI>First, click on one of the radio buttons in the <B>"Screen borders" group</B>
 to select the screen corner or border you wish to configure.
@@ -48,11 +46,21 @@ Drag and drop any Desktop object into the white field to make it an active
 are currently configuring, that object will be opened in its default view, as if
 you had double-clicked upon it.
 
+<!-- V0.9.19: added this paragraph -->
+<P><B>Note:</B> Any &xcenter; automatically becomes a screen border object for either
+the top or the bottom screen border when it is opened. Whatever you have previously
+set for either the top or the bottom border is therefore overwritten when an
+&xcenter; opens.
+
 <P><LI>By selecting <B>"Special function",</B> the drop-down box below becomes
 active. Select a special function from that box in order to have that function
 performed when the mouse is moved to the corner or border you are currently configuring.
-You can select to have either the window list or the Desktop's context menu displayed
-in the active screen corner or border.
+You can select to have either the window list or the Desktop's
+<!-- V0.9.19: link added -->
+<A HREF="glossary/gls_popmenu.html">&popmenu;</A>
+displayed in the active screen corner or border.
+<!-- V0.9.19: added ifdef -->
+<IFNDEF __NOPAGER__>
 <!-- V 0.9.4: added the following -->
 In addition, you can have the &pgr; window pop up if &pgr; is enabled. This
 is especially useful if you are using the "Flash to top" feature of &pgr;.
@@ -60,6 +68,7 @@ is especially useful if you are using the "Flash to top" feature of &pgr;.
 Also, if you want a panning virtual desktop, you can associate the "One screen up",
 "One screen right", "One screen down", and "One screen left" functions to the
 respectives corners.
+</IFNDEF>
 
 <!-- V0.9.9: added the following -->
 </UL></OL>The <B>"Corner sensitivity"</B> setting allows to specify how much

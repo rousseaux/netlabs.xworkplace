@@ -675,7 +675,7 @@ release: really_all
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
 !else
-    $(COPY) _private\status.txt $(XWPRELEASE_MAIN)
+    $(COPY) K:\projects\_private\readme.txt $(XWPRELEASE_MAIN)
 !endif
 #
 # 2) bin
@@ -720,10 +720,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
-!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\repclass.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
-!endif
 #    b) NLS
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
 #    $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
@@ -797,9 +795,11 @@ release: really_all
     $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
 !endif
 # 7) wav
+!ifndef XWPLITE
 !if [@md $(XWPRELEASE_MAIN)\wav 2> NUL]
 !endif
     $(COPY) release\wav\* $(XWPRELEASE_MAIN)\wav
+!endif
     @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 # 8) plugins
 !if [@md $(XWPRELEASE_MAIN)\plugins 2> NUL]

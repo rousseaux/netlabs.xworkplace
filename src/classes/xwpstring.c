@@ -1253,7 +1253,7 @@ SOM_Scope ULONG  SOMLINK xwstr_wpAddObjectWindowPage(XWPString *somSelf,
     /* XWPStringData *somThis = XWPStringGetData(somSelf); */
     XWPStringMethodDebug("XWPString","xwstr_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*

@@ -1826,45 +1826,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_SET2REMOVEMENUS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET2REMOVEMENUS, 0, 0, 244, 132, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Common menu items", -1, 5, 24, 105, 102,
-                        DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "H~elp", ID_XSDI_HELP, 10, 108, 95, 10, WS_GROUP
-        AUTOCHECKBOX    "~Create another", ID_XSDI_CRANOTHER, 10, 99, 95, 10
-        AUTOCHECKBOX    "C~opy", ID_XSDI_COPY, 10, 90, 95, 10
-        AUTOCHECKBOX    "~Move", ID_XSDI_MOVE, 10, 81, 95, 10
-        AUTOCHECKBOX    "Create ~shadow", ID_XSDI_SHADOW, 10, 72, 95, 10
-        AUTOCHECKBOX    "De~lete", ID_XSDI_DELETE, 10, 63, 95, 10
-        AUTOCHECKBOX    "~Pickup", ID_XSDI_PICKUP, 10, 54, 95, 10
-        AUTOCHECKBOX    "Lock in place (~Warp 4)", ID_XSDI_LOCKINPLACE, 10,
-                        45, 95, 10
-        AUTOCHECKBOX    "No su~bmenu", ID_XSDI_LOCKINPLACE_NOSUB, 20, 36, 82,
-                        10
-        AUTOCHECKBOX    "Pr~int", ID_XSDI_PRINT, 10, 27, 95, 10
-        GROUPBOX        "Folder menu items", -1, 115, 57, 120, 67,
-                        DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "~Find", ID_XSDI_FIND, 120, 105, 110, 10, WS_GROUP
-        AUTOCHECKBOX    "Sor~t ", ID_XSDI_SORT, 120, 96, 110, 10
-        AUTOCHECKBOX    "Select (Warp ~3)", ID_XSDI_SELECT, 120, 87, 110, 10
-        AUTOCHECKBOX    "View (Warp ~4)", ID_XSDI_WARP4DISPLAY, 120, 78, 110,
-                        10
-        AUTOCHECKBOX    "Arra~nge", ID_XSDI_ARRANGE, 120, 69, 110, 10
-        AUTOCHECKBOX    "Paste (Wa~rp 4)", ID_XSDI_INSERT, 120, 60, 110, 10
-        GROUPBOX        "Disk menu items", -1, 115, 24, 120, 30, DT_MNEMONIC |
-                        NOT WS_GROUP
-        AUTOCHECKBOX    "Check dis~k", ID_XSDI_CHECKDISK, 120, 36, 85, 10,
-                        WS_GROUP
-        AUTOCHECKBOX    "Form~at disk", ID_XSDI_FORMATDISK, 120, 27, 85, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_SET3SNAPTOGRID LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SET3SNAPTOGRID, 0, 0, 224, 180, NOT FS_DLGBORDER |

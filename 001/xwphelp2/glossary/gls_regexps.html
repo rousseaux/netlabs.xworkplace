@@ -14,11 +14,11 @@ search strings.
 
 <P>&xwp; uses a combination of many standards for RE syntaxes.
 The level of functionality is most closely modelled on extended
-regular expressions (EREs) as supported
-by the UNIX <CODE>egrep</CODE> and <CODE>awk</CODE> programs.
+regular expressions (EREs) as supported by the UNIX
+<CODE>egrep</CODE> and <CODE>awk</CODE> programs.
 Some enhancements introduced by POSIX, those typically found in UNIX
-<CODE>ex</CODE> and <CODE>vi</CODE>, and most found in GNU software are
-supported too.
+<CODE>ex</CODE> and <CODE>vi</CODE>, and most found in GNU software
+are supported too.
 
 <P>The following rules apply (see
 <A HREF="glossary/gls_regexps_bnf.html">BNF definition</A> for a formal definition):
@@ -32,16 +32,15 @@ then <CODE>c</CODE>.
 
 <P><LI>Certain characters have special meanings, and will have to be escaped
 by preceding them with a backslash.
-For example, <CODE>1\*2</CODE> matches <CODE>1</CODE>, then <CODE>*</CODE>,
-then <CODE>2</CODE>.
-
-<P>This applies to the following characters:
+This applies to the following characters:
 
 <PRE>
     ~ . ^ $ ( ) { } [ ] ? + * |
 </PRE>
+For example, <CODE>1\*2</CODE> matches <CODE>1</CODE>, then <CODE>*</CODE>,
+then <CODE>2</CODE>.
 
-<LI>To match the backslash itself, it must be escaped too. For example,
+<P><LI>To match the backslash itself, it must be escaped too. For example,
 <CODE>c:\\config.sys</CODE> matches <CODE>c:\config.sys</CODE>.
 
 <P><LI>The backslash can be used to describe characters which are difficult to
@@ -59,8 +58,9 @@ type:
 
 C and C++ programmers will find this notation familiar.
 Strictly speaking, according to POSIX, if <CODE>\x2e</CODE> was put in an ERE
-it should mean 'any character' (ASCII character 0x2e is the dot, which means
-any character, see later), but this implementation treats it as match a full stop.
+it should mean "any character" (ASCII character 0x2e is the dot, which means
+any character, see later), but this implementation treats it as
+"match a full stop".
 
 <P><LI>Sometimes the backslash is used to introduce a special ERE feature.
 For example <CODE>\&lt;</CODE> means 'start of word' (see later).
@@ -81,7 +81,7 @@ characters.
   [a-j-t] is the set of characters in the range 'a' to 't'
 </PRE>
 
-<P>To match a <CODE>-</CODE>, <CODE>^</CODE>, <CODE>]</CODE> character
+To match a <CODE>-</CODE>, <CODE>^</CODE>, <CODE>]</CODE> character
 in a bracket element, escape it with a backslash. For example,
   <CODE>[\])}]</CODE> matches <CODE>]</CODE>, or <CODE>)</CODE>, or <CODE>}</CODE>.
 
@@ -100,9 +100,9 @@ allow all alphanumeric characters plus space plus tab.
 
 <P><B>Any character</B>
 
-<P>The dot <CODE>.</CODE> character matches any character, without caring
-what it actually is. For example, <CODE>a.b</CODE> matches <CODE>a</CODE>,
-followed by any single character, followed by <CODE>b</CODE>.
+<P>The dot (<CODE>.</CODE>) character matches any single character, without
+caring what it actually is. For example, <CODE>t.e</CODE> matches
+<CODE>the</CODE>, but not <CODE>tree</CODE>.
 
 <P><B>Word constituent characters</B>
 
@@ -115,19 +115,18 @@ and is equivalent to <CODE>[[:alnum:]_]</CODE> or <CODE>[A-Za-z0-9_]</CODE>.
 <CODE>\W</CODE> for any non-word constituent character and is
 equivalent to <CODE>[^[:alnum:]_]</CODE> or <CODE>[^A-Za-z0-9_]</CODE>.
 
-<P>These shorthands are invalid within bracket expressions.
+<P>These shorthands are invalid within square bracket character sets.
 
 <P><B>Not a character</B>
 
 <P>A Microsoft extension to EREs is to allow you to say
 "any character except this character" by preceeding it with a tilde
-<CODE>~</CODE>. For example, <CODE>a~bc</CODE> matches <CODE>a</CODE>,
-then not <CODE>b</CODE>, then <CODE>c</CODE>. This might match
-<CODE>aXc</CODE>, <CODE>aYc</CODE>, but not <CODE>abc</CODE>.
-
-<P>The only merit in this ERE extension is that it is shorter to type than
-the equivelent bracket expression
+<CODE>~</CODE>.
+This is simply shorter to type than the equivelent
+square bracket character set
 (<CODE>~a</CODE> is shorter to type than <CODE>[^a]</CODE>).
+For example, <CODE>t~he</CODE> matches
+<CODE>tie</CODE>, but not <CODE>the</CODE>.
 
 <P><B>Anchors</B>
 
@@ -144,7 +143,7 @@ the equivelent bracket expression
   \y      matches if we are at the start or end of a word (or whole string)
 </PRE>
 
-<P>Here 'word' is according to the GNU definition as given above.
+Here "word" is according to the GNU definition as given above.
 
 <P>For example, <CODE>^xyz</CODE> matches <CODE>xyz</CODE> only if it is at
 the start of the line. <CODE>\&lt;fred</CODE> matches <CODE>fred</CODE>,
@@ -178,9 +177,6 @@ digit number.
 For example, <CODE>fred|bill</CODE> matches <CODE>fred</CODE> or <CODE>bill</CODE>.
 <CODE>fred|bill|rob</CODE> matches any one of these 3 names.
 
-<P>To search for a real <CODE>|</CODE> symbol, you will need to escape it with
-a backslash.
-
 <P><B>Nested EREs</B>
 
 <P>Brackets may be used to group EREs into sub-EREs, so that operators
@@ -193,24 +189,24 @@ For example, <CODE>(frog|toad)+</CODE> matches one or more occurence of
 <P><B>Backreferences</B>
 
 <P>Every time a nested ERE is matched, what it matched is recorded.
-You can do a backreference later in the main ERE which means
-whatever was matched before must be matched again by specifying
+You can do a backreference later in the main ERE (which means that
+whatever was matched before must be matched again) by specifying
 the backslash with a single decimal number.
-Up to 9 nested EREs may be backreferenced.
+Up to 9 nested EREs may thus be backreferenced.
 
 <P>For example, <CODE>\2</CODE> says the second nested ERE must
 be matched again. As a result,
-<CODE>(a|b)(c|d)\2\1</CODE> will match <CODE>acca</CODE>, or <CODE>adda</CODE>,
-or <CODE>bcca</CODE>, or <CODE>bddb</CODE>.
+<CODE>(a|b)(c|d)\2\1</CODE> will match <CODE>acca</CODE>,
+or <CODE>adda</CODE>, or <CODE>bcca</CODE>, or <CODE>bddb</CODE>.
+
+<P>Note that the above example is <I>not</I> a shorthand for
+writing <CODE>(a|b)(c|d)(c|d)(a|b)</CODE>. Backreferences do
+not refer to the ERE, but to what was matched by it.
 
 <P>Backreferences can be done within nested EREs to backreference
-nested nested EREs.
-
-For example, <CODE>frog|((a|bc)d\1)</CODE> matches <CODE>frog</CODE>, or <CODE>ada</CODE>,
-or <CODE>bcdbc</CODE>, but not <CODE>adbc</CODE>.
-
-<P>Backreferences are literal.
-It is a repeat of what was matched, not the nested EREs which matched it.
+nested EREs. For example, <CODE>frog|((a|bc)d\1)</CODE> matches
+<CODE>frog</CODE>, or <CODE>ada</CODE>, or <CODE>bcdbc</CODE>,
+but not <CODE>adbc</CODE>.
 
 <!--
 <P><B>Substitutions</B>

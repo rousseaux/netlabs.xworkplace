@@ -129,9 +129,11 @@ static BOOL    G_DesktopPopulated = FALSE;
  *      this actually adds the new "Menu items" page replacement
  *      to the Desktop's settings notebook.
  *
- *      This gets called from XFldDesktop::wpAddSettingsPages.
+ *      This used to get called from XFldDesktop::wpAddSettingsPages,
+ *      but with V0.9.19 we have overridden XFldDesktop::wpAddFileMenuPage
+ *      instead.
  *
- *      added V0.9.0
+ *@@added V0.9.0
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *somSelf,
@@ -147,7 +149,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndNotebook;
     inbp.hmod = savehmod;
-    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.usPageStyleFlags = 0; // BKA_MAJOR;    V0.9.19 (2002-04-17) [umoeller]
     inbp.fEnumerate = TRUE;
     inbp.pcszName = cmnGetString(ID_XSSI_DTPMENUPAGE);  // pszDtpMenuPage
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_MENUITEMS; V0.9.16 (2002-01-09) [umoeller]
@@ -502,6 +504,7 @@ SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
         s_fDesktopOpened = TRUE;
         fWasFirstOpen = TRUE;
 
+#ifndef __NEVERCHECKDESKTOP__
         if (cmnQuerySetting(sfPrePopulateDesktop))
         {
             WPObject *pobj;
@@ -523,6 +526,7 @@ SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
         }
         else
             initLog("  pre-populate disabled");
+#endif
     }
 
     // store in instance data so wpPopulate can check
@@ -640,7 +644,28 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
 
     // remove this, we'll add a new one at a different
     // location in wpAddSettingsPages
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
+}
+
+/*
+ *@@ wpAddFileMenuPage:
+ *
+ *      We add the menu items page below the other two menu
+ *      pages.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfdesk_wpAddFileMenuPage(XFldDesktop *somSelf,
+                                                  HWND hwndNotebook)
+{
+    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpAddFileMenuPage");
+
+    _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
+
+    return (XFldDesktop_parent_WPDesktop_wpAddFileMenuPage(somSelf,
+                                                           hwndNotebook));
 }
 
 /*
@@ -671,7 +696,8 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
        )
     {
         // insert "Menu" page
-        _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
+        // _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
+                // V0.9.19 (2002-04-17) [umoeller]
 
 
 #ifndef __NOXSHUTDOWN__

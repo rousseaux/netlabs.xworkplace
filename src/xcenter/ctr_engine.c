@@ -115,6 +115,7 @@
 #include "filesys\object.h"             // XFldObject implementation
 
 #include "hook\xwphook.h"
+#include "config\hookintf.h"            // daemon/hook interface
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 // #include <wpshadow.h>
@@ -5363,6 +5364,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
  *      This thread is created with a PM message queue.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now automatically making XCenter screen border object
  */
 
 static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
@@ -5656,6 +5658,15 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // this resizes the desktop now and starts auto-hide:
                         ctrpReformat(pXCenterData, 0);
                     }
+
+                    // make sure the XCenter is the current screen
+                    // border object for the matching border
+                    // V0.9.19 (2002-04-17) [umoeller]
+                    hifSetScreenBorderObjectUnique(
+                        ((pGlobals->ulPosition == XCENTER_TOP)
+                            ? SCREENCORNER_TOP
+                            : SCREENCORNER_BOTTOM),
+                        _wpQueryHandle(pXCenterData->somSelf));
 
                     // now enter the message loop;
                     // we stay in here until fnwpXCenterMainFrame

@@ -281,8 +281,15 @@ BEGIN
     MENUITEM "~Hilfe", ID_CRMI_HELP
     MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "Widget ~entfernen", ID_CRMI_REMOVEWGT
+
     MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
-    MENUITEM "Schlie·en", ID_CRMI_CLOSE_XCENTER
+
+    MENUITEM "~XCenter", ID_CRM_XCSUB, MIS_SUBMENU
+    BEGIN
+        MENUITEM "Einstell~ungen", ID_CRMI_XCSUB_PROPERTIES
+        MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
+        MENUITEM "Schlie~·en", ID_CRMI_XCSUB_CLOSE
+    END
 END
 
 /* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
@@ -390,18 +397,19 @@ BEGIN
     ID_XSSI_LB_SORTBYWRITEDATE      "Nach Datum letzten Schreibens sortieren"
     ID_XSSI_LB_SORTBYACCESSDATE     "Nach Datum letzten Zugriffs sortieren"
     ID_XSSI_LB_SORTBYCREATIONDATE   "Nach Datum der Erstellung sortieren"
-    ID_XSSI_LB_SWITCHTOICONVIEW     "Umschalten auf Symbolanzeige (nur Warp 4)"
-    ID_XSSI_LB_SWITCHTODETAILSVIEW  "Umschalten auf Detailanzeige (nur Warp 4)"
-    ID_XSSI_LB_SWITCHTOTREEVIEW     "Umschalten auf Strukturanzeige (nur Warp 4)"
+/* V0.9.19: removed Warp 4 only strings from all these */
+    ID_XSSI_LB_SWITCHTOICONVIEW     "Umschalten auf Symbolanzeige"
+    ID_XSSI_LB_SWITCHTODETAILSVIEW  "Umschalten auf Detailanzeige"
+    ID_XSSI_LB_SWITCHTOTREEVIEW     "Umschalten auf Strukturanzeige"
     ID_XSSI_LB_ARRANGEDEFAULT       "Anordnen (Standard)"
-    ID_XSSI_LB_ARRANGEFROMTOP       "Anordnen von oben (nur Warp 4)"
-    ID_XSSI_LB_ARRANGEFROMLEFT      "Anordnen von links (nur Warp 4)"
-    ID_XSSI_LB_ARRANGEFROMRIGHT     "Anordnen von rechts (nur Warp 4)"
-    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Anordnen von unten (nur Warp 4)"
-    ID_XSSI_LB_ARRANGEPERIMETER     "Anordnen Perimeter (nur Warp 4)"
-    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Anordnen horizontal (nur Warp 4)"
-    ID_XSSI_LB_ARRANGEVERTICALLY    "Anordnen vertikal (nur Warp 4)"
-    ID_XSSI_LB_INSERT               "EinfÅgen... (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEFROMTOP       "Anordnen von oben"
+    ID_XSSI_LB_ARRANGEFROMLEFT      "Anordnen von links"
+    ID_XSSI_LB_ARRANGEFROMRIGHT     "Anordnen von rechts"
+    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Anordnen von unten"
+    ID_XSSI_LB_ARRANGEPERIMETER     "Anordnen Perimeter"
+    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Anordnen horizontal"
+    ID_XSSI_LB_ARRANGEVERTICALLY    "Anordnen vertikal"
+    ID_XSSI_LB_INSERT               "EinfÅgen..."
     ID_XSSI_LB_SORTBYEXTENSION      "Nach Erweiterung sortieren"
     ID_XSSI_LB_SORTFOLDERSFIRST     "Ordner zuerst sortieren"
     ID_XSSI_LB_SORTBYCLASS          "Nach Objektklasse sortieren"
@@ -1062,12 +1070,12 @@ BEGIN
     DID_REMOVE                          "~Entfernen"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
-    ID_XSDI_FILEMENUS_GROUP             "DateimenÅs"
-    ID_XSDI_FILEATTRIBS                 """A~ttribute""-MenÅ hinzufÅgen"
-    ID_XSDI_COPYFILENAME                """D~ateiname kopieren"" hinzufÅgen"
-    ID_XSDI_FOLDERMENUS_GROUP           "OrdnermenÅs"
-    ID_XSDI_MOVE4REFRESH                """Sofo~rt aktualisieren"" zum HauptmenÅ hinzufÅgen"
-    ID_XSDI_SELECTSOME                  """Nach Name auswÑh~len"" hinzufÅgen"
+    ID_XSDI_FILEMENUS_GROUP             "Datei-MenÅeintrÑge"
+    ID_XSDI_FILEATTRIBS                 """A~ttribute""-MenÅ"
+    ID_XSDI_COPYFILENAME                """D~ateiname kopieren"""
+    ID_XSDI_FOLDERMENUS_GROUP           "Ordner-MenÅeintrÑge"
+    ID_XSDI_MOVE4REFRESH                """Sofo~rt aktualisieren"" im HauptmenÅ"
+    ID_XSDI_SELECTSOME                  """Nach Name auswÑh~len"""
     ID_XSDI_FLDRVIEWS                   """An~zeige""-MenÅs erweitern"
     ID_XSDI_FOLDERCONTENT               "~OrdnerinhaltsmenÅs hinzufÅgen"
     ID_XSDI_FC_SHOWICONS                "Symbole anze~igen"
@@ -1084,13 +1092,13 @@ BEGIN
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS */
     ID_XSDI_DTP_MENUITEMSGROUP          "Sichtbare StandardmenÅeintrÑge"
-    ID_XSDI_DTP_SORT                    "S~ortieren"
-    ID_XSDI_DTP_ARRANGE                 "~Anordnen"
-    ID_XSDI_DTP_LOCKUP                  "~Sperren"
-    ID_XSDI_DTP_LOGOFFNETWORKNOW        "Ab~melden"
-    ID_XSDI_DTP_SHUTDOWN                "S~ystemstart"
+    ID_XSDI_DTP_SORT                    """S~ortieren"""
+    ID_XSDI_DTP_ARRANGE                 """~Anordnen"""
+    ID_XSDI_DTP_LOCKUP                  """~Sperren"""
+    ID_XSDI_DTP_LOGOFFNETWORKNOW        """Ab~melden"""
+    ID_XSDI_DTP_SHUTDOWN                """S~ystemstart"""
     ID_XSDI_DTP_SHUTDOWNMENU            "UntermenÅ hin~zufÅgen"
-    ID_XSDI_DTP_SYSTEMSETUP             "System~konfiguration"
+    ID_XSDI_DTP_SYSTEMSETUP             """System~konfiguration"""
 
     /* strings formerly in ID_XSD_DTP_SHUTDOWN */
     ID_SDDI_SHAREDGROUP                 "Allgemeine Einstellungen"
@@ -1205,6 +1213,8 @@ BEGIN
     ID_SDDI_CONFIRM_TEXT                "Soll die WPS wirklich neu gestartet werden?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Alle Sitzungen schlie·en"
     ID_SDDI_WPS_STARTUPFOLDER           "Alle XWorkplace S~ystemstartordner abarbeiten"
+        /* next one is new with V0.9.19 */
+    ID_SDDI_ARCHIVEONCE                 "A~rbeitsoberflÑche einmal archivieren"
     ID_SDDI_MESSAGEAGAIN                "Die~se Nachricht beim nÑchsten Mal anzeigen"
 
     /* the following two are new with V0.9.17 (2002-02-05) [umoeller] */
@@ -1317,6 +1327,41 @@ BEGIN
     ID_XCDI_WORKERPRTY_GROUP            "Arbeitsthread"
     ID_XCDI_WORKERPRTY_TEXT1            "Standard~prioritÑt des Arbeitsthreads:"
     ID_XCDI_WORKERPRTY_BEEP             "Signalton bei PrioritÑts~Ñnderung"
+
+    /* strings for XFldWPS menu pages */
+
+    /* new ones first: */
+    ID_XSDI_MENUS_COMMON                "Gemeinsame MenÅeinstellungen"
+    ID_XSDI_MENUS_SPECIFIC              "Spezifische MenÅeinstellungen"
+    ID_XSDI_MENU_STYLE_GROUP            "MenÅstil"
+    ID_XSDI_MENUS_BARS                  "MenÅzeile in Ordnerfenstern"
+    ID_XSDI_MENUS_SHORT                 "Kurze MenÅs"
+    ID_XSDI_MENUS_LONG                  "Lange MenÅs"
+
+    /* strings formerly in ID_XSD_SET2REMOVEMENUS */
+    ID_XSDI_COMMON_GROUP                "Gemeinsame MenÅeintrÑge"
+    ID_XSDI_HELP                        """Hilf~e"""
+    ID_XSDI_CRANOTHER                   """~Erstellen"""
+    ID_XSDI_COPY                        """K~opieren"""
+    ID_XSDI_MOVE                        """~Verschieben"""
+    ID_XSDI_SHADOW                      """Referenz er~stellen"""
+    ID_XSDI_DELETE                      """~Lîschen"""
+    ID_XSDI_PICKUP                      """Au~fnehmen"""
+    ID_XSDI_LOCKINPLACE                 """S~ymbol fixieren"""
+    ID_XSDI_LOCKINPLACE_NOSUB           "Kein Untermen~Å"
+    ID_XSDI_PRINT                       """~Drucken"""
+
+    ID_XSDI_FOLDER_GROUP                "OrdnermenÅeintrÑge"
+    ID_XSDI_FIND                        """S~uchen"""
+    ID_XSDI_SORT                        """Sor~tieren""-MenÅ"
+    ID_XSDI_SELECT                      """AuswÑhlen""-MenÅ"
+    ID_XSDI_WARP4DISPLAY                """Anzeigen""-MenÅ"
+    ID_XSDI_ARRANGE                     """A~nordnen""-MenÅ"
+    ID_XSDI_INSERT                      """EinfÅgen"""
+
+    ID_XSDI_DISK_GROUP                  "LaufwerksmenÅeintrÑge"
+    ID_XSDI_CHECKDISK                   """Datentr~Ñger prÅfen"""
+    ID_XSDI_FORMATDISK                  """D~atentrÑger formatieren"""
 
 END
 

@@ -286,8 +286,15 @@ BEGIN
     MENUITEM "~Help", ID_CRMI_HELP
     MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "~Remove widget", ID_CRMI_REMOVEWGT
+
     MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
-    MENUITEM "Close", ID_CRMI_CLOSE_XCENTER
+
+    MENUITEM "~XCenter", ID_CRM_XCSUB, MIS_SUBMENU
+    BEGIN
+        MENUITEM "Propertie~s", ID_CRMI_XCSUB_PROPERTIES
+        MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
+        MENUITEM "Close", ID_CRMI_XCSUB_CLOSE
+    END
 END
 
 /* XPager context menu V0.9.11 (2001-04-25) [umoeller] */
@@ -394,18 +401,19 @@ BEGIN
     ID_XSSI_LB_SORTBYWRITEDATE      "Sort by write date"
     ID_XSSI_LB_SORTBYACCESSDATE     "Sort by access date"
     ID_XSSI_LB_SORTBYCREATIONDATE   "Sort by creation date"
-    ID_XSSI_LB_SWITCHTOICONVIEW     "Switch to Icon view (Warp 4 only)"
-    ID_XSSI_LB_SWITCHTODETAILSVIEW  "Switch to Details view (Warp 4 only)"
-    ID_XSSI_LB_SWITCHTOTREEVIEW     "Switch to Tree view (Warp 4 only)"
+/* V0.9.19: removed Warp 4 only strings from all these */
+    ID_XSSI_LB_SWITCHTOICONVIEW     "Switch to Icon view"
+    ID_XSSI_LB_SWITCHTODETAILSVIEW  "Switch to Details view"
+    ID_XSSI_LB_SWITCHTOTREEVIEW     "Switch to Tree view"
     ID_XSSI_LB_ARRANGEDEFAULT       "Arrange (default)"
-    ID_XSSI_LB_ARRANGEFROMTOP       "Arrange from top (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEFROMLEFT      "Arrange from left (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEFROMRIGHT     "Arrange from right (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Arrange from bottom (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEPERIMETER     "Arrange Perimeter (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Arrange horizontally (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEVERTICALLY    "Arrange vertically (Warp 4 only)"
-    ID_XSSI_LB_INSERT               "Paste... (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEFROMTOP       "Arrange from top"
+    ID_XSSI_LB_ARRANGEFROMLEFT      "Arrange from left"
+    ID_XSSI_LB_ARRANGEFROMRIGHT     "Arrange from right"
+    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Arrange from bottom"
+    ID_XSSI_LB_ARRANGEPERIMETER     "Arrange Perimeter"
+    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Arrange horizontally"
+    ID_XSSI_LB_ARRANGEVERTICALLY    "Arrange vertically"
+    ID_XSSI_LB_INSERT               "Paste..."
     ID_XSSI_LB_SORTBYEXTENSION      "Sort by extension"
     ID_XSSI_LB_SORTFOLDERSFIRST     "Sort, folders first"
     ID_XSSI_LB_SORTBYCLASS          "Sort by object class"
@@ -455,7 +463,8 @@ BEGIN
     ID_XSSI_DETAILSPAGE             "~Details"
     ID_XSSI_XSHUTDOWNPAGE           "~&xsd;"
     ID_XSSI_STARTUPPAGE             "~Startup"
-    ID_XSSI_DTPMENUPAGE             "~Menu items"
+    ID_XSSI_DTPMENUPAGE             "~Menu"
+            /* ID_XSSI_DTPMENUPAGE changed V0.9.19 (2002-04-17) [umoeller] */
     ID_XSSI_FILETYPESPAGE           "~File types"
     ID_XSSI_SOUNDSPAGE              "~Sounds"
     ID_XSSI_VIEWPAGE                "~View"
@@ -1065,15 +1074,16 @@ BEGIN
     DID_REMOVE                          "~Remove"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
-    ID_XSDI_FILEMENUS_GROUP             "File menus"
-    ID_XSDI_FILEATTRIBS                 "Add ""A~ttributes"" menu"
-    ID_XSDI_COPYFILENAME                "~Add ""Copy filename"""
+    /* the ones in this group have been redone with V0.9.19 */
+    ID_XSDI_FILEMENUS_GROUP             "File menu items"
+    ID_XSDI_FILEATTRIBS                 """A~ttributes"" menu"
+    ID_XSDI_COPYFILENAME                """Copy filen~ame"""
     ID_XSDI_FOLDERMENUS_GROUP           "Folder menus"
-    ID_XSDI_MOVE4REFRESH                "Add ""~Refresh now"" to main menu"
-    ID_XSDI_SELECTSOME                  "Add ""Se~lect by name"""
-    ID_XSDI_FLDRVIEWS                   "Extend ""~View"" menu"
-    ID_XSDI_FOLDERCONTENT               "Add f~older content menus"
-    ID_XSDI_FC_SHOWICONS                "Show ~icons"
+    ID_XSDI_MOVE4REFRESH                """~Refresh now"" in main menu"
+    ID_XSDI_SELECTSOME                  """Se~lect by name"""
+    ID_XSDI_FLDRVIEWS                   "La~yout items"
+    ID_XSDI_FOLDERCONTENT               "Add f~older content menu"
+    ID_XSDI_FC_SHOWICONS                "Display ~icons"
 
     /* strings formerly in ID_XSD_SETTINGS_FLDR1 */
     ID_XSSI_GENERALVIEWPAGE             "General view settings"
@@ -1083,17 +1093,18 @@ BEGIN
     ID_XSDI_KEEPTITLE                   "~Keep original title"
     ID_XSDI_SNAPTOGRID                  "Add ""Sna~p to grid"""
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
-    ID_XSDI_ENABLESTATUSBAR             "Show ~status bar"
+    ID_XSDI_ENABLESTATUSBAR             "Display ~status bar"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS */
+    /* the ones in this group have been redone with V0.9.19 */
     ID_XSDI_DTP_MENUITEMSGROUP          "Visible standard menu items"
-    ID_XSDI_DTP_SORT                    "S~ort"
-    ID_XSDI_DTP_ARRANGE                 "~Arrange"
-    ID_XSDI_DTP_LOCKUP                  "~Lockup now"
-    ID_XSDI_DTP_LOGOFFNETWORKNOW        "Lo~goff network now"
-    ID_XSDI_DTP_SHUTDOWN                "Shu~tdown"
+    ID_XSDI_DTP_SORT                    """S~ort"""
+    ID_XSDI_DTP_ARRANGE                 """~Arrange"""
+    ID_XSDI_DTP_LOCKUP                  """~Lockup now"""
+    ID_XSDI_DTP_LOGOFFNETWORKNOW        """Lo~goff network now"""
+    ID_XSDI_DTP_SHUTDOWN                """Shu~tdown"""
     ID_XSDI_DTP_SHUTDOWNMENU            "Add su~bmenu"
-    ID_XSDI_DTP_SYSTEMSETUP             "System ~setup"
+    ID_XSDI_DTP_SYSTEMSETUP             """System ~setup"""
 
     /* strings formerly in ID_XSD_DTP_SHUTDOWN */
     ID_SDDI_SHAREDGROUP                 "Common settings"
@@ -1169,7 +1180,7 @@ BEGIN
     ID_XSDI_FDRDEFAULTDOCVIEW           "De~fault document = default folder view"
     ID_XSDI_FDRAUTOREFRESH              "Enable folder ~auto-refresh"
     ID_XSDI_FDRVIEWDEFAULT_GROUP        "Default folder view"
-    ID_XSDI_FDRVIEW_INHERIT             "Use pare~nt folder's default view"
+    ID_XSDI_FDRVIEW_INHERIT             "Inherit from pare~nt"
     ID_XSDI_FDRVIEW_ICON                "~Icon"
     ID_XSDI_FDRVIEW_TREE                "T~ree"
     ID_XSDI_FDRVIEW_DETAILS             "Detail~s"
@@ -1208,6 +1219,8 @@ BEGIN
     ID_SDDI_CONFIRM_TEXT                "Are you sure you wish to restart the Desktop?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Close all sessions"
     ID_SDDI_WPS_STARTUPFOLDER           "~Process all XWorkplace Startup folders"
+        /* next one is new with V0.9.19 */
+    ID_SDDI_ARCHIVEONCE                 "~Archive Desktop once after restart"
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
 
     /* the following two are new with V0.9.17 (2002-02-05) [umoeller] */
@@ -1220,7 +1233,7 @@ BEGIN
     ID_XSDI_ICON_EXPLANATION_TXT        "Drag any object into the rectangle on the left, or find an icon file using the ""Browse"" button."
     ID_XSDI_ICON_EDIT_BUTTON            "~Edit icon"
     ID_XSDI_ICON_RESET_BUTTON           "~Reset icon"
-    ID_XSDI_ICON_LOCKPOSITION_CB        "~Lock position"
+    ID_XSDI_ICON_LOCKPOSITION_CB        "~Lock in place"
     ID_XSDI_ICON_TEMPLATE_CB            "~Template"
     ID_XSDI_ICON_HOTKEY_TEXT            "Object hot~key:"
     ID_XSDI_ICON_HOTKEY_CLEAR           "~Clear"
@@ -1322,6 +1335,41 @@ BEGIN
     ID_XCDI_WORKERPRTY_GROUP            "Worker thread"
     ID_XCDI_WORKERPRTY_TEXT1            "De~fault Worker thread priority:"
     ID_XCDI_WORKERPRTY_BEEP             "~Beep on priority change"
+
+    /* strings for XFldWPS menu pages */
+
+    /* new ones first: */
+    ID_XSDI_MENUS_COMMON                "Common menu settings"
+    ID_XSDI_MENUS_SPECIFIC              "Specific menu settings"
+    ID_XSDI_MENU_STYLE_GROUP            "Menu style"
+    ID_XSDI_MENUS_BARS                  "Displa~y folder menu bars"
+    ID_XSDI_MENUS_SHORT                 "Shor~t menus"
+    ID_XSDI_MENUS_LONG                  "Lo~ng menus"
+
+    /* strings formerly in ID_XSD_SET2REMOVEMENUS */
+    ID_XSDI_COMMON_GROUP                "Common menu items"
+    ID_XSDI_HELP                        """H~elp"""
+    ID_XSDI_CRANOTHER                   """~Create another"""
+    ID_XSDI_COPY                        """C~opy"""
+    ID_XSDI_MOVE                        """~Move"""
+    ID_XSDI_SHADOW                      """Create ~shadow"""
+    ID_XSDI_DELETE                      """De~lete"""
+    ID_XSDI_PICKUP                      """~Pickup"""
+    ID_XSDI_LOCKINPLACE                 """Loc~k in place"""
+    ID_XSDI_LOCKINPLACE_NOSUB           "No su~bmenu"
+    ID_XSDI_PRINT                       """Pr~int"""
+
+    ID_XSDI_FOLDER_GROUP                "Folder menu items"
+    ID_XSDI_FIND                        """~Find"""
+    ID_XSDI_SORT                        """Sort "" ~menu"
+    ID_XSDI_SELECT                      """~Select"" menu"
+    ID_XSDI_WARP4DISPLAY                """~View"" menu"
+    ID_XSDI_ARRANGE                     """Arra~nge"" menu"
+    ID_XSDI_INSERT                      """~Paste"""
+
+    ID_XSDI_DISK_GROUP                  "Disk menu items"
+    ID_XSDI_CHECKDISK                   """Check dis~k"""
+    ID_XSDI_FORMATDISK                  """For~mat disk"""
 
 END
 

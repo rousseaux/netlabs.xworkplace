@@ -697,7 +697,9 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
  *      thread 1). However, if this results from WinOpenObject
  *      or an OPEN setup string, this will not be on thread 1.
  *
- *      We open an XCenter view here by calling ctrpCreateXCenterView.
+ *      We open an XCenter view here by calling
+ *      ctrpCreateXCenterView or redirect other views to
+ *      thread 1.
  *
  *@@changed V0.9.9 (2001-02-06) [umoeller]: now redirecting settings to thread-1
  */
@@ -716,13 +718,10 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
         if (!_tidRunning)       // V0.9.12 (2001-05-20) [umoeller]
         {
             // no open view yet (just make sure!)
-            HAB hab;
-            if (hwndCnr)
-                hab = WinQueryAnchorBlock(hwndCnr);
-            else
-                hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
+            HWND hwnd = (hwndCnr) ? hwndCnr : cmnQueryActiveDesktopHWND();
+
             hwndNewView = ctrpCreateXCenterView(somSelf,
-                                                hab,
+                                                WinQueryAnchorBlock(hwnd),
                                                 ulView,
                                                 // store in instance data
                                                 &_pvOpenView);
@@ -748,7 +747,8 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
         // other view (probably settings):
 
         // make sure we don't open the other views on the XCenter
-        // view thread... this causes problems in various situations
+        // view thread... otherwise the views get closed when
+        // the thread terminates
         if (    (_tidRunning)
              && (doshMyTID() == _tidRunning)
            )
@@ -888,7 +888,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpAddObjectWindowPage(XCenter *somSelf,
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpAddObjectWindowPage");
 
-    return (SETTINGS_PAGE_REMOVED);
+    return SETTINGS_PAGE_REMOVED;
 }
 
 /*
