@@ -59,6 +59,56 @@
 PFNWP   G_pfnwpMoveStaticOrig = NULL;
 
 /*
+ *@@ pgrMakeWindowVisible:
+ *      moves (if needed) the specified window so that it
+ *      is at least partially visible on the current
+ *      desktop.
+ *
+ *@@added V0.9.20 (2002-07-25) [lafaix]
+ */
+
+BOOL pgrMakeWindowVisible(HWND hwnd)
+{
+    BOOL brc = FALSE;
+
+    if (hwnd)
+    {
+        SWP swp,
+            swpDesktop;
+
+        WinQueryWindowPos(hwnd, &swp);
+        WinQueryWindowPos(HWND_DESKTOP, &swpDesktop);
+
+        if (    (swp.x > (swpDesktop.x + swpDesktop.cx))
+             || (swp.y > (swpDesktop.y + swpDesktop.cy))
+             || ((swp.x + swp.cx) < swpDesktop.x)
+             || ((swp.y + swp.cy) < swpDesktop.y)
+           )
+        {
+            // the window is not visible, lets make its center
+            // visible in the current desktop
+            LONG lHorDist = swpDesktop.x + (swpDesktop.cx / 2) - (swp.x + (swp.cx / 2)),
+                 lVerDist = swpDesktop.y + (swpDesktop.cy / 2) - (swp.y + (swp.cy / 2));
+
+            LONG lHDist = lHorDist / G_pHookData->szlEachDesktopFaked.cx,
+                 lVDist = lVerDist / G_pHookData->szlEachDesktopFaked.cy;
+
+            WinSetWindowPos(hwnd,
+                            NULLHANDLE,
+                            swp.x + lHDist * G_pHookData->szlEachDesktopFaked.cx,
+                            swp.y + lVDist * G_pHookData->szlEachDesktopFaked.cy,
+                            0,
+                            0,
+                            SWP_MOVE);
+        }
+
+        brc = TRUE;
+    }
+
+    return brc;
+}
+
+/*
  *@@ MoveCurrentDesktop:
  *      moves the current desktop by moving windows around
  *      the screen. The delta values specify the pixels by

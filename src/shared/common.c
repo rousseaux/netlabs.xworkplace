@@ -1470,7 +1470,13 @@ const CONTROLDEF
                             NULL,
                             -1,
                             8,
-                            1);
+                            1),
+    G_AddButton = LOADDEF_PUSHBUTTON(DID_ADD),
+            // added V0.9.21 (2002-09-10) [lafaix]
+    G_EditButton = LOADDEF_PUSHBUTTON(DID_EDIT),
+            // added V0.9.21 (2002-09-10) [lafaix]
+    G_RemoveButton = LOADDEF_PUSHBUTTON(DID_REMOVE);
+            // added V0.9.21 (2002-09-10) [lafaix]
 
 /*
  *@@ cmnLoadDialogStrings:

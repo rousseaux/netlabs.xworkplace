@@ -487,12 +487,12 @@
 // "folder hotkeys" page
 #define ID_XSD_SET4ACCELS               560
 #define ID_XSDI_ACCELERATORS            561
-#define ID_XSDI_LISTBOX                 562
-#define ID_XSDI_DESCRIPTION             563
-#define ID_XSDI_DESCRIPTION_TX1         564     // text
-#define ID_XSDI_CLEARACCEL              565
+#define ID_XSDI_HOTKEYS_GROUP           562
+#define ID_XSDI_CNR                     563
+//#define ID_XSDI_DESCRIPTION_TX1         564     // text
+//#define ID_XSDI_CLEARACCEL              565
 #define ID_XSDI_SHOWINMENUS             566     // V0.9.2 (2000-03-08) [umoeller]
-#define ID_XSDI_SETACCEL                567     // V0.9.9 (2001-04-04) [umoeller]
+//#define ID_XSDI_SETACCEL                567     // V0.9.9 (2001-04-04) [umoeller]
 
 // "status bars" page 1
 // #define ID_XSD_SET27STATUSBARS          570  // removed V0.9.19 (2002-04-24) [umoeller]
@@ -581,6 +581,17 @@
 #define ID_XSDI_FDRVIEW_DETAILS         664
 #define ID_XSDI_FDRVIEW_LAZYICONS       665     // added V0.9.20 (2002-08-04) [umoeller]
 #define ID_XSDI_FDRVIEW_SHADOWOVERLAY   666     // added V0.9.20 (2002-08-04) [umoeller]
+
+// "Add/Edit hotkey" dialog (added V0.9.21) [lafaix]
+#define ID_XSDI_HOTKEY_ADDTITLE         670
+#define ID_XSDI_HOTKEY_EDITTITLE        671
+#define ID_XSDI_HOTKEY_HOTKEY           672
+#define ID_XSDI_HOTKEY_ACTION           673
+#define ID_XSDI_HOTKEY_PARAM            674
+#define ID_XSDI_HOTKEY_ACTION_DROP      675
+#define ID_XSDI_HOTKEY_PARAM_DROP       676
+#define ID_XSDI_HOTKEY_HOTKEY_EF        677
+#define ID_XSDI_HOTKEY_GROUP            678
 
 /* ******************************************************************
  *
@@ -1705,10 +1716,14 @@
 #define ID_XSSI_LB_COPYFILENAME_SHORT   5539
 #define ID_XSSI_LB_COPYFILENAME_FULL    5540
 
+#define ID_XSSI_LB_PICKUPDROPCOPY       5541  // added V0.9.21 (2002-09-05) [lafaix]
+#define ID_XSSI_LB_PICKUPDROPMOVE       5542  // added V0.9.21 (2002-09-05) [lafaix]
+#define ID_XSSI_LB_PICKUPDROPLINK       5543  // added V0.9.21 (2002-09-05) [lafaix]
+
 // FIRST and LAST are used be the notebook func to
 // calculate corresponding items
 #define ID_XSSI_LB_FIRST                5500
-#define ID_XSSI_LB_LAST                 5540
+#define ID_XSSI_LB_LAST                 5543
 
 // shutdown strings
 #define ID_SDSI_FLUSHING                5600

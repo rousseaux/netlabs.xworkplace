@@ -152,7 +152,7 @@ typedef struct _PAGERWINDATA
  *
  ********************************************************************/
 
-STATIC PCSZ         WC_PAGER = "XWPXPagerClient";
+static PCSZ         WC_PAGER = "XWPXPagerClient";
 
 HMTX                G_hmtxSuppressNotify = NULLHANDLE;    // V0.9.14 (2001-08-25) [umoeller]
 
@@ -783,13 +783,13 @@ STATIC VOID RefreshPagerBitmap(HWND hwnd,
                                     =   xThis / dScale_X;
 
                                 pMiniThis->ptlLowerLeft.y
-                                    =   yThis / dScale_Y;;
+                                    =   yThis / dScale_Y + 1;
 
                                 pMiniThis->ptlTopRight.x
-                                    =   (xThis + pWinInfo->data.swp.cx) / dScale_X - 1;
+                                    =   (xThis + pWinInfo->data.swp.cx) / dScale_X;
 
                                 pMiniThis->ptlTopRight.y
-                                    =   (yThis + pWinInfo->data.swp.cy) / dScale_Y - 1;
+                                    =   (yThis + pWinInfo->data.swp.cy) / dScale_Y + 1;
 
                             } // end if (    (bTypeThis == WINDOW_NORMAL) ...
                         }
@@ -1202,47 +1202,15 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
         {
             if (msg == WM_BUTTON1CLICK)
             {
-                // we first force a desktop switch if follow focus
-                // is disabled
-                // V0.9.19 (2002-06-14) [lafaix]
-                if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
-                {
-                    SWP swpActive;
-
-                    if (WinQueryWindowPos(hwndClicked, &swpActive))
-                    {
-                        // calculate the absolute coordinate of the center
-                        // of the active window relative to the bottom
-                        // left desktop:
-                        LONG    cx = G_pHookData->szlEachDesktopFaked.cx,
-                                cy = G_pHookData->szlEachDesktopFaked.cy,
-                                xCurrent = G_pHookData->ptlCurrentDesktop.x,
-                                yCurrent = G_pHookData->ptlCurrentDesktop.y,
-                                x =      (    swpActive.x
-                                            + (swpActive.cx / 2)
-                                            + xCurrent
-                                         ) / cx
-                                           * cx,
-                                y =      (    swpActive.y
-                                            + (swpActive.cy / 2)
-                                            + yCurrent
-                                         ) / cy
-                                           * cy;
-
-                        // bump boundaries
-                        if (    (x >= 0)
-                             && (x <= (G_pHookData->PagerConfig.cDesktopsX * cx))
-                             && (y >= 0)
-                             && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
-                           )
-                        {
-                            WinPostMsg(G_pHookData->hwndPagerMoveThread,
-                                       PGRM_MOVEBYDELTA,
-                                       (MPARAM)(xCurrent - x),
-                                       (MPARAM)(yCurrent - y));
-                        }
-                    }
-                }
+               // we first force a desktop switch if follow focus
+               // is disabled
+               // V0.9.19 (2002-06-14) [lafaix]
+               if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
+               {
+                   pgrSwitchToDesktop(hwndClicked,
+                                      TRUE,   // do move
+                                      FALSE); // do not flash to top
+               }
 
                 // mb1: activate window
                 WinSetActiveWindow(HWND_DESKTOP, hwndClicked);
@@ -1441,13 +1409,13 @@ STATIC VOID PagerDrag(HWND hwnd, MPARAM mp1)
             ti.rclTrack.xLeft   =   (swpTracked.x + xCurrent)
                                   / dScaleX;
             ti.rclTrack.yBottom =   (swpTracked.y + yCurrent)
-                                  / dScaleY;
+                                  / dScaleY + 1;
             ti.rclTrack.xRight  =   (swpTracked.x + swpTracked.cx + xCurrent)
                                   / dScaleX
                                   + 1;
             ti.rclTrack.yTop    =   (swpTracked.y + swpTracked.cy + yCurrent)
                                   / dScaleY
-                                  + 1;
+                                  + 2;
 
             ptlInitial.x = ti.rclTrack.xLeft;
             ptlInitial.y = ti.rclTrack.yBottom;
@@ -1536,6 +1504,77 @@ STATIC VOID PagerDrag(HWND hwnd, MPARAM mp1)
 }
 
 /*
+ *@@ pgrSwitchToDesktop:
+ *      switch to the desktop containing the center of hwnd (if
+ *      possible).  Do the move if fMove is TRUE.  Flash the
+ *      pager if fFlashToTop is TRUE when the move is possible.
+ *
+ *      Returns TRUE if the move was possible.
+ *
+ *@@added V0.9.20 (2002-07-26) [lafaix]
+ */
+
+BOOL pgrSwitchToDesktop(HWND hwnd,
+                        BOOL fMove,
+                        BOOL fFlashToTop)
+{
+    BOOL brc = FALSE;
+
+    if (hwnd)
+    {
+        SWP swp;
+
+        if (WinQueryWindowPos(hwnd, &swp))
+        {
+            // calculate the absolute coordinate of the center
+            // of the window relative to the bottom
+            // left desktop:
+            LONG    cx = G_pHookData->szlEachDesktopFaked.cx,
+                    cy = G_pHookData->szlEachDesktopFaked.cy,
+                    xCurrent = G_pHookData->ptlCurrentDesktop.x,
+                    yCurrent = G_pHookData->ptlCurrentDesktop.y,
+                    x =      (    swp.x
+                                + (swp.cx / 2)
+                                + xCurrent
+                             ) / cx
+                               * cx,
+                    y =      (    swp.y
+                                + (swp.cy / 2)
+                                + yCurrent
+                             ) / cy
+                               * cy;
+
+            // bump boundaries
+            if (    (x >= 0)
+                 && (x <= (G_pHookData->PagerConfig.cDesktopsX * cx))
+                 && (y >= 0)
+                 && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
+               )
+            {
+                if (fMove)
+                    WinPostMsg(G_pHookData->hwndPagerMoveThread,
+                               PGRM_MOVEBYDELTA,
+                               (MPARAM)(xCurrent - x),
+                               (MPARAM)(yCurrent - y));
+
+                if (fFlashToTop)
+                {
+                    WinSetWindowPos(G_pHookData->hwndPagerFrame,
+                                    HWND_TOP,
+                                    0, 0, 0, 0,
+                                    SWP_SHOW | SWP_ZORDER);
+                    CheckFlashTimer();
+                }
+
+                brc = TRUE;
+            }
+        }
+    }
+
+    return brc;
+}
+
+/*
  *@@ PagerActiveChanged:
  *      implementation for PGRM_ACTIVECHANGED in
  *      fnwpPager.
@@ -1590,53 +1629,16 @@ STATIC VOID PagerActiveChanged(HWND hwnd)
                      && (!pgrIsShowing(&swpActive))
                    )
                 {
-                    // calculate the absolute coordinate of the center
-                    // of the active window relative to the bottom
-                    // left desktop:
-                    LONG    cx = G_pHookData->szlEachDesktopFaked.cx,
-                            cy = G_pHookData->szlEachDesktopFaked.cy,
-                            xCurrent = G_pHookData->ptlCurrentDesktop.x,
-                            yCurrent = G_pHookData->ptlCurrentDesktop.y,
-                            x =      (    swpActive.x
-                                        + (swpActive.cx / 2)
-                                        + xCurrent
-                                     ) / cx
-                                       * cx,
-                            y =      (    swpActive.y
-                                        + (swpActive.cy / 2)
-                                        + yCurrent
-                                     ) / cy
-                                       * cy;
-
-                    // bump boundaries
-                    if (    (x >= 0)
-                         && (x <= (G_pHookData->PagerConfig.cDesktopsX * cx))
-                         && (y >= 0)
-                         && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
-                       )
-                    {
-                        // only actually post the msg if follow focus
-                        // is enabled V0.9.19 (2002-06-02) [umoeller]
-                        if (!(G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS))
-                            WinPostMsg(G_pHookData->hwndPagerMoveThread,
-                                       PGRM_MOVEBYDELTA,
-                                       (MPARAM)(xCurrent - x),
-                                       (MPARAM)(yCurrent - y));
-
-                        // even if follow focus is disabled we should still bring
-                        // the pager window back to top in flash mode
-                        // V0.9.19 (2002-06-02) [umoeller]
-                        // but only if in flash mode
-                        // V0.9.19 (2002-06-13) [lafaix]
-                        if (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
-                        {
-                            WinSetWindowPos(G_pHookData->hwndPagerFrame,
-                                            HWND_TOP,
-                                            0, 0, 0, 0,
-                                            SWP_SHOW | SWP_ZORDER);
-                            CheckFlashTimer();
-                        }
-                    }
+                    pgrSwitchToDesktop(hwndActive,
+                                       // only actually post the msg if follow focus
+                                       // is enabled V0.9.19 (2002-06-02) [umoeller]
+                                       !(G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS),
+                                       // even if follow focus is disabled we should still bring
+                                       // the pager window back to top in flash mode
+                                       // V0.9.19 (2002-06-02) [umoeller]
+                                       // but only if in flash mode
+                                       // V0.9.19 (2002-06-13) [lafaix]
+                                       (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP));
                 }
             }
         } // end if (hwndActive)

@@ -451,6 +451,10 @@ BEGIN
     ID_XSSI_LB_TASKLIST             "Show task list"
     ID_XSSI_LB_COPYFILENAME_SHORT   "Copy filename (without path)"
     ID_XSSI_LB_COPYFILENAME_FULL    "Copy filename (including path)"
+/* V0.9.21: added remaining Pickup choices [lafaix] */
+    ID_XSSI_LB_PICKUPDROPCOPY       "Drop copy"
+    ID_XSSI_LB_PICKUPDROPMOVE       "Drop move"
+    ID_XSSI_LB_PICKUPDROPLINK       "Drop shadow"
 
     /* XShutdown: context menu items and messages for the
        status window.
@@ -1196,6 +1200,8 @@ BEGIN
     ID_XSDI_SNAPTOGRID                  "Add ""Sna~p to grid"""
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
     ID_XSDI_ENABLESTATUSBAR             "Display ~status bar"
+    ID_XSDI_SHOWINMENUS                 "Sho~w hotkeys in menus"
+    ID_XSDI_HOTKEYS_GROUP               "Folder hotkeys"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS
         all removed with V0.9.19  */
@@ -1660,6 +1666,14 @@ BEGIN
     /* startup and shutdown folder were missing so far V0.9.21 (2002-08-31) [umoeller] */
     ID_XFSI_XWPSTARTUPFDR               "&xwp; Startup Folder"
     ID_XFSI_XWPSHUTDOWNFDR              "&xwp; Shutdown Folder"
+
+    /* hotkey definition dialog V0.9.21 (2002-09-10) [lafaix] */
+    ID_XSDI_HOTKEY_ADDTITLE             "Add Hotkey definition"
+    ID_XSDI_HOTKEY_EDITTITLE            "Edit Hotkey definition"
+    ID_XSDI_HOTKEY_HOTKEY               "Hotkey"
+    ID_XSDI_HOTKEY_ACTION               "Action"
+    ID_XSDI_HOTKEY_PARAM                "Parameter"
+    ID_XSDI_HOTKEY_GROUP                "Definition"
 END
 
 /* Treesize definitions; added V0.9.0 */

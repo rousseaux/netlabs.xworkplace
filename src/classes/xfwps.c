@@ -151,11 +151,13 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrViewsPage(XFldWPS *somSelf,
     return ntbInsertPage(&inbp);
 }
 
+extern MPARAM G_ampHotkeys[];
 /*
  *@@ xwpAddWPSFdrHotkeysPage:
  *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V0.9.21 (2002-09-06) [lafaix]: made sizeable
  */
 
 SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrHotkeysPage(XFldWPS *somSelf,
@@ -175,13 +177,16 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrHotkeysPage(XFldWPS *somSelf,
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndDlg;
         inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
-        inbp.ulDlgID = ID_XSD_SET4ACCELS;
+        inbp.ulDlgID = ID_XFD_EMPTYDLG;
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_4ACCELERATORS);  // psz4Accelerators
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1+5;
         inbp.ulPageID = SP_4ACCELERATORS;
         inbp.pfncbInitPage    = fdrHotkeysInitPage;
         inbp.pfncbItemChanged = fdrHotkeysItemChanged;
+        // make this sizeable V0.9.21 (2002-09-06) [lafaix]
+        inbp.pampControlFlags = G_ampHotkeys;
+        inbp.cControlFlags = 4; // ARRAYITEMCOUNT(G_ampHotkeys);
         ulrc = ntbInsertPage(&inbp);
     }
 

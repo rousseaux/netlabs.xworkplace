@@ -1191,7 +1191,10 @@
                           G_UndoButton,
                           G_DefaultButton,
                           G_HelpButton,
-                          G_Spacing;
+                          G_Spacing,
+                          G_AddButton,
+                          G_EditButton,
+                          G_RemoveButton;
 
         APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,
                                     ULONG cDlgItems,

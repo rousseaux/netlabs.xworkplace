@@ -46,8 +46,11 @@
 #define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"
 
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"          // private hook and daemon definitions
+#include "hook\xwpdaemn.h"
 
 #pragma hdrstop
 
@@ -67,7 +70,7 @@
  *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
  */
 
-VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
+VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK                     
 {
     POINTL      ptlMouse; // mouse coordinates
     HWND        hwndFrame; // handle of the frame window (parent)
@@ -128,6 +131,37 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
                                MPFROMP(&mi),
                                MPFROMP(szItemText));
                 }
+
+#ifndef __NOPAGER__
+                // add the sticky entry if it's a top-level window
+                if (WinQueryWindow(hwndFrame, QW_PARENT) == G_HookData.hwndPMDesktop)
+                {
+                    mi.iPosition = MIT_END;
+                    mi.afStyle = MIS_SEPARATOR;
+                    mi.afAttribute = 0;
+                    mi.id = -1;
+                    mi.hwndSubMenu = 0;
+                    mi.hItem = 0;
+                    WinSendMsg(hNewMenu,
+                               MM_INSERTITEM,
+                               MPFROMP(&mi),
+                               NULL);
+                    mi.afStyle = MIS_TEXT|MIS_SYSCOMMAND;
+                    if (WinSendMsg(G_HookData.hwndDaemonObject,
+                                   XDM_ISTRANSIENTSTICKY,
+                                   MPFROMHWND(hwndFrame),
+                                   0)
+                       )
+                        mi.afAttribute = MIA_CHECKED;
+                    else
+                        mi.afAttribute = 0;
+                    mi.id = 1;
+                    WinSendMsg(hNewMenu,
+                               MM_INSERTITEM,
+                               MPFROMP(&mi),
+                               "Sticky");
+                }
+#endif
 
                 // display popup menu
                 WinPopupMenu(HWND_DESKTOP, hwndFrame, hNewMenu,

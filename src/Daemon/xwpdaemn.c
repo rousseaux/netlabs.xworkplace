@@ -2480,6 +2480,29 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // load config from OS2.INI
                 mrc = (MRESULT)dmnLoadPagerSettings((ULONG)mp1);
             break;
+
+            /*
+             *@@ XDM_ADDTRANSIENTSTICKY:
+             *      makes a windows temporarily (un)sticky.  The
+             *      "sticky" state is not preserved upon WPS restart.
+             *
+             *      Parameters:
+             *      -- HWND mp1: the top-level window to be made
+             *          (un)sticky.
+             *
+             *      -- BOOL mp2: if TRUE, mp1 is made sticky.  If
+             *          FALSE, mp1 is made unsticky.
+             *
+             *@@added V0.9.20 (2002-07-25) [lafaix]
+             */
+
+            case XDM_TOGGLETRANSIENTSTICKY:
+                mrc = (MRESULT)pgrToggleTransientSticky((HWND)mp1);
+            break;
+
+            case XDM_ISTRANSIENTSTICKY:
+                mrc = (MRESULT)pgrIsWindowTransientSticky((HWND)mp1);
+            break;
 #endif
 
             /*

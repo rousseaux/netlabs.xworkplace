@@ -1580,10 +1580,7 @@ STATIC const CONTROLDEF
     StickiesCnr = CONTROLDEF_CONTAINER(
                             ID_SCDI_STICKY_CNR,
                             200,        // for now, will be resized
-                            100),       // for now, will be resized
-    AddButton = LOADDEF_PUSHBUTTON(DID_ADD),
-    EditButton = LOADDEF_PUSHBUTTON(DID_EDIT),
-    RemoveButton = LOADDEF_PUSHBUTTON(DID_REMOVE);
+                            100);       // for now, will be resized
 
 STATIC const DLGHITEM G_dlgPagerStickies[] =
     {
@@ -1595,9 +1592,9 @@ STATIC const DLGHITEM G_dlgPagerStickies[] =
                     START_ROW(0),
                         CONTROL_DEF(&StickiesCnr),
                     START_ROW(0),
-                        CONTROL_DEF(&AddButton),
-                        CONTROL_DEF(&EditButton),
-                        CONTROL_DEF(&RemoveButton),
+                        CONTROL_DEF(&G_AddButton),
+                        CONTROL_DEF(&G_EditButton),
+                        CONTROL_DEF(&G_RemoveButton),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // common.c

@@ -55,18 +55,25 @@
 #define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
+#define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
+#define INCL_WINENTRYFIELDS
+#define INCL_WINSTDCNR
 #include <os2.h>
 
 // C library headers
+#include <stdio.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
@@ -76,6 +83,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -523,8 +531,8 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
 
          ID_XSSI_LB_FIND, WPMENUID_FIND, WPMENUID_FIND, FALSE,
 
-         ID_XSSI_LB_PICKUP, WPMENUID_PICKUP, WPMENUID_PICKUP, FALSE,
-         ID_XSSI_LB_PICKUPCANCELDRAG, WPMENUID_PUTDOWN_CANCEL, WPMENUID_PUTDOWN_CANCEL, FALSE,
+         ID_XSSI_LB_PICKUP, WPMENUID_PICKUP, WPMENUID_PICKUP, TRUE, // was FALSE V0.9.21 (2002-09-05) [lafaix]
+         ID_XSSI_LB_PICKUPCANCELDRAG, WPMENUID_PUTDOWN_CANCEL, WPMENUID_PUTDOWN_CANCEL, TRUE, // was FALSE V0.9.21 (2002-09-05) [lafaix]
 
          ID_XSSI_LB_SORTBYNAME, ID_WPMI_SORTBYNAME, ID_WPMI_SORTBYNAME, FALSE,
          ID_XSSI_LB_SORTBYSIZE, ID_WPMI_SORTBYSIZE, ID_WPMI_SORTBYSIZE, FALSE,
@@ -572,91 +580,13 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
          ID_XSSI_LB_TASKLIST, 0x8011, 0, FALSE,
 
          ID_XSSI_LB_COPYFILENAME_SHORT, ID_XFMI_OFS_COPYFILENAME_SHORT, 0, FALSE,
-         ID_XSSI_LB_COPYFILENAME_FULL, ID_XFMI_OFS_COPYFILENAME_FULL, 0, FALSE
+         ID_XSSI_LB_COPYFILENAME_FULL, ID_XFMI_OFS_COPYFILENAME_FULL, 0, FALSE,
+
+         // V0.9.21 (2002-09-05) [lafaix]
+         ID_XSSI_LB_PICKUPDROPCOPY, WPMENUID_PUTDOWN_COPY, WPMENUID_PUTDOWN_COPY, TRUE,
+         ID_XSSI_LB_PICKUPDROPMOVE, WPMENUID_PUTDOWN_MOVE, WPMENUID_PUTDOWN_MOVE, TRUE,
+         ID_XSSI_LB_PICKUPDROPLINK, WPMENUID_PUTDOWN_LINK, WPMENUID_PUTDOWN_LINK, TRUE
     };
-
-/*
- *@@ FindHotkeyFromLBSel:
- *      this subroutine finds an index to the global
- *      G_FolderHotkeys[] array according to the currently
- *      selected list box item. This is used on the
- *      "Folder hotkeys" notebook page.
- *      This returns:
- *        NULL  if no accelerator has been defined yet
- *          -1  if LB entries do not match array strings
- *              (should not happen)
- *       other: means that an accelerator has been defined.
- *              We then return the pointer to the hotkey.
- *      If pusCommand is != NULL, it will then contain the
- *      menu "command" of the selected LB item, such that
- *      a new accelerator can be created.
- */
-
-STATIC PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
-                                       USHORT *pusCommand)     // out: menu command
-{
-    SHORT               i, i2 = 0;
-    CHAR                szTemp[MAXLBENTRYLENGTH];
-    SHORT               sItem;
-    SHORT               LBIndex = -1;
-    PXFLDHOTKEY         pHotkey = fdrQueryFldrHotkeys(),
-                        pHotkeyFound = NULL;
-
-    sItem = (SHORT)WinSendDlgItemMsg(hwndDlg, ID_XSDI_LISTBOX,
-                                     LM_QUERYSELECTION,
-                                     (MPARAM)LIT_CURSOR,
-                                     MPNULL);
-
-    WinSendDlgItemMsg(hwndDlg, ID_XSDI_LISTBOX,
-                      LM_QUERYITEMTEXT,
-                      MPFROM2SHORT(sItem, sizeof(szTemp)),
-                      (MPARAM)szTemp);
-            // szTemp now contains the selected list box entry's text
-
-    for (i = 0; i < FLDRHOTKEYCOUNT; i++)
-    {
-        if (!strcmp(szTemp, G_szLBEntries[i]))
-        {
-            LBIndex = i;
-            break;
-        }
-    }
-        // i now contains the index in the listbox arrays:
-        // -- szLBEntries[] for the strings,
-        // -- ulLBCommands[] for the corresponding commands
-        // or -1 if not found.
-
-    // item found?
-    if (LBIndex != -1)
-    {
-        // yes:
-        // loop thru the hotkeys array
-        while (pHotkey->usCommand)
-        {
-            if (pHotkey->usCommand == G_aDescriptions[i].usPostCommand)
-            {
-                // hotkey defined for this listbox item already:
-                pHotkeyFound = pHotkey;
-                break;
-            }
-            // else: go for next item
-            pHotkey++;
-            i2++;
-        }
-
-        if (    (pHotkeyFound == NULL)
-             && (pusCommand)
-           )
-            // hotkey not yet defined: store the command
-            // which corresponds to the selected item, so
-            // a new hotkey can be added
-            *pusCommand = G_aDescriptions[i].usPostCommand;
-
-        return (pHotkeyFound);
-    }
-    else
-        return (PXFLDHOTKEY)-1;     // LB entry not found
-}
 
 /*
  *@@ AddHotkeyToMenuItem:
@@ -832,6 +762,12 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
     } // end if (cmnQuerySetting(sfShowHotkeysInMenus))
 }
 
+/* ******************************************************************
+ *
+ *   Folder hotkeys page notebook functions (notebook.c)
+ *
+ ********************************************************************/
+
 typedef struct _SUBCLHOTKEYEF
 {
     PFNWP       pfnwpOrig;
@@ -857,6 +793,7 @@ typedef struct _SUBCLHOTKEYEF
  *
  *@@changed V0.9.0 [umoeller]: renamed from fnwpHotkeyEntryField
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "set" support
+ *@@changed V0.9.21 (2002-09-10) [lafaix]: no longer freeing pshef
  */
 
 STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -950,11 +887,6 @@ STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
         }
         break;
 
-        case WM_DESTROY:
-            free(pshef);
-            mrc = OldEditProc(hwndEdit, msg, mp1, mp2);
-        break;
-
         default:
             mrc = OldEditProc(hwndEdit, msg, mp1, mp2);
     }
@@ -968,6 +900,512 @@ STATIC const XWPSETTING G_HotkeysBackup[] =
         sfShowHotkeysInMenus
     };
 
+#define HOTKEYWIDTH       70
+#define ACTIONWIDTH       70
+#define PARAMWIDTH        100
+
+STATIC const CONTROLDEF
+    DefinitionGroup = LOADDEF_GROUP(ID_XSDI_HOTKEY_GROUP, SZL_AUTOSIZE),
+    HotkeyTxt = CONTROLDEF_TEXT_CENTER(
+                            LOAD_STRING,
+                            ID_XSDI_HOTKEY_HOTKEY,
+                            HOTKEYWIDTH,
+                            -1),
+    Hotkey = CONTROLDEF_ENTRYFIELD(
+                            LOAD_STRING,
+                            ID_XSDI_HOTKEY_HOTKEY_EF,
+                            HOTKEYWIDTH,
+                            -1),
+    ActionTxt = CONTROLDEF_TEXT_CENTER(
+                            LOAD_STRING,
+                            ID_XSDI_HOTKEY_ACTION,
+                            ACTIONWIDTH,
+                            -1),
+    ActionList = CONTROLDEF_DROPDOWNLIST(
+                            ID_XSDI_HOTKEY_ACTION_DROP,
+                            ACTIONWIDTH,
+                            70),
+    ParamTxt = CONTROLDEF_TEXT_CENTER(
+                            LOAD_STRING,
+                            ID_XSDI_HOTKEY_PARAM,
+                            PARAMWIDTH,
+                            -1),
+    ParamList = CONTROLDEF_DROPDOWNLIST(
+                            ID_XSDI_HOTKEY_PARAM_DROP,
+                            PARAMWIDTH,
+                            100);
+
+STATIC const DLGHITEM dlgAddHotkey[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&DefinitionGroup),
+                    START_ROW(0),
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&HotkeyTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&Hotkey),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&ActionTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&ActionList),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&ParamTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&ParamList),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_OKButton),           // common.c
+                CONTROL_DEF(&G_CancelButton),       // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+/*
+ *@@ fnwpHotkeyRecord:
+ *
+ *@@added V0.9.21 (2002-09-09) [lafaix]
+ */
+
+STATIC MRESULT EXPENTRY fnwpEditHotkeyRecord(HWND hwndDlg,
+                                             ULONG msg,
+                                             MPARAM mp1,
+                                             MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_COMMAND:
+        {
+            BOOL fDismiss = TRUE;
+
+            if (    (SHORT1FROMMP(mp1) == DID_OK)
+               )
+            {
+                // before allowing OK, check if the key is valid
+                HWND hwnd = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_HOTKEY_EF);
+                PSUBCLHOTKEYEF pshef = (PSUBCLHOTKEYEF)WinQueryWindowPtr(hwnd, QWL_USER);
+
+                if (    (pshef->usFlags == 0)
+                     && (pshef->usKeyCode == 0)
+                   )
+                {
+                    cmnErrorMsgBox(hwndDlg,
+                                   0,
+                                   253,
+                                   MB_OK,
+                                   TRUE);
+                    fDismiss = FALSE;
+
+                    WinSetFocus(HWND_DESKTOP, hwnd);
+                }
+                else
+                {
+                    hwnd = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_PARAM_DROP);
+
+                    if (WinQueryWindowTextLength(hwnd) == 0)
+                    {
+                        cmnErrorMsgBox(hwndDlg,
+                                       0,
+                                       254,
+                                       MB_OK,
+                                       TRUE);
+                        fDismiss = FALSE;
+
+                        WinSetFocus(HWND_DESKTOP, hwnd);
+                    }
+                }
+            }
+
+            if (fDismiss)
+                WinDismissDlg(hwndDlg, SHORT1FROMMP(mp1));
+        }
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL, ID_XSH_SETTINGS_PAGER_STICKY + 2);
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+/*
+ *@@ HOTKEYRECORD:
+ *      extended record core for "Hotkeys" container.
+ *
+ *@@added V0.9.21 (2002-09-05) [lafaix]
+ */
+
+typedef struct _HOTKEYRECORD
+{
+    RECORDCORE  recc;
+    CHAR        szHotkeyName[200];
+    PSZ         pcszKeyName;
+    PSZ         pcszPlugin;
+    PSZ         pcszParameters;
+    USHORT      usKey;
+    USHORT      usFlags;
+    ULONG       ulCommand;
+} HOTKEYRECORD, *PHOTKEYRECORD;
+
+/*
+ *@@ fdrSaveFldrHotkeys:
+ *       this saves the folder hotkeys contained in the
+ *       container to OS2.INI.
+ *
+ *@@added V0.9.21 (2002-09-11) [lafaix]
+ */
+
+void fdrSaveFldrHotkeys(HWND hwndCnr)
+{
+    PHOTKEYRECORD   pRec2 = NULL;
+    USHORT          usCmd = CMA_FIRST;
+    BOOL            fCont = TRUE;
+    USHORT          usHotkeyIndex = 0;      // raised with each iteration
+
+    // go through all records
+    do
+    {
+        pRec2 = (PHOTKEYRECORD)WinSendMsg(hwndCnr,
+                                          CM_QUERYRECORD,
+                                          pRec2, // ignored on first call
+                                          MPFROM2SHORT(usCmd,     // CMA_FIRST or CMA_NEXT
+                                                       CMA_ITEMORDER));
+        usCmd = CMA_NEXT;
+
+        if ((pRec2) && ((ULONG)pRec2 != -1))
+        {
+            G_FolderHotkeys[usHotkeyIndex].usKeyCode = pRec2->usKey;
+            G_FolderHotkeys[usHotkeyIndex].usFlags = pRec2->usFlags;
+            G_FolderHotkeys[usHotkeyIndex].usCommand = pRec2->ulCommand;
+            usHotkeyIndex++;
+        }
+        else
+            fCont = FALSE;
+
+    } while (fCont);
+
+    // mark the end of the hotkeys array
+    if (usHotkeyIndex < FLDRHOTKEYCOUNT)
+        G_FolderHotkeys[usHotkeyIndex].usCommand = 0;
+
+    // saving to disk
+    fdrStoreFldrHotkeys();
+}
+
+/*
+ *@@ AdjustStickyRecord:
+ *      adjusts the pcsz* values in the HOTKEYRECORD.
+ *
+ *@@added V0.9.21 (2002-09-15) [lafaix]
+ */
+
+STATIC VOID AdjustHotkeyRecord(PHOTKEYRECORD pRec)
+{
+    USHORT i = 0;
+
+    pRec->pcszPlugin = "Command";
+
+    cmnDescribeKey(pRec->szHotkeyName,
+                   pRec->usFlags,
+                   pRec->usKey);
+
+    pRec->pcszKeyName = pRec->szHotkeyName;
+    pRec->pcszParameters = "n/a";
+
+    while (i < FLDRHOTKEYCOUNT)
+    {
+        if (pRec->ulCommand == G_aDescriptions[i].usPostCommand)
+        {
+            pRec->pcszParameters = G_szLBEntries[i];
+            break;
+        }
+        i++;
+    }
+}
+
+/*
+ *@@ AddHotkeyRecord:
+ *      creates and inserts a HOTKEYRECORD for the given
+ *      container with the specified title.
+ *
+ *@@added V0.9.21 (2002-09-05) [lafaix]
+ */
+
+STATIC VOID AddHotkeyRecord(HWND hwndCnr,
+                            USHORT usKey,          // in: key scancode
+                            USHORT usFlags,         // in: key modifiers (VK_*)
+                            ULONG ulCommand,       // in: command
+                            BOOL fInvalidate)      // in: if TRUE, invalidate records
+{
+    PHOTKEYRECORD pRec;
+
+    if (pRec = (PHOTKEYRECORD)cnrhAllocRecords(hwndCnr,
+                                               sizeof(HOTKEYRECORD),
+                                               1))
+    {
+        pRec->usKey = usKey;
+        pRec->usFlags = usFlags;
+        pRec->ulCommand = ulCommand;
+
+        AdjustHotkeyRecord(pRec);
+
+        cnrhInsertRecords(hwndCnr,
+                          NULL, // parent
+                          (PRECORDCORE)pRec,
+                          fInvalidate,
+                          pRec->szHotkeyName,
+                          CRA_RECORDREADONLY,
+                          1);   // count
+    }
+}
+
+/*
+ *@@ EditHotkeyRecord:
+ *      edit and possibly inserts a HOTKEYRECORD.
+ *
+ *@@added V0.9.21 (2002-09-08) [lafaix]
+ */
+
+STATIC VOID EditHotkeyRecord(PHOTKEYRECORD pRec,
+                             PNOTEBOOKPAGE pnbp,
+                             HWND hwndCnr,
+                             BOOL fInsert)
+{
+    HWND        hwndDlg;
+    PDLGHITEM   paNew;
+
+    if (!cmnLoadDialogStrings(dlgAddHotkey,
+                              ARRAYITEMCOUNT(dlgAddHotkey),
+                              &paNew))
+    {
+        if (!dlghCreateDlg(&hwndDlg,
+                           pnbp->hwndDlgPage,
+                           FCF_FIXED_DLG,
+                           fnwpEditHotkeyRecord,
+                           cmnGetString(fInsert
+                                            ? ID_XSDI_HOTKEY_ADDTITLE
+                                            : ID_XSDI_HOTKEY_EDITTITLE),
+                           paNew,
+                           ARRAYITEMCOUNT(dlgAddHotkey),
+                           NULL,
+                           cmnQueryDefaultFont()))
+        {
+            ULONG ul;
+            HWND  hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_HOTKEY_EF);
+            SUBCLHOTKEYEF shef;
+            USHORT usOldFlags, usOldKey;
+
+            winhCenterWindow(hwndDlg);
+
+            // filling in the key field
+            memset(&shef, 0, sizeof(shef));
+            WinSetWindowPtr(hwndItem, QWL_USER, &shef);
+            shef.pfnwpOrig = WinSubclassWindow(hwndItem, fnwpFolderHotkeyEntryField);
+
+            shef.hwndSet = WinWindowFromID(pnbp->hwndDlgPage, DID_OK);
+            shef.hwndClear = WinWindowFromID(pnbp->hwndDlgPage, DID_CANCEL);
+            usOldFlags = shef.usFlags = pRec->usFlags;
+            usOldKey = shef.usKeyCode = pRec->usKey;
+
+            WinSetWindowText(hwndItem, pRec->pcszKeyName);
+
+            // filling the possible actions (just Command currently)
+            hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_ACTION_DROP);
+            WinInsertLboxItem(hwndItem,
+                              0,
+                              "Command"); // @todo
+            WinSendMsg(hwndItem, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
+
+            // loop through all the tasklist entries
+            hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_PARAM_DROP);
+            for (ul = 0;
+                 ul < FLDRHOTKEYCOUNT;
+                 ul++)
+            {
+                if (    G_szLBEntries[ul]
+                     && (    (G_fIsWarp4)
+                          || (!G_aDescriptions[ul].bWarp4)
+                        )
+                   )
+                {
+                    WinInsertLboxItem(hwndItem,
+                                      LIT_SORTASCENDING,
+                                      G_szLBEntries[ul]);
+                }
+            }
+            WinSetWindowText(hwndItem, pRec->pcszParameters);
+
+            if (WinProcessDlg(hwndDlg) == DID_OK)
+            {
+                CHAR szCommand[MAXLBENTRYLENGTH];
+                BOOL fAbort = FALSE;
+
+                // OK pressed:
+                pRec->usFlags = shef.usFlags;
+                pRec->usKey = shef.usKeyCode;
+                WinQueryWindowText(hwndItem, sizeof(szCommand), szCommand);
+
+                // getting the parameter value
+                for (ul = 0;
+                     ul < FLDRHOTKEYCOUNT;
+                     ul++)
+                {
+                    if (!strcmp(szCommand, G_szLBEntries[ul]))
+                    {
+                        pRec->ulCommand = G_aDescriptions[ul].usPostCommand;
+                        break;
+                    }
+                }
+
+                // checking for duplicate key code
+                for (ul = 0;
+                     ul < FLDRHOTKEYCOUNT;
+                     ul++)
+                {
+                    if (G_FolderHotkeys[ul].usCommand == 0)
+                        break;
+                    if (    (G_FolderHotkeys[ul].usKeyCode == pRec->usKey)
+                         && (G_FolderHotkeys[ul].usFlags == pRec->usFlags)
+                         && (    (fInsert)
+                              || (pRec->usKey != usOldKey)
+                              || (pRec->usFlags != usOldFlags)
+                                  // ignore same hotkey if editing
+                            )
+                       )
+                    {
+                        // found a duplicate hotkey
+                        if (cmnErrorMsgBox(pnbp->hwndDlgPage,
+                                           0,
+                                           255,
+                                           MB_YESNO|MB_DEFBUTTON2,
+                                           TRUE) == MBID_NO)
+                        {
+                            // abort
+                            fAbort = TRUE;
+                        }
+                        else
+                        {
+                            PHOTKEYRECORD pRec2 = NULL;
+                            USHORT        usCmd = CMA_FIRST;
+                            BOOL          fCont = TRUE;
+                            USHORT        usCurrent = 0;
+
+                            // remove existing entry
+                            do
+                            {
+                                pRec2 = (PHOTKEYRECORD)WinSendMsg(hwndCnr,
+                                                                  CM_QUERYRECORD,
+                                                                  pRec2, // ignored on first call
+                                                                  MPFROM2SHORT(usCmd,     // CMA_FIRST or CMA_NEXT
+                                                                               CMA_ITEMORDER));
+                                usCmd = CMA_NEXT;
+
+                                if ((pRec2) && ((ULONG)pRec2 != -1))
+                                {
+                                    if (usCurrent == ul)
+                                    {
+                                        WinSendMsg(hwndCnr,
+                                                   CM_REMOVERECORD,
+                                                   (MPARAM)&pRec2,
+                                                   MPFROM2SHORT(1,
+                                                                CMA_FREE | CMA_INVALIDATE));
+                                        fCont = FALSE;
+                                    }
+                                }
+                                else
+                                    fCont = FALSE;
+
+                                usCurrent++;
+                            } while (fCont);
+                        }
+                        break;
+                    }
+                }
+
+                if (!fAbort)
+                {
+                    if (fInsert)
+                        AddHotkeyRecord(hwndCnr,
+                                        shef.usKeyCode,
+                                        shef.usFlags,
+                                        pRec->ulCommand,
+                                        TRUE);          // invalidate
+                    else
+                    {
+                        // pRec is already in container
+                        AdjustHotkeyRecord(pRec);
+
+                        // invalidate container to refresh view
+                        WinSendMsg(hwndCnr,
+                                   CM_INVALIDATERECORD,
+                                   (MPARAM)&pRec,
+                                   MPFROM2SHORT(1,
+                                                CMA_TEXTCHANGED));
+                    }
+
+                    fdrSaveFldrHotkeys(hwndCnr);
+                }
+            }
+
+            WinDestroyWindow(hwndDlg);
+        }
+
+        free(paNew);
+    }
+}
+
+STATIC const CONTROLDEF
+    HotkeysEnabled = LOADDEF_AUTOCHECKBOX(ID_XSDI_ACCELERATORS),
+    HotkeysInMenus = LOADDEF_AUTOCHECKBOX(ID_XSDI_SHOWINMENUS),
+    HotkeysGroup = LOADDEF_GROUP(ID_XSDI_HOTKEYS_GROUP, SZL_AUTOSIZE),
+    HotkeysCnr = CONTROLDEF_CONTAINER(
+                            ID_XSDI_CNR,
+                            200,        // for now, will be resized
+                            100);       // for now, will be resized
+
+STATIC const DLGHITEM G_dlgHotkeys[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                CONTROL_DEF(&HotkeysEnabled),
+            START_ROW(0),
+                CONTROL_DEF(&HotkeysInMenus),
+            START_ROW(0),
+                START_GROUP_TABLE(&HotkeysGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&HotkeysCnr),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_AddButton),
+                        CONTROL_DEF(&G_EditButton),
+                        CONTROL_DEF(&G_RemoveButton),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+MPARAM G_ampHotkeys[] =
+    {
+        MPFROM2SHORT(ID_XSDI_ACCELERATORS, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_SHOWINMENUS, XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_CNR, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSDI_HOTKEYS_GROUP, XAC_SIZEX | XAC_SIZEY),
+    };
+
 /*
  *@@ fdrHotkeysInitPage:
  *      notebook callback function (notebook.c) for the
@@ -977,21 +1415,20 @@ STATIC const XWPSETTING G_HotkeysBackup[] =
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.19 (2002-04-17) [umoeller]: finally skipping Warp 4 specific entries for Warp 3
+ *@@changed V0.9.21 (2002-09-05) [lafaix]: reworked, uses the  dialog formatter too
  */
 
 VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    HWND    hwndEditField = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
-    HWND    hwndListbox = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_LISTBOX);
-
     SHORT i;
 
     if (flFlags & CBI_INIT)
     {
+        HWND        hwndCnr;
         HAB     hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
         HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
-        PSUBCLHOTKEYEF pshef;
+        XFIELDINFO  xfi[4];
 
         // first call: backup Global Settings for "Undo" button;
         // this memory will be freed automatically by the
@@ -1005,6 +1442,12 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             memcpy(pnbp->pUser2,
                    fdrQueryFldrHotkeys(),
                    FLDRHOTKEYSSIZE);
+
+        // insert the controls using the dialog formatter
+        // V0.9.21 (2002-09-05) [lafaix]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgHotkeys,
+                      ARRAYITEMCOUNT(G_dlgHotkeys));
 
         for (i = 0; i < FLDRHOTKEYCOUNT; i++)
         {
@@ -1021,44 +1464,63 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             }
         }
 
-        if (pshef = (PSUBCLHOTKEYEF)malloc(sizeof(SUBCLHOTKEYEF)))
-        {
-            memset(pshef, 0, sizeof(*pshef));
-            WinSetWindowPtr(hwndEditField, QWL_USER, pshef);
-            pshef->pfnwpOrig = WinSubclassWindow(hwndEditField, fnwpFolderHotkeyEntryField);
+        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
+                                  ID_XSDI_CNR);
 
-            pshef->hwndSet = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SETACCEL);
-            pshef->hwndClear = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL);
-        }
+        i = 0;
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pcszKeyName);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSDI_HOTKEY_HOTKEY);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pcszPlugin);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSDI_HOTKEY_ACTION);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pcszParameters);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSDI_HOTKEY_PARAM);
+        xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        cnrhSetFieldInfos(hwndCnr,
+                          xfi,
+                          i,             // array item count
+                          FALSE,         // don't draw lines
+                          1);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+
     }
 
     if (flFlags & CBI_SET)
     {
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
+                                       ID_XSDI_CNR);
+
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                               cmnQuerySetting(sfFolderHotkeysDefault));
 
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SHOWINMENUS,
                               cmnQuerySetting(sfShowHotkeysInMenus));
 
-        WinSendMsg(hwndListbox, LM_DELETEALL, 0, 0);
-        WinSetWindowText(hwndEditField, "");
+        cnrhRemoveAll(hwndCnr);
 
-        for (i = 0; i < FLDRHOTKEYCOUNT; i++)
+        i = 0;
+        while (G_FolderHotkeys[i].usCommand)
         {
-            if (    G_szLBEntries[i]
-                    // skip Warp 4 entries on Warp 3
-                    // V0.9.19 (2002-04-17) [umoeller]
-                 && (    (G_fIsWarp4)
-                      || (!G_aDescriptions[i].bWarp4)
-                    )
-               )
-            {
-                WinSendMsg(hwndListbox,
-                           LM_INSERTITEM,
-                           (MPARAM)LIT_SORTASCENDING,
-                           (MPARAM)G_szLBEntries[i]);
-            }
-            else break;
+            AddHotkeyRecord(hwndCnr,
+                            G_FolderHotkeys[i].usKeyCode,
+                            G_FolderHotkeys[i].usFlags,
+                            G_FolderHotkeys[i].usCommand,
+                            FALSE);
+            cnrhInvalidateAll(hwndCnr);
+            i++;
         }
     }
 
@@ -1066,9 +1528,20 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     {
 #ifndef __ALWAYSSUBCLASS__
         BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
+
+        WinEnableControl(pnbp->hwndDlgPage,
+                         ID_XSDI_CNR,
+                         fEnable);
+        WinEnableControl(pnbp->hwndDlgPage,
+                         DID_ADD,
+                         fEnable);
+        WinEnableControl(pnbp->hwndDlgPage,
+                         DID_EDIT,
+                         fEnable && G_FolderHotkeys[0].usCommand != 0);
+        WinEnableControl(pnbp->hwndDlgPage,
+                         DID_REMOVE,
+                         fEnable && G_FolderHotkeys[0].usCommand != 0);
+
 #endif
     }
 }
@@ -1081,6 +1554,7 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "Set" button
+ *@@changed V0.9.21 (2002-09-08) [lafaix]: reworked to use a container
  */
 
 MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1090,8 +1564,95 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
 {
     MRESULT mrc = (MRESULT)0;
 
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
+                                   ID_XSDI_CNR);
+
     switch (ulItemID)
     {
+        case ID_XSDI_CNR:
+            switch (usNotifyCode)
+            {
+                /*
+                 * CN_CONTEXTMENU:
+                 *
+                 */
+
+                case CN_CONTEXTMENU:
+                {
+                    HWND    hPopupMenu = NULLHANDLE;
+
+                    // in the CREATENOTEBOOKPAGE structure
+                    // so that the notebook.c function can
+                    // remove source emphasis later automatically
+                    pnbp->hwndSourceCnr = pnbp->hwndControl;
+                    if (pnbp->preccSource = (PRECORDCORE)ulExtra)
+                    {
+                        // popup menu on container recc:
+                        // disabling "add" item if hotkey array full
+                        if (hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
+                                                     cmnQueryNLSModuleHandle(FALSE),
+                                                     ID_XSM_STICKY_SEL))
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_XSMI_STICKY_NEW,
+                                              TRUE); // @todo
+                    }
+                    else
+                    {
+                        // popup menu on cnr whitespace
+                        // disabling "add" item if hotkey array full
+                        if (hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
+                                                     cmnQueryNLSModuleHandle(FALSE),
+                                                     ID_XSM_STICKY_NOSEL))
+                            WinEnableMenuItem(hPopupMenu,
+                                              ID_XSMI_STICKY_NEW,
+                                              TRUE); // @todo
+                    }
+
+                    if (hPopupMenu)
+                    {
+                        // font stuff snarfed from ctr_engine.c
+                        PSZ pszStdMenuFont;
+                        if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                    PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                    PMINIKEY_MENUSFONT, // "Menus",
+                                                                    NULL)))
+                            pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                  PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                  PMINIKEY_DEFAULTFONT, // "DefaultFont",
+                                                                  NULL);
+
+                        if (pszStdMenuFont)
+                        {
+                            winhSetWindowFont(hPopupMenu,
+                                              pszStdMenuFont);
+                            free(pszStdMenuFont);
+                        }
+
+                        cnrhShowContextMenu(pnbp->hwndControl,  // cnr
+                                            (PRECORDCORE)pnbp->preccSource,
+                                            hPopupMenu,
+                                            pnbp->hwndDlgPage);    // owner
+                    }
+                }
+                break;
+
+                /*
+                 * CN_ENTER:
+                 *      ulExtra has the record that was clicked on.
+                 */
+
+                case CN_ENTER:
+                    // this crashed if the user double-clicked on
+                    // cnr whitespace since the record was then NULL
+                    if (ulExtra)        // V0.9.21 (2002-08-28) [umoeller]
+                        EditHotkeyRecord((PHOTKEYRECORD)ulExtra,
+                                         pnbp,
+                                         hwndCnr,
+                                         FALSE); // do not create a new record
+                break;
+            }
+        break;
+
         case ID_XSDI_ACCELERATORS:
             cmnSetSetting(sfFolderHotkeysDefault, ulExtra);
         break;
@@ -1100,127 +1661,90 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
             cmnSetSetting(sfShowHotkeysInMenus, ulExtra);
         break;
 
-        case ID_XSDI_LISTBOX:
-            if (usNotifyCode == LN_SELECT)
-            {
-                // new hotkey description from listbox selected:
-                CHAR            szKeyName[200];
-                PXFLDHOTKEY     pHotkeyFound;
-
-                // update the Edit field with new
-                // key description, but do NOT save settings yet
-                pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage, NULL);
-                if ( (pHotkeyFound) && ((ULONG)pHotkeyFound != -1) )
-                {
-                    cmnDescribeKey(szKeyName,
-                                   pHotkeyFound->usFlags,
-                                   pHotkeyFound->usKeyCode);
-                    WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, TRUE);
-                }
-                else
-                {
-                    // not found: set to "not defined"
-                    strcpy(szKeyName,
-                           cmnGetString(ID_XSSI_NOTDEFINED));
-
-                    WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
-                }
-
-                WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
-
-                // set edit field to description text
-                WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
-                                  szKeyName);
-                // enable previously disabled items
-                WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION, TRUE);
-                WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
-            }
-        break;
-
-        // we need not handle the entry field, because we
-        // have subclassed the window procedure
-
-        /*
-         * ID_XSDI_SETACCEL:
-         *      "set" button. Copy flags from entry field.
-         *
-         *      The "Set" button is only enabled if the
-         *      entry field has considered the hotkey good.
-         */
-
-        case ID_XSDI_SETACCEL:
+        case DID_ADD:
+        case ID_XSMI_STICKY_NEW:
         {
-            HWND        hwndEdit = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
-            PXFLDHOTKEY pHotkeyFound = NULL;
-            USHORT      usCommand;
-
-            if (!(pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage,
-                                                     &usCommand)))
-            {
-                // no hotkey defined yet: append a new one
-                pHotkeyFound = fdrQueryFldrHotkeys();
-
-                // go to the end of the list
-                while (pHotkeyFound->usCommand)
-                    pHotkeyFound++;
-
-                pHotkeyFound->usCommand = usCommand;
-                // set a new list terminator
-                (*(pHotkeyFound + 1)).usCommand = 0;
-            }
-
-            if ((ULONG)pHotkeyFound != -1)
-            {
-                // no error: set hotkey data
-                CHAR szKeyName[200];
-                PSUBCLHOTKEYEF pshef = (PSUBCLHOTKEYEF)WinQueryWindowPtr(hwndEdit, QWL_USER);
-
-                pHotkeyFound->usFlags      = pshef->usFlags;
-                pHotkeyFound->usKeyCode    = pshef->usKeyCode;
-
-                PMPF_KEYS(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX",
-                            pshef->usFlags,
-                            pshef->usKeyCode));
-
-                // show description
-                cmnDescribeKey(szKeyName, pshef->usFlags, pshef->usKeyCode);
-                WinSetWindowText(hwndEdit, szKeyName);
-                WinEnableWindow(pshef->hwndSet, FALSE);
-                WinEnableWindow(pshef->hwndClear, TRUE);
-
-                // save hotkeys to INIs
-                fdrStoreFldrHotkeys();
-            }
+            HOTKEYRECORD rec;
+            memset(&rec, 0, sizeof(rec));
+            EditHotkeyRecord(&rec,
+                             pnbp,
+                             hwndCnr,
+                             TRUE); // create a new record if needed
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         }
         break;
 
-        case ID_XSDI_CLEARACCEL:
+        /*
+         * ID_XSMI_STICKY_EDIT:
+         *      show "Edit sticky window entry" dialog and edit
+         *      the entry from that dialog
+         *      (menu item command).
+         */
+
+        case ID_XSMI_STICKY_EDIT:
+            EditHotkeyRecord((PHOTKEYRECORD)pnbp->preccSource,
+                             pnbp,
+                             hwndCnr,
+                             FALSE); // do not create a new record
+        break;
+
+        /*
+         * DID_EDIT
+         *      show "Edit sticky window entry" dialog and edit
+         *      the currently selected entry from that dialog
+         *      (button command).
+         */
+
+        case DID_EDIT:
         {
-            // "Clear" button:
-            USHORT      usCommand;
-            PXFLDHOTKEY pHotkeyFound;
+            // get current selected record
+            PHOTKEYRECORD pRec;
+            if (    (pRec = (PHOTKEYRECORD)WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORDEMPHASIS,
+                                                      (MPARAM)CMA_FIRST,
+                                                      (MPARAM)CRA_SELECTED))
+                 && ((LONG)pRec != -1L)
+               )
+                EditHotkeyRecord(pRec,
+                                 pnbp,
+                                 hwndCnr,
+                                 FALSE); // do not create a new record
+        }
+        break;
 
-            pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage, &usCommand);
+        /*
+         * ID_XSMI_STICKY_DELETE:
+         *      remove sticky window record
+         *      (menu item command).
+         */
 
-            if ( (pHotkeyFound) && ((ULONG)pHotkeyFound != -1) )
+        case ID_XSMI_STICKY_DELETE:
+            WinSendMsg(hwndCnr,
+                       CM_REMOVERECORD,
+                       &(pnbp->preccSource), // double pointer...
+                       MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
+            fdrSaveFldrHotkeys(hwndCnr);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+        break;
+
+        case DID_REMOVE:
+        {
+            // get current selected record
+            PHOTKEYRECORD pRec;
+            if (    (pRec = (PHOTKEYRECORD)WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORDEMPHASIS,
+                                                      (MPARAM)CMA_FIRST,
+                                                      (MPARAM)CRA_SELECTED))
+                 && ((LONG)pRec != -1L)
+               )
             {
-                // accelerator defined:
-                PXFLDHOTKEY pHotkey = pHotkeyFound;
-
-                // in order to delete the marked accelerator,
-                // move all following hotkeys in the global
-                // hotkeys table one position ahead
-                while (pHotkey->usCommand)
-                {
-                    memcpy(pHotkey, pHotkey+1, sizeof(XFLDHOTKEY));
-                    pHotkey++;
-                }
-
-                WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
-                                  cmnGetString(ID_XSSI_NOTDEFINED));
-                WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
-                WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
-                fdrStoreFldrHotkeys();
+                WinSendMsg(hwndCnr,
+                           CM_REMOVERECORD,
+                           &pRec, // double pointer...
+                           MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
+                // @todo: really remove the definition
+                fdrSaveFldrHotkeys(hwndCnr);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
             }
         }
         break;

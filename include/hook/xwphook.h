@@ -595,6 +595,12 @@
     #define XDM_REMOVEWINLISTWATCH  (WM_USER + 429) // V0.9.19 (2002-06-14) [lafaix]
 
     #define XDM_REMOVECLICKWATCH    (WM_USER + 430) // V0.9.19 (2002-06-14) [lafaix]
+
+#ifndef __NOPAGER__
+    #define XDM_TOGGLETRANSIENTSTICKY (WM_USER + 431) // V0.9.21 (2002-07-26) [lafaix]
+    #define XDM_ISTRANSIENTSTICKY   (WM_USER + 432)
+#endif
+
 #endif
 
 

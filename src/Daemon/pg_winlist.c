@@ -86,10 +86,13 @@
 
 // XPager
 LINKLIST        G_llWinInfos;
-            // linked list of PAGERWININFO structs; this is auto-free
+            // linked list of PXWININFO structs; this is auto-free
 HMTX            G_hmtxWinInfos = 0;
             // mutex sem protecting that array
             // V0.9.12 (2001-05-31) [umoeller]: made this private
+LINKLIST        G_llTransientStickies;
+            // linked list of PXWINTRANSIENT structs; this is auto-free
+            // V0.9.21 (2002-08-13) [lafaix]
 
 extern HAB      G_habDaemon;
 extern USHORT   G_pidDaemon;
@@ -501,6 +504,7 @@ STATIC VOID CreateDebugFrame(VOID)
  *      initializes the winlist. Called from main().
  *
  *@@added V0.9.12 (2001-05-31) [umoeller]
+ *@@changed V0.9.21 (2002-08-13) [lafaix]: initializing transient stikies list
  */
 
 APIRET pgrInit(VOID)
@@ -512,6 +516,8 @@ APIRET pgrInit(VOID)
 
     lstInit(&G_llWinInfos, TRUE);
             // V0.9.7 (2001-01-21) [umoeller]
+    lstInit(&G_llTransientStickies, TRUE);
+            // V0.9.21 (2002-08-13) [lafaix]
 
     #ifdef DEBUG_WINDOWLIST
         CreateDebugFrame();
@@ -1044,6 +1050,7 @@ VOID pgrBuildWinlist(VOID)
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.7 (2001-01-21) [umoeller]: now using linked list for wininfos
+ *@@changed V0.9.21 (2002-09-05) [lafaix]: removes possible entry in transient list too
  */
 
 VOID pgrFreeWinInfo(HWND hwnd)
@@ -1060,6 +1067,22 @@ VOID pgrFreeWinInfo(HWND hwnd)
             // we have an item for this window:
             // remove from list, which will also free pWinInfo
             RemoveInfo(pNodeFound);
+
+        // V0.9.21 (2002-09-05) [lafaix]
+        pNodeFound = lstQueryFirstNode(&G_llTransientStickies);
+
+        while (pNodeFound)
+        {
+            PXWINTRANSIENT pWinTransient = (PXWINTRANSIENT)pNodeFound->pItemData;
+
+            if (hwnd == pWinTransient->hwnd)
+            {
+                lstRemoveNode(&G_llTransientStickies, pNodeFound);
+                break;
+            }
+
+            pNodeFound = pNodeFound->pNext;
+        }
 
         pgrUnlockWinlist();
     }
@@ -1154,6 +1177,76 @@ BOOL pgrRefreshSWP(PXWININFO pWinInfo)
 #endif
 
 /*
+ *@@ pgrToggleTransientSticky:
+ *      adds or removes a given window from the transient sticky
+ *      list.
+ *
+ *      Returns TRUE if the window was successfully added or removed.
+ *
+ *@@added V0.9.21 (2002-08-13) [lafaix]
+ */
+
+BOOL pgrToggleTransientSticky(HWND hwnd)
+{
+    BOOL brc = FALSE;
+
+    if (pgrLockWinlist())
+    {
+        // add if not already in transient stickies list
+        PLISTNODE pNode = lstQueryFirstNode(&G_llTransientStickies);
+
+        while (pNode)
+        {
+            PXWINTRANSIENT pWinTransient = (PXWINTRANSIENT)pNode->pItemData;
+
+            if (hwnd == pWinTransient->hwnd)
+            {
+                pWinTransient->bSticky = !(pWinTransient->bSticky);
+                brc = TRUE;
+                break;
+            }
+
+            pNode = pNode->pNext;
+        }
+
+        if (!brc)
+        {
+            // not already in transient list, so add it
+            PXWINTRANSIENT pWinTransient;
+
+            if (pWinTransient = NEW(XWINTRANSIENT))
+            {
+                ZERO(pWinTransient);
+                pWinTransient->hwnd = hwnd;
+                pWinTransient->bSticky = TRUE;
+
+                lstAppendItem(&G_llTransientStickies, pWinTransient);
+                brc = TRUE;
+            }
+        }
+
+        pgrRefresh(hwnd);
+
+        pgrUnlockWinlist();
+    }
+
+    return brc;
+}
+
+/*
+ *@@ pgrIsWindowTransientSticky:
+ *      returns TRUE if the window with the specified handle is a
+ *      transient sticky window.
+ *
+ *@@added V0.9.21 (2002-08-13) [lafaix]
+ */
+
+BOOL pgrIsWindowTransientSticky(HWND hwnd)
+{
+  return pgrIsSticky(hwnd, NULL);
+}
+
+/*
  *@@ pgrIsSticky:
  *      returns TRUE if the window with the specified window
  *      and switch titles is a sticky window. A window is
@@ -1166,6 +1259,7 @@ BOOL pgrRefreshSWP(PXWININFO pWinInfo)
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now making system window list sticky always
  *@@changed V0.9.19 (2002-04-14) [lafaix]: now uses matching criteria
  *@@changed V0.9.19 (2002-04-17) [umoeller]: added regular expressions (SF_MATCHES)
+ *@@changed V0.9.21 (2002-08-13) [lafaix]: added support for transient stickies
  */
 
 BOOL pgrIsSticky(HWND hwnd,
@@ -1178,6 +1272,32 @@ BOOL pgrIsSticky(HWND hwnd,
          && (hwnd == G_pHookData->hwndSwitchList)
        )
         return TRUE;
+
+    // check for transient stickies
+    if (pgrLockWinlist())
+    {
+        BOOL bFound = FALSE;
+        PXWINTRANSIENT pWinTransient = NULL;
+
+        PLISTNODE pNode = lstQueryFirstNode(&G_llTransientStickies);
+        while (pNode)
+        {
+            pWinTransient = (PXWINTRANSIENT)pNode->pItemData;
+
+            if (hwnd == pWinTransient->hwnd)
+            {
+                bFound = TRUE;
+                break;
+            }
+
+            pNode = pNode->pNext;
+        }
+
+        pgrUnlockWinlist();
+
+        if (bFound)
+            return pWinTransient->bSticky;
+    }
 
     if (pcszSwtitle)
     {

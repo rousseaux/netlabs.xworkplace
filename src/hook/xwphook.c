@@ -1388,6 +1388,7 @@ HWND GetFrameWindow(HWND hwndTemp)
  *@@changed V0.9.9 (2001-03-21) [lafaix]: added MB3 Push2Bottom support
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
  *@@changed V0.9.20 (2002-07-16) [lafaix]: don't always raise window on MB1 click
+ *@@changed V0.9.21 (2002-09-05) [lafaix]: added transient sticky menu support
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -1415,6 +1416,18 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                               pqmsg->msg,
                               pqmsg->mp1,
                               pqmsg->mp2);
+    }
+
+    // V0.9.21 (2002-09-05) [lafaix]
+    if (    (pqmsg->msg == WM_SYSCOMMAND)
+         && (SHORT1FROMMP(pqmsg->mp1) == 1)
+       )
+    {
+        WinPostMsg(G_HookData.hwndDaemonObject,
+                   XDM_TOGGLETRANSIENTSTICKY,
+                   MPFROMHWND(pqmsg->hwnd),
+                   0);
+        brc = TRUE;
     }
 #endif
 
@@ -1486,9 +1499,6 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     }
                 }
 #endif
-
-            // un-hide mouse if auto-hidden
-            fRestartAutoHide = TRUE;
         break;
 
         /*****************************************************************
@@ -1523,7 +1533,11 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     // make sure that the mouse is not currently captured
                     if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
                     {
-                        CHAR szWindowClass[3];
+                        CHAR szWindowClass[4];
+                                // use 4 instead of 3, or "#9whatever" is
+                                // matched too (not sure why actually, just
+                                // mimicing what we do for button 1 above)
+                                // V0.9.21 (2002-09-05) [lafaix]
                         // get class name of window being created
                         WinQueryClassName(pqmsg->hwnd,
                                           sizeof(szWindowClass),
@@ -1537,9 +1551,6 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                         }
                     }
                 }
-
-            // un-hide mouse if auto-hidden
-            fRestartAutoHide = TRUE;
         break;
 
         /*****************************************************************
@@ -1609,7 +1620,13 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     }
 
 #ifndef __NOMOVEMENT2FEATURES__
-    if (fRestartAutoHide)
+    if (    (fRestartAutoHide)
+         || (    (pqmsg->msg >= WM_BUTTONCLICKFIRST)
+              && (pqmsg->msg <= WM_BUTTONCLICKLAST)
+                  // always restart autohide for mouse buttons events
+                  // V0.9.21 (2002-09-05) [lafaix]
+            )
+       )
         // handle auto-hide V0.9.9 (2001-01-29) [umoeller]
         WMMouseMove_AutoHideMouse();
 #endif

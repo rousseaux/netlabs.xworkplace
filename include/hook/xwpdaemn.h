@@ -175,6 +175,19 @@
 
     } XWININFO, *PXWININFO;
 
+    /*
+     *@@ XWINTRANSIENT:
+     *      one of these exists for every transient sticky window.
+     *
+     *@@added V0.9.21 (2002-08-13) [lafaix]
+     */
+
+    typedef struct _XWINTRANSIENT
+    {
+        HWND hwnd;                      // transient window handle
+        BOOL bSticky;                   // forced stickyness
+    } XWINTRANSIENT, *PXWINTRANSIENT;
+
     /* ******************************************************************
      *
      *   Pager window list
@@ -243,6 +256,13 @@
         VOID _Optlink fntMoveThread(PTHREADINFO pti);
     #endif
 
+    BOOL pgrMakeWindowVisible(HWND hwnd);
+
+    BOOL pgrSwitchToDesktop(HWND hwnd, BOOL fMove, BOOL fFlashToTop);
+
+    BOOL pgrToggleTransientSticky(HWND hwnd);
+
+    BOOL pgrIsWindowTransientSticky(HWND hwnd);
 #endif
 
     /* ******************************************************************
