@@ -271,10 +271,10 @@ PXWPGLOBALSHARED   G_pXwpGlobalShared = NULL;
 HPOINTER        G_hptrDaemon = NULLHANDLE;
 
 // sliding focus data
-STATIC ULONG    G_ulSlidingFocusTimer = 0;    // timer ID for delayed sliding focus
+static ULONG    G_ulSlidingFocusTimer = 0;    // timer ID for delayed sliding focus
 // window to be activated
-STATIC HWND     G_hwndSlidingUnderMouse = NULLHANDLE;
-STATIC HWND     G_hwndSliding2Activate = NULLHANDLE;
+static HWND     G_hwndSlidingUnderMouse = NULLHANDLE;
+static HWND     G_hwndSliding2Activate = NULLHANDLE;
 
 // sliding menu data
 ULONG           G_ulSlidingMenuTimer = 0;

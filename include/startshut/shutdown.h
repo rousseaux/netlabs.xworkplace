@@ -77,9 +77,13 @@
 
     // traffic light animation
     #define XSD_ANIM_COUNT 8            // animation steps
-    typedef struct _SHUTDOWNANIM {
+
+    typedef struct _SHUTDOWNANIM
+    {
         HPOINTER    ahptr[XSD_ANIM_COUNT];
     } SHUTDOWNANIM, *PSHUTDOWNANIM;
+
+    extern SHUTDOWNANIM     G_sdAnim;       // V0.9.21 (2002-09-13) [umoeller]
 
     /*
      *@@ AUTOCLOSELISTITEM:
@@ -88,8 +92,8 @@
 
     typedef struct _AUTOCLOSELISTITEM
     {
-        CHAR                szItemName[100];
-        USHORT              usAction;
+        CHAR        szItemName[100];
+        USHORT      usAction;
     } AUTOCLOSELISTITEM, *PAUTOCLOSELISTITEM;
 
     // auto-close actions
@@ -215,6 +219,14 @@
      *
      ********************************************************************/
 
+    #ifdef LINKLIST_HEADER_INCLUDED
+        USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,
+                                     HWND hwndListbox);
+
+        USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems);
+
+    #endif
+
     VOID xsdLoadAnimation(PSHUTDOWNANIM psda);
 
     VOID xsdFreeAnimation(PSHUTDOWNANIM psda);
@@ -289,7 +301,7 @@
 
     ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms);
 
-    MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+    VOID xsdShowAutoCloseDetails(HWND hwndOwner);
 
     MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 

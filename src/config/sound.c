@@ -114,7 +114,7 @@
  *      Those constants are decl'd in common.h.
  */
 
-STATIC ULONG aulAddtlSystemSounds[] =
+static ULONG aulAddtlSystemSounds[] =
         {
             MMSOUND_XFLD_SHUTDOWN,
             MMSOUND_XFLD_RESTARTWPS,

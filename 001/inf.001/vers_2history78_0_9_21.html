@@ -44,6 +44,8 @@ should be shown for removeable disks. "Lock" and "Eject" are now always shown.
 Both features are only
 enabled when the "Replace drive not ready" feature is enabled, for security.
 
+<P><LI>&pgr;: Martin Lafaix added "Sticky" menu option to system menus.
+
 </UL>Miscellaneous changes:
 
 <UL><LI>Common: Rewrote large parts of the dialog formatter to allow for easier handling
@@ -57,6 +59,8 @@ I removed all "static" declarations for now.
 <P><LI>Folder menus: Rewrote and adjusted large parts of the internal menu hacks
 to get split views to work. I hope this hasn't broken anything for the default
 (icon, tree, details) folder views.
+
+<P><LI>Folder hotkeys: Martin Lafaix rewrote the respective page in "Workplace Shell".
 
 </UL>Bugfixes:
 
@@ -75,6 +79,9 @@ when dragging attachments from PMMail to the Desktop.
 <P><LI>Folders: "Create new" from template in config folder never worked really well
 in Tree views. Fixed a few things.
 
+<P><LI>Folders: Status bars produced vertical scroll bars for all folders that
+had "always sort" off. Fixed.
+
 <P><LI>Folder hotkeys: Disabled select by name, select all, and deselect all for
 Tree views finally.
 
@@ -92,6 +99,17 @@ in Tree view. Fixed.
 <P><LI>Extended associations: "Export" facility did not escape attribute values like &amp;
 properly. Fixed.
 
+<P><LI>Extended associations: After setting the icon of a data file object,
+changing its title would replace the custom icon with that of the associated
+program. Fixed.
+
+<P><LI>File operations: If deletion of a data file failed, e.g. because it was
+currently used, the WPS object was removed anyway without an error message. Fixed,
+added meaningful error messages also.
+
+<P><LI>Programs: Knut St. Osmundsen fixed some problems with passing environments
+on program startup.
+
 <P><LI>&xcenter;: Mostly rewrote pulse widget graph painting to fix the vertical lines
 on the left if a high load was displayed. Optimized the code at the same time to save
 a few hundered Gpi* calls.
@@ -101,6 +119,10 @@ with 0.9.20, fixed.
 
 <P><LI>OS/2 Kernel, program files: bldlevel display missed single-character substrings in
 extended bldlevel format (e.g. DANIS506.ADD). Fixed.
+
+<P><LI>Hook: Martin Lafaix fixed a few weirdos with auto-hide mouse.
+
+<P><LI>Netscape DDE: finally passes URLs with ? characters correctly.
 
 </UL>
 </BODY>

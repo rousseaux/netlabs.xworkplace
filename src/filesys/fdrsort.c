@@ -1543,7 +1543,7 @@ STATIC VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
                           lItemHandle);
 }
 
-STATIC XWPSETTING G_SortBackup[] =
+static XWPSETTING G_SortBackup[] =
     {
         slDefSortCrit,
         sfFoldersFirst,

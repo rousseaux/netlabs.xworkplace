@@ -100,7 +100,7 @@
  *
  ********************************************************************/
 
-STATIC PFNWP   G_pfnwpOrigStatic = NULL;
+static PFNWP   G_pfnwpOrigStatic = NULL;
 
 /* ******************************************************************
  *
@@ -317,7 +317,7 @@ SLDCDATA
 #define PAGE_WIDTH          (VALUESET_WIDTH + SLIDER_WIDTH + 4 * COMMON_SPACING)
             // used by second page
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     Pgr1Group = LOADDEF_GROUP(ID_SCDI_PGR1_GROUP, SZL_AUTOSIZE),
     Pgr1Enable = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_ENABLE),
     Pgr1Spacing = CONTROLDEF_TEXT("", -1, SLIDER_WIDTH, SLIDER_WIDTH),
@@ -349,7 +349,7 @@ STATIC const CONTROLDEF
     Pgr1HotkeysAltCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_ALT),
     Pgr1WraparoundCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_WRAPAROUND);
 
-STATIC const DLGHITEM G_dlgPagerGeneral[] =
+static const DLGHITEM G_dlgPagerGeneral[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -768,7 +768,7 @@ STATIC MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     G_PagerDisabled = LOADDEF_TEXT_WORDBREAK(ID_SCDI_PGR2_DISABLED_INFO, PAGE_WIDTH),
             // also used by the other pages
     ControlWindowGroup = LOADDEF_GROUP(ID_SCDI_PGR1_WINDOW_GROUP, PAGE_WIDTH),
@@ -788,7 +788,7 @@ STATIC const CONTROLDEF
     PgrShowSecondaryCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSECONDARY),
     PgrShowStickyCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSTICKY);
 
-STATIC const DLGHITEM G_dlgPagerWindow[] =
+static const DLGHITEM G_dlgPagerWindow[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -1267,7 +1267,7 @@ STATIC VOID SaveStickies(HWND hwndCnr,
 #define OPERWIDTH       50
 #define VALUEWIDTH      100
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     CriteriaGroup = LOADDEF_GROUP(ID_SCDI_STICKY_CRITERIAGROUP, SZL_AUTOSIZE),
     AttrTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
@@ -1300,7 +1300,7 @@ STATIC const CONTROLDEF
     IncludeRadio = LOADDEF_FIRST_AUTORADIO(ID_SCDI_STICKY_RADIO_INCLUDE),
     ExcludeRadio = LOADDEF_NEXT_AUTORADIO(ID_SCDI_STICKY_RADIO_EXCLUDE);
 
-STATIC const DLGHITEM dlgAddSticky[] =
+static const DLGHITEM dlgAddSticky[] =
     {
         START_TABLE,            // root table, required
 /*             START_ROW(0),        no, not in the dialog V0.9.20 (2002-07-03) [umoeller]
@@ -1575,14 +1575,14 @@ STATIC VOID EditStickyRecord(PSTICKYRECORD pRec,
     }
 }
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     StickiesGroup = LOADDEF_GROUP(ID_SCDI_STICKY_GROUP, SZL_AUTOSIZE),
     StickiesCnr = CONTROLDEF_CONTAINER(
                             ID_SCDI_STICKY_CNR,
                             200,        // for now, will be resized
                             100);       // for now, will be resized
 
-STATIC const DLGHITEM G_dlgPagerStickies[] =
+static const DLGHITEM G_dlgPagerStickies[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -2003,7 +2003,7 @@ STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
 
 #pragma pack(1)
 
-STATIC const struct
+static const struct
     {
         SHORT   id,         // ID of static frame
                 idRow,      // ID of the static row title text
@@ -2350,7 +2350,7 @@ STATIC MRESULT EXPENTRY fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPA
 #define COLORBOX(id)    CONTROLDEF_TEXT("", id, 32, COLORBOX_HEIGHT)
 #define TEXTBOX(id)     CONTROLDEF_TEXT(LOAD_STRING, id, SZL_AUTOSIZE, COLORBOX_HEIGHT)
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     ColorsGroup = LOADDEF_GROUP(ID_SCDI_PGR2_COLORS_GROUP, SZL_AUTOSIZE),
     ColorsInfo = LOADDEF_TEXT_WORDBREAK(ID_SCDI_PGR2_COLORS_INFO, -100),
     TextEmpty = CONTROLDEF_TEXT("", -1, 10, COLORBOX_HEIGHT),
@@ -2375,7 +2375,7 @@ STATIC const CONTROLDEF
     ColorTxtActive    = COLORBOX(ID_SCDI_PGR2_TXT_ACTIVE),
     ColorNull         = COLORBOX(-1);
 
-STATIC const DLGHITEM G_dlgXPagerColors[] =
+static const DLGHITEM G_dlgXPagerColors[] =
     {
         START_TABLE,
             START_ROW(0),

@@ -683,7 +683,7 @@ STATIC void _Optlink fntDriversThread(PTHREADINFO pti)
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
 
-STATIC MPARAM G_ampDriversPage[] =
+static MPARAM G_ampDriversPage[] =
     {
         MPFROM2SHORT(ID_OSDI_DRIVR_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_OSDI_DRIVR_GROUP1, XAC_SIZEX | XAC_SIZEY),

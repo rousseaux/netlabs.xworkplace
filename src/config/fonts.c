@@ -109,7 +109,7 @@
 // static THREADINFO   G_ptiCreateFontObjects = {0};
 
 #define WC_XWPFONTOBJ_SAMPLE     "XWPFontSampleClient"
-STATIC BOOL         G_fFontSampleClassRegistered = FALSE;
+static BOOL         G_fFontSampleClassRegistered = FALSE;
 
 ULONG               G_ulFontSampleHints = 0;
                                     /* | HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT
@@ -125,7 +125,7 @@ typedef struct _HINTMENUITEM
     ULONG       ulFlag;
 } HINTMENUITEM, *PHINTMENUITEM;
 
-STATIC HINTMENUITEM G_aHintMenuItems[] =
+static HINTMENUITEM G_aHintMenuItems[] =
         {
             ID_XSSI_FONT_BASELINE, // "Show baseline (red line)",
                                         HINTS_BASELINE_REDLINE,
@@ -138,11 +138,11 @@ STATIC HINTMENUITEM G_aHintMenuItems[] =
         };
 
 // list of open views
-STATIC LINKLIST     G_llFontSampleViews;
+static LINKLIST     G_llFontSampleViews;
                         // list of plain HWND's with the frame windows
                         // of all currently open sample views... this
                         // is not auto-free, of course.
-STATIC BOOL         G_fInitialized = FALSE;
+static BOOL         G_fInitialized = FALSE;
                         // TRUE after first call... we must initialize the
                         // list.
 

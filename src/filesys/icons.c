@@ -720,7 +720,7 @@ typedef struct _WIN16DIBINFO
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
-STATIC const struct _DefaultIconHeader
+static const struct _DefaultIconHeader
 {
         // bitmap array file header;
         // includes first BITMAPFILEHEADER for AND and XOR masks

@@ -161,7 +161,7 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 #define WNDCLASS_WIDGET_MONITORS    "XWPCenterMonitorWidget"
 
-STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
             WNDCLASS_WIDGET_MONITORS,
@@ -288,7 +288,7 @@ PXSTRCATC pxstrcatc = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-STATIC const RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "apmhOpen", (PFN*)&papmhOpen,
         "apmhReadStatus", (PFN*)&papmhReadStatus,

@@ -170,37 +170,37 @@ VOID ClientPaint2(HWND hwndClient, HPS hps);
 
 // static PXTIMERSET           G_pLastXTimerSet = NULL;
 
-STATIC COUNTRYSETTINGS      G_CountrySettings = {0};
+static COUNTRYSETTINGS      G_CountrySettings = {0};
 
 // widget being dragged
-STATIC PPRIVATEWIDGETVIEW     G_pWidgetBeingDragged = NULL;
+static PPRIVATEWIDGETVIEW     G_pWidgetBeingDragged = NULL;
 
-STATIC PWINSETDESKTOPWORKAREA   G_WinSetDesktopWorkArea = (PWINSETDESKTOPWORKAREA)-1;
-STATIC PWINQUERYDESKTOPWORKAREA G_WinQueryDesktopWorkArea = (PWINQUERYDESKTOPWORKAREA)-1;
+static PWINSETDESKTOPWORKAREA   G_WinSetDesktopWorkArea = (PWINSETDESKTOPWORKAREA)-1;
+static PWINQUERYDESKTOPWORKAREA G_WinQueryDesktopWorkArea = (PWINQUERYDESKTOPWORKAREA)-1;
 
-STATIC BOOL                     G_fWorkAreaSupported = FALSE;
+static BOOL                     G_fWorkAreaSupported = FALSE;
                                     // set by ctrpDesktopWorkareaSupported
-STATIC LINKLIST                 G_llWorkAreaViews;
+static LINKLIST                 G_llWorkAreaViews;
                                     // linked list of XCENTERVIEWDATA's which currently
                                     // have the "reduce workarea" flag on. This list
                                     // gets updated when XCenters are opened/closed
                                     // and/or their "reduce workarea" setting is
                                     // changed. Plain pointers, no auto-free.
                                     // Maintained by UpdateDesktopWorkarea.
-STATIC HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
+static HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
                                     // mutex protecting that list;
 
-STATIC LINKLIST                 G_llOpenViews;
+static LINKLIST                 G_llOpenViews;
                                     // linked list of XCENTERVIEWDATA's which are
                                     // currently open (regarless of the workarea
                                     // settings)
-STATIC HMTX                     G_hmtxOpenViews = NULLHANDLE;
+static HMTX                     G_hmtxOpenViews = NULLHANDLE;
                                     // mutex protecting that list;
 
-STATIC ULONG                    G_ulWidgetFromXY = 0;
+static ULONG                    G_ulWidgetFromXY = 0;
                                     // MB1/MB2 drag about to happen?
-STATIC BOOL                     G_fSizeable = FALSE;
-STATIC PPRIVATEWIDGETVIEW         G_pViewOver = NULL;
+static BOOL                     G_fSizeable = FALSE;
+static PPRIVATEWIDGETVIEW         G_pViewOver = NULL;
 
 /* ******************************************************************
  *

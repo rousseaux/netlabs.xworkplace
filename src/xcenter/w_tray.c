@@ -196,10 +196,10 @@
 // moved these two from the private widget data to the
 // globals here; also changed tray _icon_ to bitmap
 // V0.9.16 (2001-10-28) [umoeller]
-STATIC HBITMAP      G_hbmTray = -1;     // tray icon
-STATIC LONG         G_cxTrayBmp = 0,
+static HBITMAP      G_hbmTray = -1;     // tray icon
+static LONG         G_cxTrayBmp = 0,
                     G_cyTrayBmp = 0;
-STATIC HPOINTER     G_hptrHand = -1;    // hand pointer
+static HPOINTER     G_hptrHand = -1;    // hand pointer
 
 /* ******************************************************************
  *

@@ -2032,7 +2032,7 @@ STATIC MRESULT EXPENTRY fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
 #define BUTTON_WIDTH        75
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     SomeIntroTxt = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XFDI_SOME_INTROTXT,
@@ -2074,7 +2074,7 @@ STATIC const CONTROLDEF
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT);
 
-STATIC const DLGHITEM G_dlgSelectSome[] =
+static const DLGHITEM G_dlgSelectSome[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2185,7 +2185,7 @@ VOID fdrShowSelectSome(HWND hwndFrame)
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     BatchIntroTxt = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XFDI_BATCH_INTROTXT,
@@ -2214,7 +2214,7 @@ STATIC const CONTROLDEF
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT);
 
-STATIC const DLGHITEM G_dlgBatchRename[] =
+static const DLGHITEM G_dlgBatchRename[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -3286,7 +3286,7 @@ STATIC MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
 #define CX_RIGHT        120
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     PastePreviewTxt = LOADDEF_TEXT(ID_XFDI_PASTE_PREVIEW_TXT),
     PastePreviewPane = CONTROLDEF_TEXT_WORDBREAK_CY("", ID_XFDI_PASTE_PREVIEW_PANE, CX_RIGHT, 30),
     PasteObjTitleTxt = LOADDEF_TEXT(ID_XFDI_PASTE_OBJTITLE_TXT),
@@ -3296,7 +3296,7 @@ STATIC const CONTROLDEF
     PasteClassTxt = LOADDEF_TEXT(ID_XFDI_PASTE_CLASS_TXT),
     PasteClassDrop = CONTROLDEF_DROPDOWNLIST(ID_XFDI_PASTE_CLASS_DROP, CX_RIGHT, 50);
 
-STATIC const DLGHITEM G_dlgPaste[] =
+static const DLGHITEM G_dlgPaste[] =
     {
         START_TABLE,
             START_ROW(0),

@@ -136,18 +136,18 @@
  ********************************************************************/
 
 // find folder thread
-STATIC THREADINFO      G_tiFindFolder = {0};
-STATIC HWND            G_hwndFindFolder = NULLHANDLE;
-STATIC HEV             G_hevFindFolderReady = NULLHANDLE;
+static THREADINFO      G_tiFindFolder = {0};
+static HWND            G_hwndFindFolder = NULLHANDLE;
+static HEV             G_hevFindFolderReady = NULLHANDLE;
 
 // pump thread
-STATIC THREADINFO      G_tiPumpThread = {0};
-STATIC HEV             G_hevNotificationPump = NULLHANDLE;
+static THREADINFO      G_tiPumpThread = {0};
+static HEV             G_hevNotificationPump = NULLHANDLE;
 
 // global list of all notifications (auto-free)
-STATIC LINKLIST        G_llAllNotifications;
+static LINKLIST        G_llAllNotifications;
 
-STATIC BOOL            G_fExitAllRefreshThreads = FALSE;
+static BOOL            G_fExitAllRefreshThreads = FALSE;
             // this is set to TRUE as an emergency exit if
             // one of the refresh threads crashed. All three
             // threads will then terminate.

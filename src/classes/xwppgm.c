@@ -109,7 +109,7 @@
  *
  ********************************************************************/
 
-STATIC PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
+static PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
 
 /* ******************************************************************
  *

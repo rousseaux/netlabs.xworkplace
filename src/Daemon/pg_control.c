@@ -1174,6 +1174,7 @@ STATIC VOID PagerPositionFrame(VOID)
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
  *@@changed V0.9.20 (2002-08-08) [umoeller]: added shift mb2 click for hiding pager
+ *@@changed V0.9.21 (2002-09-13) [umoeller]: fixed pager window flickering with desktop switch
  */
 
 STATIC MRESULT PagerButtonClick(HWND hwnd,
@@ -1202,15 +1203,15 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
         {
             if (msg == WM_BUTTON1CLICK)
             {
-               // we first force a desktop switch if follow focus
-               // is disabled
-               // V0.9.19 (2002-06-14) [lafaix]
-               if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
-               {
-                   pgrSwitchToDesktop(hwndClicked,
-                                      TRUE,   // do move
-                                      FALSE); // do not flash to top
-               }
+                // we first force a desktop switch if follow focus
+                // is disabled
+                // V0.9.19 (2002-06-14) [lafaix]
+                if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
+                {
+                    pgrSwitchToDesktop(hwndClicked,
+                                       TRUE,   // do move
+                                       FALSE); // do not flash to top
+                }
 
                 // mb1: activate window
                 WinSetActiveWindow(HWND_DESKTOP, hwndClicked);
@@ -1228,10 +1229,12 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
 
                 // and refresh client right away because
                 // we have a delay with activechanged
+                #if 0       // no, this flickers V0.9.21 (2002-09-13) [umoeller]
                 WinPostMsg(hwnd,
                            PGRM_REFRESHCLIENT,
                            (MPARAM)FALSE,
                            0);
+                #endif
             }
             else
             {
@@ -1589,6 +1592,7 @@ BOOL pgrSwitchToDesktop(HWND hwnd,
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
  *@@changed V0.9.19 (2002-06-02) [umoeller]: made this configurable
+ *@@changed V0.9.21 (2002-09-13) [umoeller]: fixed pager window flickering with desktop switch
  */
 
 STATIC VOID PagerActiveChanged(HWND hwnd)
@@ -1598,6 +1602,8 @@ STATIC VOID PagerActiveChanged(HWND hwnd)
     if (!G_pHookData->fProcessingWraparound)
     {
         HWND        hwndActive;
+        BOOL        fRefresh = TRUE;       // V0.9.21 (2002-09-13) [umoeller]
+
         if (hwndActive = WinQueryActiveWindow(HWND_DESKTOP))
         {
             // test if this is a sticky window;
@@ -1639,15 +1645,20 @@ STATIC VOID PagerActiveChanged(HWND hwnd)
                                        // but only if in flash mode
                                        // V0.9.19 (2002-06-13) [lafaix]
                                        (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP));
+
+                    // move thread takes care of refresh, so do NOT
+                    // post refresh below, or we'll flicker
+                    fRefresh = FALSE;
                 }
             }
         } // end if (hwndActive)
 
         // refresh client
-        WinPostMsg(hwnd,
-                   PGRM_REFRESHCLIENT,
-                   (MPARAM)FALSE,
-                   0);
+        if (fRefresh)       // V0.9.21 (2002-09-13) [umoeller]
+            WinPostMsg(hwnd,
+                       PGRM_REFRESHCLIENT,
+                       (MPARAM)FALSE,
+                       0);
 
     } // end if (!G_pHookData->fProcessingWraparound)
 

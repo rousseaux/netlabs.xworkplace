@@ -119,7 +119,7 @@
  *
  ********************************************************************/
 
-STATIC const char *G_pcszPgmFileFilter = "OS2KRNL,*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
+static PCSZ G_pcszPgmFileFilter = "OS2KRNL,*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
 
 /* ******************************************************************
  *

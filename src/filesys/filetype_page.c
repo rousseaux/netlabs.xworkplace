@@ -1141,7 +1141,7 @@ END */
 #define FT_TEXT_HEIGHT          10
 #define FT_CNR_HEIGHT           40
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     FTGroup = LOADDEF_GROUP(ID_XSDI_FT_GROUP, SZL_AUTOSIZE),
     FTCnr = CONTROLDEF_CONTAINER(ID_XSDI_FT_CONTAINER,
                                  100,
@@ -1154,7 +1154,7 @@ STATIC const CONTROLDEF
     FTAssocsCnr = CONTROLDEF_CONTAINER_EXTSEL(ID_XSDI_FT_ASSOCSCNR, 100, FT_CNR_HEIGHT),
     FTCreateDatafileHandleCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FT_CREATEDATAFILEHANDLE);
 
-STATIC const DLGHITEM G_dlgFileTypes[] =
+static const DLGHITEM G_dlgFileTypes[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -1190,7 +1190,7 @@ STATIC const DLGHITEM G_dlgFileTypes[] =
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
 
-STATIC MPARAM G_ampFileTypesPage[] =
+static MPARAM G_ampFileTypesPage[] =
     {
         MPFROM2SHORT(ID_XSDI_FT_GROUP, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XSDI_FT_CONTAINER, XAC_SIZEX | XAC_SIZEY),
@@ -3074,7 +3074,7 @@ STATIC MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-STATIC MPARAM G_ampDatafileTypesPage[] =
+static MPARAM G_ampDatafileTypesPage[] =
     {
         MPFROM2SHORT(ID_XSDI_DATAF_AVAILABLE_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XSDI_DATAF_GROUP, XAC_SIZEX | XAC_SIZEY)

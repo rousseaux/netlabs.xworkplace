@@ -821,8 +821,11 @@ APIRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsC
                         if (pConfirm)
                         {
                             // yes:
-                            PCSZ     apsz = NULL;
+                            PCSZ    apsz = NULL;
                             ULONG   ulMsg;
+
+                            PMPF_FOPS(("confirming, cObjects = %d", cObjects));
+
                             if (cObjects == 1)
                             {
                                 // single object:
@@ -1094,6 +1097,8 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
                                             ? &Confirm
                                             : NULL);
 
+            PMPF_FOPS(("fopsStartTaskFromCnr returned %d", frc));
+
             // if we're in "move to trashcan" mode:
             if (!fTrueDelete)      // delete into trashcan
             {
@@ -1105,6 +1110,9 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
                         // source folder is not supported by trash can:
                         // start a "delete" job instead, with the proper
                         // confirmation messages ("Drive not supported, delete instead?")
+
+                        PMPF_FOPS(("FOPSERR_TRASHDRIVENOTSUPPORTED"));
+
                         Confirm.ulMsgSingle = 180;
                         Confirm.ulMsgMultiple = 181;
                         Confirm.ulHelpPanel = ID_XSH_TRASH_NODRIVESUPPORT;

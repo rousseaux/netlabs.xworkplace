@@ -146,18 +146,18 @@
 // #define USE_FASTMUTEX   1
 
 // global variable whether XWorkplace is initialized yet
-STATIC BOOL         G_fXWorkplaceInitialized = FALSE;
+static BOOL         G_fXWorkplaceInitialized = FALSE;
 
 extern WPFolder     *G_pConfigFolder;
                             // xfldr.c
 
 // awake objects list V0.9.20 (2002-07-25) [umoeller]
-STATIC HMTX         G_hmtxAwakeObjects = NULLHANDLE;
+static HMTX         G_hmtxAwakeObjects = NULLHANDLE;
 
 // object flags mutex V0.9.21 (2002-08-31) [umoeller]
-STATIC HMTX         G_hmtxObjFlags = NULLHANDLE;
+static HMTX         G_hmtxObjFlags = NULLHANDLE;
 
-STATIC XFldObject   *G_pFirstAwakeObject = NULL,
+static XFldObject   *G_pFirstAwakeObject = NULL,
                     *G_pLastAwakeObject = NULL;
 
 // the following two are also exported through kernel.h
@@ -3126,6 +3126,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
  *@@changed V0.9.7 (2001-01-15) [umoeller]: added WPMENUID_DELETE if trash can is enabled
  *@@changed V0.9.9 (2001-03-10) [pr]: this screwed up print jobs, now checking for WPTransient
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed shredder deleting into trash can
+ *@@changed V0.9.21 (2002-09-12) [umoeller]: re-enabled WPMENUID_DELETE to catch some more delete situations
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
@@ -3140,29 +3141,34 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
 
     switch (ulMenuId)
     {
-        /*  V0.9.16 (2001-12-06) [umoeller]:
-            disabled the following, or the shredder will delete
-            into the trash can as well... sigh
+
+        // re-enabled WPMENUID_DELETE catch here
+        // V0.9.21 (2002-09-12) [umoeller]
+
+        // this is normally never reached because fdrWMCommand
+        // intercepts this before wpMenuItemSelected gets called
+        // for 99,9% of all cases, but NOT in the case where we
+        // have a "delete" command from a folder's system menu
         case WPMENUID_DELETE:
         {
-            // this is never reached, because the subclassed folder
-            // frame winproc already intercepts this
-
-            if (    (cmnQuerySetting(sfTrashDelete))
-                 && !_somIsA(somSelf, _WPTransient)  // V0.9.9 (2001-03-10) [pr]: fix print object delete
+            if (
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+                    (cmnQuerySetting(sfReplaceDelete))
+                 &&
+#endif
+                    (!ctsIsTransient(somSelf))
+                            // V0.9.9 (2001-03-10) [pr]: fix print object delete
                )
             {
+                PMPF_FOPS(("WPMENUID_DELETE"));
 
                 cmnDeleteIntoDefTrashCan(somSelf);
                 brc = TRUE;     // processed
             }
             else
-                brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
-                                                                    hwndFrame,
-                                                                    ulMenuId);
+                fCallDefault = TRUE;
         }
         break;
-        */
 
         case WPMENUID_LOCKEDINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
             if (cmnQuerySetting(sfFixLockInPlace))

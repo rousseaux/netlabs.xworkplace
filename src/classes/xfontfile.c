@@ -89,7 +89,7 @@
  *
  ********************************************************************/
 
-STATIC const char *G_pcszFontFileFilter = "*.OFM,*.FON,*.TTF,*.TTC";
+static const char *G_pcszFontFileFilter = "*.OFM,*.FON,*.TTF,*.TTC";
 
 /* ******************************************************************
  *

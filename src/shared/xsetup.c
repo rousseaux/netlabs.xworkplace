@@ -156,7 +156,7 @@ typedef struct _FEATURESITEM
  *added V0.9.1 (99-12-19) [umoeller]
  */
 
-STATIC FEATURESITEM G_FeatureItemsList[] =
+static FEATURESITEM G_FeatureItemsList[] =
         {
             // general features
             ID_XCSI_GENERALFEATURES, 0, 0, NULL,
@@ -263,7 +263,7 @@ STATIC FEATURESITEM G_FeatureItemsList[] =
 #endif
         };
 
-STATIC PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
+static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
 
 #endif // __NOXWPSETUP__
 
@@ -294,7 +294,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDLAST  230      // last object menu ID, inclusive
 
 // array of objects for "Standard Desktop objects" menu button
-STATIC STANDARDOBJECT G_WPSObjects[] =
+static STANDARDOBJECT G_WPSObjects[] =
     {
             &WPOBJID_KEYB, &G_pcszWPKeyboard, "<WP_CONFIG>", "", 100, 0,
             &WPOBJID_MOUSE, &G_pcszWPMouse, "<WP_CONFIG>", "", 101, 0,
@@ -532,26 +532,26 @@ STATIC VOID RegisterArray(HWND hwndDlg,
     }
 }
 
-STATIC const char **G_RequirementsXFldStartupShutdown[] =
+static const char **G_RequirementsXFldStartupShutdown[] =
     {
         &G_pcszXFldDesktop,
         &G_pcszXFolder
     };
 
-STATIC const char **G_RequirementsXWPTrashCan[] =
+static const char **G_RequirementsXWPTrashCan[] =
     {
         &G_pcszXFolder,
         &G_pcszXWPTrashObject
     };
 
-STATIC const char **G_RequirementsXWPFontFolder[] =
+static const char **G_RequirementsXWPFontFolder[] =
     {
         &G_pcszXFolder,
         &G_pcszXWPFontObject,
         &G_pcszXWPFontFile
     };
 
-STATIC const char **G_RequiresXFolderOnly[] =
+static const char **G_RequiresXFolderOnly[] =
     {
         &G_pcszXFolder
     };
@@ -570,7 +570,7 @@ STATIC const char **G_RequiresXFolderOnly[] =
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-STATIC const XWPCLASSITEM G_aClasses[] =
+static const XWPCLASSITEM G_aClasses[] =
     {
         // class replacements
         &G_pcszXFldObject, &G_pcszWPObject,
@@ -1344,7 +1344,7 @@ STATIC VOID AppendClassesGroup(const CONTROLDEF *pClsOneClass,
     }
 }
 
-STATIC CONTROLDEF
+static CONTROLDEF
         ClsOKButton = CONTROLDEF_DEFPUSHBUTTON(
                     NULL,
                     DID_OK,
@@ -1369,7 +1369,7 @@ STATIC CONTROLDEF
                     SZL_AUTOSIZE,
                     SZL_AUTOSIZE);
 
-STATIC const DLGHITEM
+static const DLGHITEM
     dlgClassesFront[] =
     {
         START_TABLE,
@@ -1677,7 +1677,7 @@ typedef struct _XWPFEATURESDATA
 #endif
 } XWPFEATURESDATA, *PXWPFEATURESDATA;
 
-STATIC const XWPSETTING G_FeaturesBackup[] =
+static const XWPSETTING G_FeaturesBackup[] =
     {
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
@@ -1758,7 +1758,7 @@ STATIC const XWPSETTING G_FeaturesBackup[] =
         ___LAST_SETTING             // dummy
     };
 
-STATIC MPARAM G_ampFeaturesPage[] =
+static MPARAM G_ampFeaturesPage[] =
     {
         MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XCDI_CONTAINER, XAC_SIZEX | XAC_SIZEY)
@@ -3532,7 +3532,7 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-STATIC const XWPSETTING G_ParanoiaBackup[] =
+static const XWPSETTING G_ParanoiaBackup[] =
     {
         sulVarMenuOfs,
         // sfNoFreakyMenus,     removed V0.9.21 (2002-08-26) [umoeller]
@@ -3555,7 +3555,7 @@ SLDCDATA
                      0           // scale 2 spacing
              };
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     ParanoiaGroup = LOADDEF_GROUP(ID_XCDI_PARANOIA_GROUP, SZL_AUTOSIZE),
     ParanoiaIntro = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
@@ -3586,7 +3586,7 @@ STATIC const CONTROLDEF
                             200,
                             -1);
 
-STATIC const DLGHITEM dlgParanoia[] =
+static const DLGHITEM dlgParanoia[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -3816,7 +3816,7 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
 
 #ifdef __DEBUG__
 
-STATIC const struct
+static const struct
     {
         DEBUGGINGFLAGS  i;
         PCSZ            pcsz;
@@ -3849,7 +3849,7 @@ STATIC const struct
         DEBUGSETTING(DBGSET_SOUNDS),
     };
 
-STATIC MPARAM G_ampDebugPage[] =
+static MPARAM G_ampDebugPage[] =
     {
         MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY)

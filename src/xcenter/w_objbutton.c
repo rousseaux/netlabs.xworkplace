@@ -121,9 +121,9 @@
  ********************************************************************/
 
 #ifndef __XWPLITE__
-STATIC PCSZ G_pcszXButton =     "X Button";
+static PCSZ G_pcszXButton =     "X Button";
 #else
-STATIC PCSZ G_pcszXButton =     "eButton";
+static PCSZ G_pcszXButton =     "eButton";
 #endif
 
 /* ******************************************************************
@@ -451,7 +451,7 @@ typedef struct _XBTNMENUITEMDEF
 
 #define ID_ENTRYFIELD       999
 
-STATIC CONTROLDEF
+static CONTROLDEF
             XBOKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
             XBCancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
             XBHelpButton = CONTROLDEF_HELPPUSHBUTTON(NULL, DID_HELP, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
@@ -507,7 +507,7 @@ STATIC CONTROLDEF
                             SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT);
 
-STATIC const DLGHITEM dlgXButtonSettings[] =
+static const DLGHITEM dlgXButtonSettings[] =
     {
         START_TABLE,
             START_ROW(0),

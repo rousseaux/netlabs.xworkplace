@@ -7,15 +7,16 @@
  *      daemon process (XWPDAEMN.EXE).
  *
  *      There are four hooks at present:
- *      -- hookSendMsgHook
- *      -- hookLockupHook
- *      -- hookInputHook
- *      -- hookPreAccelHook
- *      See the remarks in the respective functions.
  *
- *      Most of the hook features started out with code and ideas
- *      taken from ProgramCommander/2 and WarpEnhancer and were then
- *      extended.
+ *      --  hookSendMsgHook
+ *
+ *      --  hookLockupHook
+ *
+ *      --  hookInputHook
+ *
+ *      --  hookPreAccelHook
+ *
+ *      See the remarks in the respective functions.
  *
  *      I have tried to design the hooks for clarity and lucidity with
  *      respect to interfaces and configuration --
@@ -206,6 +207,7 @@ HWND    G_hwndLastSubframeUnderMouse = NULLHANDLE;
 POINTS  G_ptsMousePosWin = {0};
 POINTL  G_ptlMousePosDesktop = {0};
 HWND    G_hwndRootMenu = NULLHANDLE; // V0.9.14 (2001-08-01) [lafaix]
+HWND    G_hwndStickyMenu = NULLHANDLE; // V0.9.21 (2002-09-12) [lafaix]
 
 /*
  * Prototypes:
@@ -681,8 +683,6 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
                                  TIMEOUT_HMTX_HOTKEYS);
     }
 
-    _Pmpf(("hookSetGlobalHotkeys: DosRequestMutexSem arc: %d", arc));
-
     if (!arc)
     {
         fLocked = TRUE;
@@ -793,7 +793,8 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
      *@@added V0.9.16 (2002-01-13) [umoeller]
      */
 
-    typedef struct _MQ {
+    typedef struct _MQ
+    {
         struct _MQ      *pNext;         // next MQ
         ULONG           cbStruct;       // size of structure
         ULONG           cMessages;      // current message count
@@ -840,22 +841,26 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
         {
             // 2) remember old PID from MQ (should be 0, but to be safe)
             ULONG   pidOld = pmq->pid;
+
             // 3) get real Shell PID
             PTIB    ptib;
             PPIB    ppib;
             DosGetInfoBlocks(&ptib, &ppib);
+
             // 4) hack MQ with real Shell PID
             pmq->pid = ppib->pib_ulpid;
+
             // 5) subclass (WinSubclassWindow doesn't work here)
             pfnwpOld = (PFNWP)WinQueryWindowPtr(G_HookData.hwndSwitchListCnr, QWP_PFNWP);
             WinSetWindowPtr(G_HookData.hwndSwitchListCnr, QWP_PFNWP, (PVOID)pfnwpNew);
+
             // 6) restore old PID
             pmq->pid = pidOld;
         }
 
         DosExitCritSec();
 
-        return (pfnwpOld);
+        return pfnwpOld;
     }
 
     /*
@@ -1186,11 +1191,10 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                         G_hwndRootMenu = (HWND)psmh->hwnd;
                         WMMouseMove_AutoHideMouse();
                     }
-                    else
-                    if (    (G_hwndRootMenu == psmh->hwnd)
-                         && ((PSWP)PVOIDFROMMP(psmh->mp1))
-                         && (((PSWP)PVOIDFROMMP(psmh->mp1))->fl & SWP_HIDE)
-                       )
+                    else if (    (G_hwndRootMenu == psmh->hwnd)
+                              && ((PSWP)PVOIDFROMMP(psmh->mp1))
+                              && (((PSWP)PVOIDFROMMP(psmh->mp1))->fl & SWP_HIDE)
+                            )
                     {
                         G_hwndRootMenu = NULLHANDLE;
                         WMMouseMove_AutoHideMouse();
@@ -1233,25 +1237,84 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                        (MPARAM)hwndDefButton,
                        0);
         }
-        else
         // if the dialog contains no default button, center the
         // pointer over the window
         // V0.9.19 (2002-04-04) [lafaix]
-        if (    (G_HookData.HookConfig.__ulAutoMoveFlags & AMF_ALWAYSMOVE)
-             && (WinQueryWindowUShort(psmh->hwnd, QWS_FLAGS) & FF_DIALOGBOX)
-             // ignore dialogs not direct children of desktop (fixes
-             // netscape odd hierarchy)
-             // V0.9.19 (2002-06-13) [lafaix]
-             // was comparing to HWND_DESKTOP, fixed
-             // V0.9.20 (2002-07-16) [lafaix]
-             && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
-           )
+        else if (    (G_HookData.HookConfig.__ulAutoMoveFlags & AMF_ALWAYSMOVE)
+                  && (WinQueryWindowUShort(psmh->hwnd, QWS_FLAGS) & FF_DIALOGBOX)
+                  // ignore dialogs not direct children of desktop (fixes
+                  // netscape odd hierarchy)
+                  // V0.9.19 (2002-06-13) [lafaix]
+                  // was comparing to HWND_DESKTOP, fixed
+                  // V0.9.20 (2002-07-16) [lafaix]
+                  && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
+                )
         {
             WinPostMsg(G_HookData.hwndDaemonObject,
                        XDM_MOVEPTRTOBUTTON,
                        (MPARAM)psmh->hwnd,
                        0);
         }
+    }
+#endif
+
+#ifndef __NOPAGER__
+    // adding/removing sticky menu item as needed
+    // V0.9.21 (2002-09-12) [lafaix]
+    if (    (psmh->msg == WM_INITMENU)
+         && (SHORT1FROMMP(psmh->mp1) == SC_SYSMENU)
+         && (psmh->mp2)
+             // opening the SC_SYSMENU submenu
+         && (G_hwndStickyMenu == NULLHANDLE)
+             // item not already added
+         && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
+             // top level frames ony
+       )
+    {
+        MENUITEM mi = {0};
+
+        G_hwndStickyMenu = (HWND)psmh->mp2;
+
+        mi.iPosition = MIT_END;
+        mi.afStyle = MIS_SEPARATOR;
+        mi.afAttribute = 0;
+        mi.id = 0x7FFE;
+        mi.hwndSubMenu = 0;
+        mi.hItem = 0;
+        WinSendMsg(G_hwndStickyMenu,
+                   MM_INSERTITEM,
+                   MPFROMP(&mi),
+                   NULL);
+
+        mi.afStyle = MIS_TEXT|MIS_SYSCOMMAND;
+        mi.id = 0x7FFF;
+        if (WinSendMsg(G_HookData.hwndDaemonObject,
+                       XDM_ISTRANSIENTSTICKY,
+                       MPFROMHWND(psmh->hwnd),
+                       0)
+           )
+            mi.afAttribute = MIA_CHECKED;
+        else
+            mi.afAttribute = 0;
+        WinSendMsg(G_hwndStickyMenu,
+                   MM_INSERTITEM,
+                   MPFROMP(&mi),
+                   "Sticky");
+    }
+    else if (    (psmh->msg == WM_MENUEND)
+              && (psmh->mp2)
+              && ((HWND)psmh->mp2 == G_hwndStickyMenu)
+            )
+    {
+        WinSendMsg(G_hwndStickyMenu,
+                   MM_DELETEITEM,
+                   MPFROM2SHORT(0x7FFE, FALSE),
+                   NULL);
+        WinSendMsg(G_hwndStickyMenu,
+                   MM_DELETEITEM,
+                   MPFROM2SHORT(0x7FFF, FALSE),
+                   NULL);
+        G_hwndStickyMenu = NULLHANDLE;
     }
 #endif
 
@@ -1420,14 +1483,14 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
     // V0.9.21 (2002-09-05) [lafaix]
     if (    (pqmsg->msg == WM_SYSCOMMAND)
-         && (SHORT1FROMMP(pqmsg->mp1) == 1)
+         && (SHORT1FROMMP(pqmsg->mp1) == 0x7FFF)
        )
     {
         WinPostMsg(G_HookData.hwndDaemonObject,
                    XDM_TOGGLETRANSIENTSTICKY,
                    MPFROMHWND(pqmsg->hwnd),
                    0);
-        brc = TRUE;
+//        brc = TRUE;
     }
 #endif
 

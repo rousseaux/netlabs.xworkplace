@@ -125,14 +125,14 @@
 
 // root of linked list of opened notebook pages
 // (this holds NOTEBOOKPAGELISTITEM's)
-STATIC LINKLIST        G_llOpenPages;   // this is auto-free
+static LINKLIST        G_llOpenPages;   // this is auto-free
 
 // root of linked list of subclassed notebooks
 // (this holds
-STATIC LINKLIST        G_llSubclNotebooks; // this is auto-free
+static LINKLIST        G_llSubclNotebooks; // this is auto-free
 
 // mutex semaphore for both lists
-STATIC HMTX            G_hmtxNotebooks = NULLHANDLE;
+static HMTX            G_hmtxNotebooks = NULLHANDLE;
 
 MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
 

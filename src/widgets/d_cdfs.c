@@ -111,7 +111,7 @@ PWINHSETDLGITEMSPINDATA pwinhSetDlgItemSpinData = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 PWINHSETSLIDERTICKS pwinhSetSliderTicks = NULL;
 
-STATIC const RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
@@ -462,7 +462,7 @@ SLDCDATA    SliderCData = {
                         0           // scale 2 spacing
                 };
 
-STATIC CONTROLDEF
+static CONTROLDEF
             Spacer = CONTROLDEF_SPACING(
                         15,
                         5),
@@ -570,7 +570,7 @@ STATIC CONTROLDEF
                         DID_HELP,
                         STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT);
 
-STATIC const DLGHITEM dlgCDFS[] =
+static const DLGHITEM dlgCDFS[] =
     {
         START_TABLE,
             START_ROW(ROW_VALIGN_CENTER),

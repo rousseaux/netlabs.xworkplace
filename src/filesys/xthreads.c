@@ -138,42 +138,42 @@
 
 // thread infos: moved these here from KERNELGLOBALS
 // V0.9.9 (2001-03-07) [umoeller]
-STATIC THREADINFO   G_tiWorkerThread,
+static THREADINFO   G_tiWorkerThread,
                     G_tiBushThread,
                     G_tiWimpThread,
                     G_tiFileThread;
 
 // Worker thread -- awake objects
-STATIC HMTX         G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
-STATIC TREE         *G_AwakeObjectsTree;
-STATIC LONG         G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
-STATIC Heap_t       G_AwakeObjectsHeap;                 // user heap for _ucreate
+static HMTX         G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+static TREE         *G_AwakeObjectsTree;
+static LONG         G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
+static Heap_t       G_AwakeObjectsHeap;                 // user heap for _ucreate
                                                         // V0.9.9 (2001-04-04) [umoeller]
-STATIC char         G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
+static char         G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
 
 // Worker thread -- other data
-STATIC HWND         G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
-STATIC HAB          G_habWorkerThread = NULLHANDLE;
-STATIC HMQ          G_hmqWorkerThread = NULLHANDLE;
+static HWND         G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+static HAB          G_habWorkerThread = NULLHANDLE;
+static HMQ          G_hmqWorkerThread = NULLHANDLE;
 
 // currently waiting messages for Worker thread;
 // if this gets too large, its priority will be raised
-STATIC HMTX         G_hmtxWorkerThreadData = NULLHANDLE;
-STATIC ULONG        G_ulWorkerMsgCount = 0;     // V0.9.9 (2001-04-04) [umoeller]
-STATIC BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
+static HMTX         G_hmtxWorkerThreadData = NULLHANDLE;
+static ULONG        G_ulWorkerMsgCount = 0;     // V0.9.9 (2001-04-04) [umoeller]
+static BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
 
 // Bush thread
-STATIC HAB          G_habBushThread = NULLHANDLE;
-STATIC HMQ          G_hmqBushThread = NULLHANDLE;
-STATIC CHAR         G_szBootupStatus[256];
+static HAB          G_habBushThread = NULLHANDLE;
+static HMQ          G_hmqBushThread = NULLHANDLE;
+static CHAR         G_szBootupStatus[256];
 #ifndef __NOBOOTUPSTATUS__
-STATIC HWND         G_hwndBootupStatus = NULLHANDLE;
+static HWND         G_hwndBootupStatus = NULLHANDLE;
 #endif
 
 // File thread
-STATIC HAB          G_habFileThread = NULLHANDLE;
-STATIC HMQ          G_hmqFileThread = NULLHANDLE;
-STATIC ULONG        G_CurFileThreadMsg = 0;
+static HAB          G_habFileThread = NULLHANDLE;
+static HMQ          G_hmqFileThread = NULLHANDLE;
+static ULONG        G_CurFileThreadMsg = 0;
             // current message that File thread is processing,
             // or null if none
 

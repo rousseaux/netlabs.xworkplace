@@ -180,12 +180,12 @@ extern ULONG            G_ulVarItemCount = 0;    // number of inserted menu item
 extern SHORT            G_sNextMenuId = 0;      // next menu item ID to use
 
 // llContentMenuItems contains ONLY folder content menus
-STATIC LINKLIST         G_llContentMenuItems; // changed V0.9.0
+static LINKLIST         G_llContentMenuItems; // changed V0.9.0
 
 // linked lists / counts for variable context menu items
 // llVarMenuItems contains ALL variable items ever inserted
 // (i.e. config folder items AND folder content items)
-STATIC LINKLIST         G_llVarMenuItems;     // changed V0.9.0
+static LINKLIST         G_llVarMenuItems;     // changed V0.9.0
 
 // icon for drawing the little triangle in
 // folder content menus (subfolders)
@@ -195,26 +195,26 @@ STATIC LINKLIST         G_llVarMenuItems;     // changed V0.9.0
 // which we must subclass
 extern PFNWP            G_pfnwpFolderContentMenuOriginal = NULL;
 
-STATIC POINTL           G_ptlPositionBelow;         // in screen coords
-STATIC BOOL             G_fPositionBelow = FALSE;
+static POINTL           G_ptlPositionBelow;         // in screen coords
+static BOOL             G_fPositionBelow = FALSE;
 
 // #define CX_ARROW 21
 
 // global data for owner draw; we cache this for speed
-STATIC BOOL             G_bInitNeeded;          // if TRUE, data is refreshed
+static BOOL             G_bInitNeeded;          // if TRUE, data is refreshed
 
-STATIC ULONG            G_ulMiniIconSize = 0,
+static ULONG            G_ulMiniIconSize = 0,
                         G_cxScreen = 0,     // V0.9.19 (2002-06-18) [umoeller]
                         G_cyScreen = 0;     // V0.9.19 (2002-06-18) [umoeller]
-STATIC RECTL            G_rtlMenuItem;
-STATIC LONG             G_lHiliteBackground,
+static RECTL            G_rtlMenuItem;
+static LONG             G_lHiliteBackground,
                         G_lBackground,
                         G_lHiliteText,
                         G_lBorderLight,     // [lafaix]
                         G_lBorderDark,      // [lafaix]
                         G_lText;
-STATIC SIZEF            G_szfCharBox;       // [lafaix]
-STATIC LONG             G_lMaxDescender;    // [lafaix]
+static SIZEF            G_szfCharBox;       // [lafaix]
+static LONG             G_lMaxDescender;    // [lafaix]
 
 /* ******************************************************************
  *

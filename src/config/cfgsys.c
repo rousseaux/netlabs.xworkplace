@@ -121,13 +121,13 @@
  ********************************************************************/
 
 // some global variables for "Kernel" pages
-STATIC CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
-STATIC PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
-STATIC LONG    G_lDriveCount = 0;
-STATIC HWND    G_hwndDlgDoubleFiles = NULLHANDLE;  // V0.9.9 (2001-02-28) [pr]
+static CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
+static PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
+static LONG    G_lDriveCount = 0;
+static HWND    G_hwndDlgDoubleFiles = NULLHANDLE;  // V0.9.9 (2001-02-28) [pr]
 
 // #define SYSPATHCOUNT 5
-STATIC PSZ G_apszPathNames[] =
+static PSZ G_apszPathNames[] =
         {
             "LIBPATH=",
             "SET PATH=",
@@ -156,10 +156,10 @@ typedef struct _SYSPATH
  *      which in turn contains a linked list of path entries.
  */
 
-STATIC PLINKLIST   G_pllSysPathsList;
+static PLINKLIST   G_pllSysPathsList;
 
 // the currently selected SYSPATH
-STATIC PSYSPATH    G_pSysPathSelected = 0;
+static PSYSPATH    G_pSysPathSelected = 0;
 
 /* ******************************************************************
  *
@@ -333,7 +333,7 @@ typedef struct _DOUBLEFILESWINDATA
  *      array of controls flags for winhAdjustControls.
  */
 
-STATIC const MPARAM ampDoubleFilesControls[] =
+static const MPARAM ampDoubleFilesControls[] =
     {
         MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH1,  XAC_MOVEY),
         MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH2,  XAC_MOVEY | XAC_SIZEX),

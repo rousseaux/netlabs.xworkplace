@@ -305,19 +305,19 @@ typedef struct _OBJTREENODE
  ********************************************************************/
 
 // mutex semaphores for object lists (favorite folders, quick-open)
-STATIC HMTX         G_hmtxObjectsLists = NULLHANDLE;
+static HMTX         G_hmtxObjectsLists = NULLHANDLE;
 
 // object handles cache
-STATIC TREE         *G_HandlesCacheRoot;
-STATIC HOBJECT      G_hobjLast = NULLHANDLE;        // V0.9.20 (2002-07-25) [umoeller]
-STATIC WPObject     *G_pobjLast = NULL;
-STATIC HMTX         G_hmtxHandlesCache = NULLHANDLE;
-STATIC LONG         G_lHandlesCacheItemsCount = 0;
+static TREE         *G_HandlesCacheRoot;
+static HOBJECT      G_hobjLast = NULLHANDLE;        // V0.9.20 (2002-07-25) [umoeller]
+static WPObject     *G_pobjLast = NULL;
+static HMTX         G_hmtxHandlesCache = NULLHANDLE;
+static LONG         G_lHandlesCacheItemsCount = 0;
 
 // dirty objects list
-STATIC TREE        *G_DirtyList;
-STATIC HMTX        G_hmtxDirtyList = NULLHANDLE;
-STATIC LONG        G_lDirtyListItemsCount = 0;
+static TREE        *G_DirtyList;
+static HMTX        G_hmtxDirtyList = NULLHANDLE;
+static LONG        G_lDirtyListItemsCount = 0;
 
 /* ******************************************************************
  *

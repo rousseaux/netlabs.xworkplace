@@ -291,7 +291,7 @@ PSZ pszClassInfo = NULL;
  *      (fnwpClassTreeCnrDlg).
  */
 
-STATIC MPARAM ampClassCnrCtls[] =
+static MPARAM ampClassCnrCtls[] =
     {
         MPFROM2SHORT(ID_XLDI_CNR, XAC_SIZEX | XAC_SIZEY)
     };
@@ -303,7 +303,7 @@ STATIC MPARAM ampClassCnrCtls[] =
  *      (fnwpClassInfoDlg).
  */
 
-STATIC MPARAM ampClassInfoCtls[] =
+static MPARAM ampClassInfoCtls[] =
     {
         MPFROM2SHORT(ID_XLDI_CLASSNAMETXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XLDI_CLASSNAME, XAC_MOVEY | XAC_SIZEX),
@@ -327,7 +327,7 @@ STATIC MPARAM ampClassInfoCtls[] =
  *      (fnwpMethodInfoDlg).
  */
 
-STATIC MPARAM ampMethodInfoCtls[] =
+static MPARAM ampMethodInfoCtls[] =
     {
         MPFROM2SHORT(ID_XLDI_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XLDI_RADIO_INSTANCEMETHODS, XAC_MOVEY),

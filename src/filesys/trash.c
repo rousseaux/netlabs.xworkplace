@@ -194,7 +194,7 @@ typedef struct _TRASHMAPPINGTREENODE
  *      --  XTRC_INVALID: drive letter doesn't exist.
  */
 
-STATIC BYTE        G_abSupportedDrives[CB_SUPPORTED_DRIVES] = {0};
+static BYTE        G_abSupportedDrives[CB_SUPPORTED_DRIVES] = {0};
 
 /*
  *  G_MappingsTreeRoot:
@@ -202,8 +202,8 @@ STATIC BYTE        G_abSupportedDrives[CB_SUPPORTED_DRIVES] = {0};
  *      TRASHMAPPINGTREENODE entries.
  */
 
-STATIC TREE        *G_MappingsTreeRoot = NULL;
-STATIC BOOL        G_fMappingsTreeInitialized = FALSE;
+static TREE        *G_MappingsTreeRoot = NULL;
+static BOOL        G_fMappingsTreeInitialized = FALSE;
 
 /*
  * G_abMappingDrivesDirty:
@@ -213,7 +213,7 @@ STATIC BOOL        G_fMappingsTreeInitialized = FALSE;
  *      be flushed to disk on the next wpSaveDeferred.
  */
 
-STATIC BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
+static BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
 
 /* ******************************************************************
  *
@@ -2442,19 +2442,19 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
  *
  ********************************************************************/
 
-STATIC const XWPSETTING G_TrashCanSettingsBackup[] =
+static const XWPSETTING G_TrashCanSettingsBackup[] =
     {
         sflTrashConfirmEmpty,
         sfAlwaysTrueDelete          // V0.9.19 (2002-04-14) [umoeller]
     };
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     OptionsGroup = LOADDEF_GROUP(ID_XTDI_OPTIONSGROUP, SZL_AUTOSIZE),
     AlwaysTrueDeleteCB = LOADDEF_AUTOCHECKBOX(ID_XTDI_ALWAYSTRUEDELETE),
     ConfirmEmptyCB = LOADDEF_AUTOCHECKBOX(ID_XTDI_CONFIRMEMPTY),
     ConfirmDestroyCB = LOADDEF_AUTOCHECKBOX(ID_XTDI_CONFIRMDESTROY);
 
-STATIC const DLGHITEM dlgTrashSettings[] =
+static const DLGHITEM dlgTrashSettings[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),

@@ -1227,7 +1227,7 @@ STATIC MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
 
 #define DETAILS_WIDTH       200
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     DetailsGroup = LOADDEF_GROUP(ID_XSDI_DETAILS_GROUP, SZL_AUTOSIZE),
     DetailsCnr =
         {
@@ -1248,7 +1248,7 @@ STATIC const CONTROLDEF
     DtlCloseButton = LOADDEF_DEFPUSHBUTTON(DID_CLOSE),
     DtlHelpButton = LOADDEF_HELPPUSHBUTTON(DID_HELP);
 
-STATIC const DLGHITEM dlgObjDetails[] =
+static const DLGHITEM dlgObjDetails[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required

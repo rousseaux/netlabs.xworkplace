@@ -110,8 +110,8 @@
 
 // list of all open MMPM/2 devices: this list
 // holds the plain USHORT device ID's
-STATIC HMTX        G_hmtxOpenDevices = NULLHANDLE;
-STATIC LINKLIST    G_lstOpenDevices;
+static HMTX        G_hmtxOpenDevices = NULLHANDLE;
+static LINKLIST    G_lstOpenDevices;
 
 extern HWND G_hwndMediaObject;      // in mmthread.c
 

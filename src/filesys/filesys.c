@@ -110,8 +110,8 @@
  *
  ********************************************************************/
 
-STATIC PGEA2LIST    G_StandardGEA2List = NULL;
-STATIC ULONG        G_cbStandardGEA2List = 0;
+static PGEA2LIST    G_StandardGEA2List = NULL;
+static ULONG        G_cbStandardGEA2List = 0;
 
 /* ******************************************************************
  *
@@ -1903,7 +1903,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 
 #define REAL_NAME_WIDTH         (INFO_ACTUAL_WIDTH - LEFT_COLUMN_WIDTH - 2 * COMMON_SPACING)
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     RealNameTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_FILES_REALNAME_TXT,
@@ -2020,7 +2020,7 @@ STATIC const CONTROLDEF
                             MLE_WIDTH,
                             MLE_HEIGHT);
 
-STATIC const DLGHITEM dlgFile1[] =
+static const DLGHITEM dlgFile1[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -2085,7 +2085,7 @@ STATIC const DLGHITEM dlgFile1[] =
         END_TABLE
     };
 
-STATIC MPARAM G_ampFile1Page[] =
+static MPARAM G_ampFile1Page[] =
     {
         MPFROM2SHORT(ID_XSDI_FILES_REALNAME_TXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XSDI_FILES_REALNAME, XAC_MOVEY | XAC_SIZEX),

@@ -323,7 +323,7 @@ $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) make\objects.in
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -375,7 +375,7 @@ $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -404,7 +404,7 @@ $(DISKFREEOBJS)
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -431,7 +431,7 @@ $(MODULESDIR)\ipmon.dll: $(IPMONOBJS) src\widgets\$(@B).def
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -460,7 +460,7 @@ $(MONITOROBJS)
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -487,7 +487,7 @@ $(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -516,7 +516,7 @@ $(HEALTHOBJS)
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -545,7 +545,7 @@ $(SAMPLEOBJS)
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
@@ -570,7 +570,7 @@ $(D_CDFSOBJS)
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
         @cd $(MODULESDIR)
-        mapsym /n $(@B).map > NUL
+        $(RUN_MAPSYM) $(@B).map
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)
 !endif

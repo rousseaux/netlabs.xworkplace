@@ -148,7 +148,7 @@ STATIC VOID SetEFText(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_SUMMARY_EMAIL_TEXT       32006
 #define ID_XSDI_VCARD_SUMMARY_EMAIL_EF         32007
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     TEXT_AND_ENTRYFIELD(SummaryName,
                         "~Name:",
                         ID_XSDI_VCARD_SUMMARY_NAME),
@@ -169,7 +169,7 @@ STATIC const CONTROLDEF
                         "~E-Mail:",
                         ID_XSDI_VCARD_SUMMARY_EMAIL);
 
-STATIC const DLGHITEM dlgSummary[] =
+static const DLGHITEM dlgSummary[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_CENTER),
@@ -334,7 +334,7 @@ STATIC VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_PERS_SUFFIX_TEXT           30011
 #define ID_XSDI_VCARD_PERS_SUFFIX_EF             30012
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     NameFieldsGroup = CONTROLDEF_GROUP(
                             "Name fields",
                             ID_XSDI_VCARD_PERS_NAMEFIELDS_GROUP,
@@ -356,7 +356,7 @@ STATIC const CONTROLDEF
                         "Name su~ffix:",
                         ID_XSDI_VCARD_PERS_SUFFIX);
 
-STATIC const DLGHITEM dlgName[] =
+static const DLGHITEM dlgName[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -461,7 +461,7 @@ STATIC VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_PHONE_VIDEO           33016
 
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     PhoneLB = CONTROLDEF_LISTBOX(
                             ID_XSDI_VCARD_PHONE_LISTBOX,
                             30,
@@ -514,7 +514,7 @@ STATIC const CONTROLDEF
                         "Video",
                         ID_XSDI_VCARD_PHONE_VIDEO, -1, -1); // video phone
 
-STATIC const DLGHITEM dlgPhone[] =
+static const DLGHITEM dlgPhone[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -709,7 +709,7 @@ STATIC MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
 #define ID_XSDI_VCARD_ADDR_COUNTRY_TEXT         31025
 #define ID_XSDI_VCARD_ADDR_COUNTRY_EF           31026
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     AddressFieldsGroup = CONTROLDEF_GROUP(
                             "Address fields",
                             ID_XSDI_VCARD_ADDR_NAMEFIELDS_GROUP,
@@ -737,7 +737,7 @@ STATIC const CONTROLDEF
                         "Country:",
                         ID_XSDI_VCARD_ADDR_COUNTRY);
 
-STATIC const DLGHITEM dlgAddresses[] =
+static const DLGHITEM dlgAddresses[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),

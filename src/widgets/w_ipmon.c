@@ -251,7 +251,7 @@ int _System ioctl(int, int, char *, int);
 
 #define WNDCLASS_WIDGET_IPMON    "XWPCenterIPMonWidget"
 
-STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
             WNDCLASS_WIDGET_IPMON,
@@ -329,7 +329,7 @@ PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 PXSTRPRINTF pxstrPrintf = NULL;
 
-STATIC const RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
@@ -724,7 +724,7 @@ STATIC LONG GetColor(HWND hwndDlg,
 #define COLOR_WIDTH     50
 #define COLOR_HEIGHT    16
 
-STATIC CONTROLDEF
+static CONTROLDEF
     OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
     CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
 
@@ -764,7 +764,7 @@ STATIC CONTROLDEF
                                   COLOR_WIDTH,
                                   COLOR_HEIGHT);
 
-STATIC const DLGHITEM
+static const DLGHITEM
     dlgIpmon[] =
     {
         START_TABLE,

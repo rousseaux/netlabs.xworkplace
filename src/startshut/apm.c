@@ -58,10 +58,10 @@
 // XWorkplace implementation headers
 #include "startshut\apm.h"            // APM power-off for XShutdown
 
-STATIC HFILE           G_hfAPMSys = NULLHANDLE;
-STATIC ULONG           G_ulAPMStat = APM_UNKNOWN;
-STATIC USHORT          G_usAPMVersion = 0;
-STATIC CHAR            G_szAPMVersion[10];
+static HFILE           G_hfAPMSys = NULLHANDLE;
+static ULONG           G_ulAPMStat = APM_UNKNOWN;
+static USHORT          G_usAPMVersion = 0;
+static CHAR            G_szAPMVersion[10];
 
 /*
  *@@  apmQueryVersion:

@@ -143,7 +143,7 @@ ew */
 
 // string used for separating filters in setup strings;
 // this better not appear in window titles
-STATIC PCSZ G_pcszFilterSeparator = "#~^ø@";
+static PCSZ G_pcszFilterSeparator = "#~^ø@";
 
 VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
@@ -161,7 +161,7 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #define WNDCLASS_WIDGET_WINLIST "XWPCenterWinlistWidget"
 
-STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         WNDCLASS_WIDGET_WINLIST,
         0,
@@ -256,7 +256,7 @@ PXSTRCPY pxstrcpy = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-STATIC const RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnLoadDlg", (PFN*)&pcmnLoadDlg,

@@ -168,9 +168,9 @@
  ********************************************************************/
 
 // linked list for config folder content:
-STATIC HMTX     G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
-STATIC LINKLIST G_llConfigContent;
-STATIC BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuilt
+static HMTX     G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
+static LINKLIST G_llConfigContent;
+static BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
 extern POINTL   G_ptlMouseMenu = {0, 0};    // ptr position when menu was opened
                                             // moved this here from XFolder instance
@@ -474,7 +474,7 @@ typedef struct _MENUITEMDEF
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-STATIC const MENUITEMDEF G_MenuItemsWithIDs[] =
+static const MENUITEMDEF G_MenuItemsWithIDs[] =
     {
         // "~Open as"
         ID_XSDI_MENU_OPENAS, WPMENUID_OPEN,
@@ -2362,7 +2362,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     MenuStyleGroup = LOADDEF_GROUP(ID_XSDI_MENU_STYLE_GROUP, SZL_AUTOSIZE),
     LongRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_MENUS_LONG),
     ShortRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_MENUS_SHORT),
@@ -2372,7 +2372,7 @@ STATIC const CONTROLDEF
 #endif
     LockInPlaceNoSubCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_LOCKINPLACE_NOSUB);
 
-STATIC const DLGHITEM G_dlgMenuSettings[] =
+static const DLGHITEM G_dlgMenuSettings[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2397,7 +2397,7 @@ STATIC const DLGHITEM G_dlgMenuSettings[] =
         END_TABLE
     };
 
-STATIC const XWPSETTING G_MenuSettingsBackup[] =
+static const XWPSETTING G_MenuSettingsBackup[] =
     {
         sfFixLockInPlace
 #ifndef __NOFOLDERCONTENTS__
@@ -2550,13 +2550,13 @@ STATIC MRESULT mnuSettingsItemChanged(PNOTEBOOKPAGE pnbp,
 
 #define CNR_WIDTH               (DEFAULT_TABLE_WIDTH - 2 * COMMON_SPACING)
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     EditCategoryTxt = CONTROLDEF_TEXT(LOAD_STRING, ID_XSDI_MENU_EDIT_CAT_TXT, -1, -1),
     EditCategoryDrop = CONTROLDEF_DROPDOWNLIST(ID_XSDI_MENU_EDIT_CAT_DROP, 80, 64),
     EditGroup = LOADDEF_GROUP(ID_XSDI_MENU_EDIT_GROUP, DEFAULT_TABLE_WIDTH),
     EditCnr = CONTROLDEF_CONTAINER(ID_XSDI_MENU_EDIT_CNR, CNR_WIDTH, 40);
 
-STATIC const DLGHITEM G_dlgMenuItems[] =
+static const DLGHITEM G_dlgMenuItems[] =
     {
         START_TABLE,
             START_ROW(ROW_VALIGN_CENTER),
@@ -2574,7 +2574,7 @@ STATIC const DLGHITEM G_dlgMenuItems[] =
         END_TABLE
     };
 
-STATIC MPARAM G_ampMenuItemsPage[] =
+static MPARAM G_ampMenuItemsPage[] =
     {
         MPFROM2SHORT(ID_XSDI_MENU_EDIT_CAT_TXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XSDI_MENU_EDIT_CAT_DROP, XAC_MOVEY),
@@ -2607,7 +2607,7 @@ typedef struct _CATEGORYWITHFLAG
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-STATIC const CATEGORYWITHFLAG G_CategoriesWithFlags[] =
+static const CATEGORYWITHFLAG G_CategoriesWithFlags[] =
     {
         // "Folders"
         ID_XSDI_MENU_EDIT_CAT_FOLDERS, CONFFL_WPFOLDER,
@@ -2641,7 +2641,7 @@ typedef struct _MENUITEMRECORD
     const MENUITEMDEF       *pItem;
 } MENUITEMRECORD, *PMENUITEMRECORD;
 
-STATIC const XWPSETTING G_MenuItemsBackup[] =
+static const XWPSETTING G_MenuItemsBackup[] =
     {
         sflMenuObjectWPS,
         sflMenuObjectXWP,
@@ -2976,7 +2976,7 @@ STATIC MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     CfgFdrGroup = LOADDEF_GROUP(ID_XSDI_MENUS_CONFIGFDR_GROUP, DEFAULT_TABLE_WIDTH),
     CfgCondCascadeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_CASCADE),
     CfgRemoveXCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_REMOVEX),
@@ -2987,7 +2987,7 @@ STATIC const CONTROLDEF
     CfgTplOpenPropertiesRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_TPL_OPENSETTINGS),
     CfgTplPositionCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_TPL_POSITION);
 
-STATIC const DLGHITEM G_dlgMenuConfigFdr[] =
+static const DLGHITEM G_dlgMenuConfigFdr[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -3017,7 +3017,7 @@ STATIC const DLGHITEM G_dlgMenuConfigFdr[] =
         END_TABLE
     };
 
-STATIC const XWPSETTING G_MenuConfigFdrBackup[] =
+static const XWPSETTING G_MenuConfigFdrBackup[] =
     {
         sfMenuCascadeMode,
         sfRemoveX,

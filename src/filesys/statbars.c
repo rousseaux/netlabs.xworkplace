@@ -146,11 +146,11 @@
  *
  ********************************************************************/
 
-STATIC CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-STATIC CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-STATIC CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-STATIC CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-STATIC CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static STATIC CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 
 // WPUrl class object; to preserve compatibility with Warp 3,
 // where this class does not exist, we call the SOM kernel
@@ -158,7 +158,7 @@ STATIC CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 // The initial value of -1 means that we have not queried
 // this class yet. After the first query, this either points
 // to the class object or is NULL if the class does not exist.
-STATIC SOMClass    *G_WPUrl = (SOMClass*)-1;
+static SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2);
 
@@ -3193,7 +3193,7 @@ STATIC MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
 #endif
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     StatusEnable = LOADDEF_AUTOCHECKBOX(ID_XSDI_ENABLESTATUSBAR),
     VisibleInGroup = LOADDEF_GROUP(ID_XSDI_VISIBLEIN_GROUP, DEFAULT_TABLE_WIDTH),
     VisIconCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORICONVIEWS),
@@ -3205,7 +3205,7 @@ STATIC const CONTROLDEF
     ButtonRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4RECT),
     MenuRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4MENU);
 
-STATIC const DLGHITEM G_dlgStatusBar1[] =
+static const DLGHITEM G_dlgStatusBar1[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -3237,7 +3237,7 @@ STATIC const DLGHITEM G_dlgStatusBar1[] =
         END_TABLE,
     };
 
-STATIC const XWPSETTING G_StatusBar1Backup[] =
+static const XWPSETTING G_StatusBar1Backup[] =
     {
         sfDefaultStatusBarVisibility,
         sflSBForViews,
@@ -3458,7 +3458,7 @@ STATIC VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
     }
 }
 
-STATIC const XWPSETTING G_StatusBar2Backup[] =
+static const XWPSETTING G_StatusBar2Backup[] =
     {
         sflDereferenceShadows
     };
@@ -3610,7 +3610,7 @@ typedef struct _KEYARRAYITEM
     ULONG       ulDescription;          // string ID for description
 } KEYARRAYITEM, *PKEYARRAYITEM;
 
-STATIC const KEYARRAYITEM
+static const KEYARRAYITEM
     G_aFormatSubKeys[] =
     {
         1, "b", ID_XSSI_SBMNC_1,       // "in bytes"

@@ -128,7 +128,7 @@ STATIC VOID Error(WPObject *somSelf,
 #define LEFT_COLUMN     100
 #define RIGHT_COLUMN    50
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     LocalUserGroup = LOADDEF_GROUP(ID_AMDI_USER_LOCAL_GROUP, SZL_AUTOSIZE),
     LocalUserNameTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
@@ -171,7 +171,7 @@ STATIC const CONTROLDEF
                             RIGHT_COLUMN,
                             -1);
 
-STATIC const DLGHITEM dlgLocalUser[] =
+static const DLGHITEM dlgLocalUser[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required

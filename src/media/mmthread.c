@@ -98,20 +98,20 @@
  *
  ********************************************************************/
 
-STATIC HAB         G_habPartyThread = NULLHANDLE;
-STATIC HMQ         G_hmqPartyThread = NULLHANDLE;
+static HAB         G_habPartyThread = NULLHANDLE;
+static HMQ         G_hmqPartyThread = NULLHANDLE;
 extern HWND G_hwndPartyObject = NULLHANDLE;
 
 // sound data
-STATIC ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
+static ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
 
-STATIC USHORT      G_usSoundDeviceID = 0;
-STATIC ULONG       G_ulVolumeTemp = 0;
-STATIC PSZ         G_pszSoundFile = NULL;
+static USHORT      G_usSoundDeviceID = 0;
+static ULONG       G_ulVolumeTemp = 0;
+static PSZ         G_pszSoundFile = NULL;
 
-STATIC THREADINFO  G_tiPartyThread = {0};
+static THREADINFO  G_tiPartyThread = {0};
 
-STATIC PCSZ WNDCLASS_MEDIAOBJECT = "XWPPartyThread";
+static PCSZ WNDCLASS_MEDIAOBJECT = "XWPPartyThread";
 
 /* ******************************************************************
  *
@@ -136,7 +136,7 @@ FNTD_MMIOGETFORMATNAME      *G_mmioGetFormatName = NULL;
  *      Used with doshResolveImports.
  */
 
-STATIC const RESOLVEFUNCTION G_aResolveFromMDM[] =
+static const RESOLVEFUNCTION G_aResolveFromMDM[] =
         {
                 "mciSendCommand", (PFN*)&G_mciSendCommand,
                 "mciGetErrorString", (PFN*)&G_mciGetErrorString
@@ -148,7 +148,7 @@ STATIC const RESOLVEFUNCTION G_aResolveFromMDM[] =
  *      Used with doshResolveImports.
  */
 
-STATIC const RESOLVEFUNCTION G_aResolveFromMMIO[] =
+static const RESOLVEFUNCTION G_aResolveFromMMIO[] =
         {
                 "mmioIniFileCODEC", (PFN*)&G_mmioIniFileCODEC,
                 "mmioQueryCODECNameLength", (PFN*)&G_mmioQueryCODECNameLength,

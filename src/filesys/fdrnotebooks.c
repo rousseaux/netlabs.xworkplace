@@ -102,7 +102,7 @@
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     FolderViewGroup = LOADDEF_GROUP(ID_XSD_FOLDERVIEWGROUP, DEFAULT_TABLE_WIDTH),
     FullPathCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FULLPATH),
     KeepTitleCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_KEEPTITLE),
@@ -126,7 +126,7 @@ STATIC const CONTROLDEF
     FdrViewTreeCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_TREE),
     FdrViewDetailsCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_DETAILS);
 
-STATIC const DLGHITEM dlgView[] =
+static const DLGHITEM dlgView[] =
     {
         START_TABLE,            // root table, required
             // ordering changed V0.9.19 (2002-04-17) [umoeller]
@@ -177,7 +177,7 @@ STATIC const DLGHITEM dlgView[] =
         END_TABLE
     };
 
-STATIC const XWPSETTING G_ViewBackup[] =
+static const XWPSETTING G_ViewBackup[] =
     {
         sfFullPath,
         sfKeepTitle,
@@ -423,7 +423,7 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
 
 #ifndef __NOSNAPTOGRID__
 
-STATIC const XWPSETTING G_GridBackup[] =
+static const XWPSETTING G_GridBackup[] =
     {
         sfAddSnapToGridDefault,
         sulGridX,
@@ -546,7 +546,7 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOFOLDERCONTENTS__
     FavoriteFolderCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FAVORITEFOLDER),
 #endif
@@ -571,7 +571,7 @@ STATIC const CONTROLDEF
     StatusBarCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ENABLESTATUSBAR);
 
 
-STATIC const DLGHITEM dlgXFolder[] =
+static const DLGHITEM dlgXFolder[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOFOLDERCONTENTS__
@@ -830,7 +830,7 @@ MRESULT fdrXFolderItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-STATIC const XWPSETTING G_StartupFolderBackup[] =
+static const XWPSETTING G_StartupFolderBackup[] =
     {
         sulStartupInitialDelay,
         sfShowStartupProgress

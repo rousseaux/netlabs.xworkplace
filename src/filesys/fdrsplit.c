@@ -1867,13 +1867,11 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
                 // that we are currently displaying, that's easy
                 if (_wpQueryFolder(pobj) == OBJECT_FROM_PREC(psv->precFilesShowing))
                 {
-                    /* fdrSplitPopulate(psv,
-                                     prec, */
-                    WinSendMsg(psv->hwndTreeCnr,
+                    WinPostMsg(psv->hwndTreeCnr,
                                CM_EXPANDTREE,
                                (MPARAM)prec,
                                MPNULL);
-                    WinSendMsg(psv->hwndTreeCnr,
+                    WinPostMsg(psv->hwndTreeCnr,
                                CM_SETRECORDEMPHASIS,
                                (MPARAM)prec,
                                MPFROM2SHORT(CRA_SELECTED, CRA_SELECTED));

@@ -132,8 +132,8 @@
  *
  ********************************************************************/
 
-STATIC HMTX        G_hmtxRunning = NULLHANDLE;
-STATIC LINKLIST    G_llRunning;
+static HMTX        G_hmtxRunning = NULLHANDLE;
+static LINKLIST    G_llRunning;
         // linked list of running programs; contains RUNNINGPROGRAM structs
 
 /* ******************************************************************

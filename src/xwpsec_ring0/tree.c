@@ -34,7 +34,7 @@
 #include "helpers\tree.h"
 
 #define LEAF &sentinel           // all leafs are sentinels
-STATIC TREE sentinel = { LEAF, LEAF, 0, BLACK};
+static TREE sentinel = { LEAF, LEAF, 0, BLACK};
 
 /*
 A binary search tree is a red-black tree if:

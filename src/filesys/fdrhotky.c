@@ -111,7 +111,7 @@
  */
 
 // XFolder folder hotkeys static array
-STATIC XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
+static XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
 
 /* ******************************************************************
  *
@@ -894,7 +894,7 @@ STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
     return mrc;
 }
 
-STATIC const XWPSETTING G_HotkeysBackup[] =
+static const XWPSETTING G_HotkeysBackup[] =
     {
         sfFolderHotkeysDefault,
         sfShowHotkeysInMenus
@@ -904,7 +904,7 @@ STATIC const XWPSETTING G_HotkeysBackup[] =
 #define ACTIONWIDTH       70
 #define PARAMWIDTH        100
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     DefinitionGroup = LOADDEF_GROUP(ID_XSDI_HOTKEY_GROUP, SZL_AUTOSIZE),
     HotkeyTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
@@ -938,7 +938,7 @@ STATIC const CONTROLDEF
                             PARAMWIDTH,
                             100);
 
-STATIC const DLGHITEM dlgAddHotkey[] =
+static const DLGHITEM dlgAddHotkey[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -1372,7 +1372,7 @@ STATIC VOID EditHotkeyRecord(PHOTKEYRECORD pRec,
     }
 }
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     HotkeysEnabled = LOADDEF_AUTOCHECKBOX(ID_XSDI_ACCELERATORS),
     HotkeysInMenus = LOADDEF_AUTOCHECKBOX(ID_XSDI_SHOWINMENUS),
     HotkeysGroup = LOADDEF_GROUP(ID_XSDI_HOTKEYS_GROUP, SZL_AUTOSIZE),
@@ -1381,7 +1381,7 @@ STATIC const CONTROLDEF
                             200,        // for now, will be resized
                             100);       // for now, will be resized
 
-STATIC const DLGHITEM G_dlgHotkeys[] =
+static const DLGHITEM G_dlgHotkeys[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),

@@ -142,7 +142,7 @@ typedef struct _INVOKESETUPSTRING
  *@@added V0.9.20 (2002-07-12) [umoeller]
  */
 
-STATIC const XWPSETUPENTRY G_XWPStringSetupSet[] =
+static const XWPSETUPENTRY G_XWPStringSetupSet[] =
     {
         // type,  setup string,     offset,
         STG_BOOL, "CONFIRMINVOCATION", FIELDOFFSET(XWPStringData, fConfirm),

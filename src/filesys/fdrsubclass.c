@@ -201,11 +201,11 @@
 
 // flag for whether we have manipulated the "wpFolder window"
 // PM window class already; this is done in fdr_SendMsgHook
-STATIC BOOL                G_WPFolderWinClassExtended = FALSE;
+static BOOL                G_WPFolderWinClassExtended = FALSE;
 
-STATIC CLASSINFO           G_WPFolderWinClassInfo;
+static CLASSINFO           G_WPFolderWinClassInfo;
 
-STATIC ULONG               G_SFVOffset = 0;
+static ULONG               G_SFVOffset = 0;
 
 STATIC MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,
                                                   ULONG msg,

@@ -535,7 +535,7 @@ STATIC LONG GetColor(HWND hwndDlg,
 #define COLOR_WIDTH     50
 #define COLOR_HEIGHT    16
 
-STATIC CONTROLDEF
+static CONTROLDEF
     PulseOKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
     PulseCancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
 
@@ -576,7 +576,7 @@ STATIC CONTROLDEF
                                   COLOR_WIDTH,
                                   COLOR_HEIGHT);
 
-STATIC const DLGHITEM
+static const DLGHITEM
     dlgPulseFront[] =
     {
         START_TABLE,
@@ -605,7 +605,7 @@ STATIC const DLGHITEM
         END_TABLE
     };
 
-STATIC PDLGHITEM    padlgPulsePerProcessor = NULL;  /* kso: Array of processor controls. */
+static PDLGHITEM    padlgPulsePerProcessor = NULL;  /* kso: Array of processor controls. */
 
 /*
  *@@ PwgtShowSettingsDlg:

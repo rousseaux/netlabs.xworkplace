@@ -98,12 +98,12 @@
  *
  ********************************************************************/
 
-STATIC HMTX         G_hmtxIconShares = NULLHANDLE;
+static HMTX         G_hmtxIconShares = NULLHANDLE;
 
-STATIC HMTX         G_hmtxLazyIcons = NULLHANDLE;
-STATIC LINKLIST     G_llLazyIcons;
-STATIC HEV          G_hevLazyIcons = NULLHANDLE;
-STATIC THREADINFO   G_tiLazyIcons = {0};
+static HMTX         G_hmtxLazyIcons = NULLHANDLE;
+static LINKLIST     G_llLazyIcons;
+static HEV          G_hevLazyIcons = NULLHANDLE;
+static THREADINFO   G_tiLazyIcons = {0};
 
 /* ******************************************************************
  *

@@ -624,8 +624,8 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
     }
 #endif
 
-    return (XFldDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
-                                                           pIconInfo));
+    return XFldDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
+                                                          pIconInfo);
 }
 
 /*
@@ -643,12 +643,14 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
  *      override.
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
+ *@@changed V0.9.21 (2002-09-12) [umoeller]: fixed missing _fHasIconEA adjustment
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
                                           PICONINFO pIconInfo)
 {
     CHAR        szFilename[CCHMAXPATH];
+    BOOL        fExt;
 
     XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetIconData");
@@ -679,8 +681,19 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
     // all other cases, or icon replacements disabled:
     // call parent, which will end up in XWPFileSystem
     // (WPProgramFile doesn't override this)
-    return (XFldDataFile_parent_WPDataFile_wpSetIconData(somSelf,
-                                                         pIconInfo));
+    if (XFldDataFile_parent_WPDataFile_wpSetIconData(somSelf,
+                                                     pIconInfo))
+    {
+        // success:
+        if (    (pIconInfo)
+             && (pIconInfo->fFormat != ICON_CLEAR)
+           )
+            _fHasIconEA = TRUE;     // V0.9.21 (2002-09-12) [umoeller]
+
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*

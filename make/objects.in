@@ -131,6 +131,8 @@ XFLDR_OBJS_STARTSHUT = \
 $(OUTPUTDIR)\apm.obj \
 $(OUTPUTDIR)\archives.obj \
 $(OUTPUTDIR)\shutdown.obj \
+$(OUTPUTDIR)\shut_dlg.obj \
+$(OUTPUTDIR)\shut_pages.obj \
 $(OUTPUTDIR)\winlist.obj
 
 # code from xcenter\

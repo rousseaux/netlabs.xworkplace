@@ -123,11 +123,11 @@
  *
  ********************************************************************/
 
-STATIC ARCHIVINGSETTINGS   G_ArcSettings;
-STATIC DATETIME            G_dtLastArchived;
-STATIC BOOL                G_fSettingsLoaded = FALSE;
+static ARCHIVINGSETTINGS   G_ArcSettings;
+static DATETIME            G_dtLastArchived;
+static BOOL                G_fSettingsLoaded = FALSE;
 
-STATIC CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
+static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 
 #define ARCOFS_JUSTRESTORED             0x00000
 #define ARCOFS_ARCHIVINGENABLED         0x000CF
@@ -140,7 +140,7 @@ STATIC CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
  ********************************************************************/
 
 // PSZ's for percentage spinbutton
-STATIC PCSZ     G_apcszPercentages[] =
+static PCSZ     G_apcszPercentages[] =
     {
         "0.010",
         "0.025",
@@ -158,7 +158,7 @@ STATIC PCSZ     G_apcszPercentages[] =
 #define SPIN_WIDTH      40
 #define SPIN_HEIGHT     STD_SPIN_HEIGHT
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     ArcCriteriaGroup = LOADDEF_GROUP(ID_XSDI_ARC_CRITERIA_GROUP, DEFAULT_TABLE_WIDTH),
     EnableArchiveCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_ENABLE),
     ArcAlwaysCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_ALWAYS),
@@ -207,7 +207,7 @@ STATIC const CONTROLDEF
         },
     ArcNoTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_ARCHIVES_NO_TXT2);
 
-STATIC const DLGHITEM dlgArchives[] =
+static const DLGHITEM dlgArchives[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required
@@ -703,7 +703,7 @@ VOID arcForceNoArchiving(VOID)
 
 #define ID_XFDI_GENERICDLGTEXT          221
 
-STATIC CONTROLDEF
+static CONTROLDEF
     ArcStatusIcon = CONTROLDEF_ICON(
                             NULLHANDLE,     // replaced below
                             ID_ICONDLG),
@@ -712,7 +712,7 @@ STATIC CONTROLDEF
                             ID_XFDI_GENERICDLGTEXT,
                             200);
 
-STATIC const DLGHITEM dlgArcStatus[] =
+static const DLGHITEM dlgArcStatus[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_CENTER),

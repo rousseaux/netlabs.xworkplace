@@ -157,7 +157,7 @@ extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 
 extern PIBMDRIVEDATA    G_paDriveData = NULL;
 
-STATIC THREADINFO       G_tiSentinel = {0};
+static THREADINFO       G_tiSentinel = {0};
 
 #define DESKTOP_VALID               0
 #define HANDLES_BROKEN              1       // V0.9.20 (2002-08-04) [umoeller]
@@ -166,15 +166,15 @@ STATIC THREADINFO       G_tiSentinel = {0};
 #define DESKTOP_DIR_DOESNT_EXIST    4
 #define DESKTOP_IS_NO_DIRECTORY     5
 
-STATIC ULONG            G_ulDesktopValid = -1;      // unknown at this point
-STATIC APIRET           G_arcHandles = 0;               // V0.9.20 (2002-08-04) [umoeller]
+static ULONG            G_ulDesktopValid = -1;      // unknown at this point
+static APIRET           G_arcHandles = 0;               // V0.9.20 (2002-08-04) [umoeller]
 
-STATIC HOBJECT          G_hobjDesktop;
-STATIC CHAR             G_szDesktopPath[CCHMAXPATH];
+static HOBJECT          G_hobjDesktop;
+static CHAR             G_szDesktopPath[CCHMAXPATH];
 
-STATIC HMTX             G_hmtxLog = NULLHANDLE;
+static HMTX             G_hmtxLog = NULLHANDLE;
 
-STATIC PXFILE           G_pStartupLogFile = NULL;
+static PXFILE           G_pStartupLogFile = NULL;
 
 /* ******************************************************************
  *
@@ -278,7 +278,7 @@ void initLog(const char* pcszFormat,
  *      from XFolder to XWorkplace.
  */
 
-STATIC const char **G_appszXFolderKeys[]
+static const char **G_appszXFolderKeys[]
         = {
                 &INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
                 &INIKEY_ACCELERATORS    , // "Accelerators"
@@ -386,7 +386,7 @@ STATIC ULONG WaitForApp(PCSZ pcszTitle,
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
 */
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOBOOTLOGO__
     SkipBootLogoCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_SKIPBOOTLOGO),
 #endif
@@ -422,7 +422,7 @@ STATIC const CONTROLDEF
     ShutdownButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_SHUTDOWN),
     ShutdownText = LOADDEF_TEXT(ID_XFDI_PANIC_SHUTDOWN_TXT);
 
-STATIC const DLGHITEM dlgPanic[] =
+static const DLGHITEM dlgPanic[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__

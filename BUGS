@@ -19,10 +19,6 @@ CURRENT PROBLEMS
 
 --  file dialog is broken
 
---  folder hotkeys page help panels (add dialog too)
-
---  remove command column
-
 --  split view
 
     --  drag and drop
@@ -37,22 +33,7 @@ CURRENT PROBLEMS
 
 --  shift+view click does not keep the menu open
 
---  After setting the icon of a data file object, changing the title of
-    the object will cause the icon to be replaced with the icon of the
-    default program object associated with the data file. Opening the
-    data file (or its settings notebook) will cause the correct icon to
-    reappear (until the title is changed again, of course).
-
---  When I right click on an icon file the image will change
-    to the icon assigned to the iconeditor. To get the image to change
-    back to the actual icon-file's image I either have to refresh the folder
-    or I have to open the icon-file's properties notebook (this is not always
-    reproducable and does not always affect all the icons in a folder).
-    In addition, the icons will not display if I have the turbo option
-    enabled, however, I think that this may be how "turbo folder" is supposed
-    to work.
-
-    If I install a windoze program under Odin and it creates an icon on
+--  If I install a windoze program under Odin and it creates an icon on
     the desktop (AIM for instance) it has the proper icon but if I open
     the properties or drag the icon it goes to a white sheet icon.
     Interestingly enough I have found that if I open the properties of
@@ -78,12 +59,6 @@ CURRENT PROBLEMS
     that unckecking this will cure the problem).
 
 --  enabling turbo folders WITHOUT extended assocs makes system unstable
-
---  delete: intercept _wpMenuItemSelected too because "delete" from
-    sysbutton menu won't work, and from context menu item neither
-
---  deadlocks when icons pop up on desktop (drag pictures from netscape
-    etc.)
 
 --  when hook is disabled, window list widget doesn't work; restart of
     XCenter required for getting it to work
@@ -116,17 +91,6 @@ CURRENT PROBLEMS
     matches the files 567, 576, but also 562blabla, which it should not
     ("Regular expressions" is  switched on). The same happens with
     "5[67]", while "5[68]" only selects 567 and 562blabla.
-
---  New file dialog
-    +   When called from the XButton settings Browse button, the dialog is
-        always starting at F:\ -- the programs disk with XWP on it, so that
-        could be logical. But it always starts there no matter what
-        directory I was in before and what is written in the entry field for
-        the bitmap.
-    +   I would expect to be able to change directories with a double click
-        on the folder symbol in the right hand part, but this does not work.
-    +   It should remember the position of the slider separating the left
-        from the right part.
 
 --  >I have a program object defined for ZIP-files with
     >   Program: unzip.exe
@@ -247,8 +211,6 @@ OLDER, MINOR PROBLEMS
 
 --  TMF file ends with strange char
 
---  install: subdir plugins\drvdlgs not created?!
-
 --  startup:
     --  boot logo remains on screen forever (check startup sequence for whether
         this might be lost somwhere)
@@ -300,12 +262,6 @@ XWPSetup:
         collapse it using the mouse again, the focus will be passed to the
         "startup/shutdown features" entry, instead to the "file operations". All the
         other entries behave OK, and all respond ok to keyboard expand/collapse.
-
-folders:
-    --  sorting: sorts wrong after renaming file (intercept cnr msg)
-
-    --  dragging stuff to folders crashes WPS if folder is being populated
-            (probably a WPS bug)
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of

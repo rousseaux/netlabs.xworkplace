@@ -113,7 +113,7 @@
  *
  ********************************************************************/
 
-STATIC PFNWP G_pfnwpEntryFieldOrig = 0;
+static PFNWP G_pfnwpEntryFieldOrig = 0;
 
 /* ******************************************************************
  *
@@ -1632,7 +1632,7 @@ SLDCDATA
                      0          // scale 2 spacing
              };
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     MMap2Group = LOADDEF_GROUP(ID_XSDI_MOUSE_MAPPINGS2GROUP, SZL_AUTOSIZE),
     MMap2ChordWinListCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_CHORDWINLIST),
     MMap2SysmenuMB2CB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SYSMENUMB2),
@@ -1657,7 +1657,7 @@ STATIC const CONTROLDEF
     MMap2MB3AmpTxt2 = CONTROLDEF_TEXT_CENTER("", ID_XSDI_MOUSE_MB3AMP_TXT2, 12, SZL_AUTOSIZE),
     MMap2MB3ScrollReverse = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MB3SCROLLREVERSE);
 
-STATIC const DLGHITEM G_dlgMappings2[] =
+static const DLGHITEM G_dlgMappings2[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2082,7 +2082,7 @@ SLDCDATA
                      0           // scale 2 spacing
              };
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOSLIDINGFOCUS__
     SlidingFocusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGFOCUS_GRP, SZL_AUTOSIZE),
     SlidingFocusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGFOCUS),
@@ -2119,7 +2119,7 @@ STATIC const CONTROLDEF
     CondCascadeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_CONDCASCADE),
     MenuHiliteCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MENUHILITE);
 
-STATIC const DLGHITEM dlgMovement1[] =
+static const DLGHITEM dlgMovement1[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOSLIDINGFOCUS__
@@ -2752,16 +2752,16 @@ MRESULT hifMouseMovement2ItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-STATIC ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-STATIC ULONG   G_ulScreenCornerSelectedIndex = 0;
+static ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
+static ULONG   G_ulScreenCornerSelectedIndex = 0;
 
 // screen corner object container d'n'd
-STATIC HOBJECT G_hobjBeingDragged = NULLHANDLE;
+static HOBJECT G_hobjBeingDragged = NULLHANDLE;
             // NULLHANDLE means dropping is invalid;
             // in between CN_DRAGOVER and CN_DROP, this
             // contains the object handle being dragged
 
-STATIC BOOL    G_fShutUpSlider = FALSE;
+static BOOL    G_fShutUpSlider = FALSE;
 
 /*
  *@@ UpdateScreenCornerIndex:

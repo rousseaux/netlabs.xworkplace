@@ -143,7 +143,7 @@
 // each group, set the TABLE_INHERIT_SIZE table flag to make the
 // group as wide as the main table.
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
     TitleGroup = LOADDEF_GROUP(ID_XSDI_ICON_TITLE_TEXT, SZL_AUTOSIZE),
     TitleEF = CONTROLDEF_MLE(
                             NULL,
@@ -217,12 +217,12 @@ STATIC const CONTROLDEF
                             SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT);
 
-STATIC const DLGHITEM dlgObjIconFront[] =
+static const DLGHITEM dlgObjIconFront[] =
     {
         START_TABLE,            // root table, required
     };
 
-STATIC const DLGHITEM dlgObjIconTitle[] =
+static const DLGHITEM dlgObjIconTitle[] =
     {
             // START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
             START_ROW(ROW_VALIGN_CENTER),
@@ -233,7 +233,7 @@ STATIC const DLGHITEM dlgObjIconTitle[] =
                 END_TABLE,
     };
 
-STATIC const DLGHITEM dlgObjIconIcon[] =
+static const DLGHITEM dlgObjIconIcon[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&IconGroup, TABLE_INHERIT_SIZE),
@@ -251,7 +251,7 @@ STATIC const DLGHITEM dlgObjIconIcon[] =
                 END_TABLE,
     };
 
-STATIC const DLGHITEM dlgObjIconExtrasFront[] =
+static const DLGHITEM dlgObjIconExtrasFront[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&ExtrasGroup, TABLE_INHERIT_SIZE),
@@ -259,7 +259,7 @@ STATIC const DLGHITEM dlgObjIconExtrasFront[] =
                     START_ROW(0)
     };
 
-STATIC const DLGHITEM dlgObjIconHotkey[] =
+static const DLGHITEM dlgObjIconHotkey[] =
     {
                         START_ROW(ROW_VALIGN_CENTER),
                             CONTROL_DEF(&HotkeyText),
@@ -269,28 +269,28 @@ STATIC const DLGHITEM dlgObjIconHotkey[] =
                         START_ROW(ROW_VALIGN_CENTER)
     };
 
-STATIC const DLGHITEM dlgObjIconTemplate[] =
+static const DLGHITEM dlgObjIconTemplate[] =
     {
                             CONTROL_DEF(&TemplateCB)
     };
 
-STATIC const DLGHITEM dlgObjIconLockedInPlace[] =
+static const DLGHITEM dlgObjIconLockedInPlace[] =
     {
                             CONTROL_DEF(&LockPositionCB)
     };
 
-STATIC const DLGHITEM dlgObjIconExtrasTail[] =
+static const DLGHITEM dlgObjIconExtrasTail[] =
     {
                 END_TABLE
     };
 
-STATIC const DLGHITEM dlgObjIconDetails[] =
+static const DLGHITEM dlgObjIconDetails[] =
     {
             START_ROW(0),
                 CONTROL_DEF(&DetailsButton)
     };
 
-STATIC const DLGHITEM dlgObjIconTail[] =
+static const DLGHITEM dlgObjIconTail[] =
     {
             START_ROW(0),
                 CONTROL_DEF(&G_UndoButton),         // common.c

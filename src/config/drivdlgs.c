@@ -191,16 +191,16 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
  *
  ********************************************************************/
 
-STATIC HMTX         G_hmxPlugins = NULLHANDLE;
+static HMTX         G_hmxPlugins = NULLHANDLE;
 
-STATIC LINKLIST     G_llCheckDrivers,       // linked list of DRIVERPLUGIN structs, auto-free
+static LINKLIST     G_llCheckDrivers,       // linked list of DRIVERPLUGIN structs, auto-free
                     G_llModules;            // linked list of HMODULE's, no auto-free
-STATIC BOOL         G_fModulesInitialized = FALSE,
+static BOOL         G_fModulesInitialized = FALSE,
                     G_fDriverProcsLoaded = FALSE;
 
-STATIC ULONG        G_ulDriverLoadsCount = 0;
+static ULONG        G_ulDriverLoadsCount = 0;
 
-STATIC PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
+static PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
     {
             CheckHPFSDriverName,
             CheckHPFS386DriverName,
@@ -1176,7 +1176,7 @@ typedef struct _S506ALL
 PSZ     apszDMAChannels[DMACHANNELS_COUNT];
 
 // array of tools to be subclassed for tooltips
-STATIC USHORT usS506ToolIDs[] =
+static USHORT usS506ToolIDs[] =
     {
         ID_OSDI_S506_INITQUIET,
         ID_OSDI_S506_INITVERBOSE,
@@ -2021,7 +2021,7 @@ STATIC VOID S506Settings2Dlg(HWND hwndDlg,
  *      driver.
  */
 
-STATIC USHORT ausNotSupportedByIBM[] =
+static USHORT ausNotSupportedByIBM[] =
             {
                 ID_OSDI_DANIS506_CLOCK_CHECK,
                 ID_OSDI_DANIS506_CLOCK_SLIDER,
@@ -2048,7 +2048,7 @@ STATIC USHORT ausNotSupportedByIBM[] =
  *      drivers with versions < 10.xxx.
  */
 
-STATIC USHORT ausNotSupportedByOldIBM[] =
+static USHORT ausNotSupportedByOldIBM[] =
             {
                 ID_OSDI_S506_INITWAIT,
                 ID_OSDI_S506_U_BUSMASTER

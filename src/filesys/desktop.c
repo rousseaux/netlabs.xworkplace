@@ -732,7 +732,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
  *
  ********************************************************************/
 
-STATIC const CONTROLDEF
+static const CONTROLDEF
 #ifndef __NOBOOTLOGO__
     BootLogoGroup = LOADDEF_GROUP(ID_XSDI_DTP_LOGOGROUP, SZL_AUTOSIZE),
     BootLogoCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_DTP_BOOTLOGO),
@@ -784,7 +784,7 @@ STATIC const CONTROLDEF
 #endif
     NumLockOnCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_DTP_NUMLOCKON);
 
-STATIC const DLGHITEM dlgDesktopStartup[] =
+static const DLGHITEM dlgDesktopStartup[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__
@@ -835,7 +835,7 @@ STATIC const DLGHITEM dlgDesktopStartup[] =
         END_TABLE
     };
 
-STATIC const XWPSETTING G_DtpStartupBackup[] =
+static const XWPSETTING G_DtpStartupBackup[] =
     {
         sfWriteXWPStartupLog,
 #ifndef __NOBOOTUPSTATUS__

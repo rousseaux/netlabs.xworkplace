@@ -130,12 +130,7 @@
  *
  ********************************************************************/
 
-STATIC HMTX    G_hmtxHandles = NULLHANDLE;
-
-// CHAR    G_szActiveHandles[100];
-// PBYTE   G_pHandlesBuffer = NULL;
-// ULONG   G_cbHandlesBuffer = 0;
-// PNODE   G_NodeHashTable[65536];
+static HMTX    G_hmtxHandles = NULLHANDLE;
 
 /* ******************************************************************
  *

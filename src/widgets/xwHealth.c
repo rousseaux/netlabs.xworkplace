@@ -129,7 +129,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2);
 
 #define WNDCLASS_WIDGET_XWHEALTH    "XWPHealthMonitorWidget"
 
-STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
             WNDCLASS_WIDGET_XWHEALTH,
@@ -199,7 +199,7 @@ PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-STATIC const RESOLVEFUNCTION G_aImports[] =
+static const RESOLVEFUNCTION G_aImports[] =
 {
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
@@ -235,7 +235,7 @@ double (*_System sthTemp) (int, BOOL) = NULL;
 double (*_System sthVoltage) (int, BOOL) = NULL;
 int (*_System sthFilterEvents) (PULONG, ULONG, PULONG, ULONG, PVOID) = NULL;
 
-STATIC const RESOLVEFUNCTION G_StHealthImports[] =
+static const RESOLVEFUNCTION G_StHealthImports[] =
 {
     "StHealthRegisterDaemon", (PFN*)&sthRegisterDaemon,
     "StHealthUnregisterDaemon", (PFN*)&sthUnregisterDaemon,

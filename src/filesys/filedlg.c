@@ -1039,7 +1039,7 @@ STATIC VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
  *
  ********************************************************************/
 
-STATIC PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
+static PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
 
 /*
  *@@ fnwpFileDlgFrame:

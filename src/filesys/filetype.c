@@ -168,10 +168,10 @@ typedef struct _INSTANCEFILTER
  *
  ********************************************************************/
 
-STATIC HMTX                G_hmtxInstances = NULLHANDLE;
-STATIC TREE                *G_InstanceTypesTreeRoot = NULL;
-STATIC LONG                G_cInstanceTypes;
-STATIC LINKLIST            G_llInstanceFilters;
+static HMTX                G_hmtxInstances = NULLHANDLE;
+static TREE                *G_InstanceTypesTreeRoot = NULL;
+static LONG                G_cInstanceTypes;
+static LINKLIST            G_llInstanceFilters;
 
 /* ******************************************************************
  *
@@ -2355,7 +2355,7 @@ STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-STATIC PCSZ G_pcszDoctype =
+static PCSZ G_pcszDoctype =
 "<!DOCTYPE XWPFILETYPES [\n"
 "\n"
 "<!ELEMENT XWPFILETYPES (TYPE*)>\n"

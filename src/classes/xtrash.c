@@ -155,9 +155,9 @@
  ********************************************************************/
 
 // default trash can
-STATIC XWPTrashCan *G_pDefaultTrashCan = NULL;
+static XWPTrashCan *G_pDefaultTrashCan = NULL;
 
-STATIC BOOL        G_fDrivesInitialized = FALSE;
+static BOOL        G_fDrivesInitialized = FALSE;
 
 /* ******************************************************************
  *

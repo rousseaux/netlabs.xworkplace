@@ -155,7 +155,7 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
                         mi.afAttribute = MIA_CHECKED;
                     else
                         mi.afAttribute = 0;
-                    mi.id = 1;
+                    mi.id = 0x7FFF;
                     WinSendMsg(hNewMenu,
                                MM_INSERTITEM,
                                MPFROMP(&mi),

@@ -1173,16 +1173,16 @@ BOOL fdrNukeContents(WPFolder *pFolder)
  *
  ********************************************************************/
 
-STATIC LINKLIST     G_llRootFolders;        // linked list of root folders,
+static LINKLIST     G_llRootFolders;        // linked list of root folders,
                                             // holding plain WPFolder pointers
                                             // (no auto-free, of course)
-STATIC HMTX         G_hmtxRootFolders = NULLHANDLE;
+static HMTX         G_hmtxRootFolders = NULLHANDLE;
 
 // last folder cache
 extern WPFolder     *G_pLastQueryAwakeFolder = NULL;
                         // this must be exported because if this goes
                         // dormant, XFolder::wpUnInitData must null this
-STATIC CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
+static CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
 
 /*
  *@@ LockRootFolders:

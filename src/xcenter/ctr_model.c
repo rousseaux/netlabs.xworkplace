@@ -108,7 +108,7 @@
  *@@changed V0.9.20 (2002-07-23) [lafaix]: added NLS IDs
  */
 
-STATIC const XCENTERWIDGETCLASS G_aBuiltInWidgets[]
+static const XCENTERWIDGETCLASS G_aBuiltInWidgets[]
     = {
         // object button widget
         {

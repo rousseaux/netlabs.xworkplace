@@ -261,6 +261,8 @@ RUN_STRRPL = $(HELPERS_BASE)\strrpl.exe
 
 RUN_DCD = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\dcd.cmd
 
+RUN_MAPSYM = mapsym
+
 !ifndef ENTITYDEFS
 !ifdef XWPLITE
 ENTITYDEFS = entities_lite.h
@@ -357,6 +359,10 @@ CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS)
 # these are passed to the XWPHelpers makefiles
 CC_HELPERS_EXE_MT = $(CC_EXE_MT)
 CC_HELPERS_DLL    = $(CC_DLL_MT)
+# /NtHLPC32
+# V0.9.21 (2002-09-13) [umoeller]: wonderful. Tried to add /NtXWPHCODE32
+# to compile the helpers code into a code segment other than CODE32 to
+# avoid the SYM file overflow, but it crashes the compiler right away.
 
 # Some VisualAge C++ compiler options explained [default in brackets]:
 # /c:   compile only, no link (we'll call the linker explicitly)
