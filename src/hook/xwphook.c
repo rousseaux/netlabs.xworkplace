@@ -506,10 +506,18 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
             #ifdef HACKSWITCHLIST
                 hookLog(__FILE__, __LINE__, __FUNCTION__,
                         "hacking switch list");
+
+                // doing the subclassing directly works, but
+                // doing the post msg won't. It won't even
+                // log the first string in HackSwitchList().
+                HackSwitchList(TRUE);
+
+                /*
                 WinPostMsg(G_HookData.hwndSwitchListCnr,
                            WM_HACKSWITCHLIST,
                            MP1_HACKSWITCHLIST,
                            MP2_SUBCLASS);
+                */
             #endif
         }
 
@@ -540,10 +548,9 @@ BOOL EXPENTRY hookKill(void)
     _Pmpf(("hookKill"));
 
     #ifdef HACKSWITCHLIST
-        WinSendMsg(G_HookData.hwndSwitchListCnr,
-                   WM_HACKSWITCHLIST,
-                   MP1_HACKSWITCHLIST,
-                   MP2_UNSUBCLASS);
+        hookLog(__FILE__, __LINE__, __FUNCTION__,
+                "un-hacking switch list");
+        HackSwitchList(FALSE);
     #endif
 
     if (G_HookData.fInputHooked)
@@ -1483,7 +1490,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                            pqmsg->mp1);             // POINTS pointer pos
         }
 
-    #ifdef HACKSWITCHLIST
+    #if 0
         if (    (pqmsg->hwnd == G_HookData.hwndSwitchListCnr)
              && (pqmsg->msg == WM_HACKSWITCHLIST)
              && (pqmsg->mp1 == MP1_HACKSWITCHLIST)
@@ -1494,27 +1501,6 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
             // swallow
             brc = TRUE;
-        }
-    #endif
-
-    #if 0
-        if (    (pqmsg->hwnd == G_HookData.hwndSwitchList)
-             && (pqmsg->msg == XM_HACKSWITCHLIST)
-             && (pqmsg->mp1 == MP1_HACKSWITCHLIST)
-           )
-        {
-            if (pqmsg->mp2 == MP2_HACKSWITCH_ENABLE)
-            {
-                hookLog(__FILE__, __LINE__, __FUNCTION__,
-                        "MP2_HACKSWITCH_ENABLE");
-                HackSwitchList(TRUE);       // install
-            }
-            else if (pqmsg->mp2 == MP2_HACKSWITCH_DISABLE)
-            {
-                hookLog(__FILE__, __LINE__, __FUNCTION__,
-                        "MP2_HACKSWITCH_DISABLE");
-                HackSwitchList(FALSE);      // de-install
-            }
         }
     #endif
 

@@ -25,7 +25,7 @@
     #define HOOK_PRIVATE_HEADER_INCLUDED
 
     #ifdef __DEBUG__
-        #define HACKSWITCHLIST
+        // #define HACKSWITCHLIST
     #endif
 
     /*
