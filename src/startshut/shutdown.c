@@ -809,47 +809,47 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  && (pGlobalSettings->NoWorkerThread == 0)
                 );
 
-        // WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
+        // winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
                     ( fXShutdownEnabled && (apmPowerOffSupported()) )
                 );
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
                     (      fXShutdownEnabled
                         && (apmPowerOffSupported())
                         && ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                     )
                 );
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                     ( fXShutdownEnabled && (cmnTrashCanReady()) )
                 );
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
 
         // enable "warpcenter first" if shutdown or WPS have been enabled
         // AND if the WarpCenter was found
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                          ((fXShutdownOrWPSValid)
                          && (pKernelGlobals->pAwakeWarpCenter != NULL)));
                                 // @@todo this doesn't find the WarpCenter
                                 // if started thru CONFIG.SYS
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
 
         if (WinQueryObject((PSZ)XFOLDER_SHUTDOWNID))
             // shutdown folder exists already: disable button
-            WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
     }
 }
 
@@ -963,7 +963,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        szSetup,
                                        (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))
-                WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
             else
                 cmnMessageBoxMsg(pcnbp->hwndFrame,
                                  104, 106,
@@ -1339,7 +1339,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
         }
         else
             // trash can not ready: disable item
-            WinEnableControl(hwndConfirm, ID_SDDI_EMPTYTRASHCAN, FALSE);
+            winhEnableDlgItem(hwndConfirm, ID_SDDI_EMPTYTRASHCAN, FALSE);
 
         if (psdParms->optReboot)
             ulCheckRadioButtonID = ID_SDDI_STANDARDREBOOT;
@@ -1396,7 +1396,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
         }
         else
             // no items found: disable
-            WinEnableControl(hwndConfirm, ID_SDDI_REBOOTTO, FALSE);
+            winhEnableDlgItem(hwndConfirm, ID_SDDI_REBOOTTO, FALSE);
 
         // check radio button
         winhSetDlgItemChecked(hwndConfirm, ulCheckRadioButtonID, TRUE);
@@ -1533,8 +1533,8 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         psdParms->optWPSCloseWindows = TRUE;
         psdParms->optWPSReuseStartupFolder = TRUE;
-        WinEnableControl(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
-        WinEnableControl(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
+        winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
+        winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
 
         // replace confirmation text
         WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
@@ -1765,19 +1765,19 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                       ID_XSDI_XRB_ITEMNAME,
                                       "");
 
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_ITEMNAME,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_ITEMNAME,
                             (pData->pliSelected != NULL));
 
-                WinEnableControl(hwndDlg, ID_XSDI_ACL_WMCLOSE,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_WMCLOSE,
                             (pData->pliSelected != NULL));
-                WinEnableControl(hwndDlg, ID_XSDI_ACL_CTRL_C,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_CTRL_C,
                             (pData->pliSelected != NULL));
-                WinEnableControl(hwndDlg, ID_XSDI_ACL_KILLSESSION,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_KILLSESSION,
                             (pData->pliSelected != NULL));
-                WinEnableControl(hwndDlg, ID_XSDI_ACL_SKIP,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_SKIP,
                             (pData->pliSelected != NULL));
 
-                WinEnableControl(hwndDlg,
+                winhEnableDlgItem(hwndDlg,
                                   ID_XSDI_XRB_DELETE,
                                   (   (pData->usItemCount > 0)
                                    && (pData->pliSelected)
@@ -2116,24 +2116,24 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     WinSetDlgItemText(hwndDlg, ID_XSDI_XRB_COMMAND,
                             "");
                 }
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_ITEMNAME,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_ITEMNAME,
                             (pData->pliSelected != NULL));
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_COMMAND,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_COMMAND,
                             (pData->pliSelected != NULL));
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_PARTITIONS,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_PARTITIONS,
                             (pData->pliSelected != NULL));
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_UP,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_UP,
                             (   (pData->pliSelected != NULL)
                              && (pData->usItemCount > 1)
                              && (pData->sSelected > 0)
                             ));
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_DOWN,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_DOWN,
                             (   (pData->pliSelected != NULL)
                              && (pData->usItemCount > 1)
                              && (pData->sSelected < (pData->usItemCount-1))
                             ));
 
-                WinEnableControl(hwndDlg, ID_XSDI_XRB_DELETE,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_XRB_DELETE,
                             (   (pData->usItemCount > 0)
                              && (pData->pliSelected)
                             )
@@ -3833,10 +3833,10 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                                    pShutdownData->SDConsts.hwndShutdownStatus);
 
                 // disable buttons in status window... we can't stop now!
-                WinEnableControl(pShutdownData->SDConsts.hwndShutdownStatus,
+                winhEnableDlgItem(pShutdownData->SDConsts.hwndShutdownStatus,
                                  ID_SDDI_CANCELSHUTDOWN,
                                  FALSE);
-                WinEnableControl(pShutdownData->SDConsts.hwndShutdownStatus,
+                winhEnableDlgItem(pShutdownData->SDConsts.hwndShutdownStatus,
                                  ID_SDDI_SKIPAPP,
                                  FALSE);
 
@@ -4179,62 +4179,6 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
     // end of Shutdown thread
     // thread exits!
 }
-
-/*
- *@@ fncbShutdown:
- *      callback function for XFolder::xwpBeginProcessOrderedContent
- *      when processing Shutdown folder.
- *
- *      This posts ID_SDMI_BEGINCLOSINGITEMS back to fnwpShutdown
- *      when we're done processing the folder.
- *
- *      Runs on thread 1.
- *
- *@@changed V0.9.9 (2001-03-19) [pr]: change to WM_UPDATEPROGRESSBAR call
- */
-
-/* MRESULT EXPENTRY fncbShutdown(HWND hwndStatus,      // callback parameter
-                              ULONG ulObject,       // WPObject* pointer
-                              MPARAM mp1,           // PPROCESSCONTENTINFO
-                              MPARAM mp2)           // always null
-{
-    PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO) mp1;
-    PSHUTDOWNDATA pShutdownData = (PSHUTDOWNDATA)WinQueryWindowPtr(hwndStatus,
-                                                                   QWL_USER);
-
-    CHAR szStarting2[500];
-    HWND rc = 0;
-    if (ulObject)
-    {
-        WinSetActiveWindow(HWND_DESKTOP, hwndStatus);
-        sprintf(szStarting2,
-                cmnGetString(ID_SDSI_STARTING), // (cmnQueryNLSStrings())->pszStarting,
-                _wpQueryTitle((WPObject*)ulObject));
-        WinSetDlgItemText(hwndStatus, ID_SDDI_STATUS, szStarting2);
-
-        rc = _wpViewObject((WPObject*)ulObject, 0, OPEN_DEFAULT, 0);
-
-        xsdLog(pShutdownData->ShutdownLogFile,
-               "      %s, returning hwnd 0x%lX\n",
-               szStarting2,
-               rc);
-
-        WinSetActiveWindow(HWND_DESKTOP, hwndStatus);
-
-        WinSendMsg(WinWindowFromID(hwndStatus, ID_SDDI_PROGRESSBAR),
-                   WM_UPDATEPROGRESSBAR,
-                   MPFROMLONG(pPCI->ulObjectNow),
-                   MPFROMLONG(pPCI->ulObjectMax));
-    }
-    else
-    {
-        WinPostMsg(hwndStatus, WM_COMMAND,
-                   MPFROM2SHORT(ID_SDMI_BEGINCLOSINGITEMS, 0),
-                   MPNULL);
-        pShutdownData->hPOC = 0;
-    }
-    return ((MRESULT)rc);
-} */
 
 /*
  *@@ xsdCloseVIO:
@@ -4764,7 +4708,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                     // mark status as "closing windows now"
                     pShutdownData->ulStatus = XSD_CLOSING;
-                    WinEnableControl(pShutdownData->SDConsts.hwndMain,
+                    winhEnableDlgItem(pShutdownData->SDConsts.hwndMain,
                                      ID_SDDI_BEGINSHUTDOWN,
                                      FALSE);
 
@@ -4991,13 +4935,13 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                         /* if (pShutdownData->hPOC)
                             ((PPROCESSCONTENTINFO)pShutdownData->hPOC)->fCancelled = TRUE; */
-                        WinEnableControl(pShutdownData->SDConsts.hwndShutdownStatus,
+                        winhEnableDlgItem(pShutdownData->SDConsts.hwndShutdownStatus,
                                          ID_SDDI_CANCELSHUTDOWN,
                                          FALSE);
-                        WinEnableControl(pShutdownData->SDConsts.hwndShutdownStatus,
+                        winhEnableDlgItem(pShutdownData->SDConsts.hwndShutdownStatus,
                                          ID_SDDI_SKIPAPP,
                                          FALSE);
-                        WinEnableControl(pShutdownData->SDConsts.hwndMain,
+                        winhEnableDlgItem(pShutdownData->SDConsts.hwndMain,
                                          ID_SDDI_BEGINSHUTDOWN,
                                          TRUE);
 

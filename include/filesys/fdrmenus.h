@@ -68,10 +68,6 @@
                                  HWND hwndSortMenu,
                                  ULONG ulDefaultSort);
 
-    VOID mnuModifySortMenu(WPFolder *somSelf,
-                           HWND hwndMenu,
-                           PCGLOBALSETTINGS pGlobalSettings);
-
     BOOL mnuInsertFldrViewItems(WPFolder *somSelf,
                                 HWND hwndViewSubmenu,
                                 BOOL fInsertNewMenu,
@@ -97,13 +93,6 @@
      *   Functions for reacting to menu selections                      *
      *                                                                  *
      ********************************************************************/
-
-    BOOL mnuIsSortMenuItemSelected(WPFolder *somSelf,
-                                   HWND hwndFrame,
-                                   HWND hwndMenu,
-                                   ULONG ulMenuId,
-                                   PCGLOBALSETTINGS pGlobalSettings,
-                                   PBOOL pbDismiss);
 
     VOID mnuCreateFromTemplate(WPObject *pTemplate,
                                WPFolder *pFolder);

@@ -77,15 +77,16 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
-#include "helpers\winh.h"               // PM helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\timer.h"              // replacement PM timers
+#include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -1919,21 +1920,15 @@ BOOL FrameTimer(HWND hwnd,
             if (pXCenterData->ulStartTime == 0)
             {
                 // first call:
-                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                &pXCenterData->ulStartTime,
-                                sizeof(pXCenterData->ulStartTime));
+                pXCenterData->ulStartTime = doshQuerySysUptime();
                 // initial value for XCenter:
                 // start with a square
                 cxCurrent = pXCenterData->cyFrame;
             }
             else
             {
-                ULONG ulNowTime;
-                ULONG ulMSPassed;
-                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                &ulNowTime,
-                                sizeof(ulNowTime));
-                ulMSPassed = ulNowTime - pXCenterData->ulStartTime;
+                ULONG ulNowTime = doshQuerySysUptime();
+                ULONG ulMSPassed = ulNowTime - pXCenterData->ulStartTime;
 
                 // total animation should last two seconds,
                 // so check where we are now compared to
@@ -2081,16 +2076,14 @@ BOOL FrameTimer(HWND hwnd,
             if (pXCenterData->ulStartTime == 0)
             {
                 // first call:
-                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                &pXCenterData->ulStartTime,
-                                sizeof(pXCenterData->ulStartTime));
+                pXCenterData->ulStartTime = doshQuerySysUptime();
                 // initially, subtract nothing
                 cySubtractCurrent = 0;
             }
             else
             {
                 XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
-                ULONG   ulNowTime;
+                ULONG   ulNowTime = doshQuerySysUptime();
                 ULONG   cySubtractMax;
                 ULONG   ulMinSize = pGlobals->ul3DBorderWidth;
                 if (ulMinSize == 0)
@@ -2098,10 +2091,6 @@ BOOL FrameTimer(HWND hwnd,
                     // we must not use that, or the frame will
                     // disappear completely...
                     ulMinSize = 1;
-
-                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                &ulNowTime,
-                                sizeof(ulNowTime));
 
                 // cySubtractMax has the width that should be
                 // subtracted from the full frame width to
@@ -4798,10 +4787,10 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // get handle to the "Open" submenu in the
         // the popup menu
-        if (WinSendMsg(hwndMenu,
-                       MM_QUERYITEM,
-                       MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                       (MPARAM)&mi))
+        if (winhQueryMenuItem(hwndMenu,
+                              WPMENUID_OPEN,
+                              TRUE,
+                              &mi))
         {
             // mi.hwndSubMenu now contains "Open" submenu handle,
             // which we add items to now

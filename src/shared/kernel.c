@@ -222,8 +222,6 @@ const char  *G_pcszReqFunction = NULL;
  *      Proper usage:
  *
  +          BOOL fLocked = FALSE;
- +          ULONG ulNesting;
- +          DosEnterMustComplete(&ulNesting);
  +          TRY_LOUD(excpt1)
  +          {
  +              fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
@@ -236,7 +234,6 @@ const char  *G_pcszReqFunction = NULL;
  +
  +          if (fLocked)
  +              krnUnlock();        // NEVER FORGET THIS!!
- +          DosExitMustComplete(&ulNesting);
  *
  *@@added V0.9.0 (99-11-14) [umoeller]
  *@@changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
@@ -318,22 +315,6 @@ ULONG krnQueryLock(VOID)
 
     return (0);
 }
-
-/*
- *krnOnKillDuringLock:
- *      function to be used with the TRY_xxx
- *      macros to release the mutex semaphore
- *      on thread kills.
- *
- *added V0.9.0 (99-11-14) [umoeller]
- *changed V0.9.3 (2000-04-08) [umoeller]: moved this here from common.c
- *removed V0.9.7 (2000-12-10) [umoeller]
- */
-
-/* VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2)
-{
-    DosReleaseMutexSem(G_hmtxCommonLock);
-} */
 
 /********************************************************************
  *
@@ -510,21 +491,6 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
         }
         free(paThreadInfos);
     }
-
-    /* if (tid = thrQueryID(&pKernelGlobals->tiWorkerThread))
-        fprintf(file,  "    XWorkplace Worker thread ID: 0x%lX (%d)\n", tid, tid);
-
-    if (tid = thrQueryID(&pKernelGlobals->tiSpeedyThread))
-        fprintf(file,  "    XWorkplace Speedy thread ID: 0x%lX (%d)\n", tid, tid);
-
-    if (tid = thrQueryID(&pKernelGlobals->tiFileThread))
-        fprintf(file,  "    XWorkplace File thread ID: 0x%lX (%d)\n", tid, tid);
-
-    if (tid = thrQueryID(&pKernelGlobals->tiShutdownThread))
-        fprintf(file,  "    XWorkplace Shutdown thread ID: 0x%lX (%d)\n", tid, tid);
-
-    if (tid = thrQueryID(&pKernelGlobals->tiUpdateThread))
-        fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid); */
 
     tid = krnQueryLock();
     if (tid)
@@ -1856,15 +1822,15 @@ VOID krnShowStartupDlgs(VOID)
         winhCenterWindow(hwndPanic);
 
         // disable items which are irrelevant
-        WinEnableControl(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
+        winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
                          pGlobalSettings->BootLogo);
-        WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
+        winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
                          pGlobalSettings->fReplaceArchiving);
-        WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
+        winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                          pGlobalSettings->fReplaceIcons);
-        WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
+        winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
                          pGlobalSettings->fEnablePageMage);
-        WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
+        winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                          (xmmQueryStatus() == MMSTAT_WORKING));
 
         ulrc = WinProcessDlg(hwndPanic);
@@ -2305,9 +2271,6 @@ VOID krnInitializeXWorkplace(VOID)
         // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
         winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
                                &G_KernelGlobals.hwndSysError);
-
-        // _Pmpf(("G_KernalGlobals.hwndHardError: 0x%lX", G_KernelGlobals.hwndHardError));
-        // _Pmpf(("G_KernalGlobals.hwndSysError: 0x%lX", G_KernelGlobals.hwndSysError));
 
         // initialize awake-objects list (which holds
         // plain WPObject* pointers)

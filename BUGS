@@ -17,8 +17,39 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
---  object hotkeys:
-    remove "modifier" checkbox
+XCenter:
+    --  rework stay on top
+
+    --  template object buttons...
+
+    --  put menus on object buttons on top of the bar, not on top of the button.
+
+    --  add option for tooltip shadows.
+
+    --  winlist: truncate titles with "..."
+
+    --  make object buttons droppable
+
+    --  XCenter "Run": causes black screen with Win-OS/2 execs
+
+    --  XCenter xbutton: suspend doesn't always work
+
+    --  restoring VIO sessions:
+        I THINK (which means I am not sure) that you can
+        check in the window words for this.
+        For minimized and for maximized there are window
+        words for the x and y position.
+        If a window has not been minimized/maximized, those
+        values will be -1.
+        If it was minimized/maximized at least once, those
+        values will be <> -1.
+        So you might want to check the x and y values for
+        the "maximize" window words (while the window is
+        not destroyed yet, of course).
+        If they are <> -1 then this window was maximized
+        and x and y was the maximized position (whatever
+        that would be for a maximized window, should be 0
+        and 0 ?)
 
 --  sliding menus:
     new method won't work with system menus
@@ -43,21 +74,6 @@ NOT-SO-SERIOUS PROBLEMS
 tooltips:
     -- rewrite auto-pop
 
-XCenter:
-    --  rework stay on top
-
-    -- template object buttons...
-
-    -- check wpClose again... this hangs the system somewhere
-
-    -- put menus on object buttons on top of the bar, not on top of the button.
-
-    -- add option for tooltip shadows.
-
-    -- winlist: truncate titles with "..."
-
-    -- make object buttons droppable
-
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
@@ -77,8 +93,6 @@ file exists dlg:
         >new name is not in that folder!
 
 trash can:
-    -- sorting doesn't work right... i need to rewrite sorting anyway.
-
     -- When you delete an object, it probably retains its object ID, because
        if a program tries to UPDATE the object that has been deleted, it
        effectively updates the object in the TrashCan, while it should

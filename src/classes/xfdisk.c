@@ -93,60 +93,23 @@
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
-#pragma hdrstop
 #include "helpers\undoc.h"              // some undocumented stuff
+#pragma hdrstop
 
-// global array of all awake Disk objects
-// XFldDisk* apDrives[27];
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// key for wpRestoreData etc.
+static const char*  G_pcszXFldDisk = "XFldDisk";
 
 /* ******************************************************************
  *                                                                  *
  *   here come the XFldDisk instance methods                        *
  *                                                                  *
  ********************************************************************/
-
-/*
- *@@ wpAddDiskDetailsPage:
- *      this adds the "Details" page to a disk object's
- *      settings notebook.
- *
- *      We override this method to insert our enhanced
- *      page instead.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
-                                                     HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
-    XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddDiskDetailsPage");
-
-    if (pGlobalSettings->fReplaceFilePage)
-    {
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_DISK_DETAILS;
-        pcnbp->ulPageID = SP_DISK_DETAILS;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_DETAILSPAGE);  // pszDetailsPage
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
-
-        pcnbp->pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;
-        pcnbp->pfncbItemChanged = dskDetailsItemChanged;
-
-        return (ntbInsertPage(pcnbp));
-    }
-    else
-        return (XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
-                                                            hwndNotebook));
-}
 
 /*
  *@@ wpFilterPopupMenu:
@@ -446,10 +409,10 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
 
                         // extended sort functions
                         if (pGlobalSettings->ExtFolderSort)
-                        {
                             if (hwndCnr)
-                                fdrSetFldrCnrSort(pRootFolder, hwndCnr, FALSE);    // xfldr.c
-                        }
+                                fdrSetFldrCnrSort(pRootFolder,
+                                                  hwndCnr,
+                                                  FALSE);
                     }
                 }
             } // if (pRootFolder)
@@ -466,42 +429,53 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
     return (hwndNewFrame);
 }
 
+/*
+ *@@ wpAddDiskDetailsPage:
+ *      this adds the "Details" page to a disk object's
+ *      settings notebook.
+ *
+ *      We override this method to insert our enhanced
+ *      page instead.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
+                                                     HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddDiskDetailsPage");
+
+    if (pGlobalSettings->fReplaceFilePage)
+    {
+        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XSD_DISK_DETAILS;
+        pcnbp->ulPageID = SP_DISK_DETAILS;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = cmnGetString(ID_XSSI_DETAILSPAGE);  // pszDetailsPage
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
+
+        pcnbp->pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;
+        pcnbp->pfncbItemChanged = dskDetailsItemChanged;
+
+        return (ntbInsertPage(pcnbp));
+    }
+    else
+        return (XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
+                                                            hwndNotebook));
+}
+
 /* ******************************************************************
  *                                                                  *
  *   here come the XFldDisk class methods                           *
  *                                                                  *
  ********************************************************************/
-
-/*
- *@@ xfclsQueryDisk:
- *      since I have no idea what the default wpQueryDisk
- *      is for (why the hell does it return a WPFileSystem?),
- *      this is a proper method which returns the disk object
- *      which corresponds to the drive on which the object
- *      resides. This works for both abstract and file-system
- *      objects.
- *
- *      Returns NULL upon errors.
- *
- *      Note: this method only works after the Drives folder
- *      has been populated because it relies on our
- *      wpObjectReady override for XFldDisk. Otherwise you'll
- *      get NULL back.
- *
- *      The WPS normally populates that folder a few seconds
- *      after the Desktop is up.
- */
-
-/* SOM_Scope XFldDisk*  SOMLINK xfdiskM_xwpclsQueryDiskObject(M_XFldDisk *somSelf,
-                                                          WPObject* pObject)
-{
-    ULONG ulLogicalDrive = wpshQueryLogicalDriveNumber(pObject);
-    // M_XFldDiskData *somThis = M_XFldDiskGetData(somSelf);
-    M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_xwpclsQueryDiskObject");
-
-    // _Pmpf(("xwpclsQueryDiskObject: ulDrive = %d", ulLogicalDrive));
-    return (apDrives[ulLogicalDrive]);
-} */
 
 /*
  *@@ wpclsInitData:
@@ -516,7 +490,6 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
     M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_wpclsInitData");
 
     M_XFldDisk_parent_M_WPDisk_wpclsInitData(somSelf);
-    // M_XFldDisk_parent_M_XFldObject_wpclsInitData(somSelf);
 
     {
         // store the class object in KERNELGLOBALS
@@ -527,8 +500,8 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
             krnUnlockGlobals();
         }
     }
-
-    // memset(&apDrives, 0, sizeof(apDrives));
 }
+
+
 
 

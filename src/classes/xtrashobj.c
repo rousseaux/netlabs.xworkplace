@@ -126,26 +126,44 @@
 /*
  *@@ XTRO_DETAILS:
  *      extended object details for XWPTrashObject
- *      (used in trash can Details view)
+ *      (used in trash can Details view).
+ *
+ *      The CLASSFIELDINFO's are initialized in
+ *      M_XWPTrashObject::wpclsInitData, passed to the
+ *      WPS in M_XWPTrashObject::wpclsQueryDetailsInfo,
+ *      and filled for each instance in
+ *      XWPTrashObject::wpQueryDetailsData.
+ *
+ *      Note that the "size" column is a bit tricky.
+ *      The details view diplays the pszSize data
+ *      as a string (since this can also be "calculating"),
+ *      while the "sort by size" criterion is implemented
+ *      through the ulSize value, which is hidden in
+ *      details view.
+ *
+ *      See XWPTrashObject::wpclsQueryDetailsInfo for details.
  *
  *@@changed V0.9.1 (2000-01-29) [umoeller]: added pszOriginalClass
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: added ulSize
  */
 
 typedef struct _XTRO_DETAILS
 {
-   PSZ     pszDeletedFrom;      // where object was deleted from
-   PSZ     pszSize;             // size of related object; this points
-                                // to the _szTotalSize member
-   PSZ     pszOriginalClass;    // class of related object
-   CDATE   cdateDeleted;        // deletion date
-   CTIME   ctimeDeleted;        // deletion date
+    PSZ     pszDeletedFrom;      // where object was deleted from
+    ULONG   ulSize;              // ULONG size of related object
+                                 // (this is for sorting only and not displayed)
+    PSZ     pszSize;             // formatted size of related object; this points
+                                 // to the _szTotalSize instance data
+    PSZ     pszOriginalClass;    // class of related object
+    CDATE   cdateDeleted;        // deletion date
+    CTIME   ctimeDeleted;        // deletion date
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
 // extra data fields for XWPTrashObject object details:
-#define XTRO_EXTRAFIELDS 5
-        // we add five fields
+#define XTRO_EXTRAFIELDS 6
+        // raised V0.9.12 (2001-05-18) [umoeller]
+
 static CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
-// See XWPTrashObject::wpclsQueryDetailsInfo for details.
 
 /* ******************************************************************
  *
@@ -271,8 +289,6 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
 {
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectData");
-
-    // *@@todo lock the object before doing this...
 
     _ulTotalSize = ulNewSize;
 
@@ -508,6 +524,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
     {
         PXTRO_DETAILS pDetails = (PXTRO_DETAILS)*ppDetailsData;
         pDetails->pszDeletedFrom = _xwpQueryRelatedPath(somSelf);
+        pDetails->ulSize = _ulTotalSize;
         pDetails->pszSize = _szTotalSize;
         if (_pRelatedObject)
         {
@@ -843,11 +860,37 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDrop(XWPTrashObject *somSelf,
  ********************************************************************/
 
 /*
+ *@@ CompareTrashSize:
+ *      WPS sort comparison function for "sort by size".
+ *      As opposed to the standard ULONG sort function,
+ *      this sorts in descending order so that if we sort
+ *      by size, the largest objects get on top.
+ *
+ *      NOTE: This is a WPS comparison func, NOT a cnr
+ *      comparison func. This gets called from
+ *      fnCompareDetailsColumn (if extended sorting is
+ *      enabled), or from the WPS somewhere (if not).
+ *
+ *@@added V0.9.12 (2001-05-18) [umoeller]
+ */
+
+LONG EXPENTRY CompareTrashSize(PULONG pul1,     // ptr to ul1
+                               PULONG pul2)     // ptr to ul2
+{
+    if (*pul1 < *pul2)
+        return (CMP_GREATER);
+    if (*pul1 > *pul2)
+        return (CMP_LESS);
+    return (CMP_EQUAL);
+}
+
+/*
  *@@ wpclsInitData:
  *      this class methods allows the class to
  *      initialize itself.
  *
  *@@changed V0.9.4 (2000-08-03) [umoeller]: KERNELGLOBALS flag was wrong, fixed
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: fixed sort by size
  */
 
 SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
@@ -902,18 +945,31 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             // first item: original path
             case 0:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_ORIGFOLDER);  // pszOrigFolder
+                pcfi->pTitleData        = cmnGetString(ID_XTSI_ORIGFOLDER);
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszDeletedFrom));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 
-            // fourth item: size of related object
+            // second item: size of related object (ULONG)
+            // this column is NOT displayed in details view,
+            // but used for sorting! (we'd rather not sort by string)
             case 1:
-                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
+                pcfi->flCompare         = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
+                pcfi->pfnSort           = (PFNCOMPARE)CompareTrashSize;
+                                            // V0.9.12 (2001-05-18) [umoeller]
+                pcfi->flData            |= CFA_ULONG | CFA_INVISIBLE;
+                pcfi->pTitleData        = cmnGetString(ID_XTSI_SIZE);  // pszSize
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ulSize));
+                pcfi->ulLenFieldData    = sizeof(ULONG);
+                pcfi->DefaultComparison = CMP_GREATER;
+            break;
+
+            // third item: size of related object (string)
+            // the string is displayed in details view
+            case 2:
+                pcfi->flCompare   = 0; // COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->flData            |= CFA_STRING | CFA_RIGHT;
                 pcfi->pTitleData        = cmnGetString(ID_XTSI_SIZE);  // pszSize
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszSize));
@@ -921,10 +977,9 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 
-            // fifth item: class of related object
-            case 2:
-                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
+            // fourth item: class of related object
+            case 3:
+                pcfi->flCompare         = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
                 pcfi->pTitleData        = cmnGetString(ID_XTSI_ORIGCLASS);  // pszOrigClass
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszOriginalClass));
@@ -932,10 +987,9 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 
-            // second item: deletion date
-            case 3:
+            // fifth item: deletion date
+            case 4:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_DATE | CFA_RIGHT;
                 pcfi->pTitleData        = cmnGetString(ID_XTSI_DELDATE);  // pszDelDate
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, cdateDeleted));
@@ -943,10 +997,9 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 
-            // third item: deletion time
-            case 4:
+            // sixth item: deletion time
+            case 5:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_TIME | CFA_RIGHT;
                 pcfi->pTitleData        = cmnGetString(ID_XTSI_DELTIME);  // pszDelTime
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ctimeDeleted));
@@ -992,8 +1045,13 @@ SOM_Scope BOOL  SOMLINK xtroM_wpclsCreateDefaultTemplates(M_XWPTrashObject *somS
  *      The "abstract" data returned by this function needs
  *      to be filled with instance information by
  *      XWPTrashObject::wpQueryDetailsData.
+ *
  *      We'll define additional details for the trash objects
  *      here.
+ *      Note that the CLASSFIELDINFO's have been initialized
+ *      in M_XWPTrashObject::wpclsInitData already. This
+ *      method only links the data into the details list
+ *      given to us by the WPS.
  */
 
 SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryDetailsInfo(M_XWPTrashObject *somSelf,

@@ -157,16 +157,16 @@ typedef struct _WPSTYPEASSOCTREENODE
  *
  ********************************************************************/
 
-LINKLIST            G_llTypesWithFilters;
+static LINKLIST            G_llTypesWithFilters;
                         // contains PXWPTYPEWITHFILTERS ptrs;
                         // list is auto-free
-BOOL                G_fTypesWithFiltersValid = FALSE;
+static BOOL                G_fTypesWithFiltersValid = FALSE;
                         // set to TRUE if G_llTypesWithFilters has been filled
 
-TREE                *G_WPSTypeAssocsTreeRoot = NULL;
-BOOL                G_fWPSTypesValid = FALSE;
+static TREE                *G_WPSTypeAssocsTreeRoot = NULL;
+static BOOL                G_fWPSTypesValid = FALSE;
 
-HMTX                G_hmtxAssocsCaches = NULLHANDLE;
+static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
                         // mutex protecting all the caches
 
 /* ******************************************************************

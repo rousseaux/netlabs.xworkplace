@@ -861,13 +861,13 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          && (_ulAutoHide != 0);
 
         // disable auto-hide if workarea is to be reduced
-        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                          (_fReduceDesktopWorkarea == FALSE));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT1,
                          fAutoHide);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_SLIDER,
                          fAutoHide);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT2,
                          fAutoHide);
     }
 }

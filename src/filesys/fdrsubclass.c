@@ -5,11 +5,61 @@
  *      folder frame subclassing, which has been largely
  *      redesigned with V0.9.3.
  *
- *      XFolder::wpOpen calls fdrManipulateNewView, which in
- *      turn subclasses each newly created folder frame
- *      window procedure with fdr_fnwpSubclassedFolderFrame
- *      to intercept lots of PM messages which we need for the
- *      more advanced XWorkplace operations.
+ *      XWorkplace subclasses all WPFolder frame windows to
+ *      intercept a large number of messages. This is needed
+ *      for the majority of XWorkplace's features, which are
+ *      not directly SOM/WPS-related, but are rather straight
+ *      PM programming.
+ *
+ *      Most of the standard WPS methods are really encapsulations
+ *      of PM messages. When the WPS opens a folder window, it
+ *      creates a container control as a child of the folder frame
+ *      window (with the id FID_CLIENT), which is subclassed to
+ *      get all the container WM_CONTROL messages. Then, for
+ *      example, if the user opens a context menu on an object
+ *      in the container, the frame gets WM_CONTROL with
+ *      CN_CONTEXTMENU. The WPS then finds the WPS (SOM) object
+ *      which corresponds to the container record core on which
+ *      the context menu was opened and invokes the WPS menu
+ *      methods on it, that is, wpFilterPopupMenu and
+ *      wpModifyPopupMenu. Similar things happen with WM_COMMAND
+ *      and wpMenuItemSelected.
+ *
+ *      The trick is just how to get "past" the WPS, which does
+ *      a lot of hidden stuff in its method code. By subclassing
+ *      the folder frames ourselves, we get all the messages which
+ *      are being sent or posted to the folder _before_ the WPS
+ *      gets them and can thus modify the WPS's behavior even if
+ *      no methods have been defined for a certain event. An
+ *      example of this is that the contents of an XFolder status
+ *      bar changes when object selections have changed in the
+ *      folder: this reacts to WM_CONTROL with CN_EMPHASIS.
+ *
+ *      Subclassing is done in XFolder::wpOpen after having called
+ *      the parent method (WPFolder's), which returns the handle
+ *      of the new folder frame which the WPS has created.
+ *      XFolder::wpOpen calls fdrManipulateNewView for doing this.
+ *
+ *      XFolder's subclassed frame window proc is called
+ *      fnwpSubclassedFolderFrame. Take a look at it, it's one of
+ *      the most interesting parts of XWorkplace. It handles status
+ *      bars (which are frame controls), tree view auto-rolling,
+ *      special menu features, the "folder content" menus and more.
+ *
+ *      This gives us the following hierarchy of window procedures:
+ *
+ *      1. our fnwpSubclassedFolderFrame, first, followed by
+ *
+ *      2. the WPS folder frame window subclass, followed by
+ *
+ *      3. WC_FRAME's default frame window procedure, followed by
+ *
+ *      4. WinDefWindowProc last.
+ *
+ *      If additional WPS enhancers are installed (e.g. Object
+ *      Desktop), they will appear at the top of the chain also.
+ *      I guess it depends on the hierarchy of replacement classes
+ *      in the WPS class list which one sits on top.
  *
  *      While we had an ugly global linked list of subclassed
  *      folder views in all XFolder and XWorkplace versions
@@ -37,9 +87,6 @@
  *      processing) by fdrSubclassFolderView, a SUBCLASSEDFOLDERVIEW is
  *      created and stored in the new window words. Appears to
  *      work fine so far.
- *
- *      This file also holds the fdr_fnwpSubclassedFolderFrame
- *      procedure, with which folder frames are subclassed.
  *
  *      Function prefix for this file:
  *      --  fdr*
@@ -142,11 +189,11 @@
 
 // flag for whether we have manipulated the "wpFolder window"
 // PM window class already; this is done in fdr_SendMsgHook
-BOOL                G_WPFolderWinClassExtended = FALSE;
+static BOOL                G_WPFolderWinClassExtended = FALSE;
 
-CLASSINFO           G_WPFolderWinClassInfo;
+static CLASSINFO           G_WPFolderWinClassInfo;
 
-ULONG               G_SFVOffset = 0;
+static ULONG               G_SFVOffset = 0;
 
 /* ******************************************************************
  *                                                                  *
@@ -442,7 +489,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
-    if (pGlobalSettings->fNoSubclassing == FALSE) // V0.9.3 (2000-04-26) [umoeller]
+    if (!pGlobalSettings->fNoSubclassing) // V0.9.3 (2000-04-26) [umoeller]
     {
         // subclass the new folder frame window;
         // this creates a SUBCLASSEDFOLDERVIEW for the view
@@ -458,37 +505,42 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
             fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
 
         // add status bar, if allowed:
-        // 1) status bar only if allowed for the current folder
+            // 1) status bar only if allowed for the current folder
         if (   (pGlobalSettings->fEnableStatusBars)
             && (    (_bStatusBarInstance == STATUSBAR_ON)
                  || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
                      && (pGlobalSettings->fDefaultStatusBarVisibility)
                     )
                )
-           )
             // 2) no status bar for active Desktop
-            if (somSelf != cmnQueryActiveDesktop())
-                // 3) check that subclassed list item is valid
-                if (psfv)
-                    // 4) status bar only if allowed for the current view type
-                    if (    (   (ulView == OPEN_CONTENTS)
-                             && (pGlobalSettings->SBForViews & SBV_ICON)
-                            )
-                         || (   (ulView == OPEN_TREE)
-                             && (pGlobalSettings->SBForViews & SBV_TREE)
-                            )
-                         || (   (ulView == OPEN_DETAILS)
-                             && (pGlobalSettings->SBForViews & SBV_DETAILS)
-                            )
-                        )
-                        fdrCreateStatusBar(somSelf, psfv, TRUE);
+            && (somSelf != cmnQueryActiveDesktop())
+            // 3) check that subclassed list item is valid
+            && (psfv)
+            // 4) status bar only if allowed for the current view type
+            && (    (   (ulView == OPEN_CONTENTS)
+                     && (pGlobalSettings->SBForViews & SBV_ICON)
+                    )
+                 || (   (ulView == OPEN_TREE)
+                     && (pGlobalSettings->SBForViews & SBV_TREE)
+                    )
+                 || (   (ulView == OPEN_DETAILS)
+                     && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                    )
+                )
+           )
+        {
+            fdrCreateStatusBar(somSelf, psfv, TRUE);
+        }
 
         // replace sort stuff
         if (pGlobalSettings->ExtFolderSort)
-        {
             if (hwndCnr)
-                fdrSetFldrCnrSort(somSelf, hwndCnr, FALSE);
-        }
+            {
+                _Pmpf((__FUNCTION__ ": setting folder sort"));
+                fdrSetFldrCnrSort(somSelf,
+                                  hwndCnr,
+                                  TRUE);        // force
+            }
     }
 }
 
@@ -520,7 +572,7 @@ VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
 
     for (ul = 0; ul < ulCount; ul++)
     {
-        if (WinQueryWindowUShort( swpArr[ul].hwnd, QWS_ID ) == 0x8008 )
+        if (WinQueryWindowUShort( swpArr[ul].hwnd, QWS_ID ) == 0x8008)
                                                          // FID_CLIENT
         {
             // container found: reduce size of container by
@@ -803,9 +855,9 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         #endif
                         // modify the "Sort" menu, as we would
                         // do it for context menus also
-                        mnuModifySortMenu(psfv->somSelf,
-                                          hwndMenuMsg,
-                                          pGlobalSettings);
+                        fdrModifySortMenu(psfv->somSelf,
+                                          hwndMenuMsg);
+
                         cnrhQueryCnrInfo(psfv->hwndCnr, &CnrInfo);
                         // and now insert the "folder view" items
                         winhInsertMenuSeparator(hwndMenuMsg,

@@ -19,6 +19,25 @@
 #else
     #define SETUP_HEADER_INCLUDED
 
+    /*************************************************************
+     *
+     *   API wrappers
+     *
+     *************************************************************/
+
+    // All these have been added with V0.9.12 (2001-05-18) [umoeller].
+    // If you run into trouble with these in one of your code files,
+    // after including setup.h, #undef the respective flag.
+
+    // enable wrappers in include\helpers\winh.h
+    #define WINH_STANDARDWRAPPERS
+
+    /*************************************************************
+     *
+     *   Debug info setup
+     *
+     *************************************************************/
+
     /*
      *  The following #define's determine whether additional debugging
      *  info will be compiled into xfldr.dll.
@@ -109,7 +128,7 @@
             // #define DEBUG_CNRCONTENT
 
         // the following will printf lots of sort info
-            // #define DEBUG_SORT
+            #define DEBUG_SORT
 
         // the following will printf language code queries and
         // NLS DLL evaluation

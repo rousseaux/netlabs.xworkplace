@@ -1324,13 +1324,13 @@ BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
 {
     PQUICKOPENDATA pqod = (PQUICKOPENDATA)ulCallbackParam;
 
-    WinSendMsg(WinWindowFromID(pqod->hwndStatus, ID_SDDI_PROGRESSBAR),
-               WM_UPDATEPROGRESSBAR,
-               (MPARAM)(
-                           pqod->ulQuickThis * 100
-                            + ( (100 * ulNow) / ulMax )
-                       ),
-               (MPARAM)(pqod->cQuicks * 100));
+    WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
+                      WM_UPDATEPROGRESSBAR,
+                      (MPARAM)(
+                                  pqod->ulQuickThis * 100
+                                   + ( (100 * ulNow) / ulMax )
+                              ),
+                      (MPARAM)(pqod->cQuicks * 100));
 
     // if "Cancel" has been pressed, return FALSE
     return (!pqod->fCancelled);
@@ -1369,10 +1369,10 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
                 WinSetDlgItemText(pqod->hwndStatus, ID_SDDI_STATUS, szTemp);
 
                 if (pGlobalSettings->ShowStartupProgress)
-                    WinSendMsg(WinWindowFromID(pqod->hwndStatus, ID_SDDI_PROGRESSBAR),
-                               WM_UPDATEPROGRESSBAR,
-                               (MPARAM)(pqod->ulQuickThis * 100),
-                               (MPARAM)(pqod->cQuicks * 100));
+                    WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
+                                      WM_UPDATEPROGRESSBAR,
+                                      (MPARAM)(pqod->ulQuickThis * 100),
+                                      (MPARAM)(pqod->cQuicks * 100));
             }
 
             fdrQuickOpen(pFolder,
@@ -1385,10 +1385,10 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
 
     // done: set 100%
     if (pGlobalSettings->ShowStartupProgress)
-        WinSendMsg(WinWindowFromID(pqod->hwndStatus, ID_SDDI_PROGRESSBAR),
-                   WM_UPDATEPROGRESSBAR,
-                   (MPARAM)1,
-                   (MPARAM)1);
+        WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
+                          WM_UPDATEPROGRESSBAR,
+                          (MPARAM)1,
+                          (MPARAM)1);
 
     DosSleep(500);
 
@@ -1556,10 +1556,10 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                                      HINI_USER,
                                      INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
                                      SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-                WinSendMsg(WinWindowFromID(qod.hwndStatus, ID_SDDI_PROGRESSBAR),
-                           WM_UPDATEPROGRESSBAR,
-                           (MPARAM)0,
-                           (MPARAM)qod.cQuicks);
+                WinSendDlgItemMsg(qod.hwndStatus, ID_SDDI_PROGRESSBAR,
+                                  WM_UPDATEPROGRESSBAR,
+                                  (MPARAM)0,
+                                  (MPARAM)qod.cQuicks);
             }
 
             // run the Quick Open thread synchronously

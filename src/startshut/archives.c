@@ -241,24 +241,24 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 fAlways = ((pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0),
                 fINI = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI),
                 fDays = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
                           fEnabled);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
                           fEnabled && !fAlways);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI,
                           fEnabled && !fAlways);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
                           fEnabled && !fAlways);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
                           ( (fEnabled) && (fDays) ) && !fAlways);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
                           ( (fEnabled) && (fDays) ) && !fAlways);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                           fEnabled);
     }
 }

@@ -293,7 +293,7 @@ VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CLEAR,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CLEAR,
                          (_hobjStatic != NULLHANDLE));
     }
 
@@ -918,10 +918,10 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
             MENUITEM mi;
             // get handle to the "Open" submenu in the
             // the popup menu
-            if (WinSendMsg(hwndMenu,
-                           MM_QUERYITEM,
-                           MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                           (MPARAM)&mi))
+            if (winhQueryMenuItem(hwndMenu,
+                                  WPMENUID_OPEN,
+                                  TRUE,
+                                  &mi))
             {
                 // mi.hwndSubMenu now contains "Open" submenu handle,
                 // which we add items to now

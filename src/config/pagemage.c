@@ -274,11 +274,11 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_ARROWHOTKEYS);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL,
                          fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT,
                          fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT,
                          fEnable);
     }
 }
@@ -536,18 +536,18 @@ VOID pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINDOWS);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
                          fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
                          fEnable);
 
         // flash
         fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASHTOTOP);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT1,
                          fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
                          fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT2,
                          fEnable);
 
     }

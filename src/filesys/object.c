@@ -276,17 +276,17 @@ typedef struct _OBJTREENODE
  ********************************************************************/
 
 // mutex semaphores for object lists (favorite folders, quick-open)
-HMTX        G_hmtxObjectsLists = NULLHANDLE;
+static HMTX        G_hmtxObjectsLists = NULLHANDLE;
 
 // object handles cache
-TREE        *G_HandlesCache;
-HMTX        G_hmtxHandlesCache = NULLHANDLE;
-ULONG       G_ulHandlesCacheItemsCount = 0;
+static TREE        *G_HandlesCache;
+static HMTX        G_hmtxHandlesCache = NULLHANDLE;
+static ULONG       G_ulHandlesCacheItemsCount = 0;
 
 // dirty objects list
-TREE        *G_DirtyList;
-HMTX        G_hmtxDirtyList = NULLHANDLE;
-ULONG       G_ulDirtyListItemsCount = 0;
+static TREE        *G_DirtyList;
+static HMTX        G_hmtxDirtyList = NULLHANDLE;
+static ULONG       G_ulDirtyListItemsCount = 0;
 
 /* ******************************************************************
  *
@@ -997,10 +997,7 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
             // was in cache:
             pobjReturn = pNode->pObject;
             // store system uptime as last reference
-            DosQuerySysInfo(QSV_MS_COUNT,
-                            QSV_MS_COUNT,
-                            &pNode->ulReferenced,
-                            sizeof(pNode->ulReferenced));
+            pNode->ulReferenced = doshQuerySysUptime();
         }
         else
         {
@@ -1027,10 +1024,7 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
                     pNode->Tree.id = hobj;
                     pNode->pObject = pobjReturn;
                     // store system uptime as last reference
-                    DosQuerySysInfo(QSV_MS_COUNT,
-                                    QSV_MS_COUNT,
-                                    &pNode->ulReferenced,
-                                    sizeof(pNode->ulReferenced));
+                    pNode->ulReferenced = doshQuerySysUptime();
 
                     treeInsertID(&G_HandlesCache,
                                  (TREE*)pNode,
@@ -2219,9 +2213,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
             {
                 BOOL f = hifXWPHookReady();
                 WinEnableWindow(hwndHotkeyEntryField, f);
-                WinEnableControl(hwndDlg, ID_XSDI_DTL_HOTKEY_TXT, f);
-                WinEnableControl(hwndDlg, ID_XSDI_DTL_CLEAR, f);
-                WinEnableControl(hwndDlg, ID_XSDI_DTL_SET,
+                winhEnableDlgItem(hwndDlg, ID_XSDI_DTL_HOTKEY_TXT, f);
+                winhEnableDlgItem(hwndDlg, ID_XSDI_DTL_CLEAR, f);
+                winhEnableDlgItem(hwndDlg, ID_XSDI_DTL_SET,
                                     FALSE); // always disable
             }
 
@@ -2503,16 +2497,14 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                          )
                                     )
                                  || (    ((usFlags & (KC_CTRL | KC_SHIFT | KC_ALT)) == KC_ALT)
-                                      && (   (WinSendMsg(WinWindowFromID(hwndDlg,
-                                                                         ID_XSDI_DTL_SET),
-                                                         WM_MATCHMNEMONIC,
-                                                         (MPARAM)phkn->usch,
-                                                         0))
-                                          || (WinSendMsg(WinWindowFromID(hwndDlg,
-                                                                         ID_XSDI_DTL_CLEAR),
-                                                         WM_MATCHMNEMONIC,
-                                                         (MPARAM)phkn->usch,
-                                                         0))
+                                      && (   (WinSendDlgItemMsg(hwndDlg, ID_XSDI_DTL_SET,
+                                                                WM_MATCHMNEMONIC,
+                                                                (MPARAM)phkn->usch,
+                                                                0))
+                                          || (WinSendDlgItemMsg(hwndDlg, ID_XSDI_DTL_CLEAR,
+                                                                WM_MATCHMNEMONIC,
+                                                                (MPARAM)phkn->usch,
+                                                                0))
                                          )
                                     )
                                )
@@ -2551,7 +2543,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             pWinData->usKeyCode = phkn->usKeyCode;
 
                             // enable "Set" button
-                            WinEnableControl(hwndDlg, ID_XSDI_DTL_SET,  TRUE);
+                            winhEnableDlgItem(hwndDlg, ID_XSDI_DTL_SET,  TRUE);
 
                             // and have entry field display that (comctl.c)
                         }
@@ -2614,7 +2606,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                         pWinData->usFlags,
                                         pWinData->ucScanCode,
                                         pWinData->usKeyCode);
-                    WinEnableControl(hwndDlg, ID_XSDI_DTL_SET, FALSE);
+                    winhEnableDlgItem(hwndDlg, ID_XSDI_DTL_SET, FALSE);
 
                     cmnDescribeKey(szDescription,
                                    pWinData->usFlags,
@@ -3053,10 +3045,10 @@ VOID objModifyPopupMenu(WPObject* somSelf,
             if (pszLockInPlace)
             {
                 MENUITEM mi;
-                if (WinSendMsg(hwndMenu,
-                               MM_QUERYITEM,
-                               MPFROM2SHORT(ID_WPM_LOCKINPLACE, FALSE),
-                               (MPARAM)&mi))
+                if (winhQueryMenuItem(hwndMenu,
+                                      ID_WPM_LOCKINPLACE,
+                                      FALSE,
+                                      &mi))
                 {
                     // delete old (incl. submenu)
                     winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);

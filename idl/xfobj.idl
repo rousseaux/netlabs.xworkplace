@@ -158,17 +158,11 @@ interface XFldObject : WPObject
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
 
     /*
-     * The following is forced into the .H file:
-     *
-     */
-
-    /*
      * WPObject methods overridden by XFldObject:
      *
      */
 
     wpInitData: override;
-    wpCopyObject: override;
     wpObjectReady: override;
 
     wpSetup: override;
@@ -244,8 +238,6 @@ interface M_XFldObject : M_WPObject
      */
 
     wpclsInitData: override;
-    wpclsNew: override;
-    wpclsMakeAwake: override;
 
     wpclsQuerySettingsPageSize: override;
   };

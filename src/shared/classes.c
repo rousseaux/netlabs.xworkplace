@@ -764,7 +764,7 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                         );
                                     // enable OK button according to
                                     // callback return value
-                                    WinEnableControl(hwndDlg, DID_OK, pscd->fSelectionValid);
+                                    winhEnableDlgItem(hwndDlg, DID_OK, pscd->fSelectionValid);
                                 }
                             }
                     break; }

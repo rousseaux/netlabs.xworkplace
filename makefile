@@ -149,6 +149,7 @@ $(XWP_OUTPUT_ROOT)\desktop.obj \
 $(XWP_OUTPUT_ROOT)\disk.obj \
 $(XWP_OUTPUT_ROOT)\fdrhotky.obj \
 $(XWP_OUTPUT_ROOT)\fdrnotebooks.obj \
+$(XWP_OUTPUT_ROOT)\fdrsort.obj \
 $(XWP_OUTPUT_ROOT)\fdrsubclass.obj \
 $(XWP_OUTPUT_ROOT)\fdrmenus.obj \
 $(XWP_OUTPUT_ROOT)\fhandles.obj \

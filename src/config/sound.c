@@ -996,19 +996,19 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
         // enable "Save as" (sound scheme)
         // only if current scheme is "none"
-        /* WinEnableControl(pcnbp->hwndDlgPage,
+        /* winhEnableDlgItem(pcnbp->hwndDlgPage,
                           ID_XSDI_SOUND_SCHEMES_SAVEAS,
                           (pspd->ulSchemeSelectedHandle != 0)); */
                                 // this is != 0 for "pseudo schemes" ("none" or "no sounds")
 
         // disable "Delete" (sound scheme) button
         // if current scheme is "none"
-        WinEnableControl(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pcnbp->hwndDlgPage,
                           ID_XSDI_SOUND_SCHEMES_DELETE,
                           (pspd->sSchemeSelected != LIT_NONE));
 
         // enable "Play" button if the current sound file exists
-        WinEnableControl(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pcnbp->hwndDlgPage,
                           ID_XSDI_SOUND_PLAY,
                           (     (pspd->sEventSelected != LIT_NONE)
                              && (fFileExists)
@@ -1017,7 +1017,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
         // enable volume knob if either the current sound file
         // exists or "global volume" is enabled
-        /* WinEnableControl(pcnbp->hwndDlgPage,
+        /* winhEnableDlgItem(pcnbp->hwndDlgPage,
                           ID_XSDI_SOUND_VOLUMELEVER,
                           (     (   (pspd->sEventSelected != LIT_NONE)
                                 &&  (fFileExists)

@@ -20,7 +20,7 @@
 ;
 
 LIBRARY SENTINEL INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.11#@ XCenter Theseus 4 plugin DLL'
+Description '@#Ulrich M”ller:0.9.12#@ XCenter Theseus 4 plugin DLL'
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
 

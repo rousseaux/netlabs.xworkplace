@@ -27,17 +27,17 @@
     #define DISK_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   Disk implementation                                            *
-     *                                                                  *
+     *
+     *   Disk implementation
+     *
      ********************************************************************/
 
     WPFolder* dskCheckDriveReady(WPDisk *somSelf);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFldDisk notebook callbacks (notebook.c)                       *
-     *                                                                  *
+     *
+     *   XFldDisk notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

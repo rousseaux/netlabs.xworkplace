@@ -172,14 +172,14 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                 (    (pGlobalSettings->NoWorkerThread == FALSE)
                   && (pGlobalSettings->fNoSubclassing == FALSE)
                 ));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
                          pGlobalSettings->fFdrDefaultDoc);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
                          pKernelGlobals->fAutoRefreshReplaced);
     }
 }
@@ -484,58 +484,62 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FAVORITEFOLDER,
-                _xwpIsFavoriteFolder(pcnbp->somSelf));
+                              _xwpIsFavoriteFolder(pcnbp->somSelf));
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_QUICKOPEN,
-                _xwpQueryQuickOpen(pcnbp->somSelf));
+                              _xwpQueryQuickOpen(pcnbp->somSelf));
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
-               (MPARAM)( (_bFullPathInstance == 2)
-                        ? pGlobalSettings->FullPath
-                        : _bFullPathInstance ));
+                              (     ((_bFullPathInstance == 2)
+                                       ? pGlobalSettings->FullPath
+                                       : _bFullPathInstance )
+                                 != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_KEEPTITLE,
-               (MPARAM)( (_bKeepTitleInstance == 2)
-                        ? pGlobalSettings->KeepTitle
-                        : _bKeepTitleInstance ));
-
+                              (     ((_bKeepTitleInstance == 2)
+                                       ? pGlobalSettings->KeepTitle
+                                       : _bKeepTitleInstance )
+                                 != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
-               (MPARAM)( (_bSnapToGridInstance == 2)
-                        ? pGlobalSettings->fAddSnapToGridDefault
-                        : _bSnapToGridInstance ));
+                              (     ((_bSnapToGridInstance == 2)
+                                       ? pGlobalSettings->fAddSnapToGridDefault
+                                       : _bSnapToGridInstance )
+                                 != 0));
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
-               (MPARAM)( (_bFolderHotkeysInstance == 2)
-                        ? pGlobalSettings->fFolderHotkeysDefault
-                        : _bFolderHotkeysInstance ));
+                              (     ((_bFolderHotkeysInstance == 2)
+                                       ? pGlobalSettings->fFolderHotkeysDefault
+                                       : _bFolderHotkeysInstance )
+                                 != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
-               (MPARAM)( ( (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                                    ? pGlobalSettings->fDefaultStatusBarVisibility
-                                    : _bStatusBarInstance )
-                         // always uncheck for Desktop
-                         && (pcnbp->somSelf != cmnQueryActiveDesktop())
-                       ));
+                              (   (     ((_bStatusBarInstance == STATUSBAR_DEFAULT)
+                                           ? pGlobalSettings->fDefaultStatusBarVisibility
+                                           : _bStatusBarInstance )
+                                     != 0)
+                                  // always uncheck for Desktop
+                                && (pcnbp->somSelf != cmnQueryActiveDesktop())
+                              ));
     }
 
     if (flFlags & CBI_ENABLE)
     {
         // disable items
-        WinEnableControl(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_ACCELERATORS,
                          (    !(pGlobalSettings->fNoSubclassing)
                            && (pGlobalSettings->fEnableFolderHotkeys)
                          ));
 
-        WinEnableControl(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_KEEPTITLE,
                          ( (_bFullPathInstance == 2)
                              ? pGlobalSettings->FullPath
                              : _bFullPathInstance ));
 
-        WinEnableControl(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
                          (pGlobalSettings->fEnableSnap2Grid));
 
-        WinEnableControl(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
                          (   (pcnbp->somSelf != cmnQueryActiveDesktop())
@@ -642,13 +646,74 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return ((MPARAM)0);
 }
 
+/* ******************************************************************
+ *
+ *   Notebook callbacks (notebook.c) for "Sort" pages
+ *
+ ********************************************************************/
+
+/*
+ *@@ InsertSortItem:
+ *
+ *@@added V0.9.12 (2001-05-18) [umoeller]
+ */
+
+VOID InsertSortItem(HWND hwndListbox,
+                    PULONG pulIndex,
+                    const char *pcsz,
+                    LONG lItemHandle)
+{
+    WinInsertLboxItem(hwndListbox,
+                      *pulIndex,
+                      (PSZ)pcsz);
+    winhSetLboxItemHandle(hwndListbox,
+                          (*pulIndex)++,
+                          lItemHandle);
+}
+
+/*
+ *@@ winhLboxFindItemFromHandle:
+ *      finds the list box item with the specified
+ *      handle.
+ *
+ *      Of course this only makes sense if each item
+ *      has a unique handle indeed.
+ *
+ *      Returns the index of the item found or -1.
+ *
+ *@@added V0.9.12 (2001-05-18) [umoeller]
+ */
+
+ULONG winhLboxFindItemFromHandle(HWND hwndListBox,
+                                 ULONG ulHandle)
+{
+    LONG cItems = WinQueryLboxCount(hwndListBox);
+    if (cItems)
+    {
+        ULONG ul;
+        for (ul = 0;
+             ul < cItems;
+             ul++)
+        {
+            if (ulHandle == winhQueryLboxItemHandle(hwndListBox,
+                                                    ul))
+                return (ul);
+        }
+    }
+
+    return (-1);
+}
+
 /*
  * fdrSortInitPage:
  *      "Sort" page notebook callback function (notebook.c).
  *      Sets the controls on the page.
- *      The "Sort" callbacks are used both for the folder settings notebook page
- *      AND the respective "Sort" page in the "Workplace Shell" object, so we
- *      need to keep instance data and the XFolder Global Settings apart.
+ *
+ *      The "Sort" callbacks are used both for the folder settings
+ *      notebook page AND the respective "Sort" page in the "Workplace
+ *      Shell" object, so we need to keep instance data and the
+ *      Global Settings apart.
+ *
  *      We do this by examining the page ID in the notebook info struct.
  *
  *@@changed V0.9.0 [umoeller]: updated settings page
@@ -659,17 +724,15 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                      ULONG flFlags)
 {
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
-                    ID_XSDI_SORTLISTBOX);
-    XFolderData *somThis = NULL;
+                                              ID_XSDI_SORTLISTBOX);
 
     if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
     {
         // if we're being called from a folder's notebook,
         // get instance data
-        somThis = XFolderGetData(pcnbp->somSelf);
+        XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
 
         if (flFlags & CBI_INIT)
         {
@@ -682,60 +745,109 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 pcnbp->pUser = malloc(sizeof(XFolderData));
                 memcpy(pcnbp->pUser, somThis, sizeof(XFolderData));
             }
-
-            // hide the "Enable extended sort" checkbox, which is
-            // only visible in the "Workplace Shell" object
-            // WinShowWindow(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_REPLACESORT), FALSE);
-                // removed (V0.9.0)
         }
     }
 
     if (flFlags & CBI_INIT)
     {
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_NAME)) ; // pszSortByName
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_TYPE)) ; // pszSortByType
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_CLASS)) ; // pszSortByClass
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_REALNAME)) ; // pszSortByRealName
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_SIZE)) ; // pszSortBySize
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_WRITEDATE)) ; // pszSortByWriteDate
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_ACCESSDATE)) ; // pszSortByAccessDate
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_CREATIONDATE)) ; // pszSortByCreationDate
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_EXT)) ; // pszSortByExt
-        WinInsertLboxItem(hwndListbox, LIT_END, cmnGetString(ID_XSSI_SV_FOLDERSFIRST)) ; // pszSortFoldersFirst
-    }
+        M_WPObject *pSortClass;
+        ULONG       ulIndex = 0,
+                    cColumns = 0,
+                    ul;
+        PCLASSFIELDINFO   pcfi;
 
-    if (somThis)
-    {
-        // "folder" mode:
-        if (flFlags & CBI_SET)
+        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+            // instance notebook:
+            // get folder's sort class
+            pSortClass = _wpQueryFldrSortClass(pcnbp->somSelf);
+        else
+            // "Workplace Shell" page: always use _WPFileSystem
+            pSortClass = _WPFileSystem;
+
+        // 1) insert the new XWP sort criteria
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_NAME),
+                       -2);
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_TYPE),
+                       -1);
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_CLASS),
+                       -3);
+        InsertSortItem(hwndListbox,
+                       &ulIndex,
+                       cmnGetString(ID_XSSI_SV_EXT),
+                       -4);
+
+        // 2) next, insert the class-specific sort criteria
+        cColumns = _wpclsQueryDetailsInfo(pSortClass,
+                                          &pcfi,
+                                          NULL);
+        for (ul = 0;
+             ul < cColumns;
+             ul++, pcfi = pcfi->pNextFieldInfo)
         {
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ALWAYSSORT,
-                                  ALWAYS_SORT);
-            WinSendMsg(hwndListbox,
-                       LM_SELECTITEM,
-                       (MPARAM)DEFAULT_SORT,
-                       (MPARAM)TRUE);
+            BOOL fSortable = TRUE;
+
+            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                // call this method only if somSelf is really a folder!
+                fSortable = _wpIsSortAttribAvailable(pcnbp->somSelf, ul);
+
+            if (    (fSortable)
+                    // sortable columns only:
+                 && (pcfi->flCompare & SORTBY_SUPPORTED)
+                    // rule out the images:
+                 && (0 == (pcfi->flTitle & CFA_BITMAPORICON))
+               )
+            {
+                // OK, usable sort column:
+                // add this to the list box
+                InsertSortItem(hwndListbox,
+                               &ulIndex,
+                               pcfi->pTitleData,
+                               ul);     // column number as handle
+            }
         }
     }
-    else
+
+    if (flFlags & CBI_SET)
     {
-        // "global" mode:
-        if (flFlags & CBI_SET)
-        {
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ALWAYSSORT,
-                                  pGlobalSettings->AlwaysSort);
+        LONG lDefaultSort,
+             lAlwaysSort;
+        ULONG ulIndex;
 
-            WinSendMsg(hwndListbox,
-                       LM_SELECTITEM,
-                       (MPARAM)(pGlobalSettings->DefaultSort),
-                       (MPARAM)TRUE);
+        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+        {
+            // instance notebook:
+            XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
+            lDefaultSort = (_lDefaultSort == SET_DEFAULT)
+                                ? pGlobalSettings->lDefaultSort
+                                : _lDefaultSort;
+            lAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
+                                  ? pGlobalSettings->AlwaysSort
+                                  : _lAlwaysSort;
+        }
+        else
+        {
+            // "Workplace Shell":
+            lDefaultSort = pGlobalSettings->lDefaultSort;
+            lAlwaysSort = pGlobalSettings->AlwaysSort;
         }
 
-        if (flFlags & CBI_ENABLE)
-        {
-                // removed (V0.9.0);
-                // the page now isn't even inserted
-        }
+        // find the list box entry with the matching handle
+        ulIndex = winhLboxFindItemFromHandle(hwndListbox,
+                                             lDefaultSort);
+        if (ulIndex != -1)
+            winhSetLboxSelectedItem(hwndListbox,
+                                    ulIndex,
+                                    TRUE);
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+                              ID_XSDI_ALWAYSSORT,
+                              lAlwaysSort);
     }
 }
 
@@ -768,10 +880,14 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
                                                       ID_XSDI_SORTLISTBOX);
 
-            USHORT usSortIndex = (USHORT)(WinSendMsg(hwndListbox,
-                                                     LM_QUERYSELECTION,
-                                                     (MPARAM)LIT_CURSOR,
-                                                     MPNULL));
+            ULONG ulSortIndex = (USHORT)(WinSendMsg(hwndListbox,
+                                                    LM_QUERYSELECTION,
+                                                    (MPARAM)LIT_CURSOR,
+                                                    MPNULL));
+            LONG lDefaultSort = winhQueryLboxItemHandle(hwndListbox, ulSortIndex);
+
+            BOOL fFoldersFirst = FALSE;     // @@todo
+
             BOOL fAlways = (USHORT)(winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                          ID_XSDI_ALWAYSSORT));
 
@@ -780,24 +896,25 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // if we're being called from a folder's notebook,
                 // change instance data
                 _xwpSetFldrSort(pcnbp->somSelf,
-                            // DefaultSort:
-                                usSortIndex,
-                            // AlwaysSort:
+                                lDefaultSort,
+                                fFoldersFirst,
                                 fAlways);
             }
             else
             {
                 GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
-                pGlobalSettings->DefaultSort = usSortIndex;
+                pGlobalSettings->lDefaultSort = lDefaultSort;
 
                 if (fAlways)
                 {
-                    USHORT usDefaultSort = 0,
-                           usAlwaysSort = 0;
+                    LONG lFoldersFirst,
+                         lAlwaysSort;
                     _xwpQueryFldrSort(cmnQueryActiveDesktop(),
-                                      &usDefaultSort, &usAlwaysSort);
-                    if (usAlwaysSort != 0)
+                                      &lDefaultSort,
+                                      &lFoldersFirst,
+                                      &lAlwaysSort);
+                    if (lAlwaysSort != 0)
                     {
                         // issue warning that this might also sort the Desktop
                         if (cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -805,7 +922,9 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              MB_YESNO)
                                        == MBID_YES)
                             _xwpSetFldrSort(cmnQueryActiveDesktop(),
-                                            usDefaultSort, 0);
+                                            lDefaultSort,
+                                            lFoldersFirst,
+                                            0);
                     }
                 }
                 pGlobalSettings->AlwaysSort = fAlways;
@@ -813,13 +932,6 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 cmnUnlockGlobalSettings();
             }
         break; }
-
-        /* case ID_XSDI_REPLACESORT: {
-            PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            // "extended sorting on": exists on global page only
-            pGlobalSettings->ReplaceSort = ulExtra;
-            fdrSortInitPage(pnbi, CBI_ENABLE);
-        break; } */ // removed (V0.9.0)
 
         // control other than listbox:
         case DID_UNDO:
@@ -832,8 +944,9 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     XFolderData *Backup = (pcnbp->pUser);
                     _xwpSetFldrSort(pcnbp->somSelf,
-                                    Backup->bDefaultSort,
-                                    Backup->bAlwaysSort);
+                                    Backup->lDefaultSort,
+                                    Backup->lFoldersFirst,
+                                    Backup->lAlwaysSort);
                 }
             }
             else
@@ -848,7 +961,10 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
             // "Default" button:
             if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-                _xwpSetFldrSort(pcnbp->somSelf, SET_DEFAULT, SET_DEFAULT);
+                _xwpSetFldrSort(pcnbp->somSelf,
+                                SET_DEFAULT,
+                                SET_DEFAULT,
+                                SET_DEFAULT);
             else
                 cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL);
 
@@ -881,7 +997,8 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      fdrUpdateFolderSorts);
         }
     }
-    return ((MPARAM)-1);
+
+    return 0;
 }
 
 /* ******************************************************************

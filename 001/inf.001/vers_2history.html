@@ -17,33 +17,46 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.12 (April 26, 2001)</B>
+<P><B>XWorkplace 0.9.12 (May 15, 2001)</B>
 
 <H6>New features:
 
-<UL><LI>XFldProgramFile: "Module" pages support NOSTUB executables now (e.g. JFS.IFS).
+<UL><LI>General: XWP can now read extended BLDLEVEL information, as used by most
+of the IBM networking software. Reworked the "Module" page in XFldProgramFile for
+displaying additional data, if available.
 <P><LI>XFolder: Added default folder view override to "View" page in "Workplace Shell"
 to prevent inheriting the default view from the parent folder.
+<P><LI>XFolder: Folder sorting was mostly rewritten. This now finally supports
+non-default sort classes (e.g. in the trash can, which can finally be sorted now too).
+Also added "Folders first" as an additional sort setting.
+<P><LI>XFldProgramFile: "Module" pages support NOSTUB executables now (e.g. JFS.IFS).
 <P><LI>XCenter: Added "lockup" to X-button menu.
 
 </UL>Miscellaneous changes:
-<UL><LI>Reworked trap logs a bit for more lucid output. Added seg:ofs translation of
+<UL><LI>General: Reworked trap logs a bit for more lucid output. Added seg:ofs translation of
 trapping CS:EIP for each stack frame.
+<P><LI>General: Sped up XFLDR.DLL loading by removing a lot of fixup relocation records.
 <P><LI>Removed "Partitions" view from WPDrives, which never worked right.
-<P><LI>Completely rewrote the entire startup processing to use a separate thread
-now. This should fix some of the problems on startup, like endlessly looping
+<P><LI>Startup: completely rewrote the entire startup processing to use a separate
+thread now. This should fix some of the problems on startup, like endlessly looping
 startup folders, I hope. At least it makes the code much more readable.
+<P><LI>Folder auto-refresh: reworked quite a bit, this now picks up file rename
+too and refreshes the entire folder if an overflow occured.
+<P><LI>Function keys: removed "Modifier" setting, since it did nothing in the first place.
 <P><LI>XCenter: Winlist widget filters now match the first characters only.
 
 </UL>Bugfixes:
 
 <UL><LI>General: Added mutex protection to tooltips, which should fix some strange
 problems. Also fixed some other minor problems.
+<P><LI>General: Paul Ratcliffe fixed the ugly line break display in a number of
+places.
 <P><LI>General: Chart control (used on XFldDisk "Details" page)
 caused huge PM resource leaks which could lead to system hangs. Fixed.
 <P><LI>XFolder: Disabled "Cleanup INI files" for now. Did more harm than good.
 <P><LI>XFolder: Replacement "File exists" dialog never populated the target folder,
 which could lead to duplicate objects and even system hangs. Fixed.
+<P><LI>XFolder: "Snap to grid" item on "XFolder" page didn't work. Fixed.
 <P><LI>XFldDisk: "Details" page always displayed 512 bytes for the sector size.
 Fixed, this now _really_ displays the sector size.
 <P><LI>Extended file types: Removing an association or type on program/file settings
@@ -52,6 +65,8 @@ notebook pages caused a trap. Fixed. Also fixed a small memory leak.
 info. Fixed.
 <P><LI>OS/2 Kernel: HPFS and HPFS386 dialogs crashed if no parameters existed
 in CONFIG.SYS. Fixed, thanks Lars Erdmann.
+<P><LI>Trash can wasn't very good at setting meaningful drive support defaults. Fixed;
+per default drives are supported only if they are FAT, HPFS, JFS, or FAT32.
 <P><LI>XCenter: Added mutex protection to the internal timers to prevent some
 race conditions.
 <P><LI>XCenter: Winlist widget now shows hidden windows on click.

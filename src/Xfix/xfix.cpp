@@ -1374,14 +1374,10 @@ VOID SetSort(USHORT usCmd)
     {
         HPOINTER hptrOld = winhSetWaitPointer();
 
-        /* BEGIN_CNRINFO()
-        {
-            cnrhSetSortFunc(pvSortFunc);
-        } END_CNRINFO(WinWindowFromID(G_hwndMain, FID_CLIENT)); */
-        WinSendMsg(WinWindowFromID(G_hwndMain, FID_CLIENT),
-                   CM_SORTRECORD,
-                   (MPARAM)pvSortFunc,
-                   0);
+        WinSendDlgItemMsg(G_hwndMain, FID_CLIENT,
+                          CM_SORTRECORD,
+                          (MPARAM)pvSortFunc,
+                          0);
 
         UpdateMenuItems(usCmd);
         WinSetPointer(HWND_DESKTOP, hptrOld);

@@ -102,11 +102,22 @@
  *
  ********************************************************************/
 
-#define MAPPINGS_FILE "@mapping"
+// name of the mappings file in each \trash directory
+#define MAPPINGS_FILE "@mapping"        // note: 8 chars maximum (FAT)!
 
 /*
  *@@ TRASHMAPPINGNODE:
  *      entry for the binary tree in G_MappingsTreeRoot.
+ *
+ *      The tree is sorted according to pszSourceRealName.
+ *      While we need to do searches BOTH according to
+ *      the name and the SOM folder pointer, I chose the
+ *      the name as the sort key because string comparisons
+ *      are significantly slower than a simple pointer
+ *      equality check.
+ *
+ *      See InitMappings, trshGetMappingFromSource, and
+ *      trshGetMappingFromTrashDir.
  *
  *      Assuming that C:\Documents\Important\myfile.txt
  *      gets moved into the trash can. This would result
@@ -116,35 +127,27 @@
  *         if that doesn't exist yet.
  *
  *      2) Now, instead of creating "C:\TRASH\Documents\Important"
- *         as we used to do, we create a new dir with a random
- *         name (e.g. "C:\TRASH\01234567") and move myfile.txt
+ *         as we used to do, we create a new dir with a number
+ *         as its name (e.g. "C:\TRASH\1") and move myfile.txt
  *         there.
  *
- *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\01234567"
+ *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\1"
  *         and store "C:\TRASH\Documents\Important" with pcszRealTitle.
  *
  *      If "C:\Documents\Important\myfile2.txt" gets deleted, we
- *      use that same mapping.
+ *      can use that same mapping, since it's the same source
+ *      directory.
  *
- *      By contrast, if the entire folder "C:\Documents\Important"
- *      gets deleted, we do this:
- *
- *      1) Again, creation of the hidden C:\TRASH directory,
- *         if that doesn't exist yet.
- *
- *      2) Create a new dir with a random name (e.g. "C:\TRASH\1")
- *         and move "C:\Documents\Important" there.
- *
- *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\1"
- *         and store "C:\TRASH\Documents" with pcszRealTitle.
- *
+ *      Now, if the entire parent folder "C:\Documents\Important"
+ *      gets deleted, we would create a second mapping "C:\TRASH\2"
+ *      so we won't get the "file exists" errors any more.
  *      This allows us to keep deleted files and folders separate.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  *@@changed V0.9.9 (2001-04-07) [umoeller]: completely reworked mappings to not use object handles
  */
 
-typedef struct _TRASHMAPPINGTREENODE2
+typedef struct _TRASHMAPPINGTREENODE
 {
     TREE            Tree;
                 // base tree node. ID is NOT used.
@@ -153,7 +156,8 @@ typedef struct _TRASHMAPPINGTREENODE2
                 // full path of where that folder originally was;
                 // for example, if pFolderInTrash is "C:\TRASH\01234567",
                 // this could be "C:\Documents\Important".
-                // This PSZ is allocated using malloc().
+                // This PSZ is allocated using malloc() and serves
+                // as the tree sort key.
 
     WPFolder        *pFolderInTrash;
                 // awake subfolder of \trash. This is a DIRECT subdirectory
@@ -164,7 +168,7 @@ typedef struct _TRASHMAPPINGTREENODE2
                 // decimal number representing the name of pFolderInTrash;
                 // they are all named with decimals, which we store here also
 
-} TRASHMAPPINGTREENODE2, *PTRASHMAPPINGTREENODE2;
+} TRASHMAPPINGTREENODE, *PTRASHMAPPINGTREENODE;
 
 /* ******************************************************************
  *
@@ -176,13 +180,17 @@ typedef struct _TRASHMAPPINGTREENODE2
  * G_abSupportedDrives:
  *      drives support for trash can.
  *      Index 0 is for drive C:, 1 is for D:, and so on.
+ *
  *      Each item can be one of the following:
+ *
  *      --  XTRC_SUPPORTED: drive is supported.
+ *
  *      --  XTRC_SUPPORTED: drive is not supported.
+ *
  *      --  XTRC_INVALID: drive letter doesn't exist.
  */
 
-BYTE        G_abSupportedDrives[CB_SUPPORTED_DRIVES] = {0};
+static BYTE        G_abSupportedDrives[CB_SUPPORTED_DRIVES] = {0};
 
 /*
  *  G_MappingsTreeRoot:
@@ -190,8 +198,8 @@ BYTE        G_abSupportedDrives[CB_SUPPORTED_DRIVES] = {0};
  *      TRASHMAPPINGTREENODE entries.
  */
 
-TREE        *G_MappingsTreeRoot = NULL;
-BOOL        G_fMappingsTreeInitialized = FALSE;
+static TREE        *G_MappingsTreeRoot = NULL;
+static BOOL        G_fMappingsTreeInitialized = FALSE;
 
 /*
  * G_abMappingDrivesDirty:
@@ -201,7 +209,7 @@ BOOL        G_fMappingsTreeInitialized = FALSE;
  *      be flushed to disk on the next wpSaveDeferred.
  */
 
-BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
+static BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
 
 /* ******************************************************************
  *
@@ -211,25 +219,27 @@ BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
 
 /*
  *@@ fnCompareMappingNodes:
+ *      tree comparison func (src\helpers\tree.c).
  *
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
 int TREEENTRY fnCompareMappingNodes(TREE *t1, TREE *t2)
 {
-    return (strhicmp(((PTRASHMAPPINGTREENODE2)t1)->pszSourceRealName,
-                     ((PTRASHMAPPINGTREENODE2)t2)->pszSourceRealName));
+    return (strhicmp(((PTRASHMAPPINGTREENODE)t1)->pszSourceRealName,
+                     ((PTRASHMAPPINGTREENODE)t2)->pszSourceRealName));
 }
 
 /*
  *@@ fnCompareMappingsData:
+ *      tree comparison func (src\helpers\tree.c).
  *
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
 int TREEENTRY fnCompareMappingsData(TREE *t1, void *pData)
 {
-    return (strhicmp(((PTRASHMAPPINGTREENODE2)t1)->pszSourceRealName,
+    return (strhicmp(((PTRASHMAPPINGTREENODE)t1)->pszSourceRealName,
                      (const char*)pData));
 }
 
@@ -248,13 +258,13 @@ int TREEENTRY fnCompareMappingsData(TREE *t1, void *pData)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE2 CreateMapping(ULONG ulMappingIndex,      // in: decimal in \trash subdir name
-                                     WPFolder *pFolderInTrash,   // in: direct \trash subfolder
-                                     const char *pcszSourceRealName,   // in: real name of source dir
-                                     PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
+PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in \trash subdir name
+                                    WPFolder *pFolderInTrash,   // in: direct \trash subfolder
+                                    const char *pcszSourceRealName,   // in: real name of source dir
+                                    PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
                                          // and wpSaveDeferred must be called on the trash can
 {
-    PTRASHMAPPINGTREENODE2 pMapping = malloc(sizeof(TRASHMAPPINGTREENODE2));
+    PTRASHMAPPINGTREENODE pMapping = malloc(sizeof(TRASHMAPPINGTREENODE));
     if (pMapping)
     {
         ULONG   ulDriveOfs = 0;
@@ -272,7 +282,6 @@ PTRASHMAPPINGTREENODE2 CreateMapping(ULONG ulMappingIndex,      // in: decimal i
                 // set the corresponding drive to "dirty"
                 ulDriveOfs = pcszSourceRealName[0] - 'C';
                         // 0 for C:, 1 for D:, ...
-                _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
                 G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
                 *pfNeedSave = TRUE;
@@ -347,7 +356,6 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
                         // set the corresponding drive to "dirty"
                         ulDriveOfs = pcszTrashDir[0] - 'C';
                                 // 0 for C:, 1 for D:, ...
-                        _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
                         G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
                         *pfNeedSave = TRUE;
@@ -424,8 +432,10 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
  *
  *      The trash mappings are quite efficient. They use a red-black
  *      balanced binary tree internally (see helpers\tree.c) which
- *      uses the folder SOM pointer as the sort key so a mapping can
- *      very quickly be found for a folder.
+ *      uses the folder name as the sort key so a mapping can
+ *      very quickly be found from a folder name (trshGetMappingFromSource).
+ *      You can also find a mapping from the SOM folder pointer
+ *      (trshGetMappingFromTrashDir).
  *
  *      The trash mappings are written back to disk by trshSaveMappings,
  *      which in turn gets called from XWPTrashCan::wpSaveState. We
@@ -441,7 +451,7 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
  *      This does NOT mean however that the related objects will be
  *      lost... the trash can will only lose the information about
  *      the original "deleted from" directories and display the strange
- *      object handles instead. The user can still drag the trash object
+ *      numbers instead. The user can still drag the trash object
  *      to some other location manually.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
@@ -456,6 +466,7 @@ VOID InitMappings(XWPTrashCan *somSelf,
     {
         if (!G_fMappingsTreeInitialized)
         {
+            // first call: initialize the mappings tree
             M_WPFolder  *pWPFolderClass = _WPFolder;
             BYTE        bIndex = 0;
             CHAR        cDrive = 0;
@@ -503,7 +514,7 @@ VOID InitMappings(XWPTrashCan *somSelf,
 /*
  *@@ trshGetMapping:
  *      returns a TRASHMAPPINGTREENODE for the specified
- *      source folder or NULL if none exists.
+ *      source folder name or NULL if none exists.
  *
  *      See trshInitMappings for an introduction to
  *      the trash can mappings.
@@ -511,10 +522,10 @@ VOID InitMappings(XWPTrashCan *somSelf,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE2 trshGetMappingFromSource(XWPTrashCan *pTrashCan,
-                                                const char *pcszSourceFolder)
+PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
+                                               const char *pcszSourceFolder)
 {
-    PTRASHMAPPINGTREENODE2 pMapping = NULL;
+    PTRASHMAPPINGTREENODE pMapping = NULL;
 
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
@@ -530,24 +541,26 @@ PTRASHMAPPINGTREENODE2 trshGetMappingFromSource(XWPTrashCan *pTrashCan,
 
 /*
  *@@ trshGetMappingFromTrashDir:
+ *      returns the TRASHMAPPINGTREENODE for the specified
+ *      awake \trash subfolder.
  *
  *      This can't use the sorting of the tree because
  *      the tree is sorted according to the source folder
- *      names, but since we are doing string comparisons
+ *      names, but since we are not doing string comparisons
  *      here, this seemed OK to me.
  *
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE2 trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
-                                                WPFolder *pFolderInTrash)
+PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
+                                                 WPFolder *pFolderInTrash)
 {
-    PTRASHMAPPINGTREENODE2 pMapping = NULL;
+    PTRASHMAPPINGTREENODE pMapping = NULL;
 
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
     {
-        PTRASHMAPPINGTREENODE2 pNode = treeFirst(G_MappingsTreeRoot);
+        PTRASHMAPPINGTREENODE pNode = treeFirst(G_MappingsTreeRoot);
         while (pNode)
         {
             if (pNode->pFolderInTrash == pFolderInTrash)
@@ -576,7 +589,7 @@ PTRASHMAPPINGTREENODE2 trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
  */
 
 VOID trshFreeMapping(XWPTrashCan *pTrashCan,
-                     PTRASHMAPPINGTREENODE2 pMapping,
+                     PTRASHMAPPINGTREENODE pMapping,
                      PBOOL pfNeedSave)       // out: set to TRUE if drives are dirty now
                                              // and wpSaveDeferred must be invoked on the trash can
 {
@@ -643,7 +656,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                     CHAR szMappingsFile[CCHMAXPATH];
                     XSTRING     strMappings;
                     ULONG       cEntries = 0;
-                    PTRASHMAPPINGTREENODE2 pNode;
+                    PTRASHMAPPINGTREENODE pNode;
 
                     xstrInit(&strMappings, 1000);
 
@@ -712,7 +725,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
 ULONG GetLowestTrashDirDecimal(VOID)
 {
     ULONG ul = 0;
-    PTRASHMAPPINGTREENODE2 pNode = treeFirst(G_MappingsTreeRoot);
+    PTRASHMAPPINGTREENODE pNode = treeFirst(G_MappingsTreeRoot);
     while (pNode)
     {
         if (pNode->ulIndex == ul)
@@ -751,7 +764,7 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
                                   PBOOL pfNeedSave)
 {
     WPFolder    *pFolderInTrash = NULL;
-    PTRASHMAPPINGTREENODE2 pMapping;
+    PTRASHMAPPINGTREENODE pMapping;
 
     // initialize the mappings if this hasn't been done yet
     InitMappings(pTrashCan, pfNeedSave);
@@ -1108,8 +1121,8 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
             XWPTrashCan *pTrashCan = _wpQueryFolder(somSelf);
 
             // find the mapping for this
-            PTRASHMAPPINGTREENODE2 pMapping = trshGetMappingFromTrashDir(pTrashCan,
-                                                                         pTrashDir);
+            PTRASHMAPPINGTREENODE pMapping = trshGetMappingFromTrashDir(pTrashCan,
+                                                                        pTrashDir);
             if (pMapping)
             {
                 // we have a mapping: use that
@@ -1359,8 +1372,8 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
             WPFolder *pFolder = (WPFolder*)pDirNode->pItemData;
 
             // free the mapping, if one exists
-            PTRASHMAPPINGTREENODE2 pMapping = trshGetMappingFromTrashDir(pTrashCan,
-                                                                         pFolder);
+            PTRASHMAPPINGTREENODE pMapping = trshGetMappingFromTrashDir(pTrashCan,
+                                                                        pFolder);
             if (pMapping)
                 trshFreeMapping(pTrashCan,
                                 pMapping,
@@ -1603,17 +1616,15 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *             "deep path".
  *
  *          So instead, we now create a hidden folder with a
- *          random title (for which we use the object handle
- *          of the source folder, which most probably has already
- *          been assigned and is guaranteed to be unique) and rather
+ *          number as its name (e.g. C:\trash\1) and rather
  *          add a mapping for that.
  *
  *          As a result, the concept of "trash directory mappings"
- *          had to be introduced. See trshInitMappings for an
+ *          had to be introduced. See InitMappings for an
  *          introduction. CreateMapping gets called by this function.
  *
  *      3)  Move the object which is being deleted into that
- *          directory (using wpMoveObject, so that all WPS
+ *          new directory (using wpMoveObject, so that all WPS
  *          shadows etc. remain valid);
  *
  *      4)  create a new instance of XWPTrashObject in the
@@ -1660,11 +1671,10 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
 
                 if (pFolderInTrash)
                 {
-                    // MOVE THE OBJECT NOW
-
                     // close all open views
                     if (wpshCloseAllViews(pObject))
                     {
+                        // MOVE the object now
                         if (fopsMoveObjectConfirmed(pObject,
                                                     pFolderInTrash))
                         {
@@ -2257,6 +2267,7 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
  *      implementation for M_XWPTrashCan::xwpclsSetDrivesSupport.
  *
  *@@added V0.9.1 (2000-02-03) [umoeller]
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: changed defaults to support only FAT, FAT32, HPFS, JFS
  */
 
 BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
@@ -2287,7 +2298,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
             else
             {
                 // pointer is NULL:
-                // CHAR    szFSType[30];
+                // use defaults then
                 ULONG   ulLogicalDrive = 3;     // start with drive C:
                 BYTE    bIndex = 0;             // index into G_abSupportedDrives
 
@@ -2302,8 +2313,25 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
                     switch (arc)
                     {
                         case NO_ERROR:
-                            G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
-                        break;
+                        {
+                            // drive is ready:
+                            CHAR szFS[30];
+
+                            // do some more checks V0.9.12 (2001-05-18) [umoeller]
+                            G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
+                            if (!doshQueryDiskFSType(ulLogicalDrive,
+                                                     szFS,
+                                                     sizeof(szFS)))
+                            {
+                                if (    (!stricmp(szFS, "FAT"))
+                                     || (!stricmp(szFS, "HPFS"))
+                                     || (!stricmp(szFS, "JFS"))
+                                     || (!stricmp(szFS, "FAT32"))
+                                   )
+                                    // alright, let's support this
+                                    G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
+                            }
+                        break; }
 
                         case ERROR_INVALID_DRIVE:
                             G_abSupportedDrives[bIndex] = XTRC_INVALID;
@@ -2757,7 +2785,7 @@ VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
     if (flFlags & CBI_ENABLE)
     {
         /* PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_DELETE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XTDI_DELETE,
                           (pKernelGlobals->fXFldObject)); */
     }
 
@@ -2857,8 +2885,6 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         if (pcnbp->pUser == NULL)
@@ -2869,7 +2895,6 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
             // the notebook page is destroyed
             pcnbp->pUser = malloc(CB_SUPPORTED_DRIVES);
             _xwpclsQueryDrivesSupport(_XWPTrashCan, pcnbp->pUser);
-            // memcpy(pcnbp->pUser, abSupportedDrives, sizeof(abSupportedDrives));
         }
     }
 
@@ -2913,14 +2938,14 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
     {
         // enable "Add" button if items are selected
         // in the "Unsupported" listbox
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
                          (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
                                                                     ID_XTDI_UNSUPPORTED_LB),
                                                      LIT_FIRST)
                                 != LIT_NONE));
         // enable "Remove" button if items are selected
         // in the "Supported" listbox
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
                          (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
                                                                     ID_XTDI_SUPPORTED_LB),
                                                      LIT_FIRST)

@@ -28,8 +28,8 @@
  *         enhanced XWorkplace file operations, such as moving
  *         files to the XWorkplace trash can.
  *
- *      -- Extended folder sorting is mostly implemented thru
- *         fdr_fnwpSubclassedFolderFrame as well.
+ *      -- Extended folder sorting is now documented in
+ *         src\filesys\fdrsort.c (V0.9.12).
  *
  *      -- Lots of wpAdd* settings pages overrides to replace
  *         XFolder settings pages.
@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -207,6 +207,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpNukePhysical(XFolder *somSelf)
         switch (arc)
         {
             case NO_ERROR:
+                // if the fs object doesn't exist any more,
+                // simply return TRUE also
             case ERROR_FILE_NOT_FOUND:
             case ERROR_PATH_NOT_FOUND:
                 brc = TRUE;
@@ -220,28 +222,35 @@ SOM_Scope BOOL  SOMLINK xf_xwpNukePhysical(XFolder *somSelf)
 /*
  *@@ xwpQueryFldrSort:
  *      this returns the folder's sort settings into the specified
- *      USHORT variables. These are set to SET_DEFAULT if no instance
- *      data has been defined; you will then need to query the
- *      GLOBALSETTINGS values.
+ *      USHORT variables.
+ *
+ *      Either can be set to SET_DEFAULT if no instance data has been
+ *      defined; you will then need to query the GLOBALSETTINGS values.
  *
  *      See XFolder::xwpSortViewOnce for the values of pusDefaultSort.
+ *
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: changed prototype
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: now supporting details view columns
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
-                                            PUSHORT pusDefaultSort,
-                                            PUSHORT pusAlwaysSort)
+                                            PLONG plDefaultSort,
+                                            PLONG plFoldersFirst,
+                                            PLONG plAlwaysSort)
 {
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpQueryFldrSort");
 
-    if ((pusDefaultSort) && (pusAlwaysSort))
-    {
-        *pusDefaultSort = (USHORT)_bDefaultSort;
-        *pusAlwaysSort  = (USHORT)_bAlwaysSort;
-        return (TRUE);
-    }
-    else
-        return (FALSE);
+    if (plDefaultSort)
+        *plDefaultSort = _lDefaultSort;
+
+    if (plFoldersFirst)
+        *plFoldersFirst = _lFoldersFirst;
+
+    if (plAlwaysSort)
+        *plAlwaysSort = _lAlwaysSort;
+
+    return (TRUE);
 }
 
 /*
@@ -249,9 +258,20 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
  *      this is the new XFolder method for setting the sort data
  *      for a certain folder.
  *
- *      usDefaultSort should be one of the SV_ constants as in
- *      XFolder::xwpSortViewOnce or SET_DEFAULT for resetting the folder's
- *      default sort criterion to the Global Settings's value.
+ *      usDefaultSort can be one of the following:
+ *
+ *      --  -1:     sort by type (as with standard WPS).
+ *
+ *      --  -2:     sort by object title (as with standard WPS).
+ *
+ *      --  -3:     sort by object class (new with XWP).
+ *
+ *      --  -4:     sort by extension (new with XWP).
+ *
+ *      --  >= 0: the details column index to sort by.
+ *
+ *      --  SET_DEFAULT (255): use the global default sort
+ *          criterion for this folder.
  *
  *      usAlwaysSort can be 0 or 1 or SET_DEFAULT also.
  *
@@ -262,45 +282,53 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
  *      a result to the new settings.
  *
  *@@changed V0.9.2 (2000-03-08) [umoeller]: added folder locking
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: changed prototype
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: now supporting details view columns
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
-                                          USHORT usDefaultSort,
-                                          USHORT usAlwaysSort)
+                                          long lDefaultSort,
+                                          long lFoldersFirst,
+                                          long lAlwaysSort)
 {
     BOOL        Update = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     WPSHLOCKSTRUCT Lock;
 
     #ifdef DEBUG_SORT
         _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf)));
-        _Pmpf(("  Old: Default %d, Always %d", _bDefaultSort, _bAlwaysSort));
-        _Pmpf(("  New: Default %d, Always %d", usDefaultSort, usAlwaysSort));
+        _Pmpf(("  Old: Default %d, Always %d", _lDefaultSort, _lAlwaysSort));
+        _Pmpf(("  New: Default %d, Always %d", lDefaultSort, lAlwaysSort));
     #endif
 
     if (wpshLockObject(&Lock, somSelf))
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
 
-        if (usDefaultSort != _bDefaultSort)
+        if (lDefaultSort != _lDefaultSort)
         {
-            _bDefaultSort = usDefaultSort;
+            if (    ((lDefaultSort >= -4) && (lDefaultSort < 0))
+                 || (lDefaultSort == SET_DEFAULT)
+                 || (_wpIsSortAttribAvailable(somSelf,
+                                              lDefaultSort))
+               )
+            {
+                _lDefaultSort = lDefaultSort;
+                Update = TRUE;
+            }
+        }
+
+        if (lFoldersFirst != _lFoldersFirst)
+        {
+            _lFoldersFirst = lFoldersFirst;
             Update = TRUE;
         }
 
-        if (usAlwaysSort != _bAlwaysSort)
+        if (lAlwaysSort != _lAlwaysSort)
         {
-            _bAlwaysSort = usAlwaysSort;
-            // if _wpRestoreState has found the pointer to the
-            // WPFOlder-internal sort structure, we will update
-            // this one also, because otherwise the WPS keeps
-            // messing with the container attributes;
-            // but make sure the folder is not being copied right now
-            /* if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-                if (_pFolderSortInfo)
-                    (_pFolderSortInfo)->fAlwaysSort = ALWAYS_SORT; */
+            _lAlwaysSort = lAlwaysSort;
             Update = TRUE;
         }
     } // end if (fFolderLocked)
@@ -310,13 +338,17 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     if (Update)
     {
         // update open views of this folder
-        fdrForEachOpenInstanceView(somSelf,
-                                   0,
-                                   fdrUpdateFolderSorts);
+        if (pGlobalSettings->ExtFolderSort)
+        {
+            fdrForEachOpenInstanceView(somSelf,
+                                       TRUE,            // force
+                                       fdrUpdateFolderSorts);
+            // update folder "Sort" notebook page, if open
+            ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
+        }
+
         // save instance data
         _wpSaveDeferred(somSelf);
-        // update folder "Sort" notebook page, if open
-        ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
     }
 
     return (Update);
@@ -332,64 +364,61 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
  *      This is used by the context menu entries in the "Sort"
  *      menu and the respective folder hotkeys.
  *
- *      ulSort must be one of the following:
- *      --  SV_NAME
- *      --  SV_TYPE
- *      --  SV_CLASS                (new: sort by object class)
- *      --  SV_REALNAME
- *      --  SV_SIZE
- *      --  SV_LASTWRITEDATE
- *      --  SV_LASTACCESSDATE
- *      --  SV_CREATIONDATE
- *      --  SV_EXT                  (new: sort by extension)
- *      --  SV_FOLDERSFIRST         (new: sort folders first)
+ *      ulSort must be one of the sort criteria as specified
+ *      with XFolder::xwpSetFldrSort.
  *
  *@@changed V0.9.2 (2000-03-08) [umoeller]: added folder locking
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: now supporting details view columns
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            HWND hwndFrame,
-                                           USHORT usSort)
+                                           BOOL fFoldersFirst,
+                                           long lSort)
 {
     BOOL        rc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
+    if (pGlobalSettings->ExtFolderSort)
     {
-        HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-        // XFolderData *somThis = XFolderGetData(somSelf);
-        XFolderMethodDebug("XFolder","xf_xfSortByExt");
-
-        if (hwndCnr)
+        WPSHLOCKSTRUCT Lock;
+        if (wpshLockObject(&Lock, somSelf))
         {
-            CNRINFO CnrInfo;
-            ULONG   ulStyle = 0;
+            HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+            // XFolderData *somThis = XFolderGetData(somSelf);
+            XFolderMethodDebug("XFolder","xf_xfSortByExt");
 
-            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+            if (hwndCnr)
             {
-                // for some reason, icon views need to have "auto arrange" on,
-                // or nothing will happen
-                ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
-                WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
+                CNRINFO CnrInfo;
+                ULONG   ulStyle = 0;
+
+                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+
+                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                {
+                    // for some reason, icon views need to have "auto arrange" on,
+                    // or nothing will happen
+                    ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
+                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
+                }
+
+                // send sort msg with proper sort (comparison) func
+                WinSendMsg(hwndCnr,
+                           CM_SORTRECORD,
+                           (MPARAM)fdrQuerySortFunc(somSelf,
+                                                    lSort),
+                           MPNULL);
+
+                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                    // restore old cnr style
+                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
+
+                rc = TRUE;
             }
-
-            // send sort msg with proper sort (comparison) func
-            WinSendMsg(hwndCnr,
-                       CM_SORTRECORD,
-                       (MPARAM)fdrQuerySortFunc(usSort),
-                       MPNULL);
-
-            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                // restore old cnr style
-                WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
-
-            rc = TRUE;
-        }
-    } // end if (fFolderLocked)
-
-    wpshUnlockObject(&Lock);
+        } // end if (fFolderLocked)
+        wpshUnlockObject(&Lock);
+    }
 
     return (rc);
 }
@@ -1321,9 +1350,9 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _bFolderHotkeysInstance = 2;
     _bStatusBarInstance = STATUSBAR_DEFAULT;
 
-    _bAlwaysSort = SET_DEFAULT;
-    _bDefaultSort = SET_DEFAULT;
-    _fXFolderSortSettingRestored = FALSE;
+    _lDefaultSort = SET_DEFAULT;
+    _lFoldersFirst = SET_DEFAULT;
+    _lAlwaysSort = SET_DEFAULT;
 
     _pFolderSortInfo = NULL;
     _pFolderLongArray = NULL;
@@ -1590,6 +1619,7 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed folder sorts
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: reworked for new folder sorting
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
@@ -1615,8 +1645,8 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
         _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 3, (ULONG)_bFolderHotkeysInstance);
     if (_bStatusBarInstance != STATUSBAR_DEFAULT)
         _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 4, (ULONG)_bStatusBarInstance);
-    /* if (_ulSBInflatedFrame)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 5, (ULONG)_ulSBInflatedFrame); */
+
+    // ID 5 used to be inflated SB frame, must not be used again
 
     // ID 6 used to be "always sort", this has been raised to 9
     // ID 7 used to be "default sort", this has been raised to 10
@@ -1629,19 +1659,11 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
         _wpSaveString(somSelf, (PSZ)G_pcszXFolder, 8, szDefaultDoc);
     }
 
-    #ifdef DEBUG_SORT
-        _Pmpf((__FUNCTION__ " for %s: _bAlwaysSortInstance is %d",
-                _wpQueryTitle(somSelf), _bAlwaysSort));
-    #endif
-    // if (_bAlwaysSort != SET_DEFAULT)
-        // wrong, we must always store this, or default sort settings
-        // won't work V0.9.7 (2000-12-18) [umoeller]
-        // also raised ID from 6 to 9
-        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 9, (ULONG)_bAlwaysSort);
-    // if (_bDefaultSort != SET_DEFAULT)
-        // also raised ID from 7 to 10
-        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 10, (ULONG)_bDefaultSort);
-
+    // sort keys changed again V0.9.12 (2001-05-18) [umoeller]
+    // note: we must always save these, even if they have the default value
+    _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 11, (ULONG)_lDefaultSort);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 12, (ULONG)_lFoldersFirst);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 13, (ULONG)_lAlwaysSort);
 
     brc = XFolder_parent_WPFolder_wpSaveState(somSelf);
 
@@ -1660,6 +1682,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
  *
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
+ *@@changed V0.9.12 (2001-05-18) [umoeller]: reworked for new folder sorting
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
@@ -1699,9 +1722,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         _bStatusBarInstance = (BYTE)ul;
     else _bStatusBarInstance = STATUSBAR_DEFAULT;
 
-    /* if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 5, &ul))
-        _ulSBInflatedFrame = (BYTE)ul;
-    else _ulSBInflatedFrame = 0; */
+    // ID 5 used to be inflated SB frame, must not be used again
 
     // ID 6 used to be "always sort", this has been raised to 9
     // ID 7 used to be "default sort", this has been raised to 10
@@ -1714,28 +1735,27 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         _pszDefaultDocDeferred = strdup(szDefaultDoc);
     }
 
-    // changed ID from 6 to 9 -- V0.9.7 (2000-12-18) [umoeller]
-    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 9, &ul))
-    {
-        _bAlwaysSort = (USHORT)ul;
-        _fXFolderSortSettingRestored = TRUE; // V0.9.7 (2000-12-18) [umoeller]
+    // sort keys changed again V0.9.12 (2001-05-18) [umoeller]
 
-    }
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 11, &ul))
+        _lDefaultSort = ul;
+
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 12, &ul))
+        _lFoldersFirst = ul;
+
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 13, &ul))
+        _lAlwaysSort = ul;
     else
         // setting not found:
         if (_somIsA(somSelf, _WPDesktop))
             // otherwise we might automatically sort the desktop...
             // not really what we want!
-            _bAlwaysSort = FALSE;
+            _lAlwaysSort = FALSE;
 
     #ifdef DEBUG_SORT
         _Pmpf((__FUNCTION__ " for %s: _bAlwaysSortInstance is %d",
-                _wpQueryTitle(somSelf), _bAlwaysSort));
+                _wpQueryTitle(somSelf), _lAlwaysSort));
     #endif
-
-    // changed ID from 7 to 10 -- V0.9.7 (2000-12-18) [umoeller]
-    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 10, &ul))
-        _bDefaultSort = (USHORT)ul;
 
     // in this case, we MUST call the parent LAST because
     // wpRestoreData checks for whether an XFolder sort setting
@@ -1913,33 +1933,6 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     {
                         XFolderData *somThis = XFolderGetData(somSelf);
                         _pFolderSortInfo = (PFDRSORTINFO)pValue;
-
-                        // if the parent method has found sort data,
-                        // and the user had set "Always sort" on for
-                        // the folder using the regular WPS "Sort" page,
-                        // we need to update the XFolder sort data, but
-                        // only update this if this hasn't been set
-                        // by wpRestoreState yet; as a result, the
-                        // XFolder sort settings will follow the WPFolder
-                        // sort settings, but can be overridden
-                        // fixed this with V0.9.7 (2000-12-18) [umoeller]
-
-                        // setting loaded successfully by parent?
-                        /* if (brc)
-                            // yes: did we have an XFolder setting already
-                            // (this is set by wpRestoreData)?
-                            if (!_fXFolderSortSettingRestored)
-                                // no: is "always sort" enabled?
-                                if (((PFDRSORTINFO)pValue)->fAlwaysSort)
-                                {
-                                    // yes: copy that
-                                    _Pmpf((__FUNCTION__ " for %s: hacking _bAlwaysSort to 1",
-                                                _wpQueryTitle(somSelf)));
-                                    _bAlwaysSort = 1;
-                                }
-                                // if (_bAlwaysSort == SET_DEFAULT)
-                                // _bAlwaysSort = ((PFDRSORTINFO)pValue)->fAlwaysSort;
-                        */
                     }
                 }
                 // _Pmpf(("IDKEY_FDRSORTINFO size %d -> %d", cbOrigValue, *pcbValue));
@@ -2307,7 +2300,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 ulDefaultView = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC;
         }
 
-        _Pmpf((__FUNCTION__ "1: default view is %u", ulDefaultView));
+        // _Pmpf((__FUNCTION__ "1: default view is %u", ulDefaultView));
 
         if (!ulDefaultView)
         {
@@ -2315,7 +2308,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
             // if global default views are enabled (user doesn't want
             // inherit from parent), check that value
 
-            _Pmpf((__FUNCTION__ ": global is %u", pGlobalSettings->bDefaultFolderView));
+            // _Pmpf((__FUNCTION__ ": global is %u", pGlobalSettings->bDefaultFolderView));
 
             if (pGlobalSettings->bDefaultFolderView)        // 0 means default -> inherit
             {
@@ -2326,7 +2319,8 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // a)  a default view was explicitly set for this folder; if
                 //     so, it is returned.
                 // b)  if not, wpQueryDefaultView is invoked on the parent folder...
-                //     so this recurses until some folder view was found.
+                //     so this recurses into the parent folders until some folder
+                //     view was found.
                 //     (No comment on that other than that the WPS implementation
                 //     isn't exactly speedy.)
 
@@ -2335,10 +2329,11 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // setting from the "Workplace Shell" object simply. Problem is
                 // that it isn't trivial to find out whether a default view
                 // was explicitly set for the folder... so we've added an
-                // XFldObject method for that as well.
+                // XFldObject method for that as well which gives us the value
+                // directly from the instance data.
                 ulDefaultView = _xwpQueryRealDefaultView(somSelf);
 
-                _Pmpf((__FUNCTION__ ": _xwpQueryRealDefaultView returned %d", ulDefaultView));
+                // _Pmpf((__FUNCTION__ ": _xwpQueryRealDefaultView returned %d", ulDefaultView));
 
                 // 3) check...
                 switch (ulDefaultView)
@@ -2371,7 +2366,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
         // --> inherit from parent (standard WPS behavior)
         ulDefaultView = XFolder_parent_WPFolder_wpQueryDefaultView(somSelf);
 
-    _Pmpf((__FUNCTION__ ": returning %d", ulDefaultView));
+    // _Pmpf((__FUNCTION__ ": returning %d", ulDefaultView));
 
     return (ulDefaultView);
 }
@@ -2809,37 +2804,27 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
     if (pGlobalSettings->ExtFolderSort)
     {
         // extended sorting enabled:
-        // check whether the "sort class" of the folder
-        // is WPFileSystem (which is the default); only
-        // then replace the "Sort" page with ours. Some
-        // WPS extensions define their own Details views,
-        // and we don't want to mess with that
-        if (_wpQueryFldrSortClass(somSelf) == _WPFileSystem)
-        {
-            PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
 
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
 
-            // mark this page as "instance", because both
-            // the instance settings notebook and the
-            // "Workplace Shell" object use the same
-            // callbacks
-            pcnbp->ulPageID = SP_FLDRSORT_FLDR;
+        // mark this page as "instance", because both
+        // the instance settings notebook and the
+        // "Workplace Shell" object use the same
+        // callbacks
+        pcnbp->ulPageID = SP_FLDRSORT_FLDR;
 
-            pcnbp->pfncbInitPage    = fdrSortInitPage;
-            pcnbp->pfncbItemChanged = fdrSortItemChanged;
+        pcnbp->pfncbInitPage    = fdrSortInitPage;
+        pcnbp->pfncbItemChanged = fdrSortItemChanged;
 
-            ntbInsertPage(pcnbp);
-
-            return (SETTINGS_PAGE_REMOVED);
-        }
+        return (ntbInsertPage(pcnbp));
     }
 
     return (XFolder_parent_WPFolder_wpAddFolderSortPage(somSelf,
@@ -3485,7 +3470,8 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
                 HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
                 if (hwndCnr)
                 {
-                    fdrSetFldrCnrSort(somSelf, hwndCnr,
+                    fdrSetFldrCnrSort(somSelf,
+                                      hwndCnr,
                                       TRUE);  // enfore cnr sort
                     return (TRUE);
                 }
@@ -3744,7 +3730,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
     {
         // something set (0 means standard WPS inheritance behavior):
         // return that
-        _Pmpf((__FUNCTION__ ": returning %u", pGlobalSettings->bDefaultFolderView));
+        // _Pmpf((__FUNCTION__ ": returning %u", pGlobalSettings->bDefaultFolderView));
 
         return (pGlobalSettings->bDefaultFolderView);
     }

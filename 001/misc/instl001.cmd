@@ -76,7 +76,7 @@ rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_MAINFLDR>", "SHADOWID=<XWORKPLA
 rc = SysCreateObject("XCenter", "XCenter", "<XWP_MAINFLDR>", "OBJECTID=<XWP_XCENTER>;", "U");
 
 /* "Font folder" ... added with V0.9.7 */
-rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_CONFIG>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
+rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_CONFIG>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
 if (\rc) then
     rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_DESKTOP>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
 rc = SysCreateObject("WPShadow", FontFolder, "<XWP_MAINFLDR>", "SHADOWID=<XWP_FONTFOLDER>;OBJECTID=<XWP_FONTFOLDERSHADOW>;", "U");

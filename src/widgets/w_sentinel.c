@@ -69,6 +69,11 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// disable wrappers, because we're not linking statically
+#ifdef WINH_STANDARDWRAPPERS
+    #undef WINH_STANDARDWRAPPERS
+#endif
+
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines

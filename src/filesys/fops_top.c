@@ -88,6 +88,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\stringh.h"            // string helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -187,6 +188,7 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@added V0.9.2 (2000-03-04) [umoeller]
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all" to some msg boxes
+ *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  */
 
 FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
@@ -202,7 +204,9 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             ulMsg = 0,
             flFlags = 0;
     ULONG   ulIgnoreFlag = 0;
-    PSZ     pszTitle = _wpQueryTitle(pObject);
+    PSZ     pszTitle = strdup(_wpQueryTitle(pObject));
+
+    strhBeautifyTitle(pszTitle);
 
     switch (frError)
     {
@@ -283,14 +287,16 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
         if (    (ulrc == MBID_OK)
              || (ulrc == MBID_YES)
            )
-            return (NO_ERROR);
+            frError = NO_ERROR;
         else if (ulrc == MBID_YES2ALL)
         {
             // "yes to all":
             *pulIgnoreSubsequent |= ulIgnoreFlag;
-            return (NO_ERROR);
+            frError = NO_ERROR;
         }
     }
+
+    free(pszTitle);
 
     return (frError);
 }
@@ -308,6 +314,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
  *      This receives messages from fopsGenericProgressCallback.
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
+ *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  */
 
 MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -330,7 +337,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                 case DID_CANCEL:
                 {
                     PGENERICPROGRESSWINDATA ppwd = WinQueryWindowPtr(hwndProgress, QWL_USER);
-                    WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
+                    winhEnableDlgItem(hwndProgress, DID_CANCEL, FALSE);
                     ppwd->fCancelPressed = TRUE;
                 break; }
 
@@ -385,9 +392,14 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     if (pfu->flChanged & FOPSUPD_SOURCEOBJECT_CHANGED)
                     {
                         if (pfu->pSourceObject)
+                        {
+                            PSZ pszTitle = strdup(_wpQueryTitle(pfu->pSourceObject));
+                            strhBeautifyTitle(pszTitle);
                             WinSetDlgItemText(hwndProgress,
                                               ID_XSDI_SOURCEOBJECT,
-                                              _wpQueryTitle(pfu->pSourceObject));
+                                              pszTitle);
+                            free(pszTitle);
+                        }
                     }
 
                     if (pfu->flChanged & FOPSUPD_EXPANDING_SOURCEOBJECT_1ST)
@@ -420,10 +432,10 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                                           pszSubObject);
                     // update status bar?
                     if (pfu->flChanged & FOPSPROG_UPDATE_PROGRESS)
-                        WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
-                                   WM_UPDATEPROGRESSBAR,
-                                   (MPARAM)pfu->ulProgressScalar,
-                                   (MPARAM)pfu->ulProgressMax);
+                        WinSendDlgItemMsg(hwndProgress, ID_SDDI_PROGRESSBAR,
+                                          WM_UPDATEPROGRESSBAR,
+                                          (MPARAM)pfu->ulProgressScalar,
+                                          (MPARAM)pfu->ulProgressMax);
 
                     // has cancel been pressed?
                     // (flag is set from WM_COMMAND)
@@ -449,7 +461,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                         }
                         else
                         {
-                            WinEnableControl(hwndProgress, DID_CANCEL, TRUE);
+                            winhEnableDlgItem(hwndProgress, DID_CANCEL, TRUE);
                             ppwd->fCancelPressed = FALSE;
                         }
 
@@ -461,7 +473,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                 {
                     // FOPSPROG_LASTCALL_DONE set:
                     // disable "Cancel"
-                    WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
+                    winhEnableDlgItem(hwndProgress, DID_CANCEL, FALSE);
                     if (!ppwd->fCancelPressed)
                         // set progress to 100%
                         WinSendMsg(ppwd->hwndProgressBar,
@@ -634,6 +646,7 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.3 (2000-04-28) [umoeller]: added fRelatedObject
  *@@changed V0.9.4 (2000-08-03) [umoeller]: now checking for "no objects"
+ *@@changed V0.9.4 (2001-05-17) [pr]: beautified object title
  */
 
 FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
@@ -724,21 +737,20 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
 
             if (pConfirm)
             {
-                CHAR    szObjectCount[30];
                 PSZ     apsz = NULL;
                 ULONG   ulMsg;
                 // yes:
-                _Pmpf(("Confirming..."));
                 if (cObjects == 1)
                 {
                     // single object:
-                    apsz = _wpQueryTitle(pSourceObject);
+                    apsz = strdup(_wpQueryTitle(pSourceObject));
+                    strhBeautifyTitle(apsz);
                     ulMsg = pConfirm->ulMsgSingle;
                 }
                 else
                 {
-                    sprintf(szObjectCount, "%d", cObjects);
-                    apsz = szObjectCount;
+                    apsz = malloc(30);
+                    sprintf(apsz, "%d", cObjects);
                     ulMsg = pConfirm->ulMsgMultiple;
                 }
 
@@ -750,6 +762,8 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                                         MB_YESNO)
                             != MBID_YES)
                     frc = FOPSERR_CANCELLEDBYUSER;
+
+                free(apsz);
             }
         } // end if (frc == NO_ERROR)
 

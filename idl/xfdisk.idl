@@ -47,6 +47,8 @@ interface XFldDisk : WPDisk
 #ifdef __SOMIDL__
   implementation {
 
+    //# releaseorder:
+
     /*
      * Class Modifiers:
      *
@@ -71,8 +73,6 @@ interface XFldDisk : WPDisk
      *
      */
 
-    wpAddDiskDetailsPage: override;
-
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
@@ -80,6 +80,8 @@ interface XFldDisk : WPDisk
 
     wpViewObject: override;
     wpOpen: override;
+
+    wpAddDiskDetailsPage: override;
 
 #ifdef __PRIVATE__
 

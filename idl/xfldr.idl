@@ -170,21 +170,6 @@ interface XFolder : WPFolder
     };
     typedef FDRBACKGROUND *PFDRBACKGROUND;
 
-    // REALSORTINFO:
-    // structure used internally by the WPS
-    // for sorting. This is undocumented and
-    // has been provided by Chris Wohlgemuth.
-    struct REALSORTINFO
-    {
-        LONG       lDefaultSort;     // default sort column index
-        BOOL       fAlwaysSort;      // "always maintain sort order"
-        LONG       lCurrentSort;     // current sort column index
-        PFNCOMPARE pfnCompare;       // container comparison func
-        ULONG      ulFieldOffset;    // ?!?
-        M_WPObject *Class;
-    };
-    typedef REALSORTINFO *PREALSORTINFO;
-
     /*
      * New instance methods for XFolder:
      *
@@ -192,9 +177,15 @@ interface XFolder : WPFolder
 
     BOOL xwpNukePhysical();
 
-    BOOL xwpQueryFldrSort(in PUSHORT pusDefaultSort, in PUSHORT pusAlwaysSort);
-    BOOL xwpSetFldrSort(in USHORT usDefaultSort, in USHORT usAlwaysSort);
-    BOOL xwpSortViewOnce(in HWND hwndFrame, in USHORT usSort);
+    BOOL xwpQueryFldrSort(in PLONG plDefaultSort,
+                          in PLONG plFoldersFirst,
+                          in PLONG plAlwaysSort);
+    BOOL xwpSetFldrSort(in LONG lDefaultSort,
+                        in LONG lFoldersFirst,
+                        in LONG lAlwaysSort);
+    BOOL xwpSortViewOnce(in HWND hwndFrame,
+                         in BOOL fFoldersFirst,
+                         in LONG lSort);
 
     BOOL xwpGetIconPos(in WPObject pObject,
                       in PBYTE pICONPOS,
@@ -296,17 +287,19 @@ interface XFolder : WPFolder
 
     // the following two are for XFolder's replacement sort
     // settings; these have a transparent default value also
-    BYTE            bAlwaysSort,
-                    bDefaultSort;
+    LONG            lAlwaysSort,
+                    lFoldersFirst,
+                    lDefaultSort;
 
-    BOOL            fXFolderSortSettingRestored;
+    //# BOOL            fXFolderSortSettingRestored;
             // this is TRUE after wpRestoreState has detected
             // an XFolder sort setting...
+            // removed V0.9.12 (2001-05-18) [umoeller]
 
     LONG            MenuMousePosX,
                     MenuMousePosY;
 
-    ULONG           ulDummy;
+    //# ULONG           ulDummy;
 
     BOOL            fUnInitCalled;
                             // flag for wpUnInitData, which seems
@@ -328,7 +321,8 @@ interface XFolder : WPFolder
 
     // pointer to WPFolder's sort data struct;
     // this is intercepted in wpRestoreData (IDKEY_FDRSORTINFO)
-    PFDRSORTINFO    pFolderSortInfo;
+    PVOID           pFolderSortInfo;
+
     // pointer to WPFolder's "long array";
     // this is intercepted in wpRestoreData (IDKEY_FDRLONGARRAY)
     PFDRLONGARRAY   pFolderLongArray;

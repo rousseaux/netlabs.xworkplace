@@ -73,6 +73,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\textview.h"           // PM XTextView control
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -106,6 +107,7 @@
  *      Returns NULL on errors or if the EA doesn't exist.
  *
  *      The .SUBJECT extended attribute is a plain PSZ
+
  *      without line breaks.
  *
  *@@added V0.9.7 (2000-11-30) [umoeller]
@@ -421,7 +423,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             else if (_somIsA(pcnbp->somSelf, _WPDesktop))
                 // for the Desktop, disable work area;
                 // this must not be changed
-                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
                                   FALSE);
         }
 
@@ -958,7 +960,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
  *      characteristics.
  *
  *@@added V0.9.0 [umoeller]
- *@@todo: corresponding ItemChanged page
+ *@@changed V0.9.12 (2001-05-19) [umoeller]: now using textview control for description, added extended info
  */
 
 VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
@@ -968,6 +970,17 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
+        // replace the static "description" control
+        // with a text view control
+        HWND hwndNew;
+        txvRegisterTextView(WinQueryAnchorBlock(pcnbp->hwndDlgPage));
+        hwndNew = txvReplaceWithTextView(pcnbp->hwndDlgPage,
+                                         ID_XSDI_PROG_DESCRIPTION,
+                                         WS_VISIBLE | WS_TABSTOP,
+                                         XTXF_VSCROLL | XTXF_AUTOVHIDE
+                                            | XTXF_HSCROLL | XTXF_AUTOHHIDE,
+                                         2);
+        winhSetWindowFont(hwndNew, cmnQueryDefaultFont());
     }
 
     if (flFlags & CBI_SET)
@@ -980,9 +993,12 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
         {
             PEXECUTABLE     pExec = NULL;
+            HWND            hwndTextView = WinWindowFromID(pcnbp->hwndDlgPage,
+                                                           ID_XSDI_PROG_DESCRIPTION);
 
             WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_FILENAME,
                               szFilename);
+            WinSetWindowText(hwndTextView, "\n");
 
             if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
             {
@@ -1055,31 +1071,72 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 // now get buildlevel info
                 if (doshExecQueryBldLevel(pExec) == NO_ERROR)
                 {
+                    XSTRING str;
+                    xstrInit(&str, 100);
+
                     if (pExec->pszVendor)
                     {
                         // has BLDLEVEL info:
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
-                                          ID_XSDI_PROG_VENDOR,
-                                          pExec->pszVendor);
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
-                                          ID_XSDI_PROG_VERSION,
-                                          pExec->pszVersion);
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
-                                          ID_XSDI_PROG_DESCRIPTION,
-                                          pExec->pszInfo);
+                        xstrcpy(&str, "Vendor: ", 0);
+                        xstrcat(&str, pExec->pszVendor, 0);
+                        xstrcat(&str, "\nVersion: ", 0);
+                        xstrcat(&str, pExec->pszVersion, 0);
+                        if (pExec->pszRevision)
+                        {
+                            xstrcat(&str, "\nRevision: ", 0);
+                            xstrcat(&str, pExec->pszRevision, 0);
+                        }
+                        xstrcat(&str, "\nDescription: ", 0);
+                        xstrcat(&str, pExec->pszInfo, 0);
+                        if (pExec->pszBuildDateTime)
+                        {
+                            xstrcat(&str, "\nBuild date/time: ", 0);
+                            xstrcat(&str, pExec->pszBuildDateTime, 0);
+                        }
+                        if (pExec->pszBuildMachine)
+                        {
+                            xstrcat(&str, "\nBuild machine: ", 0);
+                            xstrcat(&str, pExec->pszBuildMachine, 0);
+                        }
+                        if (pExec->pszASD)
+                        {
+                            xstrcat(&str, "\nASD Feature ID: ", 0);
+                            xstrcat(&str, pExec->pszASD, 0);
+                        }
+                        if (pExec->pszLanguage)
+                        {
+                            xstrcat(&str, "\nLanguage: ", 0);
+                            xstrcat(&str, pExec->pszLanguage, 0);
+                        }
+                        if (pExec->pszCountry)
+                        {
+                            xstrcat(&str, "\nCountry: ", 0);
+                            xstrcat(&str, pExec->pszCountry, 0);
+                        }
+                        if (pExec->pszFixpak)
+                        {
+                            xstrcat(&str, "\nFixpak: ", 0);
+                            xstrcat(&str, pExec->pszFixpak, 0);
+                        }
                     }
                     else
+                    {
                         // no BLDLEVEL info:
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
-                                          ID_XSDI_PROG_DESCRIPTION,
-                                          pExec->pszDescription);
+                        xstrcpy(&str, pExec->pszDescription, 0);
+                    }
+
+                    xstrcatc(&str, '\n');
+                    WinSetWindowText(hwndTextView, str.psz);
+                    xstrClear(&str);
                 }
 
                 doshExecClose(pExec);
             }
         } // end if (_wpQueryFilename...
 
-        if ((_wpQueryProgDetails(pcnbp->somSelf, (PPROGDETAILS)NULL, &cbProgDetails)))
+        // V0.9.12 (2001-05-19) [umoeller]
+        // gee, what was this code doing in here?!?
+        /* if ((_wpQueryProgDetails(pcnbp->somSelf, (PPROGDETAILS)NULL, &cbProgDetails)))
             if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pcnbp->somSelf,
                                                           cbProgDetails,
                                                           NULL))
@@ -1096,6 +1153,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
                 _wpFreeMem(pcnbp->somSelf, (PBYTE)pProgDetails);
             }
+        */
     }
 }
 

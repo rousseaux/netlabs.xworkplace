@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.11 README
+XWorkplace 0.9.12 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated April 26, 2001
+Last updated May 15, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -20,7 +20,7 @@ Last updated April 26, 2001
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.11.
+    Welcome to XWorkplace V0.9.12.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -41,7 +41,7 @@ Last updated April 26, 2001
     XWorkplace. Some major bugs have been fixed, and PageMage,
     XCenter, and the hook functions were enhanced further.
 
-    V0.9.11 fixes some more relatively minor bugs.
+    V0.9.12 fixes some more relatively minor bugs.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

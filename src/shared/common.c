@@ -2,7 +2,9 @@
 /*
  *@@sourcefile common.c:
  *      this file contains functions that are common to all
- *      parts of XWorkplace.
+ *      parts of XWorkplace. This is really an unsorted
+ *      collection of very miscellaneous items that only
+ *      have in common that they are "common" somehow.
  *
  *      These functions mainly deal with the following features:
  *
@@ -402,7 +404,7 @@ const char      *WNDCLASS_APIOBJECT            = "XWPAPIObject";
  *      Defining this function is my preferred way of getting the
  *      DLL's module handle, instead of querying the SOM kernel
  *      for the module name, like this is done in most WPS sample
- *      programs provided by IBM. I have found this to be much
+ *      classes provided by IBM. I have found this to be much
  *      easier and less error-prone when several classes are put
  *      into one DLL (as is the case with XWorkplace).
  *
@@ -434,11 +436,6 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
         case 0:
         {
             // DLL being loaded:
-            // CHAR    szTemp[400];
-            // PSZ     p = NULL;
-            // ULONG   aulCPList[8] = {0},
-                    // cbCPList = sizeof(aulCPList);
-                    // ulListSize = 0;
 
             // store the DLL handle in the global variable so that
             // cmnQueryMainModuleHandle() below can return it
@@ -1727,11 +1724,10 @@ BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" sub
         #endif
         // get handle to the WPObject's "Help" submenu in the
         // the folder's popup menu
-        if (WinSendMsg(hwndMenu,
-                       MM_QUERYITEM,
-                       MPFROM2SHORT(WPMENUID_HELP,
-                                    TRUE),
-                       (MPARAM)&mi))
+        if (winhQueryMenuItem(hwndMenu,
+                              WPMENUID_HELP,
+                              TRUE,
+                              &mi))
         {
             // mi.hwndSubMenu now contains "Help" submenu handle,
             // which we add items to now
@@ -2244,8 +2240,9 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
         case SP_FLDRSORT_GLOBAL:
             // G_pGlobalSettings->ReplaceSort = 0;        removed V0.9.0
-            G_pGlobalSettings->DefaultSort = SV_NAME;
+            G_pGlobalSettings->lDefaultSort = -2;        // sort by name
             G_pGlobalSettings->AlwaysSort = 0;
+            G_pGlobalSettings->fFoldersFirst = FALSE;   // V0.9.12 (2001-05-18) [umoeller]
         break;
 
         case SP_DTP_MENUITEMS:  // extra Desktop page
@@ -3577,7 +3574,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                             free(pszCommand);
                         }
 
-                        WinEnableControl(hwnd, DID_OK, fOK);
+                        winhEnableDlgItem(hwnd, DID_OK, fOK);
                         WinSetDlgItemText(hwnd, ID_XFD_RUN_FULLPATH, szExecutable);
                     }
 
@@ -3625,7 +3622,7 @@ VOID cmnRunCommandLine(HWND hwndOwner,
         winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
 
         cmnSetControlsFont(hwndDlg, 1, 10000);
-        WinEnableControl(hwndDlg, DID_OK, FALSE);
+        winhEnableDlgItem(hwndDlg, DID_OK, FALSE);
         winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
         if (WinProcessDlg(hwndDlg) == DID_OK)
         {

@@ -994,10 +994,10 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
     MENUITEM mi;
     // get handle to the "Open" submenu in the
     // the popup menu
-    if (WinSendMsg(hwndMenu,
-                   MM_QUERYITEM,
-                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                   (MPARAM)&mi))
+    if (winhQueryMenuItem(hwndMenu,
+                          WPMENUID_OPEN,
+                          TRUE,
+                          &mi))
     {
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now

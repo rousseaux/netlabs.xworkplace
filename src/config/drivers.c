@@ -910,7 +910,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
 
                         // disable "Apply" button
-                        WinEnableControl(pcnbp->hwndDlgPage,
+                        winhEnableDlgItem(pcnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_APPLYTHIS,
                                           FALSE);
                     }
@@ -931,10 +931,10 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       pszParams);
-                    WinEnableControl(pcnbp->hwndDlgPage,
+                    winhEnableDlgItem(pcnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       fAcceptsParams);
-                    WinEnableControl(pcnbp->hwndDlgPage,
+                    winhEnableDlgItem(pcnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_CONFIGURE,
                                       fEnable);
                 break; } // CN_EMPHASIS
@@ -1066,7 +1066,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     WinSetWindowText(hwndMLE,
                                                      ddd.szParams);
                                     // re-enable the "Apply" button also
-                                    WinEnableControl(pcnbp->hwndDlgPage,
+                                    winhEnableDlgItem(pcnbp->hwndDlgPage,
                                                       ID_OSDI_DRIVR_APPLYTHIS,
                                                       TRUE);
                                 }
@@ -1086,7 +1086,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_OSDI_DRIVR_PARAMS:
             if (usNotifyCode == MLN_CHANGE)
                 // enable "Apply" button
-                WinEnableControl(pcnbp->hwndDlgPage,
+                winhEnableDlgItem(pcnbp->hwndDlgPage,
                                   ID_OSDI_DRIVR_APPLYTHIS,
                                   TRUE);
         break;

@@ -1248,6 +1248,7 @@ typedef struct _FUNCKEYSPAGEDATA
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed memory leak
+ *@@changed V0.9.12 (2001-05-19) [umoeller]: removed "Modifier" column for now
  */
 
 VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1263,7 +1264,6 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         PFIELDINFO      pfi = NULL;
         int             i = 0;
         HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
@@ -1285,10 +1285,11 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
-        xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszModifier);
+        /* xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszModifier);
         xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_MODIFIER);  // "Modifier"; // pszModifier
         xfi[i].ulDataType = CFA_STRING;
-        xfi[i++].ulOrientation = CFA_CENTER;
+        xfi[i++].ulOrientation = CFA_CENTER; */
+                // removed this column V0.9.12 (2001-05-19) [umoeller]
 
         pfi = cnrhSetFieldInfos(hwndCnr,
                                 &xfi[0],
@@ -1351,6 +1352,7 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.3 (2000-04-17) [umoeller]
+ *@@changed V0.9.12 (2001-05-17) [umoeller]: removed "modifier" for now
  */
 
 MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1446,8 +1448,9 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          precc->FuncKey.szDescription);
                         WinSetWindowText(hwndEntryField,
                                          precc->szScanCode);
-                        winhSetDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER,
-                                              (precc->FuncKey.fModifier != 0));
+                        // winhSetDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER,
+                           //                    (precc->FuncKey.fModifier != 0));
+                           // V0.9.12 (2001-05-17) [umoeller]
                     }
                 }
 
@@ -1477,8 +1480,9 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            precc->FuncKey.szDescription);
                         precc->FuncKey.ucScanCode
                             = pefkd->ucScanCode;
-                        precc->FuncKey.fModifier
-                            = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
+                        precc->FuncKey.fModifier = FALSE;
+                           //  = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
+                           // V0.9.12 (2001-05-17) [umoeller]
 
                         // update record
                         sprintf(precc->szScanCode,
@@ -1522,8 +1526,9 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            sizeof(FuncKey.szDescription),
                                            FuncKey.szDescription);
                         FuncKey.ucScanCode = pefkd->ucScanCode;
-                        FuncKey.fModifier
-                            = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
+                        FuncKey.fModifier = FALSE;
+                            // = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
+                            // V0.9.12 (2001-05-17) [umoeller]
                         hifAppendFunctionKey(&FuncKey);
                         AddFuncKeyRecord(WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR),
                                          &FuncKey,
@@ -1690,26 +1695,26 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         BOOL        fEnableAmp = (   (pdc->fMB3Scroll)
                                   && (pdc->usScrollMode == SM_AMPLIFIED)
                                  );
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT1,
                           pdc->fMB3Scroll);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER,
                           pdc->fMB3Scroll);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT2,
-                          pdc->fMB3Scroll);
-
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3LINEWISE,
-                          pdc->fMB3Scroll);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_TXT2,
                           pdc->fMB3Scroll);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3LINEWISE,
+                          pdc->fMB3Scroll);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMPLIFIED,
+                          pdc->fMB3Scroll);
+
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT1,
                           fEnableAmp);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_SLIDER,
                           fEnableAmp);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3AMP_TXT2,
                           fEnableAmp);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLLREVERSE,
                           pdc->fMB3Scroll);
     }
 }
@@ -2027,42 +2032,42 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
                           (pdc->fSlidingFocus)
                           && (pGlobalSettings->fEnablePageMage)
                          );
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
                           pdc->fSlidingFocus);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
                           pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
                           pdc->fSlidingFocus);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT1,
                           pdc->fSlidingMenus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_SLIDER,
                           pdc->fSlidingMenus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT2,
                           pdc->fSlidingMenus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_CONDCASCADE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_CONDCASCADE,
                           pdc->fSlidingMenus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
                           (pdc->fSlidingMenus) && (pdc->ulSubmenuDelay > 0));
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
                          pdc->fAutoHideMouse);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
                          pdc->fAutoHideMouse);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
                          pdc->fAutoHideMouse);
     }
 }
@@ -2428,10 +2433,10 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP,
                           winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_CHECK));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR,
                           winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_OPEN_CHECK));
     }

@@ -120,11 +120,11 @@
  *                                                                  *
  ********************************************************************/
 
-CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+static CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 
 // WPUrl class object; to preserve compatibility with Warp 3,
 // where this class does not exist, we call the SOM kernel
@@ -132,7 +132,7 @@ CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 // The initial value of -1 means that we have not queried
 // this class yet. After the first query, this either points
 // to the class object or is NULL if the class does not exist.
-SOMClass    *G_WPUrl = (SOMClass*)-1;
+static SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 /* ******************************************************************
  *                                                                  *
@@ -1934,15 +1934,15 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = !(pGlobalSettings->fNoSubclassing);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
     }
 }
 

@@ -719,7 +719,7 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
                          (     (pGlobalSettings->fXShutdown)
                            // &&  (pGlobalSettings->fDTMShutdown)
                            &&  (!pGlobalSettings->NoWorkerThread)
@@ -910,11 +910,10 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                  &ulError))
             {
                 // and have the subclassed static control display the thing
-                WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_XSDI_DTP_LOGOBITMAP),
-                           SM_SETHANDLE,
-                           (MPARAM)(hbmBootLogo),
-                           MPNULL);
+                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
+                                  SM_SETHANDLE,
+                                  (MPARAM)(hbmBootLogo),
+                                  MPNULL);
 
                 // delete the bitmap again
                 // (the static control has made a private copy
@@ -943,13 +942,13 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         BOOL    fBootLogoFileExists = (access(pszBootLogoFile, 0) == 0);
         free(pszBootLogoFile);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
                          pGlobalSettings->BootLogo);
 
         if (WinQueryObject((PSZ)XFOLDER_STARTUPID))
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
     }
 }
 
@@ -1061,7 +1060,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 PSZ pszNewBootLogoFile = winhQueryWindowText(pcnbp->hwndControl);
                 if (usNotifyCode == EN_CHANGE)
-                    WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
+                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
                                      (access(pszNewBootLogoFile, 0) == 0));
                 else if (usNotifyCode == EN_KILLFOCUS)
                 {
@@ -1226,7 +1225,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))
-                    WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
                 else
                     cmnMessageBoxMsg(pcnbp->hwndFrame,
                                      104, 105,

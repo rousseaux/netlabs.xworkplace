@@ -131,7 +131,7 @@ MYOWNINC = $(INC)\xcenter
 
 $(OUTPUTDIR)\ctr_engine.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
         $(HLPINC)\prfh.h $(HLPINC)\winh.h $(HLPINC)\standards.h $(HLPINC)\stringh.h \
         $(HLPINC)\threads.h $(HLPINC)\timer.h $(HLPINC)\xstring.h \
     $(INC)\classes\xcenter.ih $(INC)\classes\xfobj.ih \

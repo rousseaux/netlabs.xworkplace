@@ -170,129 +170,21 @@
  *
  ********************************************************************/
 
-BOOL    G_fIsWarp4 = FALSE;
+static BOOL    G_fIsWarp4 = FALSE;
 
-HWND    G_hwndTemplateFrame = NULLHANDLE;
-POINTL  G_ptlTemplateMousePos = {0};
+static HWND    G_hwndTemplateFrame = NULLHANDLE;
+static POINTL  G_ptlTemplateMousePos = {0};
 
 // linked list for config folder content:
-HMTX        G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
-LINKLIST    G_llConfigContent;
-BOOL        G_fConfigCacheValid;                // if FALSE, cache is rebuilt
+static HMTX        G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
+static LINKLIST    G_llConfigContent;
+static BOOL        G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
 /* ******************************************************************
  *
  *   Various helper funcs
  *
  ********************************************************************/
-
-/*
- *@@ mnuCheckDefaultSortItem:
- *      checks/unchecks a sort item in the "Sort" submenu.
- */
-
-VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,  // in: cmnQueryGlobalSettings
-                             HWND hwndSortMenu,             // in: handle of "Sort" submenu
-                             ULONG ulDefaultSort)           // in: item id to be checked
-{
-    winhSetMenuItemChecked(hwndSortMenu,
-                           WinSendMsg(hwndSortMenu,
-                                      MM_QUERYDEFAULTITEMID,
-                                      MPNULL, MPNULL), // find current default
-                           FALSE);                     // uncheck
-
-    WinSendMsg(hwndSortMenu,
-               MM_SETDEFAULTITEMID,
-               (MPARAM)
-                    ((ulDefaultSort == SV_NAME) ? ID_WPMI_SORTBYNAME
-                    : (ulDefaultSort == SV_TYPE) ? ID_WPMI_SORTBYTYPE
-                    : (ulDefaultSort == SV_CLASS) ? pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS
-                    : (ulDefaultSort == SV_REALNAME) ? ID_WPMI_SORTBYREALNAME
-                    : (ulDefaultSort == SV_SIZE) ? ID_WPMI_SORTBYSIZE
-                    : (ulDefaultSort == SV_LASTWRITEDATE) ? ID_WPMI_SORTBYWRITEDATE
-                    : (ulDefaultSort == SV_LASTACCESSDATE) ? ID_WPMI_SORTBYACCESSDATE
-                    : (ulDefaultSort == SV_CREATIONDATE) ? ID_WPMI_SORTBYCREATIONDATE
-                    : (ulDefaultSort == SV_EXT) ? pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT
-                    : pGlobalSettings->VarMenuOffset +ID_XFMI_OFS_SORTFOLDERSFIRST),
-               MPNULL);
-}
-
-/*
- *@@ mnuModifySortMenu:
- *      this modifies the "Sort" submenu. Used for both
- *      folder context menus (mnuModifyFolderPopupMenu below)
- *      and folder menu bars (WM_INITMENU message in
- *      fdr_fnwpSubclassedFolderFrame).
- *
- *      This function leaves the original (WPS) sort menu
- *      items untouched. Those items are however intercepted
- *      in mnuMenuItemSelected.
- *
- *      Note that hwndMenu is NOT the window handle of the
- *      "Sort" menu, but the one of the parent menu, i.e.
- *      the context menu itself or the "View" menu in
- *      menu bars.
- *
- *@@changed V0.9.9 (2001-04-04) [umoeller]: removed NLSSTRINGS ptr
- */
-
-VOID mnuModifySortMenu(WPFolder *somSelf,
-                       HWND hwndMenu,               // parent of "Sort" menu
-                       PCGLOBALSETTINGS pGlobalSettings)    // cmnQueryGlobalSettings
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    // work on "Sort" menu, if allowed
-    if (pGlobalSettings->ExtFolderSort)
-    {
-        if ((pGlobalSettings->DefaultMenuItems & CTXT_SORT) == 0)
-        {
-            HWND        hwndSortMenu;
-            // SHORT       sItem, sItemCount;
-            ULONG       ulDefaultSort = DEFAULT_SORT;
-            MENUITEM    mi;
-
-            if ((BOOL)WinSendMsg(hwndMenu,
-                MM_QUERYITEM,
-                MPFROM2SHORT(WPMENUID_SORT, TRUE),
-                (MPARAM)&mi))
-            {
-                hwndSortMenu = mi.hwndSubMenu;
-                // now contains "Sort" submenu handle;
-                // insert the new XFolder sort criteria
-                winhInsertMenuItem(hwndSortMenu, 2, // after "type"
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS),
-                                   cmnGetString(ID_XSSI_SV_CLASS), // pszSortByClass */
-                                   MIS_TEXT, 0);
-                winhInsertMenuItem(hwndSortMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT),
-                                   cmnGetString(ID_XSSI_SV_EXT), // pszSortByExt */
-                                   MIS_TEXT, 0);
-                winhInsertMenuItem(hwndSortMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST),
-                                   cmnGetString(ID_XSSI_SV_FOLDERSFIRST), // pszSortFoldersFirst */
-                                   MIS_TEXT, 0);
-
-                winhInsertMenuSeparator(hwndSortMenu, MIT_END,
-                                  (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-
-                // insert "Always sort"
-                winhInsertMenuItem(hwndSortMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ALWAYSSORT),
-                                   cmnGetString(ID_XSSI_SV_ALWAYSSORT), // pszAlwaysSort */
-                                   MIS_TEXT,
-                                   (ALWAYS_SORT)           // check item if "Always sort" is on
-                                       ? (MIA_CHECKED)
-                                       : 0);
-
-                mnuCheckDefaultSortItem(pGlobalSettings,
-                                        hwndSortMenu,
-                                        ulDefaultSort);
-
-            } // end if MM_QUERYITEM
-        }
-    }
-}
 
 /*
  *@@ mnuInsertFldrViewItems:
@@ -992,17 +884,18 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
                 if (pDefDoc)
                     // we have a default document for this folder:
-                    if (WinSendMsg(hwndMenu,
-                                   MM_QUERYITEM,
-                                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                                   (MPARAM)&mi))
+                    if (winhQueryMenuItem(hwndMenu,
+                                          WPMENUID_OPEN,
+                                          TRUE,
+                                          &mi))
                     {
+                        // mi.hwndSubMenu now contains "Open" submenu handle;
+
                         CHAR szDefDoc[2*CCHMAXPATH];
                         sprintf(szDefDoc,
                                 "%s \"%s\"",
                                 cmnGetString(ID_XSSI_FDRDEFAULTDOC),  // pszFdrDefaultDoc
                                 _wpQueryTitle(pDefDoc));
-                        // mi.hwndSubMenu now contains "Open" submenu handle;
                         winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
                                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
                         // add "Default document"
@@ -1059,15 +952,14 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
                 SHORT sPos = MIT_END;
 
-                if (WinSendMsg(hwndMenu,
-                               MM_QUERYITEM,
-                               MPFROM2SHORT( ((G_fIsWarp4)
-                                     // in Warp 4, these items are in the "View" submenu;
-                                     // in Warp 3, "Select" is  a separate submenu
+                if (winhQueryMenuItem(hwndMenu,
+                                      (G_fIsWarp4)
+                                      // in Warp 4, these items are in the "View" submenu;
+                                      // in Warp 3, "Select" is  a separate submenu
                                            ? ID_WPM_VIEW           // 0x68
-                                           : 0x04),      // WPMENUID_SELECT
-                                       TRUE),
-                               (MPARAM)&mi))
+                                           : 0x04,      // WPMENUID_SELECT
+                                      TRUE,
+                                      &mi))
                 {
                     // mi.hwndSubMenu now contains "Select"/"View" submenu handle,
                     // which we can add items to now
@@ -1104,8 +996,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                            cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
                                            MIS_TEXT, 0);
                         if (G_fIsWarp4)
-                            winhInsertMenuSeparator(mi.hwndSubMenu, sPos+1,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                            winhInsertMenuSeparator(mi.hwndSubMenu,
+                                                    sPos + 1,
+                                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
                     }
 
                     // additional "view" items (icon size etc.)
@@ -1149,9 +1042,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             // work on "Sort" menu; we have put this
             // into a subroutine, because this is also
             // needed for folder menu _bars_
-            mnuModifySortMenu(somSelf,
-                              hwndMenu,
-                              pGlobalSettings);
+
+            fdrModifySortMenu(somSelf,
+                              hwndMenu);
 
             if (pGlobalSettings->AddCopyFilenameItem)
             {
@@ -1182,27 +1075,28 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                             MIS_TEXT, 0);
 
                 // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
-                if (pGlobalSettings->fEnableSnap2Grid)
-                    // "Snap to grid" enabled locally or globally?
-                    if (    (_bSnapToGridInstance == 1)
-                         || (   (_bSnapToGridInstance == 2)
-                             && (pGlobalSettings->fAddSnapToGridDefault)
-                            )
-                       )
-                    {
-                        // insert only when sorting is off
-                        if (!(ALWAYS_SORT))
-                        {
-                            if (ulView == OPEN_CONTENTS)
-                            {
-                                // insert "Snap to grid" only for open icon views
-                                winhInsertMenuItem(hwndMenu, MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID),
-                                        cmnGetString(ID_XSSI_SNAPTOGRID),  // pszSnapToGrid
-                                        MIS_TEXT, 0);
-                            }
-                        }
-                    }
+                if (    (pGlobalSettings->fEnableSnap2Grid)
+                     // "Snap to grid" enabled locally or globally?
+                     && (    (_bSnapToGridInstance == 1)
+                          || (   (_bSnapToGridInstance == 2)
+                              && (pGlobalSettings->fAddSnapToGridDefault)
+                             )
+                        )
+                     // insert only when sorting is off
+                     && (!fdrHasAlwaysSort(somSelf))
+                     // and only in icon view
+                     && (ulView == OPEN_CONTENTS)
+                    )
+                {
+                    // insert "Snap to grid" only for open icon views
+                    winhInsertMenuItem(hwndMenu,
+                                       MIT_END,
+                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID),
+                                       cmnGetString(ID_XSSI_SNAPTOGRID),  // pszSnapToGrid
+                                       MIS_TEXT,
+                                       0);
+                }
+
             } // end if view open
 
             // now do necessary preparations for all variable menu items
@@ -1251,20 +1145,23 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     // because then we will insert the folder content anyway
                     if (!_xwpIsFavoriteFolder(somSelf))
                         // somself is not in favorites list: add "Folder content"
-                        cmnuPrepareContentSubmenu(somSelf, hwndMenu,
-                                cmnGetString(ID_XSSI_FLDRCONTENT),  // pszFldrContent
-                                MIT_END,
-                                FALSE); // no owner draw in main context menu
+                        cmnuPrepareContentSubmenu(somSelf,
+                                                  hwndMenu,
+                                                  cmnGetString(ID_XSSI_FLDRCONTENT),
+                                                  MIT_END,
+                                                  FALSE); // no owner draw in main context menu
                 }
 
                 // now add favorite folders
-                for (pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
-                     pFavorite;
-                     pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, pFavorite))
+                pFavorite = NULL;
+                while (pFavorite = _xwpclsQueryFavoriteFolder(_XFolder,
+                                                              pFavorite))
                 {
-                    cmnuPrepareContentSubmenu(pFavorite, hwndMenu,
-                            _wpQueryTitle(pFavorite), MIT_END,
-                            FALSE); // no owner draw in main context menu
+                    cmnuPrepareContentSubmenu(pFavorite,
+                                              hwndMenu,
+                                              _wpQueryTitle(pFavorite),
+                                              MIT_END,
+                                              FALSE); // no owner draw in main context menu
                 }
             } // end folder contents
 
@@ -1671,151 +1568,6 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
 }
 
 /*
- *@@ mnuIsSortMenuItemSelected:
- *      this is used by both mnuMenuItemSelected and
- *      fdr_fnwpSubclassedFolderFrame for checking if the selected
- *      menu item is one of the folder things and, if so,
- *      setting the folder sort settings accordingly.
- *
- *      We need to have a separate proc for this because
- *      fdr_fnwpSubclassedFolderFrame needs this if the user uses
- *      the mouse and mnuMenuItemSelected gets the folder
- *      hotkeys.
- *
- *      This returns TRUE if the menu item was processed
- *      and then sets *pbDismiss to whether the menu should
- *      be dismissed. If pbDismiss is passed as NULL, this
- *      routine assumes that we're dealing with hotkeys
- *      instead of menu items.
- */
-
-BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
-                               HWND hwndFrame,
-                               HWND hwndMenu,      // may be NULLHANDLE if
-                                                   // pbDismiss is NULL also
-                               ULONG ulMenuId,
-                               PCGLOBALSETTINGS pGlobalSettings,
-                               PBOOL pbDismiss)    // out: dismiss flag for fdr_fnwpSubclassedFolderFrame
-{
-    BOOL        brc = FALSE;
-    ULONG       ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
-    USHORT      usAlwaysSort, usDefaultSort;
-
-    switch (ulMenuId2)
-    {
-        // new sort items
-        case ID_XFMI_OFS_SORTBYCLASS:
-        case ID_XFMI_OFS_SORTBYEXT:
-        case ID_XFMI_OFS_SORTFOLDERSFIRST:
-        {
-            USHORT usSort;
-            BOOL   fShiftPressed = doshQueryShiftState();
-
-            switch (ulMenuId2)
-            {
-                case ID_XFMI_OFS_SORTBYCLASS:       usSort = SV_CLASS;        break;
-                case ID_XFMI_OFS_SORTFOLDERSFIRST:  usSort = SV_FOLDERSFIRST; break;
-                case ID_XFMI_OFS_SORTBYEXT:         usSort = SV_EXT;          break;
-            }
-
-            if ((fShiftPressed) && (pbDismiss))
-            {
-                _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
-                _xwpSetFldrSort(somSelf,   usSort,  usAlwaysSort);
-                mnuCheckDefaultSortItem(pGlobalSettings,
-                                        hwndMenu,
-                                        usSort);
-            }
-            else
-                _xwpSortViewOnce(somSelf,
-                                 hwndFrame,
-                                 usSort);
-
-            // do not dismiss menu when shift was pressed
-            if (pbDismiss)
-                *pbDismiss = (!fShiftPressed);
-            brc = TRUE;
-        break; }
-
-        // "Always sort"
-        case ID_XFMI_OFS_ALWAYSSORT:
-        {
-            XFolderData         *somThis = XFolderGetData(somSelf);
-            BOOL                fAlwaysSort = ALWAYS_SORT;
-            _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
-            _xwpSetFldrSort(somSelf, usDefaultSort,
-                                !fAlwaysSort);
-
-            winhSetMenuItemChecked(hwndMenu,
-                        ulMenuId,
-                        !fAlwaysSort);
-
-            // do not dismiss menu
-            if (pbDismiss)
-                *pbDismiss = FALSE;
-
-            brc = TRUE;
-        break; }
-
-        default:
-            // check original menu id
-            switch (ulMenuId)
-            {
-                // one of the original WPS "sort" menu items:
-                case ID_WPMI_SORTBYNAME:
-                case ID_WPMI_SORTBYTYPE:
-                case ID_WPMI_SORTBYREALNAME:
-                case ID_WPMI_SORTBYSIZE:
-                case ID_WPMI_SORTBYWRITEDATE:
-                case ID_WPMI_SORTBYACCESSDATE:
-                case ID_WPMI_SORTBYCREATIONDATE:
-                    if (pGlobalSettings->ExtFolderSort)  // extended sorting?
-                    {
-                        BOOL   fShiftPressed = doshQueryShiftState();
-                        USHORT usSort;
-
-                        switch (ulMenuId)
-                        {
-                            case ID_WPMI_SORTBYNAME:            usSort = SV_NAME;         break;
-                            case ID_WPMI_SORTBYTYPE:            usSort = SV_TYPE;         break;
-                            case ID_WPMI_SORTBYREALNAME:        usSort = SV_REALNAME;     break;
-                            case ID_WPMI_SORTBYSIZE:            usSort = SV_SIZE;         break;
-                            case ID_WPMI_SORTBYWRITEDATE:       usSort = SV_LASTWRITEDATE;    break;
-                            case ID_WPMI_SORTBYACCESSDATE:      usSort = SV_LASTACCESSDATE;   break;
-                            case ID_WPMI_SORTBYCREATIONDATE:    usSort = SV_CREATIONDATE; break;
-                        }
-
-                        if ((fShiftPressed) && (pbDismiss))
-                        {
-                            // SHIFT pressed when menu item was selected:
-                            // set default sort criterion
-                            _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
-                            _xwpSetFldrSort(somSelf,   usSort,         usAlwaysSort);
-                            mnuCheckDefaultSortItem(pGlobalSettings,
-                                                    hwndMenu,
-                                                    usSort);
-                        }
-                        else
-                        {
-                            // not SHIFT pressed: simply sort
-                            _xwpSortViewOnce(somSelf,
-                                            hwndFrame,
-                                            usSort);
-                        }
-
-                        // do not dismiss menu if shift was pressed
-                        if (pbDismiss)
-                            *pbDismiss = (!fShiftPressed);
-                        // found flag
-                        brc = TRUE;
-                    }
-                break;
-            }
-    }
-    return (brc);
-}
-
-/*
  *@@ mnuMenuItemSelected:
  *      this gets called by XFolder::wpMenuItemSelected and
  *      XFldDisk::wpMenuItemSelected. Since both classes have
@@ -1865,11 +1617,11 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
              *
              */
 
-            if (mnuIsSortMenuItemSelected(somSelf,
-                                          hwndFrame,
-                                          NULLHANDLE,     // we don't know the menu hwnd
-                                          ulMenuId,
-                                          pGlobalSettings, &fDummy))
+            if (fdrSortMenuItemSelected(somSelf,
+                                        hwndFrame,
+                                        NULLHANDLE,     // we don't know the menu hwnd
+                                        ulMenuId,
+                                        &fDummy))
                 brc = TRUE;
 
             // no sort menu item:
@@ -2549,13 +2301,12 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
     #endif
 
     // first check if it's one of the "Sort" menu items
-    fHandled = mnuIsSortMenuItemSelected(somSelf,
-                                         WinQueryWindow(hwndCnr,
-                                                        QW_PARENT), // frame window
-                                         hwndMenu,
-                                         usItem,
-                                         pGlobalSettings,
-                                         pfDismiss);   // dismiss flag == return value
+    fHandled = fdrSortMenuItemSelected(somSelf,
+                                       WinQueryWindow(hwndCnr,
+                                                      QW_PARENT), // frame window
+                                       hwndMenu,
+                                       usItem,
+                                       pfDismiss);   // dismiss flag == return value
 
     if (!fHandled)
     {
@@ -2768,12 +2519,12 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                (    ( (G_fIsWarp4)  && (pGlobalSettings->RemoveViewMenu == 0) )
                  || ( (!G_fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                ));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
                          !(pGlobalSettings->fNoSubclassing));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
                          !(pGlobalSettings->fNoSubclassing));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
     }
 }
 
@@ -3085,16 +2836,16 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // disable items for Warp 3/4
         if (doshIsWarp4())
         {
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
                              !pGlobalSettings->RemoveLockInPlaceItem);
         }
         else
         {
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
-            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
+            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE);
         }
     }
 }

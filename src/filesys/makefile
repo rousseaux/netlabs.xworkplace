@@ -63,6 +63,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\fdrhotky.obj \
        $(OUTPUTDIR)\fdrmenus.obj \
        $(OUTPUTDIR)\fdrnotebooks.obj \
+       $(OUTPUTDIR)\fdrsort.obj \
        $(OUTPUTDIR)\fdrsubclass.obj \
        $(OUTPUTDIR)\fhandles.obj \
        $(OUTPUTDIR)\filedlg.obj \
@@ -188,6 +189,17 @@ $(OUTPUTDIR)\fdrnotebooks.obj: \
     $(INC)\filesys\xthreads.h \
     $(@B).c $(INC)\filesys\folder.h
 
+$(OUTPUTDIR)\fdrsort.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
+           $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h \
+           $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+    $(INC)\dlgids.h \
+    $(INC)\classes\xfldr.ih \
+    $(INC)\shared\common.h $(INC)\shared\cnrsort.h $(INC)\shared\wpsh.h \
+    $(INC)\filesys\folder.h \
+    $(@B).c
+
 $(OUTPUTDIR)\fdrsubclass.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
@@ -229,7 +241,7 @@ $(OUTPUTDIR)\fileops.obj: \
 $(OUTPUTDIR)\filesys.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\prfh.h \
-        $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+        $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfpgmf.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h \
@@ -271,7 +283,8 @@ $(OUTPUTDIR)\fops_bottom.obj: \
 
 $(OUTPUTDIR)\fops_top.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\linklist.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\linklist.h \
+        $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \

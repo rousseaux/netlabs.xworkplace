@@ -926,9 +926,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = !(pGlobalSettings->fNoSubclassing);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
     }
 }
 
@@ -977,7 +977,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     cmnDescribeKey(szKeyName,
                                    pHotkeyFound->usFlags,
                                    pHotkeyFound->usKeyCode);
-                    WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, TRUE);
+                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, TRUE);
                 }
                 else
                 {
@@ -985,17 +985,17 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     strcpy(szKeyName,
                            cmnGetString(ID_XSSI_NOTDEFINED));
 
-                    WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
+                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 }
 
-                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
 
                 // set edit field to description text
                 WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
                                   szKeyName);
                 // enable previously disabled items
-                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION, TRUE);
-                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION, TRUE);
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
             }
         break;
 
@@ -1080,8 +1080,8 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
                                   cmnGetString(ID_XSSI_NOTDEFINED));
-                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
-                WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
+                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 fdrStoreFldrHotkeys();
             }
         break; }

@@ -37,6 +37,11 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// disable wrappers, because we're not linking statically
+#ifdef WINH_STANDARDWRAPPERS
+    #undef WINH_STANDARDWRAPPERS
+#endif
+
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
@@ -467,11 +472,10 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
             PSAMPLESETUP pSetup=(PSAMPLESETUP)malloc(sizeof(SAMPLESETUP));
 
             // set max.length of entryfield to 1
-            WinSendMsg(WinWindowFromID(hwnd, 106),
-                       EM_SETTEXTLIMIT,
-                       MPFROMSHORT(1),
-                       (MPARAM)0);
-
+            WinSendDlgItemMsg(hwnd, 106,
+                              EM_SETTEXTLIMIT,
+                              MPFROMSHORT(1),
+                              (MPARAM)0);
 
             if(pSetup)
             {
@@ -482,18 +486,18 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                 WgtScanSetup(pData->pcszSetupString, pSetup);
 
                 if(pSetup->chDrive=='*')
-                    WinSendMsg(WinWindowFromID(hwnd, 101),
-                               BM_CLICK,
-                               MPFROMSHORT(TRUE),
-                               (MPARAM)0);
+                    WinSendDlgItemMsg(hwnd, 101,
+                                      BM_CLICK,
+                                      MPFROMSHORT(TRUE),
+                                      (MPARAM)0);
                 else
                 {
                     char sz[2];
 
-                    WinSendMsg(WinWindowFromID(hwnd, 102),
-                               BM_CLICK,
-                               MPFROMSHORT(TRUE),
-                               (MPARAM)0);
+                    WinSendDlgItemMsg(hwnd, 102,
+                                      BM_CLICK,
+                                      MPFROMSHORT(TRUE),
+                                      (MPARAM)0);
 
                     sz[0]=pSetup->chDrive;
                     sz[1]='\0';
@@ -550,10 +554,10 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                     XSTRING strSetup;
                     PSAMPLESETUP pSetup=(PSAMPLESETUP)pData->pUser;
                     // 'store' settings in pSetup
-                    if(0==(long)WinSendMsg(WinWindowFromID(hwnd, 101),
-                                           BM_QUERYCHECKINDEX,
-                                           (MPARAM)0,
-                                           (MPARAM)0))
+                    if(0==(long)WinSendDlgItemMsg(hwnd, 101,
+                                                  BM_QUERYCHECKINDEX,
+                                                  (MPARAM)0,
+                                                  (MPARAM)0))
                         // radiobutton 1 is checked -> multi-view
                         pSetup->chDrive = '*';
                     else

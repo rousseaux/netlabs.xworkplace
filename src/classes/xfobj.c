@@ -230,7 +230,8 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
  *      which returns the true value of the instance variable.
  *
  *      This will only be != OPEN_DEFAULT if the user explicitly
- *      changed the default view for the object.
+ *      changed the default view for the object on the "Menu"
+ *      page.
  *
  *      This returns 0 if we couldn't get access to the internal
  *      WPObject data.
@@ -289,8 +290,8 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
 /*
  *@@ xwpSetDeletion:
  *      this sets the deletion date and time fields for this object.
- *      This method is only to be called by the XWorkplace trash can
- *      and changes the data which is subsequently returned by
+ *      This method is _only_ to be called by the XWorkplace trash
+ *      can and changes the data which is subsequently returned by
  *      XFldObject::xwpQueryDeletion.
  *
  *      If (fSet == TRUE),the object is assumed to have been moved to the
@@ -452,7 +453,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
  *      atomic operation, similar to wpModifyStyle.
  *
  *      This operates bit-wise. To set a flag, set it in
- *      both flNotifyFlags and flNotifyMask. To unset a
+ *      both flNotifyFlags and flNotifyMask. To clear a
  *      flag, set it in flNotifyFlags only.
  *
  *      For example, to set FLAG1 and clear FLAG2, call:
@@ -521,15 +522,14 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpAddDestroyNotify(XFldObject *somSelf,
     if (wpshLockObject(&Lock, somSelf))
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        PLINKLIST pllNotifies = NULL;
         if (_pvllWidgetNotifies == NULL)
             // list not created yet: do it now
             _pvllWidgetNotifies = lstCreate(FALSE);     // no auto-free
 
-        pllNotifies = (PLINKLIST)_pvllWidgetNotifies;
-        if (pllNotifies)
+        if (_pvllWidgetNotifies)
         {
-            lstAppendItem(pllNotifies, (PVOID)hwnd);
+            lstAppendItem((PLINKLIST)_pvllWidgetNotifies,
+                          (PVOID)hwnd);
         }
 
         brc = TRUE;
@@ -556,10 +556,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
     if (wpshLockObject(&Lock, somSelf))
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        PLINKLIST pllNotifies = (PLINKLIST)_pvllWidgetNotifies;
-        if (pllNotifies)
+        if (_pvllWidgetNotifies)
         {
-            lstRemoveItem(pllNotifies, (PVOID)hwnd);
+            lstRemoveItem((PLINKLIST)_pvllWidgetNotifies,
+                          (PVOID)hwnd);
         }
 
         brc = TRUE;
@@ -886,29 +886,6 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
 }
 
 /*
- *@@ wpCopyObject:
- *      overridden for debugging.
- *
- *@@added V0.9.3 (2000-04-28) [umoeller]
- */
-
-SOM_Scope WPObject*  SOMLINK xfobj_wpCopyObject(XFldObject *somSelf,
-                                                WPFolder* Folder,
-                                                BOOL fLock)
-{
-    WPObject *pCopiedObject;
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpCopyObject");
-
-    _Pmpf(("0x%lX ++ XFldObject::wpCopyObject", somSelf));
-    pCopiedObject = XFldObject_parent_WPObject_wpCopyObject(somSelf,
-                                                            Folder,
-                                                            fLock);
-    _Pmpf(("0x%lX -- End of XFldObject::wpCopyObject", somSelf));
-    return (pCopiedObject);
-}
-
-/*
  *@@ wpObjectReady:
  *      this WPObject notification method gets called by the
  *      WPS when object instantiation is complete, for any reason.
@@ -988,7 +965,9 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
     // called for WPFolder instances, so we override
     // WPFolder::wpObjectReady also; but we don't know
     // if this is so with all Warp versions, so we
-    // better check
+    // better check (the worker thread checks for
+    // duplicates, so there's no problem in posting
+    // this twice)
     if (!_somIsA(somSelf, _WPFolder))
         xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
                          (MPARAM)somSelf,
@@ -1943,88 +1922,6 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
             xthrPostSpeedyMsg(QM_BOOTUPSTATUS,
                              (MPARAM)somSelf,       // class object
                              MPNULL);
-}
-
-/*
- *@@ wpclsNew:
- *      overridden for debugging
- */
-
-SOM_Scope WPObject*  SOMLINK xfobjM_wpclsNew(M_XFldObject *somSelf,
-                                             PSZ pszTitle,
-                                             PSZ pszSetupEnv,
-                                             WPFolder* Folder,
-                                             BOOL fLock)
-{
-    WPObject *pObject;
-    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
-    // M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsNew");
-
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("xfobjM_wpclsNew, class object: %s, title: %s, setup: %s, folder: 0x%lX (%s)",
-                    _somGetName(somSelf),
-                    pszTitle,
-                    pszSetupEnv,
-                    Folder,
-                    (Folder)
-                        ? _wpQueryTitle(Folder)
-                        : "NULL"));
-    #endif
-
-    pObject = M_XFldObject_parent_M_WPObject_wpclsNew(somSelf,
-                                                    pszTitle,
-                                                    pszSetupEnv,
-                                                    Folder, fLock);
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("End of M_XFldObject::wpclsNew, returning pObject: 0x%lX",
-                    pObject));
-    #endif
-
-    return (pObject);
-}
-
-/*
- *@@ wpclsMakeAwake:
- *      overridden for debugging
- */
-
-SOM_Scope WPObject*  SOMLINK xfobjM_wpclsMakeAwake(M_XFldObject *somSelf,
-                                                   PSZ pszTitle,
-                                                   ULONG ulStyle,
-                                                   HPOINTER hptrIcon,
-                                                   POBJDATA pObjData,
-                                                   WPFolder* Folder,
-                                                   ULONG ulUser)
-{
-    WPObject *pObject;
-    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
-    // M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsMakeAwake");
-
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("xfobjM_wpclsMakeAwake, class object: %s, title: %s, ulStyle: 0x%lX, folder: 0x%lX (%s)",
-                    _somGetName(somSelf),
-                    pszTitle,
-                    ulStyle,
-                    Folder,
-                    (Folder)
-                        ? _wpQueryTitle(Folder)
-                        : "NULL"));
-
-    #endif
-
-    pObject = M_XFldObject_parent_M_WPObject_wpclsMakeAwake(somSelf,
-                                                          pszTitle,
-                                                          ulStyle,
-                                                          hptrIcon,
-                                                          pObjData,
-                                                          Folder,
-                                                          ulUser);
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("End of M_XFldObject::wpclsMakeAwake, returning pobject: 0x%lX",
-                pObject));
-    #endif
-
-    return (pObject);
 }
 
 /*

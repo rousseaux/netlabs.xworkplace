@@ -138,9 +138,13 @@ BOOL fdrSetup(WPFolder *somSelf,
 
     BOOL        rc = TRUE,
                 fChanged = FALSE;       // instance data changed
+
+    LONG        lDefaultSort,
+                lFoldersFirst,
+                lAlwaysSort;
+
     CHAR        szValue[CCHMAXPATH + 1];
-    ULONG       cbValue;
-    cbValue = sizeof(szValue);
+    ULONG       cbValue = sizeof(szValue);
     if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
                            "SNAPTOGRID", szValue, &cbValue))
     {
@@ -245,39 +249,45 @@ BOOL fdrSetup(WPFolder *somSelf,
     if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
                            "ALWAYSSORT", szValue, &cbValue))
     {
-        USHORT      usDefaultSort, usAlwaysSort;
-
         rc = TRUE;
-        _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
+        _xwpQueryFldrSort(somSelf,
+                          &lDefaultSort,
+                          &lFoldersFirst,
+                          &lAlwaysSort);
 
         if (strnicmp(szValue, "NO", 2) == 0)
-            usAlwaysSort = 0;
+            lAlwaysSort = 0;
         else if (strnicmp(szValue, "YES", 3) == 0)
-            usAlwaysSort = 1;
+            lAlwaysSort = 1;
         else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-            usAlwaysSort = SET_DEFAULT;
-        _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
-        // fChanged = TRUE;
+            lAlwaysSort = SET_DEFAULT;
+        _xwpSetFldrSort(somSelf,
+                        lDefaultSort,
+                        lFoldersFirst,
+                        lAlwaysSort);
     }
 
     cbValue = sizeof(szValue);
     if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
                            "DEFAULTSORT", szValue, &cbValue))
     {
-        USHORT      usDefaultSort = 0,
-                    usAlwaysSort = 0;
         LONG lValue;
 
         rc = TRUE;
-        _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
+        _xwpQueryFldrSort(somSelf,
+                          &lDefaultSort,
+                          &lFoldersFirst,
+                          &lAlwaysSort);
 
         sscanf(szValue, "%d", &lValue);
-        if ( (lValue >=0) && (lValue <= SV_LAST) )
-            usDefaultSort = lValue;
+        if ( (lValue >= -4) && (lValue <= 100) )
+            lDefaultSort = lValue;
         else
-            usDefaultSort = SET_DEFAULT;
-        _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
-        // fChanged = TRUE;
+            lDefaultSort = SET_DEFAULT;
+        _xwpSetFldrSort(somSelf,
+                        lDefaultSort,
+                        lFoldersFirst,
+                        lAlwaysSort);
     }
 
     cbValue = sizeof(szValue);
@@ -288,7 +298,7 @@ BOOL fdrSetup(WPFolder *somSelf,
         LONG lValue;
 
         sscanf(szValue, "%d", &lValue);
-        if ( (lValue >=0) && (lValue <= SV_LAST) )
+        if ( (lValue >= -4) && (lValue <= 100) )
             usSort = lValue;
         else
             usSort = SET_DEFAULT;
@@ -1294,273 +1304,6 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
     } // end if (hwndFrame)
 
     return (brc);
-}
-
-/* ******************************************************************
- *
- *   Extended Folder Sort
- *
- ********************************************************************/
-
-/*
- *@@ fdrQuerySortFunc:
- *      this returns the sort comparison function for
- *      the specified sort criterion. See XFolder::xwpSortViewOnce
- *      for details.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-PFN fdrQuerySortFunc(USHORT usSort)
-{
-    USHORT usSort2 = usSort;
-
-    if (usSort == SET_DEFAULT)
-    {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        usSort2 =  pGlobalSettings->DefaultSort;
-    }
-
-    switch (usSort2)
-    {
-        case SV_TYPE:           return ((PFN)fnCompareType);
-        case SV_CLASS:          return ((PFN)fnCompareClass);
-        case SV_REALNAME:       return ((PFN)fnCompareRealName);
-        case SV_SIZE:           return ((PFN)fnCompareSize);
-        case SV_LASTWRITEDATE:  return ((PFN)fnCompareLastWriteDate);
-        case SV_LASTACCESSDATE: return ((PFN)fnCompareLastAccessDate);
-        case SV_CREATIONDATE:   return ((PFN)fnCompareCreationDate);
-        case SV_EXT:            return ((PFN)fnCompareExt);
-        case SV_FOLDERSFIRST:   return ((PFN)fnCompareFoldersFirst);
-    };
-
-    // default:
-    return ((PFN)fnCompareName);
-}
-
-/*
- * fdrSortAllViews:
- *      callback function for sorting all folder views.
- *      This is called by xf(cls)ForEachOpenView, which also passes
- *      the parameters to this func.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwnd
-                                 ULONG ulSort,     // sort flag
-                                 MPARAM mpView,    // OPEN_xxx flag
-                                 MPARAM mpFolder)  // XFolder*
-{
-    XFolder     *somSelf = (XFolder*)mpFolder;
-    MRESULT     mrc = (MPARAM)FALSE;
-
-    if (   ((ULONG)mpView == OPEN_CONTENTS)
-        || ((ULONG)mpView == OPEN_TREE)
-        || ((ULONG)mpView == OPEN_DETAILS)
-       )
-    {
-        _xwpSortViewOnce(somSelf, hwndView, ulSort);
-        mrc = (MPARAM)TRUE;
-    }
-    return (mrc);
-}
-
-/*
- *@@ fdrSetFldrCnrSort:
- *      this is the most central function of XFolder's
- *      extended sorting capabilities. This is called
- *      every time the container in an open folder view
- *      needs to have its sort settings updated. In other
- *      words, this function evaluates the current folder
- *      sort settings and finds out the corresponding
- *      container sort comparison functions and other
- *      settings.
- *
- *      Parameters:
- *      --  HWND hwndCnr     cnr of open view of somSelf
- *      --  BOOL fForce      TRUE: always update the cnr
- *                           settings, even if they have
- *                           not changed
- *
- *      This function gets called:
- *      1)  from our wpOpen override to set folder sort
- *          when a new folder view opens;
- *      2)  from our wpSetFldrSort override (see notes
- *          there);
- *      3)  after folder sort settings have been changed
- *          using xwpSetFldrSort.
- *
- *      It is usually not necessary to call this method
- *      directly. To sort folders, you should call
- *      XFolder::xwpSetFldrSort or XFolder::xwpSortViewOnce
- *      instead.
- *
- *      Note that XFolder does not use the WPS's sort
- *      mechanisms at all. Instead, we set our own
- *      container sort comparison functions directly
- *      _always_. Those functions are all in cnrsort.c.
- *
- *      See the XWorkplace Programming Guide for an
- *      overview of how XFolder sorting works.
- *
- *      This func is prototyped in common.h because
- *      XFldDisk needs access to it also (V0.9.0).
- *
- *@@changed V0.9.0 [umoeller]: this used to be an instance method
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
-                       HWND hwndCnr,           // in: container of open view of somSelf
-                       BOOL fForce)            // in: always invalidate container?
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    if (hwndCnr)
-    {
-        WPSHLOCKSTRUCT Lock;
-        if (wpshLockObject(&Lock, somSelf))
-        {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            // XFolderData     *somThis = XFolderGetData(somSelf);
-
-            // use our macro for determining this folder's always-sort flag;
-            // this is TRUE if "Always sort" is on either locally or globally
-            BOOL            AlwaysSort = ALWAYS_SORT;
-
-            // get our sort comparison func
-            PFN             pfnSort =  (AlwaysSort)
-                                           ? fdrQuerySortFunc(DEFAULT_SORT)
-                                           : NULL;
-            CNRINFO         CnrInfo = {0};
-            BOOL            Update = FALSE;
-
-            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-            #ifdef DEBUG_SORT
-                _Pmpf((__FUNCTION__ ": %s with hwndCnr = 0x%lX",
-                        _wpQueryTitle(somSelf), hwndCnr ));
-                _Pmpf(( "  _Always: %d, Global->Always: %d",
-                        _bAlwaysSort, pGlobalSettings->AlwaysSort ));
-                _Pmpf(( "  ALWAYS_SORT returned %d", AlwaysSort ));
-                _Pmpf(( "  _Default: %d, Global->Default: %d",
-                        _bDefaultSort, pGlobalSettings->DefaultSort ));
-                _Pmpf(( "  pfnSort is 0x%lX", pfnSort ));
-            #endif
-
-            // for icon views, we need extra precautions
-            if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-            {
-                // for some reason, cnr icon views need to have "auto arrange" on
-                // when sorting, or the cnr will allow to drag'n'drop icons freely
-                // within the same cnr, which is not useful when auto-sort is on
-
-                ULONG       ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
-
-                if (AlwaysSort)
-                {
-                    // always sort: we need to set CCS_AUTOPOSITION, if not set
-                    if ((ulStyle & CCS_AUTOPOSITION) == 0)
-                    {
-                        #ifdef DEBUG_SORT
-                            _Pmpf(( "  Setting CCS_AUTOPOSITION"));
-                        #endif
-                        WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
-                        Update = TRUE;
-                    }
-                }
-                else
-                {
-                    // NO always sort: we need to unset CCS_AUTOPOSITION, if set
-                    if ((ulStyle & CCS_AUTOPOSITION) != 0)
-                    {
-                        #ifdef DEBUG_SORT
-                            _Pmpf(( "  Clearing CCS_AUTOPOSITION"));
-                        #endif
-                        WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
-                        Update = TRUE;
-                    }
-                }
-            }
-
-            // now also update the internal WPFolder sort info, because otherwise
-            // the WPS will keep reverting the cnr attrs; we have obtained the pointer
-            // to this structure in wpRestoreData
-            if (_wpIsObjectInitialized(somSelf))
-                if (_pFolderSortInfo)
-                    _pFolderSortInfo->fAlwaysSort = AlwaysSort;
-
-            // finally, set the cnr sort function: we perform these checks
-            // to avoid cnr flickering
-            if (    // sort function changed?
-                    (CnrInfo.pSortRecord != (PVOID)pfnSort)
-                    // CCS_AUTOPOSITION flag changed above?
-                 || (Update)
-                 || (fForce)
-               )
-            {
-                #ifdef DEBUG_SORT
-                    _Pmpf(( "  Resetting pSortRecord to %lX", pfnSort ));
-                #endif
-
-                // set the cnr sort function; if this is != NULL, the
-                // container will always sort the records. If auto-sort
-                // is off, pfnSort has been set to NULL above.
-                CnrInfo.pSortRecord = (PVOID)pfnSort;
-
-                // now update the CnrInfo, which will sort the
-                // contents and repaint the cnr also;
-                // this might take a long time
-                WinSendMsg(hwndCnr,
-                           CM_SETCNRINFO,
-                           (MPARAM)&CnrInfo,
-                           (MPARAM)CMA_PSORTRECORD);
-            }
-        }
-
-        wpshUnlockObject(&Lock);
-
-    } // end if (hwndCnr)
-}
-
-/*
- * fdrUpdateFolderSorts:
- *      callback function for updating all folder sorts.
- *      This is called by xf(cls)ForEachOpenView, which also passes
- *      the parameters to this func.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed wrong window handle
- */
-
-MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
-                                      ULONG ulDummy,
-                                      MPARAM mpView,   // OPEN_xxx flag for this view
-                                      MPARAM mpFolder) // somSelf
-{
-    XFolder     *somSelf = (XFolder*)mpFolder;
-    MRESULT     mrc = (MPARAM)FALSE;
-
-    #ifdef DEBUG_SORT
-        _Pmpf((__FUNCTION__ ": %s", _wpQueryTitle(somSelf) ));
-    #endif
-
-    if (   ((ULONG)mpView == OPEN_CONTENTS)
-        || ((ULONG)mpView == OPEN_TREE)
-        || ((ULONG)mpView == OPEN_DETAILS)
-       )
-    {
-        HWND hwndCnr = wpshQueryCnrFromFrame(hwndView);
-
-        _Pmpf(("  hwndView 0x%lX, hwndCnr 0x%lX", hwndView, hwndCnr));
-
-        fdrSetFldrCnrSort(somSelf,
-                          hwndCnr, // hwndView, // wrong!! V0.9.7 (2000-12-18) [umoeller]
-                          FALSE);
-        mrc = (MPARAM)TRUE;
-    }
-    return (mrc);
 }
 
 /* ******************************************************************
@@ -3095,9 +2838,9 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                     if (!*pulContainerFlag)
                        *pulContainerFlag = TRUE;
 
-                    _Pmpf((__FUNCTION__ ": adding %s to %d",
-                            _wpQueryTitle(pObject),
-                            _wpQueryTitle(somSelf) ));
+                    // _Pmpf((__FUNCTION__ ": adding %s to %d",
+                    //         _wpQueryTitle(pObject),
+                    //         _wpQueryTitle(somSelf) ));
 
                     // set that object's "next object" to NULL
                     _xwpSetNextObj(pObject, NULL);
@@ -3658,15 +3401,13 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 
                 // update status bar
                 if (pGlobalSettings->ShowStartupProgress)
-                    WinSendMsg(WinWindowFromID(ppf->hwndStatus, ID_SDDI_PROGRESSBAR),
-                               WM_UPDATEPROGRESSBAR,
-                               MPFROMLONG(ppf->ulObjectThis),
-                               MPFROMLONG(ppf->cTotalObjects));
+                    WinSendDlgItemMsg(ppf->hwndStatus, ID_SDDI_PROGRESSBAR,
+                                      WM_UPDATEPROGRESSBAR,
+                                      MPFROMLONG(ppf->ulObjectThis),
+                                      MPFROMLONG(ppf->cTotalObjects));
             }
 
-            DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                            &ppf->ulFirstTime,
-                            sizeof(ppf->ulFirstTime));
+            ppf->ulFirstTime = doshQuerySysUptime();
         }
         else
             // no more objects:
@@ -3710,7 +3451,9 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                     {
                         PVIEWITEM pvi = (PVIEWITEM)(pUseItem + 1);
 
-                        _Pmpf(("    got view 0x%lX", pvi->handle));
+                        #ifdef DEBUG_STARTUP
+                            _Pmpf(("    got view 0x%lX", pvi->handle));
+                        #endif
 
                         if (pvi->handle == hwndCurrentView)
                         {
@@ -3726,10 +3469,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
             else
             {
                 // timing mode
-                ULONG ulNowTime;
-                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
-                                &ulNowTime,
-                                sizeof(ulNowTime));
+                ULONG ulNowTime = doshQuerySysUptime();
                 if (ulNowTime > (ppf->ulFirstTime + ppf->ulTiming))
                     fOKGetNext = TRUE;
             }

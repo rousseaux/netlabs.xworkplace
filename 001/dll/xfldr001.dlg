@@ -1167,23 +1167,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_NOOBJECT LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Error: Object Not Found", ID_XFD_NOOBJECT, 10, 27,
-            260, 77, WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        DEFPUSHBUTTON   "~OK", DID_OK, 10, 7, 70, 12
-        ICON            ID_ICONDLG, -1, 225, 53, 20, 16, WS_GROUP
-        LTEXT           "XWorkplace could not find the object in the configu"
-                        "ration folder which should correspond to the menu i"
-                        "tem you selected. This is an internal error in XWor"
-                        "kplace and is not supposed to happen. Please contac"
-                        "t the author.", -1, 10, 22, 205, 49, DT_WORDBREAK
-        PUSHBUTTON      "~Help", ID_XLD_CLASSLIST, 180, 7, 70, 12, BS_HELP |
-                        BS_NOPOINTERFOCUS
-    END
-END
-
 DLGTEMPLATE ID_XFD_NOTEXTCLIP LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XWorkplace Warning: Clipboard", ID_XFD_NOTEXTCLIP, -205, -15,
@@ -1852,31 +1835,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_KEYB_EDITFUNCTIONKEY LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Edit Function Key Definition", ID_XSD_KEYB_EDITFUNCTIONKEY, 12,
-            40, 244, 86, , FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "Key ~description:", -1, 6, 68, 74, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_FUNCK_DESCRIPTION_EF, 96, 70, 140, 8,
-                        ES_MARGIN
-        LTEXT           "Hardware ~scan code (click into entry field and pre"
-                        "ss the function key):", -1, 6, 56, 232, 10,
-                        DT_VCENTER | DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_FUNCK_SCANCODE_EF, 96, 46, 140, 8,
-                        ES_CENTER | ES_MARGIN
-                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FF8080L
-        AUTOCHECKBOX    "~Modifier key", ID_XSDI_FUNCK_MODIFIER, 94, 34, 138,
-                        10
-        LTEXT           "After pressing ""OK"", the function key will be reg"
-                        "istered.", -1, 6, 22, 232, 10, DT_VCENTER
-        DEFPUSHBUTTON   "~OK", DID_OK, 8, 6, 70, 12
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 86, 6, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 164, 6, 70, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_MOUSEMAPPINGS2 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_MOUSEMAPPINGS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
@@ -2079,42 +2037,6 @@ BEGIN
         PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 196, 24, 32, 12
         PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
         PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_PGMFILE_MODULE LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_PGMFILE_MODULE, 0, 0, 265, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        PUSHBUTTON      "~Help", DID_HELP, 140, 3, 70, 12, BS_HELP
-        GROUPBOX        "Program file", -1, 10, 111, 200, 33
-        LTEXT           "Path and file name:", -1, 15, 126, 180, 8,
-                        DT_MNEMONIC | NOT WS_GROUP
-        RTEXT           "unknown", ID_XSDI_DISK_AVAILABLE_BYTES, 15, 117,
-                        190, 8, NOT WS_GROUP
-        GROUPBOX        "Module format", -1, 10, 75, 200, 33
-        LTEXT           "Executable format:", -1, 15, 90, 70, 8, DT_MNEMONIC |
-                        NOT WS_GROUP
-        LTEXT           "unknown", ID_XSDI_PROG_EXEFORMAT, 95, 90, 110, 8,
-                        NOT WS_GROUP
-        LTEXT           "Target OS:", -1, 15, 81, 70, 8, DT_MNEMONIC | NOT
-                        WS_GROUP
-        LTEXT           "unknown", ID_XSDI_PROG_TARGETOS, 95, 81, 110, 8,
-                        NOT WS_GROUP
-        GROUPBOX        "Module description", -1, 10, 18, 200, 51
-        LTEXT           "Vendor:", -1, 15, 51, 70, 8, DT_MNEMONIC | NOT
-                        WS_GROUP
-        LTEXT           "unknown", ID_XSDI_PROG_VENDOR, 95, 51, 110, 8, NOT
-                        WS_GROUP
-        LTEXT           "File version:", -1, 15, 42, 70, 8, DT_MNEMONIC |
-                        NOT WS_GROUP
-        LTEXT           "unknown", ID_XSDI_PROG_VERSION, 95, 42, 110, 8, NOT
-                        WS_GROUP
-        LTEXT           "Description:", -1, 15, 33, 70, 8, DT_MNEMONIC | NOT
-                        WS_GROUP
-        RTEXT           "unknown", ID_XSDI_PROG_DESCRIPTION, 20, 24, 185, 8,
-                        NOT WS_GROUP
     END
 END
 
@@ -2342,10 +2264,10 @@ BEGIN
                         WS_GROUP | WS_VISIBLE
         AUTOCHECKBOX    "~Enable", ID_XSDI_SNAPTOGRID, 10, 115, 156, 10
         LTEXT           "~X origin", -1, 23, 97, 57, 8, DT_MNEMONIC
-        SPINBUTTON      ID_XSDI_GRID_CX, 23, 86, 43, 12, SPBS_MASTER |
+        SPINBUTTON      ID_XSDI_GRID_X, 23, 86, 43, 12, SPBS_MASTER |
                         SPBS_JUSTRIGHT | WS_GROUP
         LTEXT           "X ~spacing", -1, 84, 97, 54, 8, DT_MNEMONIC
-        SPINBUTTON      ID_XSDI_WARP4DISPLAY, 84, 86, 43, 12, SPBS_MASTER |
+        SPINBUTTON      ID_XSDI_GRID_CX, 84, 86, 43, 12, SPBS_MASTER |
                         SPBS_JUSTRIGHT | WS_GROUP
         LTEXT           "~Y spacing", -1, 110, 58, 51, 8, DT_MNEMONIC
         SPINBUTTON      ID_XSDI_GRID_Y, 110, 47, 43, 12, SPBS_MASTER |
@@ -2372,28 +2294,12 @@ BEGIN
                         5, 58, 160, 8
         AUTOCHECKBOX    "~Keep original title", ID_XSDI_KEEPTITLE, 14, 50,
                         160, 8
-        AUTOCHECKBOX    "Add ""Sna~p to grid""", ID_XSDI_FIND, 5, 38, 170, 8
+        AUTOCHECKBOX    "Add ""Sna~p to grid""", ID_XSDI_SNAPTOGRID, 5, 38,
+                        170, 8
         AUTOCHECKBOX    "React to folder h~otkeys", ID_XSDI_ACCELERATORS, 5,
                         30, 170, 8
         AUTOCHECKBOX    "Show ~status bar", ID_XSDI_ENABLESTATUSBAR, 5, 22,
                         165, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_SETTINGS_FLDRSORT LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SETTINGS_FLDRSORT, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        LTEXT           "De~fault sort criterion:", ID_XSDI_SORTTEXT, 5, 105,
-                        175, 8, DT_MNEMONIC | NOT WS_GROUP
-        LISTBOX         ID_XSDI_SORTLISTBOX, 5, 36, 175, 69, LS_NOADJUSTPOS |
-                        LS_HORZSCROLL
-        AUTOCHECKBOX    "~Always maintain sort order", ID_XSDI_ALWAYSSORT, 5,
-                        24, 175, 10
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
@@ -2968,13 +2874,83 @@ BEGIN
         AUTOCHECKBOX    "Enable folder ~auto-refresh",
                         ID_XSDI_FDRAUTOREFRESH, 12, 68, 190, 8
         GROUPBOX        "Default folder view", -1, 6, 18, 214, 44
-        AUTORADIOBUTTON "Use pare~nt folder's default view", ID_XSDI_FDRVIEW_INHERIT, 12, 46,
-                        202, 8, WS_TABSTOP
-        AUTORADIOBUTTON "~Icon", ID_XSDI_FDRVIEW_ICON, 12, 38, 202, 8, WS_TABSTOP
-        AUTORADIOBUTTON "T~ree", ID_XSDI_FDRVIEW_TREE, 12, 30, 202, 8, WS_TABSTOP
-        AUTORADIOBUTTON "Detail~s", ID_XSDI_FDRVIEW_DETAILS, 12, 22, 202, 8, WS_TABSTOP
+        AUTORADIOBUTTON "Use pare~nt folder's default view",
+                        ID_XSDI_FDRVIEW_INHERIT, 12, 46, 202, 8, WS_TABSTOP
+        AUTORADIOBUTTON "~Icon", ID_XSDI_FDRVIEW_ICON, 12, 38, 202, 8,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "T~ree", ID_XSDI_FDRVIEW_TREE, 12, 30, 202, 8,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "Detail~s", ID_XSDI_FDRVIEW_DETAILS, 12, 22, 202, 8,
+                        WS_TABSTOP
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 4, 65, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 80, 4, 65, 12
         PUSHBUTTON      "~Help", DID_HELP, 155, 4, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_KEYB_EDITFUNCTIONKEY LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Edit Function Key Definition", ID_XSD_KEYB_EDITFUNCTIONKEY, 12,
+            50, 244, 76, , FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        LTEXT           "Key ~description:", -1, 6, 58, 74, 12, DT_VCENTER |
+                        DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_FUNCK_DESCRIPTION_EF, 96, 60, 140, 8,
+                        ES_MARGIN
+        LTEXT           "Hardware ~scan code (click into entry field and pre"
+                        "ss the function key):", -1, 6, 46, 232, 10,
+                        DT_VCENTER | DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_FUNCK_SCANCODE_EF, 96, 36, 140, 8,
+                        ES_CENTER | ES_MARGIN
+                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FF8080L
+        LTEXT           "After pressing ""OK"", the function key will be reg"
+                        "istered.", -1, 6, 20, 232, 10, DT_VCENTER
+        DEFPUSHBUTTON   "~OK", DID_OK, 8, 6, 70, 12
+        PUSHBUTTON      "~Cancel", DID_CANCEL, 86, 6, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 164, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_PGMFILE_MODULE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_PGMFILE_MODULE, 0, 0, 265, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        PUSHBUTTON      "~Help", DID_HELP, 140, 3, 70, 12, BS_HELP
+        GROUPBOX        "Program file", ID_XSDI_PROG_MAINGROUP, 10, 111, 200, 33
+        LTEXT           "Path and file name:", ID_XSDI_PROG_FILENAME_TXT, 15, 126, 180, 8,
+                        DT_MNEMONIC | NOT WS_GROUP
+        RTEXT           "unknown", ID_XSDI_PROG_FILENAME, 15, 117,
+                        190, 8, NOT WS_GROUP
+        GROUPBOX        "Module format", ID_XSDI_PROG_FORMAT_GROUP, 10, 75, 200, 33
+        LTEXT           "Executable format:", ID_XSDI_PROG_EXEFORMAT_TXT, 15, 90, 70, 8, DT_MNEMONIC |
+                        NOT WS_GROUP
+        LTEXT           "unknown", ID_XSDI_PROG_EXEFORMAT, 95, 90, 110, 8,
+                        NOT WS_GROUP
+        LTEXT           "Target OS:", ID_XSDI_PROG_TARGETOS_TXT, 15, 81, 70, 8, DT_MNEMONIC | NOT
+                        WS_GROUP
+        LTEXT           "unknown", ID_XSDI_PROG_TARGETOS, 95, 81, 110, 8,
+                        NOT WS_GROUP
+        GROUPBOX        "Module description", ID_XSDI_PROG_DESCRIPTION_GROUP, 10, 18, 200, 51
+        RTEXT           "to be replaced", ID_XSDI_PROG_DESCRIPTION, 16, 24,
+                        189, 36, NOT WS_GROUP
+    END
+END
+
+DLGTEMPLATE ID_XSD_SETTINGS_FLDRSORT LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_SETTINGS_FLDRSORT, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        LTEXT           "De~fault sort criterion:", -1, 5, 118,
+                        175, 8, DT_MNEMONIC | NOT WS_GROUP
+        LISTBOX         ID_XSDI_SORTLISTBOX, 5, 42, 175, 75, LS_NOADJUSTPOS |
+                        LS_HORZSCROLL
+        AUTOCHECKBOX    "F~olders first", ID_XSDI_SORTFOLDERSFIRST, 6, 30, 175, 8
+        AUTOCHECKBOX    "~Always maintain sort order", ID_XSDI_ALWAYSSORT, 6,
+                        22, 175, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END

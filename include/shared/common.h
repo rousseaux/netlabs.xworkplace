@@ -425,7 +425,7 @@
     #define STATUSBAR_DEFAULT       255
 
     // flags for XFolder sort items
-    #define SV_NAME                 0
+    /* #define SV_NAME                 0
     #define SV_TYPE                 1
     #define SV_CLASS                2
     #define SV_REALNAME             3
@@ -435,7 +435,7 @@
     #define SV_CREATIONDATE         7
     #define SV_EXT                  8
     #define SV_FOLDERSFIRST         9
-    #define SV_LAST                 9
+    #define SV_LAST                 9 */
 
     // new XWorkplace system sounds indices
     // (in addition to those def'd by helpers\syssound.h)
@@ -775,8 +775,9 @@
                         // enable XFolder extended sorting (XWPSetup)
                     AlwaysSort,
                         // default "always sort" flag (BOOL)
-                    DefaultSort,
+                    _removed1, // DefaultSort,
                         // default sort criterion
+                        // moved this down V0.9.12 (2001-05-18) [umoeller]
                     __disabled1, // CleanupINIs,
                         // disabled for now V0.9.12 (2001-05-15) [umoeller]
 
@@ -952,6 +953,16 @@
                         // -- OPEN_CONTENTS (1): icon view
                         // -- OPEN_TREE (101): tree view
                         // -- OPEN_DETAILS (102): details view
+
+        BYTE        fFoldersFirst;
+                        // global sort setting for "folders first"
+                        // (TRUE or FALSE)
+        LONG        lDefaultSort;
+                        // new global sort criterion (moved this down here
+                        // because the value is incompatible with the earlier
+                        // setting above, which has been disabled);
+                        // this is a LONG because it can have negative values
+                        // (see XFolder::xwpSetFldrSort)
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;

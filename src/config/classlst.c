@@ -396,7 +396,7 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                         if (strlen(prcd->szClassName))
                             fEnable = TRUE;
                     }
-                    WinEnableControl(hwndDlg, DID_OK, fEnable);
+                    winhEnableDlgItem(hwndDlg, DID_OK, fEnable);
                 }
 
         break; }
@@ -601,10 +601,10 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
     // clear methods container first; the container
     // uses the strings from METHODINFO, so
     // we better do this first
-    WinSendMsg(WinWindowFromID(pClientData->hwndMethodInfoDlg, ID_XLDI_CNR),
-               CM_REMOVERECORD,
-               NULL,
-               MPFROM2SHORT(0, CMA_FREE | CMA_INVALIDATE));
+    WinSendDlgItemMsg(pClientData->hwndMethodInfoDlg, ID_XLDI_CNR,
+                      CM_REMOVERECORD,
+                      NULL,
+                      MPFROM2SHORT(0, CMA_FREE | CMA_INVALIDATE));
 
     // did we allocate a method info before?
     if (pClientData->pMethodInfo)
@@ -661,6 +661,7 @@ void _Optlink cll_fntMethodCollectThread(PTHREADINFO pti)
  *@@changed V0.9.0 [umoeller]: added method information
  *@@changed V0.9.0 [umoeller]: now using a delay timer
  *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
+ *@@changed V0.9.12 (2001-05-17) [pr]: beautify class title
  */
 
 VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
@@ -708,21 +709,25 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         if (pwps->pClassObject)
             if (fIsWPSClass)
                 hClassIcon = _wpclsQueryIcon(pwps->pClassObject);
-        WinSendMsg(WinWindowFromID(pClientData->hwndClassInfoDlg, ID_XLDI_ICON),
-                   SM_SETHANDLE,
-                   (MPARAM)hClassIcon,  // NULLHANDLE if error -> hide
-                   MPNULL);
+        WinSendDlgItemMsg(pClientData->hwndClassInfoDlg, ID_XLDI_ICON,
+                          SM_SETHANDLE,
+                          (MPARAM)hClassIcon,  // NULLHANDLE if error -> hide
+                          MPNULL);
 
         // class title
         if (pwps->pClassObject)
         {
             PSZ pszClassTitle = NULL;
             if (fIsWPSClass)
-                pszClassTitle = _wpclsQueryTitle(pwps->pClassObject);
+                pszClassTitle = strdup(_wpclsQueryTitle(pwps->pClassObject));
             if (pszClassTitle)
+            {
+                strhBeautifyTitle(pszClassTitle);
                 sprintf(szInfo2,
-                    "\"%s\"",
-                    pszClassTitle);
+                        "\"%s\"",
+                        pszClassTitle);
+                free(pszClassTitle);
+            }
             else
                 strcpy(szInfo2, "?");
         }
@@ -781,10 +786,10 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY, "");
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, "");
 
-        WinSendMsg(WinWindowFromID(pClientData->hwndClassInfoDlg, ID_XLDI_ICON),
-                   SM_SETHANDLE,
-                   (MPARAM)NULLHANDLE,  // hide icon
-                   MPNULL);
+        WinSendDlgItemMsg(pClientData->hwndClassInfoDlg, ID_XLDI_ICON,
+                          SM_SETHANDLE,
+                          (MPARAM)NULLHANDLE,  // hide icon
+                          MPNULL);
     }
 
     // give MLE new text
@@ -2965,10 +2970,10 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
     MENUITEM mi;
     // get handle to the "Open" submenu in the
     // the popup menu
-    if (WinSendMsg(hwndMenu,
-                   MM_QUERYITEM,
-                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                   (MPARAM)&mi))
+    if (winhQueryMenuItem(hwndMenu,
+                          WPMENUID_OPEN,
+                          TRUE,
+                          &mi))
     {
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now

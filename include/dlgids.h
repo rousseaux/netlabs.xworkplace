@@ -78,11 +78,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.11"
+#define XFOLDER_VERSION        "0.9.12"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.11"
+#define MINIMUM_NLS_VERSION    "0.9.12"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -226,7 +226,7 @@
 
 /* Dialog box templates */
 #define ID_XFD_NOCONFIG                 270
-#define ID_XFD_NOOBJECT                 271
+// #define ID_XFD_NOOBJECT                 271      removed V0.9.12 (2001-05-18) [umoeller]
 #define ID_XFD_LIMITREACHED             272
 #define ID_XFD_WRONGVERSION             273
 
@@ -367,8 +367,9 @@
 #define ID_XSD_SETTINGS_FLDRSORT        590
 #define ID_XSDI_ALWAYSSORT              591
 #define ID_XSDI_SORTLISTBOX             592
-//  #define ID_XSDI_REPLACESORT      675    // removed (V0.9.0)
-#define ID_XSDI_SORTTEXT                593
+// #define ID_XSDI_REPLACESORT      675    // removed (V0.9.0)
+// #define ID_XSDI_SORTTEXT                593      // removed V0.9.12 (2001-05-19) [umoeller]
+#define ID_XSDI_SORTFOLDERSFIRST        594     // added V0.9.12 (2001-05-19) [umoeller]
 
 // "File types" page (new with V0.9.0)
 #define ID_XSD_FILETYPES                600     // "File types" page in XFldWPS (V0.9.0)
@@ -394,7 +395,7 @@
 #define ID_XSDI_FT_ENTRYFIELD           622
 #define ID_XSDI_FT_TITLE                623
 
-// ids 625-630 are used above in ID_XSD_FOLDERVIEWS
+// WARNING: ID'ss 625-630 are used above in ID_XSD_FOLDERVIEWS
 
 /******************************************
  * Instance settings notebooks     >=700  *
@@ -455,15 +456,19 @@
 #define ID_XSDI_DISK_CHART              782
 
 // "Module" page (XFldProgramFile, V0.9.0)
-#define ID_XSD_PGMFILE_MODULE           789
-#define ID_XSDI_PROG_FILENAME           781
-#define ID_XSDI_PROG_PARAMETERS         782
-#define ID_XSDI_PROG_WORKINGDIR         783
-#define ID_XSDI_PROG_EXEFORMAT          784
-#define ID_XSDI_PROG_TARGETOS           785
-#define ID_XSDI_PROG_VENDOR             786
-#define ID_XSDI_PROG_VERSION            787
-#define ID_XSDI_PROG_DESCRIPTION        788
+// all changed, we had duplicates, and new items added
+// V0.9.12 (2001-05-19) [umoeller]
+#define ID_XSD_PGMFILE_MODULE           790
+#define ID_XSDI_PROG_MAINGROUP          791
+#define ID_XSDI_PROG_FILENAME           792
+#define ID_XSDI_PROG_FILENAME_TXT       793
+#define ID_XSDI_PROG_FORMAT_GROUP       794
+#define ID_XSDI_PROG_EXEFORMAT          795
+#define ID_XSDI_PROG_EXEFORMAT_TXT      796
+#define ID_XSDI_PROG_TARGETOS           797
+#define ID_XSDI_PROG_TARGETOS_TXT       798
+#define ID_XSDI_PROG_DESCRIPTION_GROUP  799
+#define ID_XSDI_PROG_DESCRIPTION        800
 
 // "Types" page in XFldDataFile V0.9.9 (2001-03-27) [umoeller]
 #define ID_XSD_DATAF_TYPES              820
@@ -982,7 +987,8 @@
 #define ID_XSD_KEYB_EDITFUNCTIONKEY     3230
 #define ID_XSDI_FUNCK_DESCRIPTION_EF    3231
 #define ID_XSDI_FUNCK_SCANCODE_EF       3232
-#define ID_XSDI_FUNCK_MODIFIER          3233
+// #define ID_XSDI_FUNCK_MODIFIER          3233
+            // removed V0.9.12 (2001-05-17) [umoeller]
 
 /******************************************
  * XWPMouse    (V0.9.0)          >= 3400   *

@@ -152,11 +152,23 @@
 
     /* ******************************************************************
      *
-     *   Extended Folder Sort
+     *   Extended Folder Sort (fdrsort.c)
      *
      ********************************************************************/
 
-    PFN fdrQuerySortFunc(USHORT usSort);
+    BOOL fdrModifySortMenu(WPFolder *somSelf,
+                           HWND hwndSortMenu);
+
+    BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
+                                 HWND hwndFrame,
+                                 HWND hwndMenu,
+                                 ULONG ulMenuId,
+                                 PBOOL pbDismiss);
+
+    PFN fdrQuerySortFunc(WPFolder *somSelf,
+                         LONG lSort);
+
+    BOOL fdrHasAlwaysSort(WPFolder *somSelf);
 
     MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,
                                      ULONG ulSort,
@@ -168,27 +180,9 @@
                            BOOL fForce);
 
     MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,
-                                           ULONG ulDummy,
-                                           MPARAM mpView,
-                                           MPARAM mpFolder);
-
-    /*
-     *@@ DEFAULT_SORT:
-     *      returns a useable setting for the default sort criterion
-     *      according to instance / global settings; before using this
-     *      macro, you need to initialize the following:
-     *          PGLOBALSETTINGS     pGlobalSettings
-     *          XFolderData         *somThis
-     */
-
-    #define DEFAULT_SORT ((_bDefaultSort == SET_DEFAULT) ? pGlobalSettings->DefaultSort : _bDefaultSort)
-
-    /*
-     *@@ ALWAYS_SORT:
-     *      the same for AlwaysSort
-     */
-
-    #define ALWAYS_SORT ((_bAlwaysSort == SET_DEFAULT) ? pGlobalSettings->AlwaysSort : _bAlwaysSort)
+                                          ULONG ulDummy,
+                                          MPARAM mpView,
+                                          MPARAM mpFolder);
 
     /* ******************************************************************
      *

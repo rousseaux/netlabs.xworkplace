@@ -623,13 +623,13 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             BOOL fXFolder = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFOLDER);
             BOOL fXFldDesktop = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDESKTOP);
 
-            WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
+            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
             // winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
 
-            WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
+            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
             // winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
 
-            WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
+            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
                                 fXFolder && fXFldDesktop);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
                                 fXFolder && fXFldDesktop);
@@ -3145,13 +3145,13 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
                         !(pGlobalSettings->NoWorkerThread));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
                         !(pGlobalSettings->NoWorkerThread));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
                         !(pGlobalSettings->NoWorkerThread));
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
                         !(pGlobalSettings->NoWorkerThread));
     }
 }
