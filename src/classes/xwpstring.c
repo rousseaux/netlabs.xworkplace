@@ -351,6 +351,7 @@ MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             switch (usNotifyCode)
             {
                 case CN_DRAGOVER:
+                    hobjBeingDragged = NULLHANDLE;
                     mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)ulExtra,
                                                     &hobjBeingDragged);
                 break; // CN_DRAGOVER
@@ -807,6 +808,7 @@ SOM_Scope void  SOMLINK xwstr_wpObjectReady(XWPString *somSelf,
  *      All persistent instance variables should be stored here.
  *
  *@@added V0.9.3 (2000-04-26) [umoeller]
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: fConfirm was never saved, fixed
  */
 
 SOM_Scope BOOL  SOMLINK xwstr_wpSaveState(XWPString *somSelf)
@@ -823,8 +825,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSaveState(XWPString *somSelf)
     if (_hobjStatic)
         _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 2, (ULONG)_hobjStatic);
 
-    if (_fConfirm)
-        _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 3, _fConfirm);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXWPString, 3, _fConfirm);
 
     return (brc);
 }

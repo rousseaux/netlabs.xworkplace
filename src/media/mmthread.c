@@ -102,7 +102,7 @@
 
 HAB         G_habMediaThread = NULLHANDLE;
 HMQ         G_hmqMediaThread = NULLHANDLE;
-HWND        G_hwndMediaObject = NULLHANDLE;
+extern HWND G_hwndMediaObject = NULLHANDLE;
 
 // sound data
 ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
@@ -111,6 +111,8 @@ USHORT      G_usSoundDeviceID = 0;
 ULONG       G_ulVolumeTemp = 0;
 
 THREADINFO  G_tiMediaThread = {0};
+
+extern PXMMCDPLAYER G_pPlayer;      // in mmhelp.c
 
 const char *WNDCLASS_MEDIAOBJECT = "XWPMediaThread";
 
@@ -172,6 +174,7 @@ RESOLVEFUNCTION G_aResolveFromMMIO[] =
  *      (xmm_fntMediaThread) object window.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
+ *@@changed V0.9.7 (2000-12-20) [umoeller]: removed XMM_CDPLAYER
  */
 
 MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -197,7 +200,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             PSZ     pszFile = malloc(CCHMAXPATH);
 
             #ifdef DEBUG_SOUNDS
-                _Pmpf(( "QM_PLAYSYSTEMSOUND index %d", mp1));
+                _Pmpf(( "XMM_PLAYSYSTEMSOUND index %d", mp1));
             #endif
 
             // get system sound from MMPM.INI
@@ -209,7 +212,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             {
                 // OK, sound file found in MMPM.INI:
                 #ifdef DEBUG_SOUNDS
-                    _Pmpf(( "QM: posting Sound %d == %s, %s", mp1, szDescr, pszFile ));
+                    _Pmpf(( "  posting Sound %d == %s, %s", mp1, szDescr, pszFile ));
                 #endif
 
                 // play!
@@ -331,176 +334,56 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
 
         case MM_MCINOTIFY:
         {
-            #ifdef DEBUG_SOUNDS
-                _Pmpf(( "MM_MCINOTIFY: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
-            #endif
+            USHORT  usNotifyCode = SHORT1FROMMP(mp1),
+                    usDeviceID = SHORT1FROMMP(mp2),
+                    usMessage = SHORT2FROMMP(mp2);
 
-            if (    (SHORT1FROMMP(mp2) == G_usSoundDeviceID)
-                 && (SHORT1FROMMP(mp1) == MCI_NOTIFY_SUCCESSFUL)
-               )
+            if ((G_usSoundDeviceID) && (usDeviceID == G_usSoundDeviceID))
             {
-                xmmStopSound(&G_usSoundDeviceID);
+                if (usNotifyCode == MCI_NOTIFY_SUCCESSFUL)
+                    xmmStopSound(&G_usSoundDeviceID);
             }
         break; }
 
-        /*
-         *@@ XMM_CDPLAYER:
-         *      works on the CD player.
-         *
-         *      Parameters:
-         *      -- PUSHORT mp1: in/out: usDeviceID.
-         *      -- SHORT1 mp2: player command.
-         *         SHORT2 mp2: player parameter.
-         *
-         *      The following player commands (SHORT1FROMMP(mp2))
-         *      are available:
-         *
-         *      -- XMMCD_PLAY: start playing.
-         *                      No parameter.
-         *      -- XMMCD_STOP: stops playing.
-         *                      No parameter.
-         *      -- XMMCD_PAUSE: pauses if playing.
-         *                      No parameter.
-         *      -- XMMCD_TOGGLEPLAY: plays if stopped or paused,
-         *                      pauses if playing.
-         *                      No parameter.
-         *      -- XMMCD_NEXTTRACK: advances to next track.
-         *                      No parameter.
-         *      -- XMMCD_PREVTRACK: goes to previous track.
-         *                      No parameter.
-         *      -- XMMCD_EJECT: ejects the tray.
-         *                      No parameter.
-         *
-         *      Returns TRUE on success, FALSE on errors.
-         *      There can be many, such as doing a PLAY if
-         *      there's no CD in the drive. If FALSE is
-         *      returned, you can try to do a mciGetErrorString
-         *      on the device ID.
-         *
-         *@@added V0.9.3 (2000-04-29) [umoeller]
-         */
-
-        case XMM_CDPLAYER:
+        case MM_MCIPOSITIONCHANGE:
         {
-            PUSHORT pusMMDeviceID = (PUSHORT)mp1;
-            USHORT  usCmd = SHORT1FROMMP(mp2),
-                    usParam = SHORT2FROMMP(mp2);
-            BOOL    brc = FALSE;
-
-            switch (usCmd)
+            if (xmmLockDevicesList())
             {
-                /*
-                 * "PLAY":
-                 *
-                 */
+                if (G_pPlayer)
+                {
+                    USHORT  usDeviceID = SHORT2FROMMP(mp1);
 
-                case XMMCD_PLAY:
-                    if (xmmCDOpenDevice(pusMMDeviceID))
+                    if (    (usDeviceID == G_pPlayer->usDeviceID)
+                         && (G_pPlayer->hwndNotify)
+                       )
                     {
-                        // device is open:
-                        brc = xmmCDPlay(*pusMMDeviceID);
-                    }
-                break;
+                        ULONG   ulMMTime = (ULONG)mp2;
 
-                /*
-                 * "STOP":
-                 *      stops the CD and closes the device.
-                 */
-
-                case XMMCD_STOP:
-                    if (xmmCDQueryStatus(*pusMMDeviceID) == MCI_MODE_PLAY)
-                    {
-                        MCI_GENERIC_PARMS mgp = {0};
-                        ULONG ulrc;
-                        memset(&mgp, 0, sizeof(mgp));
-                        ulrc = G_mciSendCommand(*pusMMDeviceID,
-                                                MCI_CLOSE,
-                                                MCI_WAIT,
-                                                &mgp,
-                                                0);
-                        if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                        ULONG   ulSeconds;
+                        ULONG   ulTrack = xmmCDCalcTrack(G_pPlayer,
+                                                         ulMMTime,
+                                                         &ulSeconds);
+                        MPARAM  mp1Post = 0,
+                                mp2Post = 0;
+                        if (ulTrack != G_pPlayer->ulTrack)
                         {
-                            *pusMMDeviceID = 0;
-                            brc = TRUE;
+                            G_pPlayer->ulTrack = ulTrack;
+                            mp1Post = (MPARAM)ulTrack;
                         }
+                        if (ulSeconds != G_pPlayer->ulSecondsInTrack)
+                        {
+                            G_pPlayer->ulSecondsInTrack = ulSeconds;
+                            mp2Post = (MPARAM)ulSeconds;
+                        }
+
+                        WinPostMsg(G_pPlayer->hwndNotify,
+                                   G_pPlayer->ulNotifyMsg,
+                                   mp1Post,
+                                   mp2Post);
                     }
-
-                    xmmCloseDevice(pusMMDeviceID);
-                break;
-
-                /*
-                 * "PAUSE":
-                 *
-                 */
-
-                case XMMCD_PAUSE:
-                    if (xmmCDQueryStatus(*pusMMDeviceID) == MCI_MODE_PLAY)
-                        brc = xmmCDPause(*pusMMDeviceID);
-                break;
-
-                /*
-                 * TOGGLEPLAY:
-                 *      play if paused/stopped;
-                 *      pause if playing.
-                 */
-
-                case XMMCD_TOGGLEPLAY:
-                    if (xmmCDOpenDevice(pusMMDeviceID))
-                    {
-                        // device is open:
-                        ULONG ulStatus = xmmCDQueryStatus(*pusMMDeviceID);
-
-                        if (ulStatus == MCI_MODE_PLAY)
-                            brc = xmmCDPause(*pusMMDeviceID);
-                        else
-                            brc = xmmCDPlay(*pusMMDeviceID);
-                    }
-                break;
-
-                /*
-                 * "NEXTTRACK":
-                 *
-                 */
-
-                case XMMCD_NEXTTRACK:
-                    brc = xmmCDPlayTrack(*pusMMDeviceID,
-                                    xmmCDQueryCurrentTrack(*pusMMDeviceID) + 1);
-                break;
-
-                /*
-                 * "PREVTRACK":
-                 *
-                 */
-
-                case XMMCD_PREVTRACK:
-                    brc = xmmCDPlayTrack(*pusMMDeviceID,
-                                    xmmCDQueryCurrentTrack(*pusMMDeviceID) - 1);
-                break;
-
-                /*
-                 * "EJECT":
-                 *
-                 */
-
-                case XMMCD_EJECT:
-                    if (xmmCDOpenDevice(pusMMDeviceID))
-                    {
-                        MCI_SET_PARMS msetp = {0};
-                        ULONG ulrc = G_mciSendCommand(*pusMMDeviceID,
-                                                      MCI_SET,
-                                                      MCI_SET_DOOR_OPEN,
-                                                      &msetp,
-                                                      0);
-                        if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-                            brc = TRUE;
-
-                        xmmCloseDevice(pusMMDeviceID);
-                    }
-                break;
-            } // end switch
-            mrc = (MPARAM)brc;
-            if (!brc)
-                WinAlarm(HWND_DESKTOP, WA_ERROR);
+                }
+                xmmUnlockDevicesList();
+            } // end if (xmmLockDevicesList())
         break; }
 
         default:

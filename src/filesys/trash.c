@@ -4,7 +4,8 @@
  *      this file has implementation code for XWPTrashCan
  *      and XWPTrashObject.
  *
- *      Gets called from src\classes\xtrash.c mostly.
+ *      Gets called from src\classes\xtrash.c and
+ *      src\classes\xtrashobj.c mostly.
  *
  *      Function prefix for this file:
  *      --  trsh*
@@ -687,6 +688,8 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                     // hasn't really been used
                     if (doshQueryDirExist(szTrashDir))   // V0.9.4 (2000-07-22) [umoeller]
                     {
+                        // OK, we have a \trash dir: now go
+                        // populate all that
                         pTrashDir = _wpclsQueryFolder(pWPFolderClass,   // _WPFolder
                                                       szTrashDir,
                                                       TRUE);       // lock object

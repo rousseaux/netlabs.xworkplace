@@ -152,6 +152,10 @@ XCENTERWIDGETCLASS G_WidgetClasses[]
  *      them from XFLDR.DLL, whose module handle is
  *      given to us in the INITMODULE export.
  *
+ *      Note that importing functions from XFLDR.DLL
+ *      is _not_ a requirement. We only do this to
+ *      avoid duplicate code.
+ *
  *      For each funtion that you need, add a global
  *      function pointer variable and an entry to
  *      the G_aImports array. These better match.
@@ -1105,13 +1109,13 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
     LONG    lLeft,
             lRight;
     LONG    xText = 0;
-    RECTL   rclSub;
 
     const XCENTERGLOBALS *pGlobals = pPrivate->pWidget->pGlobals;
 
     // avoid division by zero
     if (pPrivate->cShow)
     {
+        RECTL   rclButtonArea;
         // max paint space:
         ULONG   ulCX = (prclSubclient->xRight - prclSubclient->xLeft);
         // calc width for this button...
@@ -1144,49 +1148,49 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
         }
 
         // draw frame
-        rclSub.yBottom = prclSubclient->yBottom;
-        rclSub.yTop = prclSubclient->yTop;
+        rclButtonArea.yBottom = prclSubclient->yBottom;
         // calculate X coordinate: uchVisibility has
         // the button index as calculated by ScanSwitchList,
         // so we can multiply
-        rclSub.xLeft = prclSubclient->xLeft + (pCtrlThis->uchVisibility * cxRegular);
-        rclSub.xRight = rclSub.xLeft + cxThis;
+        rclButtonArea.xLeft = prclSubclient->xLeft
+                              + (pCtrlThis->uchVisibility * cxRegular);
+        rclButtonArea.yTop = prclSubclient->yTop - 1;
+        rclButtonArea.xRight = rclButtonArea.xLeft + cxThis - 1;
 
         // draw button frame
         pgpihDraw3DFrame(hps,
-                         &rclSub,
+                         &rclButtonArea,        // inclusive
                          lButtonBorder,
                          lLeft,
                          lRight);
 
         // draw button middle
-        WinInflateRect(pPrivate->pWidget->habWidget,
-                       &rclSub,
-                       -lButtonBorder,
-                       -lButtonBorder);
+        rclButtonArea.xLeft++;
+        rclButtonArea.yBottom++;
         WinFillRect(hps,
-                    &rclSub,
+                    &rclButtonArea,         // exclusive
                     pPrivate->Setup.lcolBackground);
 
         if (pCtrlThis->hwndIcon)
         {
             WinDrawPointer(hps,
-                           rclSub.xLeft + 1,
-                           rclSub.yBottom + 1,
+                           rclButtonArea.xLeft + 1,
+                           rclButtonArea.yBottom + 1,
                            pCtrlThis->hwndIcon,
                            DP_MINI);
-            rclSub.xLeft += pGlobals->cxMiniIcon;
+            rclButtonArea.xLeft += pGlobals->cxMiniIcon;
         }
 
         // add another pixel for the text
-        (rclSub.xLeft)++;
-        (rclSub.xRight)--;
+        rclButtonArea.xLeft++;
+        // dec right for clipping
+        rclButtonArea.xRight--;
 
         // draw switch list title
         WinDrawText(hps,
                     strlen(pCtrlThis->szSwtitle),
                     pCtrlThis->szSwtitle,
-                    &rclSub,
+                    &rclButtonArea,
                     pPrivate->Setup.lcolForeground,
                     0,
                     DT_LEFT | DT_VCENTER);
@@ -1475,20 +1479,21 @@ VOID WwgtPaint(HWND hwnd,
             RECTL       rclWin;
 
             // now paint frame
-            WinQueryWindowRect(hwnd, &rclWin);
+            WinQueryWindowRect(hwnd,
+                               &rclWin);        // exclusive
             gpihSwitchToRGB(hps);
 
+            rclWin.xRight--;
+            rclWin.yTop--;
             pgpihDraw3DFrame(hps,
-                             &rclWin,
+                             &rclWin,           // inclusive
                              WIDGET_BORDER,
                              pWidget->pGlobals->lcol3DDark,
                              pWidget->pGlobals->lcol3DLight);
 
             // now paint buttons in the middle
-            WinInflateRect(pWidget->habWidget,
-                           &rclWin,
-                           -WIDGET_BORDER,
-                           -WIDGET_BORDER);
+            rclWin.xLeft++;
+            rclWin.yBottom++;
             DrawAllCtrls(pPrivate,
                          hps,
                          &rclWin);

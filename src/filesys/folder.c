@@ -1263,18 +1263,21 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
             // get our sort comparison func
             PFN             pfnSort =  (AlwaysSort)
                                            ? fdrQuerySortFunc(DEFAULT_SORT)
-                                           : NULL
-                                       ;
-
+                                           : NULL;
             CNRINFO         CnrInfo = {0};
             BOOL            Update = FALSE;
 
             cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
             #ifdef DEBUG_SORT
-                _Pmpf(( "_xfSetCnrSort: %s", _wpQueryTitle(somSelf) ));
-                _Pmpf(( "  _Always: %d, Global->Always: %d", _AlwaysSort, pGlobalSettings->AlwaysSort ));
-                _Pmpf(( "  _Default: %d, Global->Default: %d", _DefaultSort, pGlobalSettings->DefaultSort ));
+                _Pmpf((__FUNCTION__ ": %s with hwndCnr = 0x%lX",
+                        _wpQueryTitle(somSelf), hwndCnr ));
+                _Pmpf(( "  _Always: %d, Global->Always: %d",
+                        _bAlwaysSort, pGlobalSettings->AlwaysSort ));
+                _Pmpf(( "  ALWAYS_SORT returned %d", AlwaysSort ));
+                _Pmpf(( "  _Default: %d, Global->Default: %d",
+                        _bDefaultSort, pGlobalSettings->DefaultSort ));
+                _Pmpf(( "  pfnSort is 0x%lX", pfnSort ));
             #endif
 
             // for icon views, we need extra precautions
@@ -1292,7 +1295,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                     if ((ulStyle & CCS_AUTOPOSITION) == 0)
                     {
                         #ifdef DEBUG_SORT
-                            _Pmpf(( "  New ulStyle = %lX", ulStyle | CCS_AUTOPOSITION ));
+                            _Pmpf(( "  Setting CCS_AUTOPOSITION"));
                         #endif
                         WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
                         Update = TRUE;
@@ -1304,7 +1307,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                     if ((ulStyle & CCS_AUTOPOSITION) != 0)
                     {
                         #ifdef DEBUG_SORT
-                            _Pmpf(( "  New ulStyle = %lX", ulStyle & (~CCS_AUTOPOSITION) ));
+                            _Pmpf(( "  Clearing CCS_AUTOPOSITION"));
                         #endif
                         WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
                         Update = TRUE;
@@ -1329,7 +1332,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                )
             {
                 #ifdef DEBUG_SORT
-                    _Pmpf(( "  Resetting pSortRecord to %lX", CnrInfo.pSortRecord ));
+                    _Pmpf(( "  Resetting pSortRecord to %lX", pfnSort ));
                 #endif
 
                 // set the cnr sort function; if this is != NULL, the
@@ -1359,6 +1362,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
  *      the parameters to this func.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed wrong window handle
  */
 
 MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
@@ -1370,7 +1374,7 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
     MRESULT     mrc = (MPARAM)FALSE;
 
     #ifdef DEBUG_SORT
-        _Pmpf(( "fdrUpdateFolderSorts: %s", _wpQueryTitle(somSelf) ));
+        _Pmpf((__FUNCTION__ ": %s", _wpQueryTitle(somSelf) ));
     #endif
 
     if (   ((ULONG)mpView == OPEN_CONTENTS)
@@ -1378,7 +1382,13 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
         || ((ULONG)mpView == OPEN_DETAILS)
        )
     {
-        fdrSetFldrCnrSort(somSelf, wpshQueryCnrFromFrame(hwndView), FALSE);
+        HWND hwndCnr = wpshQueryCnrFromFrame(hwndView);
+
+        _Pmpf(("  hwndView 0x%lX, hwndCnr 0x%lX", hwndView, hwndCnr));
+
+        fdrSetFldrCnrSort(somSelf,
+                          hwndCnr, // hwndView, // wrong!! V0.9.7 (2000-12-18) [umoeller]
+                          FALSE);
         mrc = (MPARAM)TRUE;
     }
     return (mrc);
@@ -2283,136 +2293,173 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
             case WM_PAINT:
             {
                 // preparations:
-                RECTL   rclBar, rcl;
-                HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, &rcl);
+                HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
                 PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
                 TRY_LOUD(excpt1)
                 {
+                    RECTL   rclBar,
+                            rclPaint;
                     POINTL  ptl1;
-                    CHAR    szText[1000], szTemp[100] = "0";
+                    PSZ     pszText;
+                    CHAR    szTemp[100] = "0";
                     USHORT  usLength;
                     LONG    lNextX;
                     PSZ     p1, p2, p3;
                     LONG    lHiColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0),
                             lLoColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
 
-                    WinQueryWindowRect(hwndBar, &rclBar);
+                    WinQueryWindowRect(hwndBar,
+                                       &rclBar);        // exclusive
                     // switch to RGB mode
                     gpihSwitchToRGB(hps);
 
                     // 1) draw background
-                    WinFillRect(hps, &rclBar, pGlobalSettings->lSBBgndColor);
+                    WinFillRect(hps,
+                                &rclBar,                // exclusive
+                                pGlobalSettings->lSBBgndColor);
+
+                    rclPaint.xLeft = rclBar.xLeft;
+                    rclPaint.yBottom = rclBar.yBottom;
+                    rclPaint.xRight = rclBar.xRight - 1;
+                    rclPaint.yTop = rclBar.yTop - 1;
 
                     // 2) draw 3D frame in selected style
                     if (pGlobalSettings->SBStyle == SBSTYLE_WARP3RAISED)
                         // Warp 3 style, raised
-                        gpihDraw3DFrame(hps, &rclBar, 1,
-                                        lHiColor, lLoColor);
+                        gpihDraw3DFrame(hps,
+                                        &rclPaint,
+                                        1,
+                                        lHiColor,
+                                        lLoColor);
                     else if (pGlobalSettings->SBStyle == SBSTYLE_WARP3SUNKEN)
                         // Warp 3 style, sunken
-                        gpihDraw3DFrame(hps, &rclBar, 1,
-                                        lLoColor, lHiColor);
+                        gpihDraw3DFrame(hps,
+                                        &rclPaint,
+                                        1,
+                                        lLoColor,
+                                        lHiColor);
                     else if (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU)
                     {
                         // Warp 4 menu style: draw 3D line at top only
-                        rcl = rclBar;
-                        rcl.yBottom = rcl.yTop-2;
-                        gpihDraw3DFrame(hps, &rcl, 1,
-                                        lLoColor, lHiColor);
+                        rclPaint.yBottom = rclPaint.yTop - 1;
+                        gpihDraw3DFrame(hps,
+                                        &rclPaint,
+                                        1,
+                                        lLoColor,
+                                        lHiColor);
                     }
                     else
                     {
                         // Warp 4 button style
-                        rcl = rclBar;
                         // draw "sunken" outer rect
-                        gpihDraw3DFrame(hps, &rclBar, 2,
-                                        lLoColor, lHiColor);
+                        gpihDraw3DFrame(hps,
+                                        &rclPaint,
+                                        2,
+                                        lLoColor,
+                                        lHiColor);
                         // draw "raised" inner rect
-                        WinInflateRect(psbd->habStatusBar, // anchor block
-                                       &rcl, -1, -1);
-                        gpihDraw3DFrame(hps, &rcl, 2,
-                                        lHiColor, lLoColor);
+                        rclPaint.xLeft++;
+                        rclPaint.yBottom++;
+                        rclPaint.xRight--;
+                        rclPaint.yTop--;
+                        gpihDraw3DFrame(hps,
+                                        &rclPaint,
+                                        2,
+                                        lHiColor,
+                                        lLoColor);
                     }
 
                     // 3) start working on text; we do "simple" GpiCharString
                     //    if no tabulators are defined, but calculate some
                     //    subrectangles otherwise
-                    WinQueryWindowText(hwndBar, sizeof(szText)-1, &szText[0]);
-                            // szText now has the translated status bar text
+                    pszText = winhQueryWindowText(hwndBar);
+                            // pszText now has the translated status bar text
                             // except for the tabulators ("$x" keys)
-                    p1 = szText;
-                    p2 = NULL;
-                    ptl1.x = 7;
+                    if (pszText)
+                    {
+                        p1 = pszText;
+                        p2 = NULL;
+                        ptl1.x = 7;
 
-                    do {    // while tabulators are present
-
-                        // search for tab mnemonic
-                        if (p2 = strstr(p1, "$x("))
+                        do  // while tabulators are present
                         {
-                            // tab found: calculate next x position into lNextX
-                            usLength = (p2-p1);
-                            strcpy(szTemp, "100");
-                            if (p3 = strchr(p2, ')'))
+                            // search for tab mnemonic
+                            if (p2 = strstr(p1, "$x("))
                             {
-                                PSZ p4 = strchr(p2, '%');
-                                strncpy(szTemp, p2+3, p3-p2-3);
-                                // get the parameter
-                                sscanf(szTemp, "%d", &lNextX);
-
-                                if (lNextX < 0)
+                                // tab found: calculate next x position into lNextX
+                                usLength = (p2-p1);
+                                strcpy(szTemp, "100");
+                                if (p3 = strchr(p2, ')'))
                                 {
-                                    // if the result is negative, it's probably
-                                    // meant to be an offset from the right
-                                    // status bar border
-                                    lNextX = (rclBar.xRight + lNextX); // lNextX is negative
+                                    PSZ p4 = strchr(p2, '%');
+                                    strncpy(szTemp, p2+3, p3-p2-3);
+                                    // get the parameter
+                                    sscanf(szTemp, "%d", &lNextX);
+
+                                    if (lNextX < 0)
+                                    {
+                                        // if the result is negative, it's probably
+                                        // meant to be an offset from the right
+                                        // status bar border
+                                        lNextX = (rclBar.xRight + lNextX); // lNextX is negative
+                                    }
+                                    else if ((p4) && (p4 < p3))
+                                    {
+                                        // if we have a '%' char before the closing
+                                        // bracket, consider lNextX a percentage
+                                        // parameter and now translate it into an
+                                        // absolute x position using the status bar's
+                                        // width
+                                        lNextX = (rclBar.xRight * lNextX) / 100;
+                                    }
                                 }
-                                else if ((p4) && (p4 < p3))
-                                {
-                                    // if we have a '%' char before the closing
-                                    // bracket, consider lNextX a percentage
-                                    // parameter and now translate it into an
-                                    // absolute x position using the status bar's
-                                    // width
-                                    lNextX = (rclBar.xRight * lNextX) / 100;
-                                }
-                            } else
-                                p2 = NULL;
-                        } else
-                            usLength = strlen(p1);
+                                else
+                                    p2 = NULL;
+                            }
+                            else
+                                usLength = strlen(p1);
 
-                        ptl1.y = (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU) ? 5 : 7;
-                        // set the text color to the global value;
-                        // this might have changed via color drag'n'drop
-                        GpiSetColor(hps, pGlobalSettings->lSBTextColor);
-                            // the font is already preset by the static
-                            // text control (phhhh...)
+                            ptl1.y = (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU) ? 5 : 7;
+                            // set the text color to the global value;
+                            // this might have changed via color drag'n'drop
+                            GpiSetColor(hps, pGlobalSettings->lSBTextColor);
+                                // the font is already preset by the static
+                                // text control (phhhh...)
 
-                        if (p2)
-                        {
-                            // did we have tabs? if so, print text clipped to rect
-                            rcl.xLeft   = 0;
-                            rcl.yBottom = 0; // ptl1.y;
-                            rcl.xRight  = lNextX-10; // 10 pels space
-                            rcl.yTop    = rclBar.yTop;
-                            GpiCharStringPosAt(hps, &ptl1, &rcl, CHS_CLIP,
-                                    usLength, p1, NULL);
-                        }
-                        else
-                        {
-                            // no (more) tabs: just print
-                            GpiMove(hps, &ptl1);
-                            GpiCharString(hps, usLength, p1);
-                        }
+                            if (p2)
+                            {
+                                // did we have tabs? if so, print text clipped to rect
+                                RECTL rcl;
+                                rcl.xLeft   = 0;
+                                rcl.yBottom = 0; // ptl1.y;
+                                rcl.xRight  = lNextX-10; // 10 pels space
+                                rcl.yTop    = rclBar.yTop;
+                                GpiCharStringPosAt(hps,
+                                                   &ptl1,
+                                                   &rcl,
+                                                   CHS_CLIP,
+                                                   usLength,
+                                                   p1,
+                                                   NULL);
+                            }
+                            else
+                            {
+                                // no (more) tabs: just print
+                                GpiMove(hps, &ptl1);
+                                GpiCharString(hps, usLength, p1);
+                            }
 
-                        if (p2)
-                        {   // "tabulator" was found: set next x pos
-                            ptl1.x = lNextX;
-                            p1 = p3+1;
-                        }
+                            if (p2)
+                            {   // "tabulator" was found: set next x pos
+                                ptl1.x = lNextX;
+                                p1 = p3+1;
+                            }
 
-                    } while (p2);       // go for next tabulator, if we had one
+                        } while (p2);       // go for next tabulator, if we had one
 
+                        free(pszText);
+                    } // end if (pszText)
                 }
                 CATCH(excpt1)
                 {

@@ -11,14 +11,8 @@
  *
  *      This file is ALL new with V0.9.0.
  *
- *      This is based on code which has kindly been provided by
- *      Stefan Milcke (Stefan.Milcke@t-online.de) and was previously
- *      contained in the WPSArcO package.
- *
- *      Created:                            Jan 10, 1997
- *      Last changed by Stefan Milcke:      Jan 16, 1999
- *
- *      Lots of later modifications by Ulrich M”ller.
+ *      This is based on ideas in the WPSArcO code which has kindly
+ *      been provided by Stefan Milcke (Stefan.Milcke@t-online.de).
  *
  *      All funtions in this file have the arc* prefix.
  *
@@ -33,7 +27,6 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Stefan Milcke.
  *      Copyright (C) 1999-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify

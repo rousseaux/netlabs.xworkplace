@@ -5,5 +5,7 @@ be in a separate DLL, which will end up in the
 plugins\xcenter directory of the XWorkplace installation
 directory.
 
+See src\shared\center.c for an introduction to the XCenter.
+
 Ulrich M”ller (2000-12-07)
 

@@ -992,8 +992,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              */
 
             case WM_APPTERMINATENOTIFY:
-                _Pmpf((__FUNCTION__ ": WM_APPTERMINATENOTIFY happ 0x%lX ulrc %d",
-                        mp1, mp2));
+                /* _Pmpf((__FUNCTION__ ": WM_APPTERMINATENOTIFY happ 0x%lX ulrc %d",
+                        mp1, mp2)); */
                 progAppTerminateNotify((HAPP)mp1);
             break;
 
@@ -2048,6 +2048,8 @@ VOID krnShowStartupDlgs(VOID)
  *@@changed V0.9.1 (99-12-19) [umoeller]: added NumLock at startup
  *@@changed V0.9.3 (2000-04-27) [umoeller]: added PM error windows
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL interface
+ *@@changed V0.9.7 (2000-12-13) [umoeller]: moved config.sys path composition here
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: got crashes if archiving displayed a msg box; moved archiving up
  */
 
 VOID krnInitializeXWorkplace(VOID)
@@ -2138,6 +2140,17 @@ VOID krnInitializeXWorkplace(VOID)
      */
 
     xthrStartThreads();
+
+    /*
+     *  check WPS archiving (V0.9.0)
+     *      moved this up V0.9.7 (2000-12-17) [umoeller];
+     *      we get crashes if a msg box is displayed otherwise
+     */
+
+    if (pGlobalSettings->fReplaceArchiving)
+        // check whether we need a WPS backup (archives.c)
+        arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,
+                               T1M_DESTROYARCHIVESTATUS);
 
     /*
      *  start XWorkplace daemon (XWPDAEMN.EXE)
@@ -2304,15 +2317,6 @@ VOID krnInitializeXWorkplace(VOID)
         }
     }
 
-    /*
-     *  check WPS archiving (V0.9.0)
-     *
-     */
-
-    if (pGlobalSettings->fReplaceArchiving)
-        // check whether we need a WPS backup (archives.c)
-        arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,
-                               T1M_DESTROYARCHIVESTATUS);
 }
 
 

@@ -1338,6 +1338,10 @@ VOID LoadNLSData(HAB habDesktop,
             &(pNLSStrings->pszByte));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_BYTES,
             &(pNLSStrings->pszBytes));
+
+    // (2000-12-14) [lafaix] Resources page name
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_PGMFILE_RESOURCES,
+            &(pNLSStrings->pszResourcesPage));
 }
 
 /*
@@ -1723,6 +1727,26 @@ BOOL cmnDescribeKey(PSZ pszBuf,
     return (brc);
 }
 
+/*
+ *@@ cmnAddCloseMenuItem:
+ *      adds a "Close" menu item to the given menu.
+ *
+ *@@added V0.9.7 (2000-12-21) [umoeller]
+ */
+
+VOID cmnAddCloseMenuItem(HWND hwndMenu)
+{
+    // add "Close" menu item
+    winhInsertMenuSeparator(hwndMenu,
+                            MIT_END,
+                            (G_pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+    winhInsertMenuItem(hwndMenu,
+                       MIT_END,
+                       WPMENUID_CLOSE,
+                       "~Close", // ###
+                       MIS_TEXT, 0);
+}
+
 /* ******************************************************************
  *                                                                  *
  *   XFolder Global Settings                                        *
@@ -2055,7 +2079,7 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
  *      as possible, because other threads cannot
  *      access the global settings after this call.
  *
- *      Always install an exception handler ... ###
+ *      Always install an exception handler ...
  *
  *@@added V0.9.0 (99-11-14) [umoeller]
  */
@@ -2503,21 +2527,22 @@ BOOL cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
 
 BOOL cmnPlaySystemSound(USHORT usIndex)
 {
-    BOOL rc = FALSE;
+    BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (pGlobalSettings->fXSystemSounds)    // V0.9.3 (2000-04-10) [umoeller]
     {
         PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
+        // check if the XWPMedia subsystem is working
         if (xmmQueryStatus() == MMSTAT_WORKING)
-            // SOUND.DLL loaded successfully and
-            // Speedythread running:
-            rc = xmmPostMediaMsg(XMM_PLAYSYSTEMSOUND,
-                                 (MPARAM)usIndex,
-                                 MPNULL);
+        {
+            brc = xmmPostMediaMsg(XMM_PLAYSYSTEMSOUND,
+                                  (MPARAM)usIndex,
+                                  MPNULL);
+        }
     }
 
-    return (rc);
+    return (brc);
 }
 
 /*

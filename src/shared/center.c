@@ -267,16 +267,14 @@
  *      buffer (which should be freed using ctrFreeSetupValue),
  *      or NULL if not found.
  *
- *      This assumes that SETUP_SEPARATOR is used to
+ *      This assumes that semicola (';') chars are used to
  *      separate the key/value pairs. You are not required
- *      to use SETUP_SEPARATOR (as long as you don't use
- *      semicola in the setup string), but this function
- *      won't work otherwise, and you'll have to write
- *      your own parser then.
+ *      to use that, but this function won't work otherwise,
+ *      and you'll have to write your own parser then.
  *
  *      Example:
  +
- +          PSZ pszSetupString = "key1=value1" SETUP_SEPARATOR "key2=value2;"
+ +          PSZ pszSetupString = "key1=value1;key2=value2;"
  +          PSZ pszValue = ctrScanSetupString(pszSetupString,
  +                                            "key1");
  +          ...
@@ -285,7 +283,8 @@
  *      would have returned "value1".
  *
  *      This searches for the keyword _without_ respect
- *      to case.
+ *      to case. It is recommended to use upper-case
+ *      keywords only.
  */
 
 PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
@@ -390,10 +389,9 @@ VOID ctrFreeSetupValue(PSZ p)
  *      identifies the widget settings internally and
  *      better be valid.
  *
- *      If the affected widget is currently open and
- *      supports updating itself according to a setup
- *      string (i.e. if XCENTERWIDGET.pScanSetupString
- *      is != NULL), that function gets called from here.
+ *      If the affected widget is currently open, it
+ *      will be sent a WM_CONTROL message with the
+ *      ID_XCENTER_CLIENT notification code.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  */
@@ -687,23 +685,25 @@ VOID DwgtDestroy(HWND hwnd)
  *         dropped on the widget.
  *
  *      -- On WM_CREATE, the widget receives a pointer to
- *         its XCENTERWIDGET structure in mp1. After
- *         the window has been successfully created, XCenter
- *         stores that pointer in QWL_USER of the widget's
- *         window words.
+ *         its XCENTERWIDGET structure in mp1.
  *
- *      -- On WM_CREATE, the widget should write its desired
- *         width into XCENTERWIDGET.cx. It can also
- *         write the minimum height it requires into the
- *         cy field (for example, if you want your control
- *         to have at least the system icon size or
- *         something).
+ *         The first thing the widget MUST do on WM_CREATE
+ *         is to store the XCENTERWIDGET pointer (from mp1)
+ *         in its QWL_USER window word by calling:
  *
- *         After all widgets have been created, the XCenter
- *         (and all widgets) are resized to have the largest
- *         cy requested. As a result, your window proc cannot
- *         assume that it will always have the size it
- *         requested.
+ +              WinSetWindowPtr(hwnd, QWL_USER, mp1);
+ *
+ *      -- The XCenter communicates with the widget using
+ *         WM_CONTROL messages. SHORT1FROMMP(mp1), the
+ *         source window ID, is always ID_XCENTER_CLIENT.
+ *         SHORT2FROMMP(mp1), the notification code, can
+ *         be:
+ *
+ *         --  XN_QUERYSIZE: the XCenter wants to know the
+ *             widget's size.
+ *
+ *         --  XN_SETUPCHANGED: widget's setup string has
+ *             changed.
  *
  *      -- All unprocessed messages should be routed
  *         to ctrDefWidgetProc instead of WinDefWindowProc.

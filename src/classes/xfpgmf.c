@@ -665,7 +665,40 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
     {
         if (pGlobalSettings->fReplaceFilePage)
         {
+            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+
+            // (2000-12-14) [lafaix] inserting "Resources" page
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = pNLSStrings->pszResourcesPage;
+            pcnbp->ulDlgID = ID_XSD_PGMFILE_RESOURCES;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
+            pcnbp->ulPageID = SP_PROG_RESOURCES;
+            pcnbp->pfncbInitPage    = fsysResourcesInitPage;
+            ntbInsertPage(pcnbp);
+            // (2000-12-14) [lafaix] end changes
+
+            // insert "Module" page
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = pNLSStrings->pszModulePage;
+            pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
+            // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
+            // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
+            pcnbp->ulPageID = SP_PROG_DETAILS;
+            pcnbp->pfncbInitPage    = fsysProgramInitPage;
+            ntbInsertPage(pcnbp);
+
+            /* PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
             PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
             memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -683,7 +716,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
             pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
             pcnbp->ulPageID = SP_PROG_DETAILS;
             pcnbp->pfncbInitPage    = fsysProgramInitPage;
-            ntbInsertPage(pcnbp);
+            ntbInsertPage(pcnbp); */
         }
     }
 

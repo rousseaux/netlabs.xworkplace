@@ -220,3 +220,11 @@ EXPORTS
    M_XMMVolumeCClassData
    M_XMMVolumeClassData
    M_XMMVolumeNewClass
+
+   XMMCDPlayerCClassData
+   XMMCDPlayerClassData
+   XMMCDPlayerNewClass
+   M_XMMCDPlayerCClassData
+   M_XMMCDPlayerClassData
+   M_XMMCDPlayerNewClass
+

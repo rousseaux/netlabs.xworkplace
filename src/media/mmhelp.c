@@ -65,6 +65,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINMESSAGEMGR
+#define INCL_WINPOINTERS
 
 #define INCL_GPI                // required for INCL_MMIO_CODEC
 #define INCL_GPIBITMAPS         // required for INCL_MMIO_CODEC
@@ -109,6 +110,10 @@
 // holds the plain USHORT device ID's
 HMTX        G_hmtxOpenDevices = NULLHANDLE;
 LINKLIST    G_lstOpenDevices;
+
+extern HWND G_hwndMediaObject;      // in mmthread.c
+
+extern PXMMCDPLAYER G_pPlayer = NULL;      // points to application ptr!
 
 /* ******************************************************************
  *                                                                  *
@@ -157,10 +162,10 @@ BOOL xmmUnlockDevicesList(VOID)
 /*
  *@@ xmmOpenDevice:
  *      opens any multimedia device.
- *      If *pusMMDeviceID is != 0, this simply
+ *      If *pusDeviceID is != 0, this simply
  *      returns TRUE. Otherwise, the device is
  *      opened from the specified parameters
- *      and *pusMMDeviceID receives the device ID.
+ *      and *pusDeviceID receives the device ID.
  *      As a result, if TRUE is returned, you can
  *      always be sure that the device is open.
  *
@@ -174,10 +179,10 @@ BOOL xmmUnlockDevicesList(VOID)
 
 BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
                    USHORT usDeviceIndex,    // in: device index (0 for default)
-                   PUSHORT pusMMDeviceID)   // in/out: MMPM/2 device ID
+                   PUSHORT pusDeviceID)   // in/out: MMPM/2 device ID
 {
     BOOL brc = FALSE;
-    if (*pusMMDeviceID == 0)
+    if (*pusDeviceID == 0)
     {
         // device not opened yet:
         ULONG ulrc;
@@ -203,7 +208,7 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
         if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
         {
             // successful: go on
-            *pusMMDeviceID = mop.usDeviceID;     // remember device ID
+            *pusDeviceID = mop.usDeviceID;     // remember device ID
 
             if (xmmLockDevicesList())
             {
@@ -238,17 +243,17 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
 /*
  *@@ xmmCloseDevice:
  *      closes a device opened by xmmOpenDevice and sets
- *      *pusMMDeviceID to null.
+ *      *pusDeviceID to null.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
 
-BOOL xmmCloseDevice(PUSHORT pusMMDeviceID)
+BOOL xmmCloseDevice(PUSHORT pusDeviceID)
 {
     BOOL brc;
     ULONG ulrc;
     MCI_GENERIC_PARMS mgp = {0};
-    ulrc = G_mciSendCommand(*pusMMDeviceID,
+    ulrc = G_mciSendCommand(*pusDeviceID,
                             MCI_CLOSE,
                             MCI_WAIT,
                             &mgp,
@@ -258,12 +263,12 @@ BOOL xmmCloseDevice(PUSHORT pusMMDeviceID)
         if (xmmLockDevicesList())
         {
             lstRemoveItem(&G_lstOpenDevices,
-                          (PVOID)*pusMMDeviceID);
+                          (PVOID)*pusDeviceID);
             xmmUnlockDevicesList();
             brc = TRUE;
         }
 
-        *pusMMDeviceID = 0;
+        *pusDeviceID = 0;
     }
 
     return brc;
@@ -291,6 +296,7 @@ VOID xmmCleanup(VOID)
             USHORT usDeviceID = (USHORT)(pNode->pItemData);
             DosBeep(1000, 100);
             xmmCloseDevice(&usDeviceID);
+            lstRemoveNode(&G_lstOpenDevices, pNode);       // V0.9.7 (2000-12-21) [umoeller]
         }
 
         xmmUnlockDevicesList();
@@ -513,48 +519,162 @@ VOID xmmStopSound(PUSHORT pusDeviceID)
  *      opens the CD device by calling xmmOpenDevice
  *      and prepares it for playing.
  *
- *      Returns TRUE if the CD device is open,
- *      either because the device has already been
- *      opened or has been opened by this call.
+ *      This expects a static XMMCDPLAYER structure
+ *      which should better be valid at all times
+ *      because the XWP media thread will also
+ *      access it to update status information.
  *
- *      This function has no counterpart. Use
- *      the generic xmmCloseDevice to close the
- *      device again.
+ *      Use xmmCDCloseDevice to close the device
+ *      again.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
 
-BOOL xmmCDOpenDevice(PUSHORT pusMMDeviceID) // in/out: CD device ID
+BOOL xmmCDOpenDevice(PXMMCDPLAYER pPlayer,
+                     ULONG ulDeviceIndex)       // 0 for default
 {
     BOOL brc = FALSE;
-    ULONG ulrc;
-
-    if (*pusMMDeviceID == 0)
+    if (xmmLockDevicesList())
     {
-        // device not opened yet:
-        if (xmmOpenDevice(MCI_DEVTYPE_CD_AUDIO,
-                          0,    // default device
-                          pusMMDeviceID))
+        if (pPlayer)
         {
-            // successfully opened:
-            // switch time format to tracks
-            MCI_SET_PARMS msetp = {0};
-            msetp.ulTimeFormat = MCI_FORMAT_TMSF;
-            ulrc = G_mciSendCommand(*pusMMDeviceID,
-                                    MCI_SET,
-                                    MCI_WAIT
-                                        | MCI_SET_TIME_FORMAT,
-                                    &msetp,
-                                    0);
-
-            _Pmpf(("NEXTTRACK MCI_SET ulrc: 0x%lX", ulrc));
-
-            brc = TRUE;
+            brc = xmmOpenDevice(MCI_DEVTYPE_CD_AUDIO,
+                                ulDeviceIndex,
+                                &pPlayer->usDeviceID);
+            if (brc)
+                G_pPlayer = pPlayer;
         }
+
+        xmmUnlockDevicesList();
     }
-    else
-        // device already open:
-        brc = TRUE;
+
+    return (brc);
+}
+
+/*
+ *@@ xmmCDCloseDevice:
+ *      closes the CD player again.
+ *
+ *@@added V0.9.7 (2000-12-21) [umoeller]
+ */
+
+VOID xmmCDCloseDevice(PXMMCDPLAYER pPlayer)
+{
+    if (xmmLockDevicesList())
+    {
+        if (pPlayer)
+        {
+            xmmCloseDevice(&pPlayer->usDeviceID);
+
+            if (pPlayer->aTocEntries)
+                free(pPlayer->aTocEntries);
+            pPlayer->aTocEntries = NULL;
+            pPlayer->cTocEntries = 0;
+        }
+
+        G_pPlayer = NULL;
+
+        xmmUnlockDevicesList();
+    }
+}
+
+/*
+ *@@ xmmCDGetTOC:
+ *      retrieves the CD's table of contents.
+ *      This operates synchronously.
+ *
+ *      This sets cTracks, aTocEntries and
+ *      cTocEntries in the XMMCDPLAYER.
+ *
+ *      The MCI_TOC_REC structure is defined
+ *      as follows:
+ *
+ +      typedef struct _MCI_TOC_REC {
+ +          BYTE       TrackNum;     //  Track number.
+ +          ULONG      ulStartAddr;  //  Starting address in MMTIME.
+ +          ULONG      ulEndAddr;    //  Ending address in MMTIME.
+ +          BYTE       Control;      //  Track control info.
+ +          USHORT     usCountry;    //  Country.
+ +          ULONG      ulOwner;      //  Owner.
+ +          ULONG      ulSerialNum;  //  Serial number.
+ +      } MCI_TOC_REC;
+ +      typedef MCI_TOC_REC *PTOCREC;
+ *
+ *@@added V0.9.7 (2000-12-20) [umoeller]
+ */
+
+BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer)
+{
+    BOOL brc = FALSE;
+    ULONG ulrc = 0;
+
+    if (xmmLockDevicesList())
+    {
+        if ((pPlayer) && (pPlayer->usDeviceID))
+        {
+            MCI_TOC_PARMS mtp = {0};
+            MCI_STATUS_PARMS msp = {0};
+
+            // clear old toc
+            if (pPlayer->aTocEntries)
+                free(pPlayer->aTocEntries);
+            pPlayer->aTocEntries = NULL;
+            pPlayer->cTocEntries = 0;
+
+            // get no. of tracks
+            msp.ulItem = MCI_STATUS_NUMBER_OF_TRACKS;
+
+            ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                    MCI_STATUS,
+                                    MCI_WAIT
+                                        | MCI_STATUS_ITEM, // msp.ulItem is valid
+                                    &msp,
+                                    0);                              // No user parm
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+            {
+                pPlayer->cTracks = LOUSHORT(msp.ulReturn);
+
+                // now get the toc
+                ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                        MCI_GETTOC,
+                                        MCI_WAIT,
+                                        &mtp,
+                                        0);                              // No user parm
+                if (mtp.ulBufSize)
+                {
+                    mtp.pBuf = malloc(mtp.ulBufSize);
+                    ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                            MCI_GETTOC,
+                                            MCI_WAIT,
+                                            &mtp,
+                                            0);                              // No user parm
+                    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                    {
+                        pPlayer->aTocEntries = mtp.pBuf;
+                        pPlayer->cTocEntries = mtp.ulBufSize / sizeof(MCI_TOC_REC);
+                        brc = TRUE;
+                    }
+                    else
+                    {
+                        CHAR szError[1000];
+                        G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                        _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                               pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+
+                        free(mtp.pBuf);
+                    }
+                }
+            }
+            else
+            {
+                CHAR szError[1000];
+                G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                       pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+            }
+        }
+        xmmUnlockDevicesList();
+    }
 
     return (brc);
 }
@@ -563,6 +683,8 @@ BOOL xmmCDOpenDevice(PUSHORT pusMMDeviceID) // in/out: CD device ID
  *@@ xmmCDQueryStatus:
  *      returns the status of a CD device opened
  *      with xmmCDOpenDevice.
+ *
+ *      This operates synchronously.
  *
  *      Returns one of the following:
  *      -- 0: invalid device.
@@ -579,57 +701,31 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
     ULONG ulReturn = 0,
           ulrc;
 
-    if (usDeviceID)
+    if (xmmLockDevicesList())
     {
-        MCI_STATUS_PARMS msp = {0};
-
-        msp.ulItem = MCI_STATUS_MODE;
-
-        ulrc = G_mciSendCommand(usDeviceID,
-                                MCI_STATUS,
-                                MCI_WAIT
-                                    | MCI_STATUS_ITEM, // msp.ulItem is valid
-                                &msp,
-                                0);                              // No user parm
-        if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+        if (usDeviceID)
         {
-            ulReturn = LOUSHORT(msp.ulReturn);
+            MCI_STATUS_PARMS msp = {0};
+
+            msp.ulItem = MCI_STATUS_MODE;
+
+            ulrc = G_mciSendCommand(usDeviceID,
+                                    MCI_STATUS,
+                                    MCI_WAIT
+                                        | MCI_STATUS_ITEM, // msp.ulItem is valid
+                                    &msp,
+                                    0);                              // No user parm
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                ulReturn = LOUSHORT(msp.ulReturn);
+            else
+            {
+                CHAR szError[1000];
+                G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                       usDeviceID, LOUSHORT(ulrc), szError));
+            }
         }
-    }
-
-    return (ulReturn);
-}
-
-/*
- *@@ xmmCDQueryLastTrack:
- *      returns the no. of the last track of the CD
- *      which is in the drive (equals the no. of
- *      tracks on the CD).
- *
- *@@added V0.9.3 (2000-04-25) [umoeller]
- */
-
-ULONG xmmCDQueryLastTrack(USHORT usDeviceID)
-{
-    ULONG ulReturn = 0,
-          ulrc;
-
-    if (usDeviceID)
-    {
-        MCI_STATUS_PARMS msp = {0};
-
-        msp.ulItem = MCI_STATUS_NUMBER_OF_TRACKS;
-
-        ulrc = G_mciSendCommand(usDeviceID,
-                                MCI_STATUS,
-                                MCI_WAIT
-                                    | MCI_STATUS_ITEM, // msp.ulItem is valid
-                                &msp,
-                                0);                              // No user parm
-        if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-        {
-            ulReturn = LOUSHORT(msp.ulReturn);
-        }
+        xmmUnlockDevicesList();
     }
 
     return (ulReturn);
@@ -641,6 +737,8 @@ ULONG xmmCDQueryLastTrack(USHORT usDeviceID)
  *      no matter whether the CD is playing
  *      or not.
  *
+ *      Returns 0 on errors.
+ *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
 
@@ -649,22 +747,31 @@ ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID)
     ULONG ulReturn = 0,
           ulrc;
 
-    if (usDeviceID)
+    if (xmmLockDevicesList())
     {
-        MCI_STATUS_PARMS msp = {0};
-
-        msp.ulItem = MCI_STATUS_CURRENT_TRACK;
-
-        ulrc = G_mciSendCommand(usDeviceID,
-                                MCI_STATUS,
-                                MCI_WAIT
-                                    | MCI_STATUS_ITEM, // msp.ulItem is valid
-                                &msp,
-                                0);                              // No user parm
-        if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+        if (usDeviceID)
         {
-            ulReturn = LOUSHORT(msp.ulReturn);
+            MCI_STATUS_PARMS msp = {0};
+
+            msp.ulItem = MCI_STATUS_CURRENT_TRACK;
+
+            ulrc = G_mciSendCommand(usDeviceID,
+                                    MCI_STATUS,
+                                    MCI_WAIT
+                                        | MCI_STATUS_ITEM, // msp.ulItem is valid
+                                    &msp,
+                                    0);                              // No user parm
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                ulReturn = LOUSHORT(msp.ulReturn);
+            else
+            {
+                CHAR szError[1000];
+                G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                       usDeviceID, LOUSHORT(ulrc), szError));
+            }
         }
+        xmmUnlockDevicesList();
     }
 
     return (ulReturn);
@@ -679,38 +786,78 @@ ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID)
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-BOOL xmmCDPlay(USHORT usDeviceID)
+BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
+               BOOL fShowWaitPointer)
 {
     BOOL brc = FALSE;
-    ULONG ulStatus = xmmCDQueryStatus(usDeviceID);
-    ULONG ulrc = -1;
 
-    if (ulStatus == MCI_MODE_STOP)
+    HPOINTER hptrOld = NULLHANDLE;
+    if (fShowWaitPointer)
+        hptrOld = winhSetWaitPointer();
+
+    if (xmmLockDevicesList())
     {
-        // device stopped:
-        // start at beginning
-        MCI_PLAY_PARMS mpp = {0};
-        ulrc = G_mciSendCommand(usDeviceID,
-                                MCI_PLAY,
-                                0, // MCI_WAIT,
-                                &mpp,      // from and to are ignored,
-                                           // since we've not set the flags
-                                0);
-    }
-    else if (ulStatus == MCI_MODE_PAUSE)
-    {
-        // device paused:
-        // resume
-        MCI_GENERIC_PARMS mgp = {0};
-        ulrc = G_mciSendCommand(usDeviceID,
-                                MCI_RESUME,
-                                0, // MCI_WAIT,
-                                &mgp,
-                                0);
+        if ((pPlayer) && (pPlayer->usDeviceID))
+        {
+            ULONG ulrc = -1;
+
+            ULONG ulNewStatus = 0,
+                  ulNewTrack = 0;
+
+            if (    (pPlayer->ulStatus != MCI_MODE_PAUSE)
+                 && (pPlayer->ulStatus != MCI_MODE_PLAY)
+               )
+            {
+                // device stopped:
+                // start at beginning
+                brc = xmmCDPlayTrack(pPlayer,
+                                     1,
+                                     fShowWaitPointer);
+                                  // this also gets the TOC
+
+                /* MCI_PLAY_PARMS mpp = {0};
+                ULONG fl = 0;
+                ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                        MCI_PLAY,
+                                        MCI_WAIT,
+                                        &mpp,      // from and to are ignored,
+                                                   // since we've not set the flags
+                                        0);
+                ulNewStatus = MCI_MODE_PLAY;
+                ulNewTrack = 1; */
+            }
+            else if (pPlayer->ulStatus == MCI_MODE_PAUSE)
+            {
+                // device paused:
+                // resume
+                MCI_GENERIC_PARMS mgp = {0};
+                mgp.hwndCallback = G_hwndMediaObject;
+                ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                        MCI_RESUME,
+                                        MCI_WAIT,
+                                        &mgp,
+                                        0);
+                ulNewStatus = MCI_MODE_PLAY;
+
+                if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                {
+                    pPlayer->ulStatus = ulNewStatus;
+                    brc = TRUE;
+                }
+                else
+                {
+                    CHAR szError[1000];
+                    G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                           pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                }
+            }
+        }
+        xmmUnlockDevicesList();
     }
 
-    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-        brc = TRUE;
+    if (hptrOld)
+        WinSetPointer(HWND_DESKTOP, hptrOld);
 
     return (brc);
 }
@@ -722,38 +869,208 @@ BOOL xmmCDPlay(USHORT usDeviceID)
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
 
-BOOL xmmCDPlayTrack(USHORT usDeviceID,
-                    USHORT usTrack)
+BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
+                    USHORT usTrack,
+                    BOOL fShowWaitPointer)
 {
     BOOL brc = FALSE;
-    ULONG ulrc = 0;
-    MCI_PLAY_PARMS mpp = {0};
+    HPOINTER hptrOld = NULLHANDLE;
+    if (fShowWaitPointer)
+        hptrOld = winhSetWaitPointer();
 
-    if (usTrack < 0)
-        usTrack = 1;
-    if (usTrack > xmmCDQueryLastTrack(usDeviceID))
-        return (FALSE);
-
-    TMSF_TRACK(mpp.ulFrom) = usTrack;
-    TMSF_MINUTE(mpp.ulFrom) = 0;
-    TMSF_SECOND(mpp.ulFrom) = 0;
-    TMSF_FRAME(mpp.ulFrom) = 0;
-    ulrc = G_mciSendCommand(usDeviceID,
-                            MCI_PLAY,
-                            MCI_FROM,
-                            &mpp,
-                            0);
-
-    _Pmpf(("NEXTTRACK MCI_SEEK ulrc: 0x%lX", ulrc));
-
-    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-        brc = TRUE;
-    else
+    if (xmmLockDevicesList())
     {
-        CHAR szError[1000];
-        G_mciGetErrorString(ulrc, szError, sizeof(szError));
-        _Pmpf(("  DeviceID %d has error %d (\"%s\")",
-               usDeviceID, ulrc, szError));
+        if ((pPlayer) && (pPlayer->usDeviceID))
+        {
+            ULONG ulrc = 0;
+
+            if (pPlayer->aTocEntries == 0)
+            {
+                // ain't got no toc yet:
+                // go get it
+                xmmCDGetTOC(pPlayer);
+            }
+
+            if (pPlayer->aTocEntries)
+            {
+                // switch time format to tracks
+                MCI_SET_PARMS msetp = {0};
+                msetp.ulTimeFormat = MCI_FORMAT_TMSF;
+                ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                        MCI_SET,
+                                        MCI_WAIT
+                                            | MCI_SET_TIME_FORMAT,
+                                        &msetp,
+                                        0);
+
+                if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                {
+                    MCI_PLAY_PARMS mpp = {0};
+
+                    if (usTrack < 0)
+                        usTrack = 1;
+                    if (usTrack > pPlayer->cTracks)
+                        return (FALSE);
+
+                    TMSF_TRACK(mpp.ulFrom) = usTrack;
+                    TMSF_MINUTE(mpp.ulFrom) = 0;
+                    TMSF_SECOND(mpp.ulFrom) = 0;
+                    TMSF_FRAME(mpp.ulFrom) = 0;
+                    ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                            MCI_PLAY,
+                                            MCI_FROM,
+                                                // do not MCI_WAIT here,
+                                                // this will never return
+                                            &mpp,
+                                            0);
+
+                    _Pmpf(("NEXTTRACK MCI_SEEK ulrc: 0x%lX", ulrc));
+
+                    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                    {
+                        pPlayer->ulStatus = MCI_MODE_PLAY;
+                        pPlayer->usCurrentTrack = usTrack;
+                        brc = TRUE;
+                    }
+                    else
+                    {
+                        CHAR szError[1000];
+                        G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                        _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                               pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                    }
+                }
+                else
+                {
+                    CHAR szError[1000];
+                    G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                           pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                }
+            }
+        }
+        xmmUnlockDevicesList();
+    }
+
+    if (hptrOld)
+        WinSetPointer(HWND_DESKTOP, hptrOld);
+
+    return (brc);
+}
+
+/*
+ *@@ xmmCDCalcTrack:
+ *      calculates the track and the currently elapsed
+ *      seconds in the track from the given ulMMTime.
+ *
+ *      The track (1-99) is returned.
+ *
+ *      Returns 0 if the track could not be found.
+ *
+ *      The caller must lock pPlayer first.
+ */
+
+ULONG xmmCDCalcTrack(PXMMCDPLAYER pPlayer,
+                     ULONG ulMMTime,
+                     PULONG pulSecondsInTrack)
+{
+    ULONG           ul;
+    ULONG           ulTrack = 0,
+                    ulMSInTrack = 0;
+    MCI_TOC_REC     *pTocEntryFound = NULL;
+
+    for (ul = 0;
+         ul < pPlayer->cTocEntries;
+         ul++)
+    {
+        MCI_TOC_REC     *pTocEntryThis = &pPlayer->aTocEntries[ul];
+        if (    (pTocEntryThis->ulStartAddr < ulMMTime)
+             && (pTocEntryThis->ulEndAddr > ulMMTime)
+           )
+        {
+            pTocEntryFound = pTocEntryThis;
+            break;
+        }
+    }
+
+    if (pTocEntryFound)
+    {
+        ulTrack = pTocEntryFound->TrackNum;
+        ulMSInTrack = MSECFROMMM(ulMMTime - pTocEntryFound->ulStartAddr);
+    }
+
+    *pulSecondsInTrack = ulMSInTrack / 1000;
+
+    return (ulTrack);
+}
+
+/*
+ *@@ xmmCDPositionAdvise:
+ *      intializes position advise messages on the media
+ *      thread. Gets called automatically from xmmCDPlayTrack
+ *      and xmmCDPlay.
+ *
+ *      If hwndNotify is NULLHANDLE, notifiations are stopped.
+ *
+ *@@added V0.9.7 (2000-12-20) [umoeller]
+ */
+
+BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
+                         HWND hwndNotify,
+                         ULONG ulNotifyMsg)
+{
+    BOOL brc = FALSE;
+    if (xmmLockDevicesList())
+    {
+        if ((pPlayer) && (pPlayer->usDeviceID))
+        {
+            ULONG ulrc = 0,
+                  fl = MCI_WAIT;
+            MCI_POSITION_PARMS mpp = {0};
+            MCI_SET_PARMS msetp = {0};
+
+            if (!hwndNotify)
+                pPlayer->hwndNotify = NULLHANDLE;
+
+            // switch time format to milliseconds
+            msetp.ulTimeFormat = MCI_FORMAT_MMTIME;
+            ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                    MCI_SET,
+                                    MCI_WAIT
+                                        | MCI_SET_TIME_FORMAT,
+                                    &msetp,
+                                    0);
+
+            mpp.hwndCallback = G_hwndMediaObject;
+            mpp.ulUnits = MSECTOMM(200);
+
+            if (hwndNotify)
+                fl |= MCI_SET_POSITION_ADVISE_ON;
+            else
+                fl |= MCI_SET_POSITION_ADVISE_OFF;
+
+            ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                    MCI_SET_POSITION_ADVISE,
+                                    fl,
+                                    &mpp,
+                                    0);
+
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+            {
+                pPlayer->fPositionAdvising = (hwndNotify != NULLHANDLE);
+                pPlayer->hwndNotify = hwndNotify;
+                pPlayer->ulNotifyMsg = ulNotifyMsg;
+            }
+            else
+            {
+                CHAR szError[1000];
+                G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                       pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                pPlayer->hwndNotify = hwndNotify;
+            }
+        }
+        xmmUnlockDevicesList();
     }
 
     return (brc);
@@ -767,17 +1084,124 @@ BOOL xmmCDPlayTrack(USHORT usDeviceID,
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-BOOL xmmCDPause(USHORT usDeviceID)
+BOOL xmmCDPause(PXMMCDPLAYER pPlayer)
 {
     BOOL brc = FALSE;
-    MCI_GENERIC_PARMS mgp = {0};
-    ULONG ulrc = G_mciSendCommand(usDeviceID,
-                                  MCI_PAUSE,
-                                  MCI_WAIT,
-                                  &mgp,
-                                  0);
-    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-        brc = TRUE;
+
+    if (xmmLockDevicesList())
+    {
+        if ((pPlayer) && (pPlayer->usDeviceID))
+        {
+            ULONG ulrc;
+            MCI_GENERIC_PARMS mgp = {0};
+            mgp.hwndCallback = G_hwndMediaObject;
+            ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                    MCI_PAUSE,
+                                    MCI_WAIT,
+                                    &mgp,
+                                    0);
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                brc = TRUE;
+        }
+        xmmUnlockDevicesList();
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ xmmCDStop:
+ *      stops the CD playing and closes the device
+ *      by calling xmmCDCloseDevice.
+ *
+ *@@added V0.9.7 (2000-12-20) [umoeller]
+ */
+
+BOOL xmmCDStop(PXMMCDPLAYER pPlayer)
+{
+    BOOL brc = FALSE;
+
+    if (xmmLockDevicesList())
+    {
+        if (pPlayer)
+        {
+            if (pPlayer->usDeviceID)
+            {
+                xmmCDPositionAdvise(pPlayer, NULLHANDLE, 0);
+
+                if (xmmCDQueryStatus(pPlayer->usDeviceID) == MCI_MODE_PLAY)
+                {
+                    MCI_GENERIC_PARMS mgp = {0};
+                    ULONG ulrc;
+                    mgp.hwndCallback = G_hwndMediaObject;
+                    ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                            MCI_STOP,
+                                            MCI_WAIT,
+                                            &mgp,
+                                            0);
+                    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                        brc = TRUE;
+                    else
+                    {
+                        CHAR szError[1000];
+                        G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                        _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                               pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                    }
+                }
+            }
+
+            xmmCDCloseDevice(pPlayer);
+        }
+        xmmUnlockDevicesList();
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ xmmCDEject:
+ *      ejects the CD and closes the device
+ *      by calling xmmCDCloseDevice.
+ *
+ *@@added V0.9.7 (2000-12-20) [umoeller]
+ */
+
+BOOL xmmCDEject(PXMMCDPLAYER pPlayer)
+{
+    BOOL brc = FALSE;
+
+    if (xmmLockDevicesList())
+    {
+        if (pPlayer)
+        {
+            if (pPlayer->usDeviceID)
+            {
+                ULONG ulrc;
+                MCI_SET_PARMS msetp = {0};
+                xmmCDPositionAdvise(pPlayer, NULLHANDLE, 0);
+
+                ulrc = G_mciSendCommand(pPlayer->usDeviceID,
+                                        MCI_SET,
+                                        MCI_SET_DOOR_OPEN,
+                                        &msetp,
+                                        0);
+                if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+                    brc = TRUE;
+                else
+                {
+                    CHAR szError[1000];
+                    G_mciGetErrorString(ulrc, szError, sizeof(szError));
+                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                           pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
+                }
+            }
+
+            xmmCDCloseDevice(pPlayer);
+        }
+        xmmUnlockDevicesList();
+    }
+
     return (brc);
 }
 
@@ -795,7 +1219,7 @@ BOOL xmmCDPause(USHORT usDeviceID)
 
 /* DEVICETYPE aDeviceTypes[] =
         {
-            MCI_DEVTYPE_VIDEOTAPE, "Video tape",        // ### NLS!
+            MCI_DEVTYPE_VIDEOTAPE, "Video tape",
             MCI_DEVTYPE_VIDEODISC, "Video disc",
             MCI_DEVTYPE_CD_AUDIO, "CD Audio",
             MCI_DEVTYPE_DAT, "DAT",

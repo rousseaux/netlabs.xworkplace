@@ -377,12 +377,14 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpQueryTrashObjectsCount(XWPTrashCan *somSelf)
  *@@changed V0.9.1 (2000-01-29) [umoeller]: added fForce parameter
  *@@changed V0.9.4 (2000-08-02) [umoeller]: now pre-loading icons; added ICONS.DLL support
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added object mutex
+ *@@changed V0.9.7 (2000-12-19) [umoeller]: new state wasn't always saved, fixed
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
                                                     BOOL fForce)
 {
-    BOOL    brc = FALSE;
+    BOOL    brc = FALSE,
+            fSave = FALSE;
     WPSHLOCKSTRUCT Lock;
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
@@ -412,7 +414,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
             {
                 brc = _wpSetIcon(somSelf, hptr);
 
-                // make sure this icon is not destroyed;
+                // make sure this icon never gets destroyed;
                 // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
                 // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
                 _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
@@ -424,13 +426,20 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
                 /* _wpSetStyle(somSelf,
                             _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON); */
                                     // OBJSTYLE_CUSTOMICON doesn't work!!
-                // _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
             }
             _fFilledIconSet = fTrashFilled;
+
+            fSave = TRUE;
         }
     }
 
     wpshUnlockObject(&Lock);
+
+    // save trash can state so that the correct icon
+    // is displayed after a WPS restart
+    // V0.9.7 (2000-12-19) [umoeller]
+    if (fSave)
+        _wpSaveDeferred(somSelf);
 
     return (brc);
 }
@@ -1053,7 +1062,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
     // save trash can's state; this will store
     // the trash object count in .CLASSINFO
     // (wpSaveState)
-    _wpSaveDeferred(somSelf);
+    // _wpSaveDeferred(somSelf);
+            // now in xwpSetCorrectTrashIcon
 
     return (brc);
 }

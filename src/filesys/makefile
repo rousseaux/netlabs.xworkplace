@@ -161,10 +161,10 @@ $(OUTPUTDIR)\fdrmenus.obj: \
            $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h \
            $(HLPINC)\winh.h $(HLPINC)\undoc.h \
     $(INC)\dlgids.h \
-    $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.ih \
     $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\notebook.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\config\partitions.h \
-    $(INC)\filesys\folder.h $(INC)\filesys\xthreads.h \
+    $(INC)\filesys\folder.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
     $(INC)\startshut\shutdown.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

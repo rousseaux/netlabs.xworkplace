@@ -41,8 +41,13 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-// #define INCL_DOSSEMAPHORES
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSPROCESS
+#define INCL_DOSEXCEPTIONS
+#define INCL_WINSTDCNR
+#define INCL_DOSRESOURCES
 #define INCL_DOSERRORS
+
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
@@ -54,15 +59,19 @@
 
 // C library headers
 #include <stdio.h>
+#include <setjmp.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -935,9 +944,9 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFldProgramFile notebook callbacks (notebook.c)                *
- *                                                                  *
+ *
+ *   XFldProgramFile notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -1088,6 +1097,373 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     }
 }
 
+/*
+ *@@ RESOURCERECORD:
+ *
+ *@@added V0.9.7 (2000-12-17) [lafaix]
+ */
+
+typedef struct _RESOURCERECORD
+{
+    RECORDCORE  recc;
+
+    ULONG ulResourceID; // !!! Could be a string with Windows or Open32 execs
+    PSZ   pszResourceType;
+    ULONG ulResourceSize;
+} RESOURCERECORD, *PRESOURCERECORD;
+
+/*
+ *@@ FSYSRESOURCE:
+ *
+ *@@added V0.9.7 (2000-12-18) [lafaix]
+ */
+
+typedef struct _FSYSRESOURCE
+{
+    ULONG ulID;
+    ULONG ulType;
+    ULONG ulSize;
+} FSYSRESOURCE, *PFSYSRESOURCE;
+
+/*
+ *@@ fsysQueryResources:
+ *      returns an array of FSYSRESOURCE structures describing all
+ *      available resources in the module.
+ *
+ *      *pcResources receives the no. of items in the array
+ *      (not the array size!). Use fsysFreeResources to clean up.
+ *
+ *@@added V0.9.7 (2000-12-18) [lafaix]
+ */
+
+PFSYSRESOURCE fsysQueryResources(PEXECUTABLE pExec, PULONG pcResources)
+{
+    ULONG         cResources = 0;
+    PFSYSRESOURCE paResources = NULL;
+    int i;
+
+    if (pExec)
+    {
+        if (pExec->ulOS == EXEOS_OS2)
+        {
+            ULONG ulDummy;
+
+            if (pExec->ulExeFormat == EXEFORMAT_LX)
+            {
+                // It's a 32bit OS/2 executable
+                cResources = pExec->pLXHeader->ulResTblCnt;
+
+                if (cResources)
+                {
+                    struct rsrc32                  /* Resource Table Entry */
+                    {
+                        unsigned short      type;   /* Resource type */
+                        unsigned short      name;   /* Resource name */
+                        unsigned long       cb;     /* Resource size */
+                        unsigned short      obj;    /* Object number */
+                        unsigned long       offset; /* Offset within object */
+                    } rs;
+
+                    paResources = malloc(sizeof(FSYSRESOURCE) * cResources);
+
+                    DosSetFilePtr(pExec->hfExe,
+                                  pExec->pLXHeader->ulResTblOfs + pExec->pDosExeHeader->ulNewHeaderOfs,
+                                  FILE_BEGIN,
+                                  &ulDummy);
+
+                    for (i = 0; i < cResources; i++)
+                    {
+                        DosRead(pExec->hfExe, &rs, 14, &ulDummy);
+                        paResources[i].ulID = rs.name;
+                        paResources[i].ulType = rs.type;
+                        paResources[i].ulSize = rs.cb;
+                    }
+                }
+            }
+            else
+            if (pExec->ulExeFormat == EXEFORMAT_NE)
+            {
+               // It's a 16bit OS/2 executable
+               cResources = pExec->pNEHeader->usResSegmCount;
+
+               if (cResources)
+               {
+                   struct {unsigned short type; unsigned short name;} rti;
+                   struct new_seg                          /* New .EXE segment table entry */
+                   {
+                       unsigned short      ns_sector;      /* File sector of start of segment */
+                       unsigned short      ns_cbseg;       /* Number of bytes in file */
+                       unsigned short      ns_flags;       /* Attribute flags */
+                       unsigned short      ns_minalloc;    /* Minimum allocation in bytes */
+                   } ns;
+
+                   paResources = malloc(sizeof(FSYSRESOURCE) * cResources);
+
+                   // We first read the resources IDs and types
+                   DosSetFilePtr(pExec->hfExe,
+                                 pExec->pNEHeader->usResTblOfs + pExec->pDosExeHeader->ulNewHeaderOfs,
+                                 FILE_BEGIN,
+                                 &ulDummy);
+
+                   for (i = 0; i < cResources; i++)
+                   {
+                       DosRead(pExec->hfExe, &rti, sizeof(rti), &ulDummy);
+                       paResources[i].ulID = rti.name;
+                       paResources[i].ulType = rti.type;
+                   }
+
+                   // And we then read their sizes
+                   for (i = 0; i < cResources; i++)
+                   {
+                       DosSetFilePtr(pExec->hfExe,
+                                     pExec->pDosExeHeader->ulNewHeaderOfs+pExec->pNEHeader->usSegTblOfs+sizeof(ns)*i,
+                                     FILE_BEGIN,
+                                     &ulDummy);
+                       DosRead(pExec->hfExe, &ns, sizeof(ns), &ulDummy);
+                       paResources[i].ulSize = ns.ns_cbseg;
+                   }
+               }
+            }
+
+            *pcResources = cResources;
+        }
+
+        doshExecClose(pExec);
+    }
+
+    return (paResources);
+}
+
+/*
+ *@@ fsysFreeResources:
+ *      frees resources allocated by fsysQueryResources.
+ *
+ *@@added V0.9.7 (2000-12-18) [lafaix]
+ */
+
+BOOL fsysFreeResources(PFSYSRESOURCE paResources)
+{
+    free(paResources);
+    return (TRUE);
+}
+
+/*
+ *@@fsysGetResourceTypeName:
+ *      returns a human-readable name from a resource type.
+ *
+ *@@added V0.9.7 (2000-12-20) [lafaix]
+ */
+PSZ fsysGetResourceTypeName(ULONG ulResourceType)
+{
+    if (ulResourceType == RT_POINTER)
+        return "RT_POINTER";
+    if (ulResourceType == RT_BITMAP)
+        return "RT_BITMAP";
+    if (ulResourceType == RT_MENU)
+        return "RT_MENU";
+    if (ulResourceType == RT_DIALOG)
+        return "RT_DIALOG";
+    if (ulResourceType == RT_STRING)
+        return "RT_STRING";
+    if (ulResourceType == RT_FONTDIR)
+        return "RT_FONTDIR";
+    if (ulResourceType == RT_FONT)
+        return "RT_FONT";
+    if (ulResourceType == RT_ACCELTABLE)
+        return "RT_ACCELTABLE";
+    if (ulResourceType == RT_RCDATA)
+        return "RT_RCDATA";
+    if (ulResourceType == RT_MESSAGE)
+        return "RT_MESSAGE";
+    if (ulResourceType == RT_DLGINCLUDE)
+        return "RT_DLGINCLUDE";
+    if (ulResourceType == RT_VKEYTBL)
+        return "RT_VKEYTBL";
+    if (ulResourceType == RT_KEYTBL)
+        return "RT_KEYTBL";
+    if (ulResourceType == RT_CHARTBL)
+        return "RT_CHARTBL";
+    if (ulResourceType == RT_DISPLAYINFO)
+        return "RT_DISPLAYINFO";
+
+    if (ulResourceType == RT_FKASHORT)
+        return "RT_FKASHORT";
+    if (ulResourceType == RT_FKALONG)
+        return "RT_FKALONG";
+
+    if (ulResourceType == RT_HELPTABLE)
+        return "RT_HELPTABLE";
+    if (ulResourceType == RT_HELPSUBTABLE)
+        return "RT_HELPSUBTABLE";
+
+    if (ulResourceType == RT_FDDIR)
+        return "RT_FDDIR";
+    if (ulResourceType == RT_FD)
+        return "RT_FD";
+
+    return "Unknown";
+}
+
+/*
+ *@@ fntInsertResources:
+ *      transient thread started by fsysResourcesInitPage
+ *      to insert resources into the "Resources" container.
+ *
+ *      This thread is created with a msg queue.
+ *
+ *@@added V0.9.7 (2000-12-17) [lafaix]
+ */
+
+void _Optlink fntInsertResources(PTHREADINFO pti)
+{
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG         cResources = 0,
+                      ul;
+        PFSYSRESOURCE paResources;
+        CHAR          szFilename[CCHMAXPATH] = "";
+
+        pcnbp->fShowWaitPointer = TRUE;
+
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEXECUTABLE     pExec = NULL;
+
+            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            {
+                paResources = fsysQueryResources(pExec, &cResources);
+
+                if (paResources)
+                {
+                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_RESOURCES);
+
+                    for (ul = 0;
+                         ul < cResources;
+                         ul++)
+                    {
+                        PRESOURCERECORD precc
+                            = (PRESOURCERECORD)cnrhAllocRecords(hwndCnr,
+                                                                sizeof(RESOURCERECORD),
+                                                                1);
+                        if (precc)
+                        {
+                            precc->ulResourceID = paResources[ul].ulID;
+                            precc->pszResourceType = fsysGetResourceTypeName(paResources[ul].ulType);
+                            precc->ulResourceSize = paResources[ul].ulSize;
+
+                            cnrhInsertRecords(hwndCnr,
+                                              NULL,
+                                              (PRECORDCORE)precc,
+                                              TRUE, // invalidate
+                                              NULL,
+                                              CRA_RECORDREADONLY,
+                                              1);
+                        }
+                    }
+                }
+
+                // store resources
+                if (pcnbp->pUser)
+                    fsysFreeResources(pcnbp->pUser);
+                pcnbp->pUser = paResources;
+            }
+        }
+    }
+    CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
+}
+
+/*
+ *@@ fsysResourcesInitPage:
+ *      "Resources" page notebook callback function (notebook.c).
+ *
+ *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@todo: corresponding ItemChanged page
+ */
+
+VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                           ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_RESOURCES);
+
+    /*
+     * CBI_INIT:
+     *      initialize page (called only once)
+     */
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[5];
+        PFIELDINFO pfi = NULL;
+        int        i = 0;
+
+        // set up cnr details view
+/* !!! not yet implemented [lafaix]
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszDeviceType);
+        xfi[i].pszColumnTitle = "Icon"; // !!! to be localized
+        xfi[i].ulDataType = CFA_BITMAPORICON;
+        xfi[i++].ulOrientation = CFA_LEFT;
+*/
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceID);
+        xfi[i].pszColumnTitle = "ID"; // !!! to be localized
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszResourceType);
+        xfi[i].pszColumnTitle = "Type"; // !!! to be localized
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceSize);
+        xfi[i].pszColumnTitle = "Size"; // !!! to be localized
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    /*
+     * CBI_SET:
+     *      set controls' data
+     */
+
+    if (flFlags & CBI_SET)
+    {
+        // fill container with resources
+        thrCreate(NULL,
+                  fntInsertResources,
+                  NULL, // running flag
+                  THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                  (ULONG)pcnbp);
+    }
+
+    /*
+     * CBI_DESTROY:
+     *      clean up page before destruction
+     */
+
+    if (flFlags & CBI_DESTROY)
+    {
+        if (pcnbp->pUser)
+            fsysFreeResources(pcnbp->pUser);
+        pcnbp->pUser = NULL;
+    }
+}
+
 /* ******************************************************************
  *                                                                  *
  *   WPProgram / XFldProgramFile setup strings                      *
@@ -1102,7 +1478,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *         directly because at this point we have no class
  *         replacement for WPProgram.
  *
- *      -- For XFldProgramFile, this gets called by
+File *      -- For XFldProgramFile, this gets called by
  *         fsysQueryProgramFileSetup.
  *
  *@@added V0.9.4 (2000-08-02) [umoeller]

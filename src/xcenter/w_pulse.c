@@ -542,15 +542,22 @@ VOID PwgtPaint2(HWND hwnd,
         ULONG       ulPaintLen = 0;
 
         // now paint button frame
-        WinQueryWindowRect(hwnd, &rclWin);
+        WinQueryWindowRect(hwnd,
+                           &rclWin);        // exclusive
         gpihSwitchToRGB(hps);
 
+        rclWin.xRight--;
+        rclWin.yTop--;
+            // rclWin is now inclusive
+
         if (fDrawFrame)
+        {
             gpihDraw3DFrame(hps,
-                            &rclWin,
+                            &rclWin,        // inclusive
                             ulBorder,
                             pWidget->pGlobals->lcol3DDark,
                             pWidget->pGlobals->lcol3DLight);
+        }
 
         if (pPrivate->arc == NO_ERROR)
         {
@@ -584,10 +591,8 @@ VOID PwgtPaint2(HWND hwnd,
         {
             // performance counters are not working:
             // display error message
-            rclWin.xLeft++;
-            rclWin.xRight--;
+            rclWin.xLeft++;     // was made inclusive above
             rclWin.yBottom++;
-            rclWin.yTop--;
             WinFillRect(hps, &rclWin, pPrivate->Setup.lcolBackground);
             sprintf(szPaint, "E %lu", pPrivate->arc);
         }

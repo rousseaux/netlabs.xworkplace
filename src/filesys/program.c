@@ -962,6 +962,94 @@ BOOL progSetupArgs(const char *pcszParams,
 }
 
 /*
+ *@@ progSetupEnv:
+ *      sets up the environment for progOpenProgram.
+ *
+ *      The caller must free the PSZ which is returned.
+ *
+ *@@added V0.9.7 (2000-12-17) [umoeller]
+ */
+
+PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
+                 const char *pcszEnv,          // in: its environment string (or NULL)
+                 WPFileSystem *pFile)          // in: file or NULL
+{
+    PSZ             pszNewEnv = NULL;
+    APIRET          arc = NO_ERROR;
+    DOSENVIRONMENT  Env = {0};
+
+    // _Pmpf((__FUNCTION__ ": pcszEnv is %s", (pcszEnv) ? pcszEnv : "NULL"));
+
+    if (pcszEnv)
+        // environment specified:
+        arc = doshParseEnvironment(pcszEnv,
+                                   &Env);
+    else
+        // no environment specified:
+        // get the one from the WPS process
+        arc = doshGetEnvironment(&Env);
+
+    if (arc == NO_ERROR)
+    {
+        // we got the environment:
+        PSZ         *pp = 0;
+        CHAR        szTemp[100];
+        HOBJECT     hobjProgram = _wpQueryHandle(pProgObject);
+
+        // 1) change WORKPLACE_PROCESS=YES to WORKPLACE__PROCESS=NO
+
+        pp = doshFindEnvironmentVar(&Env, "WORKPLACE_PROCESS");
+        if (pp)
+        {
+            // _Pmpf(("  found %s", *pp));
+            // variable was set (should always be the case, since
+            // this is set for the second PMSHELL.EXE):
+            // we can simply overwrite the string in there,
+            // because WORKPLACE_PROCESS=YES has the same length
+            // as      WORKPLACE__PROCESS=NO
+            strcpy(*pp, "WORKPLACE__PROCESS=NO");
+        }
+
+        // 2) set WP_OBJHANDLE
+
+        if (pFile)
+        {
+            // file as argument: use WP_OBJHANDLE=xxx,yyy with
+            // the handle of the file _and_ the program
+            sprintf(szTemp,
+                    "WP_OBJHANDLE=%d,%d",
+                    _wpQueryHandle(pFile),
+                    hobjProgram);
+        }
+        else
+        {
+            // no file specified: use WP_OBJHANDLE=xxx with
+            // the handle of the program only
+            sprintf(szTemp, "WP_OBJHANDLE=%d", hobjProgram);
+        }
+
+        arc = doshSetEnvironmentVar(&Env,
+                                    szTemp,
+                                    TRUE);      // add as first entry
+
+        if (arc == NO_ERROR)
+        {
+            // rebuild environment
+            arc = doshConvertEnvironment(&Env,
+                                         &pszNewEnv,
+                                         NULL);
+            if (arc != NO_ERROR)
+                if (pszNewEnv)
+                    free(pszNewEnv);
+        }
+
+        doshFreeEnvironment(&Env);
+    }
+
+    return (pszNewEnv);
+}
+
+/*
  *@@ progOpenProgram:
  *      this opens the specified program object, which
  *      must be of the WPProgram or WPProgramFile class.
@@ -1024,6 +1112,7 @@ BOOL progSetupArgs(const char *pcszParams,
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed startup dir with data files
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: now building environment correctly
  */
 
 HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
@@ -1039,7 +1128,7 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
     {
         PSZ     pszProgTitle = _wpQueryTitle(pProgObject);
 
-        _Pmpf((__FUNCTION__ ": Entering with \"%s\"", pszProgTitle));
+        // _Pmpf((__FUNCTION__ ": Entering with \"%s\"", pszProgTitle));
 
         // make sure we really have a program
         if (    (_somIsA(pProgObject, _WPProgram))
@@ -1073,18 +1162,17 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                         } PROGDETAILS; */
 
                         // fix parameters (placeholders etc.)
-                        PSZ     pszParams = 0;
-                        if (progSetupArgs(pProgDetails->pszParameters,
-                                          pArgDataFile,
-                                          &pszParams))
+                        PSZ             pszParams = 0;
+
+                        if (    (progSetupArgs(pProgDetails->pszParameters,
+                                               pArgDataFile,
+                                               &pszParams))
+                           )
                         {
                             PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
                             PSZ     pszStartupDir = pProgDetails->pszStartupDir;
                             CHAR    szDatafileDir[CCHMAXPATH] = "";
-                            _Pmpf((__FUNCTION__ ": calling winhStartApp \"%s\" with args \"%s\"",
-                                        pProgDetails->pszExecutable,
-                                        (pszParams) ? pszParams : "NULL"));
 
                             // if startup dir is empty, but data file is given,
                             // use data file's folder as startup dir...
@@ -1096,23 +1184,26 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                                     if (pFilesFolder)
                                         if (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
                                             pszStartupDir = szDatafileDir;
-                                    // _wpQueryFilename(pArgDataFile, szDatafileDir, TRUE);
-                                    // get last path separator after root dir
-                                    /* p = strrchr(szDatafileDir + 3, '\\');
-                                    if (p)
-                                    {
-                                        *p = 0;
-                                        pszStartupDir = szDatafileDir;
-                                    } */
                                 }
 
-                            // start the application...
+                            // set the new params and startup dir
                             pProgDetails->pszParameters = pszParams;
                             pProgDetails->pszStartupDir = pszStartupDir;
+
+                            // build the new environment V0.9.7 (2000-12-17) [umoeller]
+                            pProgDetails->pszEnvironment
+                                = progSetupEnv(pProgObject,
+                                               pProgDetails->pszEnvironment,
+                                               pArgDataFile);
+
+                            // start the app (more hacks in winhStartApp,
+                            // which calls WinStartApp in turn)
                             happ = winhStartApp(pKernelGlobals->hwndThread1Object,
                                                 pProgDetails);
+
                             if (happ)
                             {
+                                // app started OK:
                                 // set in-use emphasis on either
                                 // the data file or the program object
                                 progStoreRunningApp(pProgObject,
@@ -1121,7 +1212,11 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                                                     ulMenuID);
 
                             }
-                        }
+
+                            if (pProgDetails->pszEnvironment)
+                                free(pProgDetails->pszEnvironment);
+
+                        } // end if progSetupArgs
 
                         if (pszParams)
                             free(pszParams);

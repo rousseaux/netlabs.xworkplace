@@ -723,38 +723,33 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
                                                       ID_XSDI_SORTLISTBOX);
 
+            USHORT usSortIndex = (USHORT)(WinSendMsg(hwndListbox,
+                                                     LM_QUERYSELECTION,
+                                                     (MPARAM)LIT_CURSOR,
+                                                     MPNULL));
+            BOOL fAlways = (USHORT)(winhIsDlgItemChecked(pcnbp->hwndDlgPage,
+                                                         ID_XSDI_ALWAYSSORT));
+
             if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
             {
                 // if we're being called from a folder's notebook,
                 // change instance data
                 _xwpSetFldrSort(pcnbp->somSelf,
                             // DefaultSort:
-                                (USHORT)(WinSendMsg(hwndListbox,
-                                                    LM_QUERYSELECTION,
-                                                    (MPARAM)LIT_CURSOR,
-                                                    MPNULL)),
+                                usSortIndex,
                             // AlwaysSort:
-                                (USHORT)(winhIsDlgItemChecked(pcnbp->hwndDlgPage,
-                                                              ID_XSDI_ALWAYSSORT))
-                            );
+                                fAlways);
             }
             else
             {
                 GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
-                BOOL bTemp;
-                /* pGlobalSettings->ReplaceSort =
-                    winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_REPLACESORT); */
-                    // removed (V0.9.0)
-                pGlobalSettings->DefaultSort =
-                                      (BYTE)WinSendMsg(hwndListbox,
-                                          LM_QUERYSELECTION,
-                                          (MPARAM)LIT_CURSOR,
-                                          MPNULL);
-                bTemp = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ALWAYSSORT);
-                if (bTemp)
+                pGlobalSettings->DefaultSort = usSortIndex;
+
+                if (fAlways)
                 {
-                    USHORT usDefaultSort, usAlwaysSort;
+                    USHORT usDefaultSort = 0,
+                           usAlwaysSort = 0;
                     _xwpQueryFldrSort(cmnQueryActiveDesktop(),
                                       &usDefaultSort, &usAlwaysSort);
                     if (usAlwaysSort != 0)
@@ -768,7 +763,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             usDefaultSort, 0);
                     }
                 }
-                pGlobalSettings->AlwaysSort = bTemp;
+                pGlobalSettings->AlwaysSort = fAlways;
 
                 cmnUnlockGlobalSettings();
             }
@@ -792,8 +787,8 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     XFolderData *Backup = (pcnbp->pUser);
                     _xwpSetFldrSort(pcnbp->somSelf,
-                                    Backup->bDefaultSortInstance,
-                                    Backup->bAlwaysSortInstance);
+                                    Backup->bDefaultSort,
+                                    Backup->bAlwaysSort);
                 }
             }
             else
@@ -830,7 +825,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // update our folder only
             fdrForEachOpenInstanceView(pcnbp->somSelf,
                                        0,
-                                       &fdrUpdateFolderSorts);
+                                       fdrUpdateFolderSorts);
         }
         else
         {
@@ -838,7 +833,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnStoreGlobalSettings();
             // update all open folders
             fdrForEachOpenGlobalView(0,
-                                     &fdrUpdateFolderSorts);
+                                     fdrUpdateFolderSorts);
         }
     }
     return ((MPARAM)-1);

@@ -71,6 +71,7 @@ OBJS = \
        $(OUTPUTDIR)\xfwps.obj \
        $(OUTPUTDIR)\xtrash.obj \
        $(OUTPUTDIR)\xtrashobj.obj \
+       $(OUTPUTDIR)\xmmcdplay.obj \
        $(OUTPUTDIR)\xmmvolume.obj \
        $(OUTPUTDIR)\xwpfsys.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
@@ -218,7 +219,6 @@ $(OUTPUTDIR)\xfdisk.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\disk.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h $(INC)\filesys\statbars.h \
-            $(INC)\media\media.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
 
 $(OUTPUTDIR)\xfldr.obj: \
@@ -235,8 +235,8 @@ $(OUTPUTDIR)\xfobj.obj: \
             $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\object.h \
-                $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
+            $(INC)\filesys\fdrmenus.h $(INC)\filesys\fileops.h $(INC)\filesys\folder.h \
+                $(INC)\filesys\object.h $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfpgmf.obj: \
@@ -293,6 +293,13 @@ $(OUTPUTDIR)\xtrashobj.obj: \
             $(INC)\filesys\trash.h \
             $(@B).c \
             $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
+
+$(OUTPUTDIR)\xmmcdplay.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\media\media.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xmmvolume.obj: \
             $(INC)\setup.h \

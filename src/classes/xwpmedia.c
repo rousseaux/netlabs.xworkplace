@@ -119,7 +119,8 @@
  ********************************************************************/
 
 THREADINFO      G_tiInsertDevices = {0},
-                G_tiInsertCodecs = {0};
+                G_tiInsertCodecs = {0},
+                G_tiInsertIOProcs = {0};
 
 /* ******************************************************************
  *                                                                  *
@@ -176,6 +177,8 @@ typedef struct _MMDEVRECORD
  *      to insert devices into the "Devices" container.
  *
  *      This thread is created with a msg queue.
+ *
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: added exit flag
  */
 
 void _Optlink fntInsertDevices(PTHREADINFO pti)
@@ -194,42 +197,58 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
 
         if (paDevices)
         {
-            HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-
             for (ul = 0;
                  ul < cDevices;
                  ul++)
             {
-                PMMDEVRECORD precc
-                    = (PMMDEVRECORD)cnrhAllocRecords(hwndCnr,
-                                                     sizeof(MMDEVRECORD),
-                                                     1);
-                if (precc)
-                {
-                    precc->pszDeviceType = (PSZ)paDevices[ul].pcszDeviceType;
-                    precc->ulDeviceIndex = paDevices[ul].ulDeviceIndex;
-                    precc->pszInfo = paDevices[ul].szInfo;
-                    precc->pDevice = &paDevices[ul];
+                HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
-                    cnrhInsertRecords(hwndCnr,
-                                      NULL,
-                                      (PRECORDCORE)precc,
-                                      TRUE, // invalidate
-                                      NULL,
-                                      CRA_RECORDREADONLY,
-                                      1);
+                if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
+                    break;
+
+                if (!hwndCnr)
+                    break;
+                else
+                {
+                    PMMDEVRECORD precc
+                        = (PMMDEVRECORD)cnrhAllocRecords(hwndCnr,
+                                                         sizeof(MMDEVRECORD),
+                                                         1);
+                    if (!precc)
+                        break;
+                    else
+                    {
+                        precc->pszDeviceType = (PSZ)paDevices[ul].pcszDeviceType;
+                        precc->ulDeviceIndex = paDevices[ul].ulDeviceIndex;
+                        precc->pszInfo = paDevices[ul].szInfo;
+                        precc->pDevice = &paDevices[ul];
+
+                        if (!cnrhInsertRecords(hwndCnr,
+                                               NULL,
+                                               (PRECORDCORE)precc,
+                                               TRUE, // invalidate
+                                               NULL,
+                                               CRA_RECORDREADONLY,
+                                               1))
+                            break;
+                    }
                 }
             }
         }
 
         // store devices
-        if (pcnbp->pUser)
-            xmmFreeDevices(paDevices);
-        pcnbp->pUser = paDevices;
+        if (!pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
+        {
+            if (pcnbp->pUser)
+                // already set:
+                xmmFreeDevices(pcnbp->pUser); // V0.9.7 (2000-12-20) [umoeller]
+            pcnbp->pUser = paDevices;
+        }
     }
     CATCH(excpt1) {}  END_CATCH();
 
-    pcnbp->fShowWaitPointer = FALSE;
+    if (!pti->fExit)
+        pcnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -240,6 +259,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
  *      Global Settings.
  *
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: fixed hang on close while thread was running
  */
 
 VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -299,10 +319,12 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
+        // reversed order V0.9.7 (2000-12-17) [umoeller]
+        thrClose(&G_tiInsertDevices);
+
         if (pcnbp->pUser)
             xmmFreeDevices(pcnbp->pUser);
         pcnbp->pUser = NULL;
-        thrFree(&G_tiInsertDevices);
     }
 }
 
@@ -404,6 +426,7 @@ typedef struct _IOPROCRECORD
  *      This thread is created with a msg queue.
  *
  *@@changed V0.9.6 (2000-11-12) [umoeller]: fixed memory leak
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: added exit flag
  */
 
 void _Optlink fntInsertIOProcs(PTHREADINFO pti)
@@ -412,8 +435,6 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
 
     TRY_LOUD(excpt1)
     {
-        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-
         MMFORMATINFO    mmfi;
         LONG            lFormatCount;
 
@@ -449,85 +470,98 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
                          ul < lFormatsRead;
                          ul++)
                     {
-                        PIOPROCRECORD precc
-                            = (PIOPROCRECORD)cnrhAllocRecords(hwndCnr,
-                                                             sizeof(IOPROCRECORD),
-                                                             1);
-                        if (precc)
+                        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                        if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
+                            break;
+
+                        if (!hwndCnr)
+                            break;
+                        else
                         {
-                            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-                            PSZ     pszFormatName;
-                            // index
-                            precc->ulIndex = ul;
-
-                            // FourCC
-                            memcpy(&precc->szFourCC, &pmmfiThis->fccIOProc, sizeof(ULONG));
-                            precc->szFourCC[4] = 0;
-                            precc->pszFourCC = precc->szFourCC;
-
-                            // format name
-                            if (pmmfiThis->lNameLength)
+                            PIOPROCRECORD precc
+                                = (PIOPROCRECORD)cnrhAllocRecords(hwndCnr,
+                                                                 sizeof(IOPROCRECORD),
+                                                                 1);
+                            if (!precc)
+                                break;
+                            else
                             {
-                                pszFormatName = malloc(pmmfiThis->lNameLength + 1); // null term.
-                                if (pszFormatName)
+                                PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+                                PSZ     pszFormatName;
+                                // index
+                                precc->ulIndex = ul;
+
+                                // FourCC
+                                memcpy(&precc->szFourCC, &pmmfiThis->fccIOProc, sizeof(ULONG));
+                                precc->szFourCC[4] = 0;
+                                precc->pszFourCC = precc->szFourCC;
+
+                                // format name
+                                if (pmmfiThis->lNameLength)
                                 {
-                                    LONG lWritten;
-                                    G_mmioGetFormatName(pmmfiThis,
-                                                        pszFormatName,
-                                                        &lWritten,
-                                                        0,
-                                                        0);
-                                    if (lWritten)
-                                        strhncpy0(precc->szFormatName,
-                                                  pszFormatName,
-                                                  sizeof(precc->szFormatName) - 1);
-                                    free(pszFormatName);
+                                    pszFormatName = malloc(pmmfiThis->lNameLength + 1); // null term.
+                                    if (pszFormatName)
+                                    {
+                                        LONG lWritten;
+                                        G_mmioGetFormatName(pmmfiThis,
+                                                            pszFormatName,
+                                                            &lWritten,
+                                                            0,
+                                                            0);
+                                        if (lWritten)
+                                            strhncpy0(precc->szFormatName,
+                                                      pszFormatName,
+                                                      sizeof(precc->szFormatName) - 1);
+                                        free(pszFormatName);
+                                    }
                                 }
+                                precc->pszFormatName = precc->szFormatName;
+
+                                // IOProc type
+                                switch(pmmfiThis->ulIOProcType)
+                                {
+                                    case MMIO_IOPROC_STORAGESYSTEM:
+                                        strcpy(precc->szIOProcType, pNLSStrings->pszTypeStorage);
+                                    break;
+
+                                    case MMIO_IOPROC_FILEFORMAT:
+                                        strcpy(precc->szIOProcType, pNLSStrings->pszTypeFile);
+                                    break;
+
+                                    case MMIO_IOPROC_DATAFORMAT:
+                                        strcpy(precc->szIOProcType, pNLSStrings->pszTypeData);
+                                    break;
+
+                                    default:
+                                        sprintf(precc->szIOProcType, "unknown (%d)",
+                                                pmmfiThis->ulIOProcType);
+                                }
+                                precc->pszIOProcType = precc->szIOProcType;
+
+                                // media type
+                                DescribeMediaType(precc->szMediaType,
+                                                  sizeof(precc->szMediaType),
+                                                  pmmfiThis->ulMediaType);
+                                precc->pszMediaType = precc->szMediaType;
+
+                                // extension
+                                memcpy(&precc->szExtension, &pmmfiThis->szDefaultFormatExt,
+                                            5);
+                                precc->pszExtension = precc->szExtension;
+
+                                if (!cnrhInsertRecords(hwndCnr,
+                                                       NULL,
+                                                       (PRECORDCORE)precc,
+                                                       TRUE, // invalidate
+                                                       NULL,
+                                                       CRA_RECORDREADONLY,
+                                                       1))
+                                    break;
                             }
-                            precc->pszFormatName = precc->szFormatName;
 
-                            // IOProc type
-                            switch(pmmfiThis->ulIOProcType)
-                            {
-                                case MMIO_IOPROC_STORAGESYSTEM:
-                                    strcpy(precc->szIOProcType, pNLSStrings->pszTypeStorage);
-                                break;
-
-                                case MMIO_IOPROC_FILEFORMAT:
-                                    strcpy(precc->szIOProcType, pNLSStrings->pszTypeFile);
-                                break;
-
-                                case MMIO_IOPROC_DATAFORMAT:
-                                    strcpy(precc->szIOProcType, pNLSStrings->pszTypeData);
-                                break;
-
-                                default:
-                                    sprintf(precc->szIOProcType, "unknown (%d)",
-                                            pmmfiThis->ulIOProcType);
-                            }
-                            precc->pszIOProcType = precc->szIOProcType;
-
-                            // media type
-                            DescribeMediaType(precc->szMediaType,
-                                              sizeof(precc->szMediaType),
-                                              pmmfiThis->ulMediaType);
-                            precc->pszMediaType = precc->szMediaType;
-
-                            // extension
-                            memcpy(&precc->szExtension, &pmmfiThis->szDefaultFormatExt,
-                                        5);
-                            precc->pszExtension = precc->szExtension;
-
-                            cnrhInsertRecords(hwndCnr,
-                                              NULL,
-                                              (PRECORDCORE)precc,
-                                              TRUE, // invalidate
-                                              NULL,
-                                              CRA_RECORDREADONLY,
-                                              1);
-                        }
-
-                        pmmfiThis++;
+                            pmmfiThis++;
+                        } // end if (hwndCnr)
                     } // end for (ul = 0;
                 } // end if (G_mmioGetFormats(&mmfi,
 
@@ -538,17 +572,20 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
     }
     CATCH(excpt1) {}  END_CATCH();
 
-    pcnbp->fShowWaitPointer = FALSE;
+    if (!pti->fExit)
+        pcnbp->fShowWaitPointer = FALSE;
 }
 
 /*
  *@@ xwmmIOProcsInitPage:
  *      notebook callback function (notebook.c) for the
- *      XWPMedia "Codecs" page.
+ *      XWPMedia "Co2decs" page.
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: now terminating thread on early close
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: this used the same global var as the codes page, fixed
  */
 
 VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -614,11 +651,17 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        thrCreate(&G_tiInsertCodecs,
+        thrCreate(&G_tiInsertIOProcs,
                   fntInsertIOProcs,
                   NULL, // running flag
                   THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        // added V0.9.7 (2000-12-17) [umoeller]
+        thrClose(&G_tiInsertIOProcs);
     }
 }
 
@@ -663,6 +706,8 @@ typedef struct _CODECRECORD
  *      to insert devices into the "Devices" container.
  *
  *      This thread is created with a msg queue.
+ *
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: added exit flag
  */
 
 void _Optlink fntInsertCodecs(PTHREADINFO pti)
@@ -671,8 +716,6 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
 
     TRY_LOUD(excpt1)
     {
-        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-
         CODECINIFILEINFO    cifi;
         BOOL                fContinue = TRUE;
         ULONG               ulIndex = 0,
@@ -683,11 +726,11 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
         memset(&cifi, 0, sizeof(cifi));
         cifi.ulStructLen = sizeof(cifi);
 
-        _Pmpf(("Entering DumpCodecs"));
-
-        //
         do
         {
+            if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
+                break;
+
             if (G_mmioIniFileCODEC(&cifi,
                                    ulFlags) // initially MMIO_FINDPROC | MMIO_MATCHFIRST
                         != MMIO_SUCCESS)
@@ -695,74 +738,84 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
             else
             {
                 // success:
-                PCODECRECORD precc
-                    = (PCODECRECORD)cnrhAllocRecords(hwndCnr,
-                                                     sizeof(CODECRECORD),
-                                                     1);
-                if (precc)
+                HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                if (!hwndCnr)
+                    break;
+                else
                 {
-                    ULONG   cb = 0;
-
-                    // index
-                    precc->ulIndex = ulIndex;
-
-                    // FourCC
-                    memcpy(&precc->szFourCC, &cifi.fcc, sizeof(ULONG));
-                    precc->szFourCC[4] = 0;
-                    precc->pszFourCC = precc->szFourCC;
-
-                    // codec name
-                    if (G_mmioQueryCODECNameLength(&cifi,
-                                                   &cb)
-                            == MMIO_SUCCESS)
-                    {
-                        PSZ pszCodecName = malloc(cb + 1); // null term.
-                        if (pszCodecName)
-                        {
-                            LONG lWritten;
-                            if (G_mmioQueryCODECName(&cifi,
-                                                     pszCodecName,
-                                                     &cb) // excluding null term.
-                                        == MMIO_SUCCESS)
-                                strhncpy0(precc->szCodecName,
-                                          pszCodecName,
-                                          sizeof(precc->szCodecName) - 1);
-                            #ifdef __DEBUG__
-                            else
-                                strcpy(precc->szCodecName, "mmioQueryCODECName failed.");
-                            #endif
-
-                            free(pszCodecName);
-                        }
-                    }
-                    #ifdef __DEBUG__
+                    PCODECRECORD precc
+                        = (PCODECRECORD)cnrhAllocRecords(hwndCnr,
+                                                         sizeof(CODECRECORD),
+                                                         1);
+                    if (!precc)
+                        break;
                     else
-                        strcpy(precc->szCodecName, "mmioQueryCODECNameLength failed.");
-                    #endif
+                    {
+                        ULONG   cb = 0;
 
-                    precc->pszCodecName = precc->szCodecName;
+                        // index
+                        precc->ulIndex = ulIndex;
 
-                    // media type
-                    DescribeMediaType(precc->szMediaType,
-                                      sizeof(precc->szMediaType),
-                                      cifi.ulMediaType);
-                    precc->pszMediaType = precc->szMediaType;
+                        // FourCC
+                        memcpy(&precc->szFourCC, &cifi.fcc, sizeof(ULONG));
+                        precc->szFourCC[4] = 0;
+                        precc->pszFourCC = precc->szFourCC;
 
-                    strhncpy0(precc->szDLLName, cifi.szDLLName, sizeof(precc->szDLLName));
-                    precc->pszDLLName = precc->szDLLName;
+                        // codec name
+                        if (G_mmioQueryCODECNameLength(&cifi,
+                                                       &cb)
+                                == MMIO_SUCCESS)
+                        {
+                            PSZ pszCodecName = malloc(cb + 1); // null term.
+                            if (pszCodecName)
+                            {
+                                LONG lWritten;
+                                if (G_mmioQueryCODECName(&cifi,
+                                                         pszCodecName,
+                                                         &cb) // excluding null term.
+                                            == MMIO_SUCCESS)
+                                    strhncpy0(precc->szCodecName,
+                                              pszCodecName,
+                                              sizeof(precc->szCodecName) - 1);
+                                #ifdef __DEBUG__
+                                else
+                                    strcpy(precc->szCodecName, "mmioQueryCODECName failed.");
+                                #endif
 
-                    strhncpy0(precc->szProcName, cifi.szProcName, sizeof(precc->szProcName));
-                    precc->pszProcName = precc->szProcName;
+                                free(pszCodecName);
+                            }
+                        }
+                        #ifdef __DEBUG__
+                        else
+                            strcpy(precc->szCodecName, "mmioQueryCODECNameLength failed.");
+                        #endif
 
-                    cnrhInsertRecords(hwndCnr,
-                                      NULL,
-                                      (PRECORDCORE)precc,
-                                      TRUE, // invalidate
-                                      NULL,
-                                      CRA_RECORDREADONLY,
-                                      1);
-                }
-            }
+                        precc->pszCodecName = precc->szCodecName;
+
+                        // media type
+                        DescribeMediaType(precc->szMediaType,
+                                          sizeof(precc->szMediaType),
+                                          cifi.ulMediaType);
+                        precc->pszMediaType = precc->szMediaType;
+
+                        strhncpy0(precc->szDLLName, cifi.szDLLName, sizeof(precc->szDLLName));
+                        precc->pszDLLName = precc->szDLLName;
+
+                        strhncpy0(precc->szProcName, cifi.szProcName, sizeof(precc->szProcName));
+                        precc->pszProcName = precc->szProcName;
+
+                        if (!cnrhInsertRecords(hwndCnr,
+                                               NULL,
+                                               (PRECORDCORE)precc,
+                                               TRUE, // invalidate
+                                               NULL,
+                                               CRA_RECORDREADONLY,
+                                               1))
+                            break;
+                    } // end if (precc)
+                } // end if (hwndCnr)
+            } // end if (G_mmioIniFileCODEC(&cifi...
 
             ulIndex++;
             ulFlags = MMIO_FINDPROC | MMIO_MATCHNEXT;
@@ -770,7 +823,8 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
     }
     CATCH(excpt1) {}  END_CATCH();
 
-    pcnbp->fShowWaitPointer = FALSE;
+    if (!pti->fExit)
+        pcnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -781,6 +835,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
  *      Global Settings.
  *
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: now terminating thread on early close
  */
 
 VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -851,6 +906,12 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                   NULL, // running flag
                   THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        // added V0.9.7 (2000-12-17) [umoeller]
+        thrClose(&G_tiInsertCodecs);
     }
 }
 

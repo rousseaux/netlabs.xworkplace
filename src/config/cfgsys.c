@@ -122,8 +122,8 @@ CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
 PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
 LONG    G_lDriveCount = 0;
 
-#define SYSPATHCOUNT 5
-PSZ G_apszPathNames[SYSPATHCOUNT] =
+// #define SYSPATHCOUNT 5
+PSZ G_apszPathNames[] =
         {
             "LIBPATH=",
             "SET PATH=",
@@ -545,6 +545,8 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: moved config.sys path composition to krnInitializeXWorkplace
+ *@@changed V0.9.7 (2000-12-17) [umoeller]: raised buffer size for syspaths page
  */
 
 VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -554,14 +556,6 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_INIT)
     {
-        {
-            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-            if (pKernelGlobals)
-            {
-                sprintf(pKernelGlobals->szConfigSys, "%c:\\config.sys", doshQueryBootDrive());
-            }
-        }
-
         WinEnableControl(pcnbp->hwndDlgPage, DID_APPLY, TRUE);
 
         // on the "HPFS" page:
@@ -604,7 +598,6 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                               (MPARAM)G_apszAllDrives,
                               (MPARAM)ul);
         }
-        krnUnlockGlobals();
     }
 
     if (flFlags & CBI_SET)
@@ -616,8 +609,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // now read CONFIG.SYS file to initialize the dlg items
         if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
             winhDebugBox(pcnbp->hwndFrame,
-                     (PSZ)pKernelGlobals->szConfigSys,
-                     "XFolder was unable to open the CONFIG.SYS file.");
+                         (PSZ)pKernelGlobals->szConfigSys,
+                         "XFolder was unable to open the CONFIG.SYS file.");
         else
         {
             // OK, file read successfully:
@@ -799,7 +792,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                     // evaluate DISKCACHE
                     p2 = strhGetParameter(pszConfigSys, "DISKCACHE=",
-                            szParameter, sizeof(szParameter));
+                                          szParameter, sizeof(szParameter));
 
                     // enable "Cache installed" item if DISKCACHE= found
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_FSINSTALLED,
@@ -810,7 +803,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     // above will be used
                     if (szParameter[0] == 'D')
                         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_CACHESIZE_AUTO,
-                                    TRUE);
+                                              TRUE);
                     else
                         sscanf(szParameter, "%d", &ulCacheSize);
 
@@ -958,18 +951,19 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             // we'll free this manually
 
                     for (ul = 0;
-                         ul < SYSPATHCOUNT;
+                         ul < sizeof(G_apszPathNames) / sizeof(G_apszPathNames[0]);
                          ul++)
                     {
                         // create SYSPATH structure
                         PSYSPATH pSysPath = malloc(sizeof(SYSPATH));
-                        CHAR szPaths[1000] = {0};
+                        CHAR szPaths[2000];     // raised V0.9.7 (2000-12-17) [umoeller]
                         PSZ p;
 
                         memset(szPaths, 0, sizeof(szPaths));
-
-                        p = strhGetParameter(pszConfigSys, G_apszPathNames[ul],
-                                             szPaths, sizeof(szPaths));
+                        p = strhGetParameter(pszConfigSys,
+                                             G_apszPathNames[ul],
+                                             szPaths,
+                                             sizeof(szPaths));
                         if (p)
                         {
                             // now szPaths has the path list
@@ -998,15 +992,25 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                     fContinue = FALSE;
                                 }
 
-                                pszPath = strhSubstr(pStart, pEnd);
+                                if (pStart == pEnd)
+                                    fContinue = FALSE;
+                                else
+                                {
+                                    pszPath = strhSubstr(pStart, pEnd);
 
-                                if (pszPath)
-                                    if (strlen(pszPath))
-                                    {
-                                        // store path (PSZ) in list in SYSPATH
-                                        lstAppendItem(pSysPath->pllPaths, pszPath);
-                                        pStart = pEnd+1;
-                                    }
+                                    if (pszPath)
+                                        if (strlen(pszPath))
+                                        {
+                                            // store path (PSZ) in list in SYSPATH
+                                            lstAppendItem(pSysPath->pllPaths, pszPath);
+                                            pStart = pEnd+1;
+                                        }
+                                        else
+                                        {
+                                            free(pszPath);
+                                            fContinue = FALSE;
+                                        }
+                                }
                             } while (fContinue);
 
                             // store SYSPATH in global list
@@ -1026,7 +1030,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                 break; }
 
-            } // end switch
+            } // end switch (pcnbp->ulPageID)
 
             free(pszConfigSys);
             pszConfigSys = NULL;

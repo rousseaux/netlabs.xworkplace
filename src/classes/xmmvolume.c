@@ -92,9 +92,14 @@
 
 /* ******************************************************************
  *
- *   XMMVolume Instance Methods
+ *   XMMVolume instance methods
  *
  ********************************************************************/
+
+/*
+ *@@ xwpAddXMMVolumePages:
+ *
+ */
 
 SOM_Scope ULONG  SOMLINK vol_xwpAddXMMVolumePages(XMMVolume *somSelf,
                                                   HWND hwndNotebook)
@@ -432,13 +437,13 @@ SOM_Scope BOOL  SOMLINK vol_wpAddSettingsPages(XMMVolume *somSelf,
 
 /* ******************************************************************
  *
- *   XMMVolume Class Methods
+ *   XMMVolume class methods
  *
  ********************************************************************/
 
 /*
  *@@ wpclsInitData:
- *      initialize XCenter class data.
+ *      initialize class data.
  */
 
 SOM_Scope void  SOMLINK volM_wpclsInitData(M_XMMVolume *somSelf)
@@ -476,7 +481,7 @@ SOM_Scope ULONG  SOMLINK volM_wpclsQueryStyle(M_XMMVolume *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      tell the WPS the new class default title for XCenter.
+ *      tell the WPS the new class default title.
  */
 
 SOM_Scope PSZ  SOMLINK volM_wpclsQueryTitle(M_XMMVolume *somSelf)
@@ -517,44 +522,4 @@ SOM_Scope ULONG  SOMLINK volM_wpclsQueryIconData(M_XMMVolume *somSelf,
     return (sizeof(ICONINFO));
 }
 
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK volM_wpclsQuerySettingsPageSize(M_XMMVolume *somSelf,
-                                                        PSIZEL pSizl)
-{
-    /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
-    M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQuerySettingsPageSize");
-
-    return (M_XMMVolume_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
-                                                                       pSizl));
-}
-
-/*
- *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
- *      Templates folder to allow a class to
- *      create its default templates.
- *
- *      The default WPS behavior is to create new templates
- *      if the class default title is different from the
- *      existing templates.
- */
-
-SOM_Scope BOOL  SOMLINK volM_wpclsCreateDefaultTemplates(M_XMMVolume *somSelf,
-                                                         WPObject* Folder)
-{
-    /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
-    M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsCreateDefaultTemplates");
-
-    return (M_XMMVolume_parent_M_WPAbstract_wpclsCreateDefaultTemplates(somSelf,
-                                                                        Folder));
-}
 

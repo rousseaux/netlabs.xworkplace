@@ -389,7 +389,14 @@ SOM_Scope void  SOMLINK xctr_wpObjectReady(XCenter *somSelf,
 
     if (ulCode & OR_REFERENCE)
     {
-        _Pmpf(("XCenter copied, hwndOpenView: 0x%lX", _hwndOpenView));
+        // according to wpobject.h, this flag is set for
+        // OR_FROMTEMPLATE, OR_FROMCOPY, OR_SHADOW; this
+        // means that refObject is valid
+        // ###
+
+        // fix packed settings, copy linked list?!?
+        // _Pmpf(("XCenter copied, hwndOpenView: 0x%lX", _hwndOpenView));
+            // _hwndOpenView is NULLHANDLE...
     }
 }
 
@@ -594,32 +601,16 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
 }
 
 /*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
- */
-
-SOM_Scope ULONG  SOMLINK xctr_wpFilterPopupMenu(XCenter *somSelf,
-                                                ULONG ulFlags,
-                                                HWND hwndCnr,
-                                                BOOL fMultiSelect)
-{
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
-    XCenterMethodDebug("XCenter","xctr_wpFilterPopupMenu");
-
-    return (XCenter_parent_WPAbstract_wpFilterPopupMenu(somSelf,
-                                                        ulFlags,
-                                                        hwndCnr,
-                                                        fMultiSelect));
-}
-
-/*
  *@@ wpModifyPopupMenu:
  *      this WPObject instance methods gets called by the WPS
  *      when a context menu needs to be built for the object
  *      and allows the object to manipulate its context menu.
  *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We override this to add the "Widgets" submenu to an
+ *      open XCenter's popup menu. Note that we have not
+ *      overridden wpMenuItemSelected, because WM_COMMAND
+ *      is intercepted in the XCenter windows directly.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
@@ -638,43 +629,10 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
                                                       hwndCnr,
                                                       iPosition);
     if (brc)
+        // add "Add widget" submenu etc.
         brc = ctrpModifyPopupMenu(somSelf, hwndMenu);
 
     return (brc);
-}
-
-/*
- *@@ wpMenuItemSelected:
- *      this WPObject method processes menu selections.
- *      This must be overridden to support new menu
- *      items which have been added in wpModifyPopupMenu.
- */
-
-SOM_Scope BOOL  SOMLINK xctr_wpMenuItemSelected(XCenter *somSelf,
-                                                HWND hwndFrame,
-                                                ULONG ulMenuId)
-{
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
-    XCenterMethodDebug("XCenter","xctr_wpMenuItemSelected");
-
-    return (XCenter_parent_WPAbstract_wpMenuItemSelected(somSelf,
-                                                         hwndFrame,
-                                                         ulMenuId));
-}
-
-/*
- *@@ wpMenuItemHelpSelected:
- *
- */
-
-SOM_Scope BOOL  SOMLINK xctr_wpMenuItemHelpSelected(XCenter *somSelf,
-                                                    ULONG MenuId)
-{
-    /* XCenterData *somThis = XCenterGetData(somSelf); */
-    XCenterMethodDebug("XCenter","xctr_wpMenuItemHelpSelected");
-
-    return (XCenter_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
-                                                             MenuId));
 }
 
 /*
@@ -827,11 +785,11 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
             {
                 // yes, it's an XCenter view:
                 // instead of activating the view (which is what
-                // the WPS normally does), show the frame and
-                // restart the update timer
+                // the WPS normally does), show the frame on top
+                // and restart the update timer
                 // DO NOT GIVE FOCUS, DO NOT ACTIVATE
                 ctrpReformatHWND(pViewItem->handle,
-                                 FALSE);
+                                 XFMF_RESURFACE);
                 brc = TRUE;
                 break;
             }
@@ -903,6 +861,16 @@ SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsInitData");
 
     M_XCenter_parent_M_WPAbstract_wpclsInitData(somSelf);
+
+    {
+        // store the class object in KERNELGLOBALS
+        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        if (pKernelGlobals)
+        {
+            pKernelGlobals->fXCenter = TRUE;
+            krnUnlockGlobals();
+        }
+    }
 }
 
 /*
@@ -961,26 +929,6 @@ SOM_Scope ULONG  SOMLINK xctrM_wpclsQueryIconData(M_XCenter *somSelf,
     }
 
     return (sizeof(ICONINFO));
-}
-
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK xctrM_wpclsQuerySettingsPageSize(M_XCenter *somSelf,
-                                                         PSIZEL pSizl)
-{
-    /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
-    M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQuerySettingsPageSize");
-
-    return (M_XCenter_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
-                                                                     pSizl));
 }
 
 

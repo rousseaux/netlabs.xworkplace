@@ -392,7 +392,7 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
 
 /*
  *@@ ctrpDrawEmphasis:
- *      draws source emphasis on the frame client for
+ *      draws source emphasis on the XCenter client for
  *      hwnd, which should either be the client itself
  *      or a widget window.
  *
@@ -400,9 +400,9 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
  *      the client. Yeah, I know, not optimal.
  *
  *      If (hpsPre == NULLHANDLE), we request a presentation
- *      space from the frame and release it. If you specify
+ *      space from the client and release it. If you specify
  *      hpsPre yourself (e.g. during dragging, using DrgGetPS),
- *      you must request it for the frame, and it must be
+ *      you must request it for the client, and it must be
  *      in RGB mode.
  *
  *      If (fRemove == TRUE), we remove emphasis instead of
@@ -425,39 +425,54 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
     else
     {
         // no presentation space given: get one
-        hps = WinGetPS(pXCenterData->Globals.hwndFrame);
+        hps = WinGetPS(pXCenterData->Globals.hwndClient);
         gpihSwitchToRGB(hps);
     }
 
     if (hps)
     {
         RECTL rcl;
+        // get window's rectangle
         WinQueryWindowRect(hwnd,
                            &rcl);
-        WinMapWindowPoints(hwnd,
-                           pXCenterData->Globals.hwndFrame,
-                           (PPOINTL)&rcl,
-                           2);
+        if (hwnd != pXCenterData->Globals.hwndClient)
+            // widget window specified: convert to client coords
+            WinMapWindowPoints(hwnd,
+                               pXCenterData->Globals.hwndClient,
+                               (PPOINTL)&rcl,
+                               2);
         if (fRemove == FALSE)
         {
+            // add emphasis:
             GpiSetColor(hps, RGBCOL_BLACK);
             GpiSetLineType(hps, LINETYPE_DOT);
         }
         else
         {
-            // remove:
+            // remove emphasis:
             GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP,
                                               SYSCLR_INACTIVEBORDER,  // same as frame!
                                               0));
         }
 
+        if (hwnd != pXCenterData->Globals.hwndClient)
+        {
+            // widget window given:
+            // we draw emphasis _around_ the widget window
+            // on the client, so add the ulSpacing around
+            // the widget's window rectangle
+            rcl.xLeft -= pXCenterData->Globals.ulSpacing;
+            rcl.yBottom -= pXCenterData->Globals.ulSpacing;
+            rcl.xRight += pXCenterData->Globals.ulSpacing;
+            rcl.yTop += pXCenterData->Globals.ulSpacing;
+        }
+        // else (client window given): we just use that
+
         // WinQueryWindowRect returns an inclusive-exclusive
         // rectangle; since GpiBox uses inclusive-inclusive
         // rectangles, fix the top right
-        rcl.xLeft -= pXCenterData->Globals.ulSpacing;
-        rcl.yBottom -= pXCenterData->Globals.ulSpacing;
-        rcl.xRight += pXCenterData->Globals.ulSpacing - 1;
-        rcl.yTop += pXCenterData->Globals.ulSpacing - 1;
+        rcl.xRight--;
+        rcl.yTop--;
         gpihDrawThickFrame(hps,
                            &rcl,
                            pXCenterData->Globals.ulSpacing);
@@ -478,7 +493,7 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
 VOID RemoveDragoverEmphasis(HWND hwndClient)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-    HPS hps = DrgGetPS(pXCenterData->Globals.hwndFrame);
+    HPS hps = DrgGetPS(pXCenterData->Globals.hwndClient);
     if (hps)
     {
         gpihSwitchToRGB(hps);
@@ -544,6 +559,8 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
                   ULONG ulFlags)
 {
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+
+    ULONG flSWP = SWP_MOVE | SWP_SIZE;
 
     // refresh the style bits; these might have changed
     // (mask out only the ones we're interested in changing)
@@ -625,13 +642,16 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     else
         pXCenterData->yFrame = 0;
 
+    if (ulFlags & XFMF_RESURFACE)
+        flSWP |= SWP_ZORDER;
+
     WinSetWindowPos(pXCenterData->Globals.hwndFrame,
-                    NULLHANDLE,
+                    HWND_TOP,       // only relevant if SWP_ZORDER was added above
                     0,
                     pXCenterData->yFrame,
                     pXCenterData->cxFrame,
                     pXCenterData->cyFrame,
-                    SWP_MOVE | SWP_SIZE);
+                    flSWP);
 
     pXCenterData->fFrameAutoHidden = FALSE;
             // we must set this to FALSE before calling StartAutoHide
@@ -676,8 +696,9 @@ VOID ctrpReformatHWND(HWND hwnd,
  *      Postconditions:
  *
  *      -- The position of the widget is arbitrary after
- *         this. The caller must call ReformatWidgets
- *         himself.
+ *         this, and the widget window is NOT shown (WS_VISIBLE
+ *         not set). The caller must call ReformatWidgets
+ *         himself, and make the widget visible.
  *
  *      -- This raises pXCenterData->Globals.cyClient
  *         if the new widget wants a height larger
@@ -770,7 +791,9 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                                                               NULL);
 
                     // store view data in widget's QWL_USER,
-                    // in case the widget forgot
+                    // in case the widget forgot; but this won't help
+                    // much since the widget gets messages before WinCreateWindow
+                    // returns....
                     WinSetWindowPtr(pWidget->hwndWidget, QWL_USER, pNewView);
 
                     // ask the widget for its size
@@ -803,12 +826,12 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                         lstInsertItemBefore(&pXCenterData->llWidgets,
                                             pNewView,
                                             ulIndex);
-                }
+                } // end if (pWidget->hwndWidget)
             } // end if pWidgetClass
 
             if (!pWidget->hwndWidget)
             {
-                // error creating window
+                // error creating window:
                 PSZ     apsz[2];
                 apsz[0] = (PSZ)pSetting->pszWidgetClass;
                 cmnMessageBoxMsgExt(NULLHANDLE,
@@ -1245,7 +1268,7 @@ BOOL FrameTimer(HWND hwnd,
                             pXCenterData->yFrame,
                             pXCenterData->cxFrame,
                             pXCenterData->cyFrame,
-                            SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
+                            SWP_MOVE | SWP_SIZE | SWP_SHOW /* | SWP_ZORDER */ );
         break; }
 
         default:
@@ -1531,17 +1554,18 @@ VOID ClientPaint(HWND hwnd)
         // switch to RGB
         gpihSwitchToRGB(hps);
 
-        WinQueryWindowRect(hwnd, &rclWin);
+        WinQueryWindowRect(hwnd,
+                           &rclWin);        // exclusive
+        rclWin.xRight--;
+        rclWin.yTop--;
         gpihDraw3DFrame(hps,
-                        &rclWin,
+                        &rclWin,            // inclusive
                         1,
                         pXCenterData->Globals.lcol3DLight,
                         pXCenterData->Globals.lcol3DDark);
 
         rclWin.xLeft++;
-        rclWin.xRight--;
         rclWin.yBottom++;
-        rclWin.yTop--;
         WinFillRect(hps,
                     &rclWin,
                     WinQuerySysColor(HWND_DESKTOP,
@@ -1702,7 +1726,7 @@ VOID ClientMenuEnd(HWND hwnd, MPARAM mp2)
     {
         // context menu closing:
         // remove emphasis
-        WinInvalidateRect(pXCenterData->Globals.hwndFrame, NULL, FALSE);
+        WinInvalidateRect(pXCenterData->Globals.hwndClient, NULL, FALSE);
         pXCenterData->hwndContextMenu = NULLHANDLE;
     }
 }
@@ -2650,13 +2674,9 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
                     CreateOneWidget(pXCenterData,
                                     pSetting,
                                     ulWidgetIndex);
-                    /* ReformatWidgets(pXCenterData,
-                                    TRUE,   // show
-                                    FALSE); // no send XN_QUERYSIZE,
-                                            // CreateOneWidget has done that
-                            */
+                            // new widget is invisible, and at a random position
                     ctrpReformat(pXCenterData,
-                                 XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS);
+                                 XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS | XFMF_SHOWWIDGETS);
                 }
             }
 
@@ -3075,17 +3095,88 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
         pNode = lstQueryFirstNode(pllSettings);
         if (pNode)
         {
+            BOOL    fFirstWidget = TRUE;
             xstrcat(&strTemp, "WIDGETS=");
 
             // we have widgets:
+            // go thru all of them and list all widget classes and setup strings.
             while (pNode)
             {
                 PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
 
+                if (!fFirstWidget)
+                    // not first run:
+                    // add separator
+                    xstrcat(&strTemp, ",");
+                else
+                    fFirstWidget = FALSE;
+
+                // add widget class
                 xstrcat(&strTemp, pSetting->pszWidgetClass);
-                xstrcat(&strTemp, "\1");
-                xstrcat(&strTemp, pSetting->pszSetupString);
-                xstrcat(&strTemp, "\1");
+
+                if (    (pSetting->pszSetupString)
+                     && (strlen(pSetting->pszSetupString))
+                   )
+                {
+                    // widget has a setup string:
+                    // add that in brackets
+                    XSTRING strSetup2;
+
+                    // characters that must be encoded
+                    CHAR    achEncode[] = "%,();=";
+
+                    ULONG   ul = 0;
+
+                    // copy widget setup string to temporary buffer
+                    // for encoding... this has "=" and ";"
+                    // chars in it, and these should not appear
+                    // in the WPS setup string
+                    xstrInitCopy(&strSetup2,
+                                 pSetting->pszSetupString,
+                                 40);
+
+                    // add first separator
+                    xstrcat(&strTemp, "(");
+
+                    // now encode the widget setup string...
+                    for (ul = 0;
+                         ul < strlen(achEncode);
+                         ul++)
+                    {
+                        CHAR        szFind[3] = "?",
+                                    szReplace[10] = "%xx";
+                        XSTRING     strFind,
+                                    strReplace;
+                        size_t  ShiftTable[256];
+                        BOOL    fRepeat = FALSE;
+                        ULONG ulOfs = 0;
+
+                        // search string:
+                        szFind[0] = achEncode[ul];
+                        xstrInitSet(&strFind, szFind);
+
+                        // replace string: ASCII encoding
+                        sprintf(szReplace, "%c%lX", '%', achEncode[ul]);
+                        xstrInitSet(&strReplace, szReplace);
+
+                        // replace all occurences
+                        while (xstrrpl(&strSetup2,
+                                       &ulOfs,
+                                       &strFind,
+                                       &strReplace,
+                                       ShiftTable,
+                                       &fRepeat))
+                                ;
+                    } // for ul; next encoding
+
+                    // now append encoded widget setup string
+                    xstrcat(&strTemp, strSetup2.psz);
+
+                    // add terminator
+                    xstrcat(&strTemp, ")");
+
+                    xstrClear(&strSetup2);
+                } // end if (    (pSetting->pszSetupString)...
 
                 pNode = pNode->pNext;
             } // end for widgets
@@ -3229,15 +3320,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
             }
         }
 
-        // add "Close" menu item
-        winhInsertMenuSeparator(hwndMenu,
-                                MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-        winhInsertMenuItem(hwndMenu,
-                           MIT_END,
-                           WPMENUID_CLOSE,
-                           "~Close", // ###
-                           MIS_TEXT, 0);
+        cmnAddCloseMenuItem(hwndMenu);
 
         ctrpFreeClasses();
 

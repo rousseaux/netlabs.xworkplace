@@ -3,7 +3,7 @@
  *@@sourcefile w_objbutton.c:
  *      XCenter "object button" widget implementation.
  *      This is built into the XCenter and not in
- *      a plugin DLL.
+ *      a plugin DLL because it uses tons of WPS calls.
  *
  *      The PM window class actually implements two
  *      widget classes, the "X-Button" and the "object
@@ -95,6 +95,7 @@
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpdesk.h>
 #include <wpdisk.h>
+#include <wppower.h>
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
@@ -146,6 +147,11 @@ typedef struct _OBJBUTTONPRIVATE
 
     HPOINTER    hptrXMini;              // "X" icon for painting on button,
                                         // if BTF_XBUTTON
+
+    WPPower     *pPower;                // for X-button: if != NULLHANDLE,
+                                        // power management is enabled, and this
+                                        // has the "<WP_POWER>" object
+
 } OBJBUTTONPRIVATE, *POBJBUTTONPRIVATE;
 
 /* ******************************************************************
@@ -195,7 +201,6 @@ VOID OwgtScanSetup(const char *pcszSetupString,
     {
         // scan hex object handle
         pSetup->hobj = strtol(p, NULL, 16);
-        _Pmpf((__FUNCTION__ ": got handle 0x%lX", pSetup->hobj));
         ctrFreeSetupValue(p);
     }
 
@@ -409,7 +414,7 @@ VOID OwgtPaintButton(HWND hwnd)
                 if (pWidget->pGlobals->ulDisplayStyle == XCS_BUTTON)
                     ulBorder = 2;
 
-                WinQueryWindowRect(hwnd, &rclWin);
+                WinQueryWindowRect(hwnd, &rclWin);      // exclusive
                 gpihSwitchToRGB(hps);
 
                 if (    (pPrivate->fMouseButton1Down)
@@ -435,8 +440,10 @@ VOID OwgtPaintButton(HWND hwnd)
                     // button border:
 
                     // now paint button frame
+                    rclWin.xRight--;
+                    rclWin.yTop--;
                     gpihDraw3DFrame(hps,
-                                    &rclWin,
+                                    &rclWin,        // inclusive
                                     ulBorder,
                                     lLeft,
                                     lRight);
@@ -444,12 +451,12 @@ VOID OwgtPaintButton(HWND hwnd)
                     // now paint button middle
                     rclWin.xLeft += ulBorder;
                     rclWin.yBottom += ulBorder;
-                    rclWin.xRight -= ulBorder;
-                    rclWin.yTop -= ulBorder;
+                    rclWin.xRight -= ulBorder - 1;  // make exclusive again
+                    rclWin.yTop -= ulBorder - 1;    // make exclusive again
                 }
 
                 WinFillRect(hps,
-                            &rclWin,
+                            &rclWin,        // exclusive
                             lMiddle);
 
                 // get icon
@@ -472,7 +479,7 @@ VOID OwgtPaintButton(HWND hwnd)
                     // now paint icon
                     cx = rclWin.xRight - rclWin.xLeft;
                     cy = rclWin.yTop - rclWin.yBottom;
-                    GpiIntersectClipRectangle(hps, &rclWin);
+                    GpiIntersectClipRectangle(hps, &rclWin);    // exclusive!
                     WinDrawPointer(hps,
                                    // center this in remaining rectl
                                    rclWin.xLeft + ((cx - cxMiniIcon) / 2) + ulOfs,
@@ -540,6 +547,17 @@ VOID OwgtButton1Down(HWND hwnd)
                         pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
                                                                 cmnQueryNLSModuleHandle(FALSE),
                                                                 ID_CRM_XCENTERBUTTON);
+
+                        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+                        {
+                            // if XShutdown confirmations have been disabled,
+                            // remove "..." from the shutdown menu entries
+                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                                  ID_CRMI_RESTARTWPS);
+                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                                  ID_CRMI_SHUTDOWN);
+                        }
+
                         if (!pKernelGlobals->pXWPShellShared)
                         {
                             // XWPShell not running:
@@ -547,6 +565,35 @@ VOID OwgtButton1Down(HWND hwnd)
                             winhRemoveMenuItem(pPrivate->hwndMenuMain,
                                                ID_CRMI_LOGOFF);
                         }
+                        else
+                            if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+                                // if XShutdown confirmations have been disabled,
+                                // remove "..." from menu entry
+                                winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                                      ID_CRMI_LOGOFF);
+
+                        // check if we can find the "Power" object
+                        if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
+                            if (_somIsA(pPrivate->pPower, _WPPower))
+                            {
+                                // is power management enabled?
+                                if (!_wpQueryPowerManagement(pPrivate->pPower))
+                                    // no:
+                                    pPrivate->pPower = NULL;
+                            }
+                            else
+                                pPrivate->pPower = NULL;
+
+                        if (!pPrivate->pPower)
+                            winhRemoveMenuItem(pPrivate->hwndMenuMain,
+                                               ID_CRMI_SUSPEND);
+                        else
+                            // power exists:
+                            if (!_wpQueryPowerConfirmation(pPrivate->pPower))
+                                // if power confirmations have been disabled,
+                                // remove "..." from menu entry
+                                winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
+                                                      ID_CRMI_SUSPEND);
 
                         // prepare folder content submenu for Desktop
                         cmnuPrepareContentSubmenu(pActiveDesktop,
@@ -774,47 +821,81 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 {
     BOOL fProcessed = TRUE;
     ULONG ulMenuId = (ULONG)mp1;
-    switch (ulMenuId)
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
     {
-        case ID_CRMI_SUSPEND:
-        break;
-
-        case ID_CRMI_LOGOFF:
-            xsdInitiateRestartWPS(TRUE);    // logoff
-        break;
-
-        case ID_CRMI_RESTARTWPS:
-            xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
-        break;
-
-        case ID_CRMI_SHUTDOWN:
-            xsdInitiateShutdown();
-        break;
-
-        default:
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
         {
-            // other:
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
-            if (     (ulMenuId >= ulFirstVarMenuId)
-                  && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
-               )
+            switch (ulMenuId)
             {
-                // yes, variable menu item selected:
-                // get corresponding menu list item from the list that
-                // was created by mnuModifyFolderPopupMenu
-                PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
-                WPObject    *pObject = NULL;
+                case ID_CRMI_SUSPEND:
+                    // check if the "Power" object has been set up
+                    // in OwgtInitMenu
+                    if (pPrivate->pPower)
+                    {
+                        BOOL fGo = FALSE;
+                        if (_wpQueryPowerConfirmation(pPrivate->pPower))
+                            // yeah, that's funny: why do they export this function
+                            // and have this setting, and wpChangePowerState doesn't
+                            // confirm anything?!?
+                            // so do it now
+                            fGo = (cmnMessageBoxMsg(pWidget->hwndWidget,
+                                                    197,        // xcenter
+                                                    198,        // sure suspend?
+                                                    MB_YESNO)
+                                            == MBID_YES);
+                        else
+                            fGo = TRUE;
 
-                if (pItem)
-                    pObject = pItem->pObject;
+                        if (fGo)
+                            _wpChangePowerState(pPrivate->pPower,
+                                                MAKEULONG(6,        // set power state
+                                                          0),       // reserved
+                                                MAKEULONG(1,        // all devices
+                                                          2));      // suspend
+                    }
+                break;
 
-                if (pObject)    // defaults to NULL
-                    _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-            } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
-            else
-                fProcessed = FALSE;
-        break; }
+                case ID_CRMI_LOGOFF:
+                    xsdInitiateRestartWPS(TRUE);    // logoff
+                break;
+
+                case ID_CRMI_RESTARTWPS:
+                    xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
+                break;
+
+                case ID_CRMI_SHUTDOWN:
+                    xsdInitiateShutdown();
+                break;
+
+                default:
+                {
+                    // other:
+                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                    ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+                    if (     (ulMenuId >= ulFirstVarMenuId)
+                          && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
+                       )
+                    {
+                        // yes, variable menu item selected:
+                        // get corresponding menu list item from the list that
+                        // was created by mnuModifyFolderPopupMenu
+                        PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
+                        WPObject    *pObject = NULL;
+
+                        if (pItem)
+                            pObject = pItem->pObject;
+
+                        if (pObject)    // defaults to NULL
+                            _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
+                    } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
+                    else
+                        fProcessed = FALSE;
+                break; }
+            }
+        }
     }
 
     return (fProcessed);

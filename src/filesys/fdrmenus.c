@@ -106,7 +106,9 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
-#include "xfldr.ih"
+#include "xfobj.ih"                     // XFldObject
+#include "xfdisk.ih"                    // XFldDisk
+#include "xfldr.ih"                     // XFolder
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -119,14 +121,13 @@
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include "xfdisk.h"                     // XFldDisk
-
 #include <wppgm.h>                      // WPProgram
 #include <wpshadow.h>                   // WPShadow
 #include <wpdesk.h>                     // WPDesktop
@@ -494,7 +495,7 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
         while (pObject = _xwpEnumNext(pFolderThis, henum))
         {
             // if the object is a shadow, we will only de-reference
-            //   it if it's a template
+            // it if it's a template
             if (_somIsA(pObject, _WPShadow))
             {
                 pObject2Insert = _wpQueryShadowedObject(pObject, FALSE);
@@ -559,6 +560,10 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
                 lstAppendItem(pllContentThis,
                               pcli);
 
+                // mark this object that it is in the config folder
+                _xwpModifyListNotify(pObject2Insert,
+                                     OBJLIST_CONFIGFOLDER,
+                                     OBJLIST_CONFIGFOLDER);
             } // end if (pObject2Insert)
         } // end while
 

@@ -100,6 +100,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
@@ -315,8 +316,15 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
  *         run into problems when WM_APPTERMINATENOTIFY
  *         comes in.
  *
+ *      -- OBJLIST_CONFIGFOLDER: this means that the
+ *         object is a config folder or resides in
+ *         one. The config folder cache must be invalidated
+ *         when this object gets deleted.
+ *
  *      Note: These flags are NOT persistent across
  *      reboots, i.e. not stored with wpSaveState.
+ *      They are also cleared for the copy if the
+ *      object gets copied.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
@@ -694,6 +702,10 @@ SOM_Scope WPObject*  SOMLINK xfobj_wpCopyObject(XFldObject *somSelf,
  *      you get two objects with instance pointers pointing
  *      to the same object, which can only lead to problems.
  *
+ *      According to wpobject.h, the OR_REFERENCE bit is set
+ *      for OR_FROMTEMPLATE, OR_FROMCOPY, or OR_SHADOW; this
+ *      means that refObject is valid.
+ *
  *      When an object is copied in any way (thru wpCopyObject
  *      or wpCreateFromTemplate), the WPS first creates a
  *      new "empty" object (on which wpInitData is invoked),
@@ -702,11 +714,13 @@ SOM_Scope WPObject*  SOMLINK xfobj_wpCopyObject(XFldObject *somSelf,
  *      As a result, you must only handle the instance data here
  *      which is not safely set thru wpRestoreState.
  *
- *@@changed V0.9.0: adjust for XFolder: [umoeller]:wpObjectReady override
+ *@@changed V0.9.0: adjust for XFolder::wpObjectReady override
+ *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed _ulListNotify
  */
 
 SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
-                                              ULONG ulCode, WPObject* refObject)
+                                            ULONG ulCode,
+                                            WPObject* refObject)
 {
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     // XFldObjectMethodDebug("XFldObject","xfobj_wpObjectReady");
@@ -727,6 +741,13 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
 
     XFldObject_parent_WPObject_wpObjectReady(somSelf, ulCode,
                                              refObject);
+
+    if (ulCode & OR_REFERENCE)
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        _ulListNotify = 0;
+            // V0.9.7 (2000-12-18) [umoeller]
+    }
 
     // on my Warp 4 FP 10, this method does not get
     // called for WPFolder instances, so we override
@@ -776,6 +797,14 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
         // we'll get crashes later...
         _ulListNotify &= ~OBJLIST_RUNNINGSTORED;
         progRunningAppDestroyed(somSelf);
+    }
+
+    if (_ulListNotify & OBJLIST_CONFIGFOLDER)
+    {
+        // somSelf is in the config folder hierarchy:
+        // invalidate the content lists for the config
+        // folders so that they will be rebuilt
+        mnuInvalidateConfigCache();
     }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);

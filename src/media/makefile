@@ -49,9 +49,11 @@ OUTPUTDIR = ..\..\bin
 # created from the files in this directory.
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
-OBJS = $(OUTPUTDIR)\mmhelp.obj \
-       $(OUTPUTDIR)\mmthread.obj \
-       $(OUTPUTDIR)\mmvolume.obj
+OBJS = \
+    $(OUTPUTDIR)\mmcdplay.obj \
+    $(OUTPUTDIR)\mmhelp.obj \
+    $(OUTPUTDIR)\mmthread.obj \
+    $(OUTPUTDIR)\mmvolume.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -119,6 +121,14 @@ MYOWNINC = $(INC)\media
 # XWorkplace "library" .OBJ files used by several classes.
 # Source code is here in SRC\MAIN.
 
+$(OUTPUTDIR)\mmcdplay.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\winh.h \
+    $(INC)\classes\xmmcdplay.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h \
+    $(@B).c $(MYOWNINC)\media.h
+
 $(OUTPUTDIR)\mmhelp.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
@@ -134,7 +144,9 @@ $(OUTPUTDIR)\mmthread.obj: \
 
 $(OUTPUTDIR)\mmvolume.obj: \
     $(INC)\setup.h \
+    $(HLPINC)\except.h $(HLPINC)\winh.h \
     $(INC)\classes\xmmvolume.ih \
+    $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\media.h
 
 

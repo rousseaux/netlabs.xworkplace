@@ -120,6 +120,7 @@
  *   Global variables                                               *
  *                                                                  *
  ********************************************************************/
+
 /*
  *@@ XTRO_DETAILS:
  *      extended object details for XWPTrashObject

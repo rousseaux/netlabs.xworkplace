@@ -507,7 +507,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
         WPObject    *pAssocObject = ftypQueryAssociatedProgram(somSelf,
                                                                &ulView2);
                                         // object is locked
-        _Pmpf(("ftypQueryAssociatedProgram got 0x%lX", pAssocObject));
+        // _Pmpf(("ftypQueryAssociatedProgram got 0x%lX", pAssocObject));
 
         if (pAssocObject)
         {
@@ -526,7 +526,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
                                                      ulView,
                                                      param);
 
-    _Pmpf(("End of xfdf_wpOpen, returning hwnd 0x%lX", hwnd));
+    // _Pmpf(("End of xfdf_wpOpen, returning hwnd 0x%lX", hwnd));
 
     return (hwnd);
 
