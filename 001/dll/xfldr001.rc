@@ -18,7 +18,7 @@
  *      only change strings. This is very helpful to avoid
  *      accidentally ruining the dialogs.
  *
- *      Copyright (C) 1997-99 Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -442,14 +442,20 @@ BEGIN
     ID_XTSI_TRASHCAN                    "Trash can"
     ID_XTSI_TRASHOBJECT                 "Trash object"
 
-    ID_XTSI_TRASHSETTINGS               "~Trash can"
+    ID_XTSI_TRASHSETTINGSPAGE           "~Trash can"
+    ID_XTSI_TRASHDRIVESPAGE             "~Drives"
 
     ID_XTSI_ORIGFOLDER                  "Original folder"
     ID_XTSI_DELDATE                     "Deletion date"
     ID_XTSI_DELTIME                     "Deletion time"
     ID_XTSI_SIZE                        "Size"
+    ID_XTSI_ORIGCLASS                   "Original class"
 
     /* the following added with V0.9.1 */
+
+    /* trash can status bar strings */
+    ID_XTSI_STB_POPULATING              "Collecting trash on drive %c:..."
+    ID_XTSI_STB_OBJCOUNT                "%s trash object(s), total trash size: %s bytes"
 
     /* Details view columns on XWPKeyboard "Hotkeys" page */
     ID_XSSI_HOTKEY_TITLE                "Object title"
@@ -489,7 +495,7 @@ BEGIN
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
     ID_XCSI_XWPHOOK                     "Enable XWorkplace Hook"
-    ID_XCSI_NUMLOCKON                   "Switch NumLock on at startup"
+    ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace WPS archiving"
@@ -501,7 +507,7 @@ BEGIN
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries"
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
     ID_XCSI_REPLDRIVENOTREADY           "Replace ""Drive not ready"" dialog"
-    ID_XCSI_DELETEINTOTRASHCAN          "Trash can ""Delete"" support"
+    ID_XCSI_XWPTRASHCAN                 "XWorkplace trash can"
 END
 
 /* Treesize definitions; added V0.9.0 */

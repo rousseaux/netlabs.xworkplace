@@ -1,21 +1,21 @@
 
 ;
 ; xfldr001.def:
-;       module definition file for XFolder resource DLL (English).
+;       module definition file for XWorkplace resource DLL (English).
 ;       A module definition file contains information which is needed
 ;       after code modules have been compiled and need to be linked
 ;       together.
 ;       You must change the XFLDR001 string just below to the file
 ;       name that the NLS DLL will carry. You can also change the
-;       DESCRIPTION string, but this is not evaluated by XFolder.
+;       DESCRIPTION string, but this is not evaluated by XWorkplace.
 ;       Do not change anything else.
 ;
-;       Copyright (C) 1997-99 Ulrich M”ller.
-;       This file is part of the XFolder source package.
-;       XFolder is free software; you can redistribute it and/or modify
+;       Copyright (C) 1997-2000 Ulrich M”ller.
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
 ;       by the Free Software Foundation, in version 2 as it comes in the
-;       "COPYING" file of the XFolder main distribution.
+;       "COPYING" file of the XWorkplace main distribution.
 ;       This program is distributed in the hope that it will be useful,
 ;       but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -23,7 +23,7 @@
 ;
 
 LIBRARY           XFLDR001   INITINSTANCE TERMINSTANCE
-DESCRIPTION       'XFolder resource file (English)'
+DESCRIPTION       'XWorkplace National Language Support (English)'
 
 PROTMODE
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
