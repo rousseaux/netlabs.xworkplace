@@ -161,7 +161,7 @@ PMPRINTF_LIB =
 # The following macros contains the .OBJ files for the XCenter plugins.
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
 MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
-THESEUSOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_theseus.obj $(PMPRINTF_LIB) src\widgets\theseus0.lib
+SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_theseus.obj $(PMPRINTF_LIB)
 HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
@@ -382,7 +382,7 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
-      $(XWPRUNNING)\plugins\xcenter\xtheseus.dll \
+      $(XWPRUNNING)\plugins\xcenter\sentinel.dll \
       $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
@@ -521,9 +521,9 @@ $(MONITOROBJS)
         @cd $(CURRENT_DIR)
 
 #
-# Linking XTHESEUS.DLL
+# Linking sentinel.DLL
 #
-$(XWPRUNNING)\plugins\xcenter\xtheseus.dll: $(MODULESDIR)\$(@B).dll
+$(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         unlock $@
 !endif
@@ -531,12 +531,12 @@ $(XWPRUNNING)\plugins\xcenter\xtheseus.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\xtheseus.def: include\bldlevel.h
+src\widgets\sentinel.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter Theseus 4 plugin DLL"
 
-$(MODULESDIR)\xtheseus.dll: $(THESEUSOBJS) src\widgets\$(@B).def
+$(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def $(THESEUSOBJS)
+        $(LINK) /OUT:$@ src\widgets\$(@B).def $(SENTINELOBJS)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -840,8 +840,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\monitors.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\xtheseus.dll $(XWPRELEASE_MAIN)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\xtheseus.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\sentinel.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     @echo $(MAKEDIR)\makefile: Done copying files.
