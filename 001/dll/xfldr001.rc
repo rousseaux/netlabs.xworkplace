@@ -23,6 +23,8 @@
  *
  *          --  &os2;       "OS/2" or "eComStation"
  *
+ *          --  &winos2;    "Win-OS/2" or "Win16"
+ *
  *          --  &warpcenter; "WarpCenter" or "eComCenter"
  *
  *          --  &xcenter;   "XCenter" or "eCenter"
@@ -1121,7 +1123,8 @@ BEGIN
     ID_XSDI_DTP_LOGO_BLOWUP             "B~low-up style"
     ID_XSDI_DTP_LOGOFILETXT             "OS/2 1.3 BMP ~file for boot logo:"
     ID_XSDI_DTP_TESTLOGO                "T~est logo"
-    ID_XSDI_DTP_WRITEXWPSTARTLOG        "Write XWP~START.LOG file"
+    /* V0.9.19: changed log file name */
+    ID_XSDI_DTP_WRITEXWPSTARTLOG        "Write WP~START.LOG file"
     ID_XSDI_DTP_BOOTUPSTATUS            "Show W~PS class initialization"
     ID_XSDI_DTP_CREATESTARTUPFLDR       "Create ~&xwp; Startup folder"
     ID_XSDI_DTP_NUMLOCKON               "Enable ~NumLock at startup"
@@ -1340,6 +1343,17 @@ BEGIN
     ID_XSDI_SBSTYLE_3SUNKEN             "~Sunk box"
     ID_XSDI_SBSTYLE_4RECT               "~Button"
     ID_XSDI_SBSTYLE_4MENU               "~Menu"
+
+    /* strings formerly in ID_XFD_RUN */
+    ID_XFD_RUN_TITLE                    "Run"
+    ID_XFD_RUN_INTRO                    "~Enter the command to run and the startup directory:"
+    ID_XFD_RUN_MINIMIZED                "Start ~minimized"
+    ID_XFD_RUN_FULLSCREEN               "~Full screen"
+    ID_XFD_RUN_AUTOCLOSE                "Close window on e~xit"
+    ID_XFD_RUN_WINOS2_GROUP             "&winos2; settings"
+    ID_XFD_RUN_ENHANCED                 "~Enhanced mode"
+    ID_XFD_RUN_SEPARATE                 "~Separate session"
+    ID_XFD_RUN_STARTUPDIR_TXT           "~Working directory:"
 
     /* strings for XFldWPS menu pages  (all new with V0.9.19) */
     ID_XSDI_MENU_SETTINGS               "Common menu settings"

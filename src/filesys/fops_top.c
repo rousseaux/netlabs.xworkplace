@@ -236,7 +236,11 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
         case FOPSERR_DELETE_CONFIRM_FOLDER:
             // V0.9.16 (2001-12-06) [umoeller]
             // confirm folder deletions
-            ulMsg = 226;        // %1 is a folder. Delete?
+            if (ulOperation == XFT_MOVE2TRASHCAN)
+                ulMsg = 236;        // %1 is a folder. Move to trash?
+                        // V0.9.19 (2002-05-01) [umoeller]
+            else
+                ulMsg = 226;        // %1 is a folder. Delete?
             flFlags = MB_YES_YES2ALL_NO | MB_DEFBUTTON3;
             apsz[0] = pszTitle;
             cpsz = 1;
@@ -667,7 +671,7 @@ static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *      (XFLDRxxx.TMF).
  *
  *      -- If a single object is selected in the container,
- *         &ouml;FOPSCONFIRM.ulMsgSingle will be used. The "%1" parameter in the
+ *         FOPSCONFIRM.ulMsgSingle will be used. The "%1" parameter in the
  *         message will be replaced with the object's title.
  *
  *      -- If multiple objects are selected in the container,

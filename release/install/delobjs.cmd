@@ -66,6 +66,16 @@ rc = Destroy("<XWP_CONFIG>");
 /* HERE COMES THE UNDO OF INSTLxxx.CMD (INSTALL FOLDER) */
 
 
+/* the following three added with V0.9.19 */
+/* create "Lockup" setup string object */
+rc = Destroy("<XWP_LOCKUPSTR>");
+
+/* create "Find objects" setup string object */
+rc = Destroy("<XWP_FINDSTR>");
+
+/* create "Shutdown" setup string object */
+rc = Destroy("<XWP_SHUTDOWNSTR>");
+
 /* XShutdown... changed with V0.9.7 */
 rc = Destroy("<XWP_XSHUTDOWN>");
 

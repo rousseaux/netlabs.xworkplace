@@ -429,19 +429,23 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
 
     usStartPos = 21; // with OS/2 2.1 and above, Henk Kelder says
 
-    /* first step: the icon position of each object within a given
-       .ICONPOS EA starts with a string identifying the object; so
-       first, we need to compose this string depending on the type
-       of the passed object */
+    _Pmpf((__FUNCTION__ ": flags for %s are %lX", _wpQueryTitle(pObject), fl));
+
+    // first step: the icon position of each object within a given
+    // .ICONPOS EA starts with a string identifying the object; so
+    // first, we need to compose this string depending on the type
+    // of the passed object
     if (fl & OBJFL_WPABSTRACT)
     {
         // abstract object:
         HOBJECT  hObject = _wpQueryHandle(pObject);
+        _Pmpf((__FUNCTION__ ": object %s is abstract", _wpQueryTitle(pObject)));
         sprintf(szKey, "%s:A%lX", pszClass, LOUSHORT(hObject));
     }
     else if (fl & OBJFL_WPFILESYSTEM)
     {
         // file system object
+        _Pmpf((__FUNCTION__ ": object %s is file-system", _wpQueryTitle(pObject)));
         if (_wpQueryFilename(pObject, szPath, FALSE))
         {
             sprintf(szKey,
@@ -543,10 +547,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 // b)   then all abstract objects in the order they were
                 //      placed in this folder.
 
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
-
                 // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                 for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                      pObj;
@@ -573,22 +573,34 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                         // for abstract objects, this is the low word
                         // of the object handle
                         HOBJECT hobjSearch = _wpQueryHandle(pObj);
+
+                        _Pmpf((__FUNCTION__ ": object %s is abstract", _wpQueryTitle(pObj)));
+
                         sprintf(poliNew->szIdentity, ":A%lX", (hobjSearch & 0xFFFF));
                     }
                     else if (fl & OBJFL_WPFILESYSTEM)
                     {
                         // for file-system objects, this is the object's real name
-                        ULONG   ulSize = sizeof(poliNew->szIdentity)-2;
+                        ULONG   ulSize = sizeof(poliNew->szIdentity) - 2;
+
+                        _Pmpf((__FUNCTION__ ": object %s is file-system", _wpQueryTitle(pObj)));
+
                         if (fl & OBJFL_WPFOLDER)
                             strcpy(poliNew->szIdentity, ":D");
                         else
                             strcpy(poliNew->szIdentity, ":F");
+
                         // append real name
                         _wpQueryRealName(pObj,
                                          (poliNew->szIdentity)+2,
                                          &ulSize,
                                          FALSE);    // file name only
                     }
+                    else
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "sorting config folder %s: cannot determine type for %s",
+                               _wpQueryTitle(somSelf),
+                               _wpQueryTitle(pObj));
 
                     lstAppendItem(pec->pllOrderedContent,
                                   poliNew);
@@ -628,18 +640,18 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 //  } EABINDING, *PEABINDING;
 
                 PBYTE pICONPOS;
-                if (pICONPOS = malloc(peab->usValueLength+100))
+                if (pICONPOS = malloc(peab->usValueLength + 100))
                 {
-                    ULONG ulICONPOSSize = (peab->usValueLength)-5;
-                    memcpy(pICONPOS, peab->pszValue+4, peab->usValueLength-3);
+                    ULONG ulICONPOSSize = peab->usValueLength - 5;
+                    memcpy(pICONPOS,
+                           peab->pszValue + 4,
+                           peab->usValueLength - 3);
 
                     // finally, we have the ICONPOS data in _pICONPOS;
                     // now we pass the ICONPOS data to the sort function
                     // defined above
 
-                    #ifdef DEBUG_ORDEREDLIST
-                        _Pmpf(("  Sorting..."));
-                    #endif
+                    _Pmpf((__FUNCTION__ ": sorting %s", _wpQueryTitle(somSelf)));
 
                     sip.pICONPOS = pICONPOS;
                     sip.usICONPOSSize = ulICONPOSSize;

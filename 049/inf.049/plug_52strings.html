@@ -1,83 +1,95 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        Step 2: Supporting Setup Strings
+        Schritt 2: Einstellungsstrings unterstÅtzen
     </TITLE>
 </HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-OK, so your minimal widget from step 1 is running.
+OK, Ihr minimales Widget von Schritt 1 lÑuft schon mal.
 
-<P>You probably have figured out already that even though the minimal widget does
-react to fonts and colors dropped on it, those fonts and colors are not saved
-when the &xcenter; is closed and then re-opened.
+<P>Sie haben wahrscheinlich schon herausgefunden, da· das minimale Widget zwar
+darauf reagiert, wenn Schriftarten und Farben darauf fallengelassen werden,
+diese Schriftarten und Farben aber nicht gespeichert werden, wenn das &xcenter;
+geschlossen und wieder geîffnet wird.
 
-<P>Similarly, if you changed the minimal widget to be sizeable (by setting the
-<CODE>WGTF_SIZEABLE</CODE> flag in the <CODE>ulClassFlags</CODE> field of
-of <A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>,
-you will find out that the widget's size will not be remembered either.
+<P>Wenn Sie das minimale Widget so verÑndert haben, da· es in der Grî·e verÑndert
+werden kann (durch Setzen des Attributs <CODE>WGTF_SIZEABLE</CODE> im Feld
+<CODE>ulClassFlags</CODE> von
+<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>),
+werden Sie genauso bemerkt haben, da· die Grî·e des Widgets auch nicht erhalten
+bleibt.
 
-<P>Of course, the &xcenter; could have implemented saving these settings for your
-widget. But then, where would your widget store additional data that the &xcenter;
-would not know of? Using the profile functions to store the widget data in
-<CODE>OS2.INI</CODE> would not be a good idea because there can be several
-instances of your widget, which should all store their data independently.
+<P>Sicher, das &xcenter; kînnte das Speichern dieser Einstellungen fÅr Ihr
+Widget implementiert haben. Aber wo wÅrde dann Ihr Widget zusÑtzliche Daten
+speichern, von denen das &xcenter; dann nichts wei·? Die Profil-Funktionen
+zu benutzen, um die Daten des Widgets in der <CODE>OS2.INI</CODE> zu speichern,
+wÑre keine gute Idee, denn es kînnte mehrere Instanzen Ihren Widgets geben, die
+ihre Daten alle unabhÑngig voneinander speichern kînnen sollen.
 
-<P>As a result, I figured that storing widgets data together with the data of
-the &xcenter; that the widget belongs to would be the best idea.
+<P>Deshalb habe ich mir Åberlegt, da· es die beste Mîglichkeit wÑre, die Daten
+des Widgets mit den Daten des &xcenter;s, zu dem das Widget gehîrt, zu speichern.
 
-<P>To make this most flexible and easy to use, the widgets can have <B>setup strings</B>
-associated with them. If you look at the "Widgets" page of an &xcenter;, you will see
-that each widget can have its own setup string to store any data it wants.
+<P>Um dies mîglichst flexibel und einfach zu halten, kînnen die Widgets
+<B>Einstellungsstrings</B> zugeordnet bekommen. Wenn Sie sich die Seite
+"Widgets" im Einstellungsnotizbuch eines &xcenter;s ansehen, werden Sie bemerken,
+da· jedes Widget einen eigenen Einstellungsstring benutzen kann, um all die Daten
+zu speichern, die nîtig sind.
 
-<P>Even though the widgets are not Desktop objects themselves, for simplicity, I chose
-to use the WPS setup string format for the widgets also. That is, your widget
-can understand, for example, a <CODE>BACKGROUNDCOLOR=00FF00;</CODE> setup string,
-which would set the widget's background color to green.
+<P>Obwohl die Widgets nicht selbst Objekte auf der ArbeitsoberflÑche sind, habe
+ich mich zur Vereinfachung entschieden, das Format der WPS-Einstellungsstrings
+genauso auch fÅr die Widgets zu benutzen. Das hei·t, da· Ihr Widget z. B. den
+Einstellungsstring <CODE>BACKGROUNDCOLOR=00FF00;</CODE> interpretieren kann, der
+die Farbe des Widget-Hintergrundes auf grÅn setzen wÅrde.
 
-<P>Your widget class must now implement two things:
+<P>Ihre Widget-Klasse mu· nun zwei Dinge implementieren:
 
-<UL><LI><B>Parse a setup string</B> and convert it into binary data that your widget
-can use. In the above example, for the background color, you could say that the
-<CODE>BACKGROUNDCOLOR</CODE> string would have to be followed by a six-digit RGB
-hex value. The definition is up to your widget class.
+<UL><LI><B>Einen Einstellungsstring zu parsen</B> und ihn in BinÑrdaten zu
+verwandeln, die Ihr Widget benutzen kann. Im obigen Beispiel mit der Hintergrundfarbe
+kînnten Sie sagen, da· der String <CODE>BACKGROUNDCOLOR</CODE> von einem
+sechsstelligen RGB-Wert in Hex gefolgt sein mÅ·te. Die Definition ist Sache
+der Widget-Klasse.
 
-<P><LI><B>Create a setup string</B> from a set of binary values. This is needed when
-the data of your widget is about to be saved.
+<P><LI><B>Einen Einstellungsstring</B> von einer Menge von BinÑrdaten zu
+<B>erzeugen</B>. Das wird gebraucht, wenn die Daten Ihres Widgets gespeichert werden
+sollen.
 
-</UL>When your widget is created, it receives a previously stored setup string
-in the <CODE>pcszSetupString</CODE> field of its
-<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A> structure that
-comes with <CODE>WM_CREATE</CODE>. You can then allocate your own structure and
-store it in <CODE>XCENTERWIDGET.pUser</CODE>, parse the setup string, and store
-the values in there. Of course, you should set up safe defaults if a setup string
-is missing because there won't be any when your widget is initially created by
-the user.
+</UL>Wenn Ihr Widget erzeugt wird, erhÑlt es einen vorher gespeicherten
+Einstellungsstring im Feld <CODE>pcszSetupString</CODE> seiner
+<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>-Struktur, mit der
+auch <CODE>WM_CREATE</CODE> kommt. Sie kînnen dann Ihre eigene Struktur erstellen
+und sie in <CODE>XCENTERWIDGET.pUser</CODE> speichern, den Einstellungsstring
+parsen und die Werte dann darin speichern. NatÅrlich sollten Sie auch vernÅnftige
+Standardwerte vorsehen, wenn ein Einstellungsstring fehlt, weil er noch nicht da ist,
+wenn Ihr Widget das erste Mal vom Benutzer erzeugt wird.
 
-<P>Reversely, when your widget's data has changed (e.g. because a new background
-color has been dropped on it), it should compose a new full setup string.
+<P>Wenn andersherum die Daten Ihres Widgets sich geÑndert haben (z.B. weil eine neue
+Hintergrundfarbe darauf fallengelassen wurde), sollte es einen neuen Einstellungsstring
+erzeugen.
 <!-- V0.9.14: changed the following -->
-After the new setup string is composed, the widget must send the
-<CODE>XCM_SAVESETUP</CODE> message to its parent window (which is either the
-&xcenter; client or a tray widget window, if the widget resides in a tray),
+Nachdem der Einstellungsstring erzeugt wurde, mu· das Widget die Nachricht
+<CODE>XCM_SAVESETUP</CODE> an sein Mutterfenster schicken (das entweder das
+&xcenter; ist oder das Fenster des Fach-Widgets, in dem das Widget sich befindet),
 <!-- end V0.9.14 -->
-which will cause the
-new setup string to be stored together with the other widget data in the &xcenter;'s
-private data. See <CODE>center.h</CODE> for details.
+was dann zur Folge hat, da· der neue Einstellungsstring zusammen mit den anderen
+Daten des Widgets in den privaten Daten des &xcenter;s gespeichert wird. Siehe auch
+<CODE>center.h</CODE> fÅr die Details.
 
-<P>In order to encapsulate the setup string functionality, I recommend that you
-create a new structure definition for "saveable instance data". This could, for
-example, contain fields for background, foreground color, and font to be used.
-For sizeable widgets, this could also include the current size.
+<P>Um die FunktionalitÑt der Einstellungsstrings zu verpacken, empfehle ich, da· Sie
+eine neue Struktur fÅr "speicherbare Instanzdaten" definieren. Diese kînnte z.B.
+Felder fÅr Hintergrund- und Vordergrundfarbe und die benutzte Schriftart enthalten.
+FÅr in der Grî·e verÑnderbare Widgets kînnte das auch die momentane Grî·e umfassen.
 
-<P>This encapsulation allows your widget class to work on setup strings with setup
-dialogs later also, which can even be invoked when no instance of your widget
-presently exists.
+<P>Diese Verpackung erlaubt es Ihrer Widget-Klasse, spÑter auf der Basis von
+Einstellungsstrings auch mit Einstellungsdialogen zu arbeiten, die sogar aufgerufen
+werden kînnen, wenn es noch gar keins Ihrer Widgets gibt.
 
-<P>The minimal sample has no provisions for setup strings. Download the &xwp;
-source code and look into the <CODE>src\widgets</CODE> directory, which has more
-examples for how this works. <CODE>XFLDR.DLL</CODE> also exports a couple of
-handy functions that you can use to parse setup strings more easily.
+<P>Das minimale Beispiel enthÑlt noch keine Vorkehrungen fÅr Einstellungsstrings.
+Laden Sie den &xwp;-Quellcode herunter und schauen Sie sich die Dateien im
+Verzeichnis <CODE>src\widgets</CODE> an, das noch mehr Beispiele dazu enthÑlt, wie
+es funktioniert. Die <CODE>XFLDR.DLL</CODE> exportiert au·erdem ein paar nÅtzliche
+Funktionen, die Sie benutzen kînnen, um Einstellungsstrings einfacher zu parsen.
 
 <BR>
 </BODY>

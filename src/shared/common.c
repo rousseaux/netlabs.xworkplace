@@ -1075,6 +1075,7 @@ static const XWPENTITY G_aEntities[] =
     {
         "&xwp;", &ENTITY_XWORKPLACE,
         "&os2;", &ENTITY_OS2,
+        "&winos2;", &ENTITY_WINOS2,
         "&warpcenter;", &ENTITY_WARPCENTER,
         "&xcenter;", &ENTITY_XCENTER,
         "&xsd;", &ENTITY_XSHUTDOWN,
@@ -2892,7 +2893,7 @@ static const SETTINGINFO G_aSettingInfos[] =
 
         // folder view settings
         sfFullPath, FIELDOFFSET(OLDGLOBALSETTINGS, FullPath), 4,
-            SP_1GENERIC, 1,
+            SP_1GENERIC, 0,     // default changed V0.9.19 (2002-04-25) [umoeller]
             "fFullPath",
         sfKeepTitle, FIELDOFFSET(OLDGLOBALSETTINGS, KeepTitle), 4,
             SP_1GENERIC, 1,
@@ -5298,7 +5299,7 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
 
             switch(usid)
             {
-                case ID_XFD_RUN_BROWSE:
+                case DID_BROWSE:        // ID changed V0.9.19 (2002-04-25) [umoeller]
                 {
                     FILEDLG filedlg;
                     static const APSZ typelist[] =
@@ -5364,6 +5365,61 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
     return (mrc);
 }
 
+#define RUNDLG_WIDTH        (4 * STD_BUTTON_WIDTH + 6 * COMMON_SPACING)
+#define WIN16_TABLE_WIDTH   (RUNDLG_WIDTH / 2)
+#define WIN16_GROUP_WIDTH   (WIN16_TABLE_WIDTH + 2 * COMMON_SPACING + 2 * GROUP_INNER_SPACING_X)
+#define LEFT_COLUMN_WIDTH   (RUNDLG_WIDTH - WIN16_GROUP_WIDTH)
+
+static const CONTROLDEF
+    RunIntro = LOADDEF_TEXT_WORDBREAK_MNEMONIC(ID_XFD_RUN_INTRO, RUNDLG_WIDTH),
+    RunCommandDrop = CONTROLDEF_DROPDOWN(ID_XFD_RUN_COMMAND, RUNDLG_WIDTH, 150),
+    RunFullpath = CONTROLDEF_TEXT_RIGHT("M", ID_XFD_RUN_FULLPATH, RUNDLG_WIDTH, SZL_AUTOSIZE),
+    RunMinimizedCB = CONTROLDEF_AUTOCHECKBOX(LOAD_STRING, ID_XFD_RUN_MINIMIZED, LEFT_COLUMN_WIDTH, SZL_AUTOSIZE),
+    RunFullscreenCB = CONTROLDEF_AUTOCHECKBOX(LOAD_STRING, ID_XFD_RUN_FULLSCREEN, LEFT_COLUMN_WIDTH, SZL_AUTOSIZE),
+    RunAutoCloseCB = CONTROLDEF_AUTOCHECKBOX(LOAD_STRING, ID_XFD_RUN_AUTOCLOSE, LEFT_COLUMN_WIDTH, SZL_AUTOSIZE),
+    RunWinos2Group = LOADDEF_GROUP(ID_XFD_RUN_WINOS2_GROUP, WIN16_TABLE_WIDTH),
+    RunEnhancedCB = LOADDEF_AUTOCHECKBOX(ID_XFD_RUN_ENHANCED),
+    RunSeparateCB = LOADDEF_AUTOCHECKBOX(ID_XFD_RUN_SEPARATE),
+    RunStartupDirTxt = LOADDEF_TEXT(ID_XFD_RUN_STARTUPDIR_TXT),
+    RunStartupDirEF = CONTROLDEF_ENTRYFIELD(NULL, ID_XFD_RUN_STARTUPDIR, RUNDLG_WIDTH, SZL_AUTOSIZE),
+    RunBrowseButton = LOADDEF_PUSHBUTTON(DID_BROWSE);
+
+static const DLGHITEM G_dlgRun[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&RunIntro),
+            START_ROW(0),
+                CONTROL_DEF(&RunCommandDrop),
+            START_ROW(0),
+                CONTROL_DEF(&RunFullpath),
+            START_ROW(ROW_VALIGN_CENTER),
+                START_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&RunMinimizedCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&RunFullscreenCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&RunAutoCloseCB),
+                END_TABLE,
+                START_GROUP_TABLE(&RunWinos2Group),
+                    START_ROW(0),
+                        CONTROL_DEF(&RunEnhancedCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&RunSeparateCB),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&RunStartupDirTxt),
+            START_ROW(0),
+                CONTROL_DEF(&RunStartupDirEF),
+            START_ROW(0),
+                CONTROL_DEF(&G_OKButton),
+                CONTROL_DEF(&G_CancelButton),
+                CONTROL_DEF(&RunBrowseButton),
+                CONTROL_DEF(&G_HelpButton),
+        END_TABLE
+    };
+
 /*
  *@@ cmnRunCommandLine:
  *      displays a prompt dialog in which the user can
@@ -5381,6 +5437,7 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed parameter handling which was ignored
  *@@changed V0.9.14 (2001-08-07) [pr]: changed dialog handling, fixed Win-OS/2 full-screen hang
  *@@changed V0.9.14 (2001-08-23) [pr]: added more options & Browse button
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: now using dialog formatter
  */
 
 HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
@@ -5391,6 +5448,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
     TRY_LOUD(excpt1)
     {
         static HWND hwndDlg = NULLHANDLE;
+        PDLGHITEM paNew;
 
         // activate the current Run dialog if user tries to open a new one V0.9.14
         if (hwndDlg)
@@ -5417,137 +5475,151 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
         if (!hwndOwner)
             hwndOwner = cmnQueryActiveDesktopHWND(); */
 
-        if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
-                                 hwndOwner,
-                                 fnwpRunCommandLine,
-                                 cmnQueryNLSModuleHandle(FALSE),
-                                 ID_XFD_RUN,
-                                 NULL))
+        if (!cmnLoadDialogStrings(G_dlgRun,
+                                  ARRAYITEMCOUNT(G_dlgRun),
+                                  &paNew))
         {
-            HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
-                    hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
-
-            winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
-            if (LoadRunHistory(hwndCommand))
+            if (!dlghCreateDlg(&hwndDlg,
+                               hwndOwner,
+                               FCF_FIXED_DLG,
+                               fnwpRunCommandLine,
+                               cmnGetString(ID_XFD_RUN_TITLE),
+                               paNew,
+                               ARRAYITEMCOUNT(G_dlgRun),
+                               NULL,
+                               cmnQueryDefaultFont()))
             {
-                HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
-                HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
+                HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
+                        hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
 
-                WinEnableWindow(hwndOK, TRUE);
-                WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
-                WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
-                WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
-            }
+                winhSetDlgItemText(hwndDlg, ID_XFD_RUN_FULLPATH, "");
 
-            winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
-            WinSetWindowText(hwndStartup, pcszStartupDir);
-
-            cmnSetControlsFont(hwndDlg, 1, 10000);
-            winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
-            winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
-            winhCenterWindow(hwndDlg);
-
-            // go!
-            if (WinProcessDlg(hwndDlg) == DID_OK)
-            {
-                PSZ pszCommand = winhQueryWindowText(hwndCommand);
-                PSZ pszStartup = winhQueryWindowText(hwndStartup);
-
-                if (pszCommand)
+                winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
+                if (LoadRunHistory(hwndCommand))
                 {
-                    APIRET  arc = NO_ERROR;
-                    PSZ     pszExec,
-                            pParams = NULL;
-                    CHAR    szExecutable[CCHMAXPATH];
+                    HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
+                    HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
 
-                    UpdateRunHistory(hwndCommand);
-                    SaveRunHistory(hwndCommand);
-                    if (!pszStartup)
-                    {
-                        pszStartup = strdup("?:\\");
-                        *pszStartup = doshQueryBootDrive();
-                    }
-
-                    pszExec = StripParams(pszCommand,
-                                          &pParams);
-                    if (!pszExec)
-                        arc = ERROR_INVALID_PARAMETER;
-                    else
-                    {
-                        arc = doshFindExecutable(pszExec,
-                                                 szExecutable,
-                                                 sizeof(szExecutable),
-                                                 G_apcszExtensions,
-                                                 ARRAYITEMCOUNT(G_apcszExtensions));
-                        free(pszExec);
-                    }
-
-                    if (arc != NO_ERROR)
-                    {
-                        PSZ pszError;
-                        if (pszError = doshQuerySysErrorMsg(arc))
-                        {
-                            cmnMessageBox(hwndOwner,
-                                          pszCommand,
-                                          pszError,
-                                          NULLHANDLE, // no help
-                                          MB_CANCEL);
-                            free(pszError);
-                        }
-                    }
-                    else
-                    {
-                        PROGDETAILS pd;
-                        ULONG   ulDosAppType, ulFlags = 0;
-                        memset(&pd, 0, sizeof(pd));
-
-                        if (!(arc = appQueryAppType(szExecutable,
-                                                    &ulDosAppType,
-                                                    &pd.progt.progc)))
-                        {
-                            pd.progt.fbVisible = SHE_VISIBLE;
-                            pd.pszExecutable = szExecutable;
-                            nlsUpper(szExecutable, 0);
-                            pd.pszParameters = (PSZ)pParams;
-                            pd.pszStartupDir = pszStartup;
-
-                            pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
-                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
-                                pd.swpInitial.fl = SWP_MINIMIZE;
-                            else
-                                pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
-
-                            if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
-                                pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
-
-                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
-                                ulFlags |= APP_RUN_FULLSCREEN;
-
-                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
-                                ulFlags |= APP_RUN_ENHANCED;
-                            else
-                                ulFlags |= APP_RUN_STANDARD;
-
-                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
-                                ulFlags |= APP_RUN_SEPARATE;
-
-                            arc = appStartApp(NULLHANDLE,        // no notify
-                                              &pd,
-                                              ulFlags, //V0.9.14
-                                              &happ,
-                                              0,
-                                              NULL);
-                        }
-                    }
+                    WinEnableWindow(hwndOK, TRUE);
+                    WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
+                    WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
+                    WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
                 }
 
-                if (pszCommand)
-                    free(pszCommand);
-                if (pszStartup)
-                    free(pszStartup);
+                winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
+                WinSetWindowText(hwndStartup, pcszStartupDir);
+
+                cmnSetControlsFont(hwndDlg, 1, 10000);
+                winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
+                winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
+                winhCenterWindow(hwndDlg);
+
+                WinSetFocus(HWND_DESKTOP, hwndCommand);
+
+                // go!
+                if (WinProcessDlg(hwndDlg) == DID_OK)
+                {
+                    PSZ pszCommand = winhQueryWindowText(hwndCommand);
+                    PSZ pszStartup = winhQueryWindowText(hwndStartup);
+
+                    if (pszCommand)
+                    {
+                        APIRET  arc = NO_ERROR;
+                        PSZ     pszExec,
+                                pParams = NULL;
+                        CHAR    szExecutable[CCHMAXPATH];
+
+                        UpdateRunHistory(hwndCommand);
+                        SaveRunHistory(hwndCommand);
+                        if (!pszStartup)
+                        {
+                            pszStartup = strdup("?:\\");
+                            *pszStartup = doshQueryBootDrive();
+                        }
+
+                        pszExec = StripParams(pszCommand,
+                                              &pParams);
+                        if (!pszExec)
+                            arc = ERROR_INVALID_PARAMETER;
+                        else
+                        {
+                            arc = doshFindExecutable(pszExec,
+                                                     szExecutable,
+                                                     sizeof(szExecutable),
+                                                     G_apcszExtensions,
+                                                     ARRAYITEMCOUNT(G_apcszExtensions));
+                            free(pszExec);
+                        }
+
+                        if (arc != NO_ERROR)
+                        {
+                            PSZ pszError;
+                            if (pszError = doshQuerySysErrorMsg(arc))
+                            {
+                                cmnMessageBox(hwndOwner,
+                                              pszCommand,
+                                              pszError,
+                                              NULLHANDLE, // no help
+                                              MB_CANCEL);
+                                free(pszError);
+                            }
+                        }
+                        else
+                        {
+                            PROGDETAILS pd;
+                            ULONG   ulDosAppType, ulFlags = 0;
+                            memset(&pd, 0, sizeof(pd));
+
+                            if (!(arc = appQueryAppType(szExecutable,
+                                                        &ulDosAppType,
+                                                        &pd.progt.progc)))
+                            {
+                                pd.progt.fbVisible = SHE_VISIBLE;
+                                pd.pszExecutable = szExecutable;
+                                nlsUpper(szExecutable, 0);
+                                pd.pszParameters = (PSZ)pParams;
+                                pd.pszStartupDir = pszStartup;
+
+                                pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
+                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
+                                    pd.swpInitial.fl = SWP_MINIMIZE;
+                                else
+                                    pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
+
+                                if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
+                                    pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
+
+                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
+                                    ulFlags |= APP_RUN_FULLSCREEN;
+
+                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
+                                    ulFlags |= APP_RUN_ENHANCED;
+                                else
+                                    ulFlags |= APP_RUN_STANDARD;
+
+                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
+                                    ulFlags |= APP_RUN_SEPARATE;
+
+                                arc = appStartApp(NULLHANDLE,        // no notify
+                                                  &pd,
+                                                  ulFlags, //V0.9.14
+                                                  &happ,
+                                                  0,
+                                                  NULL);
+                            }
+                        }
+                    }
+
+                    if (pszCommand)
+                        free(pszCommand);
+                    if (pszStartup)
+                        free(pszStartup);
+                }
+                WinDestroyWindow(hwndDlg);
+                hwndDlg = NULLHANDLE; // V0.9.14
             }
-            WinDestroyWindow(hwndDlg);
-            hwndDlg = NULLHANDLE; // V0.9.14
+
+            free(paNew);
         }
     }
     CATCH(excpt1)

@@ -33,27 +33,36 @@ FIXED SINCE 0.9.18
 
 --  folders not refreshed after alt-click rename
 
+--  NLS: if NLS DLL cannot be found, revert to 001 automatically
+    instead of hanging the system
+
+--  fixed a bunch of problems when objects where auto-renamed due
+    to "title clash" dialog
+
 --  XCenter:
 
     --  Double clicking clock object doesn't bring-up the clock
         properties in eCS.
 
+    --  XCenter doesn't save its height when scaling.
+
+
 
 CURRENT PROBLEMS
 ----------------
 
+--  XCenter:
+
+    --  hatching doesn't disappear for program objects
+
+--  shutdown: waits forever on exceptions to finish
+
+--  Sound: Change of volume is not always reflected. It seems to be
+    reflected after a schema change and a reboot only.
+
 --  programs: NLS settings are not respected
 
---  NLS: if NLS DLL cannot be found, revert to 001 automatically
-    instead of hanging the system
-
 --  file(2) page: allow delete of EAs, edit EAT_ASCII
-
---  create two folders
-    rename one to have the name of the other
-    press 'ok' in the dialog (accept the new name)
-    now.. the name you see is NOT the name it actually got..
-    change 'focus' to the other folder and the title is updated
 
 --  pagemage: vx-rexx patch breaks several apps, such as
     visual slick edit and mr2ice status window
@@ -86,16 +95,11 @@ CURRENT PROBLEMS
 --  Kernel object: Errors page, Drive for POPUPLOG.OS2 shows
     incorrect drive (always the first HD on your system)
 
---  XCenter:
-
-    --  XCenter doesn't save its height when scaling.
-
 
 OLDER, MINOR PROBLEMS
 ---------------------
 
 --  XCenter:
-    --  double-click on tray empty space produces click on icon too
     --  spacing lines are missing on trays
     --  if tray is on top, icons are moved down (xwpbug.jpg)
     --  dragging XCenter widget text files can hang WPS (check file types?)

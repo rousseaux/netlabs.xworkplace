@@ -1012,9 +1012,6 @@ static VOID BuildDisksList(WPFolder *pDrivesFolder,
             if (fFolderLocked = !fdrRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT))
             {
                 WPObject *pObject;
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pDrivesFolder, NULL, "wpQueryContent");
-
                 // 1) count objects
                 // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                 for (   pObject = _wpQueryContent(pDrivesFolder, NULL, QC_FIRST);

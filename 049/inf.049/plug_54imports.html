@@ -1,37 +1,42 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        Step 4: Importing functions from XFLDR.DLL
+        Schritt 4: Import von Funktionen aus XFLDR.DLL
     </TITLE>
 </HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-As you might imagine, there is plenty of useful code in <CODE>XFLDR.DLL</CODE> --
-for graphics, strings, PM controls, and much more. Most of what you see in the
-"&xwp; helpers" sources is probably in <CODE>XFLDR.DLL</CODE> somewhere.
+Wie Sie sich vielleicht vorstellen kînnen, gibt es sehr viel nÅtzlichen Code in
+der <CODE>XFLDR.DLL</CODE> -- fÅr Graphiken, Strings, PM-Kontrollen und anderes
+mehr. Das meiste, was Sie in den Quellen der "&xwp;-Helferlein" sehen kînnen,
+befindet sich wahrscheinlich irgendwo in der <CODE>XFLDR.DLL</CODE>.
 
-<P>Now, if you want to use that code, you basically have two options.
+<P>Wenn Sie nun diesen Code benutzen wollen, haben Sie grundlegend zwei
+Mîglichkeiten.
 
-<OL><LI>Copy and paste the functions from the helpers sources (or wherever else
-from) into your widget code.
+<OL><LI>Holen Sie die Funktionen mit Kopieren und EinfÅgen aus den Quellen der
+Helferlein (oder woher auch immer) in den Code Ihres Widgets.
 
-<P><LI>The smart way to do this however would be to avoid duplicate code and
-use the code from <CODE>XFLDR.DLL</CODE>. The &xcenter; interfaces allow you to
-do exactly that:
+<P><LI>Der klÅgere Weg ist allerdings, doppelten Code zu vermeiden,
+und den Code aus der <CODE>XFLDR.DLL</CODE> zu benutzen. Die Schnittstelle des
+&xcenter;s erlaubt Ihnen, genau das zu tun:
 
-<P>When your DLL's "init" export gets called (ordinal 1), it receives the module
-handle of <CODE>XFLDR.DLL</CODE>. You can then use <CODE>DosQueryProcAddr</CODE>
-to resolve the addresses of functions which are exported from <CODE>XFLDR.DLL</CODE>,
-store those function pointers in global variables, and use them instead.
+<P>Wenn der "init"-Export Ihrer DLL aufgerufen wird (Ordinal 1), erhÑlt sie den
+Modul-Handle der <CODE>XFLDR.DLL</CODE>. Sie kînnen dann <CODE>DosQueryProcAddr</CODE>
+benutzen, um die Adressen der von <CODE>XFLDR.DLL</CODE> exportierten Funktionen
+aufzulîsen, diese Funktionszeiger in globalen Variablen zu speichern und statt
+des Codes verwenden.
 
-<P>Again, see the standard widgets in <CODE>src\widgets\</CODE> in the &xwp;
-sources, which all make use of this feature.
+<P>Schauen Sie sich am besten wiederum die Standard-Widgets unter
+<CODE>src\widgets\</CODE> in den &xwp;-Quellen an, die alle diese Mîglichkeit nutzen.
 
-<P>To make sure the prototypes are correct, many prototypes have already been
-typedef'd in the various &xwp; header files. Basically, I added a typedef
-whenever I needed an export myself. Similarly, in <CODE>src\shared\xwp.def</CODE>,
-you will find those functions exported which I needed for the standard plugins.
-If you need more functions and prototypes, just contact me, and I'll add them.
+<P>Um sicherzustellen, da· die Prototypen korrekt sind, sind viele Prototypen in den
+&xwp;-Headerdateien schon mit "typedef" versehen. Ich habe einfach immer dann ein
+"typedef" hinzugefÅgt, wenn ich selbst einen Export brauchte. Auf Ñhnliche Weise
+werden Sie in <CODE>src\shared\xwp.def</CODE> die Funktionen exportiert finden, die
+ich fÅr die Standard-Plugins brauchte. Wenn Sie mehr Funktionen und Prototypen
+benîtigen, kontaktieren Sie mich, und ich werde sie hinzufÅgen.
 
 </OL>
 </BODY>

@@ -3,22 +3,16 @@
     German version (049)
     (C) 1998-2000 Ulrich Mîller.
  */
- 
-/*
-    This file is executed both by INSTLxxx.CMD
-    and by XWorkplace directly if the config folder
-    is to be (re)created.
-*/
- 
+
 /* Here come the titles of the objects to be created.
    Translate these to your language. The "~" character
    determines the character for objects in the XWorkplace
    Configuration Folder which will then be underlined
    in the respective menu items. */
- 
-XWorkplace          = "eWorkplace";
+
+XWorkplace          = "eCS";
 OS2                 = "eCS"
- 
+
 /* Config Folder title */
 ConfigFolder        = XWorkplace||"-Konfigurationsordner";
 /* here come the objects in the config folder */
@@ -33,97 +27,189 @@ Folder              = "Ordner";
 URLFolder           = "URL-Ordner";
 DataFile            = "Datendatei";
 ProgramObject       = "Programm";
-QuickSettings       = "~Schnelleinstellungen";
-DefaultView         = "Standard~anzeige fÅr diesen Ordner";
-IconView            = "Symbolanzeige";
-TreeView            = "Strukturanzeige";
-DetailsView         = "Detailanzeige";
-SmallIcons          = "Kleine Symbole in Symbol- und Strukturanzeige";
-NormalIcons         = "Normale Symbole in Symbol- und Strukturanzeige";
-ShowAllInTreeView   = "Zeige alle Objekte in Strukturanzeige";
-WorkplaceShell      = "Workplace Shell";
-XWPSetup            = XWorkplace||"-Konfiguration";
-OS2Kernel           = OS2||"-Kernel";
-Screen              = "Bildschirm";
-Mouse               = "Maus";
-Keyboard            = "Tastatur";
+
 Treesize            = "Baumgrî·e";
-PackTree            = "Diesen Baum packen";
- 
+
 /* where to create the config folder: */
 TargetLocation      = "<WP_CONFIG>"
- 
-/* DO NOT CHANGE the following */
+
+/*********************************************
+ *
+ *  NLS-independent portion
+ *
+ *  Note: All of this was rewritten with V0.9.19,
+ *  but the NLS part above is unchanged. Just copy
+ *  the entire chunk below from crobj001.cmd to your
+ *  translated file, and it should still work.
+ *
+ ********************************************/
+
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
 call SysLoadFuncs
- 
+
 parse source dir;
 parse var dir x1 x2 dir;
 dir = filespec("D", dir)||filespec("P", dir);
 pdir = left(dir, length(dir)-8);
 idir = dir;
 dir = pdir||"bin\";
- 
-rc = SysCreateObject("WPFolder", ConfigFolder, TargetLocation, "ICONVIEW=NONFLOWED,MINI;DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CONFIG>", "U");
-if (\rc) then
-    rc = SysCreateObject("WPFolder", ConfigFolder, "<WP_DESKTOP>", "ICONVIEW=NONFLOWED,MINI;DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CONFIG>", "U");
- 
-/* create config folders */
-rc = SysCreateObject("WPFolder", CommandLines, "<XWP_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG1>", "U");
-    if (SysSearchPath("PATH", "CMDSHL.CMD") \= "") then
-        rc = SysCreateObject("WPProgram", OS2Win||" (CmdShl)", "<XWP_CFG1>", "EXENAME=cmdshl.cmd;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;OBJECTID=<XWP_CMDSHL>;", "U");
-    if (SysSearchPath("PATH", "BASH.EXE") \= "") then
-        rc = SysCreateObject("WPProgram", OS2Win||" (bash)", "<XWP_CFG1>", "EXENAME=bash.exe;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;OBJECTID=<XWP_BASH>;", "U");
-    if (SysSearchPath("PATH", "KSH.EXE") \= "") then
-        rc = SysCreateObject("WPProgram", OS2Win||" (ksh)", "<XWP_CFG1>", "EXENAME=ksh.exe;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;OBJECTID=<XWP_KSH>;", "U");
-    rc = SysCreateObject("WPProgram", OS2Win, "<XWP_CFG1>", "EXENAME=*;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;OBJECTID=<XWP_OS2WIN>;", "U");
-    rc = SysCreateObject("WPProgram", OS2Fullscreen, "<XWP_CFG1>", "EXENAME=*;PARAMETERS=%;PROGTYPE=FULLSCREEN;CCVIEW=YES;OBJECTID=<XWP_OS2FULL>;", "U");
-    rc = SysCreateObject("WPProgram", DosWin, "<XWP_CFG1>", "EXENAME=*;PARAMETERS=%;PROGTYPE=WINDOWEDVDM;CCVIEW=YES;OBJECTID=<XWP_DOSWIN>;", "U");
-    rc = SysCreateObject("WPProgram", DosFullscreen, "<XWP_CFG1>", "EXENAME=*;PARAMETERS=%;PROGTYPE=VDM;CCVIEW=YES;OBJECTID=<XWP_DOSFULL>;", "U");
- 
-rc = SysCreateObject("WPFolder", CreateAnother, "<XWP_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG2>", "U");
-    rc = SysCreateObject("WPFolder", Folder, "<XWP_CFG2>", "TEMPLATE=YES;OBJECTID=<XWP_FOLDERTEMPLATE>;", "U");
-    /* the following two were added with V0.9.16 */
-    rc = SysCreateObject("WPUrlFolder", URLFolder, "<XWP_CFG2>", "TEMPLATE=YES;OBJECTID=<XWP_URLFOLDERTEMPLATE>;", "U");
-    rc = SysCreateObject("WPDataFile", DataFile, "<XWP_CFG2>", "TEMPLATE=YES;OBJECTID=<XWP_DATAFILETEMPLATE>;", "U");
-    rc = SysCreateObject("WPProgram", ProgramObject, "<XWP_CFG2>", "TEMPLATE=YES;OBJECTID=<XWP_PROGRAMTEMPLATE>;", "U");
- 
-/* QuickSettings removed with V0.9.16
-rc = SysCreateObject("WPFolder", QuickSettings, "<XWP_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG3>", "U");
-    rc = SysCreateObject("WPFolder", DefaultView, "<XWP_CFG3>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG3_1>", "U");
-        rc = SysCreateObject("WPProgram", IconView, "<XWP_CFG3_1>", "EXENAME="dir'deficon.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_DEFICON>;', "U");
-        rc = SysCreateObject("WPProgram", TreeView, "<XWP_CFG3_1>", "EXENAME="dir'deftree.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_DEFTREE>;', "U");
-        rc = SysCreateObject("WPProgram", DetailsView, "<XWP_CFG3_1>", "EXENAME="dir'defdetls.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_DEFDETLS>;', "U");
-    rc = SysCreateObject("WPProgram", SmallIcons, "<XWP_CFG3>", "EXENAME="dir'icosmall.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_ICOSMALL>;', "U");
-    rc = SysCreateObject("WPProgram", NormalIcons, "<XWP_CFG3>", "EXENAME="dir'iconorm.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_ICONORM>;', "U");
-    rc = SysCreateObject("WPProgram", ShowAllInTreeView, "<XWP_CFG3>", "EXENAME="dir'showall.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_SHOWALL>;', "U");
-*/
- 
-/* rc = SysCreateObject("WPFolder", "~"||XWorkplace, "<XWP_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG4>", "U");
-    rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_CFG4>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWORKPLACE_SETUPCFGSHADOW>;", "U");
-    rc = SysCreateObject("WPShadow", WorkplaceShell, "<XWP_CFG4>", "SHADOWID=<XWP_WPS>;OBJECTID=<XWP_WPSCFGSHADOW>;", "U");
-    rc = SysCreateObject("WPShadow", Mouse, "<XWP_CFG4>", "SHADOWID=<WP_MOUSE>;OBJECTID=<XWP_WPMOUSECFGSHADOW>;", "U");
-    if (\rc) then
-        IBM changed the object ID of the "Mouse" object with MCP/ACP, so try this then
-        V0.9.16 (2001-10-23) [umoeller]
-        rc = SysCreateObject("WPShadow", Mouse, "<XWP_CFG4>", "SHADOWID=<WPSTK_MOUSE>;OBJECTID=<XWP_WPMOUSECFGSHADOW>;", "U");
-    rc = SysCreateObject("WPShadow", Keyboard, "<XWP_CFG4>", "SHADOWID=<WP_KEYB>;OBJECTID=<XWP_WPKEYBCFGSHADOW>;", "U");
-    rc = SysCreateObject("WPShadow", Screen, "<XWP_CFG4>", "SHADOWID=<XWP_SCREEN>;OBJECTID=<XWP_SCREENCFGSHADOW>;", "U");
-    rc = SysCreateObject("WPShadow", OS2Kernel, "<XWP_CFG4>", "SHADOWID=<XWP_KERNEL>;OBJECTID=<XWP_KERNELCFGSHADOW>;", "U");
-    rc = SysCreateObject("WPProgram", "---", "<XWP_CFG4>", "OBJECTID=<XWP_SEP41>;", "U");
-    rc = SysCreateObject("WPShadow", "User Guide", "<XWP_CFG4>", "SHADOWID=<XWP_REF>;OBJECTID=<XWP_REFCFGSHADOW>;", "U");
-    rc = SysCreateObject("WPProgram", "--- ", "<XWP_CFG4>", "OBJECTID=<XWP_SEP42>;", "U");
-    rc = SysCreateObject("WPShadow", ConfigFolder, "<XWP_CFG4>", "SHADOWID=<XWP_CONFIG>;OBJECTID=<XWP_CONFIGCFGSHADOW>;", "U");
-*/
-rc = SysCreateObject("WPProgram", "---", "<XWP_CONFIG>", "OBJECTID=<XWP_SEP1>;", "U");
- 
-if (SysSearchPath("PATH", "NETSCAPE.EXE") \= "") then
-    rc = SysCreateObject("WPProgram", "Netscape (DDE)", "<XWP_CONFIG>", "EXENAME="dir"netscdde.exe;OBJECTID=<XWP_NETSCAPE>;", "U");
- 
-rc = SysCreateObject("WPProgram", Treesize, "<XWP_CONFIG>", "EXENAME="dir"treesize.exe;CCVIEW=YES;OBJECTID=<XWP_TREESIZE>;", "U");
- 
-if (SysSearchPath("PATH", "ZIP.EXE") \= "") then
-    rc = SysCreateObject("WPProgram", PackTree, "<XWP_CONFIG>", "EXENAME="dir"packtree.cmd;CCVIEW=YES;OBJECTID=<XWP_PACKTREE>;", "U");
- 
- 
- 
+
+/* main config folder */
+class = "WPFolder";
+title = ConfigFolder;
+setup = "ICONVIEW=NONFLOWED,MINI;DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;";
+id = "<XWP_CONFIG>"
+target = TargetLocation;
+call CreateObject;
+
+/* command prompts subfolder */
+class = "WPFolder";
+title = CommandLines;
+setup = "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;";
+id = "<XWP_CFG1>"
+target = "<XWP_CONFIG>";
+call CreateObject;
+
+class = "WPProgram";
+
+if (SysSearchPath("PATH", "CMDSHL.CMD") \= "") then do
+    title = OS2Win||" (CmdShl)";
+    target = "<XWP_CFG1>";
+    setup = "EXENAME=cmdshl.cmd;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;";
+    id = "<XWP_CMDSHL>";
+    call CreateObject;
+end
+if (SysSearchPath("PATH", "BASH.EXE") \= "") then do
+    title = OS2Win||" (bash)";
+    target = "<XWP_CFG1>";
+    setup = "EXENAME=bash.exe;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;";
+    id = "<XWP_BASH>";
+    call CreateObject;
+end
+if (SysSearchPath("PATH", "KSH.EXE") \= "") then do
+    title = OS2Win||" (ksh)";
+    target = "<XWP_CFG1>";
+    setup = "EXENAME=ksh.exe;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;";
+    id = "<XWP_KSH>";
+    call CreateObject;
+end
+
+title = OS2Win;
+target = "<XWP_CFG1>";
+setup = "EXENAME=*;PARAMETERS=%;PROGTYPE=WINDOWABLEVIO;CCVIEW=YES;";
+id = "<XWP_OS2WIN>";
+call CreateObject;
+
+title = OS2Fullscreen;
+setup = "EXENAME=*;PARAMETERS=%;PROGTYPE=FULLSCREEN;CCVIEW=YES;";
+id = "<XWP_OS2FULL>";
+call CreateObject;
+
+title = DosWin;
+setup = "EXENAME=*;PARAMETERS=%;PROGTYPE=WINDOWEDVDM;CCVIEW=YES;";
+id = "<XWP_DOSWIN>";
+call CreateObject;
+
+title = DosFullscreen;
+setup = "EXENAME=*;PARAMETERS=%;PROGTYPE=VDM;CCVIEW=YES;";
+id = "<XWP_DOSFULL>";
+call CreateObject;
+
+/* "create new" folder */
+class = "WPFolder";
+title = CreateAnother;
+target = "<XWP_CONFIG>";
+setup = "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;";
+id = "<XWP_CFG2>";
+call CreateObject;
+
+class = "WPFolder";
+title = Folder;
+target = "<XWP_CFG2>";
+setup = "TEMPLATE=YES;";
+id = "<XWP_FOLDERTEMPLATE>";
+call CreateObject;
+
+class = "WPUrlFolder";
+title = URLFolder;
+id = "<XWP_URLFOLDERTEMPLATE>";
+call CreateObject;
+
+class = "WPDataFile";
+title =  DataFile;
+id = "<XWP_DATAFILETEMPLATE>";
+call CreateObject;
+
+class = "WPProgram";
+title = ProgramObject;
+id = "<XWP_PROGRAMTEMPLATE>";
+call CreateObject;
+
+/* more items in main cfg folder */
+
+class = "WPProgram";
+title = "---";
+target = "<XWP_CONFIG>";
+setup = "";
+id = "<XWP_SEP1>";
+call CreateObject;
+
+title = Treesize;
+setup = "EXENAME="dir"treesize.exe;CCVIEW=YES;";
+id = "<XWP_TREESIZE>";
+call CreateObject;
+
+
+exit;
+
+
+CreateObject:
+    len = length(id);
+    if (len == 0) then do
+        Say 'Error with object "'title'": object ID not given.';
+        exit;
+    end
+
+    if (left(id, 1) \= '<') then do
+        Say 'Error with object "'title'": object ID does not start with "<".';
+        exit;
+    end
+
+    if (right(id, 1) \= '>') then do
+        Say 'Error with object "'title'": object ID does not end with ">".';
+        exit;
+    end
+
+    len = length(setup);
+    if ((len > 0) & (right(setup, 1) \= ';')) then do
+        Say 'Error with object "'title'": Setup string "'setup'" does not end in semicolon.';
+        exit;
+    end
+    call charout , 'Creating "'title'" of class "'class'", setup "'setup'"... '
+    rc = SysCreateObject(class, title, target, setup"TITLE="title";OBJECTID="id";", "U");
+    if (\rc) then do
+        rc = SysCreateObject(class, title, "<WP_DESKTOP>", setup"TITLE="title";OBJECTID="id";", "U");
+    end;
+    if (\rc) then do
+        Say 'Warning: object "'title'" of class "'class'" could not be created.'
+    end
+    else do
+        Say "OK"
+    end
+
+    id = "";
+
+    return;
+
+CreateObjectWithShadow:
+    idOld = id;
+    call CreateObject;
+
+    class = "WPShadow";
+    setup = "SHADOWID="idOld";"
+    id = idOfShadow;
+    target = "<XWP_MAINFLDR>";
+
+    call CreateObject;
+
+    return;

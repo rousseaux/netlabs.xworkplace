@@ -1137,6 +1137,7 @@ static VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
  *      is enabled.
  *
  *@@added V0.9.14 (2001-08-21) [umoeller]
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: disabling auto-hide while mb2 is down
  */
 
 static BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
@@ -1178,6 +1179,30 @@ static BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
                                &ptlMouseDtp,
                                FALSE)           // no check children
                 == pGlobals->hwndFrame)
+            fStart = FALSE;
+    }
+
+    if (fStart)
+    {
+        // if the drag mouse button is currently down,
+        // don't start auto-hide either
+        // V0.9.19 (2002-04-25) [umoeller]
+        ULONG ul = WinQuerySysValue(HWND_DESKTOP, SV_BEGINDRAG);
+        LONG    lTest = 0;
+        switch (LOUSHORT(ul))
+        {
+            case WM_BUTTON2MOTIONSTART:
+                lTest = VK_BUTTON2;
+            break;
+
+            case WM_BUTTON1MOTIONSTART:
+                lTest = VK_BUTTON1;
+            break;
+        }
+
+        if (    (lTest)
+             && (WinGetKeyState(HWND_DESKTOP, lTest) & 0x8000)
+           )
             fStart = FALSE;
     }
 
@@ -1507,7 +1532,9 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
             {
                 PCXCENTERWIDGETCLASS pClass;
 
-                if (    (pClass = ctrpFindClass(pSetting->Public.pszWidgetClass))
+                if (    (!ctrpFindClass(pSetting->Public.pszWidgetClass,
+                                        FALSE,       // fMustBeTrayable
+                                        &pClass))
                      && (pClass->pShowSettingsDlg)
                    )
                 {
@@ -2566,10 +2593,12 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                             }
                         }
                         else
-                            _xwpInsertWidget(pXCenterData->somSelf,
-                                             ulIndex,
+                            _xwpCreateWidget(pXCenterData->somSelf,
                                              pszClass,
-                                             pszSetup);
+                                             pszSetup,
+                                             -1,
+                                             -1,
+                                             ulIndex);
                     }
 
                     // if the operation was a move, remove the
@@ -2648,10 +2677,12 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                                 {
                                     *pszSetupString = 0;
                                     pszSetupString += 2;
-                                    _xwpInsertWidget(pXCenterData->somSelf,
-                                                     ulIndex,
+                                    _xwpCreateWidget(pXCenterData->somSelf,
                                                      pszBuff,
-                                                     pszSetupString);
+                                                     pszSetupString,
+                                                     -1,
+                                                     -1,
+                                                     ulIndex);
                                 }
                             }
 
@@ -2682,10 +2713,12 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                         }
                         else
                             // client mode: insert as main widget
-                            _xwpInsertWidget(pXCenterData->somSelf,
-                                             ulIndex,
+                            _xwpCreateWidget(pXCenterData->somSelf,
                                              "ObjButton",    // widget class
-                                             szSetup);
+                                             szSetup,
+                                             -1,
+                                             -1,
+                                             ulIndex);
                     }
 
                     // next object
@@ -2751,12 +2784,11 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
  *@@changed V0.9.13 (2001-06-19) [umoeller]: prototype changed for tray support
  *@@changed V0.9.13 (2001-06-21) [umoeller]: fixed tooltips
  *@@changed V0.9.16 (2001-10-30) [umoeller]: fixed bad ctxt menu font on eCS default install
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: removed redundant pllWidgetViews parameter
  */
 
 PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // in: instance data
-                                          PPRIVATEWIDGETVIEW pOwningTray,      // in: owning tray or NULL if root
-                                          PLINKLIST pllWidgetViews,          // in: linked list to append to
-                                                                             // (either in XCenter or tray data)
+                                          PXCENTERWIDGET pOwningTrayWidget, // in: owning tray or NULL if root
                                           PPRIVATEWIDGETSETTING pSetting,    // in: widget setting to create from
                                           ULONG ulIndex)                     // in: index of this widget (or -1)
 {
@@ -2768,6 +2800,8 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
         if (fLocked = ctrpLockClasses())
         {
             PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+            // find the widget class for this
+            PCXCENTERWIDGETCLASS pWidgetClass;
 
             // NOTE: We must not request the XCenter mutex here because
             // this function can get called during message sends from
@@ -2777,182 +2811,187 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
             if (!pSetting)
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "PPRIVATEWIDGETSETTING is NULL.");
-            else if (pNewView = NEW(PRIVATEWIDGETVIEW))
+            else if (    (!ctrpFindClass(pSetting->Public.pszWidgetClass,
+                                         FALSE,       // fMustBeTrayable
+                                         &pWidgetClass))
+                      && (pNewView = NEW(PRIVATEWIDGETVIEW))
                         // this includes the public XCENTERWIDGET struct
+                    )
             {
                 // get ptr to XCENTERWIDGET struct
                 PXCENTERWIDGET pWidget = &pNewView->Widget;
-                // find the widget class for this
-                PCXCENTERWIDGETCLASS pWidgetClass
-                    = ctrpFindClass(pSetting->Public.pszWidgetClass);
+
+                // get the parent window and the list to append to,
+                // depending on whether this is in a tray or not
+                HWND        hwndParent;
+                PLINKLIST   pllWidgetViews;
+                        // V0.9.19 (2002-04-25) [umoeller]
 
                 ZERO(pNewView);
 
-                if (pWidgetClass)
+                if (pOwningTrayWidget)
                 {
-                    // get the parent window and the list to append to,
-                    // depending on whether this is in a tray or not
-                    HWND      hwndParent;
+                    // this is part of a tray:
+                    // parent is tray widget
+                    hwndParent = pOwningTrayWidget->hwndWidget;
+                    pllWidgetViews = ((PPRIVATEWIDGETVIEW)pOwningTrayWidget)->pllSubwidgetViews;
+                }
+                else
+                {
+                    // "root" widget: parent is XCenter client
+                    hwndParent = pGlobals->hwndClient;
+                    pllWidgetViews = &pXCenterData->llWidgets;
+                }
 
-                    if (pOwningTray)
-                        // this is part of a tray:
-                        // parent is tray widget
-                        hwndParent = pOwningTray->Widget.hwndWidget;
-                    else
-                        // "root" widget: parent is XCenter client
-                        hwndParent = pGlobals->hwndClient;
+                // set private data
+                pNewView->xCurrent = 0;         // changed later
+                pNewView->szlWanted.cx = 20;
+                pNewView->szlWanted.cy = 20;
 
-                    // set private data
-                    pNewView->xCurrent = 0;         // changed later
-                    pNewView->szlWanted.cx = 20;
-                    pNewView->szlWanted.cy = 20;
+                pNewView->pOwningTrayWidget = (PPRIVATEWIDGETVIEW)pOwningTrayWidget;
 
-                    pNewView->pOwningTrayWidget = pOwningTray;
+                // set public XCENTERWIDGET data
+                pWidget->habWidget = WinQueryAnchorBlock(pGlobals->hwndClient);
 
-                    // set public XCENTERWIDGET data
-                    pWidget->habWidget = WinQueryAnchorBlock(pGlobals->hwndClient);
+                pWidget->pfnwpDefWidgetProc = ctrDefWidgetProc;
 
-                    pWidget->pfnwpDefWidgetProc = ctrDefWidgetProc;
+                pWidget->pGlobals = pGlobals;
 
-                    pWidget->pGlobals = pGlobals;
+                pWidget->pWidgetClass = pWidgetClass;
+                pWidget->pcszWidgetClass = strdup(pWidgetClass->pcszWidgetClass);
+                            // cleaned up in WM_DESTROY of ctrDefWidgetProc
+                pWidget->ulClassFlags = pWidgetClass->ulClassFlags;
 
-                    pWidget->pWidgetClass = pWidgetClass;
-                    pWidget->pcszWidgetClass = strdup(pWidgetClass->pcszWidgetClass);
-                                // cleaned up in WM_DESTROY of ctrDefWidgetProc
-                    pWidget->ulClassFlags = pWidgetClass->ulClassFlags;
+                pWidget->fSizeable = ((pWidgetClass->ulClassFlags & WGTF_SIZEABLE) != 0);
 
-                    pWidget->fSizeable = ((pWidgetClass->ulClassFlags & WGTF_SIZEABLE) != 0);
+                pWidget->pcszSetupString = pSetting->Public.pszSetupString;
+                            // can be NULL
 
-                    pWidget->pcszSetupString = pSetting->Public.pszSetupString;
-                                // can be NULL
+                // set the hack for the tray widget so it can
+                // access the subwidgets
+                pWidget->pvWidgetSetting = pSetting;
+                        // V0.9.13 (2001-06-21) [umoeller]
 
-                    // set the hack for the tray widget so it can
-                    // access the subwidgets
-                    pWidget->pvWidgetSetting = pSetting;
-                            // V0.9.13 (2001-06-21) [umoeller]
+                pWidget->hwndWidget = WinCreateWindow(hwndParent, // V0.9.13 (2001-06-19) [umoeller]
+                                                      (PSZ)pWidgetClass->pcszPMClass,
+                                                      "",        // title
+                                                      0, // WS_VISIBLE,
+                                                      // x, y:
+                                                      0,
+                                                      0,
+                                                      // cx, cy:
+                                                      20,
+                                                      20,
+                                                      // owner:
+                                                      hwndParent, // pGlobals->hwndClient,
+                                                      HWND_TOP,
+                                                      ulIndex,                // ID
+                                                      pWidget, // pNewView,
+                                                      0);              // presparams
+                        // this sends WM_CREATE to the new widget window
 
-                    pWidget->hwndWidget = WinCreateWindow(hwndParent, // V0.9.13 (2001-06-19) [umoeller]
-                                                          (PSZ)pWidgetClass->pcszPMClass,
-                                                          "",        // title
-                                                          0, // WS_VISIBLE,
-                                                          // x, y:
-                                                          0,
-                                                          0,
-                                                          // cx, cy:
-                                                          20,
-                                                          20,
-                                                          // owner:
-                                                          hwndParent, // pGlobals->hwndClient,
-                                                          HWND_TOP,
-                                                          ulIndex,                // ID
-                                                          pWidget, // pNewView,
-                                                          0);              // presparams
-                            // this sends WM_CREATE to the new widget window
+                // clean up setup string
+                pWidget->pcszSetupString = NULL;
 
-                    // clean up setup string
-                    pWidget->pcszSetupString = NULL;
+                // unset widget class ptr; this is valid only during WM_CREATE
+                pWidget->pWidgetClass = NULL;
 
-                    // unset widget class ptr; this is valid only during WM_CREATE
-                    pWidget->pWidgetClass = NULL;
+                if (pWidget->hwndWidget)
+                {
+                    // V0.9.13 (2001-06-09) [pr]
+                    PSZ pszStdMenuFont;
+                    if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                                PMINIKEY_MENUSFONT, // "Menus",
+                                                                NULL)))
+                        pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                              PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
+                                                              PMINIKEY_DEFAULTFONT, // "DefaultFont",
+                                                              NULL);
 
-                    if (pWidget->hwndWidget)
+                    // store view data in widget's QWL_USER,
+                    // in case the widget forgot; but this won't help
+                    // much since the widget gets messages before WinCreateWindow
+                    // returns....
+                    WinSetWindowPtr(pWidget->hwndWidget, QWL_USER, pNewView);
+
+                    // ask the widget for its size
+                    GetWidgetSize(pNewView);
+                    if (pNewView->szlWanted.cy > pGlobals->cyWidgetMax)
+                        pGlobals->cyWidgetMax = pNewView->szlWanted.cy;
+                    // now we know the tallest widget... check if the client
+                    // height is smaller than that V0.9.9 (2001-03-09) [umoeller]
+                    if (pGlobals->cyWidgetMax > pGlobals->cyInnerClient)
+                        // yes: adjust client height
+                        pGlobals->cyInnerClient = pGlobals->cyWidgetMax;
+
+                    // load standard context menu
+                    pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
+                                                           cmnQueryNLSModuleHandle(FALSE),
+                                                           ID_CRM_WIDGET);
+                    // _Pmpf((__FUNCTION__ ": pszStdMenuFont is %s", (pszStdMenuFont) ? pszStdMenuFont : "NULL"));
+
+                    if (pszStdMenuFont)
                     {
-                        // V0.9.13 (2001-06-09) [pr]
-                        PSZ pszStdMenuFont;
-                        if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                    PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
-                                                                    PMINIKEY_MENUSFONT, // "Menus",
-                                                                    NULL)))
-                            pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                  PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
-                                                                  PMINIKEY_DEFAULTFONT, // "DefaultFont",
-                                                                  NULL);
+                        // set a font presparam for this menu because
+                        // otherwise it will inherit the widget's font
+                        // presparam (duh)
+                        winhSetWindowFont(pWidget->hwndContextMenu,
+                                          pszStdMenuFont);
+                        free(pszStdMenuFont);
+                    }
+                    else
+                        // system font wasn't found: use a default
+                        // V0.9.16 (2001-10-30) [umoeller]
+                        winhSetWindowFont(pWidget->hwndContextMenu,
+                                          cmnQueryDefaultFont());
 
-                        // store view data in widget's QWL_USER,
-                        // in case the widget forgot; but this won't help
-                        // much since the widget gets messages before WinCreateWindow
-                        // returns....
-                        WinSetWindowPtr(pWidget->hwndWidget, QWL_USER, pNewView);
+                    // store view
+                    if (    (ulIndex == -1)
+                         || (ulIndex >= lstCountItems(pllWidgetViews))
+                       )
+                        // append at the end:
+                        lstAppendItem(pllWidgetViews,
+                                      pNewView);
+                    else
+                        lstInsertItemBefore(pllWidgetViews,
+                                            pNewView,
+                                            ulIndex);
 
-                        // ask the widget for its size
-                        GetWidgetSize(pNewView);
-                        if (pNewView->szlWanted.cy > pGlobals->cyWidgetMax)
-                            pGlobals->cyWidgetMax = pNewView->szlWanted.cy;
-                        // now we know the tallest widget... check if the client
-                        // height is smaller than that V0.9.9 (2001-03-09) [umoeller]
-                        if (pGlobals->cyWidgetMax > pGlobals->cyInnerClient)
-                            // yes: adjust client height
-                            pGlobals->cyInnerClient = pGlobals->cyWidgetMax;
+                    // does this widget want a tooltip?
+                    // (moved this here from ctrp_fntXCenter
+                    // V0.9.13 (2001-06-21) [umoeller])
+                    if (pWidgetClass->ulClassFlags & WGTF_TOOLTIP)
+                    {
+                        // yes: add the widget as a tool to
+                        // XCenter's tooltip control
+                        TOOLINFO ti = {0};
 
-                        // load standard context menu
-                        pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
-                                                               cmnQueryNLSModuleHandle(FALSE),
-                                                               ID_CRM_WIDGET);
-                        // _Pmpf((__FUNCTION__ ": pszStdMenuFont is %s", (pszStdMenuFont) ? pszStdMenuFont : "NULL"));
+                        ti.hwndToolOwner = pGlobals->hwndClient;
+                        ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
 
-                        if (pszStdMenuFont)
-                        {
-                            // set a font presparam for this menu because
-                            // otherwise it will inherit the widget's font
-                            // presparam (duh)
-                            winhSetWindowFont(pWidget->hwndContextMenu,
-                                              pszStdMenuFont);
-                            free(pszStdMenuFont);
-                        }
+                        ti.hwndTool = pNewView->Widget.hwndWidget;
+
+                        if (pGlobals->ulPosition == XCENTER_BOTTOM)
+                            ti.ulFlags =   TTF_POS_Y_ABOVE_TOOL
+                                         | TTF_SUBCLASS;
                         else
-                            // system font wasn't found: use a default
-                            // V0.9.16 (2001-10-30) [umoeller]
-                            winhSetWindowFont(pWidget->hwndContextMenu,
-                                              cmnQueryDefaultFont());
+                            ti.ulFlags =   TTF_POS_Y_BELOW_TOOL
+                                         | TTF_SUBCLASS;
+                        if (  (0 == (  pNewView->Widget.ulClassFlags
+                                     & WGTF_TOOLTIP_AT_MOUSE)
+                           ))
+                            ti.ulFlags |= TTF_CENTER_X_ON_TOOL;
 
-                        // store view
-                        if (    (ulIndex == -1)
-                             || (ulIndex >= lstCountItems(pllWidgetViews))
-                           )
-                            // append at the end:
-                            lstAppendItem(pllWidgetViews,
-                                          pNewView);
-                        else
-                            lstInsertItemBefore(pllWidgetViews,
-                                                pNewView,
-                                                ulIndex);
+                        // add tool to tooltip control
+                        WinSendMsg(pGlobals->hwndTooltip,
+                                   TTM_ADDTOOL,
+                                   (MPARAM)0,
+                                   &ti);
+                    } // end V0.9.13 (2001-06-21) [umoeller]
 
-                        // does this widget want a tooltip?
-                        // (moved this here from ctrp_fntXCenter
-                        // V0.9.13 (2001-06-21) [umoeller])
-                        if (pWidgetClass->ulClassFlags & WGTF_TOOLTIP)
-                        {
-                            // yes: add the widget as a tool to
-                            // XCenter's tooltip control
-                            TOOLINFO ti = {0};
-
-                            ti.hwndToolOwner = pGlobals->hwndClient;
-                            ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
-
-                            ti.hwndTool = pNewView->Widget.hwndWidget;
-
-                            if (pGlobals->ulPosition == XCENTER_BOTTOM)
-                                ti.ulFlags =   TTF_POS_Y_ABOVE_TOOL
-                                             | TTF_SUBCLASS;
-                            else
-                                ti.ulFlags =   TTF_POS_Y_BELOW_TOOL
-                                             | TTF_SUBCLASS;
-                            if (  (0 == (  pNewView->Widget.ulClassFlags
-                                         & WGTF_TOOLTIP_AT_MOUSE)
-                               ))
-                                ti.ulFlags |= TTF_CENTER_X_ON_TOOL;
-
-                            // add tool to tooltip control
-                            WinSendMsg(pGlobals->hwndTooltip,
-                                       TTM_ADDTOOL,
-                                       (MPARAM)0,
-                                       &ti);
-                        } // end V0.9.13 (2001-06-21) [umoeller]
-
-                    } // end if (pWidget->hwndWidget)
-                } // end if pWidgetClass
-
-                if (!pWidget->hwndWidget)
+                } // end if (pWidget->hwndWidget)
+                else
                 {
                     free(pNewView);
                     pNewView = NULL;
@@ -3017,7 +3056,6 @@ static ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
 
         if (ctrpCreateWidgetWindow(pXCenterData,
                                    NULL,        // no owning tray
-                                   &pXCenterData->llWidgets,
                                    pSetting,
                                    -1))        // at the end
             ulrc++;
@@ -3149,10 +3187,13 @@ static VOID FrameCommand(HWND hwnd, USHORT usCmd)
             PPRIVATEWIDGETCLASS pClass;
             if (pClass = ctrpFindClassFromMenuCommand(usCmd))
             {
-                _xwpInsertWidget(pXCenterData->somSelf,
-                                 -1,        // at the end
+                _xwpCreateWidget(pXCenterData->somSelf,
                                  (PSZ)pClass->Public.pcszWidgetClass,
-                                 NULL);     // no setup string yet
+                                 NULL,     // no setup string yet
+                                 -1,
+                                 -1,
+                                 -1);       // at the end
+
             }
             else
                 // some other command (probably WPS menu items):
@@ -4745,7 +4786,6 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
                 // GUI thread because method calls may run on any thread...
                 ctrpCreateWidgetWindow(pXCenterData,
                                        NULL,        // no owning tray
-                                       &pXCenterData->llWidgets,
                                        (PPRIVATEWIDGETSETTING)mp1,
                                        (ULONG)mp2);        // ulWidgetIndex
             }
@@ -4934,115 +4974,6 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
 }
 
 /*
- *@@ ctrpInsertWidget:
- *      implementation for XCenter::xwpInsertWidget.
- *
- *      May run on any thread.
- *
- *@@added V0.9.7 (2000-12-02) [umoeller]
- *@@changed V0.9.9 (2001-03-09) [umoeller]: fixed mutex deadlock
- */
-
-BOOL ctrpInsertWidget(XCenter *somSelf,
-                      ULONG ulBeforeIndex,
-                      PCSZ pcszWidgetClass,
-                      PCSZ pcszSetupString)
-{
-    BOOL brc = FALSE;
-
-    PPRIVATEWIDGETSETTING pSetting = NULL;
-    ULONG   ulNewItemCount = 0,
-            ulWidgetIndex = 0;
-
-    XCenterData *somThis = XCenterGetData(somSelf);
-
-    WPSHLOCKSTRUCT Lock = {0};
-    TRY_LOUD(excpt1)
-    {
-        if (LOCK_OBJECT(Lock, somSelf))
-        {
-            // _Pmpf((__FUNCTION__ ": entering with %s, %s",
-            //         (pcszWidgetClass) ? pcszWidgetClass : "NULL",
-               //      (pcszSetupString) ? pcszSetupString : "NULL"));
-
-            brc = !(ctrpCreateWidgetSetting(somSelf,
-                                            NULL,       // tray for now
-                                            pcszWidgetClass,
-                                            pcszSetupString,
-                                            ulBeforeIndex,
-                                            &pSetting,
-                                            &ulNewItemCount,
-                                            &ulWidgetIndex));
-
-            /* if (pcszWidgetClass)
-            {
-                pSetting = NEW(PRIVATEWIDGETSETTING);
-
-                if (pSetting)
-                {
-                    ZERO(pSetting);
-
-                    pSetting->Public.pszWidgetClass = strhdup(pcszWidgetClass, NULL);
-                    pSetting->Public.pszSetupString = strhdup(pcszSetupString, NULL);
-                                            // can be NULL
-
-                    // add new widget setting to internal linked list
-                    AddWidgetSetting(somSelf,
-                                     pSetting,
-                                     ulBeforeIndex,
-                                     &ulNewItemCount,
-                                     &ulWidgetIndex);
-
-                    brc = TRUE;
-                }
-            } */
-        }
-    }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
-
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
-
-    if (brc && pSetting)
-    {
-        // added successfully:
-        // we must update the view outside the mutex block
-        // V0.9.9 (2001-03-09) [umoeller]
-        if (_pvOpenView)
-        {
-            // XCenter view currently open:
-            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-            PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
-            // we must send msg instead of calling ctrpCreateWidgetWindow
-            // directly, because that func may only run on the
-            // XCenter GUI thread
-            WinSendMsg(pGlobals->hwndClient,
-                       XCM_CREATEWIDGET,
-                       (MPARAM)pSetting,
-                       (MPARAM)ulWidgetIndex);
-                    // new widget is invisible, and at a random position
-            WinPostMsg(pGlobals->hwndClient,
-                       XCM_REFORMAT,
-                       (MPARAM)(XFMF_RECALCHEIGHT
-                                | XFMF_REPOSITIONWIDGETS
-                                | XFMF_SHOWWIDGETS),
-                       0);
-        }
-
-        // save instance data (with that linked list)
-        _wpSaveDeferred(somSelf);
-
-        // update the "widgets" notebook page, if open
-        ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
-    }
-
-    return (brc);
-}
-
-/*
  *@@ ctrpRemoveWidget:
  *      implementation for XCenter::xwpRemoveWidget.
  *
@@ -5086,9 +5017,8 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                     // at the bottom
                     hwndXCenterClient = pGlobals->hwndClient;
 
-                    pView = lstItemFromIndex(&pXCenterData->llWidgets,
-                                             ulIndex);
-                    if (pView)
+                    if (pView = lstItemFromIndex(&pXCenterData->llWidgets,
+                                                 ulIndex))
                     {
                         // we must send a msg instead of doing WinDestroyWindow
                         // directly because only the XCenter GUI thread can

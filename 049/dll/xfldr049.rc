@@ -1,6 +1,6 @@
 
 /*
- * xfldr001.rc:
+ * xfldr049.rc:
  *      this is the main resource file for the German NLS DLL.
  *
  *      Translate all the strings in this file.
@@ -1117,7 +1117,8 @@ BEGIN
     ID_XSDI_DTP_LOGO_BLOWUP             "Aufb~lasen"
     ID_XSDI_DTP_LOGOFILETXT             "OS/2 1.3 BMP-~Datei fÅr Bootlogo:"
     ID_XSDI_DTP_TESTLOGO                "Logo t~esten"
-    ID_XSDI_DTP_WRITEXWPSTARTLOG        "Datei XWP~START.LOG schreiben"
+    /* V0.9.19: changed log file name */
+    ID_XSDI_DTP_WRITEXWPSTARTLOG        "Datei WP~START.LOG schreiben"
     ID_XSDI_DTP_BOOTUPSTATUS            "Initialisierung der W~PS-Klassen anzeigen"
     ID_XSDI_DTP_CREATESTARTUPFLDR       "~&xwp; Systemstartordner erstellen"
     ID_XSDI_DTP_NUMLOCKON               "~NumLock beim Systemstart aktivieren"
@@ -1174,7 +1175,7 @@ BEGIN
     ID_CRDI_VIEW2_DEFSTYLES_GROUP       "Standardstile fÅr Widgets"
     ID_CRDI_VIEW2_FLATBUTTONS           "~Flache SchaltflÑchen"
     ID_CRDI_VIEW2_SUNKBORDERS           "Rah~men um statische Widgets"
-    ID_CRDI_VIEW2_HATCHINUSE            "~Offene Objekte pflegen"
+    ID_CRDI_VIEW2_HATCHINUSE            "Geîffnete ~Objekte markieren"
 
     /* strings formerly in ID_XFD_ARCHIVINGSTATUS */
     ID_XFD_ARCHIVINGSTATUS              "Archivierung der ArbeitsoberflÑche"
@@ -1335,68 +1336,79 @@ BEGIN
     ID_XSDI_SBSTYLE_4RECT               "Scha~ltflÑche"
     ID_XSDI_SBSTYLE_4MENU               "~MenÅeintrag"
 
+    /* strings formerly in ID_XFD_RUN */
+    ID_XFD_RUN_TITLE                    "AusfÅhren"
+    ID_XFD_RUN_INTRO                    "~Geben Sie den auszufÅhrenden Befehl und das Arbeitsverzeichnis ein:"
+    ID_XFD_RUN_MINIMIZED                "Bei~m Start Symbolgrî·e"
+    ID_XFD_RUN_FULLSCREEN               "~Vollbildschirm"
+    ID_XFD_RUN_AUTOCLOSE                "~Beim Beenden schlie·en"
+    ID_XFD_RUN_WINOS2_GROUP             "&winos2;-Einstellungen"
+    ID_XFD_RUN_ENHANCED                 "~Enhanced mode"
+    ID_XFD_RUN_SEPARATE                 "Getrennte ~Sitzung"
+    ID_XFD_RUN_STARTUPDIR_TXT           "Arbe~itsverzeichnis:"
+
     /* strings for XFldWPS menu pages  (all new with V0.9.19) */
-    ID_XSDI_MENU_SETTINGS               "Common menu settings"
-    ID_XSDI_MENU_ITEMS                  "Menu items"
+    ID_XSDI_MENU_SETTINGS               "Gemeinsame MenÅeinstellungen"
+    ID_XSDI_MENU_ITEMS                  "MenÅeintrÑge"
 
     ID_XSDI_MENU_STYLE_GROUP            "MenÅstil"
-    ID_XSDI_MENUS_BARS                  "Displa~y folder menu bars"
-    ID_XSDI_MENUS_SHORT                 "Shor~t menus"
-    ID_XSDI_MENUS_LONG                  "Lo~ng menus"
+    ID_XSDI_MENUS_BARS                  "MenÅleisten fÅr ~Ordner"
+    ID_XSDI_MENUS_SHORT                 "~Kurze MenÅs"
+    ID_XSDI_MENUS_LONG                  "~Lange MenÅs"
     ID_XSDI_FC_SHOWICONS                "~In OrdnerinhaltmenÅs Symbole anzeigen"
-    ID_XSDI_LOCKINPLACE_NOSUB           "No su~bmenu for ""Lock in place"""
+    ID_XSDI_LOCKINPLACE_NOSUB           "Kein ~UntermenÅ fÅr ""Symbol fixieren"""
 
-    ID_XSDI_MENU_EDIT_GROUP             "~Menu items"
-    ID_XSDI_MENU_EDIT_CAT_TXT           "~Edit menu items for"
+    ID_XSDI_MENU_EDIT_GROUP             "~MenÅeintrÑge"
+    ID_XSDI_MENU_EDIT_CAT_TXT           "M~enÅeintrÑge bearbeiten fÅr"
 
-    ID_XSDI_MENU_EDIT_CAT_FOLDERS       "folders"
-    ID_XSDI_MENU_EDIT_CAT_DESKTOP       "Desktop"
-    ID_XSDI_MENU_EDIT_CAT_DISKS         "disks"
-    ID_XSDI_MENU_EDIT_CAT_FILES         "files"
-    ID_XSDI_MENU_EDIT_CAT_OBJECTS       "all other objects"
+    ID_XSDI_MENU_EDIT_CAT_FOLDERS       "Ordner"
+    ID_XSDI_MENU_EDIT_CAT_DESKTOP       "ArbeitsoberflÑche"
+    ID_XSDI_MENU_EDIT_CAT_DISKS         "Laufwerke"
+    ID_XSDI_MENU_EDIT_CAT_FILES         "Dateien"
+    ID_XSDI_MENU_EDIT_CAT_OBJECTS       "alle anderen Objekte"
 
     /* "menu" wrapper; %s will be replaced with menu item name */
-    ID_XSDI_MENU_MENUSTRING             """%s"" submenu"
+    ID_XSDI_MENU_MENUSTRING             """%s""-UntermenÅ"
 
     /* strings for menu items... note, please use the
        same keyboard accelerators as in the default WPS
        menu items when translating for your language */
 
-    ID_XSDI_MENU_OPENAS                 "~Open as"
-    ID_XSDI_MENU_PROPERTIES             "Propertie~s"
-    ID_XSDI_MENU_OPENPARENT             "Open parent"
-    ID_XSDI_MENU_CREATEANOTHER          "Create a~nother"
+    ID_XSDI_MENU_OPENAS                 "~ôffnen"
+    ID_XSDI_MENU_PROPERTIES             "Einstell~ungen"
+    ID_XSDI_MENU_OPENPARENT             "Sta~mmordner îffnen"
+    ID_XSDI_MENU_CREATEANOTHER          "~Erstellen..."
 
-    ID_XSDI_MENU_MOVE                   "~Move..."
-    ID_XSDI_MENU_COPY                   "~Copy..."
-    ID_XSDI_MENU_PASTE                  "Paste..."
-    ID_XSDI_MENU_CREATESHADOW           "Create shado~w..."
-    ID_XSDI_MENU_DELETE                 "~Delete..."
-    ID_XSDI_MENU_PICKUP                 "P~ickup"
-    ID_XSDI_MENU_FIND                   "~Find..."
+    ID_XSDI_MENU_MOVE                   "~Verschieben..."
+    ID_XSDI_MENU_COPY                   "~Kopieren..."
+    ID_XSDI_MENU_PASTE                  "Einf~Ågen..."
+    ID_XSDI_MENU_CREATESHADOW           "~Referenz erstellen..."
+    ID_XSDI_MENU_DELETE                 "~Lîschen..."
+    ID_XSDI_MENU_PICKUP                 "Au~fnehmen"
+    ID_XSDI_MENU_FIND                   "S~uchen..."
 
-    ID_XSDI_MENU_VIEW                   "~View"
-    ID_XSDI_MENU_ICONVIEW               "~Icon view"
-    ID_XSDI_MENU_TREEVIEW               "~Tree view"
-    ID_XSDI_MENU_DETAILSVIEW            "~Details view"
-    ID_XSDI_FLDRVIEWS                   "Layout items"
+    ID_XSDI_MENU_VIEW                   "An~zeigen"
+    ID_XSDI_MENU_ICONVIEW               "~Symbolanzeige"
+    ID_XSDI_MENU_TREEVIEW               "Stru~kturanzeige"
+    ID_XSDI_MENU_DETAILSVIEW            "~Detailanzeige"
+    ID_XSDI_FLDRVIEWS                   "LayouteintrÑge"
 
-    ID_XSDI_MENU_SORT                   "Sor~t"
-    ID_XSDI_MENU_ARRANGE                "~Arrange"
+    ID_XSDI_MENU_SORT                   "Sor~tieren nach"
+    ID_XSDI_MENU_ARRANGE                "An~ordnen"
 
-    ID_XSDI_MENU_PRINT                  "~Print"
+    ID_XSDI_MENU_PRINT                  "~Drucken"
 
-    ID_XSDI_MENU_LOCKUP                 "~Lockup now"
-    ID_XSDI_MENU_LOGOFFNETWORKNOW       "Lo~goff network now"
-    ID_XSDI_MENU_SHUTDOWN               "Shut ~down..."
-    ID_XSDI_MENU_SYSTEMSETUP            "S~ystem setup"
+    ID_XSDI_MENU_LOCKUP                 "S~perren..."
+    ID_XSDI_MENU_LOGOFFNETWORKNOW       "A~bmelden..."
+    ID_XSDI_MENU_SHUTDOWN               "S~ystemabschlu·..."
+    ID_XSDI_MENU_SYSTEMSETUP            "System~konfiguration"
 
-    ID_XSDI_MENU_CHKDSK                 "Chec~k disk..."
-    ID_XSDI_MENU_FORMAT                 "Fo~rmat disk..."
-    ID_XSDI_MENU_COPYDSK                "Co~py disk..."
-    ID_XSDI_MENU_LOCKDISK               "~Lock disk"
-    ID_XSDI_MENU_EJECTDISK              "~Eject disk"
-    ID_XSDI_MENU_UNLOCKDISK             "~Unlock disk"
+    ID_XSDI_MENU_CHKDSK                 "DatentrÑger ~prÅfen..."
+    ID_XSDI_MENU_FORMAT                 "DatentrÑger for~matieren..."
+    ID_XSDI_MENU_COPYDSK                "DatentrÑger ~kopieren..."
+    ID_XSDI_MENU_LOCKDISK               "Laufwerk ~sperren"
+    ID_XSDI_MENU_EJECTDISK              "DatentrÑger ~ausgeben"
+    ID_XSDI_MENU_UNLOCKDISK             "Laufwerk ~freigeben"
 
 END
 

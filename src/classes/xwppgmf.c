@@ -1250,6 +1250,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
  *      progFillProgDetails; see remarks there.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.19 (2002-05-01) [umoeller]: this always used the replacement, even if disabled; fixed
  */
 
 SOM_Scope BOOL  SOMLINK xpgf_wpQueryProgDetails(XWPProgramFile *somSelf,
@@ -1264,27 +1265,29 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryProgDetails(XWPProgramFile *somSelf,
     XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryProgDetails");
 
-    /* return (XWPProgramFile_parent_WPProgramFile_wpQueryProgDetails(somSelf,
-                                                                    pProgDetails,
-                                                                    pulSize)); */
-
-    if (    (_wpQueryFilename(somSelf, szExecutable, TRUE))
-         && (_pProgType)
-         && (pszTitle = _wpQueryTitle(somSelf))
-         && (pulSize)
-       )
+    if (icoRunReplacement()) // V0.9.19 (2002-05-01) [umoeller]
     {
-        brc = progFillProgDetails(pProgDetails,     // can be NULL
-                                  _xwpQueryProgType(somSelf, NULL, NULL),
-                                  _pProgType->fbVisible,
-                                  _pswpInitial,
-                                  pszTitle,
-                                  szExecutable,
-                                  *_pulStartupDirHandle,
-                                  NULL,         // parameters
-                                  NULL,         // environment
-                                  pulSize);
+        if (    (_wpQueryFilename(somSelf, szExecutable, TRUE))
+             && (_pProgType)
+             && (pszTitle = _wpQueryTitle(somSelf))
+             && (pulSize)
+           )
+        {
+            brc = progFillProgDetails(pProgDetails,     // can be NULL
+                                      _xwpQueryProgType(somSelf, NULL, NULL),
+                                      _pProgType->fbVisible,
+                                      _pswpInitial,
+                                      pszTitle,
+                                      szExecutable,
+                                      *_pulStartupDirHandle,
+                                      NULL,         // parameters
+                                      NULL,         // environment
+                                      pulSize);
+        }
     }
+    else brc = XWPProgramFile_parent_WPProgramFile_wpQueryProgDetails(somSelf,
+                                                                      pProgDetails,
+                                                                      pulSize);
 
     return (brc);
 }

@@ -774,10 +774,6 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
                         if (fSem = !fdrRequestFolderMutexSem(pobj, 5000))
                         {
                             WPObject *pSubObj = 0;
-
-                            // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                                    // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pobj, NULL, "wpQueryContent");
-
                             // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                             for (   pSubObj = _wpQueryContent(pobj, NULL, QC_FIRST);
                                     pSubObj;
@@ -1997,7 +1993,7 @@ VOID objReady(WPObject *somSelf,
  */
 
 VOID objRefreshUseItems(WPObject *somSelf,
-                        PSZ pszNewTitleCopy)
+                        PSZ pszNewTitleCopy)        // in: new title
 {
     PUSEITEM    pUseItem;
 
@@ -2066,14 +2062,6 @@ VOID objRefreshUseItems(WPObject *somSelf,
         _wpSetShadowTitle(pLinkItem->LinkObj,
                           pszNewTitleCopy);
     }
-
-    // now, changing a file-system object's title
-    // will need to rename a file, but this is
-    // handled by WPFileSystem; however, the new
-    // abstract's title must be stored to OS2.INI
-    if (_somIsA(somSelf, _WPAbstract))
-        _wpSaveDeferred(somSelf);
-
 }
 
 /* ******************************************************************

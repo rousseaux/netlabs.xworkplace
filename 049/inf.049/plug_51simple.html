@@ -1,90 +1,91 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        Step 1: One Header Only
+        Schritt 1: Nur ein Header
     </TITLE>
 </HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-&xwp; now comes with a mini-widget sample (<CODE>toolkit\miniwdgt.c</CODE>)
-which contains an absolute minimum widget without any fancy functionality.
-All this widget does is display a question mark.
+Mit &xwp; wird nun ein Beispiel eines "Mini-Widgets" geliefert
+(<CODE>toolkit\miniwdgt.c</CODE>), welches das absolute Minimum eines Widgets ohne schicke
+Funktionen enthÑlt. Alles was dieses Widget macht, ist, ein Fragezeichen zu zeigen.
 
-<P>This mini widget was added to show you something to start with. It can definitely
-be improved. It does <I>not</I>
+<P>Dieses Mini-Widget wurde hinzugefÅgt, damit Sie einen leichten Einstieg haben. Es kann
+ganz sicher verbessert werden. Es kann <I>nicht</I>
 
-<UL><LI>store any settings (not even font or color presentation parameters --
-see <A HREF="plug_52strings.html">step 2</A> for this);
+<UL><LI>irgendwelche Einstellungen speichern (nicht einmal die Schriftart oder die Farbe --
+das kommt in <A HREF="plug_52strings.html">Schritt 2</A>);
 
-<P><LI>display tooltips (fly-over help -- see <A HREF="plug_53tooltips.html">step 3</A>
-for this);
+<P><LI>Tooltips anzeigen (die Hilfe bei darÅberstehendem Mauszeiger -- das kommt erst in
+<A HREF="plug_53tooltips.html">Schritt 3</A>);
 
-<P><LI>implement a settings dialog (see <A HREF="plug_55dialog.html">step 4</A> for this);
+<P><LI>einen Einstellungsdialog erzeugen (dazu siehe
+<A HREF="plug_55dialog.html">Schritt 4</A>);
 
-</UL>At the very least, a plug-in DLL must do the following:
+</UL>Als mindeste Voraussetzung mu· eine Plugin-DLL folgendes tun kînnen:
 
-<OL><LI>It must <B>export three procedures</B> by ordinal.
+<OL><LI>Sie mu· <B>drei Prozeduren</B> mit den entsprechenden Ordinalien
+<B>exportieren</B>.
 
-<P><B>a)</B> The <B>"init"</B> export (ordinal 1) gets called once only by the &xcenter;
-when your DLL gets loaded. The DLL can get loaded in situations other than
-widget creation, so do not expect this to always be the case. On init, the
-DLL should register the widget's PM window class (by calling
-<CODE>WinRegisterClass</CODE>). In addition, it can import functions from
-<CODE>XFLDR.DLL</CODE>, whose module handle is given to it (this is optional).
-However, it must always return a pointer to the array of
+<P><B>a)</B> Der <B>"init"</B>-Export (Ordinal 1) wird nur einmal vom &xcenter; aufgerufen,
+wenn Ihre DLL geladen wird. Die DLL wird eventuell auch in Situationen geladen, die nicht
+unbedingt mit der Erzeugung des Widgets zu tun haben. Sie sollten also nicht erwarten, da·
+das immer der Fall ist. Bei der Initialisierung sollte die DLL die PM-Fensterklasse des
+Widgets registrieren (durch Aufruf von <CODE>WinRegisterClass</CODE>). Au·erdem kann sie
+Funktionen aus <CODE>XFLDR.DLL</CODE> importieren, dessen Modul-Handle es Åbergeben
+bekommt (optional). Sie mu· allerdings immer einen Zeiger auf das Array der Struktur
 <A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>
-structures in the DLL so that the &xcenter; knows about the classes in the DLL.
+in dieser DLL Åbergeben, so da· das &xcenter; Åber diese Klassen in der DLL informiert ist.
 
-<P>See <CODE>toolkit\miniwdgt.c</CODE> for how this is done.
+<P>Sehen Sie in der Datei <CODE>toolkit\miniwdgt.c</CODE> nach, wie dies gemacht wird.
 
-<P><B>b)</B> The <B>"uninit"</B> export (ordinal 2) gets called when the DLL is unloaded
-by the &xcenter;. This can do cleanup, if necessary.
+<P><B>b)</B> Der <B>"uninit"</B>-Export (Ordinal 2) wird aufgerufen, wenn die DLL vom
+&xcenter; freigegeben wird. Hier kann falls nîtig aufgerÑumt werden.
 
-<P><B>c)</B> The <B>"query version"</B> export (ordinal 3) gets called even before the
-"init" export to check the &xwp; version number that this widget requires.
+<P><B>c)</B> Der <B>"query version"</B>-Export (Ordinal 3) wird noch vor dem "init"-Export
+aufgerufen, um die Version von &xwp; zu ÅberprÅfen, die dieses Widget benîtigt.
 
-<P><LI>The plug-in DLL must then contain a <B>PM window procedure</B> for the widget
-class. In the mini widget sample, this is the
-<CODE>fnwpSampleWidget</CODE> procedure. The "Init" export is reponsible for calling
-<CODE>WinRegisterClass</CODE> on that window procedure to create a PM window class
-from it.
+<P><LI>Die Plugin-DLL mu· eine <B>PM-Fensterprozedur</B> fÅr die Widget-Klasse enthalten.
+Im Beispiel des Mini-Widgets ist das die Prozedur <CODE>fnwpSampleWidget</CODE>. Der
+"init"-Export ist verantwortlich fÅr den Aufruf von <CODE>WinRegisterClass</CODE> mit dieser
+Fensterprozedur, um damit eine PM-Fensterklasse zu erzeugen.
 
-<P>This is the usual switch/case stuff that is used with every PM
-window procedure. There are a couple of extra considerations to be
-made though, which are explained below.
+<P>Das ist der normale switch/case-Block, der in jeder PM-Fensterprozedur benutzt wird. Hier
+mu· man einige besondere öberlegungen anstellen, die im folgenden erklÑrt sind.
 
-<P><LI>On <CODE>WM_CREATE</CODE>, the widget <I>must</I> store the
+<P><LI>Bei <CODE>WM_CREATE</CODE>, <I>mu·</I> das Widget den Zeiger
 <A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>
-pointer it receives with <CODE>mp1</CODE> in
-its <CODE>QWL_USER</CODE> window word. That's why the mini widget sample
-calls <CODE>WinSetWindowPtr(hwnd, QWL_USER, mp1);</CODE> on WM_CREATE.
+speichern, den es mit <CODE>mp1</CODE> in seiner <CODE>QWL_USER</CODE>-Konstante Åbergeben
+bekommt. Deshalb ruft das Mini-Widget-Beispiel auch
+<CODE>WinSetWindowPtr(hwnd, QWL_USER, mp1);</CODE> bei WM_CREATE auf.
 
-<P><LI>On <CODE>WM_CONTROL</CODE>, it should handle notifications from
-the &xcenter;. The &xcenter; will send <CODE>WM_CONTROL</CODE> messages to
-the widget when it wants to know the widget's size, for example.
+<P><LI>Bei <CODE>WM_CONTROL</CODE> sollte es Nachrichten vom &xcenter; verarbeiten. Das
+&xcenter; sendet <CODE>WM_CONTROL</CODE> Nachrichten an das Widget, wenn es z. B. dessen
+Grî·e erfahren will.
 
-<P>The notification codes that the &xcenter; uses with <CODE>WM_CONTROL</CODE>
-are listed in <CODE>toolkit\center.h</CODE>. There will probably be more
-of them in the future.
+<P>Die Nachrichten-Kodierungen, die der &xcenter; bei <CODE>WM_CONTROL</CODE> benutzt, sind
+in <CODE>toolkit\center.h</CODE> aufgefÅhrt. Es wird wahrscheinlich in der Zukunft mehr
+davon geben.
 
-<P><LI>Normally, with PM, all unprocessed messages are forwarded to
-<CODE>WinDefWindowProc</CODE>. With widgets, this is different: you must
-always pass unprocessed messages to the "&xcenter; default widget procedure",
-whose address is given to your widget in the
-<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>
-structure on <CODE>WM_CREATE</CODE> in the <CODE>pfnwpDefWidgetProc</CODE>
-field. (Yes, this is the reason why you must
-store that structure in your window words.)
+<P><LI>Normalerweise werden alle nicht abgearbeiteten Nachrichten vom PM an
+<CODE>WinDefWindowProc</CODE> weitergeleitet. Bei Widgets ist das anders: Sie mÅssen
+unprozessierte Nachrichten immer an die "&xcenter;-Standardwidgetprozedur" weiterleiten,
+deren Adresse in Ihrem Widget in der
+<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>-Struktur bei
+<CODE>WM_CREATE</CODE> im Feld <CODE>pfnwpDefWidgetProc</CODE> abgelegt wird.
+(Ja, das ist der Grund, warum Sie diese Struktur in Ihren Fensterkonstanten speichern
+mÅssen.)
 
-<P>If you do not pass unused messages on, you will severely hurt the widget's
-functionality. Even worse, you will cause memory leaks because the default
-widget procedure is responsible for cleaning up resources and important
-&xcenter; notifications.
+<P>Wenn Sie unprozessierte Nachrichten nicht weiterleiten, werden Sie der FunktionalitÑt
+des Widgets ernsthaft schaden. Noch schlimmer, Sie werden Speicherlecks verursachen, da
+die Standardwidgetprozedur dafÅr verantwortlich ist, die Resourcen aufzurÑumen und wichtige
+Nachrichten vom &xcenter; abzuarbeiten.
 
-<P><LI>Even if you do your own processing on <CODE>WM_DESTROY</CODE>, you
-must <I>always, always</I> pass <CODE>WM_DESTROY</CODE> on to
-<CODE>pfnwpDefWidgetProc</CODE>. Otherwise the &xcenter; cannot clean up your
-widget's resources properly.
+<P><LI>Sogar wenn Sie Ihre eigene Routinen bei der Nachricht <CODE>WM_DESTROY</CODE>
+ausfÅhren, mÅssen Sie <I>immer und immer</I> <CODE>WM_DESTROY</CODE> an
+<CODE>pfnwpDefWidgetProc</CODE> weiterleiten. Andernfalls kann das &xcenter; die Ressourcen
+Ihres Widgets nicht richtig aufrÑumen.
 
 </OL>
 </BODY>

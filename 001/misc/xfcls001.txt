@@ -506,3 +506,6 @@ BDview 1 (WSeB/CP/eCS) Implements an object for switching bi-directional languag
 WPVideoSystem 1 (Scitech Display Doctor) Replaces the WPSystem class to enhance the "Screen" notebook page.
 XWPFileSystem 1 XWorkplace replaces the WPFileSystem class with this class to access various internal WPS data, among others to implement "turbo folders".
 
+// Items added with V0.9.19
+FileState 1 (FILESTAT.DLL) Reports statistics for objects dropped on it.
+

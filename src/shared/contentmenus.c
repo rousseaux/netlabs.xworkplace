@@ -303,9 +303,14 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                 // So what we do:
                 // Every time WM_ADJUSTWINDOWPOS comes in, we check for whether
                 // x and y are valid. If so, this is the right call... we hack it.
-                PSWP pswp = (PSWP)mp1;
-                if (pswp)
+                PSWP pswp;
+                if (pswp = (PSWP)mp1)
                 {
+                    #ifdef DEBUG_MENUS
+                        _Pmpf(("WM_ADJUSTWINDOWPOS %d, %d, %d, %d",
+                                pswp->x, pswp->y, pswp->cx, pswp->cy));
+                    #endif
+
                     // is this the message that really sets the window?
                     if (pswp->x && pswp->y && pswp->cx && pswp->cy)
                     {
@@ -346,7 +351,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                         SHORT1FROMMP(mp1),
                         SHORT2FROMMP(mp1),
                         mp2 ));
-                    mrc = (MRESULT)(*pfnwpFolderContentMenuOriginal)(hwndMenu, msg, mp1, mp2);
+                    mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
                 break;
             #endif
 
@@ -453,7 +458,8 @@ VOID cmnuInitItemCache(VOID)
         // first call: initialize lists
         lstInit(&G_llContentMenuItems, TRUE);
         lstInit(&G_llVarMenuItems, TRUE);
-    } else
+    }
+    else
     {
         // subsequent calls: clear lists
         // (this might take a while)
@@ -754,11 +760,6 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
         {
             ULONG   ulTotalObjectsAdded = 0;
-
-            // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-            // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                    // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
             // now collect all objects in folder
             // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
             for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
@@ -1100,9 +1101,8 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
 
 PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
 {
-    PVARMENULISTITEM pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
-                                                                ulOfs);
-    return (pItem);
+    return ((PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
+                                               ulOfs));
 }
 
 /* ******************************************************************
@@ -1132,8 +1132,6 @@ PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
 VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 submenu id
                           HWND hwndMenuMsg) // from WM_INITMENU: HWND  mp2 menu window handle
 {
-    // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-
     // query bounding rectangle of "[empty]" item, according to
     // which we will format our own items
     WinSendMsg(hwndMenuMsg,

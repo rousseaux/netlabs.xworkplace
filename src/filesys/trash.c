@@ -899,11 +899,6 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
     if (pllTrashObjects)
     {
         XWPTrashObject* pTrashObject = 0;
-
-        // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-        // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                // = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
-
         // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
         for (   pTrashObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pTrashObject);
@@ -1265,10 +1260,6 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
             // to protect the contents list
             if (fTrashDirSemOwned = !fdrRequestFolderMutexSem(pTrashDir, 4000))
             {
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = SOM_Resolve(pTrashDir, WPFolder, wpQueryContent);
-
                 // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                 for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
                         (pObject);

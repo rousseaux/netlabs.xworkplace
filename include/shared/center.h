@@ -497,11 +497,11 @@
 
         const char      *pcszWidgetClass;
                 // internal widget class name; this is used to identify
-                // the class. This must be unique on the system and should
-                // not contain any spaces or special characters. Besides,
-                // since this must work with all codepages, use only
-                // ASCII characters <= 127, and use an English name
-                // always.
+                // the class. This must be unique on the system and must
+                // not contain spaces or special characters like commas,
+                // brackets, etc. Besides, since this must work with all
+                // codepages, use only ASCII characters <= 127, and use
+                // an English name always.
                 // A valid name would be "MySampleClass".
                 // This is stored internally in the XCenter data and is
                 // used whenever the XCenter is opened to create all the
@@ -768,7 +768,7 @@
                 // WM_DESTROY).
 
         PVOID       pvWidgetSetting;
-                // private pointer for tray widget. Do not use this.
+                // private pointer for tray widget. DO NOT USE THIS.
                 // V0.9.13 (2001-06-21) [umoeller]
 
     } XCENTERWIDGET;

@@ -1,88 +1,91 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        Terminology
+        Terminologie
     </TITLE>
 </HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-The following terms are used throughout this documentation, and you
-should therefore be familiar with these.
+Die folgenden Begriffe werden in der ganzen Dokumentation verwendet. Sie sollten
+deshalb mit ihnen vertraut sein.
 
-<UL><LI>An <B>"&xcenter; instance"</B> is an object of the <CODE>&xcenter;</CODE> WPS
-class. There can only be one open view per &xcenter; so
-that an &xcenter; instance is identical to an &xcenter;
-view when it's open, but there can be several &xcenter;
-instances on the system (i.e. one for each screen border).
+<UL><LI>Eine <B>"&xcenter;-Instanz"</B> ist ein Objekt der <CODE>&xcenter;</CODE>
+WPS-Klasse.  Es kann nur eine offene Ansicht pro &xcenter; geben, so dass eine
+&xcenter;-Instanz identisch mit einer offenen &xcenter;-Ansicht ist. Es kann aber
+mehrere &xcenter;-Instanzen auf dem System geben (d.h. eine pro Bildschirm-Rand).
 
-<P>Even though the &xcenter; itself is obviously a Desktop object, it completely
-isolates the widgets from the WPS stuff internally. This is why SOM/WPS programming
-knowledge is not required to write a new widget class, but you can still do WPS
-programming if you want to.
+<P>Obwohl das &xcenter; selbst ein Objekt auf der ArbeitsoberflÑche ist, isoliert
+es die Widgets komplett von der WPS-Umgebung. Deshalb benîtigt man kein Wissen
+zur SOM/WPS-Programmierung, um eine neue Widget-Klasse zu schreiben, kann aber
+trotzdem WPS-Programmierung benutzen.
 
-<P><LI>A <B>"widget"</B> is a PM subwindow of an open &xcenter; which
-displays something. An open &xcenter; can contain zero,
-one, or many widgets. Every &xcenter; keeps a list of
-widgets together with their settings in its SOM instance
-data. This is totally transparent to the widgets, but if
-you are interested, you can view that data on the "Widgets" page
-of an &xcenter;'s settings notebook.
+<P><LI>Ein <B>"Widget"</B> ist ein Unterfenster eines offenen &xcenter;s, das
+etwas anzeigt. Ein offenes &xcenter; kann kein, ein oder mehrere Widgets enthalten.
+Jeder &xcenter; speichert eine Liste seiner Widgets zusammen mit ihren
+Einstellungen in den Daten seiner SOM-Instanz. Das ist vollstÑndig transparent fÅr
+die Widgets, aber falls Sie an diesen Daten interessiert sind, kînnen Sie sie auf der
+Seite "Widgets" des Einstellungsnotizbuches des &xcenter;s ansehen.
 
-<P>Again, to make that clear: A widget is a separate PM window inside the &xcenter;.
+<P>Noch einmal zur Verdeutlichung: Ein Widget ist ein separates PM-Fenster innerhalb
+des &xcenter;s.
 
-<P><LI>A <B>"widget class"</B> defines a widget. Basically, it's a
-PM window class with a plain C structure as a wrapper
+<P><LI>Eine <B>"Widget-Klasse"</B> definiert ein Widget. Grundlegend ist es eine
+PM-Fensterklasse, die in eine C-Struktur eingepackt ist
 (<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>).
-This structure holds the name of a PM window class which is used by the &xcenter;
-to create the PM widget windows. Depending on the widget
-class's attributes, there can be one or several
-instances of a widget class. If you want a different widget in the &xcenter;,
-you need to write a widget class.
+Diese Struktur beinhaltet den Namen der PM-Fensterklasse, die vom &xcenter;
+benutzt wird, um die PM-Fenster der Widgets zu erzeugen. Je nach Attributen der
+Widget-Klasse kann es eine oder mehrere Instanzen der Widget-Klasse geben. Wenn
+Sie ein anderes Widget im &xcenter; haben wollen, mÅssen Sie eine Widget-Klasse
+schreiben.
 
-<P>Writing a widget class basically boils down to writing a PM
-window class (see below), with some additional rules to follow. To
-make things easier, several widget classes can share
-the same PM class though.
+<P>Eine Widget-Klasse zu schreiben, ist nahezu dasselbe, wie eine PM-Fensterklasse
+zu schreiben, mit ein paar zusÑtzlichen Regeln. Um dies etwas einfacher zu machen,
+kînnen sich mehrere Widget-Klassen eine PM-Klasse teilen.
 
-<P>Some widget classes are built into the &xcenter; itself (i.e. reside in
-<CODE>XFLDR.DLL</CODE>), but the &xcenter; can obviously load external plug-in DLLs too.
-Several of the widget classes that come with &xwp; have been created as plug-ins to
-show you how it's done. If you have the
-<A HREF="notices_40source.html">&xwp; source code</A>,
-look for the <CODE>src\widgets</CODE> directory.
+<P>Einige Widget-Klassen sind im &xcenter; selbst eingebaut (d.h. sie befinden
+sich in der Datei <CODE>XFLDR.DLL</CODE>), aber das &xcenter; kann
+ebenfalls externe Plugin-DLLs laden. Mehrere der Widget-Klassen, die mit &xwp;
+geliefert werden, wurden als Plugins angelegt, um Ihnen zu zeigen, wie es funktioniert.
+Wenn Sie den <A HREF="notices_40source.html">&xwp;-Quellcode</A> haben, schauen Sie
+dazu im Verzeichnis <CODE>src\widgets</CODE> nach.
 
-<P><LI>A <B>"PM window class"</B> is not an &xcenter; definition... this
-is explained in detail in the <I>Presentation Manager Programming Reference.</I>
+<P><LI>Eine <B>"PM-Fensterklasse"</B> ist keine neue Definition des &xcenter;s.
+Dieser Begriff ist im Detail in der <I>Presentation Manager Programming
+Reference</I> beschrieben.
 
-<P>Basically, PM organizes windows into classes. For example, if you create
-a PM button, you invoke <CODE>WinCreateWindow</CODE> with the name of the
-button window class (<CODE>WC_BUTTON</CODE>), which is a standard window class
-of every &os2; system.
+<P>Der PM organisiert die Fenster in Klassen. Wenn Sie z.B. eine SchaltflÑche mit dem
+PM erzeugen, rufen Sie <CODE>WinCreateWindow</CODE> mit dem Namen der Klasse fÅr
+SchaltflÑchen (<CODE>WC_BUTTON</CODE>) auf, die eine standardmÑ·ige Fensterklasse auf
+jedem &os2;-System ist.
 
-<P>It is possible to create new window classes though. The &xcenter; makes use
-of this feature to implement widget classes. So again, a widget class is a
-PM window class with a bit of extra data to give the &xcenter; more information
-about the widgets that can be created of that class.
+<P>Es ist aber auch mîglich, neue Fensterklassen zu erzeugen. Das &xcenter; nutzt
+diese Mîglichkeit, um die Widget-Klassen zu implementieren. Deshalb ist wiederum
+eine Widget-Klasse eine PM-Fensterklasse mit einigen wenigen zusÑtzlichen Daten, um
+dem &xcenter; mehr Informationen Åber die Widgets zu geben, die man mit dieser
+Klasse erzeugen kann.
 
-<P>The advantage of using separate PM window classes is that a widget is essentially
-free to do whatever it wants. It can say "Hello world", but it can also choose to
-start a dozen subthreads with videos playing.
+<P>Der Vorteil einer separaten PM-Fensterklasse ist, da· ein Widget im
+wesentlichen frei ist zu tun, was es will. Es kann genausogut "Hello world"
+schreiben wie auch ein halbes Dutzend eigene Threads erzeugen und Videos
+abspielen.
 
-<P>The disadvantage is that writing a PM window class from scratch is a bit more
-difficult than using standard controls. But that's why there are plenty of samples
-to learn from.
+<P>Der Nachteil ist, da· es ein bi·chen komplizierter ist, eine PM-Fensterklasse
+von Grund auf zu schreiben, als nur standardmÑ·ige Kontrollen zu benutzen. Aber
+es gibt ja etliche Beispiele, von denen man lernen kann.
 
-<P>When a widget is created (either because it is added to an open &xcenter;
-or when an &xcenter; is opened in the first place and thus all widgets have to
-be created), it does call <CODE>WinCreateWindow</CODE> with the PM window class
-name that was specified with the widget class. So this is really not too spectacular.
+<P>Wenn ein Widget erzeugt wird (entweder weil es zu einem offenen &xcenter;
+hinzugefÅgt wird, oder wenn ein &xcenter; das erste Mal geîffnet wird und deshalb
+alle Widgets erzeugt werden mÅssen), ruft es <CODE>WinCreateWindow</CODE> mit
+dem Namen der PM-Fensterklasse auf, die mit der Widget-Klasse angegeben wurde. Es
+ist also nichts au·ergewîhnliches.
 
-<P><LI>A <B>"widget plugin DLL"</B> is a separate DLL which resides
-in the <CODE>plugins\xcenter</CODE> directory of the &xwp;
-installation directory. This must contain one or
-several widget classes. There are three procedures that a widget plugin DLL
-is required to export to make the &xcenter; see the widget classes. This is
-explained in detail on the next pages.
+<P><LI>Eine <B>"Widget Plugin-DLL"</B> ist eine separate DLL, die sich im
+Unterverzeichnis <CODE>plugins\xcenter</CODE> des &xwp;-Installationsverzeichnisses
+befindet. Diese mu· eine oder mehrere Widget-Klassen enthalten. Es gibt drei
+Prozeduren, die eine Widget Plugin-DLL exportieren mu·, damit das &xcenter;
+die Widget-Klassen sehen kann. Diese werden im Detail auf den nÑchsten Seiten
+erklÑrt.
 
 </UL>
 </BODY>

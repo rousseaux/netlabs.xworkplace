@@ -25,6 +25,12 @@ to set them).
 
 <P><LI>&xcenter;: Widget context menus have "Close" menu item now.
 
+<P><LI>&xcenter;: WIDGETS setup strings supports trays now. It is finally
+possible to set up a complete XCenter via setup strings. Note that the
+format has slightly changed; see the help for the object "Details" button
+on the "Icon" page for details. Changed the default XCenter setup while
+I was at it.
+
 <P><LI>&os2; Kernel: Added a couple more SYSLEVEL files.
 
 <P><LI>Hook: Martin Lafaix added "Center over button-less dialogs" to
@@ -45,8 +51,8 @@ if not overridden from the command line. Thanks, Yuri Dario.
 
 <P><LI>Common: Found a way to give dialog windows a close button too.
 
-<P><LI>Startup: Much more detailed XWPSTART.LOG which might help debugging WPS startup
-problems.
+<P><LI>Startup: Much more detailed startup log which might help debugging WPS
+startup problems. Changed log file name to WPSTART.LOG.
 
 <P><LI>Folder content menus: folder templates are no longer sorted with the
 other folders.
@@ -56,6 +62,13 @@ other folders.
 <P><LI>File operations: Removed global "Replace true delete" setting. Added
 a checkbox to trash can instead.
 
+<P><LI>File operations: Reversed confirmations for "move to trash" and
+"empty trash". The real delete operation is to move something to the trash can;
+it really doesn't make sense to have every object confirmed when the trash can
+is emptied later.
+
+<P><LI>&xcenter;: Single click on empty space in tray widget will change trays now.
+
 </UL>Bugfixes:
 
 <UL><LI>Common: Some internal initialization code didn't get called for folders,
@@ -64,6 +77,14 @@ nor awake shadows properly. Fixed.
 
 <P><LI>Common: Fixed global variables which caused many dialogs to fail after
 NLS change. Also localized a few more hard-coded strings.
+
+<P><LI>Common: Lots of rework on dialog manager to fix display oddities on
+resolutions lower than 1024x768. Hopefully this didn't break anything.
+
+<P><LI>Common: Added help to some &xwp; message boxes.
+
+<P><LI>Icon page replacement: didn't allow empty object titles, which is
+allowed in the WPS. Fixed.
 
 <P><LI>Programs: Now using XWPDAEMN.EXE for starting programs, which should help
 with applications hanging the system.
@@ -104,6 +125,9 @@ Fixed.
 <P><LI>XWPSetup: "Create object" buttons produced empty titles for some classes. Fixed.
 
 <P><LI>&xshutdown;: Paul Ratcliffe fixed INI saving errors with empty applications in profiles.
+
+<P><LI>Hook: Fixed major screwups if screen border objects were opened during startup
+or shutdown.
 
 <P><LI>Hook: Pre-populate caused &pgr; to no longer detect the WPS desktop. Fixed.
 

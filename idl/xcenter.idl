@@ -49,9 +49,18 @@ interface XCenter : WPAbstract
     VOID xwpFreeWidgetsBuf(in PVOID pBuf,
                            in ULONG ulCount);
 
-    BOOL xwpInsertWidget(in ULONG ulBeforeIndex,
-                         in PSZ pszWidgetClass,
-                         in PSZ pszSetupString);
+    APIRET xwpCreateWidget(in PSZ pszWidgetClass,
+                           in PSZ pszSetupString,
+                           in ULONG ulTrayWidgetIndex,
+                           in ULONG ulTrayIndex,
+                           in ULONG ulWidgetIndex);
+
+    APIRET xwpCreateTray(in ULONG ulTrayWidgetIndex,
+                         in PSZ pszTrayName);
+
+    APIRET xwpRenameTray(in ULONG ulTrayWidgetIndex,
+                         in ULONG ulTrayIndex,
+                         in PSZ pszNewTrayName);
 
     BOOL xwpRemoveWidget(in ULONG ulIndex);
 
@@ -71,7 +80,9 @@ interface XCenter : WPAbstract
     releaseorder: xwpAddXCenterPages,
                   xwpQueryWidgets,
                   xwpFreeWidgetsBuf,
-                  xwpInsertWidget,
+                  xwpCreateWidget,
+                  xwpCreateTray,
+                  xwpRenameTray,
                   xwpRemoveWidget,
                   xwpMoveWidget,
                   xwpSetPriority,

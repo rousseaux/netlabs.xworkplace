@@ -4,12 +4,14 @@
         WIDGETSETTINGSDLGDATA
     </TITLE>
 </HEAD>
+<!-- Uebersetzung der Einleitung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-<B>Note:</B> This is an excerpt from <CODE>center.h</CODE>. This
-definition is not necessarily up-to-date. Always use <CODE>center.h</CODE>
-in your widget source code instead of this definition.
- 
+<B>Hinweis:</B> Dies ist ein Ausschnitt aus der Datei <CODE>center.h</CODE>.
+Diese Definition ist nicht unbedingt aktuell. Benutzen Sie immer
+<CODE>center.h</CODE> im Verzeichnis der Widget-Quellen statt dieser
+Definition.
+
 <PRE>
   /*
    *@@ WIDGETSETTINGSDLGDATA:
@@ -52,35 +54,35 @@ in your widget source code instead of this definition.
    *@@added V0.9.7 (2000-12-07) [umoeller]
    *@@changed V0.9.9 (2001-02-06) [umoeller]: added pctrSetSetupString
    */
- 
+
   typedef struct _WIDGETSETTINGSDLGDATA
   {
       HWND                    hwndOwner;
                   // proposed owner for settings dialog
- 
+
       const char              *pcszSetupString;
                   // present setup string (do not change)
- 
+
       const LHANDLE           hSettings;
                   // widget setting handle; this must
                   // be passed to ctrSetSetupString;
                   // DO NOT CHANGE
- 
+
       PXCENTERGLOBALS         pGlobals;
                   // if != NULL, currently open &xcenter;
                   // for which widget data is being changed.
                   // If NULL, the &xcenter; isn't currently
                   // open.
- 
+
       PXCENTERWIDGET          pView;
                   // if != NULL, currently open view
                   // of the widget. If NULL, the widget
                   // isn't currently open.
- 
+
       PVOID                   pUser;
                   // some room for additional data the
                   // settings dialog might want
- 
+
       PCTRSETSETUPSTRING      pctrSetSetupString;
                   // ptr to ctrSetSetupString function in
                   // src\shared\center.c; this must be
@@ -89,12 +91,12 @@ in your widget source code instead of this definition.
                   // This pointer has been added with V0.9.9
                   // to allow using settings dialog without
                   // having to import this from XFLDR.DLL.
- 
+
   } WIDGETSETTINGSDLGDATA, *PWIDGETSETTINGSDLGDATA;
- 
+
 </PRE>
- 
- 
+
+
 <BR>
 </BODY>
 </HTML>

@@ -1288,7 +1288,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
                 if (pPrivate->Setup.chDrive=='*')
                 {
-                    if ((long)WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)
+                    if (WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)
                         GetDrive(hwnd, pWidget, FALSE);
                     else
                         GetDrive(hwnd, pWidget, TRUE);

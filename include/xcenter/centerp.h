@@ -42,6 +42,8 @@
      *
      ********************************************************************/
 
+    #define TRAY_WIDGET_CLASS_NAME "Tray"
+
     /*
      *@@ PRIVATEWIDGETCLASS:
      *      private wrapper around the public
@@ -168,7 +170,9 @@
 
     VOID ctrpFreeClasses(VOID);
 
-    PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass);
+    APIRET ctrpFindClass(PCSZ pcszWidgetClass,
+                         BOOL fMustBeTrayable,
+                         PCXCENTERWIDGETCLASS *ppClass);
 
     HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                             HWND hwndMenu,
@@ -208,29 +212,39 @@
                 ulWidgetIndex;          // index of widget in tray or in XCenter
     } WIDGETPOSITION, *PWIDGETPOSITION;
 
+    APIRET ctrpCheckClass(PCSZ pcszWidgetClass,
+                          BOOL fMustBeTrayable);
+
     #ifdef LINKLIST_HEADER_INCLUDED
 
         APIRET XWPENTRY ctrpCreateWidgetSetting(XCenter *somSelf,
-                                               PTRAYSETTING pTray,
-                                               PCSZ pcszWidgetClass,
-                                               PCSZ pcszSetupString,
-                                               ULONG ulBeforeIndex,
-                                               PPRIVATEWIDGETSETTING *ppNewSetting,
-                                               PULONG pulNewItemCount,
-                                               PULONG pulNewWidgetIndex);
+                                                PTRAYSETTING pTray,
+                                                PCSZ pcszWidgetClass,
+                                                PCSZ pcszSetupString,
+                                                ULONG ulBeforeIndex,
+                                                PPRIVATEWIDGETSETTING *ppNewSetting,
+                                                PULONG pulNewItemCount,
+                                                PULONG pulNewWidgetIndex);
 
         APIRET ctrpFindWidgetSetting(XCenter *somSelf,
-                                    PWIDGETPOSITION pPosition,
-                                    PPRIVATEWIDGETSETTING *ppSetting,
-                                    PXCENTERWIDGET *ppViewData);
+                                     PWIDGETPOSITION pPosition,
+                                     PPRIVATEWIDGETSETTING *ppSetting,
+                                     PXCENTERWIDGET *ppViewData);
 
         VOID XWPENTRY ctrpFreeSettingData(PPRIVATEWIDGETSETTING *ppSetting);
 
         BOOL XWPENTRY ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget);
 
-        PTRAYSETTING XWPENTRY ctrpCreateTray(PPRIVATEWIDGETSETTING ppws,
-                                             PCSZ pcszTrayName,
-                                             PULONG pulIndex);
+        PTRAYSETTING XWPENTRY ctrpCreateTraySetting(PPRIVATEWIDGETSETTING ppws,
+                                                    PCSZ pcszTrayName,
+                                                    PULONG pulIndex);
+
+        APIRET ctrpFindTraySetting(XCenter *somSelf,
+                                   ULONG ulTrayWidgetIndex,
+                                   ULONG ulTrayIndex,
+                                   PPRIVATEWIDGETSETTING *ppTrayWidgetSetting,
+                                   PTRAYSETTING *ppTraySetting,
+                                   PXCENTERWIDGET *ppTrayWidget);
 
         BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
                                      ULONG ulIndex);
@@ -546,10 +560,9 @@
      ********************************************************************/
 
         PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,
-                                                PPRIVATEWIDGETVIEW pOwningTray,
-                                                PLINKLIST pllWidgetViews,
-                                                PPRIVATEWIDGETSETTING pSetting,
-                                                ULONG ulIndex);
+                                                  PXCENTERWIDGET pOwningTrayWidget,
+                                                  PPRIVATEWIDGETSETTING pSetting,
+                                                  ULONG ulIndex);
 
     #endif
 
@@ -563,10 +576,12 @@
                                        HWND hwndWidget,
                                        PWIDGETPOSITION pPosition);
 
-    BOOL ctrpInsertWidget(XCenter *somSelf,
-                          ULONG ulBeforeIndex,
-                          PCSZ pcszWidgetClass,
-                          PCSZ pcszSetupString);
+    APIRET ctrpCreateWidget(XCenter *somSelf,
+                            PCSZ pcszWidgetClass,
+                            PCSZ pcszSetupString,
+                            ULONG ulTrayWidgetIndex,
+                            ULONG ulTrayIndex,
+                            ULONG ulWidgetIndex);
 
     BOOL ctrpRemoveWidget(XCenter *somSelf,
                           ULONG ulIndex);
@@ -719,6 +734,19 @@
      */
 
     #define XCM_MOUSECLICKED         (WM_USER + 9)
+
+    /*
+     *@@ XCM_TRAYSCHANGED:
+     *      private message posted to a tray
+     *      widget after any tray settings have
+     *      changed.
+     *
+     *      Parameters: none.
+     *
+     *@@added V0.9.19 (2002-04-25) [umoeller]
+     */
+
+    #define XCM_TRAYSCHANGED         (WM_USER + 10)
 
     /* ******************************************************************
      *

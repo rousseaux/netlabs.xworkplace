@@ -108,7 +108,10 @@
     #define XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY  (ERROR_XWP_FIRST + 102)
     #define XCERR_INVALID_TRAY_INDEX            (ERROR_XWP_FIRST + 103)
     #define XCERR_INVALID_SUBWIDGET_INDEX       (ERROR_XWP_FIRST + 104)
-    #define ERROR_XCENTER_LAST                  (ERROR_XWP_FIRST + 104)
+    #define XCERR_INVALID_CLASS_NAME            (ERROR_XWP_FIRST + 105)
+    #define XCERR_CLASS_NOT_TRAYABLE            (ERROR_XWP_FIRST + 106)
+                    // V0.9.19 (2002-04-25) [umoeller]
+    #define ERROR_XCENTER_LAST                  (ERROR_XWP_FIRST + 106)
 
     // typedef unsigned long XCRET;     removed V0.9.19 (2002-04-17) [umoeller]
 

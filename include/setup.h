@@ -326,7 +326,7 @@
 
         // the following displays a lot of infos about menu
         // processing (msgs), esp. for folder content menus
-            // #define DEBUG_MENUS
+            #define DEBUG_MENUS
 
         // the following debugs turbo folders and fast
         // content trees

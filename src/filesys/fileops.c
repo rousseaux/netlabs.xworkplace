@@ -274,11 +274,6 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
             if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
             {
                 WPObject *pObject;
-
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
                 // now collect all objects in folder;
                 // -- if we have a full populate, we add all objects
                 //    to the list;
@@ -556,11 +551,6 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                 if (fFolderLocked = !fdrRequestFolderMutexSem(pObject, 5000))
                 {
                     WPObject *pSubObject;
-
-                    // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                    // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                            // = SOM_Resolve(pObject, WPFolder, wpQueryContent);
-
                     // now collect all objects in folder;
                     // -- if we have a full populate, we add all objects
                     //    to the list;

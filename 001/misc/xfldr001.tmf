@@ -451,6 +451,8 @@ Do you wish to restart the daemon now?
 
 Do you wish to start the program anyway?
 
+<--XFL0236-->: "%1" is a folder. Are you sure you want to move it into the trash can, including all of its contents?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

@@ -818,9 +818,10 @@ static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
         else
         {
-            PCXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
-
-            if (pClass)
+            PCXCENTERWIDGETCLASS pClass;
+            if (!ctrpFindClass(pWidget->pcszWidgetClass,
+                               FALSE,       // fMustBeTrayable
+                               &pClass))
             {
                 // enable "properties" if class has show-settings proc
                 WinEnableMenuItem(pWidget->hwndContextMenu,

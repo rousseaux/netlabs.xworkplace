@@ -1336,53 +1336,6 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
 }
 
 /*
- *@@ wpshPopulateTree:
- *      this will populate a given folder and all of
- *      its subfolders; used by the Worker thread to
- *      populate the Config folders in the background
- *      after the desktop is ready.
- *
- *      Be warned, this recurses in really all the
- *      folders, so in extreme cases this can populate
- *      a whole drive, which will take ages.
- *
- *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
- */
-
-/* BOOL wpshPopulateTree(WPFolder *somSelf)
-{
-    BOOL brc = FALSE;
-    WPObject    *pObject;
-
-    _Pmpf(("wpshPopulateTree"));
-
-    if (somSelf)
-    {
-        // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-        // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
-
-        if (fdrCheckIfPopulated(somSelf, FALSE))
-            brc = TRUE;
-
-        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
-        for (   pObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
-                (pObject);
-                pObject = *wpshGetNextObjPointer(pObject)
-            )
-        {
-            if (_somIsA(pObject, _WPFolder))
-                if (wpshPopulateTree(pObject)) // recurse
-                    brc = TRUE;
-        }
-    }
-
-    _Pmpf(("End of wpshPopulateTree"));
-
-    return (brc);
-} */
-
-/*
  *@@ wpshPopulateWithShadows:
  *      awakes all shadows in the specified folder.
  *

@@ -313,8 +313,16 @@
                                                  PBOOL pfIgnoreSubsequent);
 
     #define FOPS_ISQ_MOVE2TRASH_READONLY    0x0001
+
     #define FOPS_ISQ_DELETE_READONLY        0x0002
     #define FOPS_ISQ_DELETE_FOLDERS         0x0004      // V0.9.16 (2001-12-06) [umoeller]
+
+    #define FOPS_ISQ_FLAGS_EMPTYTRASH       (FOPS_ISQ_DELETE_READONLY | FOPS_ISQ_DELETE_FOLDERS)
+                            // flags for while "empty trash" is running; we no longer
+                            // confirm every folder there since we now confirm the
+                            // move to trash can
+                            // V0.9.19 (2002-05-01) [umoeller]
+
     #define FOPS_ISQ_FONTINSTALL            0x0008
 
     FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,
@@ -359,8 +367,8 @@
     typedef struct _FOPSCONFIRM
     {
         HWND        hwndOwner;          // in: owner window for msg box
-        ULONG       ulMsgSingle,        // in: msg no. if single object
-                    ulMsgMultiple;      // in: msg no. if multiple objects
+        ULONG       ulMsgMultiple,      // in: msg no. if multiple objects
+                    ulMsgSingle;        // in: msg no. if single object
         ULONG       ulHelpPanel;        // in: help panel or NULLHANDLE
                                         // V0.9.19 (2002-04-24) [umoeller]
     } FOPSCONFIRM, *PFOPSCONFIRM;

@@ -1357,9 +1357,6 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
                 WPObject *pObject;
 
                 ULONG ul = 0;
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder, NULL, "wpQueryContent");
-
                 // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                 for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         pObject;

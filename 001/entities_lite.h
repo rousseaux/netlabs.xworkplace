@@ -9,7 +9,7 @@
 #define os2 "eComStation"
 #define warp "OS/2 Warp"
 #define warp4 "OS/2 Warp 4"
-#define winos2 "Win-eCS"
+#define winos2 "Win16"
 #define warpcenter "eComCenter"
 #define xcenter "eCenter"
 #define xbutton "eButton"

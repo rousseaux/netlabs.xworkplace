@@ -441,7 +441,11 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *      Otherwise this returns:
  *
  *      --  ERROR_FILE_NOT_FOUND
+ *
  *      --  ERROR_PATH_NOT_FOUND
+ *
+ *      --  ERROR_NO_DATA: file has 0 bytes.
+ *
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
  *      --  ERROR_INVALID_PARAMETER: pcszFilename is
@@ -852,12 +856,14 @@ static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
     ULONG cColors = 1 << pInfo->cBitCount;
     ULONG cyRealSrc = pInfo->cy / 2;             // cy is doubled always
 
+#ifdef DEBUG_ICONREPLACEMENTS
     _Pmpf(("    cbFix %d", pInfo->cbFix));
     _Pmpf(("    cx %d", pInfo->cx));
     _Pmpf(("    cy %d", pInfo->cy));
     _Pmpf(("    cPlanes %d", pInfo->cPlanes));
     _Pmpf(("    cBitCount %d, cColors %d", pInfo->cBitCount, cColors));
     _Pmpf(("    cColorsUsed %d", pInfo->cColorsUsed));
+#endif
 
     /*
      * check source format:
@@ -1079,8 +1085,7 @@ static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                          y < cyRealSrc;
                          y++)
                     {
-                        PBYTE   // pbBmpTest = pbBitmapSrcThis,
-                                pbAndTest = pbAndMaskSrcThis,
+                        PBYTE   pbAndTest = pbAndMaskSrcThis,
                                 pbAndSet = pbAndMaskDestThis;
 
                         // bit to check for AND and XOR masks;
@@ -1312,7 +1317,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                     {
                         // this is not our type, so we can simply
                         // skip the entire table for speed
-#ifdef _PMPRINTF_
+#ifdef DEBUG_ICONREPLACEMENTS
                         CHAR szBuf[100];
                         _Pmpf((__FUNCTION__ ": skipping type %d (%s), %d entries",
                                       ulTypeThis,
@@ -1327,7 +1332,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                         nameinfo *paNameInfos = NULL;
                         ULONG cbNameInfos;
 
-#ifdef _PMPRINTF_
+#ifdef DEBUG_ICONREPLACEMENTS
                         CHAR szBuf[100];
                         _Pmpf((__FUNCTION__ ": entering type %d (%s), %d entries",
                                       ulTypeThis,
@@ -1359,10 +1364,12 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                                 ULONG ulIDThis = pThis->rn_id;
                                 ULONG ulOffset = pThis->rn_offset << usAlignShift;
                                 ULONG cbThis =   pThis->rn_length << usAlignShift;
+#ifdef DEBUG_ICONREPLACEMENTS
                                 _Pmpf(("   found res type %d, id %d, length %d",
                                             ulTypeThis,
                                             ulIDThis & ~0x8000,
                                             cbThis));
+#endif
 
                                 if (    (!idResource)
                                      || (    (ulIDThis & 0x8000)
@@ -1572,9 +1579,11 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
 
     int i;
 
+#ifdef DEBUG_ICONREPLACEMENTS
     _Pmpf((__FUNCTION__ ": entering, %d sections, looking for 0x%lX",
                 pPEHeader->FileHeader.usNumberOfSections,
                 ulAddressFind));
+#endif
 
     for (i = 0;
          i < pPEHeader->FileHeader.usNumberOfSections;
@@ -1582,10 +1591,12 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
     {
         PIMAGE_SECTION_HEADER pThis = &paSections[i];
 
+#ifdef DEBUG_ICONREPLACEMENTS
         _Pmpf(("    %d (%s): virtual address 0x%lX",
                 i,
                 pThis->Name,
                 pThis->VirtualAddress));
+#endif
 
         if (pThis->flCharacteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA)
             continue;
@@ -1599,10 +1610,12 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
             ULONG cb = pThis->ulSizeOfRawData; // sizeof(IMAGE_RESOURCE_DIRECTORY);
             PIMAGE_RESOURCE_DIRECTORY pResDir;
 
+#ifdef DEBUG_ICONREPLACEMENTS
             _Pmpf((__FUNCTION__ ": raw data size %d, ptr %d",
                     pThis->ulSizeOfRawData,
                     pThis->ulPointerToRawData,
                     sizeof(IMAGE_RESOURCE_DIRECTORY)));
+#endif
 
             if (!(pResDir = malloc(cb)))
                 arc = ERROR_NOT_ENOUGH_MEMORY;
@@ -1627,7 +1640,9 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
         }
     }
 
+#ifdef DEBUG_ICONREPLACEMENTS
     _Pmpf((__FUNCTION__": returning %d", arc));
+#endif
 
     return (arc);
 }
@@ -1742,19 +1757,23 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
 
             BOOL fPtrFound = FALSE;
 
+#ifdef DEBUG_ICONREPLACEMENTS
             _Pmpf(("  found RT_GROUP_ICONW, %d names, %d ids",
                     icongroupresdir->NumberOfNamedEntries,
                     icongroupresdir->NumberOfIdEntries));
+#endif
 
             // go thru icon group
             for (ulIconGroup = 0;
                  ((ulIconGroup < iconDirCount) && (pResDirEntryThis)) && (!arc);
                  ulIconGroup++, pResDirEntryThis++)
             {
+#ifdef DEBUG_ICONREPLACEMENTS
                 _Pmpf(("  %d: idThis: %d, ofs to data 0x%lX",
                         ulIconGroup,
                         pResDirEntryThis->u1.Id,
                         pResDirEntryThis->u2.OffsetToData));
+#endif
 
                 if (    (idResource == 0)       // first one found
                      || (pResDirEntryThis->u1.Id == idResource)
@@ -1779,7 +1798,9 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                         {
                             pXResDirEntry = pXResDirEntry + idResource;     // starting from specified index ...
 
+#ifdef DEBUG_ICONREPLACEMENTS
                             _Pmpf(("    found icondir for id %d", pResDirEntryThis->u1.Id));
+#endif
 
                             for (i = 0;
                                  i < ulIconGroup;
@@ -1821,7 +1842,9 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                                               + paSections[j].ulPointerToRawData
                                             );
 
+#ifdef DEBUG_ICONREPLACEMENTS
                                     _Pmpf(("    data of this icon group is at 0x%lX", ulOfs));
+#endif
 
                                     /* RetPtr[i] = (HICON)pLookupIconIdFromDirectoryEx(igdata,
                                                                                     TRUE,
@@ -2023,8 +2046,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                                     idResource,
                                                     &pbData,
                                                     &cbData);
+#ifdef DEBUG_ICONREPLACEMENTS
                         if (arc)
                             _Pmpf((__FUNCTION__ ": LoadOS2NEResource returned %d", arc));
+#endif
                     break;
 
                     case EXEOS_WIN16:
@@ -2034,8 +2059,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                                 idResource,
                                                 &pbData,
                                                 &cbData);
+#ifdef DEBUG_ICONREPLACEMENTS
                         if (arc)
                             _Pmpf((__FUNCTION__ ": LoadWinNEResource returned %d", arc));
+#endif
                     break;
 
                     default:
@@ -2049,7 +2076,9 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                         idResource,
                                         &pbData,
                                         &cbData);
+#ifdef DEBUG_ICONREPLACEMENTS
                 _Pmpf((__FUNCTION__ ": LoadWinPEResource returned %d", arc));
+#endif
             break;
 
             default:        // includes COM, BAT, CMD
@@ -2102,8 +2131,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
     if (pbData)
         free(pbData);
 
+#ifdef DEBUG_ICONREPLACEMENTS
     if (arc)
         _Pmpf((__FUNCTION__ ": returning %d", arc));
+#endif
 
     return (arc);
 }
@@ -2383,14 +2414,18 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
          && (pData = doshMalloc(cbIconInfo, &arc))
        )
     {
+#ifdef DEBUG_ICONREPLACEMENTS
         _Pmpf((__FUNCTION__ ": allocated %d bytes", cbIconInfo));
+#endif
 
         // ask the object again
         if (icoQueryIconDataN(pobj,
                               ulIndex,
                               pData))
         {
+#ifdef DEBUG_ICONREPLACEMENTS
             _Pmpf(("   got %d bytes data", cbIconInfo));
+#endif
 
             // get the icon data depending on the format
             switch (pData->fFormat)
@@ -2399,7 +2434,10 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
                 {
                     ULONG   cbResource;
                     PVOID   pvResourceTemp;
+#ifdef DEBUG_ICONREPLACEMENTS
                     _Pmpf(("   ICON_RESOURCE 0x%lX, %d", pData->hmod, pData->resid));
+#endif
+
                     // object has specified icon resource:
                     // load resource data...
                     if (    (!(arc = DosQueryResourceSize(pData->hmod,
@@ -2445,7 +2483,10 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
                 break;
 
                 case ICON_DATA:
+#ifdef DEBUG_ICONREPLACEMENTS
                     _Pmpf(("   ICON_DATA"));
+#endif
+
                     // this is OK, no conversion needed
                     *ppIconInfo = pData;
                     arc = NO_ERROR;
@@ -2454,7 +2495,10 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
                 case ICON_FILE:
                 {
                     WPFileSystem *pfs;
+#ifdef DEBUG_ICONREPLACEMENTS
                     _Pmpf(("   ICON_FILE \"%s\"", pData->pszFileName));
+#endif
+
                     if (    (pData->pszFileName)
                          && (pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
                                                              pData->pszFileName))
@@ -2491,7 +2535,10 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
 
                 default:
                     // any other format:
+#ifdef DEBUG_ICONREPLACEMENTS
                     _Pmpf(("    invalid format %d", pData->fFormat));
+#endif
+
                     arc = ERROR_INVALID_DATA;
             } // end switch (pData->Format)
         } // end if (_wpQueryIconData(pobj, pData))
@@ -2502,7 +2549,9 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
             free(pData);
     }
 
+#ifdef DEBUG_ICONREPLACEMENTS
     _Pmpf((__FUNCTION__ ": returning %d", arc));
+#endif
 
     return (arc);
 }
@@ -3700,6 +3749,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
  *@@changed V0.9.16 (2001-12-08) [umoeller]: now disabling hotkeys while entryfield has the focus
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: this didn't allow empty titles, fixed
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3736,19 +3786,26 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                    )
                 {
                     PSZ pszNewTitle;
-                    if (!(pszNewTitle = winhQueryWindowText(pnbp->hwndControl)))
+                    BOOL rc;
+
+                    if (pszNewTitle = winhQueryWindowText(pnbp->hwndControl))
                     {
-                        // no title: restore old
+                        rc = _wpSetTitle(pnbp->inbp.somSelf, pszNewTitle);
+                        free(pszNewTitle);
+                    }
+                    else
+                        // empty titles are valid, but we can't pass in
+                        // NULL strings, so use an empty string
+                        // V0.9.19 (2002-04-25) [umoeller]
+                        rc = _wpSetTitle(pnbp->inbp.somSelf, "");
+
+                    if (!rc)
+                        // failed: restore old
                         cmnMessageBoxExt(pnbp->hwndDlgPage,
                                          104,   // error
                                          NULL, 0,
                                          187,   // old name restored
                                          MB_OK);
-                    }
-                    else
-                        _wpSetTitle(pnbp->inbp.somSelf, pszNewTitle);
-
-                    free(pszNewTitle);
 
                     fRefresh = TRUE;
                 }

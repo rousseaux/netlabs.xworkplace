@@ -1,41 +1,47 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        Requirements
+        Voraussetzungen
     </TITLE>
 </HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-To write a plug-in DLL, you need to be familiar with the following:
+Um eine Plugin-DLL zu schreiben, mÅssen Sie mit folgendem vertraut sein:
 
-<OL><LI>The C programming language. There is no language support for the &os2;
-Pascal dialects at this point.
+<OL><LI>Der Programmiersprache C. Im Moment gibt es keine UnterstÅtzung
+fÅr die unter &os2; verwendeten Pascal-Dialekte.
 
-<P><LI>Presentation Manager programming. A widget class is essentially a
-PM window class (see <A HREF="plug_2terminology.html">"Terminology"</A>).
+<P><LI>Der Programmierung des Presentation Managers; eine Widget-Klasse ist
+im wesentlichen eine PM-Fensterklasse (siehe
+<A HREF="plug_2terminology.html">"Terminologie"</A>).
 
-<P>If you haven't written a PM window class from scratch before, don't worry.
-The samples will guide you, and it isn't that difficult. If you know what
-a window procedure is, and if you know the difference between an owner and
-a parent window and <CODE>WinSendMsg</CODE> and <CODE>WinPostMsg</CODE>,
-you should be fine. Of course, the more you know, the better.
+<P>Wenn Sie bis jetzt noch keine PM-Fensterklasse von Grund auf geschrieben
+haben, machen Sie sich keine Sorgen. Die Beispiele werden Sie leiten, und
+es ist auch eigentlich nicht so schwierig. Wenn Sie wissen, was eine
+Fensterprozedur ist, und wenn Sie den Unterschied zwischen einem Besitzer
+und einem Mutterfenster, sowie <CODE>WinSendMsg</CODE> und
+<CODE>WinPostMsg</CODE> kennen, sollte es keine Schwierigkeiten geben. Je
+mehr Sie schon wissen, desto einfacher geht es natÅrlich.
 
-<P><LI>You should know what a DLL is, when and why they are used, and why
-a DLL is not a process. ;-)
+<P><LI>Sie sollten wissen, was eine DLL ist, wann und warum sie benutzt
+wird, und warum eine DLL kein Proze· ist. ;-)
 
-</OL>Now for the good news: You do <I>not</I> need to know WPS and/or
-SOM programming, which should be a great relief to many contributors.
+</OL>Nun zu den guten Neuigkeiten: Sie brauchen <I>nicht</I> zu wissen, wie
+man die WPS oder mit SOM programmiert, was sicher fÅr viele, die etwas
+beitragen mîchten, eine gro·e Erleichterung sein wird.
 
-<P>Also, you can use any C compiler you want. Even EMX/GCC should do.
-The only &xwp; code that is required are the headers that you are including,
-which now come with the &xwp; binary distribution (in the <CODE>toolkit</CODE>
-directory).
+<P>Sie kînnen au·erdem den C-Compiler Ihrer Wahl benutzen. Sogar EMX/GCC
+sollte ausreichen. Sie benîtigen vom &xwp;-Code nur die Header-Dateien, die
+Sie einbinden wollen, und die jetzt mit der binÑren &xwp;-Distribution
+geliefert werden (im Verzeichnis <CODE>toolkit</CODE>).
 
-<P>If you get lost, you can always download the
-<A HREF="notices_40source.html">complete &xwp; source code</A>,
-where you will find the source code for the standard plug-in DLLs which come
-with &xwp; (the window list and the clock and memory monitors), which show
-you in detail how it's done.
+<P>Wenn Sie einmal nicht mehr weiter kommen, kînnen Sie immer noch den
+<A HREF="notices_40source.html">kompletten Quellcode von &xwp;</A>
+herunterladen, wo Sie auch die Quellen fÅr die Standardplugin-DLLs finden,
+die mit &xwp; geliefert werden (fÅr die Fensterliste, die Uhr und die
+Anzeigen zur Speicherbelegung), die Ihnen im Detail demonstrieren, wie es
+richtig geht.
 
 <BR>
 </BODY>

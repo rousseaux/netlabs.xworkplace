@@ -19,7 +19,21 @@ String              = "Setup String";
 FontFolder          = "Fonts";
 TrashCan            = "Trash Can";
 
-/* DO NOT CHANGE the following */
+Lockup              = "Lockup now";
+FindObjects         = "Find objects";
+Shutdown            = "Shut down";
+
+/*********************************************
+ *
+ *  NLS-independent portion
+ *
+ *  Note: All of this was rewritten with V0.9.19,
+ *  but the NLS part above is unchanged. Just copy
+ *  the entire chunk below from instl001.cmd to your
+ *  translated file, and it should still work.
+ *
+ ********************************************/
+
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
 call SysLoadFuncs
 
@@ -32,23 +46,130 @@ dir = pdir||"bin\";
 
 HelpLibrary = "HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;"
 
-/* create eCenter in eCS "Utilities" folder */
-rc = SysCreateObject("XCenter", "eCenter", "<WP_TOOLS>", "OBJECTID=<XWP_XCENTER>;", "U");
-
 /* "Fonts" folder  */
-rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_CONFIG>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
+class = "XWPFontFolder";
+title = FontFolder;
+setup = "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;"
+id = "<XWP_FONTFOLDER>"
+target = "<WP_CONFIG>";
+call CreateObject;
 
 /* create "Workplace Shell" */
-rc = SysCreateObject("XFldWPS", WorkplaceShell, "<WP_CONFIG>", "OBJECTID=<XWP_WPS>;", "U");
+class = "XFldWPS";
+title = WorkplaceShell;
+setup = "";
+id = "<XWP_WPS>";
+target = "<WP_CONFIG>";
+call CreateObject;
 
 /* create "Screen" */
-rc = SysCreateObject("XWPScreen", Screen, "<WP_CONFIG>", "OBJECTID=<XWP_SCREEN>;", "U");
+class = "XWPScreen";
+title = Screen;
+setup = "";
+id = "<XWP_SCREEN>";
+target = "<WP_CONFIG>";
+call CreateObject;
 
 /* create "Setup String" template in Templates folder */
-rc = SysCreateObject("XWPString", String, "<WP_TEMPS>", "TEMPLATE=YES;OBJECTID=<XWP_STRINGTPL>;", "U");
+class = "XWPString";
+title = String;
+setup = "TEMPLATE=YES;"
+id = "<XWP_STRINGTPL>";
+target = "<WP_TEMPS>";
+call CreateObject;
 
 /* create trash can on desktop */
-rc = SysCreateObject("XWPTrashCan", TrashCan, "<WP_DESKTOP>", "DEFAULTVIEW=DETAILS;ALWAYSSORT=YES;DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;", "U");
+class = "XWPTrashCan";
+title = TrashCan;
+setup = "DEFAULTVIEW=DETAILS;ALWAYSSORT=YES;DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;"
+id = "<XWP_TRASHCAN>";
+target = "<WP_DESKTOP>";
+call CreateObject;
+
+/* create "Lockup" setup string object */
+class = "XWPString";
+title = Lockup;
+setup = "SETUPSTRING=MENUITEMSELECTED%3D705%3B;DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;ICONRESOURCE=78,PMWP;"
+id = "<XWP_LOCKUPSTR>"
+target = "<WP_NOWHERE>";
+call CreateObject;
+
+/* create "Find objects" setup string object */
+class = "XWPString";
+title = FindObjects;
+setup = "SETUPSTRING=MENUITEMSELECTED%3D8%3B;DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;ICONRESOURCE=79,PMWP;";
+id = "<XWP_FINDSTR>";
+target = "<WP_NOWHERE>";
+call CreateObject;
+
+/* create "Shutdown" setup string object */
+class = "XWPString";
+title = Shutdown;
+setup = "SETUPSTRING=MENUITEMSELECTED%3D704%3B;DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;ICONRESOURCE=80,PMWP;"
+id = "<XWP_SHUTDOWNSTR>";
+target = "<WP_NOWHERE>";
+call CreateObject;
+
+/* create eCenter in eCS "Utilities" folder */
+class = "XCenter";
+title = "eCenter";
+setup = "";
+id = "<XWP_XCENTER>"
+target = "<WP_TOOLS>";
+call CreateObject;
 
 "@call "idir"crobj"LanguageCode
 
+exit;
+
+
+CreateObject:
+    len = length(id);
+    if (len == 0) then do
+        Say 'Error with object "'title'": object ID not given.';
+        exit;
+    end
+
+    if (left(id, 1) \= '<') then do
+        Say 'Error with object "'title'": object ID does not start with "<".';
+        exit;
+    end
+
+    if (right(id, 1) \= '>') then do
+        Say 'Error with object "'title'": object ID does not end with ">".';
+        exit;
+    end
+
+    len = length(setup);
+    if ((len > 0) & (right(setup, 1) \= ';')) then do
+        Say 'Error with object "'title'": Setup string "'setup'" does not end in semicolon.';
+        exit;
+    end
+    call charout , 'Creating "'title'" of class "'class'", setup "'setup'"... '
+    rc = SysCreateObject(class, title, target, setup"TITLE="title";OBJECTID="id";", "U");
+    if (\rc) then do
+        rc = SysCreateObject(class, title, "<WP_DESKTOP>", setup"TITLE="title";OBJECTID="id";", "U");
+    end;
+    if (\rc) then do
+        Say 'Warning: object "'title'" of class "'class'" could not be created.'
+    end
+    else do
+        Say "OK"
+    end
+
+    id = "";
+
+    return;
+
+CreateObjectWithShadow:
+    idOld = id;
+    call CreateObject;
+
+    class = "WPShadow";
+    setup = "SHADOWID="idOld";"
+    id = idOfShadow;
+    target = "<XWP_MAINFLDR>";
+
+    call CreateObject;
+
+    return;

@@ -771,7 +771,6 @@ FOPSRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
                                        pulIgnoreSubsequent));
     }
 
-    //
     return (NO_ERROR);
 }
 
@@ -1356,6 +1355,7 @@ FOPSRET fopsFileThreadFontProcessing(HAB hab,
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added synchronous processing support
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added hab to prototype (needed for font install)
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
+ *@@changed V0.9.19 (2002-05-01) [umoeller]: reversed confirmations for move to trash and empty trash
  */
 
 VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor block
@@ -1404,6 +1404,22 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                     #ifdef DEBUG_TRASHCAN
                         _Pmpf(("  target trash can is %s", _wpQueryTitle(pftl->pTargetFolder) ));
                     #endif
+                break;
+
+                case XFT_TRUEDELETE:
+                    // this can either be a real true delete,
+                    // or an empty trash can command... for
+                    // empty trash can, we should no longer
+                    // display confirmations,
+                    if (_somIsA(pftl->pSourceFolder, _XWPTrashCan))
+                    {
+                        // empty trash can:
+                        // pretend the user has pressed "Yes to all" for
+                        // folders and readonly files
+                        // V0.9.19 (2002-05-01) [umoeller]
+                        ulIgnoreSubsequent = FOPS_ISQ_FLAGS_EMPTYTRASH;
+                        DosBeep(1000, 100);
+                    }
                 break;
             }
 
@@ -1468,13 +1484,26 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_MOVE2TRASHCAN:
+                    {
                         #ifdef DEBUG_TRASHCAN
                             _Pmpf(("  fopsFileThreadProcessing: trashmove %s",
                                         _wpQueryTitle(fu.pSourceObject) ));
                         #endif
-                        if (!_xwpDeleteIntoTrashCan(pftl->pTargetFolder, // default trash can
-                                                    fu.pSourceObject))
-                            frc = FOPSERR_NOT_HANDLED_ABORT;
+
+                        // confirm this if the object is a folder and
+                        // folder deletion confirm is on
+                        // V0.9.19 (2002-05-01) [umoeller]
+                        if (    (!objIsAFolder(fu.pSourceObject))
+                             || (!(frc = fopsFileThreadConfirmDeleteFolder(pftl,
+                                                                           fu.pSourceObject,
+                                                                           &ulIgnoreSubsequent)))
+                           )
+                        {
+                            if (!_xwpDeleteIntoTrashCan(pftl->pTargetFolder, // default trash can
+                                                        fu.pSourceObject))
+                                frc = FOPSERR_NOT_HANDLED_ABORT;
+                        }
+                    }
                     break;
 
                     /*

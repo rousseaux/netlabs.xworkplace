@@ -85,18 +85,25 @@ The default is <CODE>YES</CODE>.
 <DD>Corresponds to the "Frame around statics" setting on an XCenter's "Style" page.
 The default is <CODE>NO</CODE>.
 
-<DT><P><CITE><B>WIDGETS</B>=<I>widget[,widget]...</I></CITE>
+<!-- V0.9.19: rewrote the WIDGETS definition -->
+<DT><P><CITE><B>WIDGETS</B>=<I>widget</I>[,<I>widget</I>]...</CITE>
 <DD>A complete, comma-separated list of the
-<!-- V0.9.19: added link -->
 <A HREF="xcenter/xc_main_widgets.html">widgets</A>
 that have been added to the &xcenter;.
-Each <CODE>widget</CODE> string has the following format:
-<BR><CODE>classname[(setup)]</CODE>
-<BR>where <CODE>classname</CODE> is the name of the widget class (as displayed on the
-"Classes" notebook page in the XCenter's properties notebook and
-<CODE>(setup)</CODE> optionally specifies the setup sub-string of the
-widget. The setup sub-string is partially encoded so that it will not contain
-characters that are forbidden in WPS setup strings.
+Each <CODE><I>widget</I></CODE> string must have the following format:
+<BR><CODE><I>classname</I>(<I>setup</I>)</CODE>
+<BR>where <CODE>classname</CODE> is the name of the widget class (as displayed
+on the "Classes" notebook page in the XCenter's properties notebook) and
+<CODE>(<I>setup</I>)</CODE> optionally specifies the setup sub-string of the
+widget. If there is no setup string, you must add an empty pair of brackets,
+e.g. "Pulse()". The setup sub-string is partially encoded so that it will not
+contain characters that are forbidden in WPS setup strings.
+
+<!-- V0.9.19: added this -->
+<P>If and only if <CODE>classname</CODE> is "Tray" for creating a
+<A HREF="xcenter/xc_tray.html">tray widget</A>, the setup string must have the
+following format: <CODE>Tray(<I>setup</I>){<I>trayname</I>[<I>widgetlist</I>]...}</CODE>
+(Note that the brackets are literal here.)
 
 <DT><P><CITE><B>WIDGETSPACING</B>=<I>value</I></CITE>
 <DD>Corresponds to the "Widget spacing" setting on an XCenter's "Style" page.

@@ -34,10 +34,17 @@
     #endif
 
     // log file names
-    #define XFOLDER_CRASHLOG        "xwptrap.log"
-    #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
-    #define XFOLDER_LOGLOG          "xwplog.log"
-    #define XFOLDER_DMNCRASHLOG     "xdmntrap.log"
+    #ifndef __XWPLITE__
+        #define XFOLDER_CRASHLOG        "xwptrap.log"
+        #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
+        #define XFOLDER_LOGLOG          "xwplog.log"
+        #define XFOLDER_DMNCRASHLOG     "xdmntrap.log"
+    #else
+        #define XFOLDER_CRASHLOG        "ewptrap.log"
+        #define XFOLDER_SHUTDOWNLOG     "eshutdwn.log"
+        #define XFOLDER_LOGLOG          "ewplog.log"
+        #define XFOLDER_DMNCRASHLOG     "edmntrap.log"
+    #endif
 
     /* ******************************************************************
      *

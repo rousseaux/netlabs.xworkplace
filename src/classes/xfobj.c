@@ -1151,7 +1151,7 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
     {
         _flFlags = OBJFL_WPABSTRACT;
         if (_somIsA(somSelf, _WPShadow))
-            _flFlags = OBJFL_WPSHADOW;
+            _flFlags |= OBJFL_WPSHADOW;
     }
 
     // _fDeleted = FALSE;
@@ -1600,7 +1600,7 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                                       PSZ pszNewTitle)
 {
-    BOOL    brc = FALSE,
+    BOOL    brc = TRUE,
             fLocked = FALSE;
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
@@ -1610,19 +1610,22 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (pszNewTitle)
+        if (!pszNewTitle)
+            brc = FALSE;
+        else
         {
             PMINIRECORDCORE pRecord = _wpQueryCoreRecord(somSelf);
-            ULONG ulNewTitleLen = strlen(pszNewTitle);
-
-            PSZ pszNewTitleCopy;
-            ULONG ulError;
+            ULONG       ulNewTitleLen = strlen(pszNewTitle);
+            PSZ         pszNewTitleCopy;
+            ULONG       ulError;
 
             // use the WPS heap in order not to clutter up
             // our own heap with all the string data
-            if (pszNewTitleCopy = _wpAllocMem(somSelf,
-                                              ulNewTitleLen + 1,
-                                              &ulError))
+            if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
+                                                ulNewTitleLen + 1,
+                                                &ulError)))
+                brc = FALSE;
+            else
             {
                 PSZ p;
 
@@ -1633,9 +1636,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                 while (p = strchr(p, '^'))
                     *p = '\n';
 
-                if (    (!pRecord->pszIcon)
-                     || (strcmp(pRecord->pszIcon, pszNewTitleCopy))
-                   )
+                if (strhcmp(pRecord->pszIcon, pszNewTitleCopy))
                 {
                     // new title is different:
                     ULONG           ulStyle = _wpQueryStyle(somSelf);
@@ -1659,16 +1660,17 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                     // now go set the new string which we allocated above
                     if (pRecord->pszIcon)
                         _wpFreeMem(somSelf, pRecord->pszIcon);
-                    pRecord->pszIcon = pszNewTitleCopy;
+                    pRecord->pszIcon = pszNewTitleCopy;     // can be NULL V0.9.19 (2002-04-25) [umoeller]
 
                     // this was missing V0.9.17 (2002-02-05) [umoeller]
                     // abstracts don't save themselves otherwise
                     if (    (fIsInitialized)
                          && (_flFlags & OBJFL_WPABSTRACT)
                        )
+                    {
+                        _Pmpf((__FUNCTION__ ": obj is abstract, saving"));
                         _wpSaveDeferred(somSelf);
-
-                    brc = TRUE;
+                    }
 
                     // now go refresh all the views...
                     // no need to do that if the object isn't even
@@ -1695,10 +1697,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                 else
                     // title hasn't changed:
                     _wpFreeMem(somSelf, pszNewTitleCopy);
-
-            } // end if (pszNewTitleCopy = strdup(pszNewTitle))
-        } // end if (pszNewTitle)
-        // else: do nothing, return FALSE
+            } // end else if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
+        } // end if (!pszNewTitle)
     }
     CATCH(excpt1)
     {

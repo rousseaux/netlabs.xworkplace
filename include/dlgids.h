@@ -302,7 +302,10 @@
 #define ID_XFDI_CNR_GROUPTITLE          302
 
 // "Run" dialog V0.9.9 (2001-03-07) [umoeller]
-#define ID_XFD_RUN                      350
+// #define ID_XFD_RUN                      350      removed V0.9.19 (2002-04-25) [umoeller]
+#define ID_XFD_RUN_TITLE                348
+#define ID_XFD_RUN_INTRO                349
+#define ID_XFD_RUN_STARTUPDIR_TXT       350
 #define ID_XFD_RUN_COMMAND              351
 #define ID_XFD_RUN_STARTUPDIR           352
 #define ID_XFD_RUN_FULLPATH             353
@@ -312,7 +315,7 @@
 #define ID_XFD_RUN_FULLSCREEN           356
 #define ID_XFD_RUN_ENHANCED             357
 #define ID_XFD_RUN_SEPARATE             358
-#define ID_XFD_RUN_BROWSE               359
+// #define ID_XFD_RUN_BROWSE               359      removed V0.9.19 (2002-04-25) [umoeller]
 #define ID_XFD_RUN_WINOS2_GROUP         360
 
 // "Startup panic" dialog, V0.9.0

@@ -367,6 +367,7 @@
     #ifndef __XWPLITE__
         #define XWORKPLACE_STRING "XWorkplace"
         DECLARE_CMN_STRING(ENTITY_OS2, "OS/2");
+        DECLARE_CMN_STRING(ENTITY_WINOS2, "Win-OS/2");
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "WarpCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "XCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
@@ -374,11 +375,14 @@
     #else
         #define XWORKPLACE_STRING "eComStation"
         DECLARE_CMN_STRING(ENTITY_OS2, "eComStation");
+        DECLARE_CMN_STRING(ENTITY_WINOS2, "Win16");
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "eComCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
         DECLARE_CMN_STRING(ENTITY_PAGER, "ePager");
     #endif
+
+    #define STARTUPLOG      "wpstart.log"
 
     DECLARE_CMN_STRING(ENTITY_XWORKPLACE, XWORKPLACE_STRING);
 

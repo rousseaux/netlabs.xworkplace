@@ -1547,7 +1547,7 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
 
             WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)mp2); // Owner frame hwnd;
 
-            winhSetEntryFieldLimit(ID_XFDI_SOME_ENTRYFIELD, 250);
+            winhSetEntryFieldLimit(hwndDropDown, 250);
                     // was missing V0.9.19 (2002-04-17) [umoeller]
 
             // load last 10 selections from OS2.INI (V0.9.0)
@@ -1567,6 +1567,9 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
 
                 free(pszLast10);
             }
+
+            // give the drop-down the focus
+            WinSetFocus(HWND_DESKTOP, hwndDropDown);
 
             // select entire string in drop-down
             winhEntryFieldSelectAll(hwndDropDown);
@@ -1822,7 +1825,7 @@ static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
 {
     PICONPOS                    pip;
     CHAR                        *p;
-    USHORT usStartPos = 21;  // OS/2 2.1 and above, says Henk
+    USHORT usStartPos = 21;     // OS/2 2.1 and above, says Henk
 
     // ICONPOS is defined in PMWP.H as folllows:
     //     typedef struct _ICONPOS
@@ -1835,15 +1838,14 @@ static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
     // now compare all the objects in the .ICONPOS structure
     // to the identity string of the search object
 
-    for (   pip = (PICONPOS)( psip->pICONPOS + usStartPos );
+    for (   pip = (PICONPOS)(psip->pICONPOS + usStartPos);
             (PBYTE)pip < (psip->pICONPOS + psip->usICONPOSSize);
         )
     {   // pip now points to an ICONPOS structure
 
         // go beyond the class name
-        p = strchr(pip->szIdentity, ':');
-        if (p) {
-
+        if (p = strchr(pip->szIdentity, ':'))
+        {
             /* #ifdef DEBUG_ORDEREDLIST
                 _Pmpf(("      Identities: %s and %s...", p, poli->szIdentity));
             #endif */
@@ -1853,8 +1855,12 @@ static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
                 return (pip);
             else
                 // not identical: go to next ICONPOS structure
-                pip = (PICONPOS)( (PBYTE)pip + sizeof(POINTL) + strlen(pip->szIdentity) + 1 );
-        } else
+                pip = (PICONPOS)(   (PBYTE)pip
+                                  + sizeof(POINTL)
+                                  + strlen(pip->szIdentity)
+                                  + 1);
+        }
+        else
             break;
     }
     return (NULL);
@@ -1877,7 +1883,8 @@ SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
             _wpQueryTitle(((PORDEREDLISTITEM)pItem2)->pObj)
         ));
     #endif */
-    if ((pItem1) && (pItem2)) {
+    if ((pItem1) && (pItem2))
+    {
         PICONPOS pip1 = GetICONPOS(((PORDEREDLISTITEM)pItem1), psip),
                  pip2 = GetICONPOS(((PORDEREDLISTITEM)pItem2), psip);
 

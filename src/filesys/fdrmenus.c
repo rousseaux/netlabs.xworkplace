@@ -618,12 +618,18 @@ XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf)
     {
         if (cmnIsADesktop(somSelf))
         {
-            _Pmpf((__FUNCTION__ ": returning sflMenuDesktopWPS"));
+            #ifdef DEBUG_MENUS
+                _Pmpf((__FUNCTION__ ": returning sflMenuDesktopWPS"));
+            #endif
+
             return sflMenuDesktopWPS;
         }
         else
         {
-            _Pmpf((__FUNCTION__ ": returning sflMenuFolderWPS"));
+            #ifdef DEBUG_MENUS
+                _Pmpf((__FUNCTION__ ": returning sflMenuFolderWPS"));
+            #endif
+
             return sflMenuFolderWPS;
         }
     }
@@ -653,12 +659,18 @@ XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf)
     {
         if (cmnIsADesktop(somSelf))
         {
-            _Pmpf((__FUNCTION__ ": returning sflMenuDesktopXWP"));
+            #ifdef DEBUG_MENUS
+                _Pmpf((__FUNCTION__ ": returning sflMenuDesktopXWP"));
+            #endif
+
             return sflMenuDesktopXWP;
         }
         else
         {
-            _Pmpf((__FUNCTION__ ": returning sflMenuFolderXWP"));
+            #ifdef DEBUG_MENUS
+                _Pmpf((__FUNCTION__ ": returning sflMenuFolderXWP"));
+            #endif
+
             return sflMenuFolderXWP;
         }
     }
@@ -707,7 +719,9 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
     ULONG fl = cmnQuerySetting(s);
     ULONG ul;
 
-    _Pmpf((__FUNCTION__ ": got 0x%08lX for setting %d", fl, s));
+    #ifdef DEBUG_MENUS
+        _Pmpf((__FUNCTION__ ": got 0x%08lX for setting %d", fl, s));
+    #endif
 
     for (ul = 0;
          ul < cSuppressFlags;
@@ -1233,6 +1247,8 @@ static VOID UnlockConfigCache(VOID)
 
 VOID mnuInvalidateConfigCache(VOID)
 {
+    _Pmpf((__FUNCTION__));
+
     if (LockConfigCache())
     {
         lstClear(&G_llConfigContent);
@@ -1275,9 +1291,9 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
 {
     BOOL brc = FALSE;
 
-    XFolder *pConfigFolder = _xwpclsQueryConfigFolder(_XFolder);
+    XFolder *pConfigFolder;
 
-    if (pConfigFolder == NULL)
+    if (!(pConfigFolder = _xwpclsQueryConfigFolder(_XFolder)))
         // config folder not or no longer found:
         mnuInvalidateConfigCache();
     else
@@ -1289,6 +1305,7 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
             if (!G_fConfigCacheValid)
             {
                 // no: create one
+                _Pmpf((__FUNCTION__ ": calling BuildConfigItemsList"));
                 BuildConfigItemsList(&G_llConfigContent,
                                      pConfigFolder);
                 G_fConfigCacheValid = TRUE;
@@ -3660,7 +3677,10 @@ static VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                     // 2) is this menu item not filtered out for the subclass?
                     // CONFFL_WPDESKTOP            0x00000004
                     // CONFFL_FILTERED_WPDESKTOP   0x00000400
-                 && (!(((flConfig & CONFFL_FILTEREDMASK) >> CONFFL_FILTEREDSHIFT) & pCategory->fl))
+                 && (!(   ((flConfig & CONFFL_FILTEREDMASK) >> CONFFL_FILTEREDSHIFT)
+                        & pCategory->fl))
+                    // skip entry if item is not configurable
+                 && (!(flConfig & CONFFL_CANNOTREMOVE))
                     // skip entry if short menus are on and flag is set
                  && ((!fShortMenus) || (!(flConfig & CONFFL_NOTINSHORTMENUS)))
                     // skip separators for now
@@ -3676,6 +3696,8 @@ static VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 ULONG flStyle = CRA_COLLAPSED | CRA_RECORDREADONLY;
                 PSZ p;
 
+                /*      we could disable static menu items,
+                        but why show them all (see above)
                 if (flConfig & CONFFL_CANNOTREMOVE)
                 {
                     preccNew->recc.ulStyle = WS_VISIBLE;
@@ -3683,6 +3705,7 @@ static VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                     flStyle |= CRA_DISABLED;
                 }
                 else
+                */
                 {
                     XWPSETTING s;
                     ULONG flFilter = G_MenuItemsWithIDs[ul].flFilter;

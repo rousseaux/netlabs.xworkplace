@@ -1103,6 +1103,7 @@ static ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wp
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added CheckDesktopValid()
  *@@changed V0.9.17 (2002-02-05) [umoeller]: added option to stop checking for broken desktops
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed wrong pager settings after logoff
+ *@@changed V0.9.19 (2002-05-01) [umoeller]: changed name of startup log file
  */
 
 VOID initMain(VOID)
@@ -1148,7 +1149,7 @@ VOID initMain(VOID)
         APIRET  arc;
         ULONG   cbFile = 0;
 
-        CHAR    szDumpFile[] = "?:\\xwpstart.log";
+        CHAR    szDumpFile[] = "?:\\" STARTUPLOG;       // name changed V0.9.19 (2002-05-01) [umoeller]
         szDumpFile[0] = doshQueryBootDrive();
 
         if (!(arc = doshOpen(szDumpFile,

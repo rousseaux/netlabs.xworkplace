@@ -1019,7 +1019,7 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                                 // set with WM_INITMENU
 
             #ifdef DEBUG_MENUS
-                _Pmpf(( "  Object selections: %d", ulSelection));
+                _Pmpf(( "  Object selections: %d", psfv->ulSelection));
             #endif
 
             // now call the functions in fdrmenus.c for this,

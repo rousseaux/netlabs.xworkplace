@@ -1,24 +1,26 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        Step 3: Adding Tooltips
+        Schritt 3: Tooltips hinzufÅgen
     </TITLE>
 </HEAD>
+<!-- Uebersetzung: Peter Weilbacher -->
 <!-- This is all new with V0.9.9. -->
 <BODY>
-To make your widget support tooltips (fly-over help), set the
-<CODE>WGTF_TOOLTIP</CODE> flag in the <CODE>ulClassFlags</CODE> field of
-of <A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>.
+Um Ihr Widget auch Tooltips (die Hilfe bei darÅberstehendem Mauszeiger) unterstÅtzen
+zu lassen, setzen Sie das Attribut <CODE>WGTF_TOOLTIP</CODE> im Feld
+<CODE>ulClassFlags</CODE> von
+<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>.
 
-<P>Only if that bit is set, your widget will receive a <CODE>WM_CONTROL</CODE> message
-with the <CODE>TTN_NEEDTEXT</CODE> notification and <CODE>XCENTER_TOOLTIP</CODE> as
-the control's ID.
+<P>Nur wenn diese Bit gesetzt ist, empfÑngt Ihr Widget die
+<CODE>WM_CONTROL</CODE>-Nachricht mit der <CODE>TTN_NEEDTEXT</CODE> Meldung und
+<CODE>XCENTER_TOOLTIP</CODE> als Kontroll-ID.
 
-<P>You will need to include <CODE>include\helpers\comctl.h</CODE> from the
-&xwp; helpers for the definitions of the &xwp; tooltip control.
+<P>Sie werden Sie die Headerdatei <CODE>include\helpers\comctl.h</CODE> aus den
+&xwp;-Helferlein fÅr die Definitionen der &xwp;-Tooltip Kontrollen einbinden mÅssen.
 
-<P>Again, if you have the full &xwp; source code, see the widgets in
-<CODE>src\widgets</CODE> for how this is done.
+<P>Wenn Sie den gesamten &xwp;-Quellcode haben, kînnen Sie bei den Widgets im
+Verzeichnis <CODE>src\widgets</CODE> sehen, wie es gemacht wird.
 
 
 <BR>

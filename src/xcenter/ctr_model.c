@@ -99,8 +99,6 @@
  *
  ********************************************************************/
 
-#define TRAY_WIDGET_CLASS_NAME "Tray"
-
 /*
  * G_aBuiltInWidgets:
  *      array of the built-in widgets in src\xcenter.
@@ -643,6 +641,18 @@ VOID ctrpFreeClasses(VOID)
  *      global array which has the given widget class
  *      name (_not_ PM window class name!).
  *
+ *      Returns:
+ *
+ *      --  NO_ERROR: *ppClass has been set to the
+ *          class struct.
+ *
+ *      --  XCERR_INVALID_CLASS_NAME: class doesn't exist.
+ *
+ *      --  XCERR_CLASS_NOT_TRAYABLE: class exists, but is
+ *          not trayable.
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
  *      Preconditions:
  *
  *      --  Use this in a block between ctrpLoadClasses
@@ -663,13 +673,20 @@ VOID ctrpFreeClasses(VOID)
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added PRIVATEWIDGETCLASS wrapping
  *@@changed V0.9.9 (2001-03-09) [umoeller]: converted global array to linked list
  *@@changed V0.9.12 (2001-05-12) [umoeller]: added extra non-null check
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: changed prototype, added fMustBeTrayable.
  */
 
-PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass)
+APIRET ctrpFindClass(PCSZ pcszWidgetClass,
+                     BOOL fMustBeTrayable,
+                     PCXCENTERWIDGETCLASS *ppClass)
 {
-    PCXCENTERWIDGETCLASS pReturn = NULL;
+    APIRET arc = XCERR_INVALID_CLASS_NAME;
 
     PLISTNODE pNode = lstQueryFirstNode(&G_llWidgetClasses);
+
+    if (!pcszWidgetClass || !ppClass)
+        return ERROR_INVALID_PARAMETER;
+
     while (pNode)
     {
         PPRIVATEWIDGETCLASS pClass
@@ -681,14 +698,23 @@ PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass)
            )
         {
             // found:
-            pReturn = &pClass->Public;
+            if (    (fMustBeTrayable)
+                 && (!(pClass->Public.ulClassFlags & WGTF_TRAYABLE))
+               )
+                arc = XCERR_CLASS_NOT_TRAYABLE;
+            else
+            {
+                *ppClass = &pClass->Public;
+                arc = NO_ERROR;
+            }
+
             break;
         }
 
         pNode = pNode->pNext;
     }
 
-    return (pReturn);    // can be NULL
+    return (arc);    // can be NULL
 }
 
 typedef struct _CLASSTOINSERT
@@ -906,6 +932,47 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
 } */
 
 /*
+ *@@ ctrpCheckClass:
+ *      checks if the given class is valid and,
+ *      if (fMustBeTrayable == TRUE), if the given class is
+ *      trayable.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR: class exists and is trayable.
+ *
+ *      --  XCERR_INVALID_CLASS_NAME: class doesn't exist.
+ *
+ *      --  XCERR_CLASS_NOT_TRAYABLE: class exists, but is
+ *          not trayable.
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *@@added V0.9.19 (2002-04-25) [umoeller]
+ */
+
+APIRET ctrpCheckClass(PCSZ pcszWidgetClass,
+                      BOOL fMustBeTrayable)
+{
+    PCXCENTERWIDGETCLASS    pClass;
+    APIRET                  arc = XCERR_INVALID_CLASS_NAME;
+
+    if (!pcszWidgetClass)
+        return ERROR_INVALID_PARAMETER;
+
+    if (ctrpLockClasses())
+    {
+        arc = ctrpFindClass(pcszWidgetClass,
+                            fMustBeTrayable,
+                            &pClass);
+
+        ctrpUnlockClasses();
+    }
+
+    return (arc);
+}
+
+/*
  *@@ ctrpCreateWidgetSetting:
  *      creates a new widget setting, which is returned
  *      in *ppNewSetting.
@@ -937,23 +1004,33 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
  *
  *      --  ERROR_INVALID_PARAMETER
  *
+ *      --  XCERR_INVALID_CLASS_NAME: class doesn't exist.
+ *
+ *      --  XCERR_CLASS_NOT_TRAYABLE: class exists, but is
+ *          not trayable.
+ *
  *@@added V0.9.13 (2001-06-21) [umoeller]
  *@@changed V0.9.16 (2001-10-18) [umoeller]: merged this with old AddWidgetSetting func
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: now checking if class is trayable
  */
 
 APIRET ctrpCreateWidgetSetting(XCenter *somSelf,
-                              PTRAYSETTING pTray,   // in: tray to create subwidget in or NULL
-                              PCSZ pcszWidgetClass, // in: new widget's class (required)
-                              PCSZ pcszSetupString, // in: new widget's setup string (can be NULL)
-                              ULONG ulBeforeIndex,   // in: index (-1 for rightmost)
-                              PPRIVATEWIDGETSETTING *ppNewSetting,  // out: newly created widget setting
-                              PULONG pulNewItemCount,   // out: new settings count (ptr can be NULL)
-                              PULONG pulNewWidgetIndex) // out: index of new widget (ptr can be NULL)
+                               PTRAYSETTING pTray,   // in: tray to create subwidget in or NULL
+                               PCSZ pcszWidgetClass, // in: new widget's class (required)
+                               PCSZ pcszSetupString, // in: new widget's setup string (can be NULL)
+                               ULONG ulBeforeIndex,   // in: index (-1 for rightmost)
+                               PPRIVATEWIDGETSETTING *ppNewSetting,  // out: newly created widget setting
+                               PULONG pulNewItemCount,   // out: new settings count (ptr can be NULL)
+                               PULONG pulNewWidgetIndex) // out: index of new widget (ptr can be NULL)
 {
     APIRET arc = NO_ERROR;
 
     if (    (somSelf)
          && (pcszWidgetClass)       // this is required
+         && (!(arc = ctrpCheckClass(pcszWidgetClass,
+                                    // fMustBeTrayable:
+                                    (pTray != NULL))))
+                                // V0.9.19 (2002-04-25) [umoeller]
          && (ppNewSetting)
        )
     {
@@ -1015,7 +1092,7 @@ APIRET ctrpCreateWidgetSetting(XCenter *somSelf,
 /*
  *@@ ctrpFindWidgetSetting:
  *      returns a PRIVATEWIDGETSETTING for the given widget
- *      index or NULL if not found.
+ *      index.
  *
  *      If a widget setting is found and (ppViewData != NULL),
  *      this also attempts to find the current view for the
@@ -1046,6 +1123,8 @@ APIRET ctrpCreateWidgetSetting(XCenter *somSelf,
  *
  *      Returns:
  *
+ *      --  NO_ERROR
+ *
  *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: the specified
  *          root widget index is too large.
  *
@@ -1072,9 +1151,6 @@ APIRET ctrpFindWidgetSetting(XCenter *somSelf,
     APIRET arc = NO_ERROR;
 
     PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
-    XCenterData *somThis = XCenterGetData(somSelf);
-    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-                            // can be NULL if we have no open view
 
     if (ppSetting)
         *ppSetting = NULL;
@@ -1089,6 +1165,10 @@ APIRET ctrpFindWidgetSetting(XCenter *somSelf,
             arc = XCERR_INVALID_ROOT_WIDGET_INDEX;
         else
         {
+            XCenterData *somThis = XCenterGetData(somSelf);
+            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                                    // can be NULL if we have no open view
+
             if (    (ppViewData)            // caller wants open view
                  && (pXCenterData)          // and we have an open view:
                )
@@ -1100,40 +1180,35 @@ APIRET ctrpFindWidgetSetting(XCenter *somSelf,
     }
     else
     {
-        PPRIVATEWIDGETSETTING pTrayWidgetSetting;
-        PTRAYSETTING pTraySetting;
-        if (!(pTrayWidgetSetting = lstItemFromIndex(pllWidgets,
-                                                    pPosition->ulTrayWidgetIndex)))
-            // this doesn't exist at all:
-            arc = XCERR_INVALID_ROOT_WIDGET_INDEX;
-        else if (!(pTrayWidgetSetting->pllTraySettings))
-            // this is no tray widget:
-            arc = XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY;
-        else if (!(pTraySetting = lstItemFromIndex(pTrayWidgetSetting->pllTraySettings,
-                                                   pPosition->ulTrayIndex)))
-            arc = XCERR_INVALID_TRAY_INDEX;
-        else if (!(*ppSetting = lstItemFromIndex(&pTraySetting->llSubwidgetSettings,
+        PPRIVATEWIDGETSETTING   pTrayWidgetSetting;
+        PTRAYSETTING            pTraySetting;
+        PXCENTERWIDGET          pTrayWidgetView = NULL;
+        if (!(arc = ctrpFindTraySetting(somSelf,
+                                        pPosition->ulTrayWidgetIndex,
+                                        pPosition->ulTrayIndex,
+                                        &pTrayWidgetSetting,
+                                        &pTraySetting,
+                                        // get widget view if caller wants view data:
+                                        (ppViewData)
+                                            ? &pTrayWidgetView
+                                            // pTrayWidgetView is set to tray widget view
+                                            // only if specified tray is currently
+                                            // switched to
+                                            : NULL)))
+        {
+            if (!(*ppSetting = lstItemFromIndex(&pTraySetting->llSubwidgetSettings,
                                                  pPosition->ulWidgetIndex)))
-            arc = XCERR_INVALID_SUBWIDGET_INDEX;
-        else
-            // all OK:
-            if (    (ppViewData)            // caller wants view
-                 && (pXCenterData)          // and we have an open view:
-               )
-            {
-                PPRIVATEWIDGETVIEW pTrayWidgetView;
-                if (    (pTrayWidgetView = lstItemFromIndex(&pXCenterData->llWidgets,
-                                                            pPosition->ulTrayWidgetIndex))
-                        // is the desired tray active?
-                     && (pTrayWidgetSetting->ulCurrentTray == pPosition->ulTrayIndex)
-                     && (pTrayWidgetView->pllSubwidgetViews)
+                arc = XCERR_INVALID_SUBWIDGET_INDEX;
+            else
+                // all OK:
+                if (    (pTrayWidgetView)       // caller wants view, and we have one,
+                                                // and specified tray is currently
+                                                // switched to:
+                     && (((PPRIVATEWIDGETVIEW)pTrayWidgetView)->pllSubwidgetViews)
                    )
-                {
-                    *ppViewData = (PXCENTERWIDGET)lstItemFromIndex(pTrayWidgetView->pllSubwidgetViews,
+                    *ppViewData = (PXCENTERWIDGET)lstItemFromIndex(((PPRIVATEWIDGETVIEW)pTrayWidgetView)->pllSubwidgetViews,
                                                                    pPosition->ulWidgetIndex);
-                }
-            }
-
+        }
     }
 
     return (arc);
@@ -1242,9 +1317,9 @@ BOOL ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget)     // in: subwid
  ********************************************************************/
 
 /*
- *@@ ctrpCreateTray:
- *      creates a new (empty) tray with the specified
- *      name in a tray widget. The new tray is appended
+ *@@ ctrpCreateTraySetting:
+ *      creates a new (empty) tray setting with the specified
+ *      name in a tray widget. The new tray setting is appended
  *      to the end of the list of the tray widget's
  *      trays.
  *
@@ -1254,11 +1329,12 @@ BOOL ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget)     // in: subwid
  *      This does not save the widget settings.
  *
  *@@added V0.9.13 (2001-06-21) [umoeller]
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: renamed from ctrpCreateTray
  */
 
-PTRAYSETTING ctrpCreateTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
-                            PCSZ pcszTrayName,   // in: tray name
-                            PULONG pulIndex)            // out: index of new tray
+PTRAYSETTING ctrpCreateTraySetting(PPRIVATEWIDGETSETTING ppws, // in: private tray widget setting
+                                   PCSZ pcszTrayName,          // in: tray name
+                                   PULONG pulIndex)            // out: index of new tray
 {
     PTRAYSETTING pNewTray;
 
@@ -1278,6 +1354,96 @@ PTRAYSETTING ctrpCreateTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widg
     }
 
     return (pNewTray);
+}
+
+/*
+ *@@ ctrpFindTraySetting:
+ *      returns a TRAYSETTING for the given tray widget
+ *      and tray indices.
+ *
+ *      If a tray setting is found and (ppViewData != NULL),
+ *      this also attempts to find the current view for the
+ *      tray widget (see below).
+ *
+ *      On input, ulTrayWidgetIndex is assumed to contain the
+ *      index of a "root" tray widget. ulTrayIndex specifies the
+ *      tray in that tray widget.
+ *
+ *      *ppViewData receives a pointer to the currently open
+ *      widget view, if any. This will be set to NULL if
+ *
+ *      --  an error is returned in the first place;
+ *
+ *      --  the XCenter isn't currently open at all;
+ *
+ *      --  the specified tray is not currently switched to.
+ *
+ *      In other words, *ppViewData is set only if the
+ *      NO_ERROR is returned _and_ the given tray is currently
+ *      showing in the tray.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  XCERR_INVALID_ROOT_WIDGET_INDEX: the specified
+ *          (root) tray widget index is too large.
+ *
+ *      --  XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY:
+ *          the specified (root) tray widget index specifies
+ *          no tray.
+ *
+ *      --  XCERR_INVALID_TRAY_INDEX: the specified tray
+ *          index is too large.
+ *
+ *@@added V0.9.19 (2002-04-25) [umoeller]
+ */
+
+APIRET ctrpFindTraySetting(XCenter *somSelf,
+                           ULONG ulTrayWidgetIndex,     // in: root index of tray widget
+                           ULONG ulTrayIndex,           // in: tray index in tray widget
+                           PPRIVATEWIDGETSETTING *ppTrayWidgetSetting,
+                                                        // out: tray widget setting if NO_ERROR
+                           PTRAYSETTING *ppTraySetting, // out: tray setting if NO_ERROR
+                           PXCENTERWIDGET *ppTrayWidget)  // out: tray widget view data or NULL; ptr can be NULL
+{
+    APIRET      arc = NO_ERROR;
+    PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
+
+    PPRIVATEWIDGETSETTING pTrayWidgetSetting;
+    if (!(pTrayWidgetSetting = lstItemFromIndex(pllWidgets,
+                                                ulTrayWidgetIndex)))
+        // this doesn't exist at all:
+        arc = XCERR_INVALID_ROOT_WIDGET_INDEX;
+    else if (!(pTrayWidgetSetting->pllTraySettings))
+        // this is no tray widget:
+        arc = XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY;
+    else if (!(*ppTraySetting = lstItemFromIndex(pTrayWidgetSetting->pllTraySettings,
+                                                 ulTrayIndex)))
+        arc = XCERR_INVALID_TRAY_INDEX;
+    else
+    {
+        XCenterData *somThis = XCenterGetData(somSelf);
+        PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                                // can be NULL if we have no open view
+
+        if (    (ppTrayWidget)            // caller wants view
+             && (pXCenterData)          // and we have an open view:
+           )
+        {
+            PPRIVATEWIDGETVIEW pTrayWidgetView;
+            if (    (pTrayWidgetView = lstItemFromIndex(&pXCenterData->llWidgets,
+                                                        ulTrayWidgetIndex))
+                    // is the desired tray active?
+                 && (pTrayWidgetSetting->ulCurrentTray == ulTrayIndex)
+               )
+            {
+                *ppTrayWidget = (PXCENTERWIDGET)pTrayWidgetView;
+            }
+        }
+    }
+
+    return arc;
 }
 
 /*

@@ -359,6 +359,7 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_SCDI_PGMG1_VALUESET:
             if (usNotifyCode == VN_ENTER)
             {
+                LoadXPagerConfig(pnbp->pUser);  // V0.9.19 (2002-04-23) [pr]
                 pPgmgConfig->ptlStartDesktop.x = SHORT2FROMMP((MPARAM)ulExtra);
                 pPgmgConfig->ptlStartDesktop.y = SHORT1FROMMP((MPARAM)ulExtra);
                 UpdateValueSet(pnbp->hwndControl,
@@ -911,6 +912,7 @@ static VOID SaveStickies(HWND hwndCnr,
     BOOL            fCont = TRUE;
     USHORT          usStickyIndex = 0;      // raised with each iteration
 
+    LoadXPagerConfig(pPgmgConfig); // V0.9.19 (2002-04-23) [pr]
     do
     {
         pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
@@ -1437,6 +1439,7 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                 {
                     HWND    hPopupMenu = NULLHANDLE;
 
+                    LoadXPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
@@ -1618,6 +1621,7 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
             PAGERCONFIG* pBackup = (PAGERCONFIG*)pnbp->pUser2;
             USHORT       us;
 
+            LoadXPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
             // overwrite entire string array with backup
             memcpy(pPgmgConfig->aszSticky,
                    pBackup->aszSticky,
@@ -1767,6 +1771,7 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
                         ULONG   ul = 0,
                                 attrFound = 0;
 
+                        LoadXPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
                         WinQueryPresParam(hwndStatic,
                                           (ULONG)mp1,
                                           0,
