@@ -146,6 +146,10 @@
 #define ID_ICON_DRIVE_LAN      163
 #define ID_ICON_DRIVE_NORMAL   164
 
+// icons used by monitor widget
+#define ID_POWER_AC            170
+#define ID_POWER_BATTERY       171
+
 /******************************************
  * generics                        < 100  *
  ******************************************/

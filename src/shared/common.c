@@ -86,6 +86,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\apps.h"               // application helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
@@ -2383,11 +2384,13 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
             {
                 PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                 *plData = pSettingThis->lDefault;
-            break; }
+            }
+            break;
 
             // ignore STG_BITFIELD
 
             case STG_PSZ:
+            case STG_PSZARRAY:
             {
                 PSZ *ppszData = (PSZ*)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                 if (pSettingThis->lDefault)
@@ -2395,7 +2398,15 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
                 else
                     // no default given:
                     *ppszData = NULL;
-            break; }
+            }
+            break;
+
+            case STG_BINARY:
+            {
+                PVOID pData = ((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                memset(pData, 0, pSettingThis->ulExtra);    // struct size
+            }
+            break;
         }
     }
 }
@@ -2469,14 +2480,14 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                 case STG_BITFLAG:
                 {
                     PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
-                    if (    ((*pulData) & pSettingThis->ulBitflag)
+                    if (    ((*pulData) & pSettingThis->ulExtra)            // bitmask
                          != (ULONG)pSettingThis->lDefault
                        )
                     {
                         sprintf(szTemp,
                                 "%s=%s;",
                                 pSettingThis->pcszSetupString,
-                                ((*pulData) & pSettingThis->ulBitflag)
+                                ((*pulData) & pSettingThis->ulExtra)        // bitmask
                                     ? "YES"
                                     : "NO");
                         xstrcat(pstr, szTemp, 0);
@@ -2604,7 +2615,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                     {
                         ULONG   ulNew = 0;
                         if (!stricmp(szValue, "YES"))
-                            ulNew = pSettingThis->ulBitflag;
+                            ulNew = pSettingThis->ulExtra;      // bitmask
                         else if (!stricmp(szValue, "NO"))
                             ulNew = 0;
                         else
@@ -2613,12 +2624,12 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                         if (brc)
                         {
                             PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
-                            if (    ((*pulData) & pSettingThis->ulBitflag)
+                            if (    ((*pulData) & pSettingThis->ulExtra)    // bitmask
                                  != ulNew
                                )
                             {
                                 *pulData = (  // clear the bit first:
-                                              ((*pulData) & ~pSettingThis->ulBitflag)
+                                              ((*pulData) & ~pSettingThis->ulExtra) // bitmask
                                               // set it if set
                                             | ulNew);
 
@@ -3604,14 +3615,20 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *      enter a command line and then runs that command
  *      line using winhStartApp.
  *
+ *      Returns the HAPP that was started or NULLHANDLE,
+ *      e.g. if an error occured or the user cancelled
+ *      the dialog.
+ *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed parameters
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed entry field lengths
+ *@@changed V0.9.12 (2001-05-26) [umoeller]: added return value
  */
 
-VOID cmnRunCommandLine(HWND hwndOwner,
+HAPP cmnRunCommandLine(HWND hwndOwner,
                        const char *pcszStartupDir)
 {
+    HAPP happ = NULLHANDLE;
     HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,
                               hwndOwner,
                               fnwpRunCommandLine,
@@ -3678,24 +3695,24 @@ VOID cmnRunCommandLine(HWND hwndOwner,
                     ULONG   ulDosAppType;
                     memset(&pd, 0, sizeof(pd));
 
-                    winhQueryAppType(szExecutable,
-                                     &ulDosAppType,
-                                     &pd.progt.progc);
+                    if (!(arc = appQueryAppType(szExecutable,
+                                                &ulDosAppType,
+                                                &pd.progt.progc)))
+                    {
+                        pd.progt.fbVisible = SHE_VISIBLE;
+                        pd.pszExecutable = szExecutable;
+                        strupr(szExecutable);
+                        pd.pszParameters = (PSZ)pParams;
+                        pd.pszStartupDir = pszStartup;
 
-                    pd.progt.fbVisible = SHE_VISIBLE;
-                    pd.pszExecutable = szExecutable;
-                    strupr(szExecutable);
-                    pd.pszParameters = (PSZ)pParams;
-                    pd.pszStartupDir = pszStartup;
+                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
+                            pd.swpInitial.fl = SWP_MINIMIZE;
+                        if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
+                            pd.swpInitial.fl = SWP_NOAUTOCLOSE;
 
-                    if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
-                        pd.swpInitial.fl = SWP_MINIMIZE;
-                    if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
-                        pd.swpInitial.fl = SWP_NOAUTOCLOSE;
-
-                    winhStartApp(NULLHANDLE,        // no notify
-                                 &pd);
-                        // WinStartApp, system()
+                        happ = appStartApp(NULLHANDLE,        // no notify
+                                           &pd);
+                    }
                 }
             }
 
@@ -3706,6 +3723,8 @@ VOID cmnRunCommandLine(HWND hwndOwner,
         }
         WinDestroyWindow(hwndDlg);
     }
+
+    return (happ);      // V0.9.12 (2001-05-26) [umoeller]
 }
 
 /*

@@ -225,7 +225,7 @@ PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(VACBASE)\include;$(PROJECT
 # TOOLS SETUP
 # -----------
 
-RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i $(PROJECT_INCLUDE) -i . -o $(OUTPUTDIR)
+RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR)
 
 RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 
@@ -407,7 +407,7 @@ LINK_ALWAYSPACK = $(LINK)
 # RESOURCE COMPILER
 # -----------------
 
-RC      = rc -p -x2 -n -i $(TKBASE)\h;$(PROJECT_BASE_DIR)\include
+RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include
 
 # RC options:
 # -p       pack (64K boundaries)

@@ -67,6 +67,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\apps.h"               // application helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
@@ -2058,8 +2059,8 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                     // this is one of those typical OS/2 environment
                     // arrays, so lets parse this
                     DOSENVIRONMENT Env = {0};
-                    if (doshParseEnvironment(pProgDetails->pszEnvironment,
-                                             &Env)
+                    if (appParseEnvironment(pProgDetails->pszEnvironment,
+                                            &Env)
                             == NO_ERROR)
                     {
                         if (Env.papszVars)
@@ -2081,7 +2082,7 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                                 ppszThis++;
                             }
                         }
-                        doshFreeEnvironment(&Env);
+                        appFreeEnvironment(&Env);
                     }
                 }
 

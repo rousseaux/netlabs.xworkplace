@@ -91,6 +91,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\apps.h"               // application helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
@@ -1899,8 +1900,8 @@ VOID krnShowStartupDlgs(VOID)
                 pd.progt.progc = PROG_PM;
                 pd.progt.fbVisible = SHE_VISIBLE;
                 pd.pszExecutable = szXfix;
-                happXFix = winhStartApp(G_KernelGlobals.hwndThread1Object,
-                                        &pd);
+                happXFix = appStartApp(G_KernelGlobals.hwndThread1Object,
+                                       &pd);
 
                 if (WaitForApp(szXfix,
                                happXFix)
@@ -1925,8 +1926,8 @@ VOID krnShowStartupDlgs(VOID)
                 pd.progt.progc = PROG_WINDOWABLEVIO;
                 pd.progt.fbVisible = SHE_VISIBLE;
                 pd.pszExecutable = "*";        // use OS2_SHELL
-                happCmd = winhStartApp(G_KernelGlobals.hwndThread1Object,
-                                       &pd);
+                happCmd = appStartApp(G_KernelGlobals.hwndThread1Object,
+                                      &pd);
                 WaitForApp(getenv("OS2_SHELL"),
                            happCmd);
             break; }

@@ -1777,15 +1777,19 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 
 /*
  *@@ wpRestoreLong:
- *      this instance method restores a 32-bit data
- *      value from the folder EAs upon object awakening.
+ *      this WPObject instance method restores a LONG value
+ *      which was previously saved by WPObject::wpSaveLong.
  *
- *      We check the "ulKey" value after having called
- *      the parent to be able to intercept the pointer
- *      to certain WPS-internal folder data, which
- *      we cannot access otherwise. That's a real ugly
- *      kludge, but there's no other way to get certain
- *      folder settings. ;-)
+ *      This may only be used while WPObject::wpRestoreState
+ *      is being processed.
+ *
+ *      This method normally isn't designed to be overridden.
+ *      However, since this gets called by WPFolder::wpRestoreState,
+ *      we override this method to be able to intercept pointers
+ *      to the WPFolder instance data, which we cannot access
+ *      otherwise. We can store these pointers in the XFolder
+ *      instance data then and read/write the WPFolder instance
+ *      data this way.
  *
  *      On Warp 4, the WPS queries the
  *      IDKEY_FDRTREEVIEWCONTENTS key here, which is
@@ -1838,6 +1842,19 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
 
 /*
  *@@ wpRestoreString:
+ *      this WPObject instance method restores a string
+ *      which was previously saved by WPObject::wpSaveString.
+ *
+ *      This may only be used while WPObject::wpRestoreState
+ *      is being processed.
+ *
+ *      This method normally isn't designed to be overridden.
+ *      However, since this gets called by WPFolder::wpRestoreState,
+ *      we override this method to be able to intercept pointers
+ *      to the WPFolder instance data, which we cannot access
+ *      otherwise. We can store these pointers in the XFolder
+ *      instance data then and read/write the WPFolder instance
+ *      data this way.
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
  */
@@ -1881,14 +1898,20 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
 
 /*
  *@@ wpRestoreData:
- *      this instance method restores binary instance
- *      data from the folder EAs upon object awakening.
- *      We check the "ulKey" value after having called
- *      the parent to be able to intercept the pointer
- *      to certain WPS-internal folder data, which
- *      we cannot access otherwise. That's a real ugly
- *      kludge, but there's no other way to get certain
- *      folder settings. ;-)
+ *      this WPObject instance method restores a chunk
+ *      of binary instance data which was previously
+ *      saved by WPObject::wpSaveData.
+ *
+ *      This may only be used while WPObject::wpRestoreState
+ *      is being processed.
+ *
+ *      This method normally isn't designed to be overridden.
+ *      However, since this gets called by WPFolder::wpRestoreState,
+ *      we override this method to be able to intercept pointers
+ *      to the WPFolder instance data, which we cannot access
+ *      otherwise. We can store these pointers in the XFolder
+ *      instance data then and read/write the WPFolder instance
+ *      data this way.
  *
  *      On Warp 4, the WPS queries lots of sort and
  *      folder view settings here, whose pointers we

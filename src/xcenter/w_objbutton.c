@@ -396,7 +396,7 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
 
-    _Pmpf((__FUNCTION__ ": WM_CONTROL id 0x%lX", usID));
+    // _Pmpf((__FUNCTION__ ": WM_CONTROL id 0x%lX", usID));
 
     if (pWidget)
     {

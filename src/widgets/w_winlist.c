@@ -2914,6 +2914,6 @@ VOID EXPENTRY WwgtQueryVersion(PULONG pulMajor,
     // report 0.9.11
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 11;
+    *pulRevision = 12;
 }
 

@@ -222,28 +222,6 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                                     ulView,
                                     hwndFrame,
                                     cmnGetString(ID_XSSI_VOLUMEVIEW));
-
-                    /* pWinData->UseItem.type    = USAGE_OPENVIEW;
-                    pWinData->UseItem.pNext   = NULL;
-                    pWinData->ViewItem.view   = ulView;
-                    pWinData->ViewItem.handle = hwndFrame;
-                    if (!_wpAddToObjUseList(somSelf, &(pWinData->UseItem))) // comes before view item
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "_wpAddToObjUseList failed.");
-
-                    // create view title: remove ~ char
-                    p = strchr(pszViewTitle, '~');
-                    if (p)
-                        // found: remove that
-                        strcpy(p, p+1);
-
-                    // register this view; I've moved this here from WM_CREATE
-                    // in cllCreateClassListView because apparently this doesn't
-                    // work right if the window has not been fully created
-                    _wpRegisterView(somSelf,
-                                    hwndFrame,
-                                    pszViewTitle); // view title
-                    free(pszViewTitle); */
                 }
             }
         }

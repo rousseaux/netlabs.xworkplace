@@ -133,21 +133,21 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         STG_LONG,    NULL,           FIELDOFFSET(XCenterData, ulWindowStyle),
         //     key for wpSaveState/wpRestoreState
                2,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                WS_ANIMATE,  0,              0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "ALWAYSONTOP",  FIELDOFFSET(XCenterData, ulWindowStyle),
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                0,       WS_TOPMOST,         0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "ANIMATE",     FIELDOFFSET(XCenterData, ulWindowStyle),
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                WS_ANIMATE,  WS_ANIMATE,     0,   0,    // V0.9.9 (2001-02-28) [pr]: fix setup string default
 
         /*
@@ -159,35 +159,35 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         STG_LONG,    NULL,             FIELDOFFSET(XCenterData, flDisplayStyle),
         //     key for wpSaveState/wpRestoreState
                4,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                XCS_FLATBUTTONS | XCS_SUNKBORDERS | XCS_SIZINGBARS, 0, 0, 0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "FLATBUTTONS",    FIELDOFFSET(XCenterData, flDisplayStyle),
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                XCS_FLATBUTTONS, XCS_FLATBUTTONS, 0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "SUNKBORDERS",    FIELDOFFSET(XCenterData, flDisplayStyle),
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                XCS_SUNKBORDERS, XCS_SUNKBORDERS, 0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "SIZINGBARS",    FIELDOFFSET(XCenterData, flDisplayStyle),
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                XCS_SIZINGBARS, XCS_SIZINGBARS, 0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "ALL3DBORDERS",    FIELDOFFSET(XCenterData, flDisplayStyle),
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                0, XCS_ALL3DBORDERS, 0,   0,
 
         /*
@@ -199,21 +199,21 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         STG_LONG,    "AUTOHIDE",    FIELDOFFSET(XCenterData, ulAutoHide),
         //     key for wpSaveState/wpRestoreState
                3,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                0,       0,                  0,   4000,
 
         // type,  setup string,     offset,
         STG_BOOL, NULL,               FIELDOFFSET(XCenterData, fHelpDisplayed),
         //     key for wpSaveState/wpRestoreState
                5,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                FALSE,   0,                  0,   1,
 
         // type,  setup string,     offset,
         STG_LONG, "PRIORITYCLASS",    FIELDOFFSET(XCenterData, ulPriorityClass),
         //     key for wpSaveState/wpRestoreState
                6,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                PRTYC_REGULAR, 0,            1,   4,
                                             // PRTYC_IDLETIME == 1
                                             // PRTYC_FOREGROUNDSERVER = 4
@@ -222,42 +222,42 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         STG_LONG, "PRIORITYDELTA",    FIELDOFFSET(XCenterData, lPriorityDelta),
         //     key for wpSaveState/wpRestoreState
                7,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                0,       0,                  0,   31,
 
         // type,  setup string,     offset,
         STG_LONG, NULL,               FIELDOFFSET(XCenterData, ulPosition),
         //     key for wpSaveState/wpRestoreState
                8,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                XCENTER_BOTTOM, 0,           0,   3,
 
         // type,  setup string,     offset,
         STG_LONG, "3DBORDERWIDTH",    FIELDOFFSET(XCenterData, ul3DBorderWidth),
         //     key for wpSaveState/wpRestoreState
                9,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                1,       0,                  0,   10,
 
         // type,  setup string,     offset,
         STG_LONG, "BORDERSPACING",    FIELDOFFSET(XCenterData, ulBorderSpacing),
         //     key for wpSaveState/wpRestoreState
                10,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                1,       0,                  0,   10,
 
         // type,  setup string,     offset,
         STG_LONG, "WIDGETSPACING",    FIELDOFFSET(XCenterData, ulWidgetSpacing),
         //     key for wpSaveState/wpRestoreState
                11,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                2,       0,                  1,   10,
 
         // type,  setup string,     offset,
         STG_BOOL,    "REDUCEDESKTOP",  FIELDOFFSET(XCenterData, fReduceDesktopWorkarea),
         //     key for wpSaveState/wpRestoreState
                12,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                FALSE,   0,                  0,   0,
 
         /*
@@ -269,14 +269,14 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         STG_PSZ,     "CLIENTFONT",  FIELDOFFSET(XCenterData, pszClientFont),
         //     key for wpSaveState/wpRestoreState
                13,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                (LONG)NULL, 0,               0,   0,
 
         // type,  setup string,     offset,
         STG_LONG,    "CLIENTCOLOR", FIELDOFFSET(XCenterData, lcolClientBackground),
         //     key for wpSaveState/wpRestoreState
                14,
-        //     default, bitflag,            min, max
+        //     default, ulExtra,            min, max
                0xCCCCCC, 0,                 0,   0x00FFFFFF
     };
 

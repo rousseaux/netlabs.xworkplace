@@ -38,7 +38,7 @@
 
     ULONG ftypAssocObjectDeleted(HOBJECT hobj);
 
-    #ifdef SOM_XFldDataFile_h
+    #if defined (SOM_XFldDataFile_h) && defined (LINKLIST_HEADER_INCLUDED)
         PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                                       BOOL fUsePlainTextAsDefault);
 

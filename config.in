@@ -74,7 +74,9 @@ VACBASE = K:\libs\IBMVAC
 # XWPRUNNING: directory where your XWorkplace
 # binaries are installed... all the produced
 # files will be copied there.
+!ifndef XWPRUNNING
 XWPRUNNING = J:\Tools\WPS\XWorkplace
+!endif
 
 # XWP_DEBUG: set to YES if you want debug code;
 # set to nothing if not.

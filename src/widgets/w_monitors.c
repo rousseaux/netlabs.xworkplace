@@ -61,6 +61,8 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSDATETIME
 #define INCL_DOSMISC
+#define INCL_DOSDEVICES
+#define INCL_DOSDEVIOCTL
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -110,6 +112,8 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
 
+#include "startshut\apm.h"            // APM power-off for XShutdown
+
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -122,6 +126,7 @@
 #define MWGT_SWAPPER            2
 #define MWGT_MEMORY             3
 #define MWGT_TIME               4
+#define MWGT_POWER              5       // V0.9.12 (2001-05-26) [umoeller]
 
 APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
@@ -145,7 +150,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_DATE,
                     "Date",
-                    "Date",
+                    "Date monitor",
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
                     NULL        // no settings dlg
                 },
@@ -153,7 +158,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_TIME,
                     "Time",
-                    "Time",
+                    "Time monitor",
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
                     NULL        // no settings dlg
                 },
@@ -161,8 +166,16 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_MEMORY,
                     "PhysMemory",
-                    "Free physical memory",
+                    "Free physical memory monitor",
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
+                    NULL        // no settings dlg
+                },
+                {
+                    WNDCLASS_WIDGET_MONITORS,
+                    MWGT_POWER,
+                    "Power",
+                    "Battery power monitor",
+                    WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
                     NULL        // no settings dlg
                 }
             };
@@ -193,6 +206,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
 // resolved function pointers from XFLDR.DLL
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
+PCMNQUERYMAINRESMODULEHANDLE pcmnQueryMainResModuleHandle = NULL;
 
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
@@ -220,6 +234,7 @@ RESOLVEFUNCTION G_aImports[] =
     {
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+        "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -237,6 +252,102 @@ RESOLVEFUNCTION G_aImports[] =
         "xstrClear", (PFN*)&pxstrClear,
         "xstrInit", (PFN*)&pxstrInit
     };
+
+/* ******************************************************************
+ *
+ *   APM definitions (from DDK)
+ *
+ ********************************************************************/
+
+/*---------------------------------------------------------------------------*
+ * Category 12 (Power Management) IOCtl Function Codes                       *
+ *---------------------------------------------------------------------------*/
+
+#define APMGIO_Category           12    // Generic IOCtl Category for APM.
+
+#define APMGIO_SendEvent        0x40    // Function Codes.
+#define APMGIO_SetEventSem      0x41
+#define APMGIO_ConfirmEvent     0x42    // 0x42 is UNDOCUMENTED.
+#define APMGIO_BroadcastEvent   0x43    // 0x43 is UNDOCUMENTED.
+#define APMGIO_RegDaemonThread  0x44    // 0x44 is UNDOCUMENTED.
+#define APMGIO_OEMFunction      0x45
+#define APMGIO_QueryStatus      0x60
+#define APMGIO_QueryEvent       0x61
+#define APMGIO_QueryInfo        0x62
+#define APMGIO_QueryState       0x63
+
+#pragma pack(1)
+
+/*---------------------------------------------------------------------------*
+ * Function 0x60, Query Power Status                                         *
+ * Reference MS/Intel APM specification for interpretation of status codes.  *
+ *---------------------------------------------------------------------------*/
+
+typedef struct _APMGIO_QSTATUS_PPKT {           // Parameter Packet.
+
+  USHORT ParmLength;    // Length, in bytes, of the Parm Packet.
+  USHORT Flags;         // Output:  Flags.
+  UCHAR  ACStatus;
+                        // Output:  0x00 if not on AC,
+                        //          0x01 if AC,
+                        //          0x02 if on backup power,
+                        //          0xFF if unknown
+  UCHAR  BatteryStatus;
+                        // Output:  0x00 if battery high,
+                        //          0x01 if battery low,
+                        //          0x02 if battery critically low,
+                        //          0x03 if battery charging
+                        //          0xFF if unknown
+  UCHAR  BatteryLife;
+                        // Output:  Battery power life (as percentage)
+  UCHAR  BatteryTimeForm;
+                        // Output:
+                        //          0x00 if format is seconds,
+                        //          0x01 if format is minutes,
+                        //          0xFF if unknown
+  USHORT BatteryTime;   // Output:  Remaining battery time.
+  UCHAR  BatteryFlags;  // Output:  Battery status flags
+
+} APMGIO_QSTATUS_PPKT, *NPAPMGIO_QSTATUS_PPKT, FAR *PAPMGIO_QSTATUS_PPKT;
+
+typedef struct _APMGIO_10_QSTATUS_PPKT {        // Parameter Packet for
+                                                // APM 1.0 interface
+  USHORT ParmLength;    // Length, in bytes, of the Parm Packet.
+  USHORT Flags;         // Output:  Flags.
+  UCHAR  ACStatus;      // Output:  AC line power status.
+  UCHAR  BatteryStatus; // Output:  Battery power status
+  UCHAR  BatteryLife;   // Output:  Battery power status
+
+} APMGIO_10_QSTATUS_PPKT;
+
+// Error return codes.
+#define GIOERR_PowerNoError             0
+#define GIOERR_PowerBadSubId            1
+#define GIOERR_PowerBadReserved         2
+#define GIOERR_PowerBadDevId            3
+#define GIOERR_PowerBadPwrState         4
+#define GIOERR_PowerSemAlreadySetup     5
+#define GIOERR_PowerBadFlags            6
+#define GIOERR_PowerBadSemHandle        7
+#define GIOERR_PowerBadLength           8
+#define GIOERR_PowerDisabled            9
+#define GIOERR_PowerNoEventQueue       10
+#define GIOERR_PowerTooManyQueues      11
+#define GIOERR_PowerBiosError          12
+#define GIOERR_PowerBadSemaphore       13
+#define GIOERR_PowerQueueOverflow      14
+#define GIOERR_PowerStateChangeReject  15
+#define GIOERR_PowerNotSupported       16
+#define GIOERR_PowerDisengaged         17
+#define GIOERR_PowerHighestErrCode     17
+
+typedef struct _APMGIO_DPKT {
+
+  USHORT ReturnCode;
+
+} APMGIO_DPKT, *NPAPMGIO_DPKT, FAR *PAPMGIO_DPKT;
+
+#pragma pack()
 
 /* ******************************************************************
  *
@@ -286,6 +397,7 @@ typedef struct _MONITORPRIVATE
                 // -- MWGT_TIME: time widget
                 // -- MWGT_SWAPPER: swap monitor widget
                 // -- MWGT_MEMORY: memory monitor widget;
+                // -- MWGT_POWER: power monitor widget;
                 // this is copied from the widget class on WM_CREATE
 
     ULONG           cxCurrent,
@@ -295,6 +407,23 @@ typedef struct _MONITORPRIVATE
             // widget settings that correspond to a setup string
 
     ULONG           ulTimerID;              // if != NULLHANDLE, update timer is running
+
+    HFILE           hfAPMSys;               // APM.SYS driver handle, if open
+    APIRET          arcAPM;                 // error code if APM.SYS open failed
+
+    ULONG           ulBatteryStatus;
+                // copy of APM battery status, that is:
+                        // Output:  0x00 if battery high,
+                        //          0x01 if battery low,
+                        //          0x02 if battery critically low,
+                        //          0x03 if battery charging
+                        //          0xFF if unknown
+    ULONG           ulBatteryLife;
+                // current battery life as percentage
+
+    HPOINTER        hptrAC,         // "AC" icon
+                    hptrBattery;    // "battery" icon
+    ULONG           ulMiniIconSize;
 
 } MONITORPRIVATE, *PMONITORPRIVATE;
 
@@ -424,6 +553,67 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 /* ******************************************************************
  *
+ *   APM monitor
+ *
+ ********************************************************************/
+
+/*
+ *@@ ApmIOCtl:
+ *
+ *@@added V0.9.12 (2001-05-26) [umoeller]
+ */
+
+APIRET ApmIOCtl(HFILE hfAPMSys,
+                ULONG ulFunction,
+                PVOID pvParamPck,
+                ULONG cbParamPck)
+{
+    APIRET          arc;
+    APMGIO_DPKT     DataPacket;
+    ULONG           ulParmSize = cbParamPck;
+    ULONG           ulRetSize = sizeof(DataPacket);
+    DataPacket.ReturnCode = GIOERR_PowerNoError;
+    if (!(arc = DosDevIOCtl(hfAPMSys,
+                            APMGIO_Category,
+                            ulFunction,
+                            pvParamPck,
+                                cbParamPck,
+                                &ulParmSize,
+                            &DataPacket,
+                                sizeof(DataPacket),
+                                &ulRetSize)))
+        if (DataPacket.ReturnCode)
+            arc = DataPacket.ReturnCode | 10000;
+
+    return (arc);
+}
+
+/*
+ *@@ ReadNewAPMValue:
+ *
+ *@@added V0.9.12 (2001-05-26) [umoeller]
+ */
+
+VOID ReadNewAPMValue(PMONITORPRIVATE pPrivate)
+{
+    if ((!pPrivate->arcAPM) && (pPrivate->hfAPMSys))
+    {
+        APMGIO_QSTATUS_PPKT  PowerStatus;
+        PowerStatus.ParmLength = sizeof(PowerStatus);
+
+        if (!(pPrivate->arcAPM = ApmIOCtl(pPrivate->hfAPMSys,
+                                          APMGIO_QueryStatus,
+                                          &PowerStatus,
+                                          PowerStatus.ParmLength)))
+        {
+            pPrivate->ulBatteryStatus = PowerStatus.BatteryStatus;
+            pPrivate->ulBatteryLife = PowerStatus.BatteryLife;
+        }
+    }
+}
+
+/* ******************************************************************
+ *
  *   PM window class implementation
  *
  ********************************************************************/
@@ -436,12 +626,15 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 /*
  *@@ MwgtCreate:
  *      implementation for WM_CREATE.
+ *
+ *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
  */
 
 MRESULT MwgtCreate(HWND hwnd,
                    PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;        // continue window creation
+    ULONG ulUpdateFreq = 1000;
 
     PSZ p;
 
@@ -471,6 +664,8 @@ MRESULT MwgtCreate(HWND hwnd,
                         // default font: use the same as in the rest of XWorkplace:
                         : pcmnQueryDefaultFont());
 
+    pPrivate->ulMiniIconSize = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
+
     // enable context menu help
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     switch (pPrivate->ulType)
@@ -487,13 +682,85 @@ MRESULT MwgtCreate(HWND hwnd,
         case MWGT_MEMORY:
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_MEMORY_MAIN;
         break;
+
+        case MWGT_POWER:
+        {
+            ULONG ulAction = 0;
+
+            pWidget->ulHelpPanelID = ID_XSH_WIDGET_POWER_MAIN;
+            ulUpdateFreq = 10 * 1000;       // once per minute
+
+            // open APM.SYS
+            pPrivate->arcAPM = DosOpen("\\DEV\\APM$",
+                                       &pPrivate->hfAPMSys,
+                                       &ulAction,
+                                       0,
+                                       FILE_NORMAL,
+                                       OPEN_ACTION_OPEN_IF_EXISTS,
+                                       OPEN_FLAGS_FAIL_ON_ERROR
+                                            | OPEN_SHARE_DENYNONE
+                                            | OPEN_ACCESS_READWRITE,
+                                       NULL);
+            if (!pPrivate->arcAPM)
+            {
+                GETPOWERINFO    getpowerinfo;
+                ULONG           ulAPMRc = NO_ERROR;
+                ULONG           ulPacketSize = sizeof(getpowerinfo),
+                                ulDataSize = sizeof(ulAPMRc);
+                // query version of APM-BIOS and APM driver
+                memset(&getpowerinfo, 0, sizeof(getpowerinfo));
+                getpowerinfo.usParmLength = sizeof(getpowerinfo);
+
+                if (!(pPrivate->arcAPM = ApmIOCtl(pPrivate->hfAPMSys,
+                                                  POWER_GETPOWERINFO,
+                                                  &getpowerinfo,
+                                                  getpowerinfo.usParmLength)))
+                {
+                    // swap lower-byte(major vers.) to higher-byte(minor vers.)
+                    USHORT usBIOSVersion =     (getpowerinfo.usBIOSVersion & 0xff) << 8
+                                             | (getpowerinfo.usBIOSVersion >> 8);
+                    USHORT usDriverVersion =   (getpowerinfo.usDriverVersion & 0xff) << 8
+                                             | (getpowerinfo.usDriverVersion >> 8);
+
+                    // set general APM version to lower
+                    USHORT usLowestAPMVersion = (usBIOSVersion < usDriverVersion)
+                                                 ? usBIOSVersion : usDriverVersion;
+
+                    if (usLowestAPMVersion < 0x101)  // version 1.1 or above
+                        // not 1.2 or higher:
+                        pPrivate->arcAPM = -1;
+                    else
+                    {
+                        // no error at all:
+                        // read first value, because next update
+                        // won't be before 1 minute from now
+                        ReadNewAPMValue(pPrivate);
+
+                        // and load the icons
+                        pPrivate->hptrAC = WinLoadPointer(HWND_DESKTOP,
+                                                          pcmnQueryMainResModuleHandle(),
+                                                          ID_POWER_AC);
+                        pPrivate->hptrBattery = WinLoadPointer(HWND_DESKTOP,
+                                                               pcmnQueryMainResModuleHandle(),
+                                                               ID_POWER_BATTERY);
+
+                        pPrivate->cyCurrent = pPrivate->ulMiniIconSize + 2;
+                    }
+                }
+            }
+
+            if (pPrivate->arcAPM)
+                ulUpdateFreq = 0;
+        }
+        break;
     }
 
     // start update timer
-    pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
-                                          hwnd,
-                                          1,
-                                          1000);
+    if (ulUpdateFreq)
+        pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+                                              hwnd,
+                                              1,
+                                              ulUpdateFreq);    // 1000, unless "power"
 
     return (mrc);
 }
@@ -559,6 +826,10 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         case MWGT_MEMORY:
                             pttt->pszText = "Currently free memory";
                         break;
+
+                        case MWGT_POWER:
+                            pttt->pszText = "Battery power";
+                        break;
                     }
 
                     pttt->ulFormat = TTFMT_PSZ;
@@ -576,6 +847,8 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *
  *      The specified HPS is switched to RGB mode before
  *      painting.
+ *
+ *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
  */
 
 VOID MwgtPaint(HWND hwnd,
@@ -588,6 +861,7 @@ VOID MwgtPaint(HWND hwnd,
     CHAR        szPaint[400] = "";
     ULONG       ulPaintLen = 0;
     POINTL      aptlText[TXTBOX_COUNT];
+    ULONG       ulExtraWidth = 0;
 
     // country settings from XCenter globals
     // (what a pointer)
@@ -660,6 +934,45 @@ VOID MwgtPaint(HWND hwnd,
             else
                 strcpy(szPaint, "?!?!?");
         break; }
+
+        case MWGT_POWER:
+            if (pPrivate->arcAPM == -1)
+                // insufficient APM version:
+                strcpy(szPaint, "APM 1.2 required.");
+            else if (pPrivate->arcAPM)
+                // other error occured:
+                sprintf(szPaint, "E %d", pPrivate->arcAPM);
+            else
+            {
+                // APM is OK:
+                const char *pcsz = NULL;
+                switch (pPrivate->ulBatteryStatus)
+                {
+                    case 0x00: pcsz = "High"; break;
+                    case 0x01: pcsz = "Low"; break;
+                    case 0x02: pcsz = "Critical"; break;
+                    case 0x03: pcsz = "Charging"; break;
+
+                    default: sprintf(szPaint, "No battery");
+                }
+                if (pcsz)
+                {
+                    sprintf(szPaint, "%d%%", pPrivate->ulBatteryLife);
+
+                    WinDrawPointer(hps,
+                                   0,
+                                   ((rclWin.yTop - rclWin.yBottom) - pPrivate->ulMiniIconSize)
+                                       / 2,
+                                   (pPrivate->ulBatteryStatus == 3)
+                                        ? pPrivate->hptrAC
+                                        : pPrivate->hptrBattery,
+                                   DP_MINI);
+
+                    // add offset for painting text
+                    ulExtraWidth = pPrivate->ulMiniIconSize;
+                }
+            }
+        break;
     }
 
     ulPaintLen = strlen(szPaint);
@@ -668,12 +981,12 @@ VOID MwgtPaint(HWND hwnd,
                     szPaint,
                     TXTBOX_COUNT,
                     aptlText);
-    if (    abs(aptlText[TXTBOX_TOPRIGHT].x + 4 - rclWin.xRight)
+    if (    abs((aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth) + 4 - rclWin.xRight)
             > 4
        )
     {
         // we need more space: tell XCenter client
-        pPrivate->cxCurrent = (aptlText[TXTBOX_TOPRIGHT].x + 2*ulBorder + 4);
+        pPrivate->cxCurrent = (aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth + 2*ulBorder + 4);
         WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
                    XCM_SETWIDGETSIZE,
                    (MPARAM)hwnd,
@@ -684,6 +997,7 @@ VOID MwgtPaint(HWND hwnd,
     {
         // sufficient space:
         GpiSetBackMix(hps, BM_OVERPAINT);
+        rclWin.xLeft += ulExtraWidth;
         WinDrawText(hps,
                     ulPaintLen,
                     szPaint,
@@ -766,6 +1080,8 @@ VOID MwgtPresParamChanged(HWND hwnd,
 /*
  *@@ MwgtButton1DblClick:
  *      implementation for WM_BUTTON1DBLCLK.
+ *
+ *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
@@ -776,6 +1092,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
     {
         const char *pcszID = NULL;
         HOBJECT hobj = NULLHANDLE;
+        ULONG ulView = 2; // OPEN_SETTINGS,
 
         switch (pPrivate->ulType)
         {
@@ -788,6 +1105,11 @@ VOID MwgtButton1DblClick(HWND hwnd,
             case MWGT_MEMORY:
                 pcszID = "<XWP_KERNEL>"; // XFOLDER_KERNELID; // "<XWP_KERNEL>";
             break;
+
+            case MWGT_POWER:
+                pcszID = "<WP_POWER>";
+                ulView = 0; // OPEN_DEFAULT;
+            break;
         }
 
         if (pcszID)
@@ -796,9 +1118,37 @@ VOID MwgtButton1DblClick(HWND hwnd,
         if (hobj)
         {
             WinOpenObject(hobj,
-                          2, // OPEN_SETTINGS,
+                          ulView,
                           TRUE);
         }
+    } // end if (pPrivate)
+}
+
+/*
+ *@@ MwgtDestroy:
+ *
+ *@@added V0.9.12 (2001-05-26) [umoeller]
+ */
+
+VOID MwgtDestroy(PXCENTERWIDGET pWidget)
+{
+    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+    if (pPrivate)
+    {
+        if (pPrivate->ulTimerID)
+            ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
+                           pWidget->hwndWidget,
+                           pPrivate->ulTimerID);
+
+        if (pPrivate->hfAPMSys)
+            DosClose(pPrivate->hfAPMSys);
+
+        if (pPrivate->hptrAC)
+            WinDestroyPointer(pPrivate->hptrAC);
+        if (pPrivate->hptrBattery)
+            WinDestroyPointer(pPrivate->hptrBattery);
+
+        free(pPrivate);
     } // end if (pPrivate)
 }
 
@@ -904,6 +1254,11 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
                 if (pPrivate)
                 {
+                    if (    (pPrivate->ulType == MWGT_POWER)
+                         && (pPrivate->hfAPMSys)
+                       )
+                        ReadNewAPMValue(pPrivate);
+
                     MwgtPaint(hwnd,
                               pPrivate,
                               hps,
@@ -943,18 +1298,9 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_DESTROY:
-        {
-            PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-            if (pPrivate)
-            {
-                if (pPrivate->ulTimerID)
-                    ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
-                                  hwnd,
-                                  pPrivate->ulTimerID);
-                free(pPrivate);
-            } // end if (pPrivate)
+            MwgtDestroy(pWidget);
             mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-        break; }
+        break;
 
         default:
             if (pWidget)
@@ -1113,9 +1459,8 @@ VOID EXPENTRY MwgtQueryVersion(PULONG pulMajor,
                                PULONG pulMinor,
                                PULONG pulRevision)
 {
-    // report 0.9.9
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 9;
+    *pulRevision = 12;
 }
 

@@ -11,6 +11,25 @@
  *         management and session handling. See
  *         progOpenProgram.
  *
+ *      Roadmap:
+ *
+ *      WPProgram and WPProgramFile need to be rewritten
+ *      entirely since they call into the WPS-internal
+ *      file-handles routines routines all the time.
+ *
+ *      Rewriting them will require the following steps:
+ *
+ *      1)  Override and rewrite all methods which appear
+ *          to call into the file handles routines. The
+ *          rewrites are required to only call
+ *          wpQueryProgDetails, wpSetProgDetails, and
+ *          wpQueryHandle.
+ *
+ *      2)  After the file handles cache has been replaced
+ *          at some point in the future, replace
+ *          those three methods with new implementations
+ *          which call the new XWP file handles routines.
+ *
  *      This file is ALL new with V0.9.6.
  *
  *      Function prefix for this file:
@@ -21,7 +40,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -67,6 +86,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -1009,12 +1029,12 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 
     if (pcszEnv)
         // environment specified:
-        arc = doshParseEnvironment(pcszEnv,
-                                   &Env);
+        arc = appParseEnvironment(pcszEnv,
+                                  &Env);
     else
         // no environment specified:
         // get the one from the WPS process
-        arc = doshGetEnvironment(&Env);
+        arc = appGetEnvironment(&Env);
 
     if (arc == NO_ERROR)
     {
@@ -1025,7 +1045,7 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 
         // 1) change WORKPLACE_PROCESS=YES to WORKPLACE__PROCESS=NO
 
-        pp = doshFindEnvironmentVar(&Env, "WORKPLACE_PROCESS");
+        pp = appFindEnvironmentVar(&Env, "WORKPLACE_PROCESS");
         if (pp)
         {
             // _Pmpf(("  found %s", *pp));
@@ -1055,15 +1075,15 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
             sprintf(szTemp, "WP_OBJHANDLE=%d", hobjProgram);
         }
 
-        arc = doshSetEnvironmentVar(&Env,
-                                    szTemp,
-                                    TRUE);      // add as first entry
+        arc = appSetEnvironmentVar(&Env,
+                                   szTemp,
+                                   TRUE);      // add as first entry
 
         if (arc == NO_ERROR)
         {
             // rebuild environment
-            arc = doshConvertEnvironment(&Env,
-                                         &pszNewEnv,
+            arc = appConvertEnvironment(&Env,
+                                        &pszNewEnv,
                                          NULL);
             if (arc != NO_ERROR)
                 if (pszNewEnv)
@@ -1073,7 +1093,7 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
                 }
         }
 
-        doshFreeEnvironment(&Env);
+        appFreeEnvironment(&Env);
     }
 
     return (pszNewEnv);
@@ -1209,10 +1229,10 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                                    pProgDetails->pszEnvironment,
                                    pArgDataFile);
 
-                // start the app (more hacks in winhStartApp,
+                // start the app (more hacks in appStartApp,
                 // which calls WinStartApp in turn)
-                happ = winhStartApp(pKernelGlobals->hwndThread1Object,
-                                    pProgDetails);
+                happ = appStartApp(pKernelGlobals->hwndThread1Object,
+                                   pProgDetails);
 
                 if (happ)
                 {
@@ -1223,7 +1243,6 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                                         pArgDataFile,
                                         happ,
                                         ulMenuID);
-
                 }
             } // end if progSetupArgs
         }

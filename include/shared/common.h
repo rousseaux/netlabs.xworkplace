@@ -364,6 +364,8 @@
 
     #define ID_XSH_SORTPAGE                 129     // V0.9.12: sort page (instance or global)
 
+    #define ID_XSH_WIDGET_POWER_MAIN        130     // V0.9.12 (2001-05-26) [umoeller]
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations
@@ -1566,6 +1568,8 @@
     #define     STG_BOOL        2
     #define     STG_BITFLAG     3
     #define     STG_PSZ         4       // V0.9.9 (2001-03-07) [umoeller]
+    #define     STG_PSZARRAY    5
+    #define     STG_BINARY      6       // V0.9.12 (2001-05-24) [umoeller]
 
     /*
      *@@ XWPSETUPENTRY:
@@ -1655,6 +1659,19 @@
                         //      a PSZ pointer, and lDefault must also
                         //      be a PSZ to the default value.
 
+                        // -- STG_PSZARRAY: an array of null-terminated
+                        //      strings, where the last string is terminated
+                        //      with two zero bytes. Note that this requires
+                        //      memory management.
+                        //      In that case, ulOfsOfData must point to
+                        //      a PSZ pointer. The default value will be
+                        //      a NULL string.
+
+                        // -- STG_BINARY: a binary structure. There is
+                        //      no setup string support, of course, and
+                        //      lMax must specify the size of the
+                        //      structure.
+
         // build/scan setup string values:
 
         const char  *pcszSetupString;
@@ -1685,8 +1702,10 @@
                                 // built if the value is different from
                                 // this. This is also used for cmnSetupInitData.
 
-        ULONG       ulBitflag;  // only with STG_BITFLAG, the mask for the
-                                // ULONG data pointed to by ulOfsOfData
+        ULONG       ulExtra;
+                        // -- with STG_BITFLAG, the mask for the
+                        // ULONG data pointed to by ulOfsOfData
+                        // -- with STG_BINARY, the size of the structure
 
         LONG        lMin,       // only with STG_LONG, the min and max
                     lMax;       // values allowed
@@ -1779,7 +1798,7 @@
 
     VOID cmnShowProductInfo(ULONG ulSound);
 
-    VOID cmnRunCommandLine(HWND hwndOwner,
+    HAPP cmnRunCommandLine(HWND hwndOwner,
                            const char *pcszStartupDir);
 
     const char* XWPENTRY cmnQueryDefaultFont(VOID);

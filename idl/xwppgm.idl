@@ -77,6 +77,34 @@ interface XWPProgram : WPProgram
      *
      */
 
+    PVOID       pvpszEnvironment;       // pointer to a PSZ containing a
+                                        // string array with the program's
+                                        // environment (last string is terminated
+                                        // with two null bytes);
+                                        // this is a ptr into the WPProgram instance data
+
+    PVOID       pSWPInitial;            // pointer to SWP struct;
+                                        // this is a ptr into the WPProgram instance data
+
+    PVOID       pvProgramLongs;         // pointer to an array of LONG values
+                                        // containing the program's data.
+                                        // Known ULONGS:
+                                        // --  index 0: fshandle of the executable.
+                                        //     0xFFFF marks a "*" executable (cmdline).
+                                        // --  index 1: fshandle of the startup dir.
+
+    ULONG       cbStringArray;          // count of bytes allocated in pvStringArray
+    PVOID       pvStringArray;          // WPProgram string array restored in wpRestoreData.
+                                        // The first USHORT is a string index always,
+                                        // the last string has a USHORT of 0xFFFF.
+                                        // Known string indices:
+                                        // --  0: executable string. This is only used
+                                        //        if the user did not specify a fully
+                                        //        qualified executable, but something on
+                                        //        the PATH which wasn't resolved to an
+                                        //        fshandle (see above).
+                                        // --  1: parameters string.
+
     /*
      * WPProgram methods overridden by XWPProgram:
      *
@@ -86,6 +114,9 @@ interface XWPProgram : WPProgram
     wpUnInitData: override;
 
     //# wpSetup: override;                  not needed, this properly calls the methods
+
+    wpSaveState: override;
+    wpRestoreState: override;
 
     wpRestoreData: override;
 

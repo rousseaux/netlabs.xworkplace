@@ -75,10 +75,13 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\dosh.h"
-#include "helpers\winh.h"
+#include "helpers\apps.h"               // application helpers
+#include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"
+#include "xfdataf.ih"
 #include "xfpgmf.ih"
 
 // XWorkplace implementation headers
@@ -93,7 +96,6 @@
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpcmdf.h>                     // WPCommandFile
-#include "xfobj.h"
 
 /* ******************************************************************
  *
@@ -332,9 +334,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
                             if (_wpQueryFilename(somSelf, szProgramFile, TRUE))
                             {
                                 // no type available: get it ourselves
-                                arc = winhQueryAppType(szProgramFile,
-                                                       &_ulDosAppType,
-                                                       &_ulAppType);
+                                arc = appQueryAppType(szProgramFile,
+                                                      &_ulDosAppType,
+                                                      &_ulAppType);
                             }
                         break; }
 
@@ -428,24 +430,23 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
 
 SOM_Scope BOOL  SOMLINK xfpgmf_xwpNukePhysical(XFldProgramFile *somSelf)
 {
-    static xfTD_wpDestroyObject pWPDataFile_wpDestroyObject = NULL;
+    static somTD_XFldDataFile_xwpNukePhysical pXFldDataFile_xwpNukePhysical = NULL;
 
     BOOL brc = FALSE;
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpNukePhysical");
 
-    if (!pWPDataFile_wpDestroyObject)
+    if (!pXFldDataFile_xwpNukePhysical)
     {
         // first call:
-        // resolve WPDataFile::wpDestroyObject
-        // (skip WPProgramFile parent call!)
-        pWPDataFile_wpDestroyObject
-            = (xfTD_wpDestroyObject)wpshResolveFor(somSelf,
-                                                   _WPDataFile,     // _XFldDataFile actually
-                                                   "wpDestroyObject");
+        // resolve XFldDataFile::xwpNukePhysical
+        pXFldDataFile_xwpNukePhysical
+            = (somTD_XFldDataFile_xwpNukePhysical)wpshResolveFor(somSelf,
+                                                    _XFldDataFile,
+                                                    "xwpNukePhysical");
     }
 
-    if (pWPDataFile_wpDestroyObject)
+    if (pXFldDataFile_xwpNukePhysical)
     {
         // clean up program resources in INI file;
         // there's no way to avoid running through
@@ -457,7 +458,7 @@ SOM_Scope BOOL  SOMLINK xfpgmf_xwpNukePhysical(XFldProgramFile *somSelf)
 
         // call WPAbstract::wpDestroyObject explicitly,
         // skipping WPProgram
-        brc = pWPDataFile_wpDestroyObject(somSelf);
+        brc = pXFldDataFile_xwpNukePhysical(somSelf);
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,

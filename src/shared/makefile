@@ -119,10 +119,10 @@ dep:
 !endif
 
 $(OUTPUTDIR)\xwpres.res: *.ico $(@B).rc
-        $(RC) -r -i $(OUTPUTDIR) $(@B).rc $(OUTPUTDIR)\$(@B).res
+        $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc
-        $(RC) -r -i $(OUTPUTDIR) $(@B).rc $(OUTPUTDIR)\$(@B).res
+        $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 # The .OBJ-from-sources dependencies are now automatically
 # created by "nmake dep" into the .depend include file.

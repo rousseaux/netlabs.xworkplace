@@ -205,10 +205,11 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\except.h"             // exception handling
+#include "helpers\apps.h"               // application helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -1829,8 +1830,8 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                         {
                             DOSENVIRONMENT Env = {0};
                             if (    (pProgDetails->pszEnvironment == 0)
-                                 || (doshParseEnvironment(pProgDetails->pszEnvironment,
-                                                     &Env)
+                                 || (appParseEnvironment(pProgDetails->pszEnvironment,
+                                                         &Env)
                                        != NO_ERROR)
                                )
                             {
@@ -1860,7 +1861,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                         ppszThis++;
                                     }
                                 }
-                                doshFreeEnvironment(&Env);
+                                appFreeEnvironment(&Env);
                             }
                         }
                     }

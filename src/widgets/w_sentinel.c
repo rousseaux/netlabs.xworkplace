@@ -1589,6 +1589,6 @@ VOID EXPENTRY TwgtQueryVersion(PULONG pulMajor,
     // report 0.9.9
     *pulMajor = 0;
     *pulMinor = 9;
-    *pulRevision = 9;
+    *pulRevision = 12;
 }
 
