@@ -598,6 +598,7 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
  *@@changed V0.9.13 (2001-06-23) [umoeller]: added new memory settings
  *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed memory leak
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed max ID_OSDI_CACHE_THRESHOLD to 128
  */
 
 VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
@@ -937,9 +938,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                     else
                         sscanf(szParameter, "%d", &ulCacheSize);
 
-                    p2 = strchr(szParameter, ','); // get next parameter
                     // optional "LW" parameter (lazy write)
-                    if (p2)
+                    if (p2 = strchr(szParameter, ','))
                     {
                         if (!strncmp(p2+1, "LW", 2))
                         {
@@ -967,7 +967,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                     // the threshold param is in sectors of 512 bytes
                     // each, so for getting KB, we need to divide by 2
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_CACHE_THRESHOLD,
-                                           4, 64,
+                                           4,
+                                           128, // fixed from 64 V0.9.20 (2002-07-03) [umoeller]
                                            ulThreshold / 2);
                     WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, szAutoCheck);
                 }
@@ -2203,7 +2204,8 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                                 ? 2048
                                                 : 1024);
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_CACHE_THRESHOLD,
-                                           4, 64,
+                                           4,
+                                           128, // fixed from 64 V0.9.20 (2002-07-03) [umoeller]
                                            64);
                     // do not auto-check FAT drives
                     WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, "");
@@ -2314,7 +2316,8 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                            0, 14400,
                                            1024);
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_CACHE_THRESHOLD,
-                                           4, 64,
+                                           4,
+                                           128,     // fixed from 64 V0.9.20 (2002-07-03) [umoeller]
                                            4);
                     WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, "");
                 break;

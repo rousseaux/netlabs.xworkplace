@@ -4911,7 +4911,7 @@ BOOL cmnRegisterView(WPObject *somSelf,
             PSZ p;
             if (p = strchr(pszViewTitle, '~'))
                 // found: remove that
-                strcpy(p, p+1);
+                strcpy(p, p + 1);
 
             brc = _wpRegisterView(somSelf,
                                   hwndFrame,

@@ -24,6 +24,36 @@ FIXED SINCE 0.9.19
 CURRENT PROBLEMS
 ----------------
 
+- Regular Expressions
+ At least in the select by name dialog the expression "5[67]."
+ matches the files 567, 576, but also 562blabla, which it should not
+ ("Regular expressions" is  switched on). The same happens with
+ "5[67]", while "5[68]" only selects 567 and 562blabla.
+
+- New file dialog
+ + When called from the XButton settings Browse button, the dialog is
+   always starting at F:\ -- the programs disk with XWP on it, so that
+   could be logical. But it always starts there no matter what
+   directory I was in before and what is written in the entry field for
+   the bitmap.
+ + I would expect to be able to change directories with a double click
+   on the folder symbol in the right hand part, but this does not work.
+ + It should remember the position of the slider separating the left
+   from the right part.
+
+--  >I have a program object defined for ZIP-files with
+    >   Program: unzip.exe
+    > Parameters: "%*" -d "g:\Work\%**n"
+    >
+    >It works fine with the normal WPS associations. But with XWP's
+    >extended associations I get this error:
+    >  checkdir: cannot create extraction directory: g:/Work"
+
+    OK, the problem remains with XWP-0.9.19, although the error message is now
+       checkdir: cannot create extraction directory: g:/Work/%**n
+
+And it does not matter, if I have "Change parameter list" switched on or off.
+
 --  WarpCenter doesn't disappear from window list
 
 --  vertical resizing of pager doesn't work, even though mouse

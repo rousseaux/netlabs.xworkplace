@@ -21,16 +21,31 @@
 
 </UL>Bugfixes:
 
-<UL><LI>Common: Replaced all strchr and strrchr calls in XWorkplace with a DBCS-enabled
+<UL><LI>Install: Fixed several problems with installation objects.
+
+<P><LI>Common: Replaced all strchr and strrchr calls in XWorkplace with a DBCS-enabled
 version, of which I do not know whether it actually works. I'd be grateful if Asian
 testers could check whether the bugs that have been reported are fixed by this since,
 again, I have no way of testing DBCS here.
 
 <P><LI>Program objects: Command line icons were broken (in "Command Prompts" folder),
-and Win-OS/2 full screen object didn't work at all. Fixed.
+and batch files and Win-OS/2 full screen objects didn't work at all. Fixed.
+
+<P><LI>Folders: "Batch rename" dialog had problems enabling the start rename button.
+Fixed.
 
 <P><LI>Sound object: Sound scheme testing was case-sensitive, while sound schemes
 in OS2SYS.INI are case-insensitive. Fixed.
+
+<P><LI>Screen object: Special functions on screen border objects page had funny
+titles, fixed.
+
+<P><LI>&pgr;: Removed silly "Pager is disabled" message from "Add sticky window"
+dialog.
+
+<P><LI>&pgr;: Stay on top would never work, fixed.
+
+<P><LI>&xcenter;: Diskfree (WarpCenter style) would never save its width, fixed.
 
 </UL>
 </BODY>

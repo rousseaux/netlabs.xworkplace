@@ -1111,7 +1111,6 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                     // first subfolder in here
                     HDIR          hdir = HDIR_CREATE;
                     FILEFINDBUF3  ffb3     = {0};
-                    // ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
                     ULONG         ulFindCount    = 1;        // look for 1 file at a time
                     APIRET        arc            = NO_ERROR;
 

@@ -5758,6 +5758,8 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
         PXMLDOM pDom = NULL;
         if (!(arc = xmlCreateDOM(0,             // no validation
                                  NULL,
+                                 0,
+                                 NULL,
                                  NULL,
                                  NULL,
                                  &pDom)))

@@ -970,6 +970,8 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
                            MPARAM mp1,
                            MPARAM mp2)
 {
+    PSWP pswp;
+
     // first check, just for speed
     if (    (msg == WM_CREATE)
          || (msg == WM_DESTROY)
@@ -1052,6 +1054,7 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
  *@@changed V0.9.14 (2001-08-02) [lafaix]: added auto move to default button
  *@@changed V0.9.16 (2001-11-22) [umoeller]: hotkeys stopped working after lockup if XPager wasn't running; fixed
  *@@changed V0.9.19 (2002-04-04) [lafaix]: enabled AMF_ALWAYSMOVE for auto move feature
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed pager stay on top
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1076,12 +1079,15 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 
         // V0.9.7 (2001-01-23) [umoeller]
         if (    (G_HookData.PagerConfig.flPager & PGRFL_STAYONTOP)
-             // && (psmh->msg == WM_ADJUSTWINDOWPOS)        doesn't work
+             // (psmh->msg == WM_ADJUSTWINDOWPOS)        doesn't work
              && (psmh->msg == WM_WINDOWPOSCHANGED)
-             && (WinIsWindowVisible(G_HookData.hwndPagerFrame))
              && (pswp = (PSWP)psmh->mp1)
              && (pswp->fl & SWP_ZORDER)
-             && (pswp->hwndInsertBehind == HWND_TOP)
+             && (psmh->hwnd != G_HookData.hwndPagerFrame)
+             // for some reason, this criterion never works
+             // V0.9.20 (2002-07-03) [umoeller]
+             // && (pswp->hwndInsertBehind == HWND_TOP)
+             && (WinIsWindowVisible(G_HookData.hwndPagerFrame))
                 // only do this if a desktop window is moved to the top
              && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
            )
@@ -1091,7 +1097,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
             WinSetWindowPos(G_HookData.hwndPagerFrame,
                             HWND_TOP,
                             0, 0, 0, 0,
-                            SWP_ZORDER | SWP_SHOW);
+                            SWP_ZORDER);
             --G_HookData.cSuppressWinlistNotify;
         }
     }

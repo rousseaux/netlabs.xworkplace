@@ -2890,6 +2890,7 @@ BOOL hifSetScreenBorderObjectUnique(ULONG ulBorder,       // in: SCREENCORNER_*
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added Corner sensitivity setting
  *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
  *@@changed V0.9.18 (2002-02-12) [pr]: added Screen Wrap option to special functions
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed tilde char in special funcs
  */
 
 VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -2921,24 +2922,9 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             HWND    hwndDrop = WinWindowFromID(pnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_DROP);
 
-            /*
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_WINDOWLIST)) ; // pszSpecialWindowList
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_DESKTOPPOPUP)) ; // pszSpecialDesktopPopup
+            CHAR    szTemp[100];
 
-#ifndef __NOPAGER__
-            WinInsertLboxItem(hwndDrop, LIT_END, "XPager");
-            // V0.9.9 (2001-01-25) [lafaix] (clockwise)
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERUP)) ; // pszSpecialXPagerUp
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERRIGHT)) ; // pszSpecialXPagerRight
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERDOWN)) ; // pszSpecialXPagerDown
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGERLEFT)) ; // pszSpecialXPagerLeft
-#endif
-
-            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_SCREENWRAP));
-            */
-
-            // above code replaced V0.9.19 (2002-04-17) [umoeller]
-
+            // code replaced V0.9.19 (2002-04-17) [umoeller]
             ULONG   ul;
             struct
             {
@@ -2963,9 +2949,18 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                  ul < ARRAYITEMCOUNT(aIDsWithFuncs);
                  ++ul)
             {
-                LONG l = WinInsertLboxItem(hwndDrop,
-                                           LIT_END,
-                                           cmnGetString(aIDsWithFuncs[ul].ulStringID));
+                // fixed tilde chars in special functions
+                // V0.9.20 (2002-07-03) [umoeller]
+                PSZ p;
+                LONG l;
+                strcpy(szTemp, cmnGetString(aIDsWithFuncs[ul].ulStringID));
+                if (p = strchr(szTemp, '~'))
+                    // found: remove that
+                    strcpy(p, p + 1);
+
+                l = WinInsertLboxItem(hwndDrop,
+                                      LIT_END,
+                                      szTemp);
                 // set handle for each item or the offsets are
                 // all wrong when pager is disabled
                 winhSetLboxItemHandle(hwndDrop,
