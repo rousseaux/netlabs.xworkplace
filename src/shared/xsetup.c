@@ -221,6 +221,7 @@ static FEATURESITEM G_FeatureItemsList[] =
 #endif
 #ifndef __NEVERCHECKDESKTOP__
             ID_XCSI_CHECKDESKTOP, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_PREPOPULATEDESKTOP, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
@@ -2010,6 +2011,8 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #ifndef __NEVERCHECKDESKTOP__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CHECKDESKTOP,
                 cmnQuerySetting(sfCheckDesktop));
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PREPOPULATEDESKTOP,
+                cmnQuerySetting(sfPrePopulateDesktop));
 #endif
 
 #ifndef __NEVEREXTASSOCS__
@@ -2366,6 +2369,10 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
 #ifndef __NEVERCHECKDESKTOP__
             case ID_XCSI_CHECKDESKTOP:
                 cmnSetSetting(sfCheckDesktop, precc->usCheckState);
+            break;
+
+            case ID_XCSI_PREPOPULATEDESKTOP:
+                cmnSetSetting(sfPrePopulateDesktop, precc->usCheckState);
             break;
 #endif
 

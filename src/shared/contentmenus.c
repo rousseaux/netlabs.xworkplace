@@ -156,12 +156,13 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
 #include <wppgm.h>                      // WPProgram
-#include <wpshadow.h>                   // WPShadow
+// #include <wpshadow.h>                   // WPShadow
 #include <wpdesk.h>                     // WPDesktop
 #include <wpdataf.h>                    // WPDataFile
 #include <wprootf.h>                    // WPRootFolder
@@ -773,16 +774,16 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                 {
                     // object not filtered:
                     // dereference shadows, if necessary
-                    pObject2 = pObject;
+                    /* pObject2 = pObject;
                     while (pObject2)
                     {
                         if (_somIsA(pObject2, _WPShadow))
                             pObject2 = _wpQueryShadowedObject(pObject2, TRUE);
                         else
                             break;
-                    }
+                    } */
 
-                    if (pObject2)
+                    if (pObject2 = objResolveIfShadow(pObject))
                     {
                         BOOL    fIsFolder = (    (_somIsA(pObject2, _WPFolder))
                                               || (_somIsA(pObject2, _WPDisk))

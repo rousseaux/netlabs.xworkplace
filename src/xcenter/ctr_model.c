@@ -802,7 +802,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
             {
                 pClass2Insert->ulMenuID =    cmnQuerySetting(sulVarMenuOffset)
                                            + ID_XFMI_OFS_VARIABLE
-                                           + (ulIndex++);
+                                           + ulIndex;
                 pClass2Insert->pClass = pClass;
                 pClass2Insert->ulAttr = ulAttr;
 
@@ -810,6 +810,10 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                               pClass2Insert);
             }
         }
+
+        // raise the index in any case or the offsets are all wrong
+        // V0.9.18 (2002-03-24) [umoeller]
+        ulIndex++;
 
         pClassNode = pClassNode->pNext;
     }

@@ -168,15 +168,19 @@ BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
     // in the WPS, so this is safe (famous last words)
     if ((pDetails = progQueryDetails(somSelf)))
     {
+        ULONG ulLen;
+
         // EXENAME: skip for WPProgramFile
         if (!_somIsA(somSelf, _WPProgramFile))
         {
-            if (pDetails->pszExecutable)
+            if (    (pDetails->pszExecutable)
+                 && (ulLen = strlen(pDetails->pszExecutable))
+               )
             {
                 PCSZ pcszProgString;
 
                 xstrcat(pstrSetup, "EXENAME=", 0);
-                xstrcat(pstrSetup, pDetails->pszExecutable, 0);
+                xstrcat(pstrSetup, pDetails->pszExecutable, ulLen);
                 xstrcatc(pstrSetup, ';');
 
                 // add PROGTYPE=, unless this is PROG_DEFAULT
@@ -192,22 +196,24 @@ BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
         } // end if (_somIsA(somSelf, _WPProgram)
 
         // PARAMETERS=
-        if (pDetails->pszParameters)
-            if (strlen(pDetails->pszParameters))
-            {
-                xstrcat(pstrSetup, "PARAMETERS=", 0);
-                xstrcat(pstrSetup, pDetails->pszParameters, 0);
-                xstrcatc(pstrSetup, ';');
-            }
+        if (    (pDetails->pszParameters)
+             && (ulLen = strlen(pDetails->pszParameters))
+           )
+        {
+            xstrcat(pstrSetup, "PARAMETERS=", 0);
+            xstrcat(pstrSetup, pDetails->pszParameters, ulLen);
+            xstrcatc(pstrSetup, ';');
+        }
 
         // STARTUPDIR=
-        if (pDetails->pszStartupDir)
-            if (strlen(pDetails->pszStartupDir))
-            {
-                xstrcat(pstrSetup, "STARTUPDIR=", 0);
-                xstrcat(pstrSetup, pDetails->pszStartupDir, 0);
-                xstrcatc(pstrSetup, ';');
-            }
+        if (    (pDetails->pszStartupDir)
+             && (ulLen = strlen(pDetails->pszStartupDir))
+           )
+        {
+            xstrcat(pstrSetup, "STARTUPDIR=", 0);
+            xstrcat(pstrSetup, pDetails->pszStartupDir, ulLen);
+            xstrcatc(pstrSetup, ';');
+        }
 
         // SET XXX=VVV
         if (pDetails->pszEnvironment)
@@ -1268,13 +1274,13 @@ static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
 {
     BOOL brc = FALSE;
 
-    HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                              NULLHANDLE,       // owner
-                              WinDefDlgProc,
-                              cmnQueryNLSModuleHandle(FALSE),
-                              ID_XSD_NEWFILETYPE,   // "New File Type" dlg
-                              NULL);            // pCreateParams
-    if (hwndDlg)
+    HWND hwndDlg;
+    if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+                             NULLHANDLE,       // owner
+                             WinDefDlgProc,
+                             cmnQueryNLSModuleHandle(FALSE),
+                             ID_XSD_NEWFILETYPE,   // "New File Type" dlg
+                             NULL))
     {
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         HWND hwndEntryField = WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD);
@@ -1283,7 +1289,7 @@ static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
                           ID_XSDI_FT_TITLE,
                           pstrPrompt->psz);
         winhSetEntryFieldLimit(hwndEntryField, 255);
-        if (WinProcessDlg(hwndDlg) == DID_OK)
+        if (DID_OK == WinProcessDlg(hwndDlg))
         {
             CHAR    szNew[300] = "";
             // ULONG   ulOfs = 0;
@@ -1306,11 +1312,9 @@ static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
 /*
  *@@ FixSpacesInFilename:
  *      checks if pstr contains spaces and, if so,
- *      encloses the string in psz in quotes.
- *      It is assumes that there is enough room
- *      in psz to hold two more characters.
+ *      encloses the string in pstr in quotes.
  *
- *      Otherwise psz is not changed.
+ *      Otherwise pstr is not changed.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
  *@@changed V0.9.18 (2002-02-13) [umoeller]: now using XSTRING

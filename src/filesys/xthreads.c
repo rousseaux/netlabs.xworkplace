@@ -116,6 +116,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -126,7 +127,7 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpshadow.h>                   // WPShadow
+// #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
  *
@@ -2011,10 +2012,7 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             if (wpshCheckObject(pFolder))
             {
-                while (_somIsA(pFolder, _WPShadow))
-                    pFolder = _wpQueryShadowedObject(pFolder, TRUE);
-
-                if (pFolder)  // V0.9.9 (2001-03-11) [umoeller]
+                if (pFolder = objResolveIfShadow(pFolder))  // V0.9.9 (2001-03-11) [umoeller]
                 {
                     if (!_somIsA(pFolder, _WPFolder)) // check only folders, avoid disks
                         break;

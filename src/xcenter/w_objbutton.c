@@ -110,7 +110,7 @@
 #include <wpdesk.h>
 #include <wpdisk.h>
 #include <wppower.h>
-#include <wpshadow.h>
+// #include <wpshadow.h>
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
@@ -534,10 +534,10 @@ static WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
        )
     {
         // dereference shadows
-        while ((pobj) && (_somIsA(pobj, _WPShadow)))
-            pobj = _wpQueryShadowedObject(pobj, TRUE);
+        /* while ((pobj) && (_somIsA(pobj, _WPShadow)))
+            pobj = _wpQueryShadowedObject(pobj, TRUE); */
 
-        if (pobj)
+        if (pobj = objResolveIfShadow(pobj))
         {
             // now, if pObj is a disk object: get root folder
             if (_somIsA(pobj, _WPDisk))

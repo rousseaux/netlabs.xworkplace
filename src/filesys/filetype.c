@@ -127,7 +127,7 @@
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 #include <wppgm.h>              // WPProgram
 #include <wppgmf.h>             // WPProgramFile
-#include <wpshadow.h>           // WPShadow
+// #include <wpshadow.h>           // WPShadow
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // #define DEBUG_ASSOCS
@@ -298,6 +298,10 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
         PSZ pszTypes = NULL,
             pszFilters = NULL;
 
+        #ifdef DEBUG_TURBOFOLDERS
+            _Pmpf((__FUNCTION__ ": entering for class %s", _somGetName(pClassObject)));
+        #endif
+
         // go for the types
         if (    (pszTypes = _wpclsQueryInstanceType(pClassObject))
              && (*pszTypes)     // many classes return ""
@@ -306,8 +310,6 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
             // this is separated by commas
             PCSZ pStart = pszTypes;
             BOOL fQuit;
-
-            // _Pmpf(("    types list %s", pszTypes));
 
             do
             {
@@ -343,7 +345,12 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
 
                     // store pointer to string in ulKey
                     pNew->Tree.ulKey = (ULONG)pNew->szUpperType;
+
                     pNew->pClassObject = pClassObject;
+
+                    #ifdef DEBUG_TURBOFOLDERS
+                        _Pmpf(("    found type %s", pNew->szUpperType));
+                    #endif
 
                     if (!fLocked)
                         fLocked = LockInstances();
@@ -384,8 +391,6 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
             PCSZ pStart = pszFilters;
             BOOL fQuit;
 
-            // _Pmpf(("    filters list %s", pszFilters));
-
             do
             {
                 PSZ pEnd;
@@ -416,11 +421,11 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                     pNew->szFilter[ulLength] = '\0';
                     nlsUpper(pNew->szFilter, ulLength);
 
-                    pNew->pClassObject = pClassObject;
-
-                    #ifdef DEBUG_ASSOCS
-                        _Pmpf(("    got filter %s", pNew->szFilter));
+                    #ifdef DEBUG_TURBOFOLDERS
+                        _Pmpf(("    found filter %s", pNew->szFilter));
                     #endif
+
+                    pNew->pClassObject = pClassObject;
 
                     if (!fLocked)
                         fLocked = LockInstances();
@@ -4179,15 +4184,9 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                 // we use OBJECT_FROM_PREC to get the SOM pointer
                                 WPObject *pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID);
 
-                                if (pObject)
+                                // dereference shadows
+                                if (pObject = objResolveIfShadow(pObject))
                                 {
-                                    // dereference shadows
-                                    while (     (pObject)
-                                             && (_somIsA(pObject, _WPShadow))
-                                          )
-                                        pObject = _wpQueryShadowedObject(pObject,
-                                                            TRUE);  // lock
-
                                     if (    (_somIsA(pObject, _WPProgram))
                                          || (_somIsA(pObject, _WPProgramFile))
                                        )

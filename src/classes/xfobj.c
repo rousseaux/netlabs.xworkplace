@@ -19,8 +19,8 @@
  *      i.e. the methods themselves.
  *      The implementation for this class is mostly in filesys\object.c.
  *
- *@@somclass XFldObject xfobj_
- *@@somclass M_XFldObject xfobjM_
+ *@@somclass XFldObject xo_
+ *@@somclass M_XFldObject xoM_
  */
 
 /*
@@ -118,7 +118,7 @@
 // other SOM headers
 #pragma hdrstop
 #include <wptrans.h>                    // WPTransient
-#include <wpabs.h>                      // WPAbstract
+#include <wpshadow.h>                   // WPShadow
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -158,12 +158,12 @@ extern WPFolder     *G_pConfigFolder;
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpDestroyStorage(XFldObject *somSelf)
+SOM_Scope BOOL  SOMLINK xo_xwpDestroyStorage(XFldObject *somSelf)
 {
     BOOL    brc = FALSE;
     xfTD_wpDestroyObject _wpDestroyObject = NULL;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpDestroyStorage");
+    XFldObjectMethodDebug("XFldObject","xo_xwpDestroyStorage");
 
     if (_wpDestroyObject = (xfTD_wpDestroyObject)wpshResolveFor(
                                              somSelf,
@@ -173,41 +173,6 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpDestroyStorage(XFldObject *somSelf)
 
     return (brc);
 }
-
-/*
- *@@ xwpAddObjectInternalsPage:
- *      this actually adds the "Internals" pages into all object notebooks,
- *      if the Global Settings allow it
- */
-
-/* SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
-                                                            HWND hwndNotebook)
-{
-    PAGEINFO pi;
-    const char* pszHelpLibrary = cmnQueryHelpLibrary();
-
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpAddObjectInternalsPages");
-
-    // insert Shutdown settings page
-    memset((PCH)&pi, 0, sizeof(PAGEINFO));
-    pi.cb                  = sizeof(PAGEINFO);
-    pi.hwndPage            = NULLHANDLE;
-    pi.pfnwp               = obj_fnwpSettingsObjDetails;
-    pi.resid               = cmnQueryNLSModuleHandle(FALSE);
-    pi.pCreateParams       = somSelf;
-                // passed to obj_fnwpSettingsObjDetails in mp2
-    pi.dlgid               = ID_XSD_OBJECTDETAILS;
-    pi.usPageStyleFlags    = BKA_STATUSTEXTON | BKA_MAJOR;   // major tab;
-    pi.usPageInsertFlags   = BKA_FIRST;
-    pi.usSettingsFlags     = 0; // don't enumerate in status line
-    pi.pszName             = cmnGetString(ID_XSSI_INTERNALS);
-
-    pi.pszHelpLibraryName  = (PSZ)pszHelpLibrary;
-    pi.idDefaultHelpPanel  = ID_XSH_SETTINGS_OBJINTERNALS;
-
-    return (_wpInsertSettingsPage(somSelf, hwndNotebook, &pi));
-} */
 
 /*
  *@@ xwpQueryRealDefaultView:
@@ -243,10 +208,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpDestroyStorage(XFldObject *somSelf)
  *@@changed V0.9.16 (2001-11-25) [umoeller]: now using new instance var to pick up changes
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_xwpQueryRealDefaultView(XFldObject *somSelf)
+SOM_Scope ULONG  SOMLINK xo_xwpQueryRealDefaultView(XFldObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryRealDefaultView");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryRealDefaultView");
 
     return (_ulDefaultView);
             // V0.9.16 (2001-11-25) [umoeller]
@@ -303,10 +268,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryRealDefaultView(XFldObject *somSelf)
  *@@added V0.9.16 (2001-12-06) [umoeller]
  */
 
-SOM_Scope PSZ  SOMLINK xfobj_xwpQueryOriginalObjectID(XFldObject *somSelf)
+SOM_Scope PSZ  SOMLINK xo_xwpQueryOriginalObjectID(XFldObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryOriginalObjectID");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryOriginalObjectID");
 
     return _pWszOriginalObjectID;
 }
@@ -328,15 +293,15 @@ SOM_Scope PSZ  SOMLINK xfobj_xwpQueryOriginalObjectID(XFldObject *somSelf)
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
-                                               CDATE* pcdateDeleted,
-                                               CTIME* pctimeDeleted)
+SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
+                                            CDATE* pcdateDeleted,
+                                            CTIME* pctimeDeleted)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
     BOOL    brc = (_cdateDeleted.year != 0);     // V0.9.16 (2001-12-06) [umoeller]
 
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryDeletion");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryDeletion");
 
     // _Pmpf((__FUNCTION__ ": _cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
 
@@ -373,12 +338,12 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
-                                             BOOL fSet)
+SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
+                                          BOOL fSet)
 {
     // BOOL    brc = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetDeletion");
+    XFldObjectMethodDebug("XFldObject","xo_xwpSetDeletion");
 
     if (fSet)
     {
@@ -404,11 +369,11 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
  *@@added V0.9.3 (2000-04-11) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
-                                                WPObject* pTrashObject)
+SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
+                                             WPObject* pTrashObject)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetTrashObject");
+    XFldObjectMethodDebug("XFldObject","xo_xwpSetTrashObject");
 
     _pTrashObject = pTrashObject;
 
@@ -423,11 +388,11 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
+SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
 {
     ULONG   ulrc = 0;
     WPSHLOCKSTRUCT Lock = {0};
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryListNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryListNotify");
 
     TRY_LOUD(excpt1)
     {
@@ -494,12 +459,12 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
-                                               ULONG flNotifyFlags)
+SOM_Scope BOOL  SOMLINK xo_xwpSetListNotify(XFldObject *somSelf,
+                                            ULONG flNotifyFlags)
 {
     BOOL    brc = FALSE;
     WPSHLOCKSTRUCT Lock = {0};
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetListNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpSetListNotify");
 
     TRY_LOUD(excpt1)
     {
@@ -543,13 +508,13 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
-                                                  ULONG flNotifyFlags,
-                                                  ULONG flNotifyMask)
+SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
+                                               ULONG flNotifyFlags,
+                                               ULONG flNotifyMask)
 {
     BOOL    brc = FALSE;
     WPSHLOCKSTRUCT Lock = {0};
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpModifyListNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpModifyListNotify");
 
     TRY_LOUD(excpt1)
     {
@@ -608,12 +573,12 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from xwpAddDestroyNotify
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpAddWidgetNotify(XFldObject *somSelf,
-                                                 HWND hwnd)
+SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
+                                              HWND hwnd)
 {
     BOOL    brc = FALSE;
     WPSHLOCKSTRUCT Lock = {0};
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpAddWidgetNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpAddWidgetNotify");
 
     TRY_LOUD(excpt1)
     {
@@ -657,12 +622,12 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpAddWidgetNotify(XFldObject *somSelf,
  *@@added V0.9.7 (2001-01-03) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
-                                                     HWND hwnd)
+SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
+                                                  HWND hwnd)
 {
     BOOL    brc = FALSE;
     WPSHLOCKSTRUCT Lock = {0};
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpRemoveDestroyNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpRemoveDestroyNotify");
 
     TRY_LOUD(excpt1)
     {
@@ -725,10 +690,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
  *@@changed V0.9.16 (2001-10-15) [umoeller]: switched prototype to using struct
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
-                                                   XFldObject_POBJECTHOTKEY pHotkey)
+SOM_Scope BOOL  SOMLINK xo_xwpQueryObjectHotkey(XFldObject *somSelf,
+                                                XFldObject_POBJECTHOTKEY pHotkey)
 {
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryObjectHotkey");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryObjectHotkey");
 
     return (objQueryObjectHotkey(somSelf, pHotkey));
 }
@@ -760,10 +725,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
-                                                 XFldObject_POBJECTHOTKEY pHotkey)
+SOM_Scope BOOL  SOMLINK xo_xwpSetObjectHotkey(XFldObject *somSelf,
+                                              XFldObject_POBJECTHOTKEY pHotkey)
 {
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetObjectHotkey");
+    XFldObjectMethodDebug("XFldObject","xo_xwpSetObjectHotkey");
 
     return (objSetObjectHotkey(somSelf, pHotkey));
 }
@@ -810,14 +775,14 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
  *@@changed V0.9.16 (2001-10-11) [umoeller]: changed implementation to using XSTRINGs
  */
 
-SOM_Scope PSZ  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
-                                           PULONG pulLength)
+SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
+                                        PULONG pulLength)
 {
     PSZ pszReturn = NULL;
     XSTRING str;
     WPSHLOCKSTRUCT Lock = {0};
 
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQuerySetup");
 
     xstrInit(&str, 500);
 
@@ -868,11 +833,11 @@ SOM_Scope PSZ  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *@@added V0.9.16 (2001-10-11) [umoeller]
  */
 
-SOM_Scope void  SOMLINK xfobj_xwpFreeSetupBuffer(XFldObject *somSelf,
-                                                 PSZ pszSetupBuffer)
+SOM_Scope void  SOMLINK xo_xwpFreeSetupBuffer(XFldObject *somSelf,
+                                              PSZ pszSetupBuffer)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpFreeSetupBuffer");
+    XFldObjectMethodDebug("XFldObject","xo_xwpFreeSetupBuffer");
 
     TRY_LOUD(excpt1)
     {
@@ -953,11 +918,11 @@ SOM_Scope void  SOMLINK xfobj_xwpFreeSetupBuffer(XFldObject *somSelf,
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
-                                             PVOID pstrSetup)
+SOM_Scope BOOL  SOMLINK xo_xwpQuerySetup2(XFldObject *somSelf,
+                                          PVOID pstrSetup)
 {
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup2");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQuerySetup2");
 
     return (objQuerySetup(somSelf,
                           pstrSetup));
@@ -986,13 +951,13 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQuerySetup2(XFldObject *somSelf,
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_xwpSetNextObj(XFldObject *somSelf,
-                                             WPObject* pobjNext)
+SOM_Scope ULONG  SOMLINK xo_xwpSetNextObj(XFldObject *somSelf,
+                                          WPObject* pobjNext)
 {
     ULONG ulrc = 0;     // seems to be a BOOL
     WPObject **ppObjNext = NULL;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetNextObj");
+    XFldObjectMethodDebug("XFldObject","xo_xwpSetNextObj");
 
     if (ppObjNext = wpshGetNextObjPointer(somSelf))
         *ppObjNext = pobjNext;
@@ -1007,12 +972,12 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpSetNextObj(XFldObject *somSelf,
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
 
-SOM_Scope WPObject*  SOMLINK xfobj_xwpQueryNextObj(XFldObject *somSelf)
+SOM_Scope WPObject*  SOMLINK xo_xwpQueryNextObj(XFldObject *somSelf)
 {
     WPObject *pobj = NULL;
     WPObject **ppObjNext = NULL;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryNextObj");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryNextObj");
 
     if (ppObjNext = wpshGetNextObjPointer(somSelf))
         pobj = *ppObjNext;
@@ -1031,12 +996,64 @@ SOM_Scope WPObject*  SOMLINK xfobj_xwpQueryNextObj(XFldObject *somSelf)
  *@@changed V0.9.2 (2000-03-15) [umoeller]: initializing new members
  */
 
-SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
+SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 {
+    static SOMClass *s_pWPObject = NULL;
+
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpInitData");
+    XFldObjectMethodDebug("XFldObject","xo_wpInitData");
 
     XFldObject_parent_WPObject_wpInitData(somSelf);
+
+    // get pointer to IBM WPObject instance data;
+    // see WPProgram::wpInitData for more about this hack
+
+    if (!s_pWPObject)
+    {
+        // first call:
+        SOMClass *pClass = _somGetClass(somSelf);
+                        // XWPObject class object now
+
+        while (pClass = _somGetParent(pClass))
+                    // either WPObject class object or another
+                    // WPObject replacement now
+        {
+            if (!strcmp(_somGetName(pClass), "WPObject"))
+            {
+                // got it:
+                s_pWPObject = pClass;
+
+                #ifdef DEBUG_RESTOREDATA
+                    _Pmpf((__FUNCTION__ ": somGetInstanceSize %d",
+                                _somGetInstanceSize(pClass)));
+                    _Pmpf((__FUNCTION__ ": somGetInstancePartSize %d",
+                                _somGetInstancePartSize(pClass)));
+                    _Pmpf((__FUNCTION__ ": sizeof(IBMOBJECTDATA) %d",
+                                sizeof(IBMOBJECTDATA)));
+                #endif
+
+                break;
+            }
+        }
+    }
+
+    if (s_pWPObject)
+        _pvWPObjectData = somDataResolve(somSelf, _somGetInstanceToken(s_pWPObject));
+    else
+        _pvWPObjectData = NULL; // shouldn't happen, but be safe
+
+    // set the class flags
+    _flFlags = 0;
+    if (_somIsA(somSelf, _WPFileSystem))
+    {
+        _flFlags = OBJFL_WPFILESYSTEM;
+        if (_somIsA(somSelf, _WPFolder))
+        {
+            _flFlags |= OBJFL_WPFOLDER;
+        }
+    }
+    else if (_somIsA(somSelf, _WPShadow))
+        _flFlags = OBJFL_WPSHADOW;
 
     // _fDeleted = FALSE;
     _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
@@ -1100,15 +1117,15 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed _ulListNotify
  */
 
-SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
-                                            ULONG ulCode,
-                                            WPObject* refObject)
+SOM_Scope void  SOMLINK xo_wpObjectReady(XFldObject *somSelf,
+                                         ULONG ulCode,
+                                         WPObject* refObject)
 {
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    // XFldObjectMethodDebug("XFldObject","xfobj_wpObjectReady");
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    // XFldObjectMethodDebug("XFldObject","xo_wpObjectReady");
 
     #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
-        _Pmpf(("xfobj_wpObjectReady for %s (class %s), ulCode: %s",
+        _Pmpf(("xo_wpObjectReady for %s (class %s), ulCode: %s",
                 _wpQueryTitle(somSelf),
                 _somGetName(_somGetClass(somSelf)),
                 (ulCode == OR_AWAKE) ? "OR_AWAKE"
@@ -1124,13 +1141,27 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
     XFldObject_parent_WPObject_wpObjectReady(somSelf, ulCode,
                                              refObject);
 
+    _flFlags |= OBJFL_INITIALIZED;
+
     if (ulCode & OR_REFERENCE)
     {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
         _ulListNotify = 0;
             // V0.9.7 (2000-12-18) [umoeller]
 
         _pvllWidgetNotifies = NULL;
+
+        #ifdef DEBUG_ICONREPLACEMENTS
+            _Pmpf((__FUNCTION__ ": object \"%s\" created from source \"%s\"",
+                    _wpQueryTitle(somSelf),
+                    _wpQueryTitle(refObject)));
+
+            _Pmpf(("  source hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                    _wpQueryCoreRecord(refObject)->hptrIcon,
+                    _wpQueryStyle(refObject) & OBJSTYLE_NOTDEFAULTICON));
+            _Pmpf(("  new hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                    _wpQueryCoreRecord(somSelf)->hptrIcon,
+                    _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
+        #endif
     }
 
     // on my Warp 4 FP 10, this method does not get
@@ -1140,10 +1171,15 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
     // better check (the worker thread checks for
     // duplicates, so there's no problem in posting
     // this twice)
-    if (!_somIsA(somSelf, _WPFolder))
+    if (!(_flFlags & OBJFL_WPFOLDER))
         xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
                          (MPARAM)somSelf,
                          MPNULL);
+
+    // if this is a template, don't let the WPS make
+    // it go dormant
+    if (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
+        _wpLockObject(somSelf);
 }
 
 /*
@@ -1158,11 +1194,11 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
  *@@added V0.9.9 (2001-04-06) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
+SOM_Scope BOOL  SOMLINK xo_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
 {
     BOOL    brc = FALSE;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSetup");
+    XFldObjectMethodDebug("XFldObject","xo_wpSetup");
 
     if (brc = XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
         brc = objSetup(somSelf,
@@ -1187,11 +1223,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
  *@@added V0.9.16 (2001-11-25) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSetupOnce(XFldObject *somSelf,
-                                          PSZ pszSetupString)
+SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
+                                       PSZ pszSetupString)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSetupOnce");
+    XFldObjectMethodDebug("XFldObject","xo_wpSetupOnce");
 
     if (G_pConfigFolder)
         // config folder is awake:
@@ -1247,12 +1283,12 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetupOnce(XFldObject *somSelf,
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpFree(XFldObject *somSelf)
+SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
 {
     BOOL                brc = FALSE;
     PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpFree");
+    XFldObjectMethodDebug("XFldObject","xo_wpFree");
 
     if (pKernelGlobals->fAutoRefreshReplaced)
     {
@@ -1334,17 +1370,52 @@ SOM_Scope BOOL  SOMLINK xfobj_wpFree(XFldObject *somSelf)
  *@@changed V0.9.16 (2001-12-31) [umoeller]: added fixes for replacement icons
  */
 
-SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
+SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 {
     PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpUnInitData");
+    XFldObjectMethodDebug("XFldObject","xo_wpUnInitData");
 
     // have object removed from awake-objects list
     xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
                       (MPARAM)somSelf,
                       MPNULL);
+
+    // destroy trash object, if there's one
+    if (_pTrashObject)
+        _wpFree(_pTrashObject);
+
+    // we have a problem with our replacement icons in that
+    // the WPS frees the pointer handle in WPObject::wpUnInitData
+    // if the object has the OBJSTYLE_NOTDEFAULTICON or OBJSTYLE_TEMPLATE
+    // flags set... so in these cases, check if the object has one
+    // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
+    // or the shared icon would disappear globally
+    // V0.9.16 (2001-12-31) [umoeller]
+    if (    (pmrc)
+         && (pmrc->hptrIcon)
+         && (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
+       )
+    {
+        #ifdef DEBUG_ICONREPLACEMENTS
+            _Pmpf((__FUNCTION__ ": checking hptr 0x%lX", pmrc->hptrIcon));
+        #endif
+
+        if (cmnIsStandardIcon(pmrc->hptrIcon))
+        {
+            #ifdef DEBUG_ICONREPLACEMENTS
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "WPS was about to nuke standard icon for object \"%s\"",
+                       pmrc->pszIcon);
+            #endif
+
+            // alright, the WPS is about to nuke this icon:
+            // set the HPOINTER in the record to NULLHANDLE
+            // to prevent the WPS from freeing it
+            pmrc->hptrIcon = NULLHANDLE;
+        }
+    }
 
     // kill the title string we allocated in our wpSetTitle replacement
     // V0.9.16 (2002-01-04) [umoeller]
@@ -1356,33 +1427,9 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
         pmrc->pszIcon = NULL;
     }
 
-    // we have a problem with our replacement icons in that
-    // the WPS frees the pointer handle in WPObject::wpUnInitData
-    // if the object has the OBJSTYLE_NOTDEFAULTICON or OBJSTYLE_TEMPLATE
-    // flags set... so in these cases, check if the object has one
-    // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
-    // or the shared icon would disappear globally
-    // V0.9.16 (2001-12-31) [umoeller]
-    if (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
-    {
-        if (    (pmrc)
-             && (cmnIsStandardIcon(pmrc->hptrIcon))
-           )
-        {
-            // alright, the WPS is about to nuke this icon:
-            // set the HPOINTER in the record to NULLHANDLE
-            // to prevent the WPS from freeing it
-            pmrc->hptrIcon = NULLHANDLE;
-        }
-    }
-
     // free the object ID backup if there's one
     // V0.9.16 (2001-12-06) [umoeller]
     wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
-
-    // destroy trash object, if there's one
-    if (_pTrashObject)
-        _wpFree(_pTrashObject);
 
     // go thru list notifications, if we have any
     if (_ulListNotify)
@@ -1492,14 +1539,14 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
  *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSetTitle(XFldObject *somSelf,
-                                         PSZ pszNewTitle)
+SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
+                                      PSZ pszNewTitle)
 {
     BOOL    brc = FALSE,
             fLocked = FALSE;
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSetTitle");
+    XFldObjectMethodDebug("XFldObject","xo_wpSetTitle");
 
     // return (XFldObject_parent_WPObject_wpSetTitle(somSelf, pszNewTitle));
 
@@ -1534,7 +1581,8 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetTitle(XFldObject *somSelf,
                 {
                     // new title is different:
                     ULONG           ulStyle = _wpQueryStyle(somSelf);
-                    BOOL            fIsInitialized = _wpIsObjectInitialized(somSelf);
+                    BOOL            fIsInitialized = (0 != (_flFlags & OBJFL_INITIALIZED));
+                                        // _wpIsObjectInitialized(somSelf);
 
                     if (    (ulStyle & OBJSTYLE_TEMPLATE)
                          && (fIsInitialized)
@@ -1616,11 +1664,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetTitle(XFldObject *somSelf,
  *@@added V0.9.16 (2001-11-25) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSetDefaultView(XFldObject *somSelf,
-                                               ULONG ulView)
+SOM_Scope BOOL  SOMLINK xo_wpSetDefaultView(XFldObject *somSelf,
+                                            ULONG ulView)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSetDefaultView");
+    XFldObjectMethodDebug("XFldObject","xo_wpSetDefaultView");
 
     _ulDefaultView = ulView;
 
@@ -1639,20 +1687,77 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetDefaultView(XFldObject *somSelf,
  *@@added V0.9.16 (2001-12-06) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSetObjectID(XFldObject *somSelf,
-                                            PSZ pszObjectID)
+SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
+                                         PSZ pszObjectID)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSetObjectID");
+    XFldObjectMethodDebug("XFldObject","xo_wpSetObjectID");
 
     // now this is a true override of the object ID,
     // so nuke the one we backed up, but only if the
     // object has been initialized
-    if (_wpIsObjectInitialized(somSelf))
+    if (_flFlags & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
         wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
 
     return (XFldObject_parent_WPObject_wpSetObjectID(somSelf,
                                                      pszObjectID));
+}
+
+/*
+ *@@ wpSetStyle:
+ *      this WPObject method sets the OBJSTYLE_* flags for
+ *      the object to a whole new set.
+ *
+ *      If this thing is made a template, lock the object
+ *      so it won't be made dormant.
+ *
+ *@@added V0.9.18 (2002-03-24) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSetStyle(XFldObject *somSelf, ULONG ulNewStyle)
+{
+    XFldObjectMethodDebug("XFldObject","xo_wpSetStyle");
+
+    /* if (ulNewStyle & OBJSTYLE_TEMPLATE)
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        if (_flFlags & OBJFL_INITIALIZED)
+            _wpLockObject(somSelf);
+    } */
+
+    return (XFldObject_parent_WPObject_wpSetStyle(somSelf, ulNewStyle));
+}
+
+/*
+ *@@ wpModifyStyle:
+ *      this WPObject method modifies OBJSTYLE_* flags for
+ *      the object bit-wise in an atomic operation.
+ *
+ *      If some smart ass makes this a template, lock the
+ *      object so it won't be made dormant.
+ *
+ *@@added V0.9.18 (2002-03-24) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpModifyStyle(XFldObject *somSelf,
+                                         ULONG ulStyleFlags,
+                                         ULONG ulStyleMask)
+{
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpModifyStyle");
+
+    /* if (    (ulStyleFlags & OBJSTYLE_TEMPLATE)
+         && (ulStyleMask & OBJSTYLE_TEMPLATE)
+       )
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        if (_flFlags & OBJFL_INITIALIZED)
+            _wpLockObject(somSelf);
+    } */
+
+    return (XFldObject_parent_WPObject_wpModifyStyle(somSelf,
+                                                     ulStyleFlags,
+                                                     ulStyleMask));
 }
 
 /*
@@ -1678,16 +1783,21 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetObjectID(XFldObject *somSelf,
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
+SOM_Scope BOOL  SOMLINK xo_wpSaveDeferred(XFldObject *somSelf)
 {
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSaveDeferred");
+    XFldObjectMethodDebug("XFldObject","xo_wpSaveDeferred");
 
-    // add the object to our private "dirty" list
-    objAddToDirtyList(somSelf);
+    // store it only if the parent actually succeeded
+    // V0.9.18 (2002-03-24) [umoeller]
+    if (XFldObject_parent_WPObject_wpSaveDeferred(somSelf))
+    {
+        // add the object to our private "dirty" list
+        objAddToDirtyList(somSelf);
+        return TRUE;
+    }
 
-    // and call the parent...
-    return (XFldObject_parent_WPObject_wpSaveDeferred(somSelf));
+    return FALSE;
 }
 
 /*
@@ -1725,10 +1835,10 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSaveImmediate(XFldObject *somSelf)
+SOM_Scope BOOL  SOMLINK xo_wpSaveImmediate(XFldObject *somSelf)
 {
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSaveImmediate");
+    XFldObjectMethodDebug("XFldObject","xo_wpSaveImmediate");
 
     objRemoveFromDirtyList(somSelf);
 
@@ -1767,12 +1877,12 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveImmediate(XFldObject *somSelf)
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed problems with disappearing object IDs
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
+SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
 {
     BOOL    brc = FALSE,
             fHacked = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpSaveState");
+    XFldObjectMethodDebug("XFldObject","xo_wpSaveState");
 
     // now, here's the bug with the object IDs disappearing if
     // the object's ID was set from another Desktop...
@@ -1821,17 +1931,34 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
  *@@changed V0.9.16 (2001-12-06) [umoeller]: now saving backup of object ID
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
-                                             ULONG ulReserved)
+SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
+                                          ULONG ulReserved)
 {
     BOOL    brc = FALSE;
     ULONG   cbcdate = sizeof(CDATE),
             cbctime = sizeof(CTIME);
+
+    PIBMOBJECTDATA pData;
+
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpRestoreState");
+    XFldObjectMethodDebug("XFldObject","xo_wpRestoreState");
 
     brc = XFldObject_parent_WPObject_wpRestoreState(somSelf,
                                                     ulReserved);
+
+    #ifdef DEBUG_RESTOREDATA
+        if (pData = (PIBMOBJECTDATA)_pvWPObjectData)
+        {
+            _Pmpf((__FUNCTION__ ": pData->pFolder 0x%lX, _wpQueryFolder 0x%lX",
+                        pData->pFolder, _wpQueryFolder(somSelf)));
+
+            _Pmpf((__FUNCTION__ ": pData->ulDefaultView 0x%lX, _wpQueryDefaultView 0x%lX",
+                        pData->ulDefaultView, _wpQueryDefaultView(somSelf)));
+
+            _Pmpf((__FUNCTION__ ": pData->pszObjectID 0x%lX, _wpQueryObjectID 0x%lX",
+                        pData->pszObjectID, _wpQueryObjectID(somSelf)));
+        }
+    #endif
 
     // now check: if an object ID was remembered with
     // this object's instance data, make a backup of
@@ -1884,13 +2011,13 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
  *@@added V0.9.1 (2000-01-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
-                                            PSZ pszClass, ULONG ulKey,
-                                            PBYTE pValue, PULONG pcbValue)
+SOM_Scope BOOL  SOMLINK xo_wpRestoreData(XFldObject *somSelf,
+                                         PSZ pszClass, ULONG ulKey,
+                                         PBYTE pValue, PULONG pcbValue)
 {
     BOOL    brc = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpRestoreData");
+    XFldObjectMethodDebug("XFldObject","xo_wpRestoreData");
 
     brc = XFldObject_parent_WPObject_wpRestoreData(somSelf,
                                                    pszClass,
@@ -1931,15 +2058,14 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
-                                                   ULONG ulFlags,
-                                                   HWND hwndCnr,
-                                                   BOOL fMultiSelect)
+SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
+                                              ULONG ulFlags,
+                                              HWND hwndCnr,
+                                              BOOL fMultiSelect)
 {
     ULONG ulMenuFilter = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpFilterPopupMenu");
+    XFldObjectMethodDebug("XFldObject","xo_wpFilterPopupMenu");
 
     ulMenuFilter = XFldObject_parent_WPObject_wpFilterPopupMenu(somSelf,
                                                          ulFlags,
@@ -1986,31 +2112,32 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
-                                                HWND hwndMenu,
-                                                HWND hwndCnr,
-                                                ULONG iPosition)
+SOM_Scope BOOL  SOMLINK xo_wpModifyPopupMenu(XFldObject *somSelf,
+                                             HWND hwndMenu,
+                                             HWND hwndCnr,
+                                             ULONG iPosition)
 {
     BOOL        rc;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpModifyPopupMenu");
+    XFldObjectMethodDebug("XFldObject","xo_wpModifyPopupMenu");
 
-    rc = (XFldObject_parent_WPObject_wpModifyPopupMenu(somSelf,
-                                                       hwndMenu,
-                                                       hwndCnr,
-                                                       iPosition));
-    if (rc)
+    if (rc = XFldObject_parent_WPObject_wpModifyPopupMenu(somSelf,
+                                                          hwndMenu,
+                                                          hwndCnr,
+                                                          iPosition))
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
         objModifyPopupMenu(somSelf, hwndMenu);  // V0.9.7 (2000-12-10) [umoeller]
 
-    // now that the menu is completely built, let's add hotkey
-    // descriptions, but DONT do this for folders or data files,
-    // because those menu items will only be added later... for
-    // folders, we call this function in XFolder::wpMenuItemSelected
-    if (!_somIsA(somSelf, _WPFileSystem))
-        fdrAddHotkeysToMenu(somSelf,
-                            hwndCnr,
-                            hwndMenu);
+        // now that the menu is completely built, let's add hotkey
+        // descriptions, but DONT do this for folders or data files,
+        // because those menu items will only be added later... for
+        // folders, we call this function in XFolder::wpMenuItemSelected
+        if (!(_flFlags & OBJFL_WPFILESYSTEM))
+            fdrAddHotkeysToMenu(somSelf,
+                                hwndCnr,
+                                hwndMenu);
+    }
 
     return rc;
 }
@@ -2053,16 +2180,16 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed shredder deleting into trash can
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
-                                                 HWND hwndFrame,
-                                                 ULONG ulMenuId)
+SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
+                                              HWND hwndFrame,
+                                              ULONG ulMenuId)
 {
     BOOL        brc = FALSE,
                 fCallDefault = FALSE;
 
     // PGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpMenuItemSelected");
+    XFldObjectMethodDebug("XFldObject","xo_wpMenuItemSelected");
 
     switch (ulMenuId)
     {
@@ -2157,7 +2284,6 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
         */
 
         case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             if (cmnQuerySetting(sfFixLockInPlace))
             {
                 // we have replaced the "lock in place" submenu:
@@ -2196,12 +2322,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
  *@@added V0.9.1 (2000-02-17) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
-                                                      HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xo_wpAddObjectGeneralPage(XFldObject *somSelf,
+                                                   HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpAddObjectGeneralPage");
+    XFldObjectMethodDebug("XFldObject","xo_wpAddObjectGeneralPage");
 
 
 #ifndef __ALWAYSREPLACEICONPAGE__
@@ -2298,19 +2423,17 @@ SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
  *@@changed V0.9.0 [umoeller]: fixed "create another" bug
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
-                                                    WPFolder* Folder,
-                                                    WPObject** ppDuplicate,
-                                                    PSZ pszTitle,
-                                                    ULONG cbTitle,
-                                                    ULONG menuID)
+SOM_Scope ULONG  SOMLINK xo_wpConfirmObjectTitle(XFldObject *somSelf,
+                                                 WPFolder* Folder,
+                                                 WPObject** ppDuplicate,
+                                                 PSZ pszTitle,
+                                                 ULONG cbTitle,
+                                                 ULONG menuID)
 {
     ULONG ulrc = NAMECLASH_NONE;
 
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpConfirmObjectTitle");
+    XFldObjectMethodDebug("XFldObject","xo_wpConfirmObjectTitle");
 
     #ifdef DEBUG_TITLECLASH
     {
@@ -2398,12 +2521,12 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
  *@@added V0.9.14 (2001-07-30) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
-                                               ULONG ulEmphasisAttr,
-                                               BOOL fTurnOn)
+SOM_Scope BOOL  SOMLINK xo_wpCnrSetEmphasis(XFldObject *somSelf,
+                                            ULONG ulEmphasisAttr,
+                                            BOOL fTurnOn)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpCnrSetEmphasis");
+    XFldObjectMethodDebug("XFldObject","xo_wpCnrSetEmphasis");
 
     if (    (ulEmphasisAttr & CRA_INUSE)
          && (_pvllWidgetNotifies)
@@ -2448,11 +2571,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
  *@@added V0.9.0 (99-11-12) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
-                                                        HOBJECT hobj)
+SOM_Scope BOOL  SOMLINK xoM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
+                                                     HOBJECT hobj)
 {
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
-    M_XFldObjectMethodDebug("M_XFldObject","xfobjM_xwpclsRemoveObjectHotkey");
+    M_XFldObjectMethodDebug("M_XFldObject","xoM_xwpclsRemoveObjectHotkey");
 
     return (objRemoveObjectHotkey(hobj));
 }
@@ -2483,14 +2606,12 @@ SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */
 
-SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
+SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
 {
     BOOL    fOpenFoldersFound = FALSE;
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                        // this will load the global settings from OS2.INI
 
     // M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf);
-    // M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsInitData");
+    // M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsInitData");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf((__FUNCTION__ " for class %s",
                     _somGetName(somSelf) ));
@@ -2529,8 +2650,9 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
 
         if (!fOpenFoldersFound)
         {
-            _Pmpf((__FUNCTION__ ": initializing class %s",
-                   _somGetName(somSelf)));
+            #ifdef DEBUG_SOMMETHODS
+            _Pmpf((__FUNCTION__ ": initializing class %s", _somGetName(somSelf)));
+            #endif
 
             // only if no open folders are found:
             // initialize the kernel (kernel.c)
@@ -2543,14 +2665,13 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
 #ifndef __NOBOOTUPSTATUS__
     if (!fOpenFoldersFound)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // even if not first invocation (i.e. some class other
         // than WPObject gets initialized): notify Speedy thread
         // of class initialization
         if (cmnQuerySetting(sfShowBootupStatus))
             xthrPostBushMsg(QM_BOOTUPSTATUS,
-                              (MPARAM)somSelf,       // class object
-                              MPNULL);
+                            (MPARAM)somSelf,       // class object
+                            MPNULL);
     }
 #endif
 }
@@ -2570,11 +2691,11 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobjM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
-                                                          PSIZEL pSizl)
+SOM_Scope BOOL  SOMLINK xoM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
+                                                       PSIZEL pSizl)
 {
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
-    M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsQuerySettingsPageSize");
+    M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsQuerySettingsPageSize");
 
     /* return (M_XFldObject_parent_M_WPObject_wpclsQuerySettingsPageSize(somSelf,
                                                                       pSizl)); */
@@ -2613,14 +2734,14 @@ SOM_Scope BOOL  SOMLINK xfobjM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
  *@@added V0.9.16 (2002-01-13) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobjM_wpclsSetIconData(M_XFldObject *somSelf,
+SOM_Scope BOOL  SOMLINK xoM_wpclsSetIconData(M_XFldObject *somSelf,
                                                 PICONINFO pIconInfo)
 {
     BOOL brc = FALSE;
     BOOL fCallDefault = TRUE;
 
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
-    M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsSetIconData");
+    M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsSetIconData");
 
 #ifndef __NOICONREPLACEMENTS__
     // if icon replacements are enabled, we support ICON_FILE

@@ -83,12 +83,16 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// SOM headers which don't crash with prec. header files
+#include "xfldr.ih"                     // XFolder
+
 #include "shared\cnrsort.h"
 #include "shared\kernel.h"              // XWorkplace Kernel
 
+#include "filesys\object.h"             // XFldObject implementation
+
 #pragma hdrstop
-#include <wpfolder.h>      // WPFolder
-#include <wpshadow.h>      // WPShadow
+// #include <wpshadow.h>      // WPShadow
 
 /*
  *@@ fnCompareExt:
@@ -161,6 +165,7 @@ SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID 
  *@@ fnCompareExtFoldersFirst:
  *
  *@@added V0.9.12 (2001-05-20) [umoeller]
+ *@@changed V0.9.18 (2002-03-23) [umoeller]: optimized
  */
 
 SHORT EXPENTRY fnCompareExtFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -168,12 +173,8 @@ SHORT EXPENTRY fnCompareExtFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE p
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj1, TRUE)
-                                : pobj1;
-    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj2, TRUE)
-                                : pobj2;
+    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
+    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -232,12 +233,8 @@ SHORT EXPENTRY fnCompareNameFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj1, TRUE)
-                                : pobj1;
-    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj2, TRUE)
-                                : pobj2;
+    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
+    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -259,6 +256,8 @@ SHORT EXPENTRY fnCompareNameFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
 /*
  *@@ fnCompareType:
  *      comparison func for sort by type (.TYPE EA)
+ *
+ *@@changed V0.9.18 (2002-03-23) [umoeller]: now comparing by name if types are equal
  */
 
 SHORT EXPENTRY fnCompareType(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -300,7 +299,10 @@ SHORT EXPENTRY fnCompareType(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
 
     }
 
-    return (0);
+    // types are equal, or both have no type:
+    // compare by name instead
+    // V0.9.18 (2002-03-23) [umoeller]
+    return (fnCompareName(pmrc1, pmrc2, pStorage));
 }
 
 /*
@@ -314,12 +316,8 @@ SHORT EXPENTRY fnCompareTypeFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj1, TRUE)
-                                : pobj1;
-    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj2, TRUE)
-                                : pobj2;
+    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
+    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -337,13 +335,15 @@ SHORT EXPENTRY fnCompareTypeFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
         return (1);
 
     // none of the two are folders:
-    // only then compare extensions
+    // only then compare types
     return (fnCompareType(pmrc1, pmrc2, pStorage));
 }
 
 /*
  *@@ fnCompareClass:
  *      comparison func for sort by object class
+ *
+ *@@changed V0.9.18 (2002-03-23) [umoeller]: now comparing by name if classes are equal
  */
 
 SHORT EXPENTRY fnCompareClass(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
@@ -367,7 +367,10 @@ SHORT EXPENTRY fnCompareClass(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOI
             case WCS_GT: return (1);
         }
 
-    return (0);
+    // classes are equal:
+    // compare by name instead
+    // V0.9.18 (2002-03-23) [umoeller]
+    return (fnCompareName(pmrc1, pmrc2, pStorage));
 }
 
 /*
@@ -381,12 +384,8 @@ SHORT EXPENTRY fnCompareClassFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj1, TRUE)
-                                : pobj1;
-    WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
-                                ? _wpQueryShadowedObject(pobj2, TRUE)
-                                : pobj2;
+    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
+    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -404,7 +403,7 @@ SHORT EXPENTRY fnCompareClassFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE
         return (1);
 
     // none of the two are folders:
-    // only then compare extensions
+    // only then compare classes
     return (fnCompareClass(pmrc1, pmrc2, pStorage));
 }
 
@@ -448,6 +447,7 @@ SHORT EXPENTRY fnCompareRealName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, P
                 }
              }
         }
+
     return (0);
 }
 
@@ -557,7 +557,7 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
 
             // printf("%s -- %s\n", sz1, sz2);
             switch (WinCompareStrings(G_habThread1, 0, 0,
-                sz1, sz2, 0))
+                    sz1, sz2, 0))
             {
                 case WCS_LT: return (-1);
                 case WCS_GT: return (1);

@@ -83,6 +83,8 @@ interface XFldDataFile : WPDataFile
      */
 
     wpInitData: override;
+    wpUnInitData: override;
+
     wpRestoreState: override;
 
     wpDisplayMenu: override;
@@ -107,6 +109,8 @@ interface XFldDataFile : WPDataFile
     wpQueryIcon: override;
     wpQueryIconData: override;
     wpSetIconData: override;
+
+    wpCreateFromTemplate: override;
 
 #ifdef __PRIVATE__
 

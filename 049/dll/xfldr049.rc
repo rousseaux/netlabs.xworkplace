@@ -723,14 +723,16 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger"
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
     ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
-    ID_XCSI_PAGER                    "XPager: Virtuelle ArbeitsoberflÑchen"
+    ID_XCSI_PAGER                       "XPager: Virtuelle ArbeitsoberflÑchen"
 
     ID_XCSI_STARTSHUTFEATURES           "Systemstart/abschlu·-Funktionen"
     ID_XCSI_ARCHIVING                   "Archivierung der ArbeitsoberflÑche ersetzen"
     ID_XCSI_RESTARTWPS                  """WPS neu starten"" aktivieren"
     ID_XCSI_XSHUTDOWN                   "Erweiterten Systemabschlu· aktivieren"
 
+/* the following two items added with V0.9.18 (2001-10-25) [umoeller] */
     ID_XCSI_CHECKDESKTOP                "IntegritÑt der WPS prÅfen"
+    ID_XCSI_PREPOPULATEDESKTOP          "ArbeitsoberflÑche vorzeitig laden"
 
     ID_XCSI_FILEOPERATIONS              "Dateioperationen"
     ID_XCSI_EXTASSOCS                   "Erweiterte Dateitypzuordnungen"

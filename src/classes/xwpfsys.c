@@ -369,16 +369,15 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
  *
  *      However, WPFolder does _not_ override this method, so
  *      for folders, the WPFileSystem implementation gets called.
- *      Unfortunately, that implementation of this method is
- *      very expensive. Even though (as with all file-system
- *      objects) the icon data from the .ICON EA is passed
- *      to WPFolder::wpRestoreState, the WPS apparently
- *      doesn't even check the buffer but checks the icon
- *      EAs _again_ in this method, which isn't exactly
- *      speedy. What we can do here safely is check if
- *      an icon was set in our XFolder::wpRestoreState override
- *      (which does parse the FEA2LIST) and if not, load
- *      a default icon here.
+ *      Unfortunately, that implementation is very expensive.
+ *      Even though (as with all file-system objects) the icon
+ *      data from the .ICON EA is passed to
+ *      WPFolder::wpRestoreState, the WPS apparently doesn't
+ *      even check the buffer but checks the icon EAs _again_
+ *      in this method, which isn't exactly speedy. What we
+ *      can do here safely is check if an icon was set in
+ *      our XFolder::wpRestoreState override (which does parse
+ *      the FEA2LIST) and if not, load a default icon here.
  *
  *      I'd love to have shared this implementation with
  *      XFldDataFile, but since WPDataFile overrides this
@@ -390,13 +389,13 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
 
 SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
 {
-    HPOINTER hptrReturn = NULLHANDLE;
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryIcon");
 
 #ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
     {
+        HPOINTER hptrReturn = NULLHANDLE;
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
         if (!(hptrReturn = prec->hptrIcon))
         {
@@ -412,13 +411,16 @@ SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
                                0);
             }
         }
+
+        // V0.9.18 (2002-03-24) [umoeller]
+        // fixed to never call the parent any more,
+        // which nukes our shared icons sometimes
+        return (hptrReturn);
     }
 
-    if (!hptrReturn)
 #endif
-        hptrReturn = XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf);
 
-    return (hptrReturn);
+    return (XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf));
 }
 
 /*
@@ -615,24 +617,6 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
         // got any:
         // do not allow this class to be unloaded!!
         _wpclsIncUsage(somSelf);
-
-    /*
-     *  Manually patch method tables of this class...
-     *
-     */
-
-    // this gets called for subclasses too, so patch
-    // this only for the parent class... descendant
-    // classes will inherit this anyway
-    /* _Pmpf((__FUNCTION__ ": attempting to override wpDestroyObject"));
-    if (somSelf == _XWPFileSystem)
-    {
-        // override the undocumented wpDestroyObject method
-        _Pmpf((__FUNCTION__ ": overriding"));
-        wpshOverrideStaticMethod(somSelf,
-                                 "wpDestroyObject",
-                                 (somMethodPtr)xfs_wpDestroyObject);
-    } */
 }
 
 /*

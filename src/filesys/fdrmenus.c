@@ -1554,10 +1554,6 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
 
         brc = TRUE;
 
-        // dereference folder/disk shadows
-        /* if (_somIsA(pFolder, _WPFolder))
-            pFolder = somSelf; */
-
         // dereference disk objects
         if (_somIsA(pFolder, _WPDisk))
             pFolder = wpshQueryRootFolder(pFolder,      // disk
@@ -1569,7 +1565,7 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
         // now we have the folder's full path
 
         // there seems to be a bug in wpQueryFilename for
-        // root folders, so we might need to append a "\" */
+        // root folders, so we might need to append a "\"
         if (strlen(szRealName) == 2)
             strcat(szRealName, "\\");
 
@@ -1578,7 +1574,7 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
         // set, we will set it to szRealName
         // temporarily; this will start the
         // program object in the directory
-        // of the folder whose context menu was selected */
+        // of the folder whose context menu was selected
         if (    (ValidRealName)
              && (!pDetails->pszStartupDir))
         {
@@ -1587,10 +1583,9 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
         }
 
         // start playing with the object's parameter list,
-        // if the global settings allow it */
+        // if the global settings allow it
         if (cmnQuerySetting(sfAppdParam))
         {
-            // CHAR            szNewParams[1024] = "";
             CHAR            szPassRealName[CCHMAXPATH];
 
             // if the folder's real name contains spaces,
@@ -1652,13 +1647,6 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
                                                     CLIPBOARDKEY,
                                                     szClipBuf))
                                 ;
-
-                            /* pszPos = strstr(szNewParams, CLIPBOARDKEY);
-                            Ofs = strlen(szClipBuf);
-                            if (Ofs + strlen(szNewParams) > CCHMAXPATH)
-                                Ofs -= strlen(szNewParams);
-                            strcpy(szClipBuf+Ofs, pszPos+strlen(CLIPBOARDKEY));
-                            strcpy(pszPos, szClipBuf); */
 
                             ParamsChanged = TRUE;
                         }
@@ -1779,9 +1767,7 @@ static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
         // yes, variable menu item selected:
         // get corresponding menu list item from the list that
         // was created by mnuModifyFolderPopupMenu
-        pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
-
-        if (pItem)
+        if (pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId))
             pObject = pItem->pObject;
 
         if (pObject)    // defaults to NULL
@@ -2378,10 +2364,7 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
     // BOOL                brc = TRUE;     // "dismiss menu" flag
 
     WPObject *pObject = somSelf;
-    WPFileSystem *pFileSystem = pObject;
-
-    if (_somIsA(pObject, _WPShadow))
-        pFileSystem = _wpQueryShadowedObject(pObject, TRUE);
+    WPFileSystem *pFileSystem = objResolveIfShadow(pObject);
 
     #ifdef DEBUG_MENUS
         _Pmpf(("mnuFileSystemSelectingMenuItem"));
@@ -2449,10 +2432,7 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
                     pObject = NULL;
 
                 // dereference shadows again
-                pFileSystem = pObject;
-                if (pObject)
-                    if (_somIsA(pObject, _WPShadow))
-                        pFileSystem = _wpQueryShadowedObject(pObject, TRUE);
+                pFileSystem = objResolveIfShadow(pObject);
             }
 
             WinSetPointer(HWND_DESKTOP, hptrOld);

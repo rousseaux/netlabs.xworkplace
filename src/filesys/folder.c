@@ -108,6 +108,7 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -115,7 +116,7 @@
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 // #include <wpdesk.h>
-#include <wpshadow.h>           // WPShadow
+// #include <wpshadow.h>           // WPShadow
 #include <wprootf.h>
 
 #include "helpers\undoc.h"              // some undocumented stuff
@@ -1450,7 +1451,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
 
     #ifdef DEBUG_STATUSBARS
-        _Pmpf(("xfCreateStatusBar %d", fShow));
+        _Pmpf((__FUNCTION__ " for %s: fShow = %d", _wpQueryTitle(somSelf), fShow));
     #endif
 
     if (psli2)
@@ -1460,12 +1461,18 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
             // show status bar
 
             if (psli2->hwndStatusBar) // already activated: update only
+            {
+                #ifdef DEBUG_STATUSBARS
+                    _Pmpf(("    status bar already exists, posting STBM_UPDATESTATUSBAR"));
+                #endif
+
                 WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
                 // and quit
+            }
             // else create status bar as a static control
             // (which will be subclassed below)
-            else if (psli2->hwndStatusBar
-                        = WinCreateWindow(psli2->hwndFrame,        // parent
+            else if (psli2->hwndStatusBar = WinCreateWindow(
+                                          psli2->hwndFrame,        // parent
                                           WC_STATIC,              // wnd class
                                           cmnGetString(ID_XSSI_POPULATING),
                                                 // "Collecting objects..."
@@ -1479,6 +1486,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                                           (PVOID)NULL,
                                           (PVOID)NULL))
             {
+                XFolderData *somThis = XFolderGetData(somSelf);
                 BOOL    fInflate = FALSE;
                 SWP     swp;
                 const char* pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
@@ -1487,6 +1495,23 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
 
                 // set up window data (QWL_USER) for status bar
                 PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
+
+                #ifdef DEBUG_STATUSBARS
+                    PCSZ pcszView;
+                    CHAR szView[100];
+                    _Pmpf(("    created new status bar hwnd 0x%lX", psli2->hwndStatusBar));
+                    switch (ulView)
+                    {
+                        case OPEN_TREE: pcszView = "Tree"; break;
+                        case OPEN_CONTENTS: pcszView = "Contents"; break;
+                        case OPEN_DETAILS: pcszView = "Details"; break;
+                        default:
+                            sprintf(szView, "unknown %d", ulView);
+                            pcszView = szView;
+                    }
+                    _Pmpf(( "    View: %s", pcszView));
+                #endif
+
                 psbd->somSelf    = somSelf;
                 psbd->psfv       = psli2;
                 psbd->habStatusBar = WinQueryAnchorBlock(psli2->hwndStatusBar);
@@ -1541,7 +1566,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                     fInflate = TRUE;
 
                 #ifdef DEBUG_STATUSBARS
-                    _Pmpf(("xfCreateStatusBar, fInflate: %d", fInflate));
+                    _Pmpf(("   fInflate = %d, ulView = %d", fInflate, ulView));
                 #endif
 
                 // set a flag for the subclassed folder frame
@@ -1573,14 +1598,21 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                                         &ulIni,
                                         sizeof(ulIni));
                 }
-                else
-                    // if the folder frame has been inflated already,
-                    // WM_FORMATFRAME _will_ have to scroll the container.
-                    // We do this for icon views only.
-                    if (ulView == OPEN_CONTENTS)
-                        psli2->fNeedCnrScroll = TRUE;
 
-                // _Pmpf(("  psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+                // always do this for icon view if auto-sort is off
+                // V0.9.18 (2002-03-24) [umoeller]
+                // WM_FORMATFRAME _will_ have to scroll the container
+                if (    (ulView == OPEN_CONTENTS)
+                     && (  (_lAlwaysSort == SET_DEFAULT)
+                                ? !cmnQuerySetting(sfAlwaysSort)
+                                : !_lAlwaysSort)
+                   )
+                    psli2->fNeedCnrScroll = TRUE;
+
+                #ifdef DEBUG_STATUSBARS
+                    _Pmpf(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+                    _Pmpf(("    sending WM_UPDATEFRAME"));
+                #endif
 
                 // enforce reformatting / repaint of frame window
                 WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
@@ -1927,8 +1959,8 @@ static VOID StatusTimer(HWND hwndBar,
                         sprintf(szView, "unknown %d", ulView);
                         pcszView = szView;
                 }
+                _Pmpf((__FUNCTION__ ":  View is %s", pcszView));
                 fdrDebugDumpFolderFlags(psbd->somSelf);
-                _Pmpf(( "  View: %s", pcszView));
             #endif
 
             // for tree views, check if folder is populated with folders;
@@ -2940,8 +2972,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 
                 // resolve shadows... this never worked for
                 // shadows V0.9.12 (2001-04-29) [umoeller]
-                if (_somIsA(ppf->pObject, _WPShadow))
-                    ppf->pObject = _wpQueryShadowedObject(ppf->pObject, TRUE);
+                ppf->pObject = objResolveIfShadow(ppf->pObject);
 
                 if (wpshCheckObject(ppf->pObject))
                 {

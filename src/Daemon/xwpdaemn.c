@@ -1146,7 +1146,7 @@ VOID ProcessHotCorner(MPARAM mp1)
     {
         UCHAR ucScanCode = 0;
 
-        _Pmpf((__FUNCTION__ ": got hot corner %d", lIndex));
+        // _Pmpf((__FUNCTION__ ": got hot corner %d", lIndex));
 
         switch (hobjIndex)
         {

@@ -473,6 +473,8 @@ SOM_Scope void  SOMLINK xpgf_wpInitData(XWPProgramFile *somSelf)
     XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpInitData");
 
+    XWPProgramFile_parent_WPProgramFile_wpInitData(somSelf);
+
     // initialize instance data
     _ulDosAppType = -1;
     _ulAppType = -1;
@@ -484,8 +486,30 @@ SOM_Scope void  SOMLINK xpgf_wpInitData(XWPProgramFile *somSelf)
     _ppszStartupDir = NULL;
     _ppszEnvironment = NULL;
     _pswpInitial = NULL;
+}
 
-    XWPProgramFile_parent_WPProgramFile_wpInitData(somSelf);
+/*
+ *@@ wpUnInitData:
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant or being deleted. All allocated resources
+ *      should be freed here.
+ *      The parent method must always be called last.
+ *
+ *@@added V0.9.18 (2002-03-24) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xpgf_wpUnInitData(XWPProgramFile *somSelf)
+{
+    XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpUnInitData");
+
+    wpshStore(somSelf,
+              &_pWszUsingIconFile,
+              NULL,
+              NULL);
+
+    XWPProgramFile_parent_WPProgramFile_wpUnInitData(somSelf);
 }
 
 /*
@@ -530,6 +554,11 @@ SOM_Scope void  SOMLINK xpgf_wpObjectReady(XWPProgramFile *somSelf,
         _ulAppType = -1;
     }
 }
+
+/*
+ *@@ wpRestoreState:
+ *
+ */
 
 SOM_Scope BOOL  SOMLINK xpgf_wpRestoreState(XWPProgramFile *somSelf,
                                             ULONG ulReserved)
@@ -641,20 +670,14 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
         CHAR        szProgramFile[CCHMAXPATH];
         BOOL        fFound = FALSE;
 
-        /*
-        #ifdef DEBUG_ASSOCS
+        #ifdef DEBUG_ICONREPLACEMENTS
             ULONG ulStyle = _wpQueryStyle(somSelf);
             _Pmpf((__FUNCTION__ ": %s, old style: 0x%lX %s %s",
                         _wpQueryTitle(somSelf),
                          ulStyle,
                          (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
                          (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
-
-            _Pmpf(("   pfeal is %lX", pfeal));
-                    // always NULL... some other relic from better days, i guess
-                    // V0.9.16 (2001-12-08) [umoeller]
         #endif
-        */
 
         if (    (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
              && (_wpQueryFilename(somSelf, szProgramFile, TRUE))
@@ -711,13 +734,21 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                           NULL,
                           NULL);
 
-                _Pmpf((__FUNCTION__ ": %s, calling exehOpen",
+                #ifdef DEBUG_ICONREPLACEMENTS
+                    _Pmpf((__FUNCTION__ ": %s, calling exehOpen",
                             szProgramFile));
+                #endif
+
                 if (!(arc = exehOpen(szProgramFile, &pExec)))
                 {
                     _xwpQueryProgType(somSelf,
                                       pExec,                // can be NULL
                                       szProgramFile);
+
+                    #ifdef DEBUG_ICONREPLACEMENTS
+                        _Pmpf(("  _xwpQueryProgType returned %d",
+                                appDescribeAppType(_ulAppType)));
+                    #endif
 
                     if (!progFindIcon(pExec,
                                       _ulAppType,
@@ -739,13 +770,6 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                                    pcbIconInfo,
                                    pIconInfo);
             }
-
-            /*
-            if (!hptr)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Couldn't find icon for %s, calling default method",
-                       szProgramFile);
-            */
         }
 
         brc = TRUE;
@@ -830,7 +854,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
                            OBJSTYLE_NOTDEFAULTICON,
                            (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
 
-            #ifdef DEBUG_ASSOCS
+            #ifdef DEBUG_ICONREPLACEMENTS
             {
                 ULONG ulStyle;
                 _Pmpf(("End of xpgf_wpSetProgIcon, new style: 0x%lX %s %s",
@@ -970,8 +994,11 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryIconData(XWPProgramFile *somSelf,
             else
             {
                 // not icon file: run the icon handler again
-                _Pmpf((__FUNCTION__ ": calling ProgramFileIconHandler, cbRequired %d, pIconInfo 0x%lX",
-                          cbRequired, pIconInfo));
+                #ifdef DEBUG_ICONREPLACEMENTS
+                    _Pmpf((__FUNCTION__ ": calling ProgramFileIconHandler, cbRequired %d, pIconInfo 0x%lX",
+                              cbRequired, pIconInfo));
+                #endif
+
                 if (!(ProgramFileIconHandler(somSelf,
                                              NULL,          // HPOINTER *phptr,
                                              &cbRequired,   // PULONG pcbIconInfo,
@@ -1262,6 +1289,11 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryProgDetails(XWPProgramFile *somSelf,
     return (brc);
 }
 
+/*
+ *@@ wpSetProgDetails:
+ *
+ */
+
 SOM_Scope BOOL  SOMLINK xpgf_wpSetProgDetails(XWPProgramFile *somSelf,
                                               PPROGDETAILS pProgDetails)
 {
@@ -1484,7 +1516,6 @@ SOM_Scope void  SOMLINK xpgfM_wpclsInitData(M_XWPProgramFile *somSelf)
 
 SOM_Scope PSZ  SOMLINK xpgfM_wpclsQueryInstanceFilter(M_XWPProgramFile *somSelf)
 {
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XWPProgramFileData *somThis = M_XWPProgramFileGetData(somSelf); */
     M_XWPProgramFileMethodDebug("M_XWPProgramFile","xpgfM_wpclsQueryInstanceFilter");
 

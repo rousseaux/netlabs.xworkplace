@@ -105,6 +105,8 @@ interface XWPProgramFile : WPProgramFile
      */
 
     wpInitData: override;
+    wpUnInitData: override;
+
     wpObjectReady: override;
 
     wpRestoreState: override;

@@ -141,6 +141,7 @@
 #define INCL_WINENTRYFIELDS
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
+#define INCL_WINSCROLLBARS
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINHOOKS
 #include <os2.h>
@@ -174,6 +175,7 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -181,7 +183,7 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
 // #include <wpdesk.h>                     // WPDesktop
-#include <wpshadow.h>                   // WPShadow
+// #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
  *                                                                  *
@@ -511,21 +513,21 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
             // 1) status bar only if allowed for the current folder
         if (
 #ifndef __NOCFGSTATUSBARS__
-               (cmnQuerySetting(sfStatusBars))
-            &&
+                (cmnQuerySetting(sfStatusBars))
+             &&
 #endif
-               (    (_bStatusBarInstance == STATUSBAR_ON)
-                 || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                     && (cmnQuerySetting(sfDefaultStatusBarVisibility))
-                    )
-               )
-            // 2) no status bar for active Desktop
-            && (somSelf != cmnQueryActiveDesktop())
-            // 3) check that subclassed list item is valid
-            && (psfv)
-            // 4) status bar only if allowed for the current view type
-            && (flViews = cmnQuerySetting(sflSBForViews))
-            && (
+                (    (_bStatusBarInstance == STATUSBAR_ON)
+                  || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                      && (cmnQuerySetting(sfDefaultStatusBarVisibility))
+                     )
+                )
+             // 2) no status bar for active Desktop
+             && (somSelf != cmnQueryActiveDesktop())
+             // 3) check that subclassed list item is valid
+             && (psfv)
+             // 4) status bar only if allowed for the current view type
+             && (flViews = cmnQuerySetting(sflSBForViews))
+             && (
                     (   (ulView == OPEN_CONTENTS)
                      && (flViews & SBV_ICON)
                     )
@@ -570,6 +572,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
  *      folder status bars.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.18 (2002-03-24) [umoeller]: fixed stupid scroll bars when always sort is off
  */
 
 static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
@@ -585,14 +588,15 @@ static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
 
     for (ul = 0; ul < ulCount; ul++)
     {
-        if (WinQueryWindowUShort( swpArr[ul].hwnd, QWS_ID ) == 0x8008)
+        HWND        hwndThis = swpArr[ul].hwnd;
+        if (WinQueryWindowUShort(hwndThis, QWS_ID ) == 0x8008)
                                                          // FID_CLIENT
         {
             // container found: reduce size of container by
             // status bar height
-            POINTL          ptlBorderSizes;
-            // XFolderData     *somThis = XFolderGetData(psfv->somSelf);
-            ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+            POINTL      ptlBorderSizes;
+            ULONG       ulStatusBarHeight = cmnQueryStatusBarHeight();
+
             WinSendMsg(psfv->hwndFrame,
                        WM_QUERYBORDERSIZE,
                        (MPARAM)&ptlBorderSizes,
@@ -624,30 +628,60 @@ static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
             // (which should be before the WPS is populating the folder);
             // psfv->fNeedCnrScroll has been initially set to TRUE
             // by fdrCreateStatusBar.
-            if (psfv->fNeedCnrScroll)
+            #ifdef DEBUG_STATUSBARS
             {
-                cnrhQueryCnrInfo(swpArr[ul].hwnd, &CnrInfo);
+                _Pmpf((__FUNCTION__ ": psfv->fNeedCnrScroll: %d", psfv->fNeedCnrScroll));
+                cnrhQueryCnrInfo(hwndThis, &CnrInfo);
 
                 #ifdef DEBUG_STATUSBARS
                     _Pmpf(( "Old CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
                 #endif
+            }
+            #endif
 
-                if (    ((LONG)CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
-                   )
+            if (psfv->fNeedCnrScroll)
+            {
+                cnrhQueryCnrInfo(hwndThis, &CnrInfo);
+
+                if ((LONG)CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
                 {
+                    RECTL rclViewport;
+
                     CnrInfo.ptlOrigin.y -= ulStatusBarHeight;
 
                     #ifdef DEBUG_STATUSBARS
                         _Pmpf(( "New CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
                     #endif
 
-                    WinSendMsg(swpArr[ul].hwnd,
+                    WinSendMsg(hwndThis,
                                CM_SETCNRINFO,
                                (MPARAM)&CnrInfo,
                                (MPARAM)CMA_PTLORIGIN);
-                    // set flag to FALSE to prevent a second adjustment
-                    psfv->fNeedCnrScroll = FALSE;
                 }
+
+                // now scroll the damn container up the maximum;
+                // we still get scroll bars in some situations if
+                // always sort is off...
+                // to scroll the container up _and_ get rid of
+                // the scroll bars, we first post HOME to the
+                // container's vertical scroll bar and _then_
+                // another PAGEUP to the container itself
+                // V0.9.18 (2002-03-24) [umoeller]
+                WinPostMsg(WinWindowFromID(hwndThis, 0x7FF9),
+                           WM_CHAR,
+                           MPFROM2SHORT(KC_VIRTUALKEY | KC_CTRL,
+                                        0),
+                           MPFROM2SHORT(0,
+                                        VK_HOME));
+                WinPostMsg(hwndThis,
+                           WM_CHAR,
+                           MPFROM2SHORT(KC_VIRTUALKEY,
+                                        0),
+                           MPFROM2SHORT(0,
+                                        VK_PAGEUP));
+
+                // set flag to FALSE to prevent a second adjustment
+                psfv->fNeedCnrScroll = FALSE;
             } // end if (psfv->fNeedCnrScroll)
 
             break;  // we're done
@@ -1015,15 +1049,10 @@ static BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                 _Pmpf(( "  Object selections: %d", ulSelection));
             #endif
 
-            // dereference shadows
-            if (pObject)
-                if (_somIsA(pObject, _WPShadow))
-                    pObject = _wpQueryShadowedObject(pObject, TRUE);
-
             // now call the functions in fdrmenus.c for this,
             // depending on the class of the object for which
             // the menu was opened
-            if (pObject)
+            if (pObject = objResolveIfShadow(pObject))
             {
                 if (_somIsA(pObject, _WPFileSystem))
                 {
@@ -1117,6 +1146,79 @@ static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
             _Pmpf(("    got FOPSRET %d", frc));
         #endif
     }
+}
+
+/*
+ *@@ WMChar:
+ *      handler for WM_CHAR in fdrProcessFolderMsgs.
+ *
+ *      Returns TRUE if msg was processed and should
+ *      be swallowed.
+ *
+ *@@added V0.9.18 (2002-03-23) [umoeller]
+ */
+
+static BOOL WMChar(HWND hwndFrame,
+                   PSUBCLASSEDFOLDERVIEW psfv,
+                   MPARAM mp1,
+                   MPARAM mp2)
+{
+    USHORT usFlags    = SHORT1FROMMP(mp1);
+    // whatever happens, we're only interested
+    // in key-down messages
+    if ((usFlags & KC_KEYUP) == 0)
+    {
+        XFolderData         *somThis = XFolderGetData(psfv->somSelf);
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+        USHORT usch       = SHORT1FROMMP(mp2);
+        USHORT usvk       = SHORT2FROMMP(mp2);
+
+        // check whether "delete to trash can" is on
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        if (cmnQuerySetting(sfTrashDelete))
+#endif
+        {
+            // yes: intercept "Del" key
+            if (usFlags & KC_VIRTUALKEY)
+                if (usvk == VK_DELETE)
+                {
+                    WMChar_Delete(psfv);
+                    // swallow this key,
+                    // do not process default winproc
+                    return (TRUE);
+                }
+        }
+
+        // check whether folder hotkeys are allowed at all
+        if (
+#ifndef __ALWAYSFDRHOTKEYS__
+                (cmnQuerySetting(sfFolderHotkeys))
+             &&
+#endif
+                // yes: check folder and global settings
+                (   (_bFolderHotkeysInstance == 1)
+                ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
+                     && (cmnQuerySetting(sfFolderHotkeysDefault))
+                    )
+                )
+           )
+        {
+            if (fdrProcessFldrHotkey(psfv->somSelf,
+                                     hwndFrame,
+                                     usFlags,
+                                     usch,
+                                     usvk))
+            {
+                // was a hotkey:
+                // swallow this key,
+                // do not process default winproc
+                return (TRUE);
+            }
+        }
+    }
+
+    return (FALSE);
 }
 
 /*
@@ -1232,7 +1334,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                              PSUBCLASSEDFOLDERVIEW psfv,  // in: folder view data
                              PFNWP pfnwpOriginal)       // in: original frame window proc
 {
-    MRESULT mrc = 0;
+    MRESULT         mrc = 0;
     BOOL            fCallDefault = FALSE;
 
     TRY_LOUD(excpt1)
@@ -1361,9 +1463,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_INITMENU:
-            {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
                 // call the default, in case someone else
                 // is subclassing folders (ObjectDesktop?!?);
                 // from what I've checked, the WPS does NOTHING
@@ -1375,7 +1474,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     InitMenu(psfv,
                              (ULONG)mp1,
                              (HWND)mp2);
-            }
             break;
 
             /*
@@ -1425,8 +1523,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_MENUEND:
-            {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 #ifdef DEBUG_MENUS
                     _Pmpf(( "WM_MENUEND: mp1 = %lX, mp2 = %lX",
                             mp1, mp2 ));
@@ -1462,7 +1558,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 }
 
                 mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
-            }
             break;
 
             /*
@@ -1478,8 +1573,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_MEASUREITEM:
-            {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 if ( (SHORT)mp1 > (cmnQuerySetting(sulVarMenuOffset)+ID_XFMI_OFS_VARIABLE) )
                 {
                     // call the measure-item func in fdrmenus.c
@@ -1488,7 +1581,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 else
                     // none of our items: pass to original wnd proc
                     mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
-            }
             break;
 
             /*
@@ -1499,7 +1591,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_DRAWITEM:
-            {
                 if (    ((SHORT)mp1 > cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)
                      && ((ULONG)mp1 != FID_CLIENT)      // rule out container V0.9.16 (2002-01-13) [umoeller]
                    )
@@ -1516,7 +1607,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 else
                     fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
                     // mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
-            }
             break;
 
             /* *************************
@@ -1603,66 +1693,11 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_CHAR:
-            {
-                USHORT usFlags    = SHORT1FROMMP(mp1);
-                // whatever happens, we're only interested
-                // in key-down messages
-                if ((usFlags & KC_KEYUP) == 0)
-                {
-                    XFolderData         *somThis = XFolderGetData(psfv->somSelf);
-                    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-                    USHORT usch       = SHORT1FROMMP(mp2);
-                    USHORT usvk       = SHORT2FROMMP(mp2);
-
-                    // check whether "delete to trash can" is on
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-                    if (    (cmnQuerySetting(sfTrashDelete))
-                       )
-#endif
-                    {
-                        // yes: intercept "Del" key
-                        if (usFlags & KC_VIRTUALKEY)
-                            if (usvk == VK_DELETE)
-                            {
-                                WMChar_Delete(psfv);
-                                // swallow this key,
-                                // do not process default winproc
-                                break;
-                            }
-                    }
-
-                    // check whether folder hotkeys are allowed at all
-                    if (
-#ifndef __ALWAYSFDRHOTKEYS__
-                            (cmnQuerySetting(sfFolderHotkeys))
-                         &&
-#endif
-                            // yes: check folder and global settings
-                            (   (_bFolderHotkeysInstance == 1)
-                            ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
-                                 && (cmnQuerySetting(sfFolderHotkeysDefault))
-                                )
-                            )
-                       )
-                    {
-                        if (fdrProcessFldrHotkey(psfv->somSelf,
-                                                 hwndFrame,
-                                                 usFlags,
-                                                 usch,
-                                                 usvk))
-                        {
-                            // was a hotkey:
-                            mrc = (MRESULT)TRUE;
-                            // swallow this key,
-                            // do not process default winproc
-                            break;
-                        }
-                    }
-                }
-
-                fCallDefault = TRUE;
-            }
+                if (WMChar(hwndFrame, psfv, mp1, mp2))
+                    // processed:
+                    mrc = (MRESULT)TRUE;
+                else
+                    fCallDefault = TRUE;
             break;
 
             /*
@@ -1779,8 +1814,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             if (psfv->hwndStatusBar)
                             {
                                 #ifdef DEBUG_STATUSBARS
-                                    _Pmpf(( "CN_EMPHASIS: posting PM_UPDATESTATUSBAR to hwnd %lX", psfv->hwndStatusBar ));
+                                    _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                            psfv->hwndStatusBar ));
                                 #endif
+
                                 WinPostMsg(psfv->hwndStatusBar,
                                            STBM_UPDATESTATUSBAR,
                                            MPNULL,
@@ -1942,28 +1979,24 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                                                MPARAM mp1,
                                                MPARAM mp2)
 {
-    MRESULT     mrc = 0;
-    PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
-                                             NULL);
-    if (psfv)
-        mrc = fdrProcessFolderMsgs(hwndFrame,
-                                   msg,
-                                   mp1,
-                                   mp2,
-                                   psfv,
-                                   psfv->pfnwpOriginal);
-    else
-    {
-        // SFV not found: use the default
-        // folder window procedure, but issue
-        // a warning to the log
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Folder SUBCLASSEDFOLDERVIEW not found.");
+    PSUBCLASSEDFOLDERVIEW psfv;
 
-        mrc = G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2);
-    }
+    if (psfv = fdrQuerySFV(hwndFrame,
+                           NULL))
+        return (fdrProcessFolderMsgs(hwndFrame,
+                                     msg,
+                                     mp1,
+                                     mp2,
+                                     psfv,
+                                     psfv->pfnwpOriginal));
 
-    return (mrc);
+    // SFV not found: use the default
+    // folder window procedure, but issue
+    // a warning to the log
+    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "Folder SUBCLASSEDFOLDERVIEW not found.");
+
+    return (G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2));
 }
 
 /*
@@ -2079,6 +2112,7 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
+
     return (mrc);
 }
 

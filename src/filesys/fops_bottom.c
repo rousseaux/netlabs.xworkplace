@@ -1110,7 +1110,10 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                             break;
                         }
 
-                        _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
+                        #ifdef DEBUG_TRASHCAN
+                            _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
+                        #endif
+
                         if (!_wpIsDeleteable(pSubObjThis))
                             // not deletable: prompt user about
                             // what to do with this
@@ -1132,7 +1135,10 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                 // because these came before the folder on the
                                 // subobjects list)
                                 WPObject *pobj2 = pSubObjThis;
-                                // _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
+
+                                #ifdef DEBUG_TRASHCAN
+                                    _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
+                                #endif
 
                                 // before we do anything, set the "delete in progress"
                                 // flag. This greatly reduces the pressure on the WPS
@@ -1167,7 +1173,10 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                 fdrFlushNotifications(pSubObjThis);
                             } // end if (_somIsA(pSubObjThis, _WPFolder))
 
-                            _Pmpf((__FUNCTION__ ": calling _wpFree"));
+                            #ifdef DEBUG_TRASHCAN
+                                _Pmpf((__FUNCTION__ ": calling _wpFree"));
+                            #endif
+
                             if (!_wpFree(pSubObjThis))
                             {
                                 frc = FOPSERR_WPFREE_FAILED;

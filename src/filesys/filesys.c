@@ -386,6 +386,12 @@ BOOL fsysSetRefreshFlags(WPFileSystem *somSelf, ULONG ulRefreshFlags)
 
 /*
  *@@ fsysRefreshFSInfo:
+ *      calls the undocumented WPFileSystem::wpRefreshFSInfo
+ *      method.
+ *
+ *      ONLY CALL THIS ON FOLDER OBJECTS. On data files, ONLY
+ *      call _wpRefresh, which properly calls our override.
+ *      THIS NUKES STANDARD ICONS ON DATA FILE OBJECTS.
  *
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */

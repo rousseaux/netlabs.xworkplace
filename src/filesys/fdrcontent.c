@@ -182,7 +182,7 @@
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 #include <wpclsmgr.h>                   // this includes SOMClassMgr
-#include <wpshadow.h>               // WPShadow
+// #include <wpshadow.h>               // WPShadow
 #include <wprootf.h>
 #include <wpdataf.h>
 

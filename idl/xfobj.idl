@@ -157,8 +157,8 @@ interface XFldObject : WPObject
      *
      */
 
-    externalprefix = xfobj_;
-    externalstem = xfobj;
+    externalprefix = xo_;
+    externalstem = xo;
     majorversion = 1;
     minorversion = 1;
     filestem = xfobj;           //# specifies the filestem for sc-generated files
@@ -171,6 +171,9 @@ interface XFldObject : WPObject
      *
      */
 
+    ULONG       flFlags;        // OBJFL_* flag (include\filesys\object.h)
+                                // V0.9.18 (2002-03-23) [umoeller]
+
     // the following have been added with V0.9.0
     // BOOL        fDeleted;       // if TRUE, the following two fields are valid
                     // removed V0.9.16 (2001-12-06) [umoeller]
@@ -181,6 +184,11 @@ interface XFldObject : WPObject
     // fDeleted flag V0.9.16 (2001-12-06) [umoeller])
     CDATE       cdateDeleted;   // data for xwpQueryDeletion, if fDeleted == TRUE
     CTIME       ctimeDeleted;   // data for xwpQueryDeletion, if fDeleted == TRUE
+
+
+    // pointer to WPObject instance data
+    // V0.9.18 (2002-03-23) [umoeller]
+    PVOID       pvWPObjectData;
 
     // the following two have been added with V0.9.2
     PWPOBJECTLONGS pObjectLongs;      // ptr to array of LONGs in instance data
@@ -223,6 +231,9 @@ interface XFldObject : WPObject
     wpSetTitle: override;
     wpSetDefaultView: override;
     wpSetObjectID: override;
+
+    wpSetStyle: override;
+    wpModifyStyle: override;
 
     wpSaveDeferred: override;
     wpSaveImmediate: override;
@@ -275,9 +286,9 @@ interface M_XFldObject : M_WPObject
                 xwpclsRemoveObjectHotkey;
 
     //# Class Modifiers
-    externalprefix = xfobjM_;
-    externalstem = xfobjM;
-    functionprefix = xfobjM_;
+    externalprefix = xoM_;
+    externalstem = xoM;
+    functionprefix = xoM_;
     majorversion = 1;
     minorversion = 1;
     filestem = xfobj;           //# specifies the filestem for sc-generated files

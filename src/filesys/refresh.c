@@ -1276,7 +1276,7 @@ static VOID PostXWPNotify(PCNINFO pCNInfo)
         memcpy(&pInfo2->CNInfo,
                pCNInfo,
                sizeof(CNINFO) + pCNInfo->cbName - 1);
-        *(pInfo2->CNInfo.szName + pCNInfo->cbName) = '\0';
+        pInfo2->CNInfo.szName[pCNInfo->cbName] = '\0';
 
         // notify worker
         if (!WinPostMsg(G_hwndFindFolder,

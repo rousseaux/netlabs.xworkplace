@@ -107,10 +107,11 @@
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpshadow.h>
+// #include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -468,10 +469,7 @@ static WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
     {
         if (pobj = OBJECT_FROM_PREC(precc))
         {
-            if (_somIsA(pobj, _WPShadow))
-                pobj = _wpQueryShadowedObject(pobj, TRUE);
-
-            if (pobj)
+            if (pobj = objResolveIfShadow(pobj))
             {
                 if (_somIsA(pobj, _WPDisk))
                     pobj = wpshQueryRootFolder(pobj,
@@ -571,8 +569,7 @@ static BOOL IsInsertable(WPObject *pObject,
 
         // resolve shadows
         if (pObject)
-            if (_somIsA(pObject, _WPShadow))
-                pObject = _wpQueryShadowedObject(pObject, TRUE);
+            pObject = objResolveIfShadow(pObject);
 
         if (!pObject)
             // broken:

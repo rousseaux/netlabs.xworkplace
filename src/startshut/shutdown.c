@@ -1668,8 +1668,10 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         pData->fPartitionsLoaded = TRUE;
                     }
 
-                    _Pmpf((__FUNCTION__ ": pData->pPartitionsList is 0x%lX",
+                    #ifdef DEBUG_SHUTDOWN
+                        _Pmpf((__FUNCTION__ ": pData->pPartitionsList is 0x%lX",
                                 pData->pPartitionsList));
+                    #endif
 
                     if (pData->pPartitionsList)
                     {
@@ -3875,10 +3877,12 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
         else
         {
             brc = _wpSaveImmediate(pobjThis);
-            _Pmpf((__FUNCTION__ ": saved obj 0x%lX (%s, class %s)",
+            #ifdef DEBUG_SHUTDOWN
+                _Pmpf((__FUNCTION__ ": saved obj 0x%lX (%s, class %s)",
                                 pobjThis,
                                 _wpQueryTitle(pobjThis),
                                 _somGetClassName(pobjThis)));
+            #endif
         }
     }
     CATCH(excpt1)
@@ -5213,7 +5217,9 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 
                     XFolder         *pShutdownFolder;
 
-                    _Pmpf((" ---> ID_SDDI_BEGINSHUTDOWN"));
+                    #ifdef DEBUG_SHUTDOWN
+                        _Pmpf((" ---> ID_SDDI_BEGINSHUTDOWN"));
+                    #endif
 
                     doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  ID_SDDI_BEGINSHUTDOWN, hwnd: 0x%lX", hwndFrame);
 

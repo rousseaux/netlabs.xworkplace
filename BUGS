@@ -17,7 +17,9 @@ Ulrich M”ller.
 CURRENT PROBLEMS
 ----------------
 
---  override all wpQuery/SetIconData too
+--  pagemage: vx-rexx patch breaks visual slick edit
+
+--  pe icons all broken, module page missing
 
 --  program objects:
 
@@ -30,17 +32,9 @@ CURRENT PROBLEMS
     --  VIO executable icons keep disappearing when templates folder
         was opened
 
-    --  pronews.exe not handled correctly in program object
+    --  pronews.exe shows default icon in program object
 
     --  lost icons for FTP-PM
-
-    --  Icon loading code - I've had to hit Default/Undo on about a half dozen program
-        objects to restore the proper icon. I have discovered that this doesn't work
-        properly for any *.cmd or *.exe files that don't have custom icons - the icon is
-        always changing back to the open font folder icon (???). It also seems that the
-        icons for attachments in PMMail have been adversely affected, as many are now
-        showing as blank. I see in the BUGS file that you noticed the problem with
-        ProNews - but the problem is much more widespread.
 
 --  when you open the object properties of an application from the File
     Types tab of the Workplace Shell object, the icon disappears. Selecting
@@ -124,17 +118,6 @@ OLDER, MINOR PROBLEMS
     reports garbage with TVFS drives
 
 --  setup strings for WPShadow: SHADOWID (?) not reported
-
---  ext assocs:
-    >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object
-    associated with ZIP files, that has this string as parameter:
-    "O:\TMP %*"
-    to specify where to unpack and Zip file name. Using extended file type association,
-    the script fails to open Zip files stored in folders containing spaces in their
-    name. Maybe this problem is common to all objects that use "%*" as parameter...
-
-sort:
-    --  sort by type doesn't sort files with same (or no) type
 
 install:
     --  if lockup on start is enabled, first xwp msg box hangs the system

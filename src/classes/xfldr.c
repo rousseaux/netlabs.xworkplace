@@ -162,16 +162,16 @@
  *                                                                  *
  ********************************************************************/
 
-extern WPFolder     *G_pConfigFolder = NULL;
+extern WPFolder             *G_pConfigFolder = NULL;
                         // used in xfobj.c too
 
 // roots of linked lists for favorite/quick-open folders
 // these hold plain WPObject pointers, no auto-free
 #ifndef __NOFOLDERCONTENTS__
-extern OBJECTLIST          G_llFavoriteFolders = {0};
+extern OBJECTLIST           G_llFavoriteFolders = {0};
 #endif
 #ifndef __NOQUICKOPEN__
-extern OBJECTLIST          G_llQuickOpenFolders = {0};
+extern OBJECTLIST           G_llQuickOpenFolders = {0};
 #endif
                             // these two are exported in folder.h
 
@@ -307,15 +307,15 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     XFolderData *somThis = XFolderGetData(somSelf);
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    #ifdef DEBUG_SORT
-        _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf)));
-        _Pmpf(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
-        _Pmpf(("  New: Default %d, Always %d", lDefaultSort, lAlwaysSort));
-    #endif
-
     BOOL fLocked = FALSE;
 
     WPSHLOCKSTRUCT Lock = {0};
+
+    #ifdef DEBUG_SORT
+        _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf) ));
+        _Pmpf(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
+        _Pmpf(("  New: Default %d, Always %d", lDefaultSort, lAlwaysSort));
+    #endif
 
     TRY_LOUD(excpt1)
     {
@@ -2608,6 +2608,9 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
 
+    static      s_fDesktopOpened = FALSE;
+    BOOL        fIsDesktop = cmnIsADesktop(somSelf);
+
     // XFolderMethodDebug("XFolder","xf_wpOpen");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
@@ -2617,13 +2620,41 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                     param));
     #endif
 
+    if (    (!s_fDesktopOpened)
+         && (fIsDesktop)
+       )
+    {
+        // if this is the first desktop ever opened, it
+        // must be the default desktop...
+        // pre-populate to avoid hangs on startup
+        s_fDesktopOpened = TRUE;
+
+        if (cmnQuerySetting(sfPrePopulateDesktop))
+        {
+            WPObject *pobj;
+
+            HPOINTER hptrOld = winhSetWaitPointer();
+
+            fdrCheckIfPopulated(somSelf,
+                                FALSE);     // not folders only
+            for (pobj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+                 pobj;
+                 pobj = *wpshGetNextObjPointer(pobj))
+            {
+                _wpQueryIcon(pobj);
+            }
+
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+        }
+    }
+
 #ifndef __NOFDRDEFAULTDOCS__
     // default document support
     if (ulView == OPEN_DEFAULT)
     {
         if (    (cmnQuerySetting(sfFdrDefaultDoc))
              && (cmnQuerySetting(sfFdrDefaultDocView))
-             && (!cmnIsADesktop(somSelf))
+             && (!fIsDesktop)
            )
         {
             fOpenDefaultDoc = TRUE;
@@ -4078,7 +4109,10 @@ SOM_Scope HPOINTER  SOMLINK xfM_wpclsQueryIconN(M_XFolder *somSelf,
                             switch (pbData->fFormat)
                             {
                                 case ICON_FILE:
-                                    _Pmpf(("        pIconInfo->pszFileName %s", pbData->pszFileName));
+                                    #ifdef DEBUG_ICONREPLACEMENTS
+                                        _Pmpf(("        pIconInfo->pszFileName %s", pbData->pszFileName));
+                                    #endif
+
                                     icoLoadICOFile(pbData->pszFileName,
                                                    &_hptrAni1,
                                                    NULL,

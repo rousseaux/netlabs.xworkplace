@@ -338,10 +338,10 @@ static const RESOLVEFUNCTION G_aImports[] =
 
 typedef struct _MONITORSETUP
 {
-    LONG        lcolBackground,         // background color
-                lcolForeground;         // foreground color (for text)
+    LONG            lcolBackground,         // background color
+                    lcolForeground;         // foreground color (for text)
 
-    PSZ         pszFont;
+    PSZ             pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
 
@@ -688,7 +688,7 @@ BOOL UpdateDiskMonitors(HWND hwnd,
                                    &tidDaemon))
        )
     {
-        PADDDISKWATCH pAddDiskWatch;
+        PADDDISKWATCH pAddDiskWatch = NULL;
 
         // remove all existing disk watches
         WinSendMsg(hwndDaemon,
@@ -723,9 +723,10 @@ BOOL UpdateDiskMonitors(HWND hwnd,
                            (MPARAM)pAddDiskWatch,
                            0);
             }
-
-            DosFreeMem(pAddDiskWatch);
         }
+
+        if (pAddDiskWatch)
+            DosFreeMem(pAddDiskWatch);
 
         pPrivate->ulRefreshBitmap = 2;
     }
@@ -1803,27 +1804,77 @@ VOID MwgtPresParamChanged(HWND hwnd,
 }
 
 /*
+ *@@ FindDriveFromWidgetX:
+ *      returns the drive letter of the drive
+ *      corresponding to the given X position (in
+ *      widget coordinates), or 0 if there's none.
+ *
+ *@@added V0.9.18 (2002-03-23) [umoeller]
+ */
+
+CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
+                          SHORT x)
+{
+    ULONG   cDisks;
+    if (    (pPrivate->Setup.pszDisks)
+         && (cDisks = strlen(pPrivate->Setup.pszDisks))
+       )
+    {
+        ULONG   ul;
+        for (ul = 0;
+             ul < cDisks;
+             ul++)
+        {
+            // drive letter
+            CHAR c = pPrivate->Setup.pszDisks[ul];
+            if ((c > 'A') && (c <= 'Z'))
+            {
+                ULONG ulLogicalDrive = c - 'A' + 1;
+                // get the offset into paDiskDatas array
+                PDISKDATA pDataThis = &pPrivate->paDiskDatas[ulLogicalDrive];
+
+                if (    (x > pDataThis->lX)
+                     && (x < pDataThis->lX + pDataThis->lCX)
+                   )
+                {
+                    // got it:
+                    return c;
+                }
+            }
+        }
+    }
+
+    return '\0';
+}
+
+/*
  *@@ MwgtButton1DblClick:
  *      implementation for WM_BUTTON1DBLCLK.
  *
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
+ *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting eCSClock on eCS
+ *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting double-click on diskfree to open drive
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
-                         PXCENTERWIDGET pWidget)
+                         PXCENTERWIDGET pWidget,
+                         MPARAM mp1)
 {
-    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    PMONITORPRIVATE pPrivate;
+    if (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
     {
-        PCSZ pcszID = NULL;
-        HOBJECT hobj = NULLHANDLE;
-        ULONG ulView = 2; // OPEN_SETTINGS,
+        PCSZ        pcszID = NULL,
+                    pcszBackupID = NULL;
+        HOBJECT     hobj = NULLHANDLE;
+        ULONG       ulView = 2; // OPEN_SETTINGS,
+        CHAR        szTemp[50];
 
         switch (pPrivate->ulType)
         {
             case MWGT_DATE:
             case MWGT_TIME:
                 pcszID = "<WP_CLOCK>";
+                pcszBackupID = "<ECSCLOCK_CLOCK>";      // V0.9.18 (2002-03-23) [umoeller]
             break;
 
             case MWGT_SWAPPER:
@@ -1835,16 +1886,40 @@ VOID MwgtButton1DblClick(HWND hwnd,
                 pcszID = "<WP_POWER>";
                 ulView = 0; // OPEN_DEFAULT;
             break;
+
+            case MWGT_DISKFREE:     // V0.9.18 (2002-03-23) [umoeller]
+            {
+                CHAR c;
+                if (c = FindDriveFromWidgetX(pPrivate,
+                                             SHORT1FROMMP(mp1)))
+                {
+                    // open the drive
+                    sprintf(szTemp,
+                            "<WP_DRIVE_%c>",
+                            c);
+                    pcszID = szTemp;
+                    ulView = 0; // OPEN_DEFAULT
+                }
+            }
+            break;
         }
 
         if (pcszID)
             hobj = WinQueryObject((PSZ)pcszID);
 
+        // if we have a backup ID, try that
+        // V0.9.18 (2002-03-23) [umoeller]
+        if (!hobj && pcszBackupID)
+            hobj = WinQueryObject((PSZ)pcszBackupID);
+
         if (hobj)
         {
-            WinOpenObject(hobj,
-                          ulView,
-                          TRUE);
+            if (WinOpenObject(hobj,
+                              ulView,
+                              TRUE))
+                WinOpenObject(hobj,
+                              ulView,
+                              TRUE);
         }
     } // end if (pPrivate)
 }
@@ -2221,7 +2296,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_BUTTON1DBLCLK:
-            MwgtButton1DblClick(hwnd, pWidget);
+            MwgtButton1DblClick(hwnd, pWidget, mp1);
             mrc = (MPARAM)TRUE;     // message processed
         break;
 

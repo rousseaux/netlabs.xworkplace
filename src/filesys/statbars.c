@@ -106,6 +106,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -115,7 +116,7 @@
 #include <wpfolder.h>                   // WPFolder
 #include <wpdisk.h>                     // WPDisk
 #include <wppgm.h>                      // WPProgram
-#include <wpshadow.h>                   // WPShadow
+// #include <wpshadow.h>                   // WPShadow
 #include <wpshdir.h>                    // WPSharedDir // V0.9.5 (2000-09-20) [pr]
 
 // finally, our own header file
@@ -642,8 +643,8 @@ static VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
 
         case 1:     // no division needed, avoid the calc below
             nlsThousandsDouble(pszBuf,
-                                dbl,
-                                pcs->cThousands);
+                               dbl,
+                               pcs->cThousands);
         break;
 
         case 0:     // GetDivisor() has detected a syntax error,
@@ -1418,8 +1419,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 szTemp[300];
 
     // pre-resolve class pointers for speed V0.9.11 (2001-04-22) [umoeller]
-    SOMClass    *pclsWPShadow = _WPShadow,
-                *pclsWPFileSystem = _WPFileSystem;
+    /* SOMClass    *pclsWPShadow = _WPShadow,
+                *pclsWPFileSystem = _WPFileSystem; */
 
     xstrInit(&strText, 300);
 
@@ -1443,8 +1444,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                                            (MPARAM)prec,
                                            MPFROM2SHORT(cmd,     // CMA_FIRST or CMA_NEXT
                                                         CMA_ITEMORDER));
-        if (    prec == NULL
-             || (ULONG)prec == -1
+        if (    (prec == NULL)
+             || ((ULONG)prec == -1)
            )
             // error, or last:
             break;
@@ -1475,12 +1476,11 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
                 {
                     // deref multiple shadows
-                    if (pDeref && _somIsA(pDeref, pclsWPShadow))
-                        pDeref = _wpQueryShadowedObject(pDeref, TRUE);
+                    pDeref = objResolveIfShadow(pDeref);
                 }
 #endif
 
-                if (pDeref && _somIsA(pDeref, pclsWPFileSystem))
+                if (pDeref && _somIsA(pDeref, _WPFileSystem))
                 {
                     // OK, we got a WPFileSystem:
                     ULONG cbThis = _wpQueryFileSize(pDeref);
@@ -1552,8 +1552,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 #ifndef __NOCFGSTATUSBARS__
         if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
 #endif
-            if (_somIsA(pobjSelected, pclsWPShadow))
-                pobjSelected = _wpQueryShadowedObject(pobjSelected, TRUE);
+            pobjSelected = objResolveIfShadow(pobjSelected);
 
         if (pobjSelected == NULL)
             return(strdup(""));
@@ -1587,7 +1586,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         stbTranslateSingleMnemonics(pobjSelected,
                                     &strText,
                                     pcs);
-        if (_somIsA(pobjSelected, pclsWPFileSystem))
+        if (_somIsA(pobjSelected, _WPFileSystem))
             // if we have a file-system object, we
             // need to re-query its size, because
             // we might have dereferenced a shadow
@@ -1764,6 +1763,25 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         // reallocated, so search on in new buffer from here
         p = strText.psz + ulFoundOfs;  // szTemp could have been anything
     }
+
+    // dump icon position in debug mode
+    #ifdef DEBUG_STATUSBARS
+    if (    (cSelectedRecords == 1)
+         && (pobjSelected)
+         && (prec = _wpQueryCoreRecord(pobjSelected))
+       )
+    {
+        XSTRING strNew;
+        CHAR sz[100];
+        sprintf(sz, "(%d, %d) ", prec->ptlIcon.x, prec->ptlIcon.y);
+        xstrInitCopy(&strNew,
+                     sz,
+                     0);
+        xstrcats(&strNew, &strText);
+        xstrcpys(&strText, &strNew);
+        xstrClear(&strNew);
+    }
+    #endif
 
     if (strText.ulLength)
     {

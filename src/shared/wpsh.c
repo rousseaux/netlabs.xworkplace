@@ -101,6 +101,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -1047,12 +1048,12 @@ BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passe
             WPObject *pObject = (WPObject*)OBJECT_FROM_PREC(pmrcSelected);
 
             // dereference shadows
-            if (pObject)
+            /* if (pObject)
                 if (_somIsA(pObject, _WPShadow))
-                    pObject = _wpQueryShadowedObject(pObject, TRUE);
+                    pObject = _wpQueryShadowedObject(pObject, TRUE); */
 
             // check if it's a file-system object
-            if (pObject)
+            if (pObject = objResolveIfShadow(pObject))
                 if (_somIsA(pObject, _WPFileSystem))
                     if (_wpQueryFilename(pObject, szRealName, fFullPath))
                         sprintf(szToClipboard+strlen(szToClipboard), "%s ", szRealName);
@@ -1073,18 +1074,17 @@ BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passe
 
         CHAR       szRealName[CCHMAXPATH];
 
-        WPObject *pObject = somSelf;
+        WPObject *pObject; /*  = somSelf;
         if (_somIsA(pObject, _WPShadow))
-            pObject = _wpQueryShadowedObject(pObject, TRUE);
+            pObject = _wpQueryShadowedObject(pObject, TRUE); */
 
-        if (pObject)
+        if (pObject = objResolveIfShadow(somSelf))
             if (_somIsA(pObject, _WPFileSystem))
                 if (_wpQueryFilename(pObject, szRealName, fFullPath))
                     sprintf(szToClipboard, "%s ", szRealName);
     }
 
-    ulLength = strlen(szToClipboard);
-    if (ulLength)
+    if (ulLength = strlen(szToClipboard))
     {
         // something was copied:
         szToClipboard[ulLength-1] = '\0'; // remove last space
@@ -1253,14 +1253,15 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
                         // we use OBJECT_FROM_PREC to get the SOM pointer
                         WPObject *pSourceObject
                                     = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-                        if (pSourceObject)
+                        if (pSourceObject = objResolveIfShadow(pSourceObject))
                         {
                             // dereference shadows
-                            while (     (pSourceObject)
+                            /* while (     (pSourceObject)
                                      && (_somIsA(pSourceObject, _WPShadow))
                                   )
                                 pSourceObject = _wpQueryShadowedObject(pSourceObject,
                                                     TRUE);  // lock
+                               */
 
                             // store object handle to output
                             *phObject = _wpQueryHandle(pSourceObject);

@@ -104,7 +104,7 @@
 
 #pragma hdrstop
 #include <wpfolder.h>                   // WPFolder
-#include <wpshadow.h>                   // WPShadow
+// #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
  *                                                                  *

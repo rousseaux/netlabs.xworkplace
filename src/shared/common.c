@@ -975,6 +975,7 @@ static const XWPENTITY G_aEntities[] =
         "&xsd;", &ENTITY_XSHUTDOWN,
         "&version;", &G_pcszBldlevel,
         "&date;", &G_pcszBldDate,
+        "&pgr;", &ENTITY_PAGER,
         "&nl;", &G_pcszNewLine
     };
 
@@ -1685,6 +1686,10 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
             hptrReturn = WinLoadPointer(HWND_DESKTOP,
                                         hmod,
                                         ulResID);
+
+            if (!hptrReturn)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot load icon id %d", ulStdIcon);
         }
     } // end if (pStdIcon)
 
@@ -1884,13 +1889,13 @@ APIRET cmnGetStandardIcon(ULONG ulStdIcon,
  *      and must therefore not be freed.
  *
  *@@added V0.9.16 (2001-12-18) [umoeller]
+ *@@changed V0.9.18 (2002-03-24) [umoeller]: this never returned TRUE, dammit! fixed, now XFldObject::wpUnInitData works
  */
 
 BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
 {
     BOOL        fLocked = FALSE,
                 brc = FALSE;
-    HPOINTER    hptrReturn = NULLHANDLE;
 
     TRY_LOUD(excpt1)
     {
@@ -1914,7 +1919,7 @@ BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
     if (fLocked)
         UnlockIcons();
 
-    return (hptrReturn);
+    return (brc);
 }
 
 /* ******************************************************************
@@ -2668,6 +2673,9 @@ static const SETTINGINFO G_aSettingInfos[] =
         sfCheckDesktop, -1, 0,
             SP_SETUP_FEATURES, 1,
             "fCheckDesktop",
+        sfPrePopulateDesktop, -1, 0,
+            SP_SETUP_FEATURES, 0,       // default is off
+            "fPrePopulateDesktop",
 #endif
 
 #ifndef __ALWAYSEXTSORT__

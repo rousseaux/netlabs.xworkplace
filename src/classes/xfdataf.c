@@ -52,8 +52,8 @@
  *      SOM Emitter emitctm: 2.41
  */
 
-#ifndef SOM_Module_xdf_Source
-#define SOM_Module_xdf_Source
+#ifndef SOM_Module_xfdataf_Source
+#define SOM_Module_xfdataf_Source
 #endif
 #define XFldDataFile_Class_Source
 #define M_XFldDataFile_Class_Source
@@ -157,8 +157,6 @@ SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
     {
         APIRET arc = DosDelete(szFilename);
 
-        _Pmpf((__FUNCTION__ ": DosDelete returned %d", arc));
-
         switch (arc)
         {
             case NO_ERROR:
@@ -193,12 +191,48 @@ SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
 }
 
 /*
+ *@@ wpUnInitData:
+ *
+ *@@added V0.9.18 (2002-03-24) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
+{
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpUnInitData");
+
+    // we have a problem with our replacement icons in that
+    // the WPS frees the pointer handle in WPObject::wpUnInitData
+    // if the object has the OBJSTYLE_NOTDEFAULTICON or OBJSTYLE_TEMPLATE
+    // flags set... so in these cases, check if the object has one
+    // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
+    // or the shared icon would disappear globally
+    // V0.9.16 (2001-12-31) [umoeller]
+    #ifdef DEBUG_ICONREPLACEMENTS
+    {
+        PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
+        _Pmpf((__FUNCTION__ " for %s: OBJSTYLE_NOTDEFAULTICON %lX",
+                _wpQueryTitle(somSelf),
+                _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
+        _Pmpf(("    OBJSTYLE_TEMPLATE %lX",
+                _wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE));
+        _Pmpf(("    hptrIcon %lX",
+                pmrc->hptrIcon));
+        _Pmpf(("    cmnIsStandardIcon %lX",
+                cmnIsStandardIcon(pmrc->hptrIcon)));
+    }
+    #endif
+
+    XFldDataFile_parent_WPDataFile_wpUnInitData(somSelf);
+}
+
+/*
  *@@ wpRestoreState:
  *      this WPObject instance method gets called during object
  *      initialization (after wpInitData) to restore the data
  *      which was stored with wpSaveState.
  *
- *      The WPDataFile implementation has a _major_bug in here
+ *      The WPDataFile implementation has a _major_ bug in here
  *      in that it turns _on_ the OBJSTYLE_NOTDEFAULTICON bit
  *      even if no icon was loaded from the EAs. As a result,
  *      another rewrite was in order here.
@@ -210,6 +244,7 @@ SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
  *      loaded during populate.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.18 (2002-03-24) [umoeller]: fixed disappearing standard icons on copy
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
@@ -226,6 +261,12 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
 
+        #ifdef DEBUG_ICONREPLACEMENTS
+            _Pmpf((__FUNCTION__ " pre: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
+        #endif
+
         // find the WPFileSystem method by skipping the
         // buggy WPDataFile implementation
         if (pwpRestoreState = (somTD_WPObject_wpRestoreState)wpshResolveFor(
@@ -237,8 +278,11 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
             PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
             APIRET arc;
             HPOINTER hptrNew;
+            ULONG flNewStyle = 0;
 
-            _Pmpf((__FUNCTION__ ": obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
+            #ifdef DEBUG_ICONREPLACEMENTS
+                _Pmpf((__FUNCTION__ ": obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
+            #endif
 
             if (    (!prec->hptrIcon)
                  && (pFSData)
@@ -250,11 +294,14 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
                )
             {
                 _wpSetIcon(somSelf, hptrNew);
-                _wpModifyStyle(somSelf,
-                               OBJSTYLE_NOTDEFAULTICON,
-                               OBJSTYLE_NOTDEFAULTICON);
 
-                _Pmpf(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
+                // set icon style below
+                // V0.9.18 (2002-03-24) [umoeller]
+                flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+
+                #ifdef DEBUG_ICONREPLACEMENTS
+                    _Pmpf(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
+                #endif
 
                 // set our instance data flag so that we know that
                 // we should NEVER EVER use an association icon
@@ -267,10 +314,41 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
             }
 
             brc = pwpRestoreState(somSelf, ulReserved);
+
+            // moved this down here because parent restore state
+            // overwrites this sucker, and then we might have
+            // an erroneous OBJSTYLE_NOTDEFAULTICON set that
+            // causes icons to be freed during copy...
+            // V0.9.18 (2002-03-24) [umoeller]
+            // situation was this:
+            // copy command file via ctrl-drag
+            // 1) wpCopyObject first instantiates a new SOM object
+            // 2) calls wpRestoreState (this one here) to
+            //    set up the new object's instance data
+            // 3) checks if the source object has a non-default icon;
+            //    if so, it is copied again... unfortunately, if we
+            //    had the OBJSTYLE_NOTDEFAULTICON bit set here,
+            //    our standard icon was nuked!!
+            // This only happened for files with .ICON EAs, where
+            // first we set a standard icon (!) and then the parent
+            // wpRestoreState set the OBJSTYLE_NOTDEFAULTICON flag --
+            // not a good idea.
+
+            // Long story: set the flag only below so it will be
+            // correct when we come out of restore.
+            _wpModifyStyle(somSelf,
+                           OBJSTYLE_NOTDEFAULTICON,
+                           flNewStyle);
         }
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Cannot resolve WPFileSystem::wpRestoreState.");
+
+        #ifdef DEBUG_ICONREPLACEMENTS
+            _Pmpf((__FUNCTION__ " post: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
+        #endif
     }
 
     if (!pwpRestoreState)
@@ -678,7 +756,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
     #ifdef DEBUG_ASSOCS
-    _Pmpf(("xdf_wpOpen, ulView: 0x%lX", ulView));
+        _Pmpf(("xdf_wpOpen, ulView: 0x%lX", ulView));
     #endif
 
 #ifndef __NEVEREXTASSOCS__
@@ -948,6 +1026,9 @@ SOM_Scope BOOL  SOMLINK xdf_wpQueryDefaultHelp(XFldDataFile *somSelf,
  *      wpQueryAssociatedFileIcon (which normally gets called
  *      during folder populate).
  *
+ *      See XFldDataFile::wpQueryIcon for an introduction
+ *      to the data file icon mess.
+ *
  *      From what I see, ulView is normally 0x1000, which
  *      is the WPS-internal code for the first associated
  *      program. This is only > 1000 if the default
@@ -960,7 +1041,8 @@ SOM_Scope BOOL  SOMLINK xdf_wpQueryDefaultHelp(XFldDataFile *somSelf,
  *
  *      This returns NULL if there's no associated program
  *      for the specified view. Otherwise it returns a
- *      WPProgram or WPProgramFile, which is locked.
+ *      WPProgram or WPProgramFile, which has been locked
+ *      once.
  *
  *      The caller should unlock the object after it's
  *      done using it. AFAIK, WPS wpQueryAssociatedFileIcon
@@ -1033,6 +1115,9 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
  *      This gets called on the first call to wpQueryIcon,
  *      even if turbo folders are not enabled.
  *
+ *      See XFldDataFile::wpQueryIcon for an introduction
+ *      to the data file icon mess.
+ *
  *      We override this for speed to call
  *      ftypQueryAssociatedProgram directly.
  *
@@ -1099,12 +1184,21 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
  *
  *      This gets called from various places in the WPS
  *      whenever data file attributes change so that
- *      the association might have changed.
+ *      the association might have changed. Note that
+ *      WPDataFile::wpQueryIcon does _not_ call this,
+ *      but wpQueryAssociatedFileIcon instead.
  *
  *      The problem with this method is that it appears
  *      to check internally for the OBJSTYLE_NOTDEFAULTICON
  *      flag, which is rarely set any more since we
  *      share the association icons with the executables.
+ *
+ *      Since WPProgramFile overrides this method (but not
+ *      wpQueryAssociatedFileIcon), this never gets called
+ *      for program files.
+ *
+ *      See XFldDataFile::wpQueryIcon for an introduction
+ *      to the data file icon mess.
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
  */
@@ -1118,32 +1212,33 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
     // only call the parent if we don't have an .ICON EA,
     // otherwise do nothing
     // V0.9.18 (2002-03-19) [umoeller]
-    if (    (!_fHasIconEA)
-         && (cmnQuerySetting(sfExtAssocs))
-       )
+    if (cmnQuerySetting(sfExtAssocs))
     {
-        if (    (!_somIsA(somSelf, _WPIcon))
-             && (!_somIsA(somSelf, _WPPointer))
-           )
+        if (!_fHasIconEA)
         {
-            HPOINTER hptr;
-
-            if (!(hptr = _wpQueryAssociatedFileIcon(somSelf)))
-                // use class icon then
-                hptr = _wpclsQueryIcon(_somGetClass(somSelf));
-
-            if (hptr)
+            if (    (!_somIsA(somSelf, _WPIcon))
+                 && (!_somIsA(somSelf, _WPPointer))
+               )
             {
-                _wpSetIcon(somSelf, hptr);
+                HPOINTER hptr;
 
-                // make sure this is turned off!!!
-                _wpModifyStyle(somSelf,
-                               OBJSTYLE_NOTDEFAULTICON,
-                               0);
+                if (!(hptr = _wpQueryAssociatedFileIcon(somSelf)))
+                    // use class icon then
+                    hptr = _wpclsQueryIcon(_somGetClass(somSelf));
+
+                if (hptr)
+                {
+                    _wpSetIcon(somSelf, hptr);
+
+                    // make sure this is turned off!!!
+                    _wpModifyStyle(somSelf,
+                                   OBJSTYLE_NOTDEFAULTICON,
+                                   0);
+                }
             }
-        }
 
-        return;
+            return;
+        }
     }
 #endif
 
@@ -1160,25 +1255,39 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *
  *      With data files and all subclasses, this turns out
  *      to be a major mess. When being made awake, all
- *      data files initially receive a NULLHANDLE pointer,
- *      _unless_ the file has an .ICON attribute so the
- *      WPS can quickly set that up in wpRestoreState.
- *      Only in that case will the icon initially be set.
- *      Otherwise the WPS attempts to find a data file
- *      icon on the first call to this method... how this
- *      works in detail depends on the class of the
- *      object too.
+ *      data files initially receive a NULLHANDLE pointer.
+ *      In WPDataFile::wpRestoreState, the WPS checks if
+ *      the file-system data has an .ICON EA so this can
+ *      be quickly set.
+ *      Only in that case will the icon already be set
+ *      when wpQueryIcon is called for the first time.
+ *
+ *      So I guess what is done here is the following:
+ *
+ *      --  If the icon has already been set (either in
+ *          wpRestoreState or by a previous call to
+ *          wpQueryIcon), return it.
+ *
+ *      --  If not, call wpSetIcon with the return value
+ *          from wpQueryAssociatedProgram or, if no association
+ *          exists, from wpclsQueryIcon of the file's class.
+ *          Then return that new icon.
  *
  *      Unfortunately the WPS always sets OBJSTYLE_NOTDEFAULTICON
  *      in here, which is not a good idea with our replacement
  *      associations.
  *
- *      Note also that WPProgramFile (and XWPProgramFile)
- *      do not override this method; but this calls
- *      _wpQueryAssociatedFileIcon in turn, which is overridden
- *      by WPProgramFile to call WPProgramFile::wpSetProgIcon,
- *      which we override to change the executable icons
- *      (see XWPProgramFile::wpSetProgIcon).
+ *      Remarks for WPProgramFile:
+ *
+ *      --  WPProgramFile apparently overrides this method
+ *          to call wpSetProgIcon directly. It also overrides
+ *          wpSetAssociatedFileIcon to call wpSetProgIcon.
+ *
+ *      --  We thus "only" have to override XWPProgramFile::wpSetProgIcon
+ *          to replace the executable icons.
+ *
+ *      --  Since WPCommandFile is derived from WPProgramFile,
+ *          this affects command files as well.
  *
  *      What a mess.
  *
@@ -1187,17 +1296,19 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 {
-    HPOINTER hptrReturn = NULLHANDLE;
-    PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
-
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIcon");
-
-    _Pmpf((__FUNCTION__ ": obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
 
 #ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfExtAssocs))
     {
+        HPOINTER hptrReturn = NULLHANDLE;
+        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+
+        #ifdef DEBUG_ICONREPLACEMENTS
+            _Pmpf((__FUNCTION__ ": obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
+        #endif
+
         TRY_LOUD(excpt1)
         {
             if (!(hptrReturn = prec->hptrIcon))
@@ -1221,33 +1332,34 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
                         flNewStyle = OBJSTYLE_NOTDEFAULTICON;
                 }
 
+                // no need to do special checks for WPProgramFile,
+                // because they override wpQueryAssociatedFileIcon
+
                 // 2) try if we find an association
                 if (!hptrReturn)
                     hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
+                            // this makes the icon global,
+                            // but does not set the icon or the
+                            // NOTDEFAULTICON flag
 
                 if (!hptrReturn)
                     // 3) use class icon then
                     hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
 
-                if (hptrReturn)
-                {
-                    _wpSetIcon(somSelf, hptrReturn);
-                    _wpModifyStyle(somSelf,
-                                   OBJSTYLE_NOTDEFAULTICON,
-                                   flNewStyle);
-                }
+                _wpSetIcon(somSelf, hptrReturn);
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               flNewStyle);
             }
         }
         CATCH(excpt1)
         {
         } END_CATCH();
+
+        return (hptrReturn);
     }
-
-    if (!hptrReturn)
 #endif
-        hptrReturn = XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
-
-    return (hptrReturn);
+    return (XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf));
 }
 
 /*
@@ -1426,6 +1538,57 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
                                                          pIconInfo));
 }
 
+/*
+ *@@ wpCreateFromTemplate:
+ *      this WPObject method creates a new object from
+ *      somSelf, which is assumed to be a template.
+ *
+ *      The WPFileSystem override of this kills our
+ *      shared icons, so this had to be rewritten as
+ *      well for WPDataFile. Note that WPFolder still
+ *      uses the original implementation so we do not
+ *      have to bother with any subfolders here.
+ *
+ *@@added V0.9.18 (2002-03-24) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xdf_wpCreateFromTemplate(XFldDataFile *somSelf,
+                                                      WPFolder* folder,
+                                                      BOOL fLock)
+{
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpCreateFromTemplate");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        WPObject *pNew = NULL;
+
+        // all this doesn't make sense if we aren't a template
+        // in the first place
+        if (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
+        {
+            // I can't get this to work any other way...
+            // apparently, create from template is so full of
+            // ugly hacks that this is the best way to do it
+            if (pNew = _wpCopyObject(somSelf,
+                                     folder,
+                                     fLock))
+            {
+                _wpModifyStyle(pNew,
+                               OBJSTYLE_TEMPLATE,
+                               0);
+            }
+        }
+
+        return pNew;
+    }
+#endif
+
+    return (XFldDataFile_parent_WPDataFile_wpCreateFromTemplate(somSelf,
+                                                                folder,
+                                                                fLock));
+}
 
 /* ******************************************************************
  *
@@ -1471,7 +1634,7 @@ SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)
         if (doshIsWarp4())
         {
             // on Warp 4, override wpModifyMenu (Warp 4-specific method)
-            wpshOverrideStaticMethod(_XFldDataFile,
+            wpshOverrideStaticMethod(somSelf, // _XFldDataFile,
                                      "wpModifyMenu",
                                      (somMethodPtr)xdf_wpModifyMenu);
         }

@@ -311,7 +311,7 @@
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
 #pragma hdrstop
-#include <wpshadow.h>                   // WPShadow
+// #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
  *
@@ -337,12 +337,12 @@ typedef WINBUILDPTRHANDLE *PWINBUILDPTRHANDLE;
  *      in PMREF; I believe it has the same format as an .ICO
  *      file and the .ICON EA. It appears that the WPS also
  *      uses this format when it stores icons in OS2.INI for
- *      abstract objects.
+ *      abstract objects (PM_Abstract:Icons section).
  *
  *      Returns:
  *
  *      --  NO_ERROR: *phptr has received a new HPOINTER. Use
- *          WinFreeFileIcon to free the icon. If you're using
+ *          WinDestroyPointer to free the icon. If you're using
  *          the icon on an object via wpSetIcon, set the
  *          OBJSTYLE_NOTDEFAULTICON style on the object.
  *
@@ -406,7 +406,8 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
 
 /*
  *@@ icoLoadICOFile:
- *      attempts to load the specified .ICO file.
+ *      attempts to load the specified .ICO (or
+ *      .PTR) file.
  *
  *      To support both "query icon" and "query
  *      icon data" interfaces, this supports three
@@ -415,7 +416,7 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *      --  If (phptr != NULL), the icon data
  *          is loaded and turned into a new
  *          HPOINTER by calling icoBuildPtrHandle.
- *          Use WinFreeFileIcon to free that pointer.
+ *          Use WinDestroyPointer to free that pointer.
  *
  *      --  If (pcbIconData != NULL), *pcbIconData
  *          is set to the size that is required for
@@ -494,22 +495,33 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
         // output data
         if (!arc)
         {
-            if (phptr)
-                arc = icoBuildPtrHandle(pbData,
-                                        phptr);
+            // build the pointer in any case, cos
+            // we can't find out whether the data
+            // is broken maybe
+            // V0.9.18 (2002-03-24) [umoeller]
+            HPOINTER hptr;
+            if (!(arc = icoBuildPtrHandle(pbData,
+                                          &hptr)))
+            {
+                if (phptr)
+                    *phptr = hptr;
+                else
+                    // caller does not want the pointer:
+                    WinDestroyPointer(hptr);
 
-            if (pbIconData)
-                /* if (!pcbIconData)
-                    arc = ERROR_INVALID_PARAMETER;
-                else if (*pcbIconData < cbData)
-                    arc = ERROR_BUFFER_OVERFLOW;
-                else */     // V0.9.18 (2002-03-19) [umoeller]
-                    memcpy(pbIconData,
-                           pbData,
-                           cbData);
+                if (pbIconData)
+                    /* if (!pcbIconData)
+                        arc = ERROR_INVALID_PARAMETER;
+                    else if (*pcbIconData < cbData)
+                        arc = ERROR_BUFFER_OVERFLOW;
+                    else */     // V0.9.18 (2002-03-19) [umoeller]
+                        memcpy(pbIconData,
+                               pbData,
+                               cbData);
 
-            if (pcbIconData)
-                *pcbIconData = cbData;
+                if (pcbIconData)
+                    *pcbIconData = cbData;
+            }
         }
     }
     CATCH(excpt1)
@@ -583,23 +595,33 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
                 {
                     PBYTE pbData = (PBYTE)(pcbValue + 1);
 
-                    // output data
-                    if (phptr)
-                        arc = icoBuildPtrHandle(pbData,
-                                                phptr);
+                    // build the pointer in any case, cos
+                    // we can't find out whether the data
+                    // is broken maybe
+                    // V0.9.18 (2002-03-24) [umoeller]
+                    HPOINTER hptr;
+                    if (!(arc = icoBuildPtrHandle(pbData,
+                                                  &hptr)))
+                    {
+                        // output data
+                        if (phptr)
+                            *phptr = hptr;
+                        else
+                            WinDestroyPointer(hptr);
 
-                    if (pbIconData)
-                        /* if (!pcbIconData)
-                            arc = ERROR_INVALID_PARAMETER;
-                        else if (*pcbIconData < cbData)
-                            arc = ERROR_BUFFER_OVERFLOW;
-                        else */ // V0.9.18 (2002-03-19) [umoeller]
-                            memcpy(pbIconData,
-                                   pbData,
-                                   cbData);
+                        if (pbIconData)
+                            /* if (!pcbIconData)
+                                arc = ERROR_INVALID_PARAMETER;
+                            else if (*pcbIconData < cbData)
+                                arc = ERROR_BUFFER_OVERFLOW;
+                            else */ // V0.9.18 (2002-03-19) [umoeller]
+                                memcpy(pbIconData,
+                                       pbData,
+                                       cbData);
 
-                    if (pcbIconData)
-                        *pcbIconData = cbData;
+                        if (pcbIconData)
+                            *pcbIconData = cbData;
+                    }
                 }
                 else
                     arc = ERROR_NO_DATA;
@@ -1145,7 +1167,7 @@ static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
  *
  *      Note that Windows uses different resource
  *      type flags than OS/2; use the WINRT_* flags
- *      from dosh.h instead of the OS/2 RT_* flags.
+ *      from exeh.h instead of the OS/2 RT_* flags.
  *
  *      If idResource == 0, the first resource of
  *      the specified type is loaded.
@@ -1904,16 +1926,18 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *          which makes it unsuitable for our
  *          wpSetProgIcon replacements because we'd
  *          rather replace the default icons and we
- *          can't find out using WinLoadFileIcon.
+ *          can't find out if there's a non-default
+ *          icon using WinLoadFileIcon.
  *
  *      --  This is intended for executables _only_.
  *          It does not check for an .ICO file in the
  *          same directory, nor will this check for
- *          .ICON EAs.
+ *          .ICON EAs, as WinLoadFileIcon would.
  *
  *      --  This takes an EXECUTABLE from exehOpen
  *          as input. As a result, only executables
  *          supported by exehOpen are supported.
+ *          (But that's NE, LX, and PE anyway.)
  *
  *      Presently the following executable and icon
  *      resource formats are understood:
@@ -1922,6 +1946,8 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *          and exehLoadOS2NEResource);
  *
  *      2)  Win16 NE, but only 32x32 icons in 16 colors.
+ *
+ *      PE icons are still not working.
  *
  *      See icoLoadICOFile for the meaning of
  *      the phptr, pcbIconData, and pbIconData
@@ -1937,6 +1963,7 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *
  *      --  ERROR_NO_DATA: EXE format understood, but
  *          the EXE contains no icon resources.
+ *          Still returned for PE now.
  *
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
@@ -2034,22 +2061,32 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
         {
             if (pbData && cbData)
             {
-                if (phptr)
-                    arc = icoBuildPtrHandle(pbData,
-                                            phptr);
+                // build the pointer in any case, cos
+                // we can't find out whether the data
+                // is broken maybe
+                // V0.9.18 (2002-03-24) [umoeller]
+                HPOINTER hptr;
+                if (!(arc = icoBuildPtrHandle(pbData,
+                                              &hptr)))
+                {
+                    if (phptr)
+                        *phptr = hptr;
+                    else
+                        WinDestroyPointer(hptr);
 
-                if (pbIconData)
-                    /* if (!pcbIconData)
-                        arc = ERROR_INVALID_PARAMETER;
-                    else if (*pcbIconData < cbData)
-                        arc = ERROR_BUFFER_OVERFLOW;
-                    else */ // V0.9.18 (2002-03-19) [umoeller]
-                        memcpy(pbIconData,
-                               pbData,
-                               cbData);
+                    if (pbIconData)
+                        /* if (!pcbIconData)
+                            arc = ERROR_INVALID_PARAMETER;
+                        else if (*pcbIconData < cbData)
+                            arc = ERROR_BUFFER_OVERFLOW;
+                        else */ // V0.9.18 (2002-03-19) [umoeller]
+                            memcpy(pbIconData,
+                                   pbData,
+                                   cbData);
 
-                if (pcbIconData)
-                    *pcbIconData = cbData;
+                    if (pcbIconData)
+                        *pcbIconData = cbData;
+                }
             }
             else
                 arc = ERROR_NO_DATA;
@@ -2080,6 +2117,9 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
  *@@ icoRunReplacement:
  *      returns TRUE if either turbo folders or
  *      extended associations are enabled.
+ *
+ *      Used mainly by XWPProgramFile and
+ *      XWPProgram.
  *
  *@@added V0.9.18 (2002-03-16) [umoeller]
  */
@@ -2480,10 +2520,7 @@ APIRET icoCopyIconFromObject(WPObject *somSelf,       // in: target
 {
     APIRET arc = NO_ERROR;
 
-    if ((pobjSource) && (_somIsA(pobjSource, _WPShadow)))
-        pobjSource = _wpQueryShadowedObject(pobjSource, TRUE);
-
-    if (pobjSource)
+    if (pobjSource = objResolveIfShadow(pobjSource))
     {
         PICONINFO pData;
         if (arc = icoLoadIconData(pobjSource, ulIndex, &pData))
@@ -2582,9 +2619,14 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
            )
             brc = TRUE;
 
-        // WinDestroyPointer(hptrClass);
-                // this is probably not a good idea
-                // V0.9.18 (2002-03-19) [umoeller]
+#ifndef __NOICONREPLACEMENTS__
+        // only destroy the pointer if we're not
+        // running our replacement because then
+        // it is shared
+        // V0.9.18 (2002-03-19) [umoeller]
+        if (!cmnQuerySetting(sfIconReplacements))
+#endif
+            WinDestroyPointer(hptrClass);
 
         return (brc);
     }

@@ -72,7 +72,7 @@
  *      4.  The wpQueryFldrSort and wpSetFldrSort methods are
  *          completely obscure. The prototypes are really useless,
  *          since the WPS uses an undocumented structure for
- *          sorting instead, which we have defined as WPSSORTINFO
+ *          sorting instead, which we have defined as IBMSORTINFO
  *          below.
  *
  *      5.  The most important limitation was however that there
@@ -98,7 +98,7 @@
  *      sets its own comparison function directly on the container.
  *      As a result, XWP has to do _all_ the sorting now.
  *
- *      To be able to still get the WPSSORTINFO which sits somewhere
+ *      To be able to still get the IBMSORTINFO which sits somewhere
  *      in the WPFolder instance data, we added XFolder::wpRestoreData,
  *      which gets called when an object is awakened. Since the caller
  *      always passes a block of memory to which wpRestoreData should
@@ -179,7 +179,7 @@
  *      2)  Sort settings.
  *
  *          This is particularly difficult, because WPFolder stores
- *          a WPSSORTINFO structure with the instance data. This
+ *          a IBMSORTINFO structure with the instance data. This
  *          thing is very obscure because it even contains a pointer
  *          to the comparison func. While I have now found that the
  *          WPS needs this for getting the details data from the
@@ -199,7 +199,7 @@
  *          flag (see xfldr.idl).
  *
  *          In addition, we need to hack the "always sort" flag in the
- *          WPSSORTINFO structure to support global "always sort", but
+ *          IBMSORTINFO structure to support global "always sort", but
  *          we will need to keep track of whether this flag is set
  *          explicitly for a folder or because the default flag was set.
  *
@@ -280,9 +280,10 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpshadow.h>      // WPShadow
+// #include <wpshadow.h>      // WPShadow
 
 /* ******************************************************************
  *
@@ -295,7 +296,7 @@
 #define WPMENUID_SORTBYTYPE             0x1771      // "-1" sort criterion
 
 /*
- *@@ WPSSORTINFO:
+ *@@ IBMSORTINFO:
  *      structure used internally by the WPS
  *      for sorting. This is undocumented and
  *      has been provided by Chris Wohlgemuth.
@@ -310,7 +311,7 @@
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
 
-typedef struct _WPSSORTINFO
+typedef struct _IBMSORTINFO
 {
     LONG       lDefaultSort;     // default sort column index
     BOOL       fAlwaysSort;      // "always maintain sort order"
@@ -318,7 +319,7 @@ typedef struct _WPSSORTINFO
     PFNCOMPARE pfnCompare;       // WPS comparison func called by fnCompareDetailsColumn
     ULONG      ulFieldOffset;    // field offset to compare
     M_WPObject *Class;           // sort class
-} WPSSORTINFO, *PWPSSORTINFO;
+} IBMSORTINFO, *PIBMSORTINFO;
 
 /* ******************************************************************
  *
@@ -339,7 +340,7 @@ typedef struct _WPSSORTINFO
 static VOID CheckDefaultSortItem(HWND hwndSortMenu,
                                  LONG lSort)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
 
     // first run thru the existing menu as composed
     // by the WPS and uncheck the default item.
@@ -362,7 +363,7 @@ static VOID CheckDefaultSortItem(HWND hwndSortMenu,
         // we have "always sort" and "folders first", which
         // we don't want to unset
         // V0.9.13 (2001-06-19) [umoeller]
-        if (sidThis == cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR)
+        if (sidThis == ulVarMenuOffset + ID_XFMI_OFS_SEPARATOR)
             break;
 
         winhSetMenuItemChecked(hwndSortMenu,
@@ -387,11 +388,11 @@ static VOID CheckDefaultSortItem(HWND hwndSortMenu,
         break;
 
         case -3:
-            sDefID = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYCLASS;
+            sDefID = ulVarMenuOffset + ID_XFMI_OFS_SORTBYCLASS;
         break;
 
         case -4:
-            sDefID = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYEXT;
+            sDefID = ulVarMenuOffset + ID_XFMI_OFS_SORTBYEXT;
         break;
 
         default:
@@ -437,6 +438,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
+        ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
         MENUITEM mi;
 
         if (winhQueryMenuItem(hwndMenuWithSortSubmenu,
@@ -449,7 +451,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
             XFolderData *somThis = XFolderGetData(somSelf);
 
             // cast pointer to WPFolder-internal sort data
-            // PWPSSORTINFO psi = (PWPSSORTINFO)_pFolderSortInfo;
+            // PIBMSORTINFO psi = (PIBMSORTINFO)_pFolderSortInfo;
             // SHORT sDefID;
 
             // we'll insert sort by "class" and "extension"
@@ -464,7 +466,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // "sort by class"
                 winhInsertMenuItem(hwndSortMenu,
                                    mi.iPosition + 1,            // behind "sort by type"
-                                   cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYCLASS,
+                                   ulVarMenuOffset + ID_XFMI_OFS_SORTBYCLASS,
                                    cmnGetString(ID_XSSI_SV_CLASS), // pszSortByClass
                                    MIS_TEXT,
                                    0);
@@ -472,7 +474,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // "sort by extension"
                 winhInsertMenuItem(hwndSortMenu,
                                    mi.iPosition + 2,
-                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYEXT),
+                                   ulVarMenuOffset + ID_XFMI_OFS_SORTBYEXT,
                                    cmnGetString(ID_XSSI_SV_EXT), // pszSortByExt
                                    MIS_TEXT,
                                    0);
@@ -488,25 +490,25 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // add "folders first"
                 winhInsertMenuSeparator(hwndSortMenu,
                                         MIT_END,
-                                        cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR);
+                                        ulVarMenuOffset + ID_XFMI_OFS_SEPARATOR);
                 f = (_lFoldersFirst == SET_DEFAULT)
                         ? cmnQuerySetting(sfFoldersFirst)
                         : _lFoldersFirst;
                 winhInsertMenuItem(hwndSortMenu,
                                    MIT_END,
-                                   cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTFOLDERSFIRST,
+                                   ulVarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST,
                                    cmnGetString(ID_XSSI_SV_FOLDERSFIRST),
                                    MIS_TEXT,
                                    (f) ? MIA_CHECKED : 0);
 
                 // add "always sort"
                 winhInsertMenuSeparator(hwndSortMenu, MIT_END,
-                                  (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
+                                        ulVarMenuOffset + ID_XFMI_OFS_SEPARATOR);
                 f = (_lAlwaysSort == SET_DEFAULT)
                         ? cmnQuerySetting(sfAlwaysSort)
                         : _lAlwaysSort;
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
-                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_ALWAYSSORT),
+                                   ulVarMenuOffset + ID_XFMI_OFS_ALWAYSSORT,
                                    cmnGetString(ID_XSSI_SV_ALWAYSSORT), // pszAlwaysSort
                                    MIS_TEXT,
                                    (f) ? MIA_CHECKED : 0);
@@ -829,12 +831,14 @@ static LONG EXPENTRY CompareDate(PCDATE pd1,     // ptr to ul1
     else if (pd1->year < pd2->year)
         return CMP_LESS;
     else
+    {
         // compare months
         if (pd1->month > pd2->month)
             return CMP_GREATER;
         else if (pd1->month < pd2->month)
             return CMP_LESS;
         else
+        {
             // compare days
             if (pd1->day > pd2->day)
                 return CMP_GREATER;
@@ -850,18 +854,24 @@ static LONG EXPENTRY CompareDate(PCDATE pd1,     // ptr to ul1
                 else if (pt1->hours < pt2->hours)
                     return CMP_LESS;
                 else
+                {
                     // compare minutes
                     if (pt1->minutes > pt2->minutes)
                         return CMP_GREATER;
                     else if (pt1->minutes < pt2->minutes)
                         return CMP_LESS;
                     else
+                    {
                         // compare seconds
                         if (pt1->seconds > pt2->seconds)
                             return CMP_GREATER;
                         else if (pt1->seconds < pt2->seconds)
                             return CMP_LESS;
+                    }
+                }
             }
+        }
+    }
 
     return CMP_EQUAL;
 }
@@ -888,6 +898,7 @@ static LONG EXPENTRY CompareDate(PCDATE pd1,     // ptr to ul1
  *      which would have made things a bit easier.
  *
  *@@added V0.9.12 (2001-05-18) [umoeller]
+ *@@changed V0.9.18 (2002-03-23) [umoeller]: speed optimizations
  */
 
 SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
@@ -904,7 +915,7 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
     XFolderData *somThis = XFolderGetData(pFolder);
     // get WPFolder-internal sort struct
     // from pointer hacked in wpRestoreData
-    PWPSSORTINFO pSortInfo = (PWPSSORTINFO)_pFolderSortInfo;
+    PIBMSORTINFO pSortInfo = (PIBMSORTINFO)_pFolderSortInfo;
 
     BOOL    f1IsOfSortClass,
             f2IsOfSortClass;
@@ -917,17 +928,13 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
         // yes:
         // resolve shadows
         // (watch out, _wpQueryShadowedObject can return NULL)
-        WPObject *pobjDeref1 = (_somIsA(pobj1, _WPShadow))
-                                    ? _wpQueryShadowedObject(pobj1, TRUE)
-                                    : pobj1;
-        WPObject *pobjDeref2 = (_somIsA(pobj2, _WPShadow))
-                                    ? _wpQueryShadowedObject(pobj2, TRUE)
-                                    : pobj2;
+        WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
+        WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
         BOOL IsFldr1 = (pobjDeref1)
-                          ? _somIsA(pobjDeref1, _WPFolder)
+                          ? objIsAFolder(pobjDeref1)
                           : FALSE;      // treat broken shadows as non-folders
         BOOL IsFldr2 = (pobjDeref2)
-                          ? _somIsA(pobjDeref2, _WPFolder)
+                          ? objIsAFolder(pobjDeref2)
                           : FALSE;      // treat broken shadows as non-folders
 
         if (IsFldr1 != IsFldr2)
@@ -1085,9 +1092,9 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
             // looks like caller wants a details column... well then.
             if (lSort >= 0)
             {
-                PWPSSORTINFO psi;
+                PIBMSORTINFO psi;
 
-                if (    (psi = (PWPSSORTINFO)_pFolderSortInfo)
+                if (    (psi = (PIBMSORTINFO)_pFolderSortInfo)
                      && (_wpIsSortAttribAvailable(somSelf,
                                                   lSort))
                      && (psi->Class = _wpQueryFldrSortClass(somSelf))
@@ -1195,7 +1202,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
  *      returns the instance or the global setting.
  *
  *      Otherwise, this returns the flag from
- *      the WPSSORTINFO.
+ *      the IBMSORTINFO.
  *
  *@@added V0.9.12 (2001-05-19) [umoeller]
  */
@@ -1214,7 +1221,7 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
 
 #ifndef __ALWAYSEXTSORT__
     if (_pFolderSortInfo)
-        return (((PWPSSORTINFO)_pFolderSortInfo)->fAlwaysSort);
+        return (((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort);
 
     return (FALSE);
 #endif
@@ -1376,7 +1383,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // to this structure in wpRestoreData
                 if (_wpIsObjectInitialized(somSelf))
                     if (_pFolderSortInfo)
-                        ((PWPSSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
+                        ((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
 
                 // finally, set the cnr sort function: we perform these checks
                 // to avoid cnr flickering
@@ -1571,7 +1578,7 @@ VOID fdrSortInitPage(PNOTEBOOKPAGE pnbp,
                 memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
                 */
                 pnbp->pUser = cmnBackupSettings(G_SortBackup,
-                                                 ARRAYITEMCOUNT(G_SortBackup));
+                                                ARRAYITEMCOUNT(G_SortBackup));
             }
 
             // sort class: always use _WPFileSystem

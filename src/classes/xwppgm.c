@@ -287,12 +287,12 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
                                                PSZ pszBuffer)
 {
     BOOL                brc = FALSE;
-    PWPPROGRAMPRIVATE   pData;
+    PIBMPROGRAMDATA   pData;
     XWPProgramData      *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_xwpQueryExecutable");
 
     // have we found the WPProgram instance data yet?
-    if (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+    if (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
     {
         TRY_LOUD(excpt1)
         {
@@ -417,7 +417,7 @@ SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
 
     //  We can now always use this pointer to hack ourselves into
     //  the WPProgram instance data at all times. For this, we
-    //  need to typecast the above void* pointer to WPPROGRAMPRIVATE*,
+    //  need to typecast the above void* pointer to IBMPROGRAMDATA*,
     //  which is declared in include\filesys\program.h. Hopefully
     //  IBM hasn't changed the struct ordering with any versions of
     //  OS/2 (famous last words).
@@ -442,37 +442,38 @@ SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
 
 SOM_Scope void  SOMLINK xpg_wpUnInitData(XWPProgram *somSelf)
 {
-    PWPPROGRAMPRIVATE pData;
+    PIBMPROGRAMDATA pData;
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpUnInitData");
 
     // have we found the WPProgram instance data yet?
-    if (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+    if (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
     {
         // alright, check if we allocated any strings...
-        // if so, clean them out here
+        // if so, clean them out here, and set each ptr
+        // to NULL so that the WPS won't try to free it
+        // again in the parent method
         if (pData->pszExecutable && _fWeAllocatedExecutable)
         {
             _wpFreeMem(somSelf, pData->pszExecutable);
-            // set the ptr to NULL so that the IBM parent
-            // method won't try to free this again
             pData->pszExecutable = NULL;
         }
         if (pData->pszParameters && _fWeAllocatedParameters)
         {
             _wpFreeMem(somSelf, pData->pszParameters);
-            // set the ptr to NULL so that the IBM parent
-            // method won't try to free this again
             pData->pszParameters = NULL;
         }
         if (pData->pszEnvironment && _fWeAllocatedEnvironment)
         {
             _wpFreeMem(somSelf, pData->pszEnvironment);
-            // set the ptr to NULL so that the IBM parent
-            // method won't try to free this again
             pData->pszEnvironment = NULL;
         }
     }
+
+    wpshStore(somSelf,
+              &_pWszUsingIconFile,
+              NULL,
+              NULL);
 
     XWPProgram_parent_WPProgram_wpUnInitData(somSelf);
 }
@@ -642,7 +643,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  */
 
 static BOOL ProgramIconHandler(XWPProgram *somSelf,
-                               PWPPROGRAMPRIVATE pData,
+                               PIBMPROGRAMDATA pData,
                                XWPProgramData *somThis,
                                HPOINTER *phptr,
                                PULONG pcbIconInfo,   // out: if != NULL, size of ICONINFO buffer required
@@ -736,7 +737,9 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
                         ULONG ulProgType;
                         ULONG ulStdIcon = 0;
 
-                        // _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType", pszExec));
+                        #ifdef DEBUG_ICONREPLACEMENTS
+                            _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType", pszExec));
+                        #endif
 
                         if (!(ulProgType = pData->ProgType.progc))
                             ulProgType = progQueryProgType(pszExec,
@@ -847,13 +850,13 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
 SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
                                           PFEA2LIST pfeal)
 {
-    PWPPROGRAMPRIVATE  pData;
+    PIBMPROGRAMDATA  pData;
 
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgIcon");
 
     // have we found the WPProgram instance data yet?
-    if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+    if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
          && (icoRunReplacement())
        )
@@ -913,13 +916,13 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
 SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
                                              PICONINFO pIconInfo)
 {
-    PWPPROGRAMPRIVATE  pData;
+    PIBMPROGRAMDATA  pData;
 
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIconData");
 
     // have we found the WPProgram instance data yet?
-    if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+    if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
          && (icoRunReplacement())
        )
@@ -937,8 +940,11 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
             CHAR            szHandle[10];
             sprintf(szHandle, "%lX", LOUSHORT(hobj));       // no leading zeros,
                                                             // hex letters in capitals
-            _Pmpf((__FUNCTION__ ": trying to load %s, %s",
-                        WPINIAPP_ICONS, szHandle));
+            #ifdef DEBUG_ICONREPLACEMENTS
+                _Pmpf((__FUNCTION__ ": trying to load %s, %s",
+                            WPINIAPP_ICONS, szHandle));
+            #endif
+
             if (    (PrfQueryProfileSize(HINI_USER,
                                          (PSZ)WPINIAPP_ICONS,  // "PM_Abstract:Icons"
                                          szHandle,
@@ -1001,8 +1007,11 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
                 else
                 {
                     // not icon file: run the icon handler again
-                    _Pmpf((__FUNCTION__ ": calling ProgramIconHandler, cbRequired %d, pIconInfo 0x%lX",
+                    #ifdef DEBUG_ICONREPLACEMENTS
+                        _Pmpf((__FUNCTION__ ": calling ProgramIconHandler, cbRequired %d, pIconInfo 0x%lX",
                               cbRequired, pIconInfo));
+                    #endif
+
                     if (!(ProgramIconHandler(somSelf,
                                              pData,
                                              somThis,
@@ -1059,8 +1068,11 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
             CHAR            szHandle[10];
             sprintf(szHandle, "%lX", LOUSHORT(hobj));       // no leading zeros,
                                                             // hex letters in capitals
-            _Pmpf((__FUNCTION__ ": deleting %s, %s",
-                        WPINIAPP_ICONS, szHandle));
+            #ifdef DEBUG_ICONREPLACEMENTS
+                _Pmpf((__FUNCTION__ ": deleting %s, %s",
+                            WPINIAPP_ICONS, szHandle));
+            #endif
+
             PrfWriteProfileData(HINI_USER,
                                 (PSZ)WPINIAPP_ICONS,  // "PM_Abstract:Icons"
                                 szHandle,
@@ -1170,13 +1182,13 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                                                PPROGDETAILS pProgDetails,
                                                PULONG pulSize)
 {
-    PWPPROGRAMPRIVATE  pData;
+    PIBMPROGRAMDATA  pData;
 
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryProgDetails");
 
     // have we found the WPProgram instance data yet?
-    if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+    if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
          && (icoRunReplacement())
        )
@@ -1184,7 +1196,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
         BOOL brc = FALSE;
         BOOL fLocked = FALSE;
 
-        #ifdef _PMPRINTF_
+        #ifdef DEBUG_PROGRAMSTART
             _Pmpf((__FUNCTION__ " for \"%s\":", _wpQueryTitle(somSelf) ));
 
             _Pmpf(("   pszEnvironment is 0x%lX",
@@ -1250,7 +1262,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                 if (!_xwpQueryExecutable(somSelf, szExecutable))
                     pcszExecutable = NULL;
 
-                #ifdef _PMPRINTF_
+                #ifdef DEBUG_PROGRAMSTART
                     _Pmpf((__FUNCTION__ " for \"%s\": progc is %s",
                             pszTitle,
                             appDescribeAppType(pData->ProgType.progc)));
@@ -1281,7 +1293,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                                           pData->pszEnvironment,
                                           pulSize);
 
-                _Pmpf((__FUNCTION__ ": progFillProgDetails returned %d", brc));
+                #ifdef DEBUG_PROGRAMSTART
+                    _Pmpf((__FUNCTION__ ": progFillProgDetails returned %d", brc));
+                #endif
             }
         }
         CATCH(excpt1)
@@ -1291,7 +1305,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
         if (fLocked)
             _wpReleaseObjectMutexSem(somSelf);
 
-        _Pmpf((__FUNCTION__ ": returning %d", brc));
+        #ifdef DEBUG_PROGRAMSTART
+            _Pmpf((__FUNCTION__ ": returning %d", brc));
+        #endif
 
         return (brc);
 
@@ -1399,16 +1415,18 @@ APIRET progStore(WPObject *somSelf,
 SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                                              PPROGDETAILS pProgDetails)
 {
-    PWPPROGRAMPRIVATE  pData;
+    PIBMPROGRAMDATA  pData;
     BOOL        brc = FALSE;
 
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgDetails");
 
-    _Pmpf((__FUNCTION__": entering, _pvWPProgramData is 0x%lX", _pvWPProgramData));
+    #ifdef DEBUG_PROGRAMSTART
+        _Pmpf((__FUNCTION__": entering, _pvWPProgramData is 0x%lX", _pvWPProgramData));
+    #endif
 
     // have we found the WPProgram instance data yet?
-    if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+    if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
          && (icoRunReplacement())
        )
@@ -1427,7 +1445,10 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                  && (strhcmp(pszMyTitle, pProgDetails->pszTitle))
                )
             {
-                _Pmpf(("    setting new title \"%s\"", pProgDetails->pszTitle));
+                #ifdef DEBUG_PROGRAMSTART
+                    _Pmpf(("    setting new title \"%s\"", pProgDetails->pszTitle));
+                #endif
+
                 _wpSetTitle(somSelf, pProgDetails->pszTitle);
             }
 
@@ -1437,7 +1458,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 // executable specified:
                 ULONG hfs;
 
-                _Pmpf(("    input exec \"%s\"", pProgDetails->pszExecutable));
+                #ifdef DEBUG_PROGRAMSTART
+                    _Pmpf(("    input exec \"%s\"", pProgDetails->pszExecutable));
+                #endif
 
                 // "*" means command prompt
                 if (pProgDetails->pszExecutable[0] == '*')
@@ -1468,7 +1491,10 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                        )
                     {
                         // handle changed:
-                        _Pmpf(("    setting new exe handle 0xlX", hfs));
+                        #ifdef DEBUG_PROGRAMSTART
+                            _Pmpf(("    setting new exe handle 0xlX", hfs));
+                        #endif
+
                         progStore(somSelf,
                                   &pData->pszExecutable,
                                   &_fWeAllocatedExecutable,
@@ -1487,7 +1513,10 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                        )
                     {
                         // file changed:
-                        _Pmpf(("    setting new exe handle 0xlX", hfs));
+                        #ifdef DEBUG_PROGRAMSTART
+                            _Pmpf(("    setting new exe handle 0xlX", hfs));
+                        #endif
+
                         progStore(somSelf,
                                   &pData->pszExecutable,
                                   &_fWeAllocatedExecutable,
@@ -1510,8 +1539,10 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 fSetProgIcon = TRUE;
             }
 
-            // _Pmpf(("   new hfs 0x%lX", _usExecutableHandle));
-            // _Pmpf(("   new _pszExecutable %s", _pWszExecutable));
+            #ifdef DEBUG_PROGRAMSTART
+                _Pmpf(("   new hfs 0x%lX", _usExecutableHandle));
+                _Pmpf(("   new _pszExecutable %s", _pWszExecutable));
+            #endif
 
             // startup dir
             pData->ulStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);

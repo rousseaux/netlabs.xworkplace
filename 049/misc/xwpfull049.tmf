@@ -98,10 +98,9 @@ Auáerdem wurde dem Einstellungsobjekt "Tastatur" im Ordner "Systemkonfiguration"
 Dieser Eintrag ist nicht verfgbar, wenn der &xwp;-Hook nicht installiert ist.
 ;Make sure that you also have the "Object page" setting in the "General features" group enabled, or you won't be able to configure hotkeys.
 Dies wurde mit &xwp; V0.9.1 eingefhrt.
-<--FEATURES_6054-->: "PageMage" bietet virtuelle Arbeitsoberfl„chen. Dies bedeutet, daá &xwp; aus der aktuellen Arbeitsoberfl„che eine von vielen macht, zwischen denen hin- und hergeschaltet werden kann.
-Ist diese Funktion aktiviert, so wird dem Einstellungsobjekt "Bildschirm" eine neue Seite hinzugefgt, auf der Feineinstellungen fr PageMage vorgenommen werden k”nnen.
+<--FEATURES_6054-->: "&pgr;" bietet virtuelle Arbeitsoberfl„chen. Dies bedeutet, daá &xwp; aus der aktuellen Arbeitsoberfl„che eine von vielen macht, zwischen denen hin- und hergeschaltet werden kann.
+Ist diese Funktion aktiviert, so wird dem Einstellungsobjekt "Bildschirm" eine neue Seite hinzugefgt, auf der Feineinstellungen fr &pgr; vorgenommen werden k”nnen.
 Dieser Eintrag ist nicht verfgbar, wenn der &xwp;-Hook nicht installiert wurde.
-PageMage war frher ein separates Programm, das von Carlos Ugarte geschrieben wurde, und ist nun in &xwp; integriert.
 Dies wurde mit &xwp; V0.9.2 eingefhrt.
 
 <--FEATURES_6021-->: Hiermit wird die Seite "Archivieren" im Einstellungsnotizbuch der Arbeitsoberfl„che ersetzt. Ist diese Funktion aktiviert, k”nnen die Bedingungen, unter denen die Workplace Shell automatisch gesichert wird, pr„zise eingestellt werden - anstelle der M”glichkeit, die Archivierung nur ganz an- oder abschalten zu k”nnen.
@@ -118,6 +117,14 @@ Diese Funktion erlaubt es, den Systemabschluá w„hrend der Durchfhrung abzubrech
 Hiermit wird dem Einstellungsnotizbuch der Arbeitsoberfl„che eine Seite "&xsd;" hinzugefgt, ber welche die Funktion konfiguriert werden kann.
 Dies wurde mit XFolder 0.60 eingefhrt.
 Details entnehmen Sie bitte dem &xwp;-Handbuch.
+;
+; the following two were added with V0.9.18
+;
+<--FEATURES_6024-->: Wenn "Integrit„t der WPS prfen" aktiviert ist, prft &xwp; die Integrit„t der Arbeitsoberfl„che bei jedem WPS-Start, bevor die WPS den gefrchteten Dialog "Die Arbeitsoberfl„che kann nicht gefunden werden" anzeigen kann.
+Falls &xwp; Probleme mit der Arbeitsoberfl„che entdeckt (wie z.B. eine besch„digte Dateihandles-Tabelle oder eine verlorene <WP_DESKTOP>-ID), kann es versuchen, diese Probleme zu reparieren.
+Sie k”nnen diese Funktion deaktivieren, wenn &xwp; wiederholt Probleme meldet, Ihre Arbeitsoberfl„che jedoch offensichtlich problemlos arbeitet.
+<--FEATURES_6025-->: Wenn "Arbeitsoberfl„che vorzeitig laden" aktiviert ist, l„dt &xwp; s„mtliche Objekte der Arbeitsoberfl„che bereits beim Starten der WPS, bevor sich das Hauptfenster der Arbeitsoberfl„che ”ffnet.
+Diese Funktion kann m”glicherweise Systemh„nger beim Starten der WPS beheben, wenn die Arbeitsoberfl„che viele Objekte enth„lt und die WPS sich beim Initialisieren verheddert.
 
 <--FEATURES_6041-->: "Erweiterte Dateizuordnungen" lassen die WPS nur noch Dateitypen zur Zuordnung von Programmen zu Datendateien verwenden.
 Seien Sie nicht beunruhigt, Dateifilter gibt es immer noch. Der Unterschied besteht darin, daá den Dateien basierend auf Dateifiltern automatisch ein Dateityp zugewiesen wird, anstatt Programme direkt auf Filterbasis zuzuordnen.
@@ -240,7 +247,7 @@ Sie kann nun sogar Informationen zu WPS-Methoden anzeigen, was hilfreich fr WPS
 Dies wurde mit &xwp; 0.9.0 eingefhrt.
 
 <--XWPCLS_1267-->: "XWPScreen" implementiert das Objekt "Bildschirm", welches alle Bildschirm-bezogenen Seiten des alten Objektes "System" beinhaltet, ebenso wie neue &xwp;-Bildschirmeinstellungen,
-wie z.B. die PageMage-Konfiguration.
+wie z.B. die &pgr;-Konfiguration.
 Dies wurde mit &xwp; 0.9.2 eingefhrt.
 
 ;

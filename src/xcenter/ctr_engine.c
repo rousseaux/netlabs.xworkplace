@@ -111,10 +111,12 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
 
+#include "filesys\object.h"             // XFldObject implementation
+
 #include "hook\xwphook.h"
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-#include <wpshadow.h>
+// #include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -1945,11 +1947,12 @@ static PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
                     pllObjects = lstCreate(FALSE);
 
                 // dereference shadows
-                while ((pReal) && (_somIsA(pReal, _WPShadow)))
+                /* while ((pReal) && (_somIsA(pReal, _WPShadow)))
                     pReal = _wpQueryShadowedObject(pReal,
                                                    TRUE); // lock
+                   */
 
-                if (pReal)
+                if (pReal = objResolveIfShadow(pReal))
                     lstAppendItem(pllObjects, pReal);
 
                 if (pusIndicator)
