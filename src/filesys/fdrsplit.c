@@ -75,6 +75,7 @@
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
 #include "xfdisk.ih"
+#include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -594,12 +595,24 @@ BOOL fdrMakeCnrPaint(HWND hwndCnr)
 
 LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
 {
+    if (lcol == 0x40000000)
+    {
+        CHAR    szTemp[20];
+        LONG    lRed, lGreen, lBlue;
+        PrfQueryProfileString(HINI_USER,
+                              "PM_Colors",
+                              "DesktopIconText",
+                              "0 0 0",
+                              szTemp,
+                              sizeof(szTemp));
+        sscanf(szTemp, "%d %d %d", &lRed, &lGreen, &lBlue);
+        lcol = MAKE_RGB(lRed, lGreen, lBlue);
+    }
     // really sick stuff here... frequently, if the
     // highest byte is set in the color value, it is
     // really a SYSCLR_* index; for backgrounds, this
     // is normally SYSCLR_WINDOW, so check this
-    #define USE_DEFAULT_COLOR   0xFF000000
-    if (lcol & USE_DEFAULT_COLOR)
+    else if (lcol & 0xFF000000)
     {
         #define DUMPCOL(i) case i: pcsz = # i; break
         PCSZ pcsz = "unknown index";
@@ -656,6 +669,54 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
     }
 
     return lcol;
+}
+
+/*
+ *@@ fdrRemoveFromImageCache:
+ *      removes the given object from the image cache.
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+BOOL fdrRemoveFromImageCache(WPObject *pobjImage)
+{
+    BOOL    brc = FALSE,
+            fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockImages())
+        {
+            PLISTNODE pNode = lstQueryFirstNode(&G_llImages);
+            while (pNode)
+            {
+                PIMAGECACHEENTRY pice = (PIMAGECACHEENTRY)pNode->pItemData;
+                if (pice->pobjImage == pobjImage)
+                {
+                    // found:
+
+                    // delete the bitmap
+                    GpiDeleteBitmap(pice->hbm);
+
+                    lstRemoveNode(&G_llImages,
+                                  pNode);       // auto-free
+                    brc = TRUE;
+                    break;
+                }
+
+                pNode = pNode->pNext;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    }
+    END_CATCH();
+
+    if (fLocked)
+        UnlockImages();
+
+    return brc;
 }
 
 typedef BOOL32 _System somTP_wpQueryBitmapHandle(WPObject *somSelf,
@@ -801,6 +862,11 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
 
                                     lstAppendItem(&G_llImages,
                                                   pice);
+
+                                    // remove from cache when it goes dormant
+                                    _xwpModifyFlags(pobjImage,
+                                                    OBJLIST_IMAGECACHE,
+                                                    OBJLIST_IMAGECACHE);
                                 }
                             }
                         }
@@ -843,6 +909,8 @@ VOID SetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts are to
             LONG        lcolBack,
                         lcolFore;
             PSUBCLCNR   pSubCnr;
+
+            WinEnableWindowUpdate(hwndCnr, FALSE);
 
             // hack background
             lcolBack = ResolveColor(pBkgnd->BkgndStore.lcolBackground);
@@ -897,6 +965,8 @@ VOID SetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts are to
             // for this view
             winhSetWindowFont(hwndCnr,
                               _wpQueryFldrFont(pFolder, ulView));
+
+            WinEnableWindowUpdate(hwndCnr, TRUE);
         }
     }
     CATCH(excpt1)

@@ -1411,6 +1411,7 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
  *@@changed V0.9.3 (2000-04-10) [umoeller]: snap2grid feature setting was ignored; fixed
  *@@changed V0.9.12 (2001-05-22) [umoeller]: "refresh now" was added even for non-open-view menus
  *@@changed V0.9.14 (2001-08-07) [pr]: added Run menu item
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: added split view
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -1460,6 +1461,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          *
          */
 
+        // hack in split view V0.9.21 (2002-08-24) [umoeller]
         if (WinSendMsg(hwndMenu,
                        MM_QUERYITEM,
                        MPFROM2SHORT(WPMENUID_OPEN, TRUE),

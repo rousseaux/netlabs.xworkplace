@@ -2520,6 +2520,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  *@@changed V0.9.18 (2002-03-20) [umoeller]: added pre-populate support
  *@@changed V0.9.19 (2002-04-02) [umoeller]: moved pre-populate to XFldDesktop::wpOpen
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: added split view
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,

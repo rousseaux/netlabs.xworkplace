@@ -163,6 +163,7 @@ BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
  *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: added OPEN=SPLITVIEW
  */
 
 BOOL fdrSetup(WPFolder *somSelf,
@@ -179,6 +180,17 @@ BOOL fdrSetup(WPFolder *somSelf,
 
     CHAR        szValue[CCHMAXPATH + 1];
     ULONG       cbValue = sizeof(szValue);
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+                           "OPEN", szValue, &cbValue))
+    {
+        if (!stricmp(szValue, "SPLITVIEW"))
+            _wpViewObject(somSelf,
+                          NULLHANDLE,
+                          cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SPLITVIEW,
+                          0);
+    }
 
 #ifndef __NOSNAPTOGRID__
     if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,

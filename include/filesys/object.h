@@ -189,6 +189,7 @@
     #define OBJLIST_HANDLESCACHE            0x00100000 // V0.9.9 (2001-04-02) [umoeller]
     #define OBJLIST_DIRTYLIST               0x00200000 // V0.9.11 (2001-04-18) [umoeller]
     #define OBJLIST_QUERYAWAKEFSOBJECT      0x00400000 // V0.9.16 (2001-10-25) [umoeller]
+    #define OBJLIST_IMAGECACHE              0x00800000 // V0.9.21 (2002-08-24) [umoeller]
 
     BOOL objIsAShadow(WPObject *somSelf);
 

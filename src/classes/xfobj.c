@@ -664,34 +664,38 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
  *
  *      Current flags are:
  *
- *      -- OBJLIST_RUNNINGSTORED: this means that the
- *         object has been given in-use emphasis by
- *         progOpenProgram. This can happen to program
- *         objects (WPProgram or WPProgramFile) or
- *         data files. If the object is destroyed
- *         for whatever reason, the object needs to
- *         be removed from the list maintained by
- *         progOpenProgram because otherwise we'd
- *         run into problems when WM_APPTERMINATENOTIFY
- *         comes in.
+ *      --  OBJLIST_RUNNINGSTORED: this means that the
+ *          object has been given in-use emphasis by
+ *          progOpenProgram. This can happen to program
+ *          objects (WPProgram or WPProgramFile) or
+ *          data files. If the object is destroyed
+ *          for whatever reason, the object needs to
+ *          be removed from the list maintained by
+ *          progOpenProgram because otherwise we'd
+ *          run into problems when WM_APPTERMINATENOTIFY
+ *          comes in.
  *
- *      -- OBJLIST_CONFIGFOLDER: this means that the
- *         object is a config folder or resides in
- *         one. The config folder cache must be invalidated
- *         when this object gets deleted.
+ *      --  OBJLIST_CONFIGFOLDER: this means that the
+ *          object is a config folder or resides in
+ *          one. The config folder cache must be invalidated
+ *          when this object gets deleted.
  *
- *      -- OBJLIST_FAVORITEFOLDER: object is a folder
- *         on the "favorite folders" list.
+ *      --  OBJLIST_FAVORITEFOLDER: object is a folder
+ *          on the "favorite folders" list.
  *
- *      -- OBJLIST_QUICKOPENFOLDER: object is a folder
- *         on the "quick-open folders" list.
+ *      --  OBJLIST_QUICKOPENFOLDER: object is a folder
+ *          on the "quick-open folders" list.
  *
- *      -- OBJLIST_HANDLESCACHE: object is in handles
- *         cache (see objFindObjFromHandle).
+ *      --  OBJLIST_HANDLESCACHE: object is in handles
+ *          cache (see objFindObjFromHandle).
  *
- *      -- OBJLIST_QUERYAWAKEFSOBJECT: object is in root
- *         folders list or has been touched by that cache
- *         (fdrRegisterAwakeRootFolder).
+ *      --  OBJLIST_QUERYAWAKEFSOBJECT: object is in root
+ *          folders list or has been touched by that cache
+ *          (fdrRegisterAwakeRootFolder).
+ *
+ *      --  OBJLIST_IMAGECACHE: object is a WPImageFile
+ *          that has been used as a folder background
+ *          in folder split view.
  *
  *      Note: These flags are NOT persistent across
  *      reboots, i.e. not stored with wpSaveState.
