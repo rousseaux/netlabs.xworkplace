@@ -161,7 +161,7 @@ Are you sure you want to do this?
 
 <--XFL0157-->: The &xwp; Hook has been installed. Object hotkeys and mouse movement features are available in the "Keyboard" and "Mouse" settings objects.
 
-<--XFL0158-->: The &xwp; Hook has now been deinstalled. Object hotkeys and mouse movement features are no longer available in the "Keyboard" and "Mouse" settings objects.
+<--XFL0158-->: The &xwp; Hook has now been uninstalled. Object hotkeys and mouse movement features are no longer available in the "Keyboard" and "Mouse" settings objects.
 
 ;
 ; the following items have been added with V0.9.1
@@ -320,9 +320,9 @@ Do you wish to ignore this error and continue installing fonts?
 
 Do you wish to ignore this error and continue installing fonts?
 
-<--XFL0202-->: Are you sure you want to deinstall the font "%1"?
+<--XFL0202-->: Are you sure you want to uninstall the font "%1"?
 
-<--XFL0203-->: You have selected %1 fonts to be deinstalled. Are you sure you want to do this?
+<--XFL0203-->: You have selected %1 fonts to be uninstalled. Are you sure you want to do this?
 
 <--XFL0204-->: The font "%1" could not be unloaded at this point. An application might still be using it. However, after the next reboot it should be gone.
 

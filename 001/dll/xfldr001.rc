@@ -807,7 +807,7 @@ BEGIN
     ID_XSSI_DRIVERVENDOR                "Vendor: "
 
     ID_XSSI_FONTSAMPLEVIEW              "~Font sample"
-    ID_XSSI_FONTDEINSTALL               "~Deinstall..."
+    ID_XSSI_FONTDEINSTALL               "~Uninstall..."
 
     ID_XSSI_KEYDESCRIPTION              "Key Description"
     ID_XSSI_SCANCODE                    "Hardware Scan Code"
@@ -1356,7 +1356,7 @@ BEGIN
     ID_XFD_RUN_STARTUPDIR_TXT           "~Working directory:"
 
     /* strings formerly in ID_CRD_SETTINGS_VIEW */
-    ID_XRDI_VIEW_FRAMEGROUP             "XCenter frame"
+    ID_XRDI_VIEW_FRAMEGROUP             "&xcenter; frame"
     ID_CRDI_VIEW_REDUCEWORKAREA         "~Reduce desktop workarea"
     ID_CRDI_VIEW_ALWAYSONTOP            "~Always on top"
     ID_CRDI_VIEW_ANIMATE                "A~nimate"
@@ -1364,7 +1364,7 @@ BEGIN
     ID_CRDI_VIEW_AUTOHIDE_TXT1          "D~elay:"
     ID_CRDI_VIEW_AUTOHIDE_CLICK         "Hide i~mmediately on mouse click"
     ID_CRDI_VIEW_PRTY_GROUP             "~View thread priority"
-    ID_CRDI_VIEW_POSITION_GROUP         "XCenter position"
+    ID_CRDI_VIEW_POSITION_GROUP         "&xcenter; position"
     ID_CRDI_VIEW_TOPOFSCREEN            "~Top of screen"
     ID_CRDI_VIEW_BOTTOMOFSCREEN         "~Bottom of screen"
     ID_CRDI_VIEW_AUTOSCREENBORDER       "Automatically add to ~screen border"
@@ -1432,6 +1432,26 @@ BEGIN
     ID_XSDI_MENU_EJECTDISK              "~Eject disk"
     ID_XSDI_MENU_UNLOCKDISK             "~Unlock disk"
 
+    /* widget class names (all new with V0.9.19) */
+    ID_CRSI_WIDGET_OBJBUTTON            "Object button"
+    ID_CRSI_WIDGET_XBUTTON              "&xbutton;"
+    ID_CRSI_WIDGET_PULSE                "Pulse (CPU load)"
+    ID_CRSI_WIDGET_TRAY                 "Tray"
+    ID_CRSI_WIDGET_DISKFREE_WC          "Diskfree (&warpcenter; style)"
+    ID_CRSI_WIDGET_DATE                 "Date"
+    ID_CRSI_WIDGET_TIME                 "Time"
+    ID_CRSI_WIDGET_FREEMEM              "Free physical memory"
+    ID_CRSI_WIDGET_POWER                "Battery power"
+    ID_CRSI_WIDGET_DISKFREE_COND        "Diskfree (condensed)"
+    ID_CRSI_WIDGET_SENTINEL             "Sentinel memory watcher"
+    ID_CRSI_WIDGET_WINDOWLIST           "Window list"
+    ID_CRSI_WIDGET_HEALTH               "Health Monitor"
+
+    /* font sample view (all new with V0.9.19) */
+    ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
+    ID_XSSI_FONT_MAXASCENDER            "Show maximum ascender/descender (gray rectangles on left)"
+    ID_XSSI_FONT_INTERNALLEADING        "Show internal leading (gray rectangle)"
+    ID_XSSI_FONT_LOWERCASEASCENT        "Show lower case ascent/descent (red rectangles)"
 END
 
 /* Treesize definitions; added V0.9.0 */

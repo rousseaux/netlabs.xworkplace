@@ -41,9 +41,9 @@ XShutdown           = "eXtended Shutdown...";
 FontFolder          = "Fonts";
 
 /* the following three added with V0.9.19 */
-Lockup              = "Sperren";
-FindObjects         = "Suchen";
-Shutdown            = "Systemabschluá";
+Lockup              = "Lockup now";
+FindObjects         = "Find objects";
+Shutdown            = "Shut down";
 
 /*********************************************
  *
@@ -114,7 +114,7 @@ title = FontFolder;
 setup = "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;";
 id = "<XWP_FONTFOLDER>"
 target = "<WP_CONFIG>";
-call CreateObject;
+call CreateObjectWithShadow;
 
 /* create "Workplace Shell" */
 class = "XFldWPS";

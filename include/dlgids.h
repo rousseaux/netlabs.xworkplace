@@ -2191,6 +2191,25 @@
 
 #define ID_CRSI_OWGT_BITMAPFILE         6226
 
+#define ID_CRSI_WIDGET_OBJBUTTON        6227
+#define ID_CRSI_WIDGET_XBUTTON          6228
+#define ID_CRSI_WIDGET_PULSE            6229
+#define ID_CRSI_WIDGET_TRAY             6230
+#define ID_CRSI_WIDGET_DISKFREE_WC      6231
+#define ID_CRSI_WIDGET_DATE             6232
+#define ID_CRSI_WIDGET_TIME             6233
+#define ID_CRSI_WIDGET_FREEMEM          6234
+#define ID_CRSI_WIDGET_POWER            6235
+#define ID_CRSI_WIDGET_DISKFREE_COND    6236
+#define ID_CRSI_WIDGET_SENTINEL         6237
+#define ID_CRSI_WIDGET_WINDOWLIST       6238
+#define ID_CRSI_WIDGET_HEALTH           6239
+
+#define ID_XSSI_FONT_BASELINE           6240
+#define ID_XSSI_FONT_MAXASCENDER        6241
+#define ID_XSSI_FONT_INTERNALLEADING    6242
+#define ID_XSSI_FONT_LOWERCASEASCENT    6243
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000

@@ -161,48 +161,58 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 #define WNDCLASS_WIDGET_MONITORS    "XWPCenterMonitorWidget"
 
 static const XCENTERWIDGETCLASS G_WidgetClasses[] =
-            {
-                {
-                    WNDCLASS_WIDGET_MONITORS,
-                    MWGT_DATE,
-                    "Date",
-                    "Date",
-                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
-                    NULL        // no settings dlg
-                },
-                {
-                    WNDCLASS_WIDGET_MONITORS,
-                    MWGT_TIME,
-                    "Time",
-                    "Time",
-                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
-                    NULL        // no settings dlg
-                },
-                {
-                    WNDCLASS_WIDGET_MONITORS,
-                    MWGT_MEMORY,
-                    "PhysMemory",
-                    "Free physical memory",
-                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
-                    NULL        // no settings dlg
-                },
-                {
-                    WNDCLASS_WIDGET_MONITORS,
-                    MWGT_POWER,
-                    "Power",
-                    "Battery power",
-                    WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP | WGTF_TRAYABLE,
-                    NULL        // no settings dlg
-                },
-                {
-                    WNDCLASS_WIDGET_MONITORS,
-                    MWGT_DISKFREE,
-                    "DiskFreeCondensed",
-                    "Diskfree (condensed)",
-                    WGTF_TOOLTIP | WGTF_TRAYABLE | WGTF_SIZEABLE,
-                    NULL        // no settings dlg
-                }
-            };
+    {
+        {
+            WNDCLASS_WIDGET_MONITORS,
+            MWGT_DATE,
+            "Date",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_DATE),
+                                        // widget class name displayed to user
+                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
+            NULL        // no settings dlg
+        },
+        {
+            WNDCLASS_WIDGET_MONITORS,
+            MWGT_TIME,
+            "Time",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_TIME),
+                                        // widget class name displayed to user
+                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
+            NULL        // no settings dlg
+        },
+        {
+            WNDCLASS_WIDGET_MONITORS,
+            MWGT_MEMORY,
+            "PhysMemory",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_FREEMEM),
+                                        // widget class name displayed to user
+                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
+            NULL        // no settings dlg
+        },
+        {
+            WNDCLASS_WIDGET_MONITORS,
+            MWGT_POWER,
+            "Power",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_POWER),
+                                        // widget class name displayed to user
+                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP | WGTF_TRAYABLE,
+            NULL        // no settings dlg
+        },
+        {
+            WNDCLASS_WIDGET_MONITORS,
+            MWGT_DISKFREE,
+            "DiskFreeCondensed",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_DISKFREE_COND),
+                                        // widget class name displayed to user
+                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_TOOLTIP | WGTF_TRAYABLE | WGTF_SIZEABLE,
+            NULL        // no settings dlg
+        }
+    };
 
 /* ******************************************************************
  *

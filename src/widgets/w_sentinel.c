@@ -171,16 +171,18 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 #define WNDCLASS_WIDGET_SENTINEL    "XWPCenterSentinelWidget"
 
 static const XCENTERWIDGETCLASS G_WidgetClasses[] =
-            {
-                {
-                    WNDCLASS_WIDGET_SENTINEL,
-                    0,
-                    "Sentinel",
-                    "Sentinel memory watcher",
-                    WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
-                    NULL        // no settings dlg
-                },
-            };
+    {
+        {
+            WNDCLASS_WIDGET_SENTINEL,
+            0,
+            "Sentinel",
+           (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_SENTINEL),
+                                       // widget class name displayed to user
+                                       // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
+            NULL        // no settings dlg
+        },
+    };
 
 /* ******************************************************************
  *

@@ -24,7 +24,7 @@ OS2                 = "OS/2"
 XFolderMain         = XWorkplace||"-Installation";
 /* "Introduction" object (SmartGuide) */
 XFolderIntro        = "EinfÅhrung";
-OnlineReference     = XWorkplace||"-Handbuch";
+OnlineReference     = XWorkplace||"-Benutzerhandbuch";
 /* other objects */
 WorkplaceShell      = "Workplace Shell";
 XWPSetup            = XWorkplace||"-Konfiguration";
@@ -35,15 +35,15 @@ Media               = "Multimedia";
 String              = "Konfigurationsstring";
 Mouse               = "Maus";
 Keyboard            = "Tastatur";
-Sound               = "Klang";
+Sound               = "Warnton";
 XShutdown           = "Erweiterter Systemabschlu·...";
 /* font folder added with V0.9.7 */
 FontFolder          = "Schriftarten";
 
 /* the following three added with V0.9.19 */
-Lockup              = "Lockup now";
-FindObjects         = "Find objects";
-Shutdown            = "Shut down";
+Lockup              = "Sperren";
+FindObjects         = "Suchen";
+Shutdown            = "Systemabschlu·";
 
 /*********************************************
  *
@@ -114,7 +114,7 @@ title = FontFolder;
 setup = "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;";
 id = "<XWP_FONTFOLDER>"
 target = "<WP_CONFIG>";
-call CreateObject;
+call CreateObjectWithShadow;
 
 /* create "Workplace Shell" */
 class = "XFldWPS";

@@ -1078,6 +1078,7 @@ static const XWPENTITY G_aEntities[] =
         "&winos2;", &ENTITY_WINOS2,
         "&warpcenter;", &ENTITY_WARPCENTER,
         "&xcenter;", &ENTITY_XCENTER,
+        "&xbutton;", &ENTITY_XBUTTON,
         "&xsd;", &ENTITY_XSHUTDOWN,
         "&version;", &G_pcszBldlevel,
         "&date;", &G_pcszBldDate,

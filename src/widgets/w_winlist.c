@@ -148,15 +148,17 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #define WNDCLASS_WIDGET_WINLIST "XWPCenterWinlistWidget"
 
-static const XCENTERWIDGETCLASS G_WidgetClasses[]
-        = {
-            WNDCLASS_WIDGET_WINLIST,
-            0,
-            "WindowList",
-            "Window list",
-            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP_AT_MOUSE,
-            WwgtShowSettingsDlg
-          };
+static const XCENTERWIDGETCLASS G_WidgetClasses[] =
+    {
+        WNDCLASS_WIDGET_WINLIST,
+        0,
+        "WindowList",
+        (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_WINDOWLIST),
+                                    // widget class name displayed to user
+                                    // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+        WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP_AT_MOUSE,
+        WwgtShowSettingsDlg
+    };
 
 /* ******************************************************************
  *

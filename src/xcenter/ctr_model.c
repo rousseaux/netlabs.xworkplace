@@ -106,14 +106,14 @@
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added tray widget
  */
 
-static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
+static const XCENTERWIDGETCLASS G_aBuiltInWidgets[]
     = {
         // object button widget
         {
             WNDCLASS_WIDGET_OBJBUTTON,
             BTF_OBJBUTTON,
             "ObjButton",
-            "Object button",
+            NULL,
             WGTF_NOUSERCREATE | WGTF_TOOLTIP | WGTF_TRAYABLE,
             NULL        // no settings dlg
         },
@@ -122,11 +122,7 @@ static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WNDCLASS_WIDGET_OBJBUTTON,
             BTF_XBUTTON,
             "XButton",
-#ifdef __EWORKPLACE__
-            "eButton",
-#else
-            "X-Button",
-#endif
+            NULL,
             WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP       // not trayable
                  | WGTF_CANTAKECENTERHOTKEY,        // V0.9.19 (2002-04-17) [umoeller]
             OwgtShowXButtonSettingsDlg          // V0.9.14 (2001-08-21) [umoeller]
@@ -136,7 +132,7 @@ static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WNDCLASS_WIDGET_PULSE,
             0,
             "Pulse",
-            "Pulse (CPU load)",
+            NULL,
             WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP, // not trayable
             PwgtShowSettingsDlg                 // V0.9.16 (2002-01-05) [umoeller]
         },
@@ -145,10 +141,29 @@ static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WNDCLASS_WIDGET_TRAY,
             0,
             TRAY_WIDGET_CLASS_NAME,         // also used in strcmp in the code
-            "Tray",
+            NULL,
             WGTF_SIZEABLE | WGTF_TOOLTIP,                       // not trayable, of course
             NULL        // no settings dlg
         }
+    };
+
+/*
+ *@@ G_aulBuiltInWidgetStringIDs:
+ *      string IDs for cmnGetString to finally
+ *      NLS-enable the widget names.
+ *
+ *      These must be in the same order as in the
+ *      array above.
+ *
+ *@@added V0.9.19 (2002-05-07) [umoeller]
+ */
+
+static const ULONG G_aulBuiltInWidgetStringIDs[] =
+    {
+        ID_CRSI_WIDGET_OBJBUTTON,
+        ID_CRSI_WIDGET_XBUTTON,
+        ID_CRSI_WIDGET_PULSE,
+        ID_CRSI_WIDGET_TRAY
     };
 
 // array of classes created by ctrpLoadClasses
@@ -304,6 +319,10 @@ VOID ctrpLoadClasses(VOID)
                     memcpy(&pClass->Public,
                            &G_aBuiltInWidgets[ul],
                            sizeof(XCENTERWIDGETCLASS));
+                    // load corresponding NLS string
+                    // V0.9.19 (2002-05-07) [umoeller]
+                    pClass->Public.pcszClassTitle = cmnGetString(G_aulBuiltInWidgetStringIDs[ul]);
+
                     lstAppendItem(&G_llWidgetClasses,
                                   pClass);
                 }
@@ -463,6 +482,14 @@ VOID ctrpLoadClasses(VOID)
                                         memcpy(&pClass->Public,
                                                &paClasses[ul],
                                                sizeof(XCENTERWIDGETCLASS));
+
+                                        // load NLS string if this is a string ID
+                                        // V0.9.19 (2002-05-07) [umoeller]
+                                        if ((ULONG)pClass->Public.pcszClassTitle & XCENTER_STRING_RESOURCE)
+                                            pClass->Public.pcszClassTitle = cmnGetString(
+                                                      ((ULONG)pClass->Public.pcszClassTitle)
+                                                    & ~XCENTER_STRING_RESOURCE);
+
                                         // store version
                                         pClass->ulVersionMajor = ulMajor;
                                         pClass->ulVersionMinor = ulMinor;

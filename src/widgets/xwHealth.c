@@ -129,16 +129,18 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2);
 #define WNDCLASS_WIDGET_XWHEALTH    "XWPHealthMonitorWidget"
 
 static const XCENTERWIDGETCLASS G_WidgetClasses[] =
-{
     {
-        WNDCLASS_WIDGET_XWHEALTH,
-        MWGT_HEALTHMONITOR,
-        "Health Monitor",
-        "Health Monitor",
-        WGTF_UNIQUEPERXCENTER,
-        xwhShowSettingsDlg
-    },
-};
+        {
+            WNDCLASS_WIDGET_XWHEALTH,
+            MWGT_HEALTHMONITOR,
+            "Health Monitor",
+            (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_HEALTH),
+                                        // widget class name displayed to user
+                                        // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
+            WGTF_UNIQUEPERXCENTER,
+            xwhShowSettingsDlg
+        },
+    };
 
 /* ******************************************************************
  *

@@ -498,10 +498,10 @@
         const char      *pcszWidgetClass;
                 // internal widget class name; this is used to identify
                 // the class. This must be unique on the system and must
-                // not contain spaces or special characters like commas,
-                // brackets, etc. Besides, since this must work with all
-                // codepages, use only ASCII characters <= 127, and use
-                // an English name always.
+                // not contain special characters like commas, brackets,
+                // etc. Besides, since this must work with all codepages,
+                // use only ASCII characters <= 127, and use an English
+                // name always.
                 // A valid name would be "MySampleClass".
                 // This is stored internally in the XCenter data and is
                 // used whenever the XCenter is opened to create all the
@@ -517,6 +517,11 @@
                 // This is not used to identify the class internally and may
                 // change between releases and NLS versions. So you can set
                 // this to a language-specific string.
+                // Note: If this has the highest bit set, it is assumed to
+                // be a string resource ID in the XWorkplace NLS DLL instead
+                // of a real string:
+                #define XCENTER_STRING_RESOURCE     0x80000000
+                            // V0.9.19 (2002-05-07) [umoeller]
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:

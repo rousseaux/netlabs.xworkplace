@@ -119,19 +119,20 @@ ULONG               G_ulFontSampleHints = 0;
 
 typedef struct _HINTMENUITEM
 {
-    const char  *pcszItemText;
+    // const char  *pcszItemText;
+    ULONG       ulStringID;
     ULONG       ulFlag;
 } HINTMENUITEM, *PHINTMENUITEM;
 
 static HINTMENUITEM G_aHintMenuItems[] =
         {
-            "Show baseline (red line)",
+            ID_XSSI_FONT_BASELINE, // "Show baseline (red line)",
                                         HINTS_BASELINE_REDLINE,
-            "Show maximum ascender/descender (gray rectangles on left)",
+            ID_XSSI_FONT_MAXASCENDER, // "Show maximum ascender/descender (gray rectangles on left)",
                                         HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT,
-            "Show internal leading (gray rectangle)",
+            ID_XSSI_FONT_INTERNALLEADING, // "Show internal leading (gray rectangle)",
                                         HINTS_INTERNALLEADING_GRAYRECT,
-            "Show lower case ascent/descent (red rectangles)",
+            ID_XSSI_FONT_LOWERCASEASCENT, // "Show lower case ascent/descent (red rectangles)",
                                         HINTS_LOWERCASEASCENT_REDRECT
         };
 
@@ -986,6 +987,8 @@ MRESULT fonSampleTextItemChanged(PNOTEBOOKPAGE pnbp,
 /*
  *@@ fonModifyFontPopupMenu:
  *      implementation for XWPFontObject::wpModifyPopupMenu.
+ *
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: added NLS for menu item strings
  */
 
 VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
@@ -1036,7 +1039,8 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
             winhInsertMenuItem(hwndMenu,
                                MIT_END,
                                WPMENUID_USER + ul,
-                               G_aHintMenuItems[ul].pcszItemText,
+                               cmnGetString(G_aHintMenuItems[ul].ulStringID),
+                                    // V0.9.19 (2002-05-07) [umoeller]
                                MIS_TEXT,
                                // set checked if flag is currently set
                                (G_ulFontSampleHints & G_aHintMenuItems[ul].ulFlag)
