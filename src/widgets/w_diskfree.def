@@ -17,7 +17,7 @@
 ;
 
 LIBRARY DISKFREE INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:1.1.0#@ eWorkplace diskfree plugin DLL'
+Description '@#Ulrich M”ller:1.1.0#@ XWorkplace diskfree plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
