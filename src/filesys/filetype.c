@@ -6,6 +6,10 @@
  *      well as notebook pages for the "Workplace Shell"
  *      object (XFldWPS).
  *
+ *      This has the complete engine for the extended
+ *      file type associations, i.e. associating filters
+ *      with types, and types with program objects.
+ *
  *      This file is ALL new with V0.9.0.
  *
  *      There are several entry points into this mess:
@@ -78,7 +82,6 @@
 #define INCL_WINSTDDRAG
 #include <os2.h>
 
-// C library headers
 // C library headers
 #include <stdio.h>              // needed for except.h
 #include <setjmp.h>             // needed for except.h
@@ -2791,7 +2794,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               ID_XSDI_FT_TYPE,
                                               pftpd->pftreccSelected->recc.recc.pszIcon);
                     }
-                break; } // case CN_EMPHASIS
+                }
+                break; // case CN_EMPHASIS
 
                 /*
                  * CN_INITDRAG:
@@ -2818,7 +2822,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          DRAG_RMF,
                                          DO_MOVEABLE);
 
-                break; } // case CN_INITDRAG
+                }
+                break; // case CN_INITDRAG
 
                 /*
                  * CN_DRAGOVER:
@@ -2857,7 +2862,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     // and return the drop flags
                     mrc = (MRFROM2SHORT(usIndicator, usOp));
-                break; } // case CN_DRAGOVER
+                }
+                break; // case CN_DRAGOVER
 
                 /*
                  * CN_DROP:
@@ -2952,7 +2958,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     _Pmpf(("CN_DROP: returning"));
                     #endif
 
-                break; } // case CN_DROP
+                }
+                break; // case CN_DROP
 
                 /*
                  * CN_DROPNOTIFY:
@@ -2999,7 +3006,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         DrgDeleteDraginfoStrHandles(pcldi->pDragInfo);
                         DrgFreeDraginfo(pcldi->pDragInfo);
                     }
-                break; }
+                }
+                break;
 
                 /*
                  * CN_CONTEXTMENU:
@@ -3057,7 +3065,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         (PRECORDCORE)pcnbp->preccSource,
                                         hPopupMenu,
                                         pcnbp->hwndDlgPage);    // owner
-                break; }
+                }
+                break;
 
                 case CN_REALLOCPSZ:
                 {
@@ -3083,7 +3092,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             mrc = (MPARAM)TRUE;
                         }
                     }
-                break; }
+                }
+                break;
 
                 case CN_ENDEDIT:
                 {
@@ -3155,11 +3165,13 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         pftpd->pszFileTypeOld = NULL;
                     }
-                break; }
+                }
+                break;
 
             } // end switch (usNotifyCode)
 
-        break; } // case ID_XSDI_FT_CONTAINER
+        }
+        break;  // case ID_XSDI_FT_CONTAINER
 
         /*
          * ID_XSMI_FILETYPES_DELETE:
@@ -3186,7 +3198,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     CMA_FREE | CMA_INVALIDATE));
                 ftypInvalidateCaches();
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILETYPES_NEW:
@@ -3235,7 +3248,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 WinDestroyWindow(hwndDlg);
             }
 
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILETYPES_PICKUP:
@@ -3259,7 +3273,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                              DRAG_RMF,
                              DO_MOVEABLE);
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILETYPES_DROP:
@@ -3277,7 +3292,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // requested (in Desktop coordinates),
                             // which should be over the target record
                             // core or container whitespace
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILETYPES_CANCELDRAG:
@@ -3286,10 +3302,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSMI_FILETYPES_CANCELDRAG:
-        {
             // for one time, this is simple
             DrgCancelLazyDrag();
-        break; }
+        break;
 
         /*
          * ID_XSDI_FT_FILTERSCNR:
@@ -3337,10 +3352,12 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         (PRECORDCORE)pcnbp->preccSource,
                                         hPopupMenu,
                                         pcnbp->hwndDlgPage);    // owner
-                break; }
+                }
+                break;
 
             } // end switch (usNotifyCode)
-        break; } // case ID_XSDI_FT_FILTERSCNR
+        }
+        break; // case ID_XSDI_FT_FILTERSCNR
 
         /*
          * ID_XSMI_FILEFILTER_DELETE:
@@ -3377,7 +3394,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
 
             WriteXWPFilters2INI(pftpd);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILEFILTER_NEW:
@@ -3411,7 +3429,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
                 WinDestroyWindow(hwndDlg);
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILEFILTER_IMPORTWPS:
@@ -3433,7 +3452,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                pftpd);           // FILETYPESPAGEDATA for the dlg
             }
             WinShowWindow(pftpd->hwndWPSImportDlg, TRUE);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_FT_ASSOCSCNR:
@@ -3470,7 +3490,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                 DO_MOVEABLE);
                         }
 
-                break; } // case CN_INITDRAG
+                }
+                break;  // case CN_INITDRAG
 
                 /*
                  * CN_DRAGAFTER:
@@ -3601,7 +3622,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     // and return the drop flags
                     mrc = (MRFROM2SHORT(usIndicator, usOp));
-                break; }
+                }
+                break;
 
                 /*
                  * CN_DROP:
@@ -3663,7 +3685,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         pftpd->hwndAssocsCnr);
                         pftpd->pobjDrop = NULL;
                     }
-                break; }
+                }
+                break;
 
                 /*
                  * CN_CONTEXTMENU ("Associations" container):
@@ -3705,10 +3728,11 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         (PRECORDCORE)pcnbp->preccSource,
                                         hPopupMenu,
                                         pcnbp->hwndDlgPage);    // owner
-                break; }
+                }
+                break;
             } // end switch (usNotifyCode)
-
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILEASSOC_DELETE:
@@ -3748,7 +3772,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             WriteAssocs2INI((PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
                             pftpd->hwndTypesCnr,
                             pftpd->hwndAssocsCnr);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FILETYPES_IMPORT:
@@ -4024,7 +4049,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             } // end if (pftpd)
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -4101,7 +4127,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                         WinSetPointer(HWND_DESKTOP, hptrOld);
                     }
-                break; }
+                }
+                break;
 
                 case ID_XSDI_FT_UNKNOWNONLY:
                     if (    (usNotifyCode == BN_CLICKED)
@@ -4112,7 +4139,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 break;
             } // end switch (usItemID)
 
-        break; } // case case WM_CONTROL
+        }
+        break; // case case WM_CONTROL
 
         /*
          * WM_COMMAND:
@@ -4206,7 +4234,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                         // for selected record core
                                     pftpd->hwndAssocsCnr);
                                         // from updated list box
-                break; } // case DID_OK
+                }
+                break; // case DID_OK
 
                 case ID_XSDI_FT_SELALL:
                 case ID_XSDI_FT_DESELALL:
@@ -4229,7 +4258,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2); */
             } // end switch (usCmd)
 
-        break; } // case WM_CONTROL
+        }
+        break; // case WM_CONTROL
 
         case WM_HELP:
             // display help using the "Workplace Shell" SOM object
@@ -4620,7 +4650,8 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // call "init" callback to reinitialize the page
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             }
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
             // kill all explicit types
@@ -4791,7 +4822,8 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // call "init" callback to reinitialize the page
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             }
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
             // kill all explicit types

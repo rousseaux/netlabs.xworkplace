@@ -1489,9 +1489,9 @@ void EXPENTRY WgtQueryVersion(PULONG pulMajor,
                               PULONG pulMinor,
                               PULONG pulRevision)
 {
-    *pulMajor = 0;
-    *pulMinor = 9;
-    *pulRevision = 13;
+    *pulMajor = XFOLDER_MAJOR;              // dlgids.h
+    *pulMinor = XFOLDER_MINOR;
+    *pulRevision = XFOLDER_REVISION;
 }
 
 
