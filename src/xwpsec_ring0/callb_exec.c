@@ -48,13 +48,7 @@
 ULONG LOADEROPEN(PSZ pszPath,
                  ULONG SFN)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*
@@ -69,13 +63,7 @@ ULONG LOADEROPEN(PSZ pszPath,
 
 ULONG GETMODULE(PSZ pszPath)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*
@@ -91,13 +79,7 @@ ULONG GETMODULE(PSZ pszPath)
 ULONG EXECPGM(PSZ pszPath,
               PCHAR pchArgs)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*
@@ -114,13 +96,6 @@ VOID EXECPGM_POST(PSZ pszPath,
                   PCHAR pchArgs,
                   ULONG NewPID)
 {
-    int rc = NO_ERROR;
-
-    if (G_pidShell)
-    {
-    }
-
-    // no return value
 }
 
 

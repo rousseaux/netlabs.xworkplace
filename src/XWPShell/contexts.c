@@ -38,6 +38,7 @@
 #include "helpers\procstat.h"
 #include "helpers\standards.h"
 #include "helpers\stringh.h"
+#include "helpers\threads.h"
 #include "helpers\tree.h"               // red-black binary trees
 
 #include "helpers\xwpsecty.h"
@@ -88,6 +89,10 @@ HMTX        G_hmtxACLs = NULLHANDLE;
 
 PRING0BUF   G_pRing0Buf = NULL;         //  system ACL table
 
+THREADINFO  G_tiLogger = {0};
+
+extern PXFILE G_LogFile;            // xwpshell.c
+
 /* ******************************************************************
  *
  *   Private Helpers
@@ -115,6 +120,27 @@ BOOL LockACLs(VOID)
 VOID UnlockACLs(VOID)
 {
     DosReleaseMutexSem(G_hmtxACLs);
+}
+
+/*
+ *@@ SecIOCtl:
+ *
+ *@@added V1.0.1 (2003-01-10) [umoeller]
+ */
+
+APIRET SecIOCtl(ULONG ulFuncCode,
+                PVOID pvData,
+                ULONG cbData)
+{
+    return DosDevIOCtl(G_hfSec32DD,
+                       IOCTL_XWPSEC,
+                       ulFuncCode,
+                       NULL,        // params, we have none
+                       0,
+                       NULL,
+                       pvData,
+                       cbData,
+                       &cbData);
 }
 
 /*
@@ -204,30 +230,134 @@ ULONG CalcACLNodeSize(PACLDBTREENODE pNode,
 
 /* ******************************************************************
  *
- *   Initialization, status
+ *   Security logging thread
  *
  ********************************************************************/
 
 /*
- *@@ SecIOCtl:
+ *@@ LogEntry:
  *
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-APIRET SecIOCtl(ULONG ulFuncCode,
-                PVOID pvData,
-                ULONG cbData)
+APIRET LogEntry(PEVENTLOGENTRY pThis,
+                const char* pcszFormat,
+                ...)
 {
-    return DosDevIOCtl(G_hfSec32DD,
-                       IOCTL_XWPSEC,
-                       ulFuncCode,
-                       NULL,        // params, we have none
-                       0,
-                       NULL,
-                       pvData,
-                       cbData,
-                       &cbData);
+    APIRET arc = NO_ERROR;
+
+    if (G_LogFile)
+    {
+        DATETIME dt;
+        CHAR szTemp[2000];
+        ULONG   ulLength;
+
+        ulLength = sprintf(szTemp,
+                           "%04lX|%04lX %04d-%02d-%02d %02d:%02d:%02d ",
+                           pThis->ctxt.pid, pThis->ctxt.tid,
+                           pThis->stamp.year, pThis->stamp.month, pThis->stamp.day,
+                           pThis->stamp.hours, pThis->stamp.minutes, pThis->stamp.seconds);
+        if (!(arc = doshWrite(G_LogFile,
+                              ulLength,
+                              szTemp)))
+        {
+            va_list arg_ptr;
+            va_start(arg_ptr, pcszFormat);
+            ulLength = vsprintf(szTemp, pcszFormat, arg_ptr);
+            va_end(arg_ptr);
+
+            szTemp[ulLength++] = '\n';
+
+            arc = doshWrite(G_LogFile,
+                            ulLength,
+                            szTemp);
+        }
+    }
+
+    return arc;
 }
+
+/*
+ *@@ fntLogger:
+ *
+ *@@added V1.0.1 (2003-01-10) [umoeller]
+ */
+
+void _Optlink fntLogger(PTHREADINFO ptiMyself)
+{
+    APIRET  arc;
+
+    PLOGBUF pLogBuf;
+
+    if (!(arc = DosAllocMem((PVOID*)&pLogBuf,
+                            LOGBUFSIZE,
+                            PAG_COMMIT | PAG_READ | PAG_WRITE | OBJ_TILE)))
+    {
+        while (!ptiMyself->fExit)
+        {
+            if (!(arc = SecIOCtl(XWPSECIO_GETLOGBUF,
+                                 pLogBuf,
+                                 LOGBUFSIZE)))
+            {
+                ULONG ul;
+                PEVENTLOGENTRY pThis = (PEVENTLOGENTRY)((PBYTE)pLogBuf + sizeof(LOGBUF));
+
+                for (ul = 0;
+                     ul < pLogBuf->cLogEntries;
+                     ++ul)
+                {
+                    CHAR szTemp[CCHMAXPATH];
+                    switch (pThis->ulEventCode)
+                    {
+                        case EVENT_OPENPRE:
+                        case EVENT_OPENPOST:
+                        {
+                            PEVENTBUF_OPEN pOpen =
+                                    (PEVENTBUF_OPEN)((PBYTE)pThis + sizeof(EVENTLOGENTRY));
+                            memcpy(szTemp,
+                                   pOpen->szPath,
+                                   pOpen->ulPathLen + 1);
+
+                            if (pThis->ulEventCode == EVENT_OPENPRE)
+                                LogEntry(pThis,
+                                         "%04d: OPENPRE  \"%s\" -> %d",
+                                         ul,
+                                         szTemp,
+                                         pOpen->rc);
+                            else
+                                LogEntry(pThis,
+                                         "%04d: OPENPOST \"%s\" -> %d",
+                                         ul,
+                                         szTemp,
+                                         pOpen->rc);
+                        }
+                        break;
+                    }
+
+                    pThis = (PEVENTLOGENTRY)((PBYTE)pThis + pThis->cbStruct);
+                }
+            }
+            else
+            {
+                doshWriteLogEntry(G_LogFile,
+                                  "Error: XWPSECIO_GETLOGBUF returned %d",
+                                  arc);
+                break;
+            }
+        }
+
+        doshWriteLogEntry(G_LogFile,
+                          "Logger thread exiting");
+
+        DosFreeMem(pLogBuf);
+    }
+}
+
+/* ******************************************************************
+ *
+ *   Initialization, status
+ *
+ ********************************************************************/
 
 /*
  *@@ InitRing0:
@@ -279,13 +409,16 @@ APIRET InitRing0(VOID)
                 ULONG           cbStruct =   sizeof(PROCESSLIST)
                                            + (cProcs - 1) * sizeof(ULONG);
 
-                _Pmpf(("got %d processes, list has %d bytes", cProcs, cbStruct));
+                doshWriteLogEntry(G_LogFile,
+                                  __FUNCTION__ ": got %d processes, list has %d bytes",
+                                  cProcs,
+                                  cbStruct);
 
                 if (!(pList = malloc(cbStruct)))
                     arc = ERROR_NOT_ENOUGH_MEMORY;
                 else
                 {
-                    PULONG      ppidThis = &pList->apidTrusted[0];
+                    PUSHORT     ppidThis = &pList->apidTrusted[0];
 
                     pList->cbStruct = cbStruct;
                     pList->cTrusted = cProcs;
@@ -305,25 +438,25 @@ APIRET InitRing0(VOID)
                         pProcThis = (PQPROCESS32)t;
                     }
 
-                    #ifdef __DEBUG__
-                    {
-                        ULONG ul;
-                        for (ul = 0;
-                             ul < pList->cTrusted;
-                             ++ul)
-                        {
-                            _Pmpf(("got pid 0x%lX", pList->apidTrusted[ul]));
-                        }
-                    }
-                    #endif
-
                     // alright, REGISTER these and ENABLE LOCAL SECURITY
                     // by calling DosDevIOCtl
-                    arc = SecIOCtl(XWPSECIO_REGISTER,
-                                   pList,
-                                   pList->cbStruct);
+                    if (!(arc = SecIOCtl(XWPSECIO_REGISTER,
+                                         pList,
+                                         pList->cbStruct)))
+                    {
+                        // this worked:
+                        // start the logger thread
+                        thrCreate(&G_tiLogger,
+                                  fntLogger,
+                                  NULL,
+                                  "Logger",
+                                  THRF_WAIT,
+                                  0);
+                    }
 
-                    _Pmpf(("SecIOCtl returned %d", arc));
+                    doshWriteLogEntry(G_LogFile,
+                                      __FUNCTION__ ": XWPSECIO_REGISTER returned %d",
+                                      arc);
                 }
             }
 
@@ -387,6 +520,9 @@ VOID scxtExit(VOID)
 {
     if (G_hfSec32DD)
     {
+        SecIOCtl(XWPSECIO_DEREGISTER,
+                 NULL,
+                 0);
         DosClose(G_hfSec32DD);
         G_hfSec32DD = NULLHANDLE;
     }
@@ -426,14 +562,34 @@ APIRET scxtCreateACLEntry(PACLDBTREENODE pNewEntry)
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-APIRET scxtQueryStatus(PRING0STATUS pStatus)
+APIRET scxtQueryStatus(PXWPSECSTATUS pStatus)
 {
+    APIRET  arc = NO_ERROR;
+
     ZERO(pStatus);
 
     if (G_hfSec32DD)
+    {
+        RING0STATUS r0s;
+
         pStatus->fLocalSecurity = TRUE;
 
-    return NO_ERROR;
+        if (!(arc = SecIOCtl(XWPSECIO_QUERYSTATUS,
+                             &r0s,
+                             sizeof(r0s))))
+        {
+            pStatus->cbAllocated = r0s.cbAllocated;
+            pStatus->cAllocations = r0s.cAllocations;
+            pStatus->cFrees = r0s.cFrees;
+            pStatus->cLogBufs = r0s.cLogBufs;
+            pStatus->cMaxLogBufs = r0s.cMaxLogBufs;
+            pStatus->cLogged = r0s.cLogged;
+            pStatus->cGranted = r0s.cGranted;
+            pStatus->cDenied = r0s.cDenied;
+        }
+    }
+
+    return arc;
 }
 
 /* ******************************************************************

@@ -132,7 +132,7 @@
 
     VOID scxtExit(VOID);
 
-    APIRET scxtQueryStatus(PRING0STATUS pStatus);
+    APIRET scxtQueryStatus(PXWPSECSTATUS pStatus);
 
     #ifdef XWPTREE_INCLUDED
         APIRET scxtCreateACLEntry(PACLDBTREENODE pNewEntry);

@@ -23,7 +23,7 @@
 #ifndef XSECAPI_HEADER_INCLUDED
     #define XSECAPI_HEADER_INCLUDED
 
-    APIRET xsecQueryStatus(PRING0STATUS pStatus);
+    APIRET xsecQueryStatus(PXWPSECSTATUS pStatus);
 
     APIRET xsecQueryLocalUser(PXWPUSERDBENTRY *ppLocalUser);
 

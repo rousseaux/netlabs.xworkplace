@@ -66,7 +66,7 @@ DosTable2 struc
 DosTable2 ends
 
 DATA32 segment
-        extrn  TKSSBase  : dword
+        extrn  G_TKSSBase  : dword
 DATA32 ends
 
 CODE16 segment
@@ -141,7 +141,7 @@ thunk32$sec32_pre_init_base:
         movzx ebx, bx
         movzx ecx, byte ptr es:[ebx]     ; count of dword in DosTable1
         mov eax, es:[ebx + 4 * ecx + 2].d2__TKSSBase
-        mov TKSSBase, eax
+        mov G_TKSSBase, eax
 
         mov eax, NO_ERROR
 sec32_pre_init_base_err:

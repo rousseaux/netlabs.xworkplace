@@ -247,7 +247,7 @@ VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand)
  *      returns ring-0 statistics.
  *
  +      If this returns NO_ERROR, XWPShell is running
- *      correctly. Check RING0STATUS.fLocalSecurity to
+ *      correctly. Check XWPSECSTATUS.fLocalSecurity to
  *      learn whether the ring-0 driver is active also.
  *
  *      Required authority: None.
@@ -261,7 +261,7 @@ VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand)
  *@@added V1.0.1 (2003-01-05) [umoeller]
  */
 
-APIRET xsecQueryStatus(PRING0STATUS pStatus)        // out: ring-0 status (ptr can be null)
+APIRET xsecQueryStatus(PXWPSECSTATUS pStatus)        // out: ring-0 status (ptr can be null)
 {
     APIRET              arc = NO_ERROR;
     PXWPSHELLCOMMAND    pCommand;

@@ -92,7 +92,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\xsetup.h"              // XWPSetup implementation
 
-#include "security\xwpsecty.h"          // XWorkplace Security base
+#include "helpers\xwpsecty.h"           // XWorkplace Security base
 #include "shared\xsecapi.h"             // XWorkplace Security API
 
 // other SOM headers
@@ -210,7 +210,7 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         APIRET      arc = NO_ERROR;
-        RING0STATUS Status;
+        XWPSECSTATUS Status;
         PXWPUSERDBENTRY pLocalUser;
 
         if (    (!(arc = xsecQueryStatus(&Status)))
@@ -219,6 +219,9 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         {
             ULONG   cGroups;
             PXWPGROUPDBENTRY paGroups;
+            CHAR    szTemp[200],
+                    szTemp2[100];
+            PCSZ    pcszTemp;
 
             WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_AMDI_USER_USERID_DATA,
@@ -231,11 +234,23 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               ID_AMDI_USER_FULLNAME_DATA,
                               pLocalUser->User.szFullName);
 
+            if (!Status.fLocalSecurity)
+                pcszTemp = "Inactive";      // @@todo localize
+            else
+            {
+                sprintf(szTemp,
+                        "Active, %s bytes, %d/%d bufs",
+                        nlsThousandsULong(szTemp2,
+                                          Status.cbAllocated,
+                                          cmnQueryThousandsSeparator()),
+                        Status.cLogBufs,
+                        Status.cMaxLogBufs);
+                pcszTemp = szTemp;
+            }
+
             WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_AMDI_USER_LOCALSEC_DATA,
-                              (Status.fLocalSecurity)
-                                ? "Active"
-                                : "Inactive");   // @@todo localize
+                              pcszTemp);
 
             if (!(arc = xsecQueryGroups(&cGroups,
                                         &paGroups)))

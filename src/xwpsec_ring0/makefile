@@ -93,6 +93,7 @@ COBJS = \
     $(OUTPUTDIR)\sec32_strategy.obj \
     $(OUTPUTDIR)\sec32_data.obj \
     $(OUTPUTDIR)\sec32_callbacks.obj \
+    $(OUTPUTDIR)\sec32_contexts.obj \
     $(OUTPUTDIR)\strat_init_base.obj \
     $(OUTPUTDIR)\strat_init_complete.obj \
     $(OUTPUTDIR)\strat_ioctl.obj \
@@ -116,13 +117,13 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 .c{$(OUTPUTDIR)}.obj:
-        @echo $<
-        @echo CINCLUDES: $(CINCLUDES)
-        $(CC) -c $(CFLAGS) $(CDEFINES) -Fa$(@:.obj=.s) -Fo$@ $(CINCLUDES) $<
+    @echo Compiling $<
+    @echo CINCLUDES: $(CINCLUDES)
+    $(CC) -c $(CFLAGS) $(CDEFINES) -Fa$(@:.obj=.s) -Fo$@ $(CINCLUDES) $<
 
 .asm{$(OUTPUTDIR)}.obj:
-        @echo Assembling $<
-        $(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
+    @echo Assembling $<
+    $(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
 
 # linking
 
@@ -130,12 +131,12 @@ $(DRIVERNAME).def: ..\..\include\bldlevel.h makefile
     $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "$(XWPNAME) Security device driver"
 
 $(MODULESDIR)\$(DRIVERNAME).sys: \
-            $(AOBJS) \
-            $(COBJS) \
-            $(OUTPUTDIR)\sec32_start.obj \
-            $(OUTPUTDIR)\sec32_end.obj \
-            $(DRIVERNAME).def \
-            makefile
+    $(AOBJS) \
+    $(COBJS) \
+    $(OUTPUTDIR)\sec32_start.obj \
+    $(OUTPUTDIR)\sec32_end.obj \
+    $(DRIVERNAME).def \
+    makefile
         ilink @<<
 /OUT:$(MODULESDIR)\$(@B).sys
 /map:$(MODULESDIR)\$(@B).map
@@ -143,8 +144,8 @@ $(MODULESDIR)\$(DRIVERNAME).sys: \
 $(OUTPUTDIR)\sec32_start.obj
 $(AOBJS)
 $(COBJS)
-$(OUTPUTDIR)\sec32_end.obj
 $(DDKBASE)\lib\os2386p.lib
+$(OUTPUTDIR)\sec32_end.obj
 $(DRIVERNAME).def
 <<
 # /NOD

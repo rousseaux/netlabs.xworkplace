@@ -53,13 +53,7 @@
 ULONG CallType MOVE_PRE(PSZ pszNewPath,
                         PSZ pszOldPath)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*

@@ -22,7 +22,6 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-// #include <secure.h>
 
 #include <string.h>
 
@@ -35,42 +34,75 @@
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+extern EVENTBUF_OPEN_MAX    G_OpenBuf = {0};
+
+/* ******************************************************************
+ *
+ *   Callouts
+ *
+ ********************************************************************/
+
 /*
  *@@ OPEN_PRE:
  *      SES kernel hook for OPEN_PRE.
- *      This gets called from the OS/2 kernel to give
- *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
+ *      Since this is stored in G_SecurityHooks (sec32_callbacks.c),
+ *      this gets called from the OS/2 kernel to give us a chance
+ *      to authorize this event.
  */
 
 ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
                         ULONG fsOpenFlags,  // in: open flags
                         ULONG fsOpenMode,   // in: open mode
-                        ULONG SFN)          // in: apparently slot file number
+                        ULONG SFN)          // in: system file number
 {
-    int rc = NO_ERROR;
+    G_OpenBuf.buf.rc = NO_ERROR;
 
-    kernel_printf("Entering OPEN_PRE %s", pszPath);
-
-    if (utilNeedsVerify())
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
     {
+        G_OpenBuf.buf.fsOpenFlags = fsOpenFlags;
+        G_OpenBuf.buf.fsOpenMode = fsOpenMode;
+        G_OpenBuf.buf.SFN = SFN;
+
+        G_OpenBuf.buf.ulPathLen = strlen(pszPath);
+
+        memcpy(G_OpenBuf.buf.szPath,
+               pszPath,
+               G_OpenBuf.buf.ulPathLen + 1);
+
+        G_OpenBuf.buf.cbStruct =   sizeof(EVENTBUF_OPEN)
+                                 + G_OpenBuf.buf.ulPathLen;
+
+        // authorize event if it is not from XWPShell
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+        }
+
+        if (G_bLog == LOG_ACTIVE)
+            ctxtLogEvent(EVENT_OPENPRE,
+                         &G_OpenBuf,
+                         G_OpenBuf.buf.cbStruct);
     }
 
-    kernel_printf("Exiting OPEN_PRE %s --> %d", pszPath, rc);
-
-    return rc;
+    return G_OpenBuf.buf.rc;
 }
 
 /*
  *@@ OPEN_POST:
  *      security callback for OPEN_POST.
  *
- *      This callback is stored in G_SecurityHooks in
- *      sec32_callbacks.c to hook the kernel.
- *
- *      Currently disabled. @@todo
+ *      Since this is stored in G_SecurityHooks (sec32_callbacks.c),
+ *      this gets called from the OS/2 kernel to give us notification
+ *      about this event.
  */
 
 ULONG CallType OPEN_POST(PSZ pszPath,
@@ -80,6 +112,38 @@ ULONG CallType OPEN_POST(PSZ pszPath,
                          ULONG Action,
                          ULONG RC)
 {
+    if (    (G_pidShell)
+         && (!DevHlp32_GetInfoSegs(&G_pGDT,
+                                   &G_pLDT))
+       )
+    {
+        G_OpenBuf.buf.fsOpenFlags = fsOpenFlags;
+        G_OpenBuf.buf.fsOpenMode = fsOpenMode;
+        G_OpenBuf.buf.SFN = SFN;
+
+        G_OpenBuf.buf.rc = RC;
+        G_OpenBuf.buf.Action = Action;
+
+        G_OpenBuf.buf.ulPathLen = strlen(pszPath);
+
+        memcpy(G_OpenBuf.buf.szPath,
+               pszPath,
+               G_OpenBuf.buf.ulPathLen + 1);
+
+        G_OpenBuf.buf.cbStruct =   sizeof(EVENTBUF_OPEN)
+                                 + G_OpenBuf.buf.ulPathLen;
+
+        // authorize event if it is not from XWPShell
+        if (G_pidShell != G_pLDT->LIS_CurProcID)
+        {
+        }
+
+        if (G_bLog == LOG_ACTIVE)
+            ctxtLogEvent(EVENT_OPENPOST,
+                         &G_OpenBuf,
+                         G_OpenBuf.buf.cbStruct);
+    }
+
     return NO_ERROR;
 }
 

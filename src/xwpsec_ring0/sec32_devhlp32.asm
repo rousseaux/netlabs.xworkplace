@@ -24,7 +24,8 @@
         INCL_DOSERRORS equ 1
         include bseerr.inc
         include devhlp.inc
-        include mwdd32_segdef.inc
+        ; include mwdd32_segdef.inc
+        include sec32_segdef.inc
         include r0thunk.inc
 
 SAS_SIG   equ      "SAS "

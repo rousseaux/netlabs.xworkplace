@@ -105,7 +105,7 @@ HAPP        G_happWPS = NULLHANDLE;
 PSZ         G_pszEnvironment = NULL;
     // environment of user shell
 
-FILE        *G_LogFile = NULL;
+extern PXFILE G_LogFile = NULL;
 
 PXWPSHELLSHARED G_pXWPShellShared = 0;
 
@@ -129,10 +129,11 @@ VOID Error(const char* pcszFormat,
     va_list     args;
     CHAR        szError[1000];
     va_start(args, pcszFormat);
-    vfprintf(G_LogFile, pcszFormat, args);
-    fprintf(G_LogFile, "\n");
-    fflush(G_LogFile);
+    vsprintf(szError, pcszFormat, args);
     va_end(args);
+
+    doshWrite(G_LogFile, 0, szError);
+    doshWrite(G_LogFile, 0, "\n");
     /* winhDebugBox(NULLHANDLE,
              "XWPShell",
              szError); */
@@ -847,16 +848,32 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 
 int main(int argc, char *argv[])
 {
-    APIRET  arc = NO_ERROR;
+    APIRET      arc = NO_ERROR;
 
-    HAB     hab;
-    HMQ     hmq;
+    HAB         hab;
+    HMQ         hmq;
+    DATETIME    DT;
+    ULONG       cbFile = 0;
 
-    CHAR szLog[100];
+    CHAR        szLog[500];
     sprintf(szLog, "%c:\\xwpshell.log", doshQueryBootDrive());
-    G_LogFile = fopen(szLog, "a");
 
-    _Pmpf(("Entering main."));
+    doshOpen(szLog,
+             XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
+             &cbFile,
+             &G_LogFile);
+
+    DosGetDateTime(&DT);
+    sprintf(szLog,
+            "\n\nXWPShell startup -- %04d-%02d-%02d %02d:%02d:%02d\n",
+            DT.year, DT.month, DT.day,
+            DT.hours, DT.minutes, DT.seconds);
+    doshWrite(G_LogFile,
+              0,
+              szLog);
+    doshWrite(G_LogFile,
+              0,
+              "---------------------------------------\n");
 
     if (!(hab = WinInitialize(0)))
         return 99;
@@ -952,7 +969,9 @@ int main(int argc, char *argv[])
     WinDestroyMsgQueue(hmq);
     WinTerminate(hab);
 
-    fclose(G_LogFile);
+    doshWriteLogEntry(G_LogFile,
+                      "XWPShell exiting");
+    doshClose(&G_LogFile);
 
     return arc;
 }

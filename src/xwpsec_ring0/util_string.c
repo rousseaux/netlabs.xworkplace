@@ -18,9 +18,9 @@
  *      GNU General Public License for more details.
  */
 
-#ifdef __IBMC__
-#pragma strings(readonly)
-#endif
+// #ifdef __IBMC__
+// #pragma strings(readonly)
+// #endif
 
 #define INCL_DOS
 #define INCL_DOSERRORS
@@ -424,7 +424,8 @@ static int skip_atoi(const char **s);
 static char * number(char * str, long num, int base, int size, int precision, int type);
 int sprintf(char * buf, const char *fmt, ...);
 
-#if !defined(MINIFSD) && !defined(MWDD32) && !defined(FSD32)
+#if 0 // !defined(MINIFSD) && !defined(MWDD32) && !defined(FSD32)
+
 /*
  * Routines accessed in interrupt context (here through the 'printk' call)
  */
@@ -800,15 +801,4 @@ int kernel_printf(const char *fmt, ...)
     return 0;
 }
 
-void _memcpy(void *pTarget,
-             const void *pSource,
-             long cb)
-{
-    char *d = (char*)pTarget;
-    const char *s = (char*)pSource;
-    for (;
-         --cb >= 0;
-         *d++ = *s++)
-        ;
-}
 

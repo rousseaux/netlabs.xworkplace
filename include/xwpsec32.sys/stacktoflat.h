@@ -26,7 +26,7 @@
  * current thread. FLAT:ESP = SP + *TKSSBase
  * Its pointer is obtained from the kernel at INIT time in the DosTable.
  */
-extern void *TKSSBase;
+extern void *G_TKSSBase;
 
 /*
  * This routine is used to convert a ring 0 stack based address to its
@@ -34,6 +34,6 @@ extern void *TKSSBase;
  * addresses to subroutines. It is A LOT faster than using VirtToLin
  * to do the conversion.
  */
-#define __StackToFlat(p) (void*)((unsigned long)p + *(unsigned long *)TKSSBase)
+#define __StackToFlat(p) (void*)((unsigned long)p + *(unsigned long *)G_TKSSBase)
 
 #endif

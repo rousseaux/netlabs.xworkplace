@@ -50,7 +50,7 @@ struct SecImp_s G_SecurityHooks =
                         //                              ULONG SFN);
                         //      lets ISS authorize DosOpen
 
-   0, // OPEN_POST,           // ULONG (* CallType OPEN_POST)(PSZ pszPath,
+   OPEN_POST,           // ULONG (* CallType OPEN_POST)(PSZ pszPath,
                         //                              ULONG fsOpenFlags,
                         //                              ULONG fsOpenMode,
                         //                              ULONG SFN,

@@ -47,13 +47,7 @@
 
 ULONG DELETE_PRE(PSZ pszPath)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*

@@ -1,7 +1,8 @@
 
 /*
  *@@sourcefile ring0api.h:
- *      public definitions for interfacing XWPSEC32.SYS.
+ *      public definitions for interfacing XWPSEC32.SYS, shared between
+ *      ring 3 and ring 0.
  */
 
 /*
@@ -29,6 +30,8 @@ extern "C" {
      *
      ********************************************************************/
 
+    #pragma pack(1)
+
     // category for IOCtl's to xwpsec32.sys
     #define IOCTL_XWPSEC            0x8F
 
@@ -48,14 +51,214 @@ extern "C" {
 
     typedef struct _PROCESSLIST
     {
-        ULONG           cbStruct;
-        ULONG           cTrusted;
-        ULONG           apidTrusted[1];
+        ULONG       cbStruct;
+        USHORT      cTrusted;
+        USHORT      apidTrusted[1];
     } PROCESSLIST, *PPROCESSLIST;
 
     #define XWPSECIO_REGISTER           0x50
 
     #define XWPSECIO_DEREGISTER         0x51
+
+    /*
+     *@@ TIMESTAMP:
+     *      matches the first 20 bytes from the global infoseg
+     *      declaration.
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _TIMESTAMP
+    {
+        ULONG   SIS_BigTime;    // Time from 1-1-1970 in seconds    4
+        ULONG   SIS_MsCount;    // Freerunning milliseconds counter 8
+        UCHAR   hours;          // Hours                            9
+        UCHAR   minutes;        // Minutes                          10
+        UCHAR   seconds;        // Seconds                          11
+        UCHAR   SIS_HunTime;    // Hundredths of seconds            12
+        USHORT  SIS_TimeZone;   // Timezone in min from GMT (Set to EST)  14
+        USHORT  SIS_ClkIntrvl;  // Timer interval (units=0.0001 secs)     16
+        UCHAR   day;            // Day-of-month (1-31)                    17
+        UCHAR   month;          // Month (1-12)                           18
+        USHORT  year;           // Year (>= 1980)                         20
+    } TIMESTAMP, *PTIMESTAMP;
+
+    /*
+     *@@ CONTEXTINFO:
+     *      matches the first 16 bytes from the local infoseg
+     *      declaration.
+     *
+     *@@added V [umoeller]
+     */
+
+    typedef struct _CONTEXTINFO
+    {
+        USHORT  pid;            // Current process ID
+        USHORT  ppid;           // Process ID of parent
+        USHORT  prty;           // Current thread priority
+        USHORT  tid;            // Current thread ID
+        USHORT  LIS_CurScrnGrp; // Screengroup
+        UCHAR   LIS_ProcStatus; // Process status bits
+        UCHAR   LIS_fillbyte1;  // filler byte
+        USHORT  LIS_Fgnd;       // Current process is in foreground
+        UCHAR   LIS_ProcType;   // Current process type
+        UCHAR   LIS_fillbyte2;  // filler byte
+    } CONTEXTINFO, *PCONTEXTINFO;
+
+    /*
+     *@@ EVENTLOGENTRY:
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _EVENTLOGENTRY
+    {
+        USHORT      cbStruct;       // total size of EVENTLOGENTRY plus data that follows
+        USHORT      ulEventCode;    // EVENT_* code
+
+        CONTEXTINFO ctxt;           // 16 bytes
+
+        TIMESTAMP   stamp;          // 20 bytes
+
+        // event-specific data follows right afterwards;
+        // as a convention, each data buffer has another
+        // ULONG cbStruct as the first entry
+    } EVENTLOGENTRY, *PEVENTLOGENTRY;
+
+    #define LOGBUFSIZE          0xFFFF
+
+    /*
+     *@@ LOGBUF:
+     *      logging buffer used in two contexts:
+     *
+     *      --  as the data packet used with the
+     *          XWPSECIO_GETLOGBUF ioctl, which
+     *          must be allocated LOGBUFSIZE (64K)
+     *          in size by the ring-3 logging thread;
+     *
+     *      --  as a linked list of logging buffers
+     *          in the driver.
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _LOGBUF
+    {
+        ULONG           cbUsed;             // total bytes used in the buffer
+        struct _LOGBUF  *pNext;             // used only at ring 0 for linking bufs
+        ULONG           cLogEntries;        // no. of EVENTLOGENTRY structs that follow
+
+        // next follow cLogEntries EVENTLOGENTRY structs
+
+    } LOGBUF, *PLOGBUF;
+
+    /*
+     *@@ XWPSECIO_GETLOGBUF:
+     *      ioctl function code for the ring-3 logging
+     *      thread.
+     *
+     *      The shell can optionally start a thread to
+     *      retrieve logging data from ring 0. This
+     *      thread must do nothing but keep calling
+     *      this ioctl function code with a pointer
+     *      to a LOGBUFSIZE (64K) LOGBUF structure as
+     *      the data packet.
+     *
+     *      On each ioctl, ring 0 will block the thread
+     *      until logging data is available.
+     *
+     *      The buffer contains data only if NO_ERROR
+     *      is returned, and LOGBUF.cbUsed bytes will
+     *      have been filled. The pNext buffer contains
+     *      a ring-0 pointer and must not be followed
+     *      by the thread.
+     *
+     *      Ring 0 may return the following errors:
+     *
+     *      --  ERROR_I24_INVALID_PARAMETER
+     *
+     *      --  ERROR_I24_GEN_FAILURE: probably out of
+     *          memory.
+     *
+     *      --  ERROR_I24_CHAR_CALL_INTERRUPTED: ProcBlock
+     *          returned with an error.
+     */
+
+    #define XWPSECIO_GETLOGBUF          0x52
+
+    /*
+     *@@ RING0STATUS:
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _RING0STATUS
+    {
+        ULONG       cbAllocated;        // fixed memory currently allocated in ring 0
+        ULONG       cAllocations,       // no. of allocations made since startup
+                    cFrees;             // no. of frees made since startup
+        USHORT      cLogBufs,           // current 64K log buffers in use
+                    cMaxLogBufs;        // max 64K log buffers that were ever in use
+        ULONG       cLogged;            // no. of syscalls that were logged
+        ULONG       cGranted,           // no. of syscalls where access was granted
+                    cDenied;            // ... and denied
+    } RING0STATUS, *PRING0STATUS;
+
+    /*
+     *@@ XWPSECIO_QUERYSTATUS:
+     *      returns the current status of the driver.
+     *
+     *      Data packet must be a fixed-size RING0STATUS
+     *      structure.
+     */
+
+    #define XWPSECIO_QUERYSTATUS        0x53
+
+    /* ******************************************************************
+     *
+     *   Event logging
+     *
+     ********************************************************************/
+
+    /*
+     *@@ EVENTBUF_OPEN:
+     *      event buffer used with EVENT_OPENPRE
+     *      and EVENT_OPENPOST.
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _EVENTBUF_OPEN
+    {
+        ULONG   cbStruct;       // size of event buffer (must be present in all EVENTBUF_* structs)
+        ULONG   fsOpenFlags;    // open flags
+        ULONG   fsOpenMode;     // open mode
+        ULONG   SFN;            // system file number
+        ULONG   Action;         // OPEN_POST only: action taken
+        APIRET  rc;             // -- with OPEN_PRE: authorization returned from callout,
+                                //    either NO_ERROR or ERROR_ACCESS_DENIED
+                                // -- with OPEN_POST: RC parameter passed in
+        ULONG   ulPathLen;      // length of szPath, excluding null terminator
+        CHAR    szPath[1];      // filename
+    } EVENTBUF_OPEN, *PEVENTBUF_OPEN;
+
+    /*
+     *@@ EVENTBUF_OPENPRE_MAX:
+     *      wrapper struct so we can create an
+     *      EVENTBUF_OPENPRE in global data.
+     *
+     *@@added V1.0.1 (2003-01-10) [umoeller]
+     */
+
+    typedef struct _EVENTBUF_OPEN_MAX
+    {
+        EVENTBUF_OPEN       buf;
+        CHAR                szFill[CCHMAXPATH];
+    } EVENTBUF_OPEN_MAX;
+
+    #define EVENT_OPENPRE               1
+
+    #define EVENT_OPENPOST              2
 
     #pragma pack()
 

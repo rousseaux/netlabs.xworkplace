@@ -74,8 +74,8 @@ extern char data32_end;
 
 extern int G_DebugPort;
 
-void *TKSSBase;                     // in sec32_pre_init_base.asm
-    // pointer to kernel _TKSSBase value.
+void *G_TKSSBase;                   // in sec32_pre_init_base.asm
+    // pointer to kernel TKSSBase value.
 
 /* ******************************************************************
  *
@@ -304,10 +304,15 @@ int sec32_init_base(PTR16 reqpkt)
         }
     }
 
-    // return end of code and end of data
-    // to kernel so that init code can be released
+    // return end of code and end of CODE16 and DATA16;
+    // this is normally used by 16-bit drivers so that
+    // the init-code and -data can be released after
+    // initialization, but since our init code is in
+    // 32-bit code, this won't happen for us...
     pRequest->u.output.codeend = codeend;
+            // set to offset CODE16:code16_end, see sec32_start.asm
     pRequest->u.output.dataend = dataend;
+            // set to offset DATA16:data16_end, see sec32_start.asm
 
     return (status | STDON);
 }

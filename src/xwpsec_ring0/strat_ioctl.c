@@ -26,6 +26,7 @@
 #include <os2.h>
 
 #include <builtin.h>
+#include <string.h>
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -43,9 +44,11 @@
  *
  ********************************************************************/
 
-static ULONG    G_open_count = 0;
+extern ULONG        G_open_count = 0;
 
-PPROCESSLIST    G_pplTrusted = NULL;           // global list of trusted processes (fixed mem)
+extern PPROCESSLIST G_pplTrusted = NULL;           // global list of trusted processes (fixed mem)
+
+extern RING0STATUS  G_R0Status = {0};
 
 /* ******************************************************************
  *
@@ -54,7 +57,7 @@ PPROCESSLIST    G_pplTrusted = NULL;           // global list of trusted process
  ********************************************************************/
 
 /*
- *@@ RegisterDaemon:
+ *@@ ioctlRegisterDaemon:
  *      implementation for XWPSECIO_REGISTER in sec32_ioctl.
  *
  *      If this returns NO_ERROR, access control is ENABLED
@@ -63,7 +66,7 @@ PPROCESSLIST    G_pplTrusted = NULL;           // global list of trusted process
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-APIRET RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packet
+IOCTLRET ioctlRegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packet
 {
     PPROCESSLIST pplShell;
 
@@ -73,31 +76,33 @@ APIRET RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request pa
         return ERROR_I24_INVALID_PARAMETER;
 
     // make a copy of the shell's list of trusted processes
-    if (DevHlp32_VMAlloc(pplShell->cbStruct,   // Length
-                         VMDHA_NOPHYSADDR,     // PhysAddr == -1
-                         VMDHA_FIXED,          // Flags
-                         (PVOID*)&G_pplTrusted))
+    if (!(G_pplTrusted = utilAllocFixed(pplShell->cbStruct)))
         return ERROR_I24_GEN_FAILURE;
 
-    _memcpy(G_pplTrusted,
-            pplShell,
-            pplShell->cbStruct);
+    memcpy(G_pplTrusted,
+           pplShell,
+           pplShell->cbStruct);
 
     // now get the caller's (shell's) PID  and store that,
     // because we need that for extra privileges of the shell;
     // also once G_pidShell is != null,
     // ACCESS CONTROL IS ENABLED GLOBALLY
-    if (!(G_pidShell = utilGetTaskPID()))
+    if (DevHlp32_GetInfoSegs(&G_pGDT,
+                             &G_pLDT))
         // error:
         return ERROR_I24_GEN_FAILURE;
 
+    // reset logging flag in case this is a reopen
+    G_bLog = LOG_INACTIVE;
+
     // alright from now on we authenticate!
+    G_pidShell = G_pLDT->LIS_CurProcID;
 
     return NO_ERROR;
 }
 
 /*
- *@@ DeregisterDaemon:
+ *@@ ioctlDeregisterDaemon:
  *      implementation for XWPSECIO_DEREGISTER in sec32_ioctl.
  *
  *      After this, access control is DISABLED.
@@ -105,13 +110,16 @@ APIRET RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request pa
  *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-VOID DeregisterDaemon(VOID)
+VOID ioctlDeregisterDaemon(VOID)
 {
     if (G_pplTrusted)
     {
-        DevHlp32_VMFree(G_pplTrusted);
+        utilFreeFixed(G_pplTrusted,
+                      G_pplTrusted->cbStruct);
         G_pplTrusted = NULL;
     }
+
+    ctxtStopLogging();
 
     G_pidShell = 0;
 }
@@ -211,13 +219,63 @@ int sec32_ioctl(PTR16 reqpkt)
     // check function
     switch (pRequest->func)
     {
+        /*
+         * XWPSECIO_REGISTER:
+         *      called from XWPShell thread 1 for initialization.
+         */
+
         case XWPSECIO_REGISTER:
-            if (rc = RegisterDaemon(pRequest))
+            if (rc = ioctlRegisterDaemon(pRequest))
                 return STDON | STERR | rc;
         break;
 
+        /*
+         * XWPSECIO_DEREGISTER:
+         *      called from XWPShell thread 1 for cleanup.
+         */
+
         case XWPSECIO_DEREGISTER:
-            DeregisterDaemon();
+            ioctlDeregisterDaemon();
+        break;
+
+        /*
+         * XWPSECIO_GETLOGBUF:
+         *      called from XWPShell logging thread for
+         *      logging support.
+         */
+
+        case XWPSECIO_GETLOGBUF:
+        {
+            PLOGBUF     pLogBufR3;
+            // get flat pointer to data packet, which is LOGBUF
+            if (DevHlp32_VirtToLin(pRequest->data,
+                                   __StackToFlat(&pLogBufR3)))
+                return STDON | STERR | ERROR_I24_INVALID_PARAMETER;
+
+            if (rc = ctxtFillLogBuf(pLogBufR3,
+                                    // produce ULONG from 16:16 reqpkt ptr (ProcBlock id)
+                                    (reqpkt.seg << 16) | reqpkt.ofs))
+                return STDON | STERR | rc;
+        }
+        break;
+
+        /*
+         * XWPSECIO_QUERYSTATUS:
+         *
+         */
+
+        case XWPSECIO_QUERYSTATUS:
+        {
+            PRING0STATUS    pStatusR3;
+            // get flat pointer to data packet, which is LOGBUF
+            if (DevHlp32_VirtToLin(pRequest->data,
+                                   __StackToFlat(&pStatusR3)))
+                return STDON | STERR | ERROR_I24_INVALID_PARAMETER;
+
+            memcpy(pStatusR3,
+                   &G_R0Status,
+                   sizeof(G_R0Status));
+        }
         break;
 
         default:
@@ -243,7 +301,7 @@ int sec32_close(PTR16 reqpkt)
     // to be safe, call deregister daemon first,
     // just in case the shell crashed and didn't
     // call the ioctl properly
-    DeregisterDaemon();
+    ioctlDeregisterDaemon();
 
     --G_open_count;
 

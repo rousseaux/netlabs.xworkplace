@@ -83,7 +83,7 @@
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 
-#include "security\xwpsecty.h"          // XWorkplace Security base
+#include "helpers\xwpsecty.h"           // XWorkplace Security base
 #include "shared\xsecapi.h"             // XWorkplace Security API
 
 // other SOM headers

@@ -47,13 +47,7 @@
 
 ULONG MAKEDIR(PSZ pszPath)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*
@@ -68,13 +62,7 @@ ULONG MAKEDIR(PSZ pszPath)
 
 ULONG CHANGEDIR(PSZ pszPath)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 /*
@@ -93,13 +81,7 @@ ULONG CHANGEDIR(PSZ pszPath)
 
 ULONG REMOVEDIR(PSZ pszPath)
 {
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 

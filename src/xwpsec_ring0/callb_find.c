@@ -47,28 +47,7 @@
 
 ULONG FINDFIRST(PFINDPARMS pParms)
 {
-    /*          typedef struct {
-                 PSZ    pszPath;      // well formed path
-                 ULONG  ulHandle;     // search handle
-                 ULONG  rc;           // rc user got from findfirst
-                 PUSHORT pResultCnt;  // count of found files
-                 USHORT usReqCnt;     // count user requested
-                 USHORT usLevel;      // search level
-                 USHORT usBufSize;    // user buffer size
-                 USHORT fPosition;    // use position information?
-                 PCHAR  pcBuffer;     // ptr to user buffer
-                 ULONG  Position;     // Position for restarting search
-                 PSZ    pszPosition;  // file to restart search with
-             } FINDPARMS, *PFINDPARMS;
-    */
-
-    int rc = NO_ERROR;
-
-    if (utilNeedsVerify())
-    {
-    }
-
-    return (rc);
+    return NO_ERROR;
 }
 
 

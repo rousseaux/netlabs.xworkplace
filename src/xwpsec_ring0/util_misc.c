@@ -16,9 +16,9 @@
  *      GNU General Public License for more details.
  */
 
-#ifdef __IBMC__
-#pragma strings(readonly)
-#endif
+// #ifdef __IBMC__
+// #pragma strings(readonly)
+// #endif
 
 #define INCL_DOS
 #define INCL_DOSERRORS
@@ -32,6 +32,8 @@
 #include "xwpsec32.sys\DevHlp32.h"
 #include "xwpsec32.sys\reqpkt32.h"
 
+#include "security\ring0api.h"
+
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
@@ -41,8 +43,9 @@
  *
  ********************************************************************/
 
-struct InfoSegGDT *G_pGDT = 0;      // OS/2 global infoseg
-struct InfoSegLDT *G_pLDT = 0;      // OS/2 local  infoseg
+static PVOID        G_pTemp = NULL;
+
+extern RING0STATUS  G_R0Status;     // in strat_ioctl.c
 
 /* ******************************************************************
  *
@@ -51,36 +54,41 @@ struct InfoSegLDT *G_pLDT = 0;      // OS/2 local  infoseg
  ********************************************************************/
 
 /*
- *@@ utilNeedsVerify:
- *      returns TRUE if access control is enabled
- *      AND the caller's PID (task time!) is not
- *      that of the ring-3 daemon.
+ *@@ utilAllocFixed:
+ *      allocates a chunk of fixed memory.
+ *
+ *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-BOOL utilNeedsVerify(VOID)
+PVOID utilAllocFixed(ULONG cb)
 {
-    return (    (G_pidShell)
-             && (G_pidShell != utilGetTaskPID())
-           );
+    // make a copy of the shell's list of trusted processes
+    if (DevHlp32_VMAlloc(cb,                // Length
+                         VMDHA_NOPHYSADDR,  // PhysAddr == -1
+                         VMDHA_FIXED,       // Flags
+                         (PVOID*)&G_pTemp))
+        return NULL;
+
+    G_R0Status.cbAllocated += cb;
+    ++G_R0Status.cAllocations;
+
+    return G_pTemp;
 }
 
 /*
- *@@ utilGetTaskPID:
- *      returns the PID of the caller's process.
- *      Valid at task time only.
+ *@@ utilFreeFixed:
+ *      frees memory allocated by utilAllocFixed.
  *
- *      Returns 0 on errors, the PID otherwise.
- *
- *@@added V0.9.4 (2000-07-03) [umoeller]
+ *@@added V1.0.1 (2003-01-10) [umoeller]
  */
 
-unsigned long utilGetTaskPID(void)
+VOID utilFreeFixed(PVOID pv,
+                   ULONG cb)
 {
-    if (!DevHlp32_GetInfoSegs(&G_pGDT,
-                              &G_pLDT))
-        return G_pLDT->LIS_CurProcID;
+    DevHlp32_VMFree(pv);
 
-    return 0;
+    G_R0Status.cbAllocated -= cb;
+    ++G_R0Status.cFrees;
 }
 
 
