@@ -70,7 +70,15 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 # MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
 # PROJECT_OUTPUT_DIR has been set by setup.in based on the environment.
 MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
-!if [@echo       MODULESDIR is $(MODULESDIR)]
+!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
+!endif
+
+!ifdef XWP_DEBUG
+!if [@echo ---^> Debug build has been enabled.]
+!endif
+!else
+!if [@echo ---^> Building release code (debugging disabled).]
+!endif
 !endif
 
 # create output directory

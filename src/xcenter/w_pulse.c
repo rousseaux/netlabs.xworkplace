@@ -106,6 +106,7 @@ typedef struct _PULSESETUP
 {
     LONG            lcolBackground,
                     lcolGraph,
+                    lcolGraphIntr,
                     lcolText;
 
     PSZ             pszFont;
@@ -150,9 +151,16 @@ typedef struct _WIDGETPRIVATE
     ULONG           cLoads;
     PLONG           palLoads;       // ptr to an array of LONGs containing previous
                                     // CPU loads
+    PLONG           palIntrs;       // ptr to an array of LONGs containing previous
+                                    // CPU interrupt loads
 
     APIRET          arc;            // if != NO_ERROR, an error occured, and
                                     // the error code is displayed instead.
+
+    BOOL            fCrashed;       // set to TRUE if the pulse crashed somewhere.
+                                    // This will disable display then to avoid
+                                    // crashing again on each timer tick.
+
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
 /* ******************************************************************
@@ -237,6 +245,18 @@ VOID PwgtScanSetup(const char *pcszSetupString,
     }
     else
         pSetup->lcolGraph = RGBCOL_DARKCYAN; // RGBCOL_BLUE;
+
+    // graph color: (interrupt load)
+    p = ctrScanSetupString(pcszSetupString,
+                           "GRPHINTRCOL");
+    if (p)
+    {
+        pSetup->lcolGraphIntr = ctrParseColorString(p);
+        ctrFreeSetupValue(p);
+    }
+    else
+        pSetup->lcolGraphIntr = RGBCOL_BLUE; // RGBCOL_BLUE;
+
 
     // text color:
     p = ctrScanSetupString(pcszSetupString,
@@ -495,6 +515,13 @@ VOID PwgtUpdateGraph(HWND hwnd,
             DRO_FILL,
             &rclBmp);
 
+
+    // @@@PH
+    // Note: we've got to add the "load bars" of
+    // "CPU Load" and "CPU Interrupt Load" together rather
+    // than draw them overlapping.
+
+    // scan the CPU loads
     if (pPrivate->palLoads)
     {
         GpiSetColor(pPrivate->hpsMem,
@@ -507,6 +534,29 @@ VOID PwgtUpdateGraph(HWND hwnd,
             ptl.y = 0;
             GpiMove(pPrivate->hpsMem, &ptl);
             ptl.y = rclBmp.yTop * pPrivate->palLoads[ul] / 1000;
+            GpiLine(pPrivate->hpsMem, &ptl);
+
+            ptl.x++;
+        }
+    }
+
+    // scan the CPU interrupt loads
+    // Note: the interrupt load is expected to be much lower
+    // than the total CPU load. Therefore, the graph is painted
+    // in the foreground.
+    if (pPrivate->palIntrs)
+    {
+        GpiSetColor(pPrivate->hpsMem,
+                    pPrivate->Setup.lcolGraphIntr);
+        // go thru all values in the "Interrupt Loads" LONG array
+        // Note: number of "loads" entries and "intrs" entries is the same
+        for (ul = 0;
+             ((ul < pPrivate->cLoads) && (ul < rclBmp.xRight));
+             ul++)
+        {
+            ptl.y = 0;
+            GpiMove(pPrivate->hpsMem, &ptl);
+            ptl.y = 4; // rclBmp.yTop * pPrivate->palIntrs[ul] / 1000;
             GpiLine(pPrivate->hpsMem, &ptl);
 
             ptl.x++;
@@ -622,7 +672,10 @@ VOID PwgtPaint2(HWND hwnd,
                         pPrivate->Setup.lcolText,
                         DT_CENTER | DT_VCENTER);
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt1)
+    {
+        pPrivate->fCrashed = TRUE;
+    } END_CATCH();
 }
 
 /*
@@ -666,49 +719,82 @@ VOID PwgtGetNewLoad(HWND hwnd)
         PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
-            if (pPrivate->arc == NO_ERROR)
+            TRY_LOUD(excpt1)
             {
-                HPS hps;
-                RECTL rclClient;
-                WinQueryWindowRect(hwnd, &rclClient);
-                if (rclClient.xRight)
+                if (    (!pPrivate->fCrashed)
+                     && (pPrivate->arc == NO_ERROR)
+                   )
                 {
-                    ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
-                    if (pPrivate->palLoads == NULL)
+                    HPS hps;
+                    RECTL rclClient;
+                    WinQueryWindowRect(hwnd, &rclClient);
+                    if (rclClient.xRight)
                     {
-                        // create array of loads
-                        pPrivate->cLoads = ulGraphCX;
-                        pPrivate->palLoads = (PLONG)malloc(sizeof(LONG) * pPrivate->cLoads);
-                        memset(pPrivate->palLoads, 0, sizeof(LONG) * pPrivate->cLoads);
-                    }
-
-                    if (pPrivate->palLoads)
-                    {
-                        pPrivate->arc = doshPerfGet(pPrivate->pPerfData);
-                        if (pPrivate->arc == NO_ERROR)
+                        ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
+                        if (pPrivate->palLoads == NULL)
                         {
-                            // in the array of loads, move each entry one to the front;
-                            // drop the oldest entry
-                            memcpy(&pPrivate->palLoads[0],
-                                   &pPrivate->palLoads[1],
-                                   sizeof(LONG) * (pPrivate->cLoads - 1));
-                            // and update the last entry with the current value
-                            pPrivate->palLoads[pPrivate->cLoads - 1]
-                                = pPrivate->pPerfData->palLoads[0];
-
-                            // update display
-                            pPrivate->fUpdateGraph = TRUE;
+                            // create array of loads
+                            pPrivate->cLoads = ulGraphCX;
+                            pPrivate->palLoads = (PLONG)malloc(sizeof(LONG) * pPrivate->cLoads);
+                            memset(pPrivate->palLoads, 0, sizeof(LONG) * pPrivate->cLoads);
                         }
-                    }
 
-                    hps = WinGetPS(hwnd);
-                    PwgtPaint2(hwnd,
-                               pPrivate,
-                               hps,
-                               FALSE);       // do not draw frame
-                    WinReleasePS(hps);
-                } // end if (rclClient.xRight)
+                        if (pPrivate->palIntrs == NULL)
+                        {
+                            // create array of interrupt loads
+                            pPrivate->cLoads = ulGraphCX;
+                            pPrivate->palIntrs = (PLONG)malloc(sizeof(LONG) * pPrivate->cLoads);
+                            memset(pPrivate->palIntrs, 0, sizeof(LONG) * pPrivate->cLoads);
+                        }
+
+
+                        if (pPrivate->palLoads || pPrivate->palIntrs)
+                        {
+                            pPrivate->arc = doshPerfGet(pPrivate->pPerfData);
+                            if (pPrivate->arc == NO_ERROR)
+                            {
+                                // in the array of loads, move each entry one to the front;
+                                // drop the oldest entry
+                                if (pPrivate->palLoads)
+                                {
+                                    memcpy(&pPrivate->palLoads[0],
+                                           &pPrivate->palLoads[1],
+                                           sizeof(LONG) * (pPrivate->cLoads - 1));
+
+                                    // and update the last entry with the current value
+                                    pPrivate->palLoads[pPrivate->cLoads - 1]
+                                        = pPrivate->pPerfData->palLoads[0];
+                                }
+
+                                if (pPrivate->palIntrs)
+                                {
+                                    memcpy(&pPrivate->palIntrs[0],
+                                           &pPrivate->palIntrs[1],
+                                           sizeof(LONG) * (pPrivate->cLoads - 1));
+
+                                    // and update the last entry with the current value
+                                    pPrivate->palIntrs[pPrivate->cLoads - 1]
+                                        = pPrivate->pPerfData->palIntrs[0];
+                                }
+
+                                // update display
+                                pPrivate->fUpdateGraph = TRUE;
+                            }
+                        }
+
+                        hps = WinGetPS(hwnd);
+                        PwgtPaint2(hwnd,
+                                   pPrivate,
+                                   hps,
+                                   FALSE);       // do not draw frame
+                        WinReleasePS(hps);
+                    } // end if (rclClient.xRight)
+                }
             }
+            CATCH(excpt1)
+            {
+                pPrivate->fCrashed = TRUE;
+            } END_CATCH();
         } // end if (pPrivate)
     } // end if (pWidget)
 }
@@ -793,9 +879,44 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                        ulNewClientCX * sizeof(LONG));
                             }
 
-                            pPrivate->cLoads = ulNewClientCX;
                             free(pPrivate->palLoads);
                             pPrivate->palLoads = palNewLoads;
+
+                            // do the same for the interrupt load
+                            if (pPrivate->palIntrs)
+                            {
+                                PLONG palNewIntrs = (PLONG)malloc(sizeof(LONG) * ulNewClientCX);
+
+                                if (ulNewClientCX > pPrivate->cLoads)
+                                {
+                                    // window has become wider:
+                                    // fill the front with zeroes
+                                    memset(palNewIntrs,
+                                           0,
+                                           (ulNewClientCX - pPrivate->cLoads) * sizeof(LONG));
+                                    // and copy old values after that
+                                    memcpy(&palNewIntrs[(ulNewClientCX - pPrivate->cLoads)],
+                                           pPrivate->palIntrs,
+                                           pPrivate->cLoads * sizeof(LONG));
+                                }
+                                else
+                                {
+                                    // window has become smaller:
+                                    // e.g. ulnewClientCX = 100
+                                    //      pPrivate->cLoads = 200
+                                    // drop the first items
+                                    ULONG ul = 0;
+                                    memcpy(palNewIntrs,
+                                           &pPrivate->palIntrs[pPrivate->cLoads - ulNewClientCX],
+                                           ulNewClientCX * sizeof(LONG));
+                                }
+
+                                free(pPrivate->palIntrs);
+                                pPrivate->palIntrs = palNewIntrs;
+                            }
+
+                            pPrivate->cLoads = ulNewClientCX;
+
                         } // end if (pPrivate->palLoads)
 
                         pPrivate->Setup.cx = pswpNew->cx;

@@ -864,18 +864,7 @@ MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
              || (strcmp(pwps->pszClassName, "WPFolder") == 0)   // V0.9.0
            )
         {
-            preccParent = (PRECORDCORE)mpreccParent;
-            while (preccParent)
-            {
-                WinSendMsg(hwndCnr, CM_EXPANDTREE, (MPARAM)preccParent, MPNULL);
-
-                preccParent = WinSendMsg(hwndCnr, CM_QUERYRECORD,
-                        preccParent,
-                        MPFROM2SHORT(CMA_PARENT, CMA_ITEMORDER));
-
-                if (preccParent == (PRECORDCORE)-1)
-                    preccParent = NULL;
-            }
+            cnrhExpandFromRoot(hwndCnr, (PRECORDCORE)mpreccParent);
         }
 
         // class replaced:

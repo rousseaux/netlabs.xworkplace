@@ -54,14 +54,6 @@
 !error in setup.in: You must set XWPRUNNING to an existing XWorkplace binary installation. See PROGREF.INF for details.
 !endif
 
-!ifdef XWP_DEBUG
-!if [@echo setup.in: Debug build has been enabled.]
-!endif
-!else
-!if [@echo setup.in: Building release code (debugging disabled).]
-!endif
-!endif
-
 !ifndef XWP_OUTPUT_ROOT
 XWP_OUTPUT_ROOT = $(PROJECT_BASE_DIR)\bin
 !endif

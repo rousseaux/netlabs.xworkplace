@@ -15,7 +15,7 @@
  *      --  fdlr*
  *
  *@@added V0.9.9 (2001-03-11) [umoeller]
- *@@header "filesys\filedlf.h"
+ *@@header "filesys\filedlg.h"
  */
 
 /*
@@ -368,8 +368,16 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
 
 /*
  *@@ GetFSFromRecord:
- *      returns the WPFolder* which is represented
+ *      returns the WPFileSystem* which is represented
  *      by the specified record.
+ *
+ *      Returns NULL
+ *
+ *      -- if (fFoldersOnly) and precc does not represent
+ *         a folder;
+ *
+ *      -- if (!fFoldersOnly) and precc does not represent
+ *         a file-system object.
  *
  *      This resolves shadows and returns root folders
  *      for WPDisk objects cleanly. Returns NULL
@@ -420,53 +428,61 @@ WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
  *@@ IsInsertable:
  *      checks if pObject can be inserted in a container.
  *
- *      --  If (fFoldersOnly == TRUE), this will return TRUE
- *          if pObject is a folder. This will correctly resolve
- *          shadows and return TRUE for WPDisk's also. Useful
- *          for checking if an object should appear in a tree
- *          view.
+ *      --  If (ulFoldersOnly == 0), this inserts all
+ *          WPFileSystem and WPDisk objects plus shadows pointing
+ *          to them.
  *
- *          pcszFileMask is ignored in this case.
- *
- *      --  If (fFoldersOnly == FALSE), this will return TRUE
- *          if pObject is a WPFileSystem or a shadow pointing
- *          to one.
- *
- *          In that case, if (pcszFileMask != NULL), the object's
- *          real name is checked against that file mask also.
+ *          For file-system objects, if (pcszFileMask != NULL), the
+ *          object's real name is checked against that file mask also.
  *          For example, if (pcszFileMask == *.TXT), this will
  *          return TRUE only if pObject's real name matches
  *          *.TXT.
  *
- *      In any case, FALSE is returned matches the above,
- *      but the file has the "hidden" attribute on.
+ *          We never insert other abstracts or transients
+ *          because these cannot be opened with the file dialog.
+ *
+ *          This is for the right (files) view.
+ *
+ *      --  If (ulFoldersOnly == 1), only folders are inserted.
+ *          We will not even insert disk objects or shadows,
+ *          even if they point to shadows.
+ *
+ *          pcszFileMask is ignored in this case.
+ *
+ *          This is for the left (drives) view when items
+ *          are expanded.
+ *
+ *          This will NOT resolve shadows because if we insert
+ *          shadows of folders into a container, their contents
+ *          cannot be inserted a second time. The WPS shares
+ *          records so each object can only be inserted once.
+ *
+ *      --  If (ulFoldersOnly == 2), in addition to folders
+ *          (as with ulFoldersOnly == 1), we allow insertion
+ *          of drive objects too.
+ *
+ *      In any case, FALSE is returned if the object matches
+ *      the above, but the object has the "hidden" attribute on.
  */
 
 BOOL IsInsertable(WPObject *pObject,
-                  BOOL fFoldersOnly,
+                  BOOL ulFoldersOnly,
                   const char *pcszFileMask)
 {
-    // resolve shadows
-    if (pObject)
-        if (_somIsA(pObject, _WPShadow))
-            pObject = _wpQueryShadowedObject(pObject, TRUE);
-
-    if (!pObject)
-        // broken:
-        return (FALSE);
-
-    if (fFoldersOnly)
+    if (ulFoldersOnly)
     {
         // folders only:
         if (pObject)
         {
-            if (_somIsA(pObject, _WPDisk))
+            // allow disks for mode 2 only
+            if (    (ulFoldersOnly == 2)
+                 && (_somIsA(pObject, _WPDisk))
+               )
             {
                 // always insert, even if drive not ready
                 return (TRUE);
             }
             else
-            {
                 if (_somIsA(pObject, _WPFolder))
                 {
                     // filter out folder templates and hidden folders
@@ -475,12 +491,24 @@ BOOL IsInsertable(WPObject *pObject,
                        )
                         return (TRUE);
                 }
-            }
         }
     }
     else
     {
         // not folders-only:
+
+        // resolve shadows
+        if (pObject)
+            if (_somIsA(pObject, _WPShadow))
+                pObject = _wpQueryShadowedObject(pObject, TRUE);
+
+        if (!pObject)
+            // broken:
+            return (FALSE);
+
+        if (_somIsA(pObject, _WPDisk))
+            return (TRUE);
+
         if (    // filter out non-file systems (shadows pointing to them have been resolved):
                 (_somIsA(pObject, _WPFileSystem))
                 // filter out hidden objects:
@@ -525,17 +553,9 @@ BOOL IsInsertable(WPObject *pObject,
  *      into a subtree. precParent should then be the
  *      record matching pFolder in the tree, of course.
  *
- *      If (fFoldersOnly = TRUE), populate occurs with
- *      that flag as well, and only folders (plus disks
- *      plus shadows to folders or disks) are inserted.
- *      This is for the left (drives) view.
- *
- *      If (fFoldersOnly = FALSE), this does a full
- *      populate and inserts all WPFileSystem objects
- *      plus shadows pointing to WPFileSystem objects.
- *      We do not insert other abstracts or transients
- *      because these cannot be opened with the file dialog.
- *      This is for the right (files) view.
+ *      This function filters out records according
+ *      to ulFoldersOnly and pcszFileMask, which are
+ *      passed to IsInsertable() for filtering.
  *
  *      While this is running, it keeps checking if
  *      *pfExit is TRUE. If so, the routine exits
@@ -553,7 +573,7 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
                            HWND hwndCnr,                // in: cnr to insert reccs to
                            WPFolder *pFolder,           // in: folder whose contents are to be inserted
                            PMINIRECORDCORE precParent,  // in: parent recc or NULL
-                           BOOL fFoldersOnly,           // in: folders only?
+                           ULONG ulFoldersOnly,         // in: folders only?
                            const char *pcszFileMask,    // in: file mask or NULL
                            PLINKLIST pllObjects,        // in/out: if != NULL, list where
                                                         // to append objects to
@@ -564,7 +584,7 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
     ULONG       cObjects = 0;
 
     if (wpshCheckIfPopulated(pFolder,
-                             fFoldersOnly))     // folders only?
+                             (ulFoldersOnly != 0)))     // folders only?
     {
         BOOL fFolderLocked = FALSE;
 
@@ -586,7 +606,9 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
                         pObject = rslv_wpQueryContent(pFolder, pObject, QC_NEXT)
                     )
                 {
-                    if (IsInsertable(pObject, fFoldersOnly, pcszFileMask))
+                    if (IsInsertable(pObject,
+                                     ulFoldersOnly,
+                                     pcszFileMask))
                         cObjects++;
                 }
 
@@ -605,7 +627,9 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
                                 pObject = rslv_wpQueryContent(pFolder, pObject, QC_NEXT)
                             )
                         {
-                            if (IsInsertable(pObject, fFoldersOnly, pcszFileMask))
+                            if (IsInsertable(pObject,
+                                             ulFoldersOnly,
+                                             pcszFileMask))
                             {
                                 *ppThis = pObject;
                                 ppThis++;
@@ -833,12 +857,6 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData,
                     _Pmpf(("        got prec 0x%lX", precParent));
                     if (pNew)
                     {
-                        if (!WinSendMsg(pWinData->hwndDrivesCnr,
-                                        CM_EXPANDTREE,
-                                        (MPARAM)precParent,
-                                        0))
-                            _Pmpf(("        cannot expand!!!"));
-
                         if (pllToExpand)
                             lstAppendItem(pllToExpand, pNew);
 
@@ -868,13 +886,15 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData,
     {
         ULONG ul;
         // got valid folder, apparently:
-        cnrhSelectRecord(pWinData->hwndDrivesCnr,
-                         precSelect,
-                         TRUE);
+        cnrhExpandFromRoot(pWinData->hwndDrivesCnr,
+                           (PRECORDCORE)precSelect);
         ul = cnrhScrollToRecord(pWinData->hwndDrivesCnr,
                                 (PRECORDCORE)precSelect,
                                 CMA_ICON | CMA_TEXT | CMA_TREEICON,
                                 TRUE);       // keep parent
+        cnrhSelectRecord(pWinData->hwndDrivesCnr,
+                         precSelect,
+                         TRUE);
         if (ul && ul != 3)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                     "Error: cnrhScrollToRecord returned %d", ul);
@@ -1259,24 +1279,6 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
  *
  ********************************************************************/
 
-HWND winhCreateControl(HWND hwndParentAndOwner,
-                       const char *pcszClass,
-                       const char *pcszText,
-                       ULONG ulStyle,
-                       ULONG ulID)
-{
-    return (WinCreateWindow(hwndParentAndOwner,
-                            (PSZ)pcszClass,
-                            (PSZ)pcszText,
-                            ulStyle,
-                            0, 0, 0, 0,
-                            hwndParentAndOwner,
-                            HWND_TOP,
-                            ulID,
-                            NULL,
-                            NULL));
-}
-
 /*
  *@@ MainClientCreate:
  *      part of the implementation for WM_CREATE. This
@@ -1344,8 +1346,97 @@ VOID MainClientCreate(HWND hwnd,
 }
 
 /*
- *@@ MainClientRepositionControls:
+ *@@ MainClientChar:
+ *      implementation for WM_CHAR in fnwpMainClient.
  *
+ *@@added V0.9.9 (2001-03-13) [umoeller]
+ */
+
+MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    BOOL brc = FALSE;               // not processed
+    PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+
+    if (pWinData)
+    {
+        USHORT usCommand;
+        USHORT usKeyCode;
+        USHORT usFlags    = SHORT1FROMMP(mp1);
+        USHORT usch       = SHORT1FROMMP(mp2);
+        USHORT usvk       = SHORT2FROMMP(mp2);
+
+        // key down msg?
+        if ((usFlags & KC_KEYUP) == 0)
+        {
+            if (usFlags & KC_VIRTUALKEY)
+            {
+                switch (usvk)
+                {
+                    case VK_TAB:
+                    {
+                        // tab key:
+                        // check current focus
+                        HWND hwndFocus = WinQueryFocus(HWND_DESKTOP),
+                             hwndFocusNext = NULLHANDLE;
+
+                        if (hwndFocus == pWinData->hwndDrivesCnr)
+                            hwndFocusNext = pWinData->hwndFilesCnr;
+                        else if (hwndFocus == pWinData->hwndFilesCnr)
+                            hwndFocusNext = pWinData->hwndFileEntry;
+                        else if (hwndFocus == pWinData->hwndFileEntry)
+                            hwndFocusNext = pWinData->hwndOK;
+                        else if (hwndFocus == pWinData->hwndOK)
+                            hwndFocusNext = pWinData->hwndCancel;
+                        else if (hwndFocus == pWinData->hwndCancel)
+                            hwndFocusNext = pWinData->hwndHelp;
+                        else if (hwndFocus == pWinData->hwndHelp)
+                            hwndFocusNext = pWinData->hwndDrivesCnr;
+
+                        if (hwndFocusNext)
+                            WinSetFocus(HWND_DESKTOP, hwndFocusNext);
+                        else
+                            WinSetFocus(HWND_DESKTOP, pWinData->hwndFileEntry);
+                    break; }
+
+                    case VK_BACKSPACE:
+                    {
+                        // get current selection in drives view
+                        PMINIRECORDCORE prec = (PMINIRECORDCORE)WinSendMsg(
+                                                pWinData->hwndDrivesCnr,
+                                                CM_QUERYRECORD,
+                                                (MPARAM)pWinData->precSelectedInDrives,
+                                                MPFROM2SHORT(CMA_PARENT,
+                                                             CMA_ITEMORDER));
+                        if (prec)
+                            // not at root already:
+                            cnrhSelectRecord(pWinData->hwndDrivesCnr,
+                                             prec,
+                                             TRUE);
+                    break; }
+
+                    case VK_ESC:
+                        WinPostMsg(hwnd,
+                                   WM_COMMAND,
+                                   (MPARAM)DID_CANCEL,
+                                   0);
+                    break;
+                } // end switch
+            }
+        }
+    }
+
+    return ((MPARAM)brc);
+}
+
+/*
+ *@@ MainClientRepositionControls:
+ *      part of the implementation of WM_SIZE in
+ *      fnwpMainClient. This resizes all subwindows
+ *      of the main client -- the split window and
+ *      the controls on bottom.
+ *
+ *      Repositioning the split window will in turn
+ *      cause the two container frames to be adjusted.
  */
 
 VOID MainClientRepositionControls(HWND hwnd,
@@ -1572,11 +1663,13 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         /*
          * WM_CHAR:
-         *
+         *      this gets forwarded to us from all the
+         *      sub-frames and also the controls.
+         *      We re-implement a dialog manager here.
          */
 
         case WM_CHAR:
-            DosBeep(1000, 10);
+            mrc = MainClientChar(hwnd, mp1, mp2);
         break;
 
         /*
@@ -1713,12 +1806,14 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 {
                     // files container:
                     // then we can use fast insert
+                    _Pmpf(("    fast insert"));
                     _wpclsInsertMultipleObjects(_somGetClass(pioa->pFolder),
                                                 pioa->hwndCnr,
                                                 NULL,
                                                 (PVOID*)pioa->papObjects,
                                                 pioa->precParent,
                                                 pioa->cObjects);
+                    _Pmpf(("    fast insert done, locking"));
 
                     for (ul = 0;
                          ul < pioa->cObjects;
@@ -1734,6 +1829,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         if (pioa->pllObjects)
                             lstAppendItem(pioa->pllObjects, pobjThis);
                     }
+                    _Pmpf(("    done locking"));
 
                     // set new "directory" on bottom
                     _wpQueryFilename(pioa->pFolder,
@@ -1772,6 +1868,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         pWinData->psfvFiles->pRealObject = pioa->pFolder;
                     }
                 }
+
+                _Pmpf(("XM_INSERTOBJARRAY: done"));
             }
 
         break; }
@@ -1875,6 +1973,15 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
         case WM_CHAR:
             // forward to main client
             WinPostMsg(WinQueryWindow(hwndFrame, QW_OWNER),
+                       msg,
+                       mp1,
+                       mp2);
+        break;
+
+        case WM_SYSCOMMAND:
+            // forward to main frame
+            WinPostMsg(WinQueryWindow(WinQueryWindow(hwndFrame, QW_OWNER),
+                                      QW_OWNER),
                        msg,
                        mp1,
                        mp2);
@@ -1996,6 +2103,15 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
         case WM_CHAR:
             // forward to main client
             WinPostMsg(WinQueryWindow(hwndFrame, QW_OWNER),
+                       msg,
+                       mp1,
+                       mp2);
+        break;
+
+        case WM_SYSCOMMAND:
+            // forward to main frame
+            WinPostMsg(WinQueryWindow(WinQueryWindow(hwndFrame, QW_OWNER),
+                                      QW_OWNER),
                        msg,
                        mp1,
                        mp2);
@@ -2270,9 +2386,18 @@ HWND fdlgFileDlg(HWND hwndParent,
                 {
                     PLISTNODE pNode;
                     BOOL fExit = FALSE;
+                    PMINIRECORDCORE pDrivesRec;
+                    POINTL ptlIcon = {0, 0};
 
                     BuildDisksList(WinData.pDrivesFolder,
                                    &WinData.llDisks);
+
+                    // insert the drives folder
+                    pDrivesRec = _wpCnrInsertObject(WinData.pDrivesFolder,
+                                                    WinData.hwndDrivesCnr,
+                                                    &ptlIcon,
+                                                    NULL,       // parent record
+                                                    NULL);      // RECORDINSERT
 
                     // insert the folder contents into the
                     // drives tree on the left... this is
@@ -2281,12 +2406,18 @@ HWND fdlgFileDlg(HWND hwndParent,
                     InsertFolderContents(WinData.hwndMainClient,
                                          WinData.hwndDrivesCnr,
                                          WinData.pDrivesFolder,
-                                         NULL,      // parent record
-                                         TRUE,      // folders only
+                                         pDrivesRec,   // parent record
+                                         2,         // folders plus disks
                                          NULL,      // no file mask
                                          &WinData.llDriveObjectsInserted,
                                          NULL,
                                          &fExit);
+
+                    // expand "drives"
+                    WinSendMsg(WinData.hwndDrivesCnr,
+                               CM_EXPANDTREE,
+                               (MPARAM)pDrivesRec,
+                               MPNULL);
 
                     // this has called wpCnrinsertObjects which
                     // subclasses the container owner, so
@@ -2327,6 +2458,8 @@ HWND fdlgFileDlg(HWND hwndParent,
                             lstFree(pllToExpand);
 
                         WinData.fFileDlgReady = TRUE;
+
+                        WinSetFocus(HWND_DESKTOP, WinData.hwndFileEntry);
 
                         /*
                          *  PM MSG LOOP
