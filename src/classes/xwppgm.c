@@ -1299,6 +1299,7 @@ APIRET progStore(WPObject *somSelf,
 
     return NO_ERROR;
 }
+
 /*
  *@@ wpSetProgDetails:
  *      this instance method exists for both WPProgram

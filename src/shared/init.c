@@ -422,16 +422,20 @@ static const CONTROLDEF
     DisableXPagerCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEPAGER),
 #endif
     DisableMultimediaCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEMULTIMEDIA),
-    ContinueButton = LOADDEF_DEFPUSHBUTTON(ID_XFDI_PANIC_CONTINUE),
+
+    // @@fixes 361 V1.0.2 (2003-03-07) [umoeller]
+    #define MY_BUTTON_WIDTH (STD_BUTTON_WIDTH * 3 / 2)
+
+    ContinueButton = CONTROLDEF_DEFPUSHBUTTON(LOAD_STRING, ID_XFDI_PANIC_CONTINUE, MY_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+    XFixButton = CONTROLDEF_PUSHBUTTON(LOAD_STRING, ID_XFDI_PANIC_XFIX, MY_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+    CmdButton = CONTROLDEF_PUSHBUTTON(LOAD_STRING, ID_XFDI_PANIC_CMD, MY_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+    ShutdownButton = CONTROLDEF_PUSHBUTTON(LOAD_STRING, ID_XFDI_PANIC_SHUTDOWN, MY_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
     ContinueText = LOADDEF_TEXT(ID_XFDI_PANIC_CONTINUE_TXT),
-    XFixButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_XFIX),
     XFixText = LOADDEF_TEXT(ID_XFDI_PANIC_XFIX_TXT),
-    CmdButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_CMD),
     CmdText = LOADDEF_TEXT(ID_XFDI_PANIC_CMD_TXT),
-    ShutdownButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_SHUTDOWN),
     ShutdownText = LOADDEF_TEXT(ID_XFDI_PANIC_SHUTDOWN_TXT);
 
-static const DLGHITEM dlgPanic[] =
+static const DLGHITEM G_dlgPanic[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__
@@ -472,18 +476,22 @@ static const DLGHITEM dlgPanic[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&DisableMultimediaCB),
+
             START_ROW(ROW_VALIGN_CENTER),
-                CONTROL_DEF(&ContinueButton),
-                CONTROL_DEF(&ContinueText),
-            START_ROW(ROW_VALIGN_CENTER),
-                CONTROL_DEF(&XFixButton),
-                CONTROL_DEF(&XFixText),
-            START_ROW(ROW_VALIGN_CENTER),
-                CONTROL_DEF(&CmdButton),
-                CONTROL_DEF(&CmdText),
-            START_ROW(ROW_VALIGN_CENTER),
-                CONTROL_DEF(&ShutdownButton),
-                CONTROL_DEF(&ShutdownText),
+                START_TABLE_ALIGN,
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ContinueButton),
+                        CONTROL_DEF(&ContinueText),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&XFixButton),
+                        CONTROL_DEF(&XFixText),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&CmdButton),
+                        CONTROL_DEF(&CmdText),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ShutdownButton),
+                        CONTROL_DEF(&ShutdownText),
+                END_TABLE,
         END_TABLE
     };
 
@@ -552,6 +560,7 @@ STATIC BOOL RunXFix(VOID)
  *@@added V0.9.16 (2001-10-08) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: added "disable refresh", "disable turbo fdrs"
  *@@changed V0.9.17 (2002-02-05) [umoeller]: added fForceShow and "disable check desktop"
+ *@@changed V1.0.2 (2003-03-07) [umoeller]: enlarged buttons a bit @@fixes 361
  */
 
 STATIC VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
@@ -573,8 +582,8 @@ STATIC VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                                   FCF_FIXED_DLG,
                                   WinDefDlgProc,
                                   cmnGetString(ID_XFDI_PANIC_TITLE),
-                                  dlgPanic,
-                                  ARRAYITEMCOUNT(dlgPanic),
+                                  G_dlgPanic,
+                                  ARRAYITEMCOUNT(G_dlgPanic),
                                   NULL,
                                   cmnQueryDefaultFont())))
         {

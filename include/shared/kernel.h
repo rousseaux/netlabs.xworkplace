@@ -329,7 +329,11 @@
 
     #define T1M_NOTIFYWAKEUP            (WM_USER+293)    // V0.9.20 (2002-07-25) [umoeller]
 
+    #define T1M_OPENOBJECTFROMHANDLE2   (WM_USER+294)    // V1.0.2 (2003-03-07) [umoeller]
+
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef BOOL KRNPOSTTHREAD1OBJECTMSG(ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef KRNPOSTTHREAD1OBJECTMSG *PKRNPOSTTHREAD1OBJECTMSG;
 
     MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 

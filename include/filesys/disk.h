@@ -62,6 +62,8 @@
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
+
+        VOID XWPENTRY dskDetailsTimer(PNOTEBOOKPAGE pnbp, ULONG ul);
     #endif
 
 #endif

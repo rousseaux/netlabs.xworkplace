@@ -240,7 +240,8 @@ interface XFldObject : WPObject
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
-    HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
+    HWND xwpHotkeyOrBorderAction(in ULONG ulView,
+                                 in ULONG ulCorner);
 
     VOID xwpHandleSelfClose(in HWND hwndFrame,
                             in ULONG ulMenuId);

@@ -759,7 +759,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
  *@@changed V0.9.9 (2001-02-18) [pr]: fix delete folder from menu bar
  *@@changed V1.0.0 (2002-08-26) [umoeller]: func renamed
  *@@changed V1.0.0 (2002-08-26) [umoeller]: moved "select some" and "batch rename" here to fix duplicate popups
- *@@changed V1.0.2 (2002-02-16) [pr]: "delete original" deleted wrong object, fixed @@fixes 8
+ *@@changed V1.0.2 (2003-02-16) [pr]: "delete original" deleted wrong object, fixed @@fixes 8
  */
 
 BOOL fcmdProcessViewCommand(WPFolder *somSelf,
@@ -800,7 +800,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
                 if (!(fTrueDelete = cmnQuerySetting(sfAlwaysTrueDelete)))
                     fTrueDelete = doshQueryShiftState();
 
-                // V1.0.2 (2002-02-16) [pr]: @@fixes 8
+                // V1.0.2 (2003-02-16) [pr]: @@fixes 8
                 if (!pFirstObject)
                 {
                     pFirstObject = wpshQuerySourceObject(somSelf,

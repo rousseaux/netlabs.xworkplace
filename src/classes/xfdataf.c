@@ -2066,7 +2066,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
         {
             // "extended associations" allowed:
             if (    ((ulView >= 0x1000) && (ulView < 0x1100))
-                 || (ulView == OPEN_RUNNING)    // double-click on data file... what's this, IBM?
+                 || (ulView == OPEN_RUNNING)    // double-click on data file
                  || (ulView == OPEN_DEFAULT)
                )
                 // use our replacement mechanism
@@ -2077,17 +2077,16 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
         {
             // replacement desired:
             ULONG       ulView2 = ulView;
-            WPObject    *pAssocObject
-                = ftypQueryAssociatedProgram(somSelf,
-                                             &ulView2,
-                                             // use "plain text" as default:
-                                             TRUE);
-                                                // we've used "plain text" as default
-                                                // in wpModifyMenu, so we need to do
-                                                // the same again here
-                                // object is locked
+            WPObject    *pAssocObject;
 
-            if (pAssocObject)
+            if (pAssocObject = ftypQueryAssociatedProgram(somSelf,
+                                                          &ulView2,
+                                                          // use "plain text" as default:
+                                                          TRUE))
+                                                             // we've used "plain text" as default
+                                                             // in wpModifyMenu, so we need to do
+                                                             // the same again here
+                                // object is locked now
             {
                 CHAR szFailing[CCHMAXPATH];
                 APIRET arc;

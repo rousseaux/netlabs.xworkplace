@@ -913,6 +913,8 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
         inbp.pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;
         inbp.pfncbItemChanged = dskDetailsItemChanged;
+        inbp.pfncbTimer = dskDetailsTimer;          // V1.0.2 (2003-05-14) [umoeller]
+        inbp.ulTimer = 1000;
         return ntbInsertPage(&inbp);
     }
 

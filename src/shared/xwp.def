@@ -111,6 +111,7 @@ EXPORTS
     krnQueryDaemonObject
     krnPostDaemonMsg
     krnSendDaemonMsg
+    krnPostThread1ObjectMsg
     lstAppendItem
     lstClear
     lstCountItems

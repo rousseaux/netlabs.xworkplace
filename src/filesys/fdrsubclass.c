@@ -800,7 +800,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
  *@@ fdrManipulatePulldown:
  *
  *@@added V1.0.0 (2002-08-28) [umoeller]
- *@@changed V1.0.2 (2002-02-16) [pr]: "Edit"->"Delete" deleted wrong object @@fixes 324
+ *@@changed V1.0.2 (2003-02-16) [pr]: "Edit"->"Delete" deleted wrong object @@fixes 324
  */
 
 VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -819,7 +819,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
                     // V1.0.0 (2002-08-24) [umoeller]
         break;
 
-        // V1.0.2 (2002-02-16) [pr]: @@fixes 324
+        // V1.0.2 (2003-02-16) [pr]: @@fixes 324
         case 0x2D0: // "Edit" submenu
         case ID_XFM_BAR_EDIT:       // in split view V1.0.0 (2002-08-28) [umoeller]
         {

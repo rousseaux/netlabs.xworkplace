@@ -1024,15 +1024,8 @@ SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
  *      T1M_OpenObjectFromHandle. This allows WPS
  *      classes to override what happens in this case.
  *
- *      Parameters:
- *
- *      --  hab is the anchor block of WPS thread 1.
- *
- *      --  ulCorner is 0 if this is really from a
- *          hotkey. In that case, the "hotkey"
- *          system sound has already been played.
- *          It is > 0 if this resulted from a
- *          screen border mouse action.
+ *      See XFldObject::xwpHotkeyOrBorderAction for
+ *      the parameters.
  *
  *      We override this for the XCenter to be able
  *      to open the first widget which can handle
@@ -1042,7 +1035,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
  */
 
 SOM_Scope HWND  SOMLINK xctr_xwpHotkeyOrBorderAction(XCenter *somSelf,
-                                                     ULONG hab,
+                                                     ULONG ulView,
                                                      ULONG ulCorner)
 {
     PXCENTERWINDATA pXCenterData;
@@ -1066,7 +1059,10 @@ SOM_Scope HWND  SOMLINK xctr_xwpHotkeyOrBorderAction(XCenter *somSelf,
         return pXCenterData->Globals.hwndFrame;
     }
 
-    return _wpViewObject(somSelf, NULLHANDLE, OPEN_DEFAULT, 0);
+    return _wpViewObject(somSelf,
+                         NULLHANDLE,
+                         ulView, // OPEN_DEFAULT,
+                         0);
 }
 
 /*

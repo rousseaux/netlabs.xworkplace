@@ -251,9 +251,10 @@ BOOL sndInstallAddtlSounds(HAB hab,
                     cmnQueryLanguageCode());
             if (!doshQuickStartSession("cmd.exe",
                                        szCmdFile,
-                                       FALSE, // background
-                                       SSF_CONTROL_INVISIBLE, // but auto-close
-                                       TRUE,  // wait
+                                       SSF_TYPE_DEFAULT,            // session type
+                                       FALSE,                       // background
+                                       SSF_CONTROL_INVISIBLE,       // but auto-close
+                                       TRUE,                        // wait
                                        &sid,
                                        &pid,
                                        NULL))

@@ -3768,9 +3768,10 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
     sprintf(szTemp, "/c %s", pShutdownData->sdParams.szRebootCommand);
     if (doshQuickStartSession("cmd.exe",
                               szTemp,
-                              FALSE, // background
+                              SSF_TYPE_DEFAULT,      // session type
+                              FALSE,                 // background
                               SSF_CONTROL_INVISIBLE, // but auto-close
-                              TRUE,  // wait flag
+                              TRUE,                  // wait flag
                               &sid,
                               &pid,
                               NULL)

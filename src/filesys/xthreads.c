@@ -1007,9 +1007,10 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     WinShowWindow(hwndCreating, TRUE);
                     doshQuickStartSession("cmd.exe",
                                           szPath2,
-                                          FALSE, // background
+                                          SSF_TYPE_DEFAULT,      // session type
+                                          FALSE,                 // background
                                           SSF_CONTROL_INVISIBLE, // but auto-close
-                                          TRUE,  // wait
+                                          TRUE,                  // wait
                                           &sid,
                                           &pid,
                                           NULL);

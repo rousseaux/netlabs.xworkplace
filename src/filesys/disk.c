@@ -269,6 +269,7 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.12 (2001-04-29) [umoeller]: fixed wrong sector display
+ *@@changed V1.0.2 (2003-05-14) [umoeller]: moved SET code to new timer callback for cont. updates
  */
 
 VOID dskDetailsInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -293,139 +294,6 @@ VOID dskDetailsInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        ULONG ulLogicalDrive;
-
-        // the following is safe because WPSharedDir doesn't have
-        // a "Details" page
-        if (ulLogicalDrive = _wpQueryLogicalDrive(pnbp->inbp.somSelf))
-        {
-            FSALLOCATE      fsa;
-            CHAR            szTemp[100];
-            CHAR            szVolumeLabel[20];
-
-            // get thousands separator from "Country" object
-            CHAR            cThousands = cmnQueryThousandsSeparator();
-
-            if (doshQueryDiskLabel(ulLogicalDrive, &szVolumeLabel[0])
-                    == NO_ERROR)
-                // label entry field
-                WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DISK_LABEL,
-                                  szVolumeLabel);
-
-            // file-system type (HPFS, ...)
-            if (doshQueryDiskFSType(ulLogicalDrive,
-                                    szTemp,
-                                    sizeof(szTemp))
-                        == NO_ERROR)
-            {
-                WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DISK_FILESYSTEM,
-                                  szTemp);
-            }
-
-            if (DosQueryFSInfo(ulLogicalDrive, FSIL_ALLOC, &fsa, sizeof(fsa))
-                    == NO_ERROR)
-            {
-                double      dTotal = 0,
-                            dAllocated = 0,
-                            dAvailable = 0;
-                double      dDisplay[2];
-                CHAR        szAvailable[50] = "",
-                            szAllocated[50] = "";
-                PSZ         apszDescriptions[2];
-                CHARTDATA   pcd;
-                LONG        alColors[2] = {
-                                                0x00FF0000,     // color for allocated (RGB)
-                                                0x0000FF00      // color for free
-                                          };
-
-                ULONG       ulBlockSize = fsa.cbSector * fsa.cSectorUnit;
-                            // V0.9.12 (2001-04-29) [umoeller]
-                            // this page always reported fsa.cbSector
-                            // only, which is always 512
-
-                // bytes per sector
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_SECTORSIZE,
-                                  nlsThousandsULong(szTemp,
-                                                     ulBlockSize,
-                                                            // fixed V0.9.12 (2001-04-29) [umoeller]
-                                                     cThousands));
-
-                // total size
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_TOTAL_SECTORS,
-                                  nlsThousandsULong(szTemp,
-                                                     fsa.cUnit,
-                                                            // fixed V0.9.12 (2001-04-29) [umoeller]
-                                                     cThousands));
-                dTotal = (double)fsa.cbSector
-                              * fsa.cSectorUnit
-                              * fsa.cUnit;
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_TOTAL_BYTES,
-                                  nlsThousandsDouble(szTemp,
-                                                     dTotal,
-                                                     cThousands));
-
-                // free space
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_AVAILABLE_SECTORS,
-                                  nlsThousandsULong(szTemp,
-                                                    fsa.cUnitAvail,
-                                                            // fixed V0.9.12 (2001-04-29) [umoeller]
-                                                    cThousands));
-                dAvailable = (double)fsa.cbSector
-                                  * fsa.cSectorUnit
-                                  * fsa.cUnitAvail,
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_AVAILABLE_BYTES,
-                                  nlsThousandsDouble(szTemp,
-                                                     dAvailable,
-                                                     cThousands));
-
-                // allocated space
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_ALLOCATED_SECTORS,
-                                  nlsThousandsULong(szTemp,
-                                                     (fsa.cUnit - fsa.cUnitAvail),
-                                                            // V0.9.12 (2001-04-29) [umoeller]
-                                                     cThousands));
-                dAllocated = dTotal - dAvailable;  // allocated
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_DISK_ALLOCATED_BYTES,
-                                  nlsThousandsDouble(szTemp,
-                                                     dAllocated,
-                                                     cThousands));
-
-                // reset pie chart control with those values
-                pcd.usStartAngle = 270 + 15;
-                pcd.usSweepAngle = 360 - 30;       // draw 7/8 pie
-                pcd.cValues = 2;            // value count
-                dDisplay[0] = dAllocated;
-                dDisplay[1] = dAvailable;
-                pcd.padValues = &dDisplay[0];
-
-                pcd.palColors = (LONG*)(&alColors);
-
-                // compose description strings array
-                nlsThousandsDouble(szAllocated,
-                                   dDisplay[0] / 1024 / 1024,
-                                   cThousands);
-                strcat(szAllocated, " MB");
-                nlsThousandsDouble(szAvailable,
-                                   dDisplay[1] / 1024 / 1024,
-                                   cThousands);
-                strcat(szAvailable, " MB");
-                apszDescriptions[0] = szAllocated;
-                apszDescriptions[1] = szAvailable;
-                pcd.papszDescriptions = &apszDescriptions[0];
-
-                WinSendMsg(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DISK_CHART),
-                           CHTM_SETCHARTDATA,
-                           &pcd,
-                           NULL);
-            }
-        }
     }
 }
 
@@ -474,4 +342,147 @@ MRESULT dskDetailsItemChanged(PNOTEBOOKPAGE pnbp,
     return mrc;
 }
 
+/*
+ *@@ dskDetailsTimer:
+ *
+ *@@added V1.0.2 (2003-05-14) [umoeller]
+ */
+
+VOID XWPENTRY dskDetailsTimer(PNOTEBOOKPAGE pnbp, ULONG ul)
+{
+    ULONG ulLogicalDrive;
+
+    // the following is safe because WPSharedDir doesn't have
+    // a "Details" page
+    if (ulLogicalDrive = _wpQueryLogicalDrive(pnbp->inbp.somSelf))
+    {
+        FSALLOCATE      fsa;
+        CHAR            szTemp[100];
+        CHAR            szVolumeLabel[20];
+
+        // get thousands separator from "Country" object
+        CHAR            cThousands = cmnQueryThousandsSeparator();
+
+        if (doshQueryDiskLabel(ulLogicalDrive, &szVolumeLabel[0])
+                == NO_ERROR)
+            // label entry field
+            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DISK_LABEL,
+                              szVolumeLabel);
+
+        // file-system type (HPFS, ...)
+        if (doshQueryDiskFSType(ulLogicalDrive,
+                                szTemp,
+                                sizeof(szTemp))
+                    == NO_ERROR)
+        {
+            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DISK_FILESYSTEM,
+                              szTemp);
+        }
+
+        if (DosQueryFSInfo(ulLogicalDrive, FSIL_ALLOC, &fsa, sizeof(fsa))
+                == NO_ERROR)
+        {
+            double      dTotal = 0,
+                        dAllocated = 0,
+                        dAvailable = 0;
+            double      dDisplay[2];
+            CHAR        szAvailable[50] = "",
+                        szAllocated[50] = "";
+            PSZ         apszDescriptions[2];
+            CHARTDATA   pcd;
+            LONG        alColors[2] = {
+                                            0x00FF0000,     // color for allocated (RGB)
+                                            0x0000FF00      // color for free
+                                      };
+
+            ULONG       ulBlockSize = fsa.cbSector * fsa.cSectorUnit;
+                        // V0.9.12 (2001-04-29) [umoeller]
+                        // this page always reported fsa.cbSector
+                        // only, which is always 512
+
+            // bytes per sector
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_SECTORSIZE,
+                              nlsThousandsULong(szTemp,
+                                                 ulBlockSize,
+                                                        // fixed V0.9.12 (2001-04-29) [umoeller]
+                                                 cThousands));
+
+            // total size
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_TOTAL_SECTORS,
+                              nlsThousandsULong(szTemp,
+                                                 fsa.cUnit,
+                                                        // fixed V0.9.12 (2001-04-29) [umoeller]
+                                                 cThousands));
+            dTotal = (double)fsa.cbSector
+                          * fsa.cSectorUnit
+                          * fsa.cUnit;
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_TOTAL_BYTES,
+                              nlsThousandsDouble(szTemp,
+                                                 dTotal,
+                                                 cThousands));
+
+            // free space
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_AVAILABLE_SECTORS,
+                              nlsThousandsULong(szTemp,
+                                                fsa.cUnitAvail,
+                                                        // fixed V0.9.12 (2001-04-29) [umoeller]
+                                                cThousands));
+            dAvailable = (double)fsa.cbSector
+                              * fsa.cSectorUnit
+                              * fsa.cUnitAvail,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_AVAILABLE_BYTES,
+                              nlsThousandsDouble(szTemp,
+                                                 dAvailable,
+                                                 cThousands));
+
+            // allocated space
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_ALLOCATED_SECTORS,
+                              nlsThousandsULong(szTemp,
+                                                 (fsa.cUnit - fsa.cUnitAvail),
+                                                        // V0.9.12 (2001-04-29) [umoeller]
+                                                 cThousands));
+            dAllocated = dTotal - dAvailable;  // allocated
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_DISK_ALLOCATED_BYTES,
+                              nlsThousandsDouble(szTemp,
+                                                 dAllocated,
+                                                 cThousands));
+
+            // reset pie chart control with those values
+            pcd.usStartAngle = 270 + 15;
+            pcd.usSweepAngle = 360 - 30;       // draw 7/8 pie
+            pcd.cValues = 2;            // value count
+            dDisplay[0] = dAllocated;
+            dDisplay[1] = dAvailable;
+            pcd.padValues = &dDisplay[0];
+
+            pcd.palColors = (LONG*)(&alColors);
+
+            // compose description strings array
+            nlsThousandsDouble(szAllocated,
+                               dDisplay[0] / 1024 / 1024,
+                               cThousands);
+            strcat(szAllocated, " MB");
+            nlsThousandsDouble(szAvailable,
+                               dDisplay[1] / 1024 / 1024,
+                               cThousands);
+            strcat(szAvailable, " MB");
+            apszDescriptions[0] = szAllocated;
+            apszDescriptions[1] = szAvailable;
+            pcd.papszDescriptions = &apszDescriptions[0];
+
+            WinSendMsg(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DISK_CHART),
+                       CHTM_SETCHARTDATA,
+                       &pcd,
+                       NULL);
+        }
+    }
+
+}
 

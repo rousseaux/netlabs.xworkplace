@@ -2534,13 +2534,16 @@ SOM_Scope BOOL  SOMLINK xo_xwpQuerySetup2(XFldObject *somSelf,
  *
  *      Parameters:
  *
- *      --  hab is the anchor block of WPS thread 1.
+ *      --  ulView is the OPEN_* flag, normally OPEN_DEFAULT.
  *
  *      --  ulCorner is 0 if this is really from a
  *          hotkey. In that case, the "hotkey"
  *          system sound has already been played.
  *          It is > 0 if this resulted from a
  *          screen border mouse action.
+ *          It is -1 if the caller desires only object
+ *          opening/resurfacing without any special
+ *          processing.
  *
  *      Presently, only the XCenter overrides this,
  *      so this default implementation gets called
@@ -2549,10 +2552,11 @@ SOM_Scope BOOL  SOMLINK xo_xwpQuerySetup2(XFldObject *somSelf,
  *      resurface an existing view.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.2 (2003-03-07) [umoeller]: removed hab, added ulView param
  */
 
 SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
-                                                   ULONG hab,
+                                                   ULONG ulView,
                                                    ULONG ulCorner)
 {
     HWND hwnd;
@@ -2563,14 +2567,14 @@ SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
     // open the object, or resurface if already open
     hwnd = _wpViewObject(somSelf,
                          NULLHANDLE,   // hwndCnr (?!?)
-                         OPEN_DEFAULT,
+                         ulView, // OPEN_DEFAULT,
                          0);           // "optional parameter" (?!?)
 
     PMPF_KEYS(("opened hwnd 0x%lX", hwnd));
 
     if (hwnd)
     {
-        if (WinIsWindow(hab,
+        if (WinIsWindow(WinQueryAnchorBlock(HWND_DESKTOP),
                         hwnd))
         {
             // it's a window:

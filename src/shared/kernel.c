@@ -1059,7 +1059,9 @@ STATIC VOID T1M_DaemonReady(VOID)
  *                  2 = top left,
  *                  3 = lower right,
  *                  4 = top right;
- *                  0 = no corner, probably object hotkey.
+ *                  0 = object hotkey. We then play the respective
+ *                      system sound.
+ *                  -1 = other action. Perform no special processing.
  *
  *      The way this works is the following:
  *
@@ -1069,7 +1071,13 @@ STATIC VOID T1M_DaemonReady(VOID)
  *      2)  If it is not, we try to get the object from the
  *          handle. If that works (handle isn't invalid),
  *          we first play the "hotkey" system sound. We then
- *          invoke
+ *          invoke XFldObject::xwpHotkeyOrBorderAction.
+ *
+ *      Note that the "corner" value (mp2) is evaluated by
+ *      XFldObject::xwpHotkeyOrBorderAction and its overrides,
+ *      so there might be class-specific behavior attached to
+ *      that. For example, XCenter::xwpHotkeyOrBorderAction
+ *      will open the X-Button menu for the "0" value.
  *
  *@@added V0.9.3 (2000-04-20) [umoeller]
  *@@changed V0.9.3 (2000-04-20) [umoeller]: added system sound
@@ -1189,7 +1197,7 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
 
                 if (pobjStart)
                 {
-                    somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
+                    /* somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
 
                     // obtain "xwpHotkeyOrBorderAction" method pointer
                     if (pfn_xwpHotkeyOrBorderAction = (somTD_XFldObject_xwpHotkeyOrBorderAction)somResolveByName(
@@ -1197,21 +1205,52 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                                                             "xwpHotkeyOrBorderAction"))
                     {
                         // method resolved:
+                        */
 #ifndef __NOXSYSTEMSOUNDS__
                         if ((ULONG)mp2 == 0)
                             // object hotkey, not screen corner:
                             cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
                                         // V0.9.3 (2000-04-20) [umoeller]
 #endif
-                        pfn_xwpHotkeyOrBorderAction(pobjStart,
-                                                    WinQueryAnchorBlock(hwndObject),
-                                                    (ULONG)mp2);
-                    }
+
+                        // we have a method call for this V1.0.2 (2003-03-07) [umoeller]
+                        _xwpHotkeyOrBorderAction(pobjStart,
+                                                 // WinQueryAnchorBlock(hwndObject),
+                                                 OPEN_DEFAULT,      // changed V1.0.2 (2003-03-07) [umoeller]
+                                                 (ULONG)mp2);
+                    // }
                 }
             }
         }
     }
     CATCH(excpt1) {} END_CATCH();
+}
+
+/*
+ *@@ T1M_OpenObjectFromHandle2:
+ *      implementation for T1M_OPENOBJECTFROMHANDLE2 in
+ *      fnwpThread1Object.
+ *
+ *      Required for the #398 bugfix from w_monitors.c.
+ *
+ *@@added V1.0.2 (2003-03-07) [umoeller]
+ */
+
+STATIC VOID T1M_OpenObjectFromHandle2(HWND hwndObject,
+                                      HOBJECT hobj,
+                                      ULONG ulView)
+{
+    WPObject *pobjStart = _wpclsQueryObject(_WPObject,
+                                            hobj);
+
+    PMPF_KEYS(("received hobj 0x%lX -> 0x%lX",
+                hobj,
+                pobjStart));
+
+    if (pobjStart)
+        _xwpHotkeyOrBorderAction(pobjStart,
+                                 ulView,
+                                 -1);
 }
 
 /*
@@ -1509,6 +1548,22 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
 
         case T1M_OPENOBJECTFROMHANDLE:
             T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
+        break;
+
+        /*
+         *@@ T1M_OPENOBJECTFROMHANDLE2:
+         *      like T1M_OPENOBJECTFROMHANDLE, but instead
+         *      this has the following params:
+         *
+         *      --  HOBJECT mp1
+         *
+         *      --  ULONG mp2: OPEN_* flag (view to open).
+         *
+         *@@added V1.0.2 (2003-03-07) [umoeller]
+         */
+
+        case T1M_OPENOBJECTFROMHANDLE2:
+            T1M_OpenObjectFromHandle2(hwndObject, (HOBJECT)mp1, (ULONG)mp2);
         break;
 
         /*

@@ -270,6 +270,7 @@ PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
 PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
 PKRNQUERYDAEMONOBJECT pkrnQueryDaemonObject = NULL;
+PKRNPOSTTHREAD1OBJECTMSG pkrnPostThread1ObjectMsg = NULL;
 
 PNLSDATETIME2 pnlsDateTime2 = NULL;
 PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
@@ -315,6 +316,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
         "krnQueryDaemonObject", (PFN*)&pkrnQueryDaemonObject,
+        "krnPostThread1ObjectMsg", (PFN*)&pkrnPostThread1ObjectMsg,
         "nlsDateTime2", (PFN*)&pnlsDateTime2,
         "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
@@ -1965,6 +1967,7 @@ CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
  *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting eCSClock on eCS
  *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting double-click on diskfree to open drive
  *@@changed V0.9.19 (2002-04-02) [umoeller]: eCSClock opened settings, fixed
+ *@@changed V1.0.2 (2003-03-07) [umoeller]: now posting msg to t1 obj for opening objects @@fixes 398
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
@@ -2034,12 +2037,19 @@ VOID MwgtButton1DblClick(HWND hwnd,
 
         if (hobj)
         {
+            // changed V1.0.2 (2003-03-07) [umoeller] @@fixes 398
+            pkrnPostThread1ObjectMsg(T1M_OPENOBJECTFROMHANDLE2,
+                                    (MPARAM)hobj,
+                                    (MPARAM)ulView);
+
+            /*
             if (WinOpenObject(hobj,
                               ulView,
                               TRUE))
                 WinOpenObject(hobj,
                               ulView,
                               TRUE);
+            */
         }
     } // end if (pPrivate)
 }
