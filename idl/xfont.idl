@@ -54,6 +54,8 @@ interface XWPFontFolder : WPFolder
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
+    BOOL xwpChangeFontsCount(in LONG i);
+
     attribute BOOL fFilledWithFonts;
             // this is TRUE after the font folder has been filled
             // with fonts on the first open
@@ -66,7 +68,8 @@ interface XWPFontFolder : WPFolder
             xwpUpdateStatusBar,
             _get_fFilledWithFonts,
             _set_fFilledWithFonts,
-            xwpProcessObjectCommand;
+            xwpProcessObjectCommand,
+            xwpChangeFontsCount;
 
     /*
      * Class Modifiers:

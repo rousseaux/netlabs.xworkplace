@@ -1437,11 +1437,9 @@ WPObject* wpshCreateFromTemplate(HAB hab,
             // up everything
 
             // So just copy the object and remove OBJSTYLE_TEMPLATE later...
-            pNewObject = _wpCopyObject(pTemplate,
-                                       pFolder,
-                                       TRUE); // lock
-
-            if (pNewObject)
+            if (pNewObject = _wpCopyObject(pTemplate,
+                                           pFolder,
+                                           TRUE))       // lock
             {
                 PMINIRECORDCORE pmrc = NULL;
                 _wpModifyStyle(pNewObject,

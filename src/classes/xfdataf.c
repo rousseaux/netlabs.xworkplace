@@ -1092,12 +1092,16 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
  *
  *@@added V0.9.16 (2002-01-26) [umoeller]
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed broken icons in PMMail
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: now using XFldObject::xwpShareIcon
  */
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 {
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedFileIcon");
+
+    _PmpfF(("[%s] entering",
+            _wpQueryTitle(somSelf)));
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -1111,6 +1115,9 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
                         // has changed the data file's default view
 
             WPObject *pobjAssoc;
+
+            _PmpfF(("   getting associated program for default view 0x%lX", ulView));
+
             if (pobjAssoc = ftypQueryAssociatedProgram(somSelf,
                                                        &ulView,
                                                        // do not use "plain text" as default,
@@ -1118,7 +1125,17 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
                                                        FALSE))
                     // locks the object
             {
+                _PmpfF(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
+
                 // get the assoc icon
+#if 1
+                // V0.9.20 (2002-07-25) [umoeller]
+                // now using the new icon sharing mechanism!
+                hptr = icomShareIcon(pobjAssoc,
+                                     somSelf,
+                                     TRUE);         // make global
+
+#else
                 if (hptr = _wpQueryIcon(pobjAssoc))
                     // and make it global so that other processes
                     // can use it (otherwise PMMail won't display
@@ -1128,21 +1145,25 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
                                        // magic flag used by the WPS,
                                        // whatever this is for
                                        0x77482837);
-
+#endif
+                // we have locked the object twice now (once in
+                // ftypQueryAssociatedProgram, once in icomShareIcon),
+                // so unlock once now
                 // _wpUnlockObject(pobjAssoc);
-                        // is this smart? may the program go dormant?
-                        // default method does this though, so we do it too
             }
         }
         CATCH(excpt1)
         {
         } END_CATCH();
 
-        return (hptr);      // NULLHANDLE still for "plain text"
+        _PmpfF(("done, returning 0x%lX",
+                hptr));
+
+        return hptr;      // NULLHANDLE still for "plain text"
     }
 #endif
 
-    return (XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf));
+    return XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf);
 }
 
 /*

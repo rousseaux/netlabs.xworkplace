@@ -2642,10 +2642,10 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // enable "warpcenter first" if shutdown or WPS have been enabled
         // AND if the WarpCenter was found
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
-                          ((fXShutdownOrWPSValid)
-                          && (pKernelGlobals->pAwakeWarpCenter != NULL)));
-                                 // @@todo this doesn't find the WarpCenter
-                                 // if started thru CONFIG.SYS
+                         (    (fXShutdownOrWPSValid)
+                           && (G_pAwakeWarpCenter != NULL)
+                                    // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
+                         ));
 
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
@@ -3107,14 +3107,16 @@ VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
                           &pConsts->pidPM,
                           NULL);
 
-    if (pConsts->pKernelGlobals->pAwakeWarpCenter)
+    if (G_pAwakeWarpCenter)     // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
     {
         // WarpCenter is awake: check if it's open
         PUSEITEM pUseItem;
-        for (pUseItem = _wpFindUseItem(pConsts->pKernelGlobals->pAwakeWarpCenter,
-                                       USAGE_OPENVIEW, NULL);
+        for (pUseItem = _wpFindUseItem(G_pAwakeWarpCenter,
+                                       USAGE_OPENVIEW,
+                                       NULL);
              pUseItem;
-             pUseItem = _wpFindUseItem(pConsts->pKernelGlobals->pAwakeWarpCenter, USAGE_OPENVIEW,
+             pUseItem = _wpFindUseItem(G_pAwakeWarpCenter,
+                                       USAGE_OPENVIEW,
                                        pUseItem))
         {
             PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
@@ -3572,7 +3574,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
              && (pConsts->pKernelGlobals)
             )
     {
-        *ppObject = pConsts->pKernelGlobals->pAwakeWarpCenter;
+        *ppObject = G_pAwakeWarpCenter;     // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
         return (XSD_WARPCENTER);
     }
 #ifdef __DEBUG__
@@ -4508,7 +4510,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             }
 
             // close WarpCenter next (V0.9.5, from V0.9.3)
-            if (    (pWarpCenter = pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter)
+            if (    (pWarpCenter = G_pAwakeWarpCenter)      // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
                  && (somIsObj(pWarpCenter))
                )
             {
@@ -5360,7 +5362,7 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                     // close open WarpCenter first, if desired
                     // V0.9.7 (2000-12-08) [umoeller]
                     doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  WarpCenter treatment:");
-                    if (somIsObj(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter))
+                    if (somIsObj(G_pAwakeWarpCenter))       // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
                     {
                         if (pShutdownData->SDConsts.hwndOpenWarpCenter)
                         {

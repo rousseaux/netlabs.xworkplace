@@ -511,7 +511,7 @@ SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
 
     XWPProgram_parent_WPProgram_wpObjectReady(somSelf, ulCode,
                                               refObject);
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         XWPProgramData *somThis = XWPProgramGetData(somSelf);
 
@@ -618,7 +618,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
 {
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIcon");
 
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         XWPProgramData *somThis = XWPProgramGetData(somSelf);
         PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
@@ -906,7 +906,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (icoRunReplacement())
+         && (icomRunReplacement())
        )
     {
         BOOL        brc = FALSE;
@@ -972,7 +972,7 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (icoRunReplacement())
+         && (icomRunReplacement())
        )
     {
         ULONG           cbRequired = sizeof(ICONINFO);
@@ -1105,7 +1105,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetIconData");
 
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         if (    (pIconInfo)
              && (pIconInfo->fFormat == ICON_CLEAR)
@@ -1162,10 +1162,6 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetAssociationType(XWPProgram *somSelf,
 
     brc = XWPProgram_parent_WPProgram_wpSetAssociationType(somSelf,
                                                            pszType);
-
-#ifndef __NEVEREXTASSOCS__
-    ftypInvalidateCaches();
-#endif
 
     return brc;
 }
@@ -1238,7 +1234,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (icoRunReplacement())
+         && (icomRunReplacement())
        )
     {
         BOOL brc = FALSE;
@@ -1436,7 +1432,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PIBMPROGRAMDATA)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (icoRunReplacement())
+         && (icomRunReplacement())
        )
     {
         BOOL brc = FALSE;

@@ -21,7 +21,7 @@
  *          the XFldDataFile menu methods to hack the
  *          "Open" submenu.
  *
- *      --  ftypBuildAssocsList could be called separately
+ *      --  BuildAssocsList could be called separately
  *          to build a complete associations list for an
  *          object.
  *
@@ -127,32 +127,13 @@
 #include <wppgmf.h>                     // WPProgramFile
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
-// #define DEBUG_ASSOCS
+#define DEBUG_ASSOCS
 
 /* ******************************************************************
  *
  *   Additional declarations
  *
  ********************************************************************/
-
-/*
- *@@ WPSTYPEASSOCTREENODE:
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- *@@changed V0.9.16 (2002-01-26) [umoeller]: now using aulHandles for speed
- */
-
-typedef struct _WPSTYPEASSOCTREENODE
-{
-    TREE        Tree;
-        // we use Tree.ulKey for
-        // PSZ         pszType;
-    ULONG       cHandles;                   // no. of items in aulHandles
-    HOBJECT     ahobjs[1];                  // array of objects handles;
-                                            // struct is dynamic in size
-    // PSZ         pszObjectHandles;
-    // ULONG       cbObjectHandles;
-} WPSTYPEASSOCTREENODE, *PWPSTYPEASSOCTREENODE;
 
 /*
  *@@ INSTANCETYPE:
@@ -185,19 +166,6 @@ typedef struct _INSTANCEFILTER
  *   Global variables
  *
  ********************************************************************/
-
-static LINKLIST            G_llTypesWithFilters;
-                        // contains PXWPTYPEWITHFILTERS ptrs;
-                        // list is auto-free
-static BOOL                G_fTypesWithFiltersValid = FALSE;
-                        // set to TRUE if G_llTypesWithFilters has been filled
-
-static TREE                *G_WPSTypeAssocsTreeRoot = NULL;
-static LONG                G_cWPSTypeAssocsTreeItems = 0;       // added V0.9.12 (2001-05-22) [umoeller]
-static BOOL                G_fWPSTypesValid = FALSE;
-
-static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
-                        // mutex protecting all the caches
 
 static HMTX                G_hmtxInstances = NULLHANDLE;
 static TREE                *G_InstanceTypesTreeRoot = NULL;
@@ -544,413 +512,6 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
 
 /* ******************************************************************
  *
- *   Associations caches
- *
- ********************************************************************/
-
-/*
- *@@ ftypLockCaches:
- *      locks the association caches.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-BOOL ftypLockCaches(VOID)
-{
-    if (G_hmtxAssocsCaches)
-        return !DosRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT);
-
-    // first call:
-    if (!DosCreateMutexSem(NULL,
-                           &G_hmtxAssocsCaches,
-                           0,
-                           TRUE))     // lock!
-    {
-        lstInit(&G_llTypesWithFilters,
-                TRUE);         // auto-free
-        treeInit(&G_WPSTypeAssocsTreeRoot,
-                 &G_cWPSTypeAssocsTreeItems);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-/*
- *@@ ftypUnlockCaches:
- *      unlocks the association caches.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-VOID ftypUnlockCaches(VOID)
-{
-    DosReleaseMutexSem(G_hmtxAssocsCaches);
-}
-
-/*
- *@@ ftypInvalidateCaches:
- *      invalidates all the global association caches
- *      and frees all allocated memory.
- *
- *      This must ALWAYS be called when any of the data
- *      in OS2.INI related to associations (WPS or XWP)
- *      is changed. Otherwise XWP can't pick up the changes.
- *
- *      After the caches have been invalidated, the next
- *      call to ftypGetCachedTypesWithFilters or FindWPSTypeAssoc
- *      will reinitialize the caches automatically.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-VOID ftypInvalidateCaches(VOID)
-{
-    if (ftypLockCaches())
-    {
-        if (G_fTypesWithFiltersValid)
-        {
-            // 1) clear the XWP types with filters
-            /* PLISTNODE pNode = lstQueryFirstNode(&G_llTypesWithFilters);
-            while (pNode)
-            {
-                PXWPTYPEWITHFILTERS pThis = (PXWPTYPEWITHFILTERS)pNode->pItemData;
-                if (pThis->pszType)
-                {
-                    free(pThis->pszType);
-                    pThis->pszType = NULL;
-                }
-                if (pThis->pszFilters)
-                {
-                    free(pThis->pszFilters);
-                    pThis->pszFilters = NULL;
-                }
-
-                pNode = pNode->pNext;
-            } */        // no longer necessary, these use the same memory block
-                        // V0.9.16 (2002-01-26) [umoeller]
-
-            lstClear(&G_llTypesWithFilters);
-                        // this frees the XWPTYPEWITHFILTERS structs themselves
-
-            G_fTypesWithFiltersValid = FALSE;
-        }
-
-        if (G_fWPSTypesValid)
-        {
-            // 2) clear the WPS types... we build an
-            // array from the tree first to avoid
-            // rebalancing the tree on every node
-            // delete
-            LONG cItems = G_cWPSTypeAssocsTreeItems;
-            TREE **papNodes = treeBuildArray(G_WPSTypeAssocsTreeRoot,
-                                             &cItems);
-
-            if (papNodes)
-            {
-                ULONG ul;
-                for (ul = 0; ul < cItems; ul++)
-                {
-                    PWPSTYPEASSOCTREENODE pWPSType = (PWPSTYPEASSOCTREENODE)papNodes[ul];
-                    if (pWPSType->Tree.ulKey) // pszType)
-                    {
-                        free((PSZ)pWPSType->Tree.ulKey); // pszType);
-                        pWPSType->Tree.ulKey = 0; // pszType = NULL;
-                    }
-                    /* if (pWPSType->pszObjectHandles)
-                    {
-                        free(pWPSType->pszObjectHandles);
-                        pWPSType->pszObjectHandles = NULL;
-                    } */ // no longer needed V0.9.16 (2002-01-26) [umoeller]
-                    free(pWPSType);
-                }
-
-                free(papNodes);
-            }
-
-            // reset the tree root
-            treeInit(&G_WPSTypeAssocsTreeRoot,
-                     &G_cWPSTypeAssocsTreeItems);
-
-            G_fWPSTypesValid = FALSE;
-        }
-
-        ftypUnlockCaches();
-    }
-}
-
-/*
- *@@ BuildTypesWithFiltersCache:
- *      called from ftypGetCachedTypesWithFilters to build
- *      the tree of XWPTYPEWITHFILTERS entries.
- *
- *      Preconditions:
- *
- *      -- The caller must lock the caches before calling.
- *
- *@@added V0.9.16 (2002-01-26) [umoeller]
- */
-
-static VOID BuildTypesWithFiltersCache(VOID)
-{
-    // caches have been cleared, or first call:
-    // build the list in the global variable from OS2.INI...
-
-    APIRET arc;
-    PSZ     pszTypesWithFiltersList = NULL;
-
-    #ifdef DEBUG_ASSOCS
-        DosBeep(1000, 100);
-        _PmpfF(("rebuilding list"));
-    #endif
-
-    if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                    INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                    &pszTypesWithFiltersList)))
-    {
-        PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
-
-        while (*pTypeWithFilterThis != 0)
-        {
-            // pFilterThis has the current type now
-            // (e.g. "C Code");
-            // get filters for that (e.g. "*.c");
-            // this is another list of null-terminated strings
-            ULONG ulTypeLength;
-            if (ulTypeLength = strlen(pTypeWithFilterThis))
-            {
-                ULONG cbFiltersForTypeList = 0;     // including null byte
-                PSZ pszFiltersForTypeList;
-                if (pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
-                                                                 INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                                                 pTypeWithFilterThis,
-                                                                 &cbFiltersForTypeList))
-                {
-                    if (cbFiltersForTypeList)
-                    {
-                        // this would be e.g. "*.c" now
-                        PXWPTYPEWITHFILTERS pNew;
-
-                        if (pNew = malloc(   sizeof(XWPTYPEWITHFILTERS)
-                                           + ulTypeLength + 1
-                                           + cbFiltersForTypeList))
-                        {
-                            // OK, pack this stuff:
-                            // V0.9.16 (2002-01-26) [umoeller]
-                            // put the type after pNew
-                            // put the filters list after that
-                            pNew->pszType = (PBYTE)pNew + sizeof(XWPTYPEWITHFILTERS);
-                                // strdup(pTypeWithFilterThis);
-                            pNew->pszFilters = pNew->pszType + ulTypeLength + 1;
-                                            // pszFiltersForTypeList;
-                                            // no copy, we have malloc() already
-
-                            memcpy(pNew->pszType,
-                                   pTypeWithFilterThis,
-                                   ulTypeLength + 1);
-                            memcpy(pNew->pszFilters,
-                                   pszFiltersForTypeList,
-                                   cbFiltersForTypeList);
-                            // upper-case this so we can use doshMatch
-                            // instead of doshMatchCase
-                            // V0.9.16 (2002-01-26) [umoeller]
-                            nlsUpper(pNew->pszFilters, cbFiltersForTypeList);
-                            lstAppendItem(&G_llTypesWithFilters, pNew);
-                        }
-                        else
-                            // malloc failed:
-                            break;
-                    }
-                    else
-                        if (pszFiltersForTypeList)
-                            free(pszFiltersForTypeList);
-                }
-            }
-
-            pTypeWithFilterThis += ulTypeLength + 1;   // next type/filter
-        } // end while (*pTypeWithFilterThis != 0)
-
-        free(pszTypesWithFiltersList);
-                    // we created copies of each string here
-
-        G_fTypesWithFiltersValid = TRUE;
-    }
-}
-
-/*
- *@@ ftypGetCachedTypesWithFilters:
- *      returns the LINKLIST containing XWPTYPEWITHFILTERS pointers,
- *      which is built internally if this hasn't been done yet.
- *
- *      This is new with V0.9.9 to speed up getting the filters
- *      for the XWP file types so we don't have to retrieve these
- *      from OS2.INI all the time (for each single data file which
- *      is awakened during folder population).
- *
- *      Preconditions:
- *
- *      -- The caller must lock the caches before calling.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- *@@changed V0.9.16 (2002-01-26) [umoeller]: optimizations
- */
-
-PLINKLIST ftypGetCachedTypesWithFilters(VOID)
-{
-    if (!G_fTypesWithFiltersValid)
-        BuildTypesWithFiltersCache();
-
-    return (&G_llTypesWithFilters);
-}
-
-/*
- *@@ BuildWPSTypesCache:
- *      rebuilds the WPS types cache.
- *
- *      Preconditions:
- *
- *      -- Caller must hold the cache mutex.
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad types count
- *@@changed V0.9.16 (2002-01-05) [umoeller]: some optimizations for empty strings
- *@@changed V0.9.16 (2002-01-26) [umoeller]: now pre-resolving object handles for speed
- */
-
-static VOID BuildWPSTypesCache(VOID)
-{
-    APIRET  arc;
-    PSZ     pszAssocData = NULL;
-    if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                    WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                    &pszAssocData)))
-    {
-        PSZ pTypeThis = pszAssocData;
-        while (*pTypeThis)
-        {
-            CHAR    szObjectHandles[1000];      // enough for 200 handles
-            ULONG   cb = sizeof(szObjectHandles);
-            ULONG   cHandles = 0;
-            PCSZ    pAssoc;
-            if (    (PrfQueryProfileData(HINI_USER,
-                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                         pTypeThis,
-                                         szObjectHandles,
-                                         &cb))
-                 && (cb > 1)
-               )
-            {
-                // we got handles for this type, and it's not
-                // just a null byte (just to name the type):
-                // count the handles
-
-                pAssoc = szObjectHandles;
-                while (*pAssoc)
-                {
-                    HOBJECT hobjAssoc;
-                    if (hobjAssoc = atoi(pAssoc))
-                    {
-                        cHandles++;
-
-                        // go for next object handle (after the 0 byte)
-                        pAssoc += strlen(pAssoc) + 1;
-                        if (pAssoc >= szObjectHandles + cb)
-                            break; // while (*pAssoc)
-                    }
-                    else
-                        // invalid handle:
-                        break;
-
-                } // end while (*pAssoc)
-            }
-
-            if (cHandles)
-            {
-                PWPSTYPEASSOCTREENODE pNewNode;
-                if (pNewNode = malloc(   sizeof(WPSTYPEASSOCTREENODE)
-                                       + (cHandles - 1) * sizeof(HOBJECT)))
-                {
-                    // ptr to first handle in buf
-                    HOBJECT     *phobjThis = pNewNode->ahobjs;
-
-                    pNewNode->Tree.ulKey = (ULONG)strdup(pTypeThis);
-                    pNewNode->cHandles = cHandles;
-
-                    // second loop, fill the handles array
-                    pAssoc = szObjectHandles;
-                    while (*pAssoc)
-                    {
-                        if (*phobjThis = atoi(pAssoc))
-                        {
-                            // go for next object handle (after the 0 byte)
-                            pAssoc += strlen(pAssoc) + 1;
-                            phobjThis++;
-                            if (pAssoc >= szObjectHandles + cb)
-                                break; // while (*pAssoc)
-                        }
-                        else
-                            // invalid handle:
-                            break;
-
-                    } // end while (*pAssoc)
-                }
-
-                // insert into binary tree
-                treeInsert(&G_WPSTypeAssocsTreeRoot,
-                           &G_cWPSTypeAssocsTreeItems,   // V0.9.16 (2001-10-19) [umoeller]
-                           (TREE*)pNewNode,
-                           treeCompareStrings);
-
-            } // end if cHandles
-
-            pTypeThis += strlen(pTypeThis) + 1;   // next type
-        }
-
-        free(pszAssocData);
-
-        G_fWPSTypesValid = TRUE;
-    }
-}
-
-/*
- *@@ FindWPSTypeAssoc:
- *      returns the PWPSTYPEASSOCTREENODE containing the
- *      WPS association objects for the specified type.
- *
- *      This is retrieved from the internal cache, which
- *      is built if necessary.
- *
- *      Preconditions:
- *
- *      -- The caller must lock the caches before calling.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-static PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
-{
-    if (!G_fWPSTypesValid)
-        // create a copy of the data from OS2.INI... this
-        // is much faster than using the Prf* functions all
-        // the time
-        BuildWPSTypesCache();
-
-    if (G_fWPSTypesValid)
-    {
-        #ifdef DEBUG_ASSOCS
-            _PmpfF(("looking for %s now...", pcszType));
-        #endif
-
-        return ((PWPSTYPEASSOCTREENODE)treeFind(G_WPSTypeAssocsTreeRoot,
-                                                (ULONG)pcszType,
-                                                treeCompareStrings));
-    }
-
-    return NULL;
-}
-
-/* ******************************************************************
- *
  *   Extended associations helper funcs
  *
  ********************************************************************/
@@ -1067,19 +628,29 @@ static ULONG AppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C 
 }
 
 /*
+ *@@ FNFOREACHAUTOMATICTYPE:
+ *      callback for ForEachAutomaticType.
+ *
+ *      If this returns FALSE, processing is
+ *      aborted.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+typedef BOOL _Optlink FNFOREACHAUTOMATICTYPE(PCSZ pcszType,
+                                             PVOID pvUser);
+typedef FNFOREACHAUTOMATICTYPE *PFNFOREACHAUTOMATICTYPE;
+
+/*
  *@@ AppendTypesForFile:
- *      this lists all extended file types which have
- *      a file filter assigned to them which matches
- *      the given object title.
+ *      this calls the given callback for all extended
+ *      file types which have a file filter assigned to
+ *      them which matches the given object title.
  *
  *      For example, if you pass "filetype.c" to this
  *      function and "C Code" has the "*.c" filter
- *      assigned, this would add "C Code" to the given
- *      list.
- *
- *      The list is not cleared, but simply appended to.
- *      The type is only added if it doesn't exist in
- *      the list yet.
+ *      assigned, this would call the callback with
+ *      the "C Code" type string.
  *
  *      In order to query all associations for a given
  *      object, pass the object title to this function
@@ -1088,80 +659,128 @@ static ULONG AppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C 
  *      function, call ftypListAssocsForType with the
  *      same objects list for each call.
  *
- *      Note that this func creates _copies_ of the
- *      file types in the given list, using strdup().
- *
  *      This returns the no. of items which were added
  *      (0 if none).
  *
- *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
-                                PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
-                                                      // with file types (e.g. "C Code", "Plain text")
+static ULONG ForEachAutomaticType(PCSZ pcszObjectTitle,
+                                  PFNFOREACHAUTOMATICTYPE pfnForEachAutomaticType,
+                                  PVOID pvUser)
 {
     ULONG   ulrc = 0;
+    ULONG   ulObjectTitleLen;
+    PSZ     pszUpperTitle;
 
-    if (ftypLockCaches())
+    // loop thru all extended file types which have
+    // filters assigned to them to check whether the
+    // filter matches the object title
+
+    if (    (pcszObjectTitle)
+         && (pszUpperTitle = strhdup(pcszObjectTitle, &ulObjectTitleLen))
+       )
     {
-        // loop thru all extended file types which have
-        // filters assigned to them to check whether the
-        // filter matches the object title
-        PLINKLIST pllTypesWithFilters = ftypGetCachedTypesWithFilters();
+        PSZ     pszTypesWithFiltersList;
 
         #ifdef DEBUG_ASSOCS
-        _PmpfF(("getting types for objtitle %s", pcszObjectTitle));
+        _PmpfF(("[%s] entering", pcszObjectTitle));
         #endif
 
-        if (pllTypesWithFilters)
+        nlsUpper(pszUpperTitle, ulObjectTitleLen);
+
+        if (!prfhQueryKeysForApp(HINI_USER,
+                                 INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                 &pszTypesWithFiltersList))
         {
-            ULONG ulObjectTitleLen;
-            PSZ pszUpperTitle = strhdup(pcszObjectTitle, &ulObjectTitleLen);
+            PSZ     pTypeThis = pszTypesWithFiltersList;
+            BOOL    fQuit = FALSE;
 
-            PLISTNODE pNode = lstQueryFirstNode(pllTypesWithFilters);
-
-            nlsUpper(pszUpperTitle, ulObjectTitleLen);
-
-            while (pNode)
+            while ((*pTypeThis) && (!fQuit))
             {
-                PXWPTYPEWITHFILTERS pTypeWithFilters = (PXWPTYPEWITHFILTERS)pNode->pItemData;
+                // pTypeWithFilterThis has the current type now
+                // (e.g. "C Code");
+                // get filters for that (e.g. "*.c");
+                // this is another list of null-terminated strings
+                ULONG   ulTypeLength;
+                ULONG   cbFiltersForTypeList = 0;     // including null byte
+                PSZ     pszFiltersForTypeList;
 
-                // second loop: thru all filters for this file type
-                PSZ pFilterThis = pTypeWithFilters->pszFilters;
-                while (*pFilterThis != 0)
+                #ifdef DEBUG_ASSOCS
+                _Pmpf(("   checking filters of type %s", pTypeThis));
+                #endif
+
+                if (    (ulTypeLength = strlen(pTypeThis))
+                     && (pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
+                                                                      INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                                                      pTypeThis,
+                                                                      &cbFiltersForTypeList))
+                   )
                 {
-                    // check if this matches the data file name
-                    if (doshMatchCase(pFilterThis, pszUpperTitle))
+                    if (cbFiltersForTypeList)
                     {
-                        #ifdef DEBUG_ASSOCS
-                            _Pmpf(("  found type %s", pTypeWithFilters->pszType));
-                        #endif
+                        // this would be e.g. "*.c" now
 
-                        // matches:
-                        // now we have:
-                        // --  pszFilterThis e.g. "*.c"
-                        // --  pTypeFilterThis e.g. "C Code"
-                        // store the type (not the filter) in the output list
-                        AppendSingleTypeUnique(pllTypes,
-                                               strdup(pTypeWithFilters->pszType));
+                        // second loop: thru all filters for this file type
+                        PSZ pFilterThis = pszFiltersForTypeList;
 
-                        ulrc++;     // found something
+                        while ((*pFilterThis) && (!fQuit))
+                        {
+                            // check if this matches the data file name
+                            ULONG ulFilterThisLen = strlen(pFilterThis);
 
-                        break;      // this file type is done, so go for next type
+                            nlsUpper(pFilterThis, ulFilterThisLen);
+
+                            #ifdef DEBUG_ASSOCS
+                            _Pmpf(("      checking filters %s", pFilterThis));
+                            #endif
+
+                            if (doshMatchCase(pFilterThis, pszUpperTitle))
+                            {
+                                #ifdef DEBUG_ASSOCS
+                                    _PmpfF(("  type %s matches filter %s on %s",
+                                            pTypeThis,
+                                            pFilterThis,
+                                            pszUpperTitle));
+                                #endif
+
+                                // matches:
+                                // now we have:
+                                // --  pFilterThis e.g. "*.c"
+                                // --  pTypeWithFilterThis e.g. "C Code"
+
+                                ulrc++;     // found something
+
+                                // call user callback
+                                if (!pfnForEachAutomaticType(pTypeThis,
+                                                             pvUser))
+                                    fQuit = TRUE;
+
+                                break;      // this file type is done, so go for next type
+                            }
+
+                            pFilterThis += ulFilterThisLen + 1;   // next type/filter
+
+                            if (pFilterThis >= pszFiltersForTypeList + cbFiltersForTypeList)
+                                break; // while (*pFilter))
+
+                        } // end while (*pFilterThis)
                     }
 
-                    pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
-                } // end while (*pFilterThis)
+                    free(pszFiltersForTypeList);
+                }
 
-                pNode = pNode->pNext;
-            }
+                pTypeThis += ulTypeLength + 1;   // next type/filter
 
-            free(pszUpperTitle);
+            } // end while (*pTypeWithFilterThis != 0)
+
+            free(pszTypesWithFiltersList);
+                        // we created copies of each string here
         }
 
-        ftypUnlockCaches();
+        free(pszUpperTitle);
     }
+
     return (ulrc);
 }
 
@@ -1194,6 +813,7 @@ static ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
  *@@changed V0.9.9 (2001-04-02) [umoeller]: now using objFindObjFromHandle, DRAMATICALLY faster
  *@@changed V0.9.16 (2002-01-01) [umoeller]: loop stopped after an invalid handle, fixed
  *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, changed prototype, optimized
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: adjusted for getting rid of caches and mutexes
  */
 
 static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgram or WPProgramFile
@@ -1204,68 +824,85 @@ static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgr
 {
     ULONG   ulrc = 0;
 
-    CHAR    szTypeThis[100],
-            szParentForType[100];
-
+    CHAR    szTypeThis[100];
     PCSZ    pcszTypeThis = pcszType0;     // for now; later points to szTypeThis
 
     BOOL    fQuit = FALSE;
+
+    #ifdef DEBUG_ASSOCS
+        _PmpfF((" entering with type %s", pcszTypeThis));
+    #endif
 
     // outer loop for climbing up the file type parents
     do // while TRUE
     {
         // get associations from WPS INI data
-        PWPSTYPEASSOCTREENODE pWPSType = FindWPSTypeAssoc(pcszTypeThis);
-        ULONG cb;
-
-        #ifdef DEBUG_ASSOCS
-            _PmpfF(("got %d handles for type %s",
-                (pWPSType) ? pWPSType->cHandles : 0,
-                pcszTypeThis));
-        #endif
-
-        if (pWPSType)
+        CHAR    szObjectHandles[1000];      // enough for 200 handles
+        ULONG   cb = sizeof(szObjectHandles);
+        ULONG   cHandles = 0;
+        PCSZ    pAssoc;
+        if (    (PrfQueryProfileData(HINI_USER,
+                                     (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                     (PSZ)pcszTypeThis,
+                                     szObjectHandles,
+                                     &cb))
+             && (cb > 1)
+           )
         {
-            ULONG ul;
-
-            for (ul = 0;
-                 ul < pWPSType->cHandles;
-                 ul++)
+            // we got handles for this type, and it's not
+            // just a null byte (just to name the type):
+            // count the handles
+            pAssoc = szObjectHandles;
+            while ((*pAssoc) && (!fQuit))
             {
-                WPObject *pobjAssoc;
-                if (pobjAssoc = objFindObjFromHandle(pWPSType->ahobjs[ul]))
+                HOBJECT hobjAssoc;
+                if (!(hobjAssoc = atoi(pAssoc)))
+                    // invalid handle:
+                    break;
+                else
                 {
-                    PLINKLIST pllAssocs;
+                    WPObject *pobjAssoc;
 
-                    if (!(pllAssocs = *ppllAssocs))
-                        // first assoc found and list not created yet:
-                        // create list then
-                        *ppllAssocs = pllAssocs = lstCreate(FALSE);
-
-                    // look if the object has already been added;
-                    // this might happen if the same object has
-                    // been defined for several types (inheritance!)
-                    // V0.9.9 (2001-03-27) [umoeller]
-                    if (!lstNodeFromItem(pllAssocs, pobjAssoc))
+                    if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
                     {
-                        // no:
-                        lstAppendItem(pllAssocs, pobjAssoc);
-                        ulrc++;
+                        PLINKLIST pllAssocs;
 
-                        // V0.9.16 (2002-01-26) [umoeller]
-                        if (    (ulBuildMax != -1)
-                             && (lstCountItems(pllAssocs) >= ulBuildMax)
-                           )
+                        if (!(pllAssocs = *ppllAssocs))
+                            // first assoc found and list not created yet:
+                            // create list then
+                            *ppllAssocs = pllAssocs = lstCreate(FALSE);
+
+                        // look if the object has already been added;
+                        // this might happen if the same object has
+                        // been defined for several types (inheritance!)
+                        // V0.9.9 (2001-03-27) [umoeller]
+                        if (!lstNodeFromItem(pllAssocs, pobjAssoc))
                         {
-                            // we have reached the max no. the caller wants:
-                            fQuit = TRUE;
-                            if (pfDone)
-                                *pfDone = TRUE;
-                            break;
+                            // no:
+                            lstAppendItem(pllAssocs, pobjAssoc);
+                            ulrc++;
+
+                            // V0.9.16 (2002-01-26) [umoeller]
+                            if (    (ulBuildMax != -1)
+                                 && (lstCountItems(pllAssocs) >= ulBuildMax)
+                               )
+                            {
+                                // we have reached the max no. the caller wants:
+                                fQuit = TRUE;
+                                if (pfDone)
+                                    *pfDone = TRUE;
+                                break;
+                            }
                         }
                     }
                 }
-            }
+
+                // go for next object handle (after the 0 byte)
+                pAssoc += strlen(pAssoc) + 1;
+                if (pAssoc >= szObjectHandles + cb)
+                    break; // while (*pAssoc)
+
+            } // end while (*pAssoc)
         }
 
         if (fQuit)
@@ -1282,11 +919,11 @@ static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgr
                  && (cb)
                )
             {
-                #ifdef DEBUG_ASSOCS
-                    _Pmpf(("        Got %s as parent", szTypeThis));
-                #endif
-
                 pcszTypeThis = szTypeThis;
+
+                #ifdef DEBUG_ASSOCS
+                    _PmpfF(("   next round for %s", pcszTypeThis));
+                #endif
             }
             else
                 break;
@@ -1295,6 +932,455 @@ static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgr
     } while (TRUE);
 
     return (ulrc);
+}
+
+/* ******************************************************************
+ *
+ *   XFldDataFile extended associations
+ *
+ ********************************************************************/
+
+/*
+ *@@ BUILDSTACK:
+ *      temp struct for fncbBuildAssocsList.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+typedef struct _BUILDSTACK
+{
+    PLINKLIST   *ppllAssocs;
+    ULONG       ulBuildMax;
+    PBOOL       pfDone;
+} BUILDSTACK, *PBUILDSTACK;
+
+/*
+ *@@ fncbBuildAssocsList:
+ *      callback set from BuildAssocsList for ForEachAutomaticType.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+BOOL _Optlink fncbBuildAssocsList(PCSZ pcszType,
+                                  PVOID pvUser)
+{
+    PBUILDSTACK pb = (PBUILDSTACK)pvUser;
+    ListAssocsForType(pb->ppllAssocs,
+                      pcszType,
+                      pb->ulBuildMax,
+                      pb->pfDone);
+
+    // return TRUE to keep going
+    return !(*(pb->pfDone));
+}
+
+/*
+ *@@ BuildAssocsList:
+ *      this helper function builds a list of all
+ *      associated WPProgram and WPProgramFile objects
+ *      in the data file's instance data.
+ *
+ *      This is the heart of the extended associations
+ *      engine. This function gets called whenever
+ *      extended associations are needed.
+ *
+ *      --  From ftypQueryAssociatedProgram, this gets
+ *          called with (fUsePlainTextAsDefault == FALSE),
+ *          mostly (inheriting that func's param).
+ *          Since that method is called during folder
+ *          population to find the correct icon for the
+ *          data file, we do NOT want all data files to
+ *          receive the icons for plain text files.
+ *
+ *      --  From ftypModifyDataFileOpenSubmenu, this gets
+ *          called with (fUsePlainTextAsDefault == TRUE).
+ *          We do want the items for "plain text" in the
+ *          "Open" context menu if no other type has been
+ *          assigned.
+ *
+ *      The list (which is of type PLINKLIST, containing
+ *      plain WPObject* pointers) is returned.
+ *
+ *      This returns NULL if an error occured or no
+ *      associations were added.
+ *
+ *      NOTE: This locks each object instantiated as a
+ *      result of the call. Use FreeAssocsList instead
+ *      of lstFree to free the list returned by this
+ *      function.
+ *
+ *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
+ *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: no longer creating list if no assocs exist, returning NULL now
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: this never added "plain text" if the object had a type but no associations
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, mostly rewritten for MAJOR speedup
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: adjustments for getting rid of caches and mutexes
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: made function private
+ */
+
+static PLINKLIST BuildAssocsList(WPDataFile *somSelf,
+                                 ULONG ulBuildMax,         // in: max no. of assocs to append or -1 for all
+                                 BOOL fUsePlainTextAsDefault)
+{
+    PLINKLIST   pllAssocs = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+        BOOL        fDone = FALSE;
+
+        // 1) run thru the types that were assigned explicitly
+        PSZ pszExplicitTypes;
+        if (    (pszExplicitTypes = _wpQueryType(somSelf))
+             && (*pszExplicitTypes)
+           )
+        {
+            // yes, explicit type(s):
+            // decode those (separated by '\n')
+            PSZ pszTypesCopy;
+            if (pszTypesCopy = strdup(pszExplicitTypes))
+            {
+                PSZ     pTypeThis = pszExplicitTypes;
+                PSZ     pLF = 0;
+
+                // loop thru types list
+                while (pTypeThis && *pTypeThis && !fDone)
+                {
+                    // get next line feed
+                    if (pLF = strchr(pTypeThis, '\n'))
+                        // line feed found:
+                        *pLF = '\0';
+
+                    ListAssocsForType(&pllAssocs,
+                                      pTypeThis,
+                                      ulBuildMax,
+                                      &fDone);
+
+                    if (pLF)
+                        // next type (after LF)
+                        pTypeThis = pLF + 1;
+                    else
+                        break;
+                }
+
+                free(pszTypesCopy);
+            }
+        }
+
+        if (!fDone)
+        {
+            // 2) run thru automatic (extended) file types based on
+            //    the object title
+            BUILDSTACK bs;
+            bs.ppllAssocs = &pllAssocs;
+            bs.ulBuildMax = ulBuildMax;
+            bs.pfDone = &fDone;
+
+            ForEachAutomaticType(_wpQueryTitle(somSelf),
+                                 fncbBuildAssocsList,
+                                 &bs);
+        }
+
+        // V0.9.16 (2002-01-05) [umoeller]:
+        // moved the following "plain text" addition down...
+        // previously, "plain text" was only added if no _types_
+        // were present, but that isn't entirely correct... really
+        // it should be added if no _associations_ were found,
+        // so check this here instead!
+        if (fUsePlainTextAsDefault)
+        {
+            if (    (!pllAssocs)
+                 || (!lstCountItems(pllAssocs))
+               )
+            {
+                ListAssocsForType(&pllAssocs,
+                                  "Plain Text",
+                                  ulBuildMax,
+                                  NULL);
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    #ifdef DEBUG_ASSOCS
+        _Pmpf(("    BuildAssocsList: got %d assocs",
+                    (pllAssocs)
+                        ? lstCountItems(pllAssocs)
+                        : 0));
+    #endif
+
+    return (pllAssocs);
+}
+
+/*
+ *@@ FreeAssocsList:
+ *      frees all resources allocated by BuildAssocsList
+ *      by unlocking all objects on the specified list and
+ *      then freeing the list.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V0.9.12 (2001-05-24) [umoeller]: changed prototype for new lstFree
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: made function private
+ */
+
+static ULONG FreeAssocsList(PLINKLIST *ppllAssocs)    // in: list created by BuildAssocsList
+{
+    ULONG       ulrc = 0;
+    PLINKLIST pList;
+    if (pList = *ppllAssocs)
+    {
+        PLISTNODE   pNode = lstQueryFirstNode(pList);
+        while (pNode)
+        {
+            WPObject *pObj = (WPObject*)pNode->pItemData;
+            _wpUnlockObject(pObj);
+
+            pNode = pNode->pNext;
+            ulrc++;
+        }
+
+        lstFree(ppllAssocs);
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ ftypQueryAssociatedProgram:
+ *      implementation for XFldDataFile::wpQueryAssociatedProgram.
+ *
+ *      This gets called _instead_ of the WPDataFile version if
+ *      extended associations have been enabled.
+ *
+ *      This also gets called from XFldDataFile::wpOpen to find
+ *      out which of the new associations needs to be opened.
+ *
+ *      It is the responsibility of this method to return the
+ *      associated WPProgram or WPProgramFile object for the
+ *      given data file according to ulView.
+ *
+ *      Normally, ulView is the menu item ID in the "Open"
+ *      submenu, which is >= 0x1000. HOWEVER, for some reason,
+ *      the WPS also uses OPEN_RUNNING as the default view.
+ *      We can also get OPEN_DEFAULT.
+ *
+ *      The object returned has been locked by this function.
+ *      Use _wpUnlockObject to unlock it again.
+ *
+ *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: lists are temporary only now
+ *@@changed V0.9.6 (2000-11-12) [umoeller]: added pulView output
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: performance tweaking
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed wrong default icons for WPUrl
+ */
+
+WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
+                                     PULONG pulView,            // in: default view (normally 0x1000,
+                                                                // can be > 0x1000 if the default view
+                                                                // has been manually changed on the
+                                                                // "Menu" page);
+                                                                // out: "real" default view if this
+                                                                // was OPEN_RUNNING or something
+                                     BOOL fUsePlainTextAsDefault)
+                                            // in: use "plain text" as standard if no other type was found?
+{
+    WPObject    *pObjReturn = 0;
+
+    PLINKLIST   pllAssocObjects;
+
+    ULONG       ulIndex = 0;
+    if (*pulView == OPEN_RUNNING)
+        *pulView = 0x1000;
+    else if (*pulView == OPEN_DEFAULT)
+        *pulView = _wpQueryDefaultView(somSelf);
+                // returns 0x1000, unless the user has changed
+                // the default association on the "Menu" page
+
+    // calc index to search...
+    if (    (*pulView >= 0x1000)
+         // delimit this!! Return a null icon if this is way too large.
+         // V0.9.19 (2002-05-23) [umoeller]
+         && (*pulView <= 0x1010)
+       )
+    {
+        ulIndex = *pulView - 0x1000;
+    // else
+        // ulIndex = 0;
+        // wrooong: WPUrl objects have OPEN_CONTENTS (1)
+        // as their default view and the WPS does not give them an associated
+        // file icon... instead, they always get the class default icon.
+        // This was broken with XWP, which always associated the first
+        // program even if the default view was < 0x1000. In that case,
+        // we must rather return a null icon so that the class icon gets
+        // used instead. So ONLY run thru the list below if we actually
+        // have a default view >= 0x1000.
+        // V0.9.19 (2002-05-23) [umoeller]
+
+        if (pllAssocObjects = BuildAssocsList(somSelf,
+                                              ulIndex + 1,
+                                              fUsePlainTextAsDefault))
+        {
+            ULONG   cAssocObjects;
+            if (cAssocObjects = lstCountItems(pllAssocObjects))
+            {
+                // any items found:
+                PLISTNODE           pAssocObjectNode = 0;
+
+                if (ulIndex >= cAssocObjects)
+                    ulIndex = 0;
+
+                if (pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
+                                                        ulIndex))
+                {
+                    pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
+                    // raise lock count on this object again (i.e. lock
+                    // twice) because FreeAssocsList unlocks each
+                    // object on the list once, and this one better
+                    // stay locked
+                    _wpLockObject(pObjReturn);
+                }
+            }
+
+            FreeAssocsList(&pllAssocObjects);
+        }
+    }
+
+    return (pObjReturn);
+}
+
+/*
+ *@@ ftypModifyDataFileOpenSubmenu:
+ *      this adds associations to an "Open" submenu.
+ *
+ *      -- On Warp 3, this gets called from the wpDisplayMenu
+ *         override with (fDeleteExisting == TRUE).
+ *
+ *         This is a brute-force hack to get around the
+ *         limitations which IBM has imposed on manipulation
+ *         of the "Open" submenu. See XFldDataFile::wpDisplayMenu
+ *         for details.
+ *
+ *         We remove all associations from the "Open" menu and
+ *         add our own ones instead.
+ *
+ *      -- Instead, on Warp 4, this gets called from our
+ *         XFldDataFile::wpModifyMenu hack with
+ *         (fDeleteExisting == FALSE).
+ *
+ *      This gets called only if extended associations are
+ *      enabled.
+ *
+ *@@added V0.9.0 (99-11-27) [umoeller]
+ */
+
+BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in question
+                                   HWND hwndOpenSubmenu,
+                                            // in: "Open" submenu window
+                                   BOOL fDeleteExisting)
+                                            // in: if TRUE, we remove all items from "Open"
+{
+    BOOL            brc = FALSE;
+
+    if (hwndOpenSubmenu)
+    {
+        ULONG       ulItemID = 0;
+
+        // 1) remove existing (default WPS) association
+        // items from "Open" submenu
+
+        if (!fDeleteExisting)
+            brc = TRUE;     // continue
+        else
+        {
+            // delete existing:
+            // find first item
+            do
+            {
+                ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
+                                             MM_ITEMIDFROMPOSITION,
+                                             0,       // first item
+                                             0);      // reserved
+                if ((ulItemID) && (ulItemID != MIT_ERROR))
+                {
+                    #ifdef DEBUG_ASSOCS
+                        PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
+                        _Pmpf(("mnuModifyDataFilePopupMenu: removing 0x%lX (%s)",
+                                    ulItemID,
+                                    pszItemText));
+                        free(pszItemText);
+                    #endif
+
+                    winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
+
+                    brc = TRUE;
+                }
+                else
+                    break;
+
+            } while (TRUE);
+        }
+
+        // 2) add the new extended associations
+
+        if (brc)
+        {
+            PLINKLIST   pllAssocObjects;
+            ULONG       cAssocObjects;
+            if (    (pllAssocObjects = BuildAssocsList(somSelf,
+                                                       // get all:
+                                                       -1,
+                                                       // use "plain text" as default:
+                                                       TRUE))
+                 && (cAssocObjects = lstCountItems(pllAssocObjects))
+               )
+            {
+                // now add all the associations; this list has
+                // instances of WPProgram and WPProgramFile
+                PLISTNODE       pNode = lstQueryFirstNode(pllAssocObjects);
+
+                // get data file default associations; this should
+                // return something >= 0x1000 also
+                ULONG           ulDefaultView = _wpQueryDefaultView(somSelf);
+
+                // initial menu item ID; all associations must have
+                // IDs >= 0x1000
+                ulItemID = 0x1000;
+
+                while (pNode)
+                {
+                    WPObject *pAssocThis;
+                    if (pAssocThis = (WPObject*)pNode->pItemData)
+                    {
+                        PSZ pszAssocTitle;
+                        if (pszAssocTitle = _wpQueryTitle(pAssocThis))
+                        {
+                            winhInsertMenuItem(hwndOpenSubmenu,  // still has "Open" submenu
+                                               MIT_END,
+                                               ulItemID,
+                                               pszAssocTitle,
+                                               MIS_TEXT,
+                                               // if this is the default view,
+                                               // mark as default
+                                               (ulItemID == ulDefaultView)
+                                                    ? MIA_CHECKED
+                                                    : 0);
+                        }
+                    }
+
+                    ulItemID++;     // raise item ID even if object was invalid;
+                                    // this must be the same in wpMenuItemSelected
+
+                    pNode = pNode->pNext;
+                }
+            }
+
+            FreeAssocsList(&pllAssocObjects);
+        }
+    }
+
+    return brc;
 }
 
 /*
@@ -1315,88 +1401,87 @@ static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgr
 APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
                           PCSZ pcszNew)      // in: new name for pcszOld
 {
-    APIRET arc = FALSE;
-
-    if (ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
+    APIRET  arc = FALSE;
+    ULONG   ulLength;
+    // check WPS file types... this better exist, or we'll stop
+    // right away
+    if (!PrfQueryProfileSize(HINI_USER,
+                             (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                             (PSZ)pcszOld,
+                             &ulLength))
+        arc = ERROR_FILE_NOT_FOUND;
+    else
     {
-        // check WPS file types... this better exist, or we'll stop
-        // right away
-        PWPSTYPEASSOCTREENODE pWPSType = FindWPSTypeAssoc(pcszOld);
-        if (!pWPSType)
-            arc = ERROR_FILE_NOT_FOUND;
+        // pcszNew must not be used yet.
+        if (PrfQueryProfileSize(HINI_USER,
+                                (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                (PSZ)pcszNew,
+                                &ulLength))
+            arc = ERROR_FILE_EXISTS;
         else
         {
-            // pcszNew must not be used yet.
-            if (FindWPSTypeAssoc(pcszNew))
-                arc = ERROR_FILE_EXISTS;
-            else
+            // OK... first of all, we must write a new entry
+            // into "PMWP_ASSOC_TYPE" with the old handles
+            if (!(arc = prfhRenameKey(HINI_USER,
+                                      // old app:
+                                      WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                      // old key:
+                                      pcszOld,
+                                      // new app:
+                                      NULL,     // same app
+                                      // new key:
+                                      pcszNew)))
             {
-                // OK... first of all, we must write a new entry
-                // into "PMWP_ASSOC_TYPE" with the old handles
-                if (!(arc = prfhRenameKey(HINI_USER,
-                                          // old app:
-                                          WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                          // old key:
-                                          pcszOld,
-                                          // new app:
-                                          NULL,     // same app
-                                          // new key:
-                                          pcszNew)))
+                PSZ pszXWPParentTypes;
+
+                // now update the the XWP entries, if any exist
+
+                // 1) associations linked to this file type:
+                prfhRenameKey(HINI_USER,
+                              INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                              pcszOld,
+                              NULL,         // same app
+                              pcszNew);
+                // 2) parent types for this:
+                prfhRenameKey(HINI_USER,
+                              INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                              pcszOld,
+                              NULL,         // same app
+                              pcszNew);
+
+                // 3) now... go thru ALL of "XWorkplace:FileTypes"
+                // and check if any of the types in there has specified
+                // pcszOld as its parent type. If so, update that entry.
+                if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                                INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                &pszXWPParentTypes)))
                 {
-                    PSZ pszXWPParentTypes;
-
-                    // now update the the XWP entries, if any exist
-
-                    // 1) associations linked to this file type:
-                    prfhRenameKey(HINI_USER,
-                                  INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                  pcszOld,
-                                  NULL,         // same app
-                                  pcszNew);
-                    // 2) parent types for this:
-                    prfhRenameKey(HINI_USER,
-                                  INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                  pcszOld,
-                                  NULL,         // same app
-                                  pcszNew);
-
-                    // 3) now... go thru ALL of "XWorkplace:FileTypes"
-                    // and check if any of the types in there has specified
-                    // pcszOld as its parent type. If so, update that entry.
-                    if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                                    INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                    &pszXWPParentTypes)))
+                    PSZ pParentThis = pszXWPParentTypes;
+                    while (*pParentThis)
                     {
-                        PSZ pParentThis = pszXWPParentTypes;
-                        while (*pParentThis)
+                        PSZ pszThisParent = prfhQueryProfileData(HINI_USER,
+                                                                 INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                                 pParentThis,
+                                                                 NULL);
+                        if (pszThisParent)
                         {
-                            PSZ pszThisParent = prfhQueryProfileData(HINI_USER,
-                                                                     INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                                     pParentThis,
-                                                                     NULL);
-                            if (pszThisParent)
-                            {
-                                if (!strcmp(pszThisParent, pcszOld))
-                                    // replace this entry
-                                    PrfWriteProfileString(HINI_USER,
-                                                          (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                          pParentThis,
-                                                          (PSZ)pcszNew);
+                            if (!strcmp(pszThisParent, pcszOld))
+                                // replace this entry
+                                PrfWriteProfileString(HINI_USER,
+                                                      (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                      pParentThis,
+                                                      (PSZ)pcszNew);
 
-                                free(pszThisParent);
-                            }
-                            pParentThis += strlen(pParentThis) + 1;
+                            free(pszThisParent);
                         }
 
-                        free(pszXWPParentTypes);
+                        pParentThis += strlen(pParentThis) + 1;
                     }
+
+                    free(pszXWPParentTypes);
                 }
             }
-
-            ftypInvalidateCaches();
         }
-
-        ftypUnlockCaches();
     }
 
     return arc;
@@ -1522,503 +1607,31 @@ static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object ha
 ULONG ftypAssocObjectDeleted(HOBJECT hobj)
 {
     ULONG ulrc = 0;
-    BOOL fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        // lock out everyone else from messing with the types here
-        if (fLocked = ftypLockCaches())
-        {
-            CHAR szHandle[20];
+        CHAR szHandle[20];
 
-            ftypInvalidateCaches();
+        // run through OS2.INI assocs...
+        // NOTE: we run through both the WPS types and
+        // WPS filters sections here, even though XWP
+        // extended assocs don't use the WPS filters.
+        // But the object got deleted, so we shouldn't
+        // leave the old entries in there.
+        sprintf(szHandle, "%d", hobj);
 
-            // run through OS2.INI assocs...
-            // NOTE: we run through both the WPS types and
-            // WPS filters sections here, even though XWP
-            // extended assocs don't use the WPS filters.
-            // But the object got deleted, so we shouldn't
-            // leave the old entries in there.
-            sprintf(szHandle, "%d", hobj);
+        #ifdef DEBUG_ASSOCS
+            _PmpfF(("running with %s", szHandle));
+        #endif
 
-            #ifdef DEBUG_ASSOCS
-                _PmpfF(("running with %s", szHandle));
-            #endif
-
-            ulrc += RemoveAssocReferences(szHandle,
-                                          WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
-            ulrc += RemoveAssocReferences(szHandle,
-                                          WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
-        }
+        ulrc += RemoveAssocReferences(szHandle,
+                                      WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
+        ulrc += RemoveAssocReferences(szHandle,
+                                      WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (fLocked)
-        ftypUnlockCaches();
-
     return (ulrc);
-}
-
-/* ******************************************************************
- *
- *   XFldDataFile extended associations
- *
- ********************************************************************/
-
-/*
- *@@ ftypBuildAssocsList:
- *      this helper function builds a list of all
- *      associated WPProgram and WPProgramFile objects
- *      in the data file's instance data.
- *
- *      This is the heart of the extended associations
- *      engine. This function gets called whenever
- *      extended associations are needed.
- *
- *      --  From ftypQueryAssociatedProgram, this gets
- *          called with (fUsePlainTextAsDefault == FALSE),
- *          mostly (inheriting that func's param).
- *          Since that method is called during folder
- *          population to find the correct icon for the
- *          data file, we do NOT want all data files to
- *          receive the icons for plain text files.
- *
- *      --  From ftypModifyDataFileOpenSubmenu, this gets
- *          called with (fUsePlainTextAsDefault == TRUE).
- *          We do want the items for "plain text" in the
- *          "Open" context menu if no other type has been
- *          assigned.
- *
- *      The list (which is of type PLINKLIST, containing
- *      plain WPObject* pointers) is returned.
- *
- *      This returns NULL if an error occured or no
- *      associations were added.
- *
- *      NOTE: This locks each object instantiated as a
- *      result of the call. Use ftypFreeAssocsList instead
- *      of lstFree to free the list returned by this
- *      function.
- *
- *@@added V0.9.0 (99-11-27) [umoeller]
- *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
- *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
- *@@changed V0.9.9 (2001-03-27) [umoeller]: no longer creating list if no assocs exist, returning NULL now
- *@@changed V0.9.16 (2002-01-05) [umoeller]: this never added "plain text" if the object had a type but no associations
- *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, mostly rewritten for MAJOR speedup
- */
-
-PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
-                              ULONG ulBuildMax,         // in: max no. of assocs to append or -1 for all
-                              BOOL fUsePlainTextAsDefault)
-{
-    PLINKLIST   pllAssocs = NULL;
-
-    BOOL        fLocked = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        if (fLocked = ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
-        {
-            BOOL        fDone = FALSE;
-
-            // 1) run thru the types that were assigned explicitly
-            PSZ pszExplicitTypes;
-            if (    (pszExplicitTypes = _wpQueryType(somSelf))
-                 && (*pszExplicitTypes)
-               )
-            {
-                // yes, explicit type(s):
-                // decode those (separated by '\n')
-                PSZ pszTypesCopy;
-                if (pszTypesCopy = strdup(pszExplicitTypes))
-                {
-                    PSZ     pTypeThis = pszExplicitTypes;
-                    PSZ     pLF = 0;
-
-                    // loop thru types list
-                    while (pTypeThis && *pTypeThis && !fDone)
-                    {
-                        // get next line feed
-                        if (pLF = strchr(pTypeThis, '\n'))
-                            // line feed found:
-                            *pLF = '\0';
-
-                        ListAssocsForType(&pllAssocs,
-                                          pTypeThis,
-                                          ulBuildMax,
-                                          &fDone);
-
-                        if (pLF)
-                            // next type (after LF)
-                            pTypeThis = pLF + 1;
-                        else
-                            break;
-                    }
-
-                    free(pszTypesCopy);
-                }
-            }
-
-            if (!fDone)
-            {
-                // 2) run thru automatic (extended) file types based on
-                //    the object title
-                PLINKLIST pllTypesWithFilters;
-
-                if (pllTypesWithFilters = ftypGetCachedTypesWithFilters())
-                {
-                    PCSZ pcszObjectTitle = _wpQueryTitle(somSelf);
-                    PLISTNODE pNode = lstQueryFirstNode(pllTypesWithFilters);
-
-                    ULONG ulObjectTitleLen;
-                    PSZ pszUpperTitle = strhdup(pcszObjectTitle, &ulObjectTitleLen);
-                    nlsUpper(pszUpperTitle, ulObjectTitleLen);
-
-                    #ifdef DEBUG_ASSOCS
-                        _PmpfF(("entering for \"%s\", fUsePlainTextAsDefault = %d",
-                                    pszUpperTitle,
-                                    fUsePlainTextAsDefault));
-                    #endif
-
-                    while (pNode && !fDone)
-                    {
-                        PXWPTYPEWITHFILTERS pTypeWithFilters = (PXWPTYPEWITHFILTERS)pNode->pItemData;
-
-                        // second loop: thru all filters for this file type
-                        PSZ pFilterThis = pTypeWithFilters->pszFilters;
-                        while ((*pFilterThis != 0) && (!fDone))
-                        {
-                            // check if this matches the data file name;
-                            // we use doshMatchCase, it's magnitudes faster
-                            if (doshMatchCase(pFilterThis, pszUpperTitle))
-                            {
-                                #ifdef DEBUG_ASSOCS
-                                    _Pmpf(("  filter \"%s\" from type \"%s\" matches",
-                                            pFilterThis, pTypeWithFilters->pszType));
-                                #endif
-
-                                ListAssocsForType(&pllAssocs,
-                                                  pTypeWithFilters->pszType,
-                                                  ulBuildMax,
-                                                  &fDone);
-
-                                break;      // this file type is done, so go for next type
-                            }
-
-                            pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
-                        } // end while (*pFilterThis)
-
-                        pNode = pNode->pNext;
-                    }
-
-                    free(pszUpperTitle);
-                }
-            }
-
-            // V0.9.16 (2002-01-05) [umoeller]:
-            // moved the following "plain text" addition down...
-            // previously, "plain text" was only added if no _types_
-            // were present, but that isn't entirely correct... really
-            // it should be added if no _associations_ were found,
-            // so check this here instead!
-            if (fUsePlainTextAsDefault)
-            {
-                if (    (!pllAssocs)
-                     || (!lstCountItems(pllAssocs))
-                   )
-                {
-                    ListAssocsForType(&pllAssocs,
-                                      "Plain Text",
-                                      ulBuildMax,
-                                      NULL);
-                }
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
-
-    if (fLocked)
-        ftypUnlockCaches();
-
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("    ftypBuildAssocsList: got %d assocs",
-                    (pllAssocs)
-                        ? lstCountItems(pllAssocs)
-                        : 0));
-    #endif
-
-    return (pllAssocs);
-}
-
-/*
- *@@ ftypFreeAssocsList:
- *      frees all resources allocated by ftypBuildAssocsList
- *      by unlocking all objects on the specified list and
- *      then freeing the list.
- *
- *@@added V0.9.6 (2000-10-16) [umoeller]
- *@@changed V0.9.12 (2001-05-24) [umoeller]: changed prototype for new lstFree
- */
-
-ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs)    // in: list created by ftypBuildAssocsList
-{
-    ULONG       ulrc = 0;
-    PLINKLIST pList;
-    if (pList = *ppllAssocs)
-    {
-        PLISTNODE   pNode = lstQueryFirstNode(pList);
-        while (pNode)
-        {
-            WPObject *pObj = (WPObject*)pNode->pItemData;
-            _wpUnlockObject(pObj);
-
-            pNode = pNode->pNext;
-            ulrc++;
-        }
-
-        lstFree(ppllAssocs);
-    }
-
-    return (ulrc);
-}
-
-/*
- *@@ ftypQueryAssociatedProgram:
- *      implementation for XFldDataFile::wpQueryAssociatedProgram.
- *
- *      This gets called _instead_ of the WPDataFile version if
- *      extended associations have been enabled.
- *
- *      This also gets called from XFldDataFile::wpOpen to find
- *      out which of the new associations needs to be opened.
- *
- *      It is the responsibility of this method to return the
- *      associated WPProgram or WPProgramFile object for the
- *      given data file according to ulView.
- *
- *      Normally, ulView is the menu item ID in the "Open"
- *      submenu, which is >= 0x1000. HOWEVER, for some reason,
- *      the WPS also uses OPEN_RUNNING as the default view.
- *      We can also get OPEN_DEFAULT.
- *
- *      The object returned has been locked by this function.
- *      Use _wpUnlockObject to unlock it again.
- *
- *@@added V0.9.0 (99-11-27) [umoeller]
- *@@changed V0.9.6 (2000-10-16) [umoeller]: lists are temporary only now
- *@@changed V0.9.6 (2000-11-12) [umoeller]: added pulView output
- *@@changed V0.9.16 (2002-01-26) [umoeller]: performance tweaking
- *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed wrong default icons for WPUrl
- */
-
-WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
-                                     PULONG pulView,            // in: default view (normally 0x1000,
-                                                                // can be > 0x1000 if the default view
-                                                                // has been manually changed on the
-                                                                // "Menu" page);
-                                                                // out: "real" default view if this
-                                                                // was OPEN_RUNNING or something
-                                     BOOL fUsePlainTextAsDefault)
-                                            // in: use "plain text" as standard if no other type was found?
-{
-    WPObject    *pObjReturn = 0;
-
-    PLINKLIST   pllAssocObjects;
-
-    ULONG       ulIndex = 0;
-    if (*pulView == OPEN_RUNNING)
-        *pulView = 0x1000;
-    else if (*pulView == OPEN_DEFAULT)
-        *pulView = _wpQueryDefaultView(somSelf);
-                // returns 0x1000, unless the user has changed
-                // the default association on the "Menu" page
-
-    // calc index to search...
-    if (    (*pulView >= 0x1000)
-         // delimit this!! Return a null icon if this is way too large.
-         // V0.9.19 (2002-05-23) [umoeller]
-         && (*pulView <= 0x1010)
-       )
-    {
-        ulIndex = *pulView - 0x1000;
-    // else
-        // ulIndex = 0;
-        // wrooong: WPUrl objects have OPEN_CONTENTS (1)
-        // as their default view and the WPS does not give them an associated
-        // file icon... instead, they always get the class default icon.
-        // This was broken with XWP, which always associated the first
-        // program even if the default view was < 0x1000. In that case,
-        // we must rather return a null icon so that the class icon gets
-        // used instead. So ONLY run thru the list below if we actually
-        // have a default view >= 0x1000.
-        // V0.9.19 (2002-05-23) [umoeller]
-
-        if (pllAssocObjects = ftypBuildAssocsList(somSelf,
-                                                  ulIndex + 1,
-                                                  fUsePlainTextAsDefault))
-        {
-            ULONG   cAssocObjects;
-            if (cAssocObjects = lstCountItems(pllAssocObjects))
-            {
-                // any items found:
-                PLISTNODE           pAssocObjectNode = 0;
-
-                if (ulIndex >= cAssocObjects)
-                    ulIndex = 0;
-
-                if (pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
-                                                        ulIndex))
-                {
-                    pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
-                    // raise lock count on this object again (i.e. lock
-                    // twice) because ftypFreeAssocsList unlocks each
-                    // object on the list once, and this one better
-                    // stay locked
-                    _wpLockObject(pObjReturn);
-                }
-            }
-
-            ftypFreeAssocsList(&pllAssocObjects);
-        }
-    }
-
-    return (pObjReturn);
-}
-
-/*
- *@@ ftypModifyDataFileOpenSubmenu:
- *      this adds associations to an "Open" submenu.
- *
- *      -- On Warp 3, this gets called from the wpDisplayMenu
- *         override with (fDeleteExisting == TRUE).
- *
- *         This is a brute-force hack to get around the
- *         limitations which IBM has imposed on manipulation
- *         of the "Open" submenu. See XFldDataFile::wpDisplayMenu
- *         for details.
- *
- *         We remove all associations from the "Open" menu and
- *         add our own ones instead.
- *
- *      -- Instead, on Warp 4, this gets called from our
- *         XFldDataFile::wpModifyMenu hack with
- *         (fDeleteExisting == FALSE).
- *
- *      This gets called only if extended associations are
- *      enabled.
- *
- *@@added V0.9.0 (99-11-27) [umoeller]
- */
-
-BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in question
-                                   HWND hwndOpenSubmenu,
-                                            // in: "Open" submenu window
-                                   BOOL fDeleteExisting)
-                                            // in: if TRUE, we remove all items from "Open"
-{
-    BOOL            brc = FALSE;
-
-    if (hwndOpenSubmenu)
-    {
-        ULONG       ulItemID = 0;
-
-        // 1) remove existing (default WPS) association
-        // items from "Open" submenu
-
-        if (!fDeleteExisting)
-            brc = TRUE;     // continue
-        else
-        {
-            // delete existing:
-            // find first item
-            do
-            {
-                ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
-                                             MM_ITEMIDFROMPOSITION,
-                                             0,       // first item
-                                             0);      // reserved
-                if ((ulItemID) && (ulItemID != MIT_ERROR))
-                {
-                    #ifdef DEBUG_ASSOCS
-                        PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
-                        _Pmpf(("mnuModifyDataFilePopupMenu: removing 0x%lX (%s)",
-                                    ulItemID,
-                                    pszItemText));
-                        free(pszItemText);
-                    #endif
-
-                    winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
-
-                    brc = TRUE;
-                }
-                else
-                    break;
-
-            } while (TRUE);
-        }
-
-        // 2) add the new extended associations
-
-        if (brc)
-        {
-            PLINKLIST   pllAssocObjects;
-            ULONG       cAssocObjects;
-            if (    (pllAssocObjects = ftypBuildAssocsList(somSelf,
-                                                           // get all:
-                                                           -1,
-                                                           // use "plain text" as default:
-                                                           TRUE))
-                 && (cAssocObjects = lstCountItems(pllAssocObjects))
-               )
-            {
-                // now add all the associations; this list has
-                // instances of WPProgram and WPProgramFile
-                PLISTNODE       pNode = lstQueryFirstNode(pllAssocObjects);
-
-                // get data file default associations; this should
-                // return something >= 0x1000 also
-                ULONG           ulDefaultView = _wpQueryDefaultView(somSelf);
-
-                // initial menu item ID; all associations must have
-                // IDs >= 0x1000
-                ulItemID = 0x1000;
-
-                while (pNode)
-                {
-                    WPObject *pAssocThis = (WPObject*)pNode->pItemData;
-                    if (pAssocThis)
-                    {
-                        PSZ pszAssocTitle;
-                        if (pszAssocTitle = _wpQueryTitle(pAssocThis))
-                        {
-                            winhInsertMenuItem(hwndOpenSubmenu,  // still has "Open" submenu
-                                               MIT_END,
-                                               ulItemID,
-                                               pszAssocTitle,
-                                               MIS_TEXT,
-                                               // if this is the default view,
-                                               // mark as default
-                                               (ulItemID == ulDefaultView)
-                                                    ? MIA_CHECKED
-                                                    : 0);
-                        }
-                    }
-
-                    ulItemID++;     // raise item ID even if object was invalid;
-                                    // this must be the same in wpMenuItemSelected
-
-                    pNode = pNode->pNext;
-                }
-            }
-
-            ftypFreeAssocsList(&pllAssocObjects);
-        }
-    }
-
-    return brc;
 }
 
 /* ******************************************************************
@@ -2241,7 +1854,6 @@ static PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cn
                               (PSZ)INIAPP_XWPFILETYPES,    // "XWorkplace:FileTypes"
                               pszKey,
                               NULL);  // delete key
-        ftypInvalidateCaches();
     }
 
     // return the record core which we created;
@@ -2640,7 +2252,6 @@ static BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" 
                                       pszFileType,        // from cnr
                                       szAssocs,
                                       cbAssocs);
-            ftypInvalidateCaches();
         }
     }
 
@@ -2820,7 +2431,6 @@ static ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
                                 ? szFilters
                                 : NULL,     // no items found: delete key
                             cbFilters);
-        ftypInvalidateCaches();
     }
 
     return (ulrc);
@@ -2851,9 +2461,9 @@ static VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
     // get the XWorkplace-defined filters for this file type
     ULONG cbFiltersData;
     PSZ pszFiltersData = prfhQueryProfileData(HINI_USER,
-                                INIAPP_XWPFILEFILTERS,  // "XWorkplace:FileFilters"
-                                pszFileType,
-                                &cbFiltersData);
+                                              INIAPP_XWPFILEFILTERS,  // "XWorkplace:FileFilters"
+                                              pszFileType,
+                                              &cbFiltersData);
 
     // empty container
     WinSendMsg(pftpd->hwndFiltersCnr,
@@ -2953,8 +2563,6 @@ static BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
                 brc = (lstAppendItem(&pftpd->llFileTypes, pliAssoc) != NULL);
             }
         }
-
-        ftypInvalidateCaches();
     }
 
     return brc;
@@ -3549,8 +3157,6 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                                               // NULL == root: delete key
                                                               : NULL);
                                             // aaarrgh
-
-                                    ftypInvalidateCaches();
                                 }
                             }
                             #ifdef DEBUG_ASSOCS
@@ -3818,7 +3424,6 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                            (MPARAM)&pftrecc,
                            MPFROM2SHORT(1,  // only one record
                                     CMA_FREE | CMA_INVALIDATE));
-                ftypInvalidateCaches();
             }
         }
         break;
@@ -4517,24 +4122,27 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
 {
     HPOINTER hptrOld = winhSetWaitPointer();
 
-    if (ftypLockCaches())
+    HWND        hwndListBox = WinWindowFromID(hwndDlg,
+                                              ID_XSDI_FT_FILTERLIST);
+
+    BOOL        fUnknownOnly = winhIsDlgItemChecked(hwndDlg,
+                                                    ID_XSDI_FT_UNKNOWNONLY);
+
+    // PLINKLIST   pllXWPTypesWithFilters = ftypGetCachedTypesWithFilters();
+
+    APIRET      arc;
+
+    PSZ         pszAssocsList = NULL,
+                pszTypesWithFiltersList = NULL;
+
+    WinSendMsg(hwndListBox,
+               LM_DELETEALL,
+               0, 0);
+
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                    &pszTypesWithFiltersList)))
     {
-        HWND        hwndListBox = WinWindowFromID(hwndDlg,
-                                                  ID_XSDI_FT_FILTERLIST);
-
-        BOOL        fUnknownOnly = winhIsDlgItemChecked(hwndDlg,
-                                                        ID_XSDI_FT_UNKNOWNONLY);
-
-        PLINKLIST   pllXWPTypesWithFilters = ftypGetCachedTypesWithFilters();
-
-        APIRET      arc;
-
-        PSZ         pszAssocsList = NULL;
-
-        WinSendMsg(hwndListBox,
-                   LM_DELETEALL,
-                   0, 0);
-
         if (!(arc = prfhQueryKeysForApp(HINI_USER,
                                         WPINIAPP_ASSOCFILTER, // "PMWP_ASSOC_FILTER"
                                         &pszAssocsList)))
@@ -4564,28 +4172,45 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
                 {
                     // b) now check XWorkplace filters
                     // V0.9.9 (2001-02-06) [umoeller]
-                    PLISTNODE pNode = lstQueryFirstNode(pllXWPTypesWithFilters);
-                    while (pNode)
+
+                    PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
+
+                    while ((*pTypeWithFilterThis) && (fInsert))
                     {
-                        PXWPTYPEWITHFILTERS pTypeWithFilters
-                            = (PXWPTYPEWITHFILTERS)pNode->pItemData;
-
-                        // second loop: thru all filters for this file type
-                        PSZ pFilterThis = pTypeWithFilters->pszFilters;
-                        while (*pFilterThis != 0)
+                        // pFilterThis has the current type now
+                        // (e.g. "C Code");
+                        // get filters for that (e.g. "*.c");
+                        // this is another list of null-terminated strings
+                        ULONG ulTypeLength;
+                        if (ulTypeLength = strlen(pTypeWithFilterThis))
                         {
-                            // check if this matches the data file name
-                            if (!strcmp(pFilterThis, pAssocThis))
+                            ULONG cbFiltersForTypeList = 0;     // including null byte
+                            PSZ pszFiltersForTypeList;
+                            if (pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
+                                                                             INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                                                             pTypeWithFilterThis,
+                                                                             &cbFiltersForTypeList))
                             {
-                                fInsert = FALSE;
-                                break;
+                                // second loop: thru all filters for this file type
+                                PSZ pFilterThis = pszFiltersForTypeList;
+                                while (*pFilterThis != 0)
+                                {
+                                    // check if this matches the data file name
+                                    if (!strcmp(pFilterThis, pAssocThis))
+                                    {
+                                        fInsert = FALSE;
+                                        break;
+                                    }
+
+                                    pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
+                                } // end while (*pFilterThis)
+
+                                free(pszFiltersForTypeList);
                             }
+                        }
 
-                            pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
-                        } // end while (*pFilterThis)
-
-                        pNode = pNode->pNext;
-                    }
+                        pTypeWithFilterThis += ulTypeLength + 1;   // next type/filter
+                    } // end while (*pTypeWithFilterThis != 0)
                 }
 
                 if (fInsert)
@@ -4601,7 +4226,7 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
 
         } // end if (pszAssocsList)
 
-        ftypUnlockCaches();
+        free(pszTypesWithFiltersList);
     }
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -5162,6 +4787,22 @@ static VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" ca
  ********************************************************************/
 
 /*
+ *@@ fncbDatafileTypesInitPage:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+BOOL _Optlink fncbDatafileTypesInitPage(PCSZ pcszType,
+                                        PVOID pllTypes)
+{
+    // store the type (not the filter) in the output list
+    AppendSingleTypeUnique((PLINKLIST)pllTypes,
+                           strdup(pcszType));
+
+    return TRUE;
+}
+
+/*
  *@@ ftypDatafileTypesInitPage:
  *      notebook callback function (notebook.c) for the
  *      "File types" page in a data file instance settings notebook.
@@ -5195,8 +4836,9 @@ VOID ftypDatafileTypesInitPage(PNOTEBOOKPAGE pnbp,
         // build list of automatic types;
         // all these records will be DISABLED
         // in the container
-        AppendTypesForFile(_wpQueryTitle(pnbp->inbp.somSelf),
-                           pllAutomaticTypes);
+        ForEachAutomaticType(_wpQueryTitle(pnbp->inbp.somSelf),
+                             fncbDatafileTypesInitPage,
+                             pllAutomaticTypes);
 
         FillInstanceFileTypesPage(pnbp,
                                   pszTypes,    // string with types to check
@@ -5743,7 +5385,6 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
                        PXSTRING pstrError)       // out: error description, if rc != NO_ERROR
 {
     APIRET arc;
-    BOOL fLocked = FALSE;
 
     PSZ pszContent = NULL;
 
@@ -5769,30 +5410,21 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
             {
                 TRY_LOUD(excpt1)
                 {
-                    if (fLocked = ftypLockCaches())
+                    PDOMNODE pRootElement;
+                    if (pRootElement = xmlGetRootElement(pDom))
                     {
-                        PDOMNODE pRootElement;
-                        if (pRootElement = xmlGetRootElement(pDom))
-                        {
-                            arc = ImportTypes(pRootElement,
-                                              NULL);        // parent type == none
-                                    // this recurses into subtypes
+                        arc = ImportTypes(pRootElement,
+                                          NULL);        // parent type == none
+                                // this recurses into subtypes
 
-                        }
-                        else
-                            arc = ERROR_DOM_NO_ELEMENT;
                     }
+                    else
+                        arc = ERROR_DOM_NO_ELEMENT;
                 }
                 CATCH(excpt1)
                 {
                     arc = ERROR_PROTECTION_VIOLATION;
                 } END_CATCH();
-
-                // invalidate the caches
-                ftypInvalidateCaches();
-
-                if (fLocked)
-                    ftypUnlockCaches();
             }
 
             switch (arc)
@@ -6197,58 +5829,51 @@ static PCSZ G_pcszDoctype =
 APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
 {
     APIRET arc = NO_ERROR;
-    BOOL fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = ftypLockCaches())
+        PDOMDOCUMENTNODE pDocument = NULL;
+        PDOMNODE pRootElement = NULL;
+
+        // create a DOM
+        if (!(arc = xmlCreateDocument("XWPFILETYPES",
+                                      &pDocument,
+                                      &pRootElement)))
         {
-            PDOMDOCUMENTNODE pDocument = NULL;
-            PDOMNODE pRootElement = NULL;
-
-            // create a DOM
-            if (!(arc = xmlCreateDocument("XWPFILETYPES",
-                                          &pDocument,
-                                          &pRootElement)))
+            // add the types tree
+            if (!(arc = ExportAddTypesTree(pRootElement)))
             {
-                // add the types tree
-                if (!(arc = ExportAddTypesTree(pRootElement)))
+                // create a text XML document from all this
+                XSTRING strDocument;
+                xstrInit(&strDocument, 1000);
+                if (!(arc = xmlWriteDocument(pDocument,
+                                             "ISO-8859-1",
+                                             G_pcszDoctype,
+                                             &strDocument)))
                 {
-                    // create a text XML document from all this
-                    XSTRING strDocument;
-                    xstrInit(&strDocument, 1000);
-                    if (!(arc = xmlWriteDocument(pDocument,
-                                                 "ISO-8859-1",
-                                                 G_pcszDoctype,
-                                                 &strDocument)))
-                    {
-                        xstrConvertLineFormat(&strDocument,
-                                              LF2CRLF);
-                        arc = doshWriteTextFile(pcszFilename,
-                                                strDocument.psz,
-                                                NULL,
-                                                NULL);
-                    }
-
-                    xstrClear(&strDocument);
+                    xstrConvertLineFormat(&strDocument,
+                                          LF2CRLF);
+                    arc = doshWriteTextFile(pcszFilename,
+                                            strDocument.psz,
+                                            NULL,
+                                            NULL);
                 }
 
-                // kill the DOM document
-                xmlDeleteNode((PNODEBASE)pDocument);
+                xstrClear(&strDocument);
             }
-            #ifdef DEBUG_ASSOCS
-            else
-                _PmpfF(("xmlCreateDocument returned %d", arc));
-            #endif
+
+            // kill the DOM document
+            xmlDeleteNode((PNODEBASE)pDocument);
         }
+        #ifdef DEBUG_ASSOCS
+        else
+            _PmpfF(("xmlCreateDocument returned %d", arc));
+        #endif
     }
     CATCH(excpt1)
     {
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
-
-    if (fLocked)
-        ftypUnlockCaches();
 
     return arc;
 }

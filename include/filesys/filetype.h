@@ -45,52 +45,13 @@
      *
      ********************************************************************/
 
-    /*
-     *@@ XWPTYPEWITHFILTERS:
-     *      structure representing one entry in "XWorkplace:FileFilters"
-     *      from OS2.INI. These are now cached for speed.
-     *
-     *      A linked list of these exists in G_llTypesWithFilters,
-     *      which is built on the first call to
-     *      ftypGetCachedTypesWithFilters.
-     *
-     *@@added V0.9.9 (2001-02-06) [umoeller]
-     */
-
-    typedef struct _XWPTYPEWITHFILTERS
-    {
-        PSZ         pszType;        // e.g. "C Code" (points to after structure)
-        PSZ         pszFilters;     // e.g. "*.c\0*.h\0\0" (points to after structure)
-                // together with this structure we allocate enough
-                // room for storing the two strings
-    } XWPTYPEWITHFILTERS, *PXWPTYPEWITHFILTERS;
-
-#ifndef __NEVEREXTASSOCS__
-    VOID ftypInvalidateCaches(VOID);
-
-    #ifdef LINKLIST_HEADER_INCLUDED
-        PLINKLIST ftypGetCachedTypesWithFilters(VOID);
-    #endif
-
-    BOOL ftypLockCaches(VOID);
-
-    VOID ftypUnlockCaches(VOID);
-
-#endif
-
     APIRET ftypRenameFileType(PCSZ pcszOld,
                               PCSZ pcszNew);
 
     ULONG ftypAssocObjectDeleted(HOBJECT hobj);
 
 #ifndef __NEVEREXTASSOCS__
-    #if defined (SOM_XFldDataFile_h) && defined (LINKLIST_HEADER_INCLUDED)
-        PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
-                                      ULONG ulBuildMax,
-                                      BOOL fUsePlainTextAsDefault);
-
-        ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs);
-
+    #ifdef SOM_XFldDataFile_h
         WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,
                                              PULONG pulView,
                                              BOOL fUsePlainTextAsDefault);

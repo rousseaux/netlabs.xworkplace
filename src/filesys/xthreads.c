@@ -177,6 +177,8 @@ static ULONG        G_CurFileThreadMsg = 0;
             // current message that File thread is processing,
             // or null if none
 
+#if 0       // disabled V0.9.20 (2002-07-25) [umoeller]
+
 /* ******************************************************************
  *
  *   Awake objects list for Worker thread
@@ -463,6 +465,8 @@ static VOID WorkerRemoveObject(WPObject *pObj)
         fWorkerAwakeObjectsSemOwned = FALSE;
     }
 }
+
+#endif // V0.9.20 (2002-07-25) [umoeller]
 
 /* ******************************************************************
  *
@@ -870,9 +874,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *          WPObject* mp1: somSelf as in XFldObject::wpObjectReady
          */
 
-        case WOM_ADDAWAKEOBJECT:
-            WorkerAddObject((WPObject*)mp1);
-        break;
+        // case WOM_ADDAWAKEOBJECT:         // removed V0.9.20 (2002-07-25) [umoeller]
+        //     WorkerAddObject((WPObject*)mp1);
+        // break;
 
         /*
          * WOM_REMOVEAWAKEOBJECT:
@@ -891,9 +895,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *          WPObject* mp1: somSelf as in XFldObject::wpUnInitData
          */
 
-        case WOM_REMOVEAWAKEOBJECT:
-            WorkerRemoveObject((WPObject*)mp1);
-        break;
+        // case WOM_REMOVEAWAKEOBJECT:      // removed V0.9.20 (2002-07-25) [umoeller]
+        //     WorkerRemoveObject((WPObject*)mp1);
+        // break;
 
         /*
          * WOM_REFRESHFOLDERVIEWS:

@@ -43,13 +43,14 @@ interface XWPFontFile : WPDataFile
      *
      */
 
-    attribute BOOL    fFontInstalled;
+    BOOL xwpIsInstalled();
+
+//#    attribute BOOL    fFontInstalled;        removed V0.9.20 (2002-07-25) [umoeller]
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder:   _get_fFontInstalled,
-                    _set_fFontInstalled;
+    releaseorder:   xwpIsInstalled;
 
     /*
      * Class Modifiers:
@@ -75,12 +76,7 @@ interface XWPFontFile : WPDataFile
      *
      */
 
-    wpInitData: override;
-    wpUnInitData: override;
-
-    wpObjectReady: override;
-
-//#    wpQueryDefaultHelp: override; replaced with class method V0.9.20 (2002-07-12) [umoeller]
+//# all other methods removed V0.9.20 (2002-07-25) [umoeller]
 
 #ifdef __PRIVATE__
 

@@ -4,7 +4,7 @@
  *      implementation code for the replacement object
  *      "Icon" page.
  *
- *      This file is ALL new with V0.9.20. The code used
+ *      This file is new with V0.9.20. The code used
  *      to be in icons.c before and hasn't changed.
  *
  *      Function prefix for this file:
@@ -122,582 +122,6 @@
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
 #pragma hdrstop
-
-/* ******************************************************************
- *
- *   Object icon management
- *
- ********************************************************************/
-
-/*
- *@@ icoRunReplacement:
- *      returns TRUE if either turbo folders or
- *      extended associations are enabled.
- *
- *      Used mainly by XWPProgramFile and
- *      XWPProgram.
- *
- *@@added V0.9.18 (2002-03-16) [umoeller]
- */
-
-BOOL icoRunReplacement(VOID)
-{
-    BOOL        fRunReplacement = FALSE;
-
-    // turbo folders enabled?
-#ifndef __NOTURBOFOLDERS__
-    fRunReplacement = cmnQuerySetting(sfTurboFolders);
-#endif
-
-#ifndef __NOICONREPLACEMENTS__
-    if (!fRunReplacement)
-        if (cmnQuerySetting(sfIconReplacements))
-            fRunReplacement = TRUE;
-#endif
-
-    return (fRunReplacement);
-}
-
-/*
- *@@ icoClsQueryMaxAnimationIcons:
- *      evil helper for calling wpclsQueryMaxAnimationIcons,
- *      which is undocumented.
- *
- *      See xfTP_wpclsQueryMaxAnimationIcons.
- *
- *      Note that this calls a class method, so pass in a
- *      class object.
- *
- *@@added V0.9.19 (2002-06-15) [umoeller]
- */
-
-ULONG icoClsQueryMaxAnimationIcons(M_WPObject *somSelf)
-{
-    xfTD_wpclsQueryMaxAnimationIcons _wpclsQueryMaxAnimationIcons;
-    if (_wpclsQueryMaxAnimationIcons = (xfTD_wpclsQueryMaxAnimationIcons)
-                              wpshResolveFor(somSelf,
-                                             NULL,
-                                             "wpclsQueryMaxAnimationIcons"))
-        return _wpclsQueryMaxAnimationIcons(somSelf);
-
-    return 0;
-}
-
-/*
- *@@ icoQueryIconN:
- *      evil helper for calling wpQueryIcon
- *      or wpQueryIconN, which is undocumented.
- *
- *      Returns 0 on errors.
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-HPOINTER icoQueryIconN(WPObject *pobj,    // in: object
-                       ULONG ulIndex)     // in: animation index or 0 for regular icon
-{
-    if (!ulIndex)
-        return (_wpQueryIcon(pobj));
-
-    // index specified: this better be a folder, and we better be Warp 4
-    if (    (G_fIsWarp4)
-         && (_somIsA(pobj, _WPFolder))
-       )
-    {
-        xfTD_wpQueryIconN pwpQueryIconN;
-
-        if (pwpQueryIconN
-            = (xfTD_wpQueryIconN)wpshResolveFor(pobj,
-                                                NULL, // use somSelf's class
-                                                "wpQueryIconN"))
-            return (pwpQueryIconN(pobj, ulIndex));
-    }
-
-    return 0;
-}
-
-/*
- *@@ icoQueryIconDataN:
- *      evil helper for calling wpQueryIconData
- *      or wpQueryIconDataN, which is undocumented.
- *
- *      Returns 0 on errors.
- *
- *      The "query icon data" methods return
- *      an ICONINFO structure. This only sometimes
- *      contains the "icon data" (which is why the
- *      method name is very misleading), but sometimes
- *      instructions for the caller about the icon
- *      format:
- *
- *      --  With ICON_RESOURCE, the caller will
- *          find the icon data in the specified
- *          icon resource.
- *
- *      --  With ICON_FILE, the caller will have
- *          to load an icon file.
- *
- *      --  Only with ICON_DATA, the icon data is
- *          actually returned. This is usually
- *          returned if the object has a user icon
- *          set in OS2.INI (for abstracts) or
- *          in the .ICONx EA (for fs objects)
- *
- *      As a result, icoLoadIconData was added
- *      which actually loads the icon data if
- *      the format isn't ICON_DATA already.
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-ULONG icoQueryIconDataN(WPObject *pobj,    // in: object
-                        ULONG ulIndex,     // in: animation index or 0 for regular icon
-                        PICONINFO pData)   // in: icon data buffer or NULL for "query size"
-{
-    if (!ulIndex)
-        return (_wpQueryIconData(pobj, pData));
-
-    // index specified: this better be a folder, and we better be Warp 4
-    if (    (G_fIsWarp4)
-         && (_somIsA(pobj, _WPFolder))
-       )
-    {
-        xfTD_wpQueryIconDataN pwpQueryIconDataN;
-
-        if (pwpQueryIconDataN
-            = (xfTD_wpQueryIconDataN)wpshResolveFor(pobj,
-                                                    NULL, // use somSelf's class
-                                                    "wpQueryIconDataN"))
-            return (pwpQueryIconDataN(pobj, pData, ulIndex));
-    }
-
-    return 0;
-}
-
-/*
- *@@ icoSetIconDataN:
- *      evil helper for calling wpSetIconData
- *      or wpSetIconDataN, which is undocumented.
- *
- *      While wpSetIcon only temporarily changes
- *      an object's icon (which is then returned
- *      by wpQueryIcon), wpSetIconData stores a
- *      new persistent icon as well. For abstracts,
- *      this will go into OS2.INI, for fs objects
- *      into the object's EAs.
- *
- *      Note that as a special hack, wpSetIconData
- *      supports the ICON_CLEAR "format", which
- *      resets the icon data to the class's default
- *      icon (or something else for special classes
- *      like WPDisk, WPDataFile or WPProgram).
- *
- *      Returns 0 on errors.
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-BOOL icoSetIconDataN(WPObject *pobj,    // in: object
-                     ULONG ulIndex,     // in: animation index or 0 for regular icon
-                     PICONINFO pData)   // in: icon data to set (requried)
-{
-    if (!ulIndex)
-        return (_wpSetIconData(pobj, pData));
-
-    // index specified: this better be a folder, and we better be Warp 4
-    if (    (G_fIsWarp4)
-         && (_somIsA(pobj, _WPFolder))
-       )
-    {
-        xfTD_wpSetIconDataN pwpSetIconDataN;
-
-        if (pwpSetIconDataN
-            = (xfTD_wpSetIconDataN)wpshResolveFor(pobj,
-                                                  NULL, // use somSelf's class
-                                                  "wpSetIconDataN"))
-            return (pwpSetIconDataN(pobj, pData, ulIndex));
-    }
-
-    return 0;
-}
-
-/*
- *@@ icoClsQueryIconN:
- *      evil helper for calling wpclsQueryIconN,
- *      which is undocumented.
- *
- *      WARNING: This always builds a new HPOINTER,
- *      so the caller should use WinDestroyPointer
- *      to avoid resource leaks.
- *
- *@@added V0.9.16 (2001-10-19) [umoeller]
- */
-
-HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
-                          ULONG ulIndex)
-{
-    if (!ulIndex)
-        return (_wpclsQueryIcon(pClassObject));
-
-    // index specified: this better be a folder, and we better be Warp 4
-    if (    (G_fIsWarp4)
-         && (_somDescendedFrom(pClassObject, _WPFolder))
-       )
-    {
-        xfTD_wpclsQueryIconN pwpclsQueryIconN;
-
-        if (pwpclsQueryIconN
-            = (xfTD_wpclsQueryIconN)wpshResolveFor(pClassObject,
-                                                   NULL, // use somSelf's class
-                                                   "wpclsQueryIconN"))
-            return (pwpclsQueryIconN(pClassObject, ulIndex));
-    }
-
-    return 0;
-}
-
-/*
- *@@ icoLoadIconData:
- *      retrieves the ICONINFO for the specified
- *      object and animation index in a new buffer.
- *
- *      If ulIndex == 0, this retrieves the standard
- *      icon. Otherwise this returns the animation icon.
- *      Even though the WPS always uses this stupid
- *      index with the icon method calls, I don't think
- *      any index besides 1 is actually supported.
- *
- *      If this returns NO_ERROR, the given PICONINFO*
- *      will receive a pointer to a newly allocated
- *      ICONINFO buffer whose format is always ICON_DATA.
- *      This will properly load an icon resource if the
- *      object has the icon format set to ICON_RESOURCE
- *      or ICON_FILE.
- *
- *      If NO_ERROR is returned, the caller must free()
- *      this pointer.
- *
- *      Otherwise this might return the following errors:
- *
- *      --  ERROR_NO_DATA: icon format not understood.
- *
- *      --  ERROR_FILE_NOT_FOUND: icon file doesn't exist.
- *
- *      plus those of doshMalloc and DosGetResource, such as
- *      ERROR_NOT_ENOUGH_MEMORY.
- *
- *      This is ICONINFO:
- *
- +      typedef struct _ICONINFO {
- +        ULONG       cb;           // Length of the ICONINFO structure.
- +        ULONG       fFormat;      // Indicates where the icon resides.
- +        PSZ         pszFileName;  // Name of the file containing icon data (ICON_FILE)
- +        HMODULE     hmod;         // Module containing the icon resource (ICON_RESOURCE)
- +        ULONG       resid;        // Identity of the icon resource (ICON_RESOURCE)
- +        ULONG       cbIconData;   // Length of the icon data in bytes (ICON_DATA)
- +        PVOID       pIconData;    // Pointer to the buffer containing icon data (ICON_DATA)
- +      } ICONINFO;
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer recursing, which didn't work anyway
- */
-
-APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to query
-                       ULONG ulIndex,              // in: animation index or 0 for regular icon
-                       PICONINFO *ppIconInfo)      // out: ICONINFO allocated via _wpAllocMem
-{
-    APIRET arc = NO_ERROR;
-    PICONINFO pData = NULL;
-    ULONG cbIconInfo;
-
-    arc = ERROR_NO_DATA;     // whatever, this shouldn't fail
-
-    *ppIconInfo = NULL;
-
-    // find out how much memory the object needs for this
-    if (    (cbIconInfo = icoQueryIconDataN(pobj,
-                                            ulIndex,
-                                            NULL))        // query size
-                                // if this fails, arc is still ERROR_NO_DATA
-            // allocate the memory
-         && (pData = doshMalloc(cbIconInfo, &arc))
-       )
-    {
-#ifdef DEBUG_ICONREPLACEMENTS
-        _PmpfF(("allocated %d bytes", cbIconInfo));
-#endif
-
-        // ask the object again
-        if (icoQueryIconDataN(pobj,
-                              ulIndex,
-                              pData))
-        {
-#ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf(("   got %d bytes data", cbIconInfo));
-#endif
-
-            // get the icon data depending on the format
-            switch (pData->fFormat)
-            {
-                case ICON_RESOURCE:
-                {
-                    ULONG   cbResource;
-                    PVOID   pvResourceTemp;
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("   ICON_RESOURCE 0x%lX, %d", pData->hmod, pData->resid));
-#endif
-
-                    // object has specified icon resource:
-                    // load resource data...
-                    if (    (!(arc = DosQueryResourceSize(pData->hmod,
-                                                          RT_POINTER,
-                                                          pData->resid,
-                                                          &cbResource)))
-                       )
-                    {
-                        if (!cbResource)
-                            arc = ERROR_NO_DATA;
-                        else if (!(arc = DosGetResource(pData->hmod,
-                                                        RT_POINTER,
-                                                        pData->resid,
-                                                        &pvResourceTemp)))
-                        {
-                            // loaded OK:
-                            // return a new ICONINFO then
-                            PICONINFO pData2;
-                            ULONG     cb2 = sizeof(ICONINFO) + cbResource;
-                            if (pData2 = doshMalloc(cb2, &arc))
-                            {
-                                // point icon data to after ICONINFO struct
-                                PBYTE pbIconData = (PBYTE)pData2 + sizeof(ICONINFO);
-                                pData2->cb = sizeof(ICONINFO);
-                                pData2->fFormat = ICON_DATA;
-                                pData2->cbIconData = cbResource;
-                                pData2->pIconData = pbIconData;
-                                // copy icon data there
-                                memcpy(pbIconData, pvResourceTemp, cbResource);
-
-                                // and return the new struct
-                                *ppIconInfo = pData2;
-                            }
-
-                            // in any case, free the original
-                            free(pData);
-                            pData = NULL;       // do not free again below
-
-                            DosFreeResource(pvResourceTemp);
-                        }
-                    }
-                }
-                break;
-
-                case ICON_DATA:
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("   ICON_DATA"));
-#endif
-
-                    // this is OK, no conversion needed
-                    *ppIconInfo = pData;
-                    arc = NO_ERROR;
-                break;
-
-                case ICON_FILE:
-                {
-                    WPFileSystem *pfs;
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("   ICON_FILE \"%s\"", pData->pszFileName));
-#endif
-
-                    if (    (pData->pszFileName)
-                         && (pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                                             pData->pszFileName))
-                       )
-                    {
-                        ULONG cbRequired;
-                        if (!(cbRequired = _wpQueryIconData(pfs, NULL)))
-                            arc = ERROR_NO_DATA;
-                        else
-                        {
-                            PICONINFO pData2;
-                            if (pData2 = doshMalloc(cbRequired, &arc))
-                            {
-                                if (!_wpQueryIconData(pfs, pData2))
-                                {
-                                    arc = ERROR_NO_DATA;
-                                    free(pData2);
-                                }
-                                else
-                                {
-                                    free(pData);
-                                    *ppIconInfo = pData2;
-                                    arc = NO_ERROR;
-                                }
-                            }
-                        }
-
-                        _wpUnlockObject(pfs);
-                    }
-                    else
-                        arc = ERROR_FILE_NOT_FOUND;
-                }
-                break;
-
-                default:
-                    // any other format:
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("    invalid format %d", pData->fFormat));
-#endif
-
-                    arc = ERROR_INVALID_DATA;
-            } // end switch (pData->Format)
-        } // end if (_wpQueryIconData(pobj, pData))
-        else
-            arc = ERROR_NO_DATA;
-
-        if (arc && pData)
-            free(pData);
-    }
-
-#ifdef DEBUG_ICONREPLACEMENTS
-    _PmpfF(("returning %d", arc));
-#endif
-
-    return arc;
-}
-
-/*
- *@@ icoCopyIconFromObject:
- *      sets a new persistent icon for somSelf
- *      by copying the icon data from pobjSource.
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-APIRET icoCopyIconFromObject(WPObject *somSelf,       // in: target
-                             WPObject *pobjSource,    // in: source
-                             ULONG ulIndex)           // in: animation index or 0 for regular icon
-{
-    APIRET arc = NO_ERROR;
-
-    if (pobjSource = objResolveIfShadow(pobjSource))
-    {
-        PICONINFO pData;
-        if (arc = icoLoadIconData(pobjSource, ulIndex, &pData))
-            // error loading that icon:
-            // if we're trying to load an animation icon
-            // (i.e. ulIndex != 0), try loading index 0 and
-            // set that on the animation icon... the user
-            // might be trying to drag a regular icon on
-            // the animation page
-            // V0.9.16 (2001-12-08) [umoeller]
-            arc = icoLoadIconData(pobjSource, 0, &pData);
-
-        if (!arc)
-        {
-            // now set this icon for the target object
-            icoSetIconDataN(somSelf, ulIndex, pData);
-            free(pData);
-
-            // the standard WPS behavior is that
-            // if a folder icon is copied onto the
-            // standard icon of a folder, the animation
-            // icon is copied too... so check:
-            if (    (_somIsA(somSelf, _WPFolder))
-                 && (_somIsA(pobjSource, _WPFolder))
-                 // but don't do this if we're setting the
-                 // animation icon explicitly
-                 && (!ulIndex)
-               )
-            {
-                // alright, copy animation icon too,
-                // but if this fails, don't return an error
-                if (!icoLoadIconData(pobjSource, 1, &pData))
-                {
-                    icoSetIconDataN(somSelf, 1, pData);
-                    free(pData);
-                }
-            }
-        }
-    }
-    else
-        arc = ERROR_FILE_NOT_FOUND;
-
-    return arc;
-}
-
-/*
- *@@ objResetIcon:
- *      resets an object's icon to its default.
- *
- *      See the explanations about ICON_CLEAR
- *      with icoSetIconDataN.
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-VOID objResetIcon(WPObject *somSelf,
-                  ULONG ulIndex)
-{
-    ICONINFO Data;
-    memset(&Data, 0, sizeof(Data));
-    Data.fFormat = ICON_CLEAR;
-    icoSetIconDataN(somSelf,
-                    ulIndex,
-                    &Data);
-}
-
-/*
- *@@ icoIsUsingDefaultIcon:
- *      returns TRUE if the object is using
- *      a default icon for the specified
- *      animation index.
- *
- *      This call is potentially expensive so
- *      don't use it excessively.
- *
- *@@added V0.9.16 (2001-10-19) [umoeller]
- *@@changed V0.9.18 (2002-03-19) [umoeller]: fixed disappearing animation icon
- */
-
-BOOL icoIsUsingDefaultIcon(WPObject *pobj,
-                           ULONG ulAnimationIndex)
-{
-    if (ulAnimationIndex)
-    {
-        // caller wants animation icon checked:
-        // compare this object's icon to the class's
-        // default animation icon
-        BOOL brc = FALSE;
-        HPOINTER hptrClass = icoClsQueryIconN(_somGetClass(pobj),
-                                              ulAnimationIndex);
-        if (    hptrClass
-             && (icoQueryIconN(pobj,
-                               ulAnimationIndex)
-                 == hptrClass)
-           )
-            brc = TRUE;
-
-#ifndef __NOICONREPLACEMENTS__
-        // only destroy the pointer if we're not
-        // running our replacement because then
-        // it is shared
-        // V0.9.18 (2002-03-19) [umoeller]
-        if (!cmnQuerySetting(sfIconReplacements))
-#endif
-            WinDestroyPointer(hptrClass);
-
-        return brc;
-    }
-
-    // caller wants regular icon checked:
-    // do NOT compare it to the class default icon
-    // but check the object style instead (there are
-    // many default icons in the WPS which are _not_
-    // class default icons, e.g. WPProgram and WPDataFile
-    // association icons)
-    return ((0 == (_wpQueryStyle(pobj)
-                            & OBJSTYLE_NOTDEFAULTICON)));
-}
 
 /* ******************************************************************
  *
@@ -1053,8 +477,8 @@ static VOID PaintIcon(POBJICONPAGEDATA pData,
                                                     PP_BACKGROUNDCOLOR,
                                                     TRUE,
                                                     SYSCLR_DIALOGBACKGROUND);
-    HPOINTER    hptr = icoQueryIconN(pData->pnbp->inbp.somSelf,
-                                     pData->ulAnimationIndex);
+    HPOINTER    hptr = icomQueryIconN(pData->pnbp->inbp.somSelf,
+                                      pData->ulAnimationIndex);
 
     gpihSwitchToRGB(hps);
     WinQueryWindowRect(hwndStatic, &rclStatic);
@@ -1123,9 +547,9 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
     TRY_LOUD(excpt1)
     {
         pcszContext = "Context: loading icon data";
-        if (!(arc = icoLoadIconData(pData->pnbp->inbp.somSelf,
-                                    pData->ulAnimationIndex,
-                                    &pIconInfo)))
+        if (!(arc = icomLoadIconData(pData->pnbp->inbp.somSelf,
+                                     pData->ulAnimationIndex,
+                                     &pIconInfo)))
         {
             // create a temp file and dump the icon data
             // into it in one flush
@@ -1200,9 +624,9 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
                                 NewIcon.cb = sizeof(ICONINFO);
                                 NewIcon.fFormat = ICON_FILE;
                                 NewIcon.pszFileName = szTempFile;
-                                if (!icoSetIconDataN(pData->pnbp->inbp.somSelf,
-                                                     pData->ulAnimationIndex,
-                                                     &NewIcon))
+                                if (!icomSetIconDataN(pData->pnbp->inbp.somSelf,
+                                                      pData->ulAnimationIndex,
+                                                      &NewIcon))
                                     arc = ERROR_FILE_NOT_FOUND;
 
                                 // repaint icon
@@ -1328,9 +752,9 @@ static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
         {
             // dragover was valid above:
             APIRET arc;
-            if (arc = icoCopyIconFromObject(pData->pnbp->inbp.somSelf,
-                                            pData->pobjDragged,
-                                            pData->ulAnimationIndex))
+            if (arc = icomCopyIconFromObject(pData->pnbp->inbp.somSelf,
+                                             pData->pobjDragged,
+                                             pData->ulAnimationIndex))
                 // do not display a msg box during drop,
                 // this nukes PM
                 WinPostMsg(hwndStatic,
@@ -1501,8 +925,8 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
 
             if (flIconPageFlags & ICONFL_ICON)
             {
-                BOOL fUsingDefaultIcon = icoIsUsingDefaultIcon(pnbp->inbp.somSelf,
-                                                               pData->ulAnimationIndex);
+                BOOL fUsingDefaultIcon = icomIsUsingDefaultIcon(pnbp->inbp.somSelf,
+                                                                pData->ulAnimationIndex);
 
                 // go subclass the icon static control
                 pData->hwndIconStatic = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_ICON_STATIC);
@@ -1519,9 +943,9 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
 
                 if (!fUsingDefaultIcon)
                     // not default icon: load a copy for "undo"
-                    icoLoadIconData(pnbp->inbp.somSelf,
-                                    pData->ulAnimationIndex,
-                                    &pData->pIconDataBackup);
+                    icomLoadIconData(pnbp->inbp.somSelf,
+                                     pData->ulAnimationIndex,
+                                     &pData->pIconDataBackup);
             }
 
             if (flIconPageFlags & ICONFL_HOTKEY)
@@ -1643,8 +1067,8 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
             // the object has a default icon anyway
             WinEnableControl(pnbp->hwndDlgPage,
                              ID_XSDI_ICON_RESET_BUTTON,
-                             !icoIsUsingDefaultIcon(pnbp->inbp.somSelf,
-                                                    pData->ulAnimationIndex));
+                             !icomIsUsingDefaultIcon(pnbp->inbp.somSelf,
+                                                     pData->ulAnimationIndex));
         }
 
         if (flIconPageFlags & ICONFL_HOTKEY)
@@ -1904,9 +1328,9 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                         arc = ERROR_FILE_NOT_FOUND;
                     else
                     {
-                        arc = icoCopyIconFromObject(pnbp->inbp.somSelf,
-                                                    pfs,
-                                                    pData->ulAnimationIndex);
+                        arc = icomCopyIconFromObject(pnbp->inbp.somSelf,
+                                                     pfs,
+                                                     pData->ulAnimationIndex);
                         WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
                     }
 
@@ -1917,7 +1341,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
 
             case ID_XSDI_ICON_RESET_BUTTON:
                 if (pData->flIconPageFlags & ICONFL_ICON)
-                    objResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
+                    icomResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
             break;
 
             case ID_XSDI_ICON_TEMPLATE_CB:
@@ -2035,12 +1459,12 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                     // restore icon backup
                     if (pData->pIconDataBackup)
                         // was using non-default icon:
-                        icoSetIconDataN(pnbp->inbp.somSelf,
-                                        pData->ulAnimationIndex,
-                                        pData->pIconDataBackup);
+                        icomSetIconDataN(pnbp->inbp.somSelf,
+                                         pData->ulAnimationIndex,
+                                         pData->pIconDataBackup);
                     else
                         // was using default icon:
-                        objResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
+                        icomResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
                 }
 
                 if (flIconPageFlags & ICONFL_TEMPLATE)
@@ -2093,7 +1517,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
 
                 if (flIconPageFlags & ICONFL_ICON)
                     // reset standard icon
-                    objResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
+                    icomResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
 
                 if (flIconPageFlags & ICONFL_TEMPLATE)
                     // clear template bit

@@ -27,14 +27,14 @@
  +                                                 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
  *
  *      The basic rule is that there is the concept of a
- *      "dormant object". This can be any file-system thing
- *      on disk or an abstract object in OS2.INI.
+ *      "dormant object". This is an object that currently
+ *      exists only in storage, but not as a SOM object in
+ *      memory. "Storage" is disk for file-system objects
+ *      and OS2.INI for abstract objects.
  *
  *      By contrast, an object is said to be "awake" if it
- *      exists as a SOM object in memory. Per definition, an
- *      awake object also has a physical representation: for
- *      abstract objects, "physical storage" is the OS2.INI
- *      file; for file-system objects, the file system.
+ *      also exists as a SOM object in memory. Per definition,
+ *      an awake object also has a physical representation.
  *      Only WPTransients have no physical storage at all;
  *      as a consequence, there is really no such thing as
  *      a dormant transient object.
@@ -263,6 +263,7 @@
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -342,7 +343,7 @@ WPObject* objResolveIfShadow(WPObject *somSelf)
     if (somSelf)
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        if (_flFlags & OBJFL_WPSHADOW)
+        if (_flObject & OBJFL_WPSHADOW)
             return _wpQueryShadowedObject(somSelf, TRUE);
     }
 
@@ -358,7 +359,7 @@ WPObject* objResolveIfShadow(WPObject *somSelf)
 ULONG objQueryFlags(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    return _flFlags;
+    return _flObject;
 }
 
 /*
@@ -371,7 +372,7 @@ ULONG objQueryFlags(WPObject *somSelf)
 BOOL objIsAnAbstract(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    return (0 != (_flFlags & OBJFL_WPABSTRACT));
+    return (0 != (_flObject & OBJFL_WPABSTRACT));
 }
 
 /*
@@ -384,7 +385,7 @@ BOOL objIsAnAbstract(WPObject *somSelf)
 BOOL objIsAFolder(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    return (0 != (_flFlags & OBJFL_WPFOLDER));
+    return (0 != (_flObject & OBJFL_WPFOLDER));
 }
 
 /*
@@ -398,7 +399,7 @@ BOOL objIsAFolder(WPObject *somSelf)
 BOOL objIsObjectInitialized(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    return (0 != (_flFlags & OBJFL_INITIALIZED));
+    return (0 != (_flObject & OBJFL_INITIALIZED));
 }
 
 /*
@@ -1674,6 +1675,72 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                        CRA_RECORDREADONLY);
                 }
             }
+
+        // 6) icon server and clients, in debug mode V0.9.20 (2002-07-25) [umoeller]
+
+        #ifdef __DEBUG__
+        {
+            XFldObjectData *somThis = XFldObjectGetData(pObject);
+            BOOL fLocked = FALSE;
+
+            TRY_LOUD(excpt1)
+            {
+                if (fLocked = icomLockIconShares())
+                {
+                    sprintf(szTemp1,
+                            "Icon server: %s",
+                            _pobjIconServer ? _wpQueryTitle(_pobjIconServer) : "none");
+
+                    preccLevel2 = AddObjectUsage2Cnr(hwndCnr,
+                                                     preccRoot,
+                                                     szTemp1,
+                                                     CRA_RECORDREADONLY);
+
+                    sprintf(szTemp1,
+                            "Icon clients: %d",
+                            _cIconClients);
+
+                    preccLevel2 = AddObjectUsage2Cnr(hwndCnr,
+                                                     preccRoot,
+                                                     szTemp1,
+                                                     CRA_RECORDREADONLY);
+
+                    if (_cIconClients)
+                    {
+                        WPObject *pobjClient = _pFirstIconClient;
+                        PCSZ pcszTitle;
+
+                        while (pobjClient)
+                        {
+                            XFldObjectData *somThat = XFldObjectGetData(pobjClient);
+
+                            WPFolder *pFolder;
+                            szText[0] = '\0';
+                            if (pFolder = _wpQueryFolder(pobjClient))
+                                _wpQueryFilename(pFolder, szText, TRUE);
+
+                            sprintf(szTemp1,
+                                    "%s {%s}",
+                                    (pcszTitle = _wpQueryTitle(pobjClient))
+                                                    ? pcszTitle
+                                                    : "??? no title",
+                                    szText);
+
+                            AddObjectUsage2Cnr(hwndCnr,
+                                               preccLevel2,
+                                               szTemp1,
+                                               CRA_RECORDREADONLY);
+                            pobjClient = somThat->pNextClient;
+                        }
+                    }
+                }
+            }
+            CATCH(excpt1) {} END_CATCH();
+
+            if (fLocked)
+                icomUnlockIconShares();
+        }
+        #endif
     } // end if (pObject)
 
     cnrhInvalidateAll(hwndCnr); // V0.9.16 (2001-10-25) [umoeller]
@@ -2052,6 +2119,7 @@ VOID objShowObjectDetails(HWND hwndOwner,
  *      helped, since even IBM can't read their own docs.)
  *
  *@@added V0.9.19 (2002-04-02) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed excessive object ID creation
  */
 
 VOID objReady(WPObject *somSelf,
@@ -2061,7 +2129,7 @@ VOID objReady(WPObject *somSelf,
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
     // avoid doing this twice
-    if (!(_flFlags & OBJFL_INITIALIZED))
+    if (!(_flObject & OBJFL_INITIALIZED))
     {
         #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
             _Pmpf(("xo_wpObjectReady for %s (class %s), ulCode: %s",
@@ -2078,28 +2146,7 @@ VOID objReady(WPObject *somSelf,
          #endif
 
         // set flag
-        _flFlags |= OBJFL_INITIALIZED;
-
-        if (ulCode & OR_REFERENCE)
-        {
-            _ulListNotify = 0;
-                // V0.9.7 (2000-12-18) [umoeller]
-
-            _pvllWidgetNotifies = NULL;
-
-            #ifdef DEBUG_ICONREPLACEMENTS
-                _PmpfF(("object \"%s\" created from source \"%s\"",
-                        _wpQueryTitle(somSelf),
-                        _wpQueryTitle(refObject)));
-
-                _Pmpf(("  source hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
-                        _wpQueryCoreRecord(refObject)->hptrIcon,
-                        _wpQueryStyle(refObject) & OBJSTYLE_NOTDEFAULTICON));
-                _Pmpf(("  new hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
-                        _wpQueryCoreRecord(somSelf)->hptrIcon,
-                        _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
-            #endif
-        }
+        _flObject |= OBJFL_INITIALIZED;
 
         // on my Warp 4 FP 10, this method does not get
         // called for WPFolder instances, so we override
@@ -2112,14 +2159,36 @@ VOID objReady(WPObject *somSelf,
         // for eComStation 1.0, but this now gets called
         // explicitly, so kick out the check
         // if (!(_flFlags & OBJFL_WPFOLDER))
-        xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
-                          (MPARAM)somSelf,
-                          MPNULL);
+        // xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
+        //                   (MPARAM)somSelf,
+        //                   MPNULL);
+                // removed V0.9.20 (2002-07-25) [umoeller]
 
         // if this is a template, don't let the WPS make
         // it go dormant
         if (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
             _wpLockObject(somSelf);
+
+        // if we were copied, nuke our backup object ID
+        // because this got copied from the refobject...
+        // and even though wpCopyObject apparently does
+        // call wpSetObjectID(NULL), it does that before
+        // the objReady call so that XFldObject::wpSetObjectID
+        // does not kill the backup! This resulted in the
+        // backup ID being stored for all objects created
+        // from the "Create new" folder, for example, but
+        // probably from every other copy or template on
+        // the system as well. CHECKINI then reported tons
+        // of wrong object IDs because the backup ID was
+        // taken again for the real object ID after wakeup.
+        // V0.9.20 (2002-07-25) [umoeller]
+        if (    (ulCode == OR_FROMCOPY)
+             || (ulCode == OR_FROMTEMPLATE)
+           )
+            wpshStore(somSelf,
+                      &_pWszOriginalObjectID,
+                      NULL,
+                      NULL);
     }
 }
 
@@ -2857,6 +2926,8 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
 {
     WPObject *pobjReturn = NULL;
 
+    _PmpfF(("    getting pobj for hobj 0x%lX", hobj));
+
     // lock the cache
     if (LockHandlesCache())
     {
@@ -2879,7 +2950,17 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
             if (!pObjectClass)
                 pObjectClass = _WPObject;
 
-            if (pobjReturn = _wpclsQueryObject(pObjectClass, hobj))
+            // do not keep the cache locked while we're calling
+            // wpclsQueryObject... this is a very expensive
+            // operation and might cause deadlocks
+            // V0.9.20 (2002-07-25) [umoeller]
+            UnlockHandlesCache();
+
+            _Pmpf(("   object is not in cache, calling _wpclsQueryObject"));
+
+            if (    (pobjReturn = _wpclsQueryObject(pObjectClass, hobj))
+                 && (LockHandlesCache())
+               )
             {
                 // valid handle:
 
@@ -2911,6 +2992,10 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
 
         UnlockHandlesCache();
     }
+
+    #ifdef DEBUG_ASSOCS
+        _PmpfF(("    got [%s]{%s}", _wpQueryTitle(pobjAssoc), _somGetClassName(pobjAssoc)));
+    #endif
 
     return (pobjReturn);
 }

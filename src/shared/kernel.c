@@ -117,6 +117,7 @@
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
+#include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -586,6 +587,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     else
         fprintf(file, "\nGlobal lock semaphore is currently not owned.\n", tid, tid);
 
+    /* removed V0.9.20 (2002-07-25) [umoeller]
     arc = xthrQueryAwakeObjectsMutexOwner(&pid,
                                           &tid,
                                           &ulCount);
@@ -595,6 +597,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     else
         fprintf(file, "Awake-objects semaphore is currently not owned (request count: %d).\n",
                 tid, tid, ulCount);
+    */
 }
 
 /*
@@ -1770,32 +1773,27 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
         break;
 
         /*
-         * T1M_PROGOPENPROGRAM:
-         *      calls progOpenProgramThread1 to make sure the
-         *      application gets started from thread 1
-         *      (to avoid the system hangs with Win-OS/2
-         *      full-screen sessions).
-         *
-         *      This is used only by progOpenProgram and
-         *      shouldn't be used otherwise because we
-         *      use the thread-1 object window as the
-         *      WinStartApp notify window.
+         *@@ T1M_NOTIFYWAKEUP:
+         *      posted ONLY from the replacement refresh
+         *      (PumpAgedNotification) when an object has
+         *      been added to a folder and needs to be
+         *      made awake. We shouldn't do that on the
+         *      pump thread in order to avoid system
+         *      deadlocks. See the remarks in
+         *      PumpAgedNotification for details.
          *
          *      Parameters:
          *
-         *      --  PPROGOPENDATA mp1: program data.
+         *      --  PXWPNOTIFY mp1: notification containing
+         *          the full path of the new object.
          *
-         *      --  mp2: always null.
-         *
-         *      No return code.
-         *
-         *added V0.9.16 (2001-12-02) [umoeller]
-         *removed again V0.9.19 (2002-03-28) [umoeller]
+         *@@added V0.9.20 (2002-07-25) [umoeller]
          */
 
-        /* case T1M_PROGOPENPROGRAM:
-            progOpenProgramThread1(mp1);
-        break; */
+        case T1M_NOTIFYWAKEUP:
+            _wpclsQueryObjectFromPath(_WPFileSystem,
+                                      ((PXWPNOTIFY)mp1)->CNInfo.szName);
+        break;
 
 #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop

@@ -65,9 +65,48 @@
      *
      ********************************************************************/
 
-    BOOL icoRunReplacement(VOID);
+    BOOL icomLockIconShares(VOID);
 
-    ULONG icoClsQueryMaxAnimationIcons(M_WPObject *somSelf);
+    VOID icomUnlockIconShares(VOID);
+
+    HPOINTER icomShareIcon(WPObject *somSelf,
+                           WPObject *pobjClient,
+                           BOOL fMakeGlobal);
+
+    VOID icomUnShareIcon(WPObject *pobjServer,
+                         WPObject *pobjClient);
+
+    BOOL icomRunReplacement(VOID);
+
+    ULONG icomClsQueryMaxAnimationIcons(M_WPObject *somSelf);
+
+    HPOINTER icomQueryIconN(WPObject *pobj,
+                            ULONG ulIndex);
+
+    ULONG icomQueryIconDataN(WPObject *pobj,
+                             ULONG ulIndex,
+                             PICONINFO pData);
+
+    BOOL icomSetIconDataN(WPObject *pobj,
+                          ULONG ulIndex,
+                          PICONINFO pData);
+
+    HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
+                              ULONG ulIndex);
+
+    APIRET icomLoadIconData(WPObject *pobj,
+                            ULONG ulIndex,
+                            PICONINFO *ppIconInfo);
+
+    APIRET icomCopyIconFromObject(WPObject *somSelf,
+                                  WPObject *pobjSource,
+                                  ULONG ulIndex);
+
+    VOID icomResetIcon(WPObject *somSelf,
+                       ULONG ulIndex);
+
+    BOOL icomIsUsingDefaultIcon(WPObject *pobj,
+                                ULONG ulAnimationIndex);
 
     /* ******************************************************************
      *

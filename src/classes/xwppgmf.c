@@ -835,7 +835,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetProgIcon");
 
     // turbo folders enabled?
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         BOOL        brc = FALSE;
         HPOINTER    hptr = NULLHANDLE;
@@ -951,7 +951,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryIconData(XWPProgramFile *somSelf,
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryIconData");
 
     // turbo folders enabled?
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         APIRET          arc = ERROR_NO_DATA;
         ULONG           cbRequired = sizeof(ICONINFO);
@@ -1040,7 +1040,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetIconData(XWPProgramFile *somSelf,
     XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetIconData");
 
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         if (    (pIconInfo)
              && (pIconInfo->fFormat == ICON_CLEAR)
@@ -1085,11 +1085,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetAssociationType(XWPProgramFile *somSelf,
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetAssociationType");
 
     brc = XWPProgramFile_parent_WPProgramFile_wpSetAssociationType(somSelf,
-                                                                    pszType);
-
-#ifndef __NEVEREXTASSOCS__
-    ftypInvalidateCaches();
-#endif
+                                                                   pszType);
 
     return brc;
 }
@@ -1292,7 +1288,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryProgDetails(XWPProgramFile *somSelf,
     XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryProgDetails");
 
-    if (icoRunReplacement()) // V0.9.19 (2002-05-01) [umoeller]
+    if (icomRunReplacement()) // V0.9.19 (2002-05-01) [umoeller]
     {
         if (    (_wpQueryFilename(somSelf, szExecutable, TRUE))
              && (_pProgType)

@@ -186,6 +186,49 @@ SOM_Scope BOOL  SOMLINK fon_xwpUpdateStatusBar(XWPFontFolder *somSelf,
 }
 
 /*
+ *@@ xwpChangeFontsCount:
+ *      changes the fonts count and refreshes the status bar.
+ *
+ *      This gets called when a font object is created, or
+ *      later for manual uninstalls, to refresh the count of
+ *      installed fonts properly, which wasn't working before
+ *      0.9.20.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK fon_xwpChangeFontsCount(XWPFontFolder *somSelf,
+                                                long i)
+{
+    BOOL brc = FALSE,
+         fLocked = FALSE;
+    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpChangeFontsCount");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            _ulFontsCurrent += i;
+
+            // update _ulFontsMax for deinstalls also, or the status bar will boom
+            if (i < 0)
+                _ulFontsMax += i;
+
+            stbUpdate(somSelf);
+
+            brc = TRUE;
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).

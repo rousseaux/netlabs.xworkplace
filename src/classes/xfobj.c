@@ -136,6 +136,59 @@ static BOOL         G_fXWorkplaceInitialized = FALSE;
 extern WPFolder     *G_pConfigFolder;
                             // xfldr.c
 
+// awake objects list V0.9.20 (2002-07-25) [umoeller]
+static HMTX         G_hmtxAwakeObjects = NULLHANDLE;
+
+static XFldObject   *G_pFirstAwakeObject = NULL,
+                    *G_pLastAwakeObject = NULL;
+
+// the following two are also exported through kernel.h
+WPObject            *G_pAwakeWarpCenter = NULL;
+ULONG               G_cAwakeObjects = 0;
+
+/* ******************************************************************
+ *
+ *   Awake objects list
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockAwakeObjectsList:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static BOOL LockAwakeObjectsList(VOID)
+{
+    if (G_hmtxAwakeObjects)
+        // return !DosRequestMutexSem(G_hmtxAwakeObjects, SEM_INDEFINITE_WAIT);
+        if (!DosRequestMutexSem(G_hmtxAwakeObjects, 2000))
+            return TRUE;
+        else
+        {
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot request awake objects mutex.");
+            return FALSE;
+        }
+
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxAwakeObjects,
+                              0,
+                              TRUE);
+}
+
+/*
+ *@@ UnlockAwakeObjectsList:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static VOID UnlockAwakeObjectsList(VOID)
+{
+    DosReleaseMutexSem(G_hmtxAwakeObjects);
+}
+
 /* ******************************************************************
  *
  *   here come the XFldObject instance methods
@@ -237,72 +290,6 @@ SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
     inbp.pfncbInitPage    = icoIcon1InitPage;
     inbp.pfncbItemChanged = icoIcon1ItemChanged;
     return ntbInsertPage(&inbp);
-}
-
-/*
- *@@ xwpShareIconWith:
- *      returns the current icon of somSelf and registers pobjClient
- *      as a current user of the icon so that pobjClient can be
- *      forced to refresh its icon if somSelf's icon changes.
- *
- *      This was added for finally getting icons from associations
- *      right. Practically, this method only gets called on WPProgram
- *      and WPProgramFile objects, but instead of having to implement
- *      it twice, I added it to XFldObject as the only common
- *      ancestor.
- *
- *      In detail, this does the following:
- *
- *      1)  Calls wpQueryIcon to get the current icon of the object.
- *          This will go through the class-specific overhead to
- *          determine somSelf's current (program) icon.
- *
- *      2)  Adds pobjClient to the list of objects using this icon
- *          in the instance data.
- *
- *      3)  If fMakeGlobal is TRUE and the icon has not yet been
- *          made global (i.e. pobjClient is the first requestor),
- *          we tell PM to put the icon in shared memory.
- *
- *      Cleanup happens automatically for the caller, i.e. the
- *      caller is automatically removed from the private list
- *      when he goes dormant. This works because the caller is
- *      an XFldObject too, and we call XFldObject::xwpModifyListNotify
- *      on him behind his back.
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-SOM_Scope HPOINTER  SOMLINK xo_xwpShareIconWith(XFldObject *somSelf,
-                                                WPObject* pobjClient,
-                                                BOOL fMakeGlobal)
-{
-    BOOL        fLocked = FALSE;
-    HPOINTER    hptrIcon;
-
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_xwpShareIconWith");
-
-    if (hptrIcon = _wpQueryIcon(somSelf))
-    {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-
-        /*
-        TRY_LOUD(excpt1)
-        {
-            if (fLocked = LockIconShares())
-            {
-
-                _xwpModifyListNotify(
-            }
-        }
-
-        if (fLocked)
-            UnlockIconShares();
-        */
-    }
-
-    return hptrIcon;
 }
 
 /*
@@ -455,7 +442,11 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
 }
 
 /*
- *@@ AllocTrashData:
+ *@@ GetTrashData:
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must hold object mutex.
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
@@ -599,7 +590,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
 /*
  *@@ xwpQueryListNotify:
  *      returns the current list notification flags for this
- *      object. See XFldObject::xwpSetListNotify for details.
+ *      object. See XFldObject::xwpModifyListNotify for details.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
@@ -618,7 +609,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
 
         if (pobjLock = cmnLockObject(somSelf))
         {
-            ulrc = _ulListNotify;
+            ulrc = _flObject;
         }
     }
     CATCH(excpt1) {} END_CATCH();
@@ -630,8 +621,9 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
 }
 
 /*
- *@@ xwpSetListNotify:
- *      sets the list notification flags for this object.
+ *@@ xwpModifyListNotify:
+ *      this modifies the current list-notify flags for the
+ *      current object in an atomic operation.
  *
  *      List notification flags are a new object feature
  *      with XWorkplace. These are intended to implement
@@ -675,44 +667,6 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
  *      They are also cleared for the copy if the
  *      object gets copied.
  *
- *@@added V0.9.6 (2000-10-23) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_xwpSetListNotify(XFldObject *somSelf,
-                                            ULONG flNotifyFlags)
-{
-    BOOL    brc = FALSE;
-    WPObject *pobjLock = NULL;
-    XFldObjectMethodDebug("XFldObject","xo_xwpSetListNotify");
-
-    // we need the lock here because xwpModifyListNotify
-    // reads and writes holding the lock too
-
-    TRY_LOUD(excpt1)
-    {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-
-        if (pobjLock = cmnLockObject(somSelf))
-        {
-            _ulListNotify = flNotifyFlags;
-            brc = TRUE;
-        }
-    }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (pobjLock)
-        _wpReleaseObjectMutexSem(pobjLock);
-
-    return brc;
-}
-
-/*
- *@@ xwpModifyListNotify:
- *      this modifies the current list-notify flags for the
- *      current object in an atomic operation.
- *
- *      See XFldObject::xwpSetListNotify for details.
- *
  *      Use this method if you need to modify single flags
  *      while keeping others (instead of first querying and
  *      then setting the new flags). This function is an
@@ -745,9 +699,9 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
 
         if (pobjLock = cmnLockObject(somSelf))
         {
-            _ulListNotify = (
+            _flObject     = (
                                 // copy all unaffected
-                                (_ulListNotify & ~flNotifyFlags)
+                                (_flObject & ~flNotifyFlags)
                                 // OR with masked new ones
                               | (flNotifyFlags & flNotifyMask)
                             );
@@ -1240,6 +1194,28 @@ SOM_Scope WPObject*  SOMLINK xo_xwpQueryNextObj(XFldObject *somSelf)
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
+/*
+ * icon server/client stuff (see icomShareIcon):
+ * V0.9.20 (2002-07-25) [umoeller]
+ * We implement a linked list here, using object instance data. This
+ * looks like the best solution to me since the LARGE majority of awake
+ * WPS objects will be data files and thus icon clients.
+ * 1) If we are an icon server, pFirstIconClient and pLastIconClient
+ *    implement a linked list of icon clients, pointing to the first
+ *    and the last WPObject* client.
+ * 2) In each icon client object, pNextClient and pPreviousClient
+ *    implement the linked list.
+ */
+
+/*
+ *
+ *     * SOM attributes:
+ *
+ * doubly-linked list of awake objects
+ * (the root of the list is a global variable in xfobj.c)
+ * V0.9.20 (2002-07-25) [umoeller]
+ */
+
 SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
                                                    ULONG hab,
                                                    ULONG ulCorner)
@@ -1310,11 +1286,14 @@ SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.2 (2000-03-15) [umoeller]: initializing new members
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added awake objects list maintenance
  */
 
 SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 {
     static SOMClass *s_pWPObject = NULL;
+
+    BOOL fAwakeSem = FALSE;
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpInitData");
@@ -1323,7 +1302,6 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 
     // get pointer to IBM WPObject instance data;
     // see WPProgram::wpInitData for more about this hack
-
     if (!s_pWPObject)
     {
         // first call:
@@ -1358,42 +1336,90 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
     else
         _pvWPObjectData = NULL; // shouldn't happen, but be safe
 
+    // maintain the list of awake objects
+    // (new with V0.9.20 (2002-07-25) [umoeller]):
+    // we used to post WOM_ADDAWAKEOBJECT and have the
+    // Worker thread maintain a tree of awake objects,
+    // but for one, this was a terrible overhead both in
+    // memory and time, and secondly, that tree was
+    // maintained asynchronously and thus not up-to-date.
+    // We now maintain a doubly-linked list right here
+    // and in wpUnInitData. And instead of wasting memory
+    // for another LINKLIST, we use the "pNextAwake" and
+    // "pPreviousAwake" members in the object instance
+    // data for the list directly... the below code is
+    // basically copied from linklist.c.
+    _pNextAwake = NULL;
+    _pPreviousAwake = NULL;
+
+    if (fAwakeSem = LockAwakeObjectsList())
+    {
+        if (G_pLastAwakeObject)
+        {
+            // list is not empty:
+            // store ourselves in the previously last object
+            XFldObjectData *somLast = XFldObjectGetData(G_pLastAwakeObject);
+            somLast->pNextAwake = somSelf;
+            // store that object as the previous for ourselves
+            _pPreviousAwake = G_pLastAwakeObject;
+            // terminate list with ourselves
+            _pNextAwake = NULL;
+            // and make ourselves the last one now
+            G_pLastAwakeObject = somSelf;
+
+            // raise list count
+            ++G_cAwakeObjects;
+        }
+        else
+        {
+            // list is empty:
+            G_pFirstAwakeObject
+                = G_pLastAwakeObject
+                = somSelf;
+
+            G_cAwakeObjects = 1;
+        }
+
+        UnlockAwakeObjectsList();
+    }
+
+    // store awake WarpCenter if that's us; moved that
+    // here as well from Worker thread, this finally
+    // allows us to catch the WarpCenter even if it's
+    // started from config.sys
+    if (!strcmp(_somGetClassName(somSelf), G_pcszSmartCenter))
+        G_pAwakeWarpCenter = somSelf;
+
     // set the class flags
-    _flFlags = 0;
+    _flObject = 0;
     if (_somIsA(somSelf, _WPFileSystem))
     {
-        _flFlags = OBJFL_WPFILESYSTEM;
+        _flObject = OBJFL_WPFILESYSTEM;
         if (_somIsA(somSelf, _WPFolder))
-            _flFlags |= OBJFL_WPFOLDER;
+            _flObject |= OBJFL_WPFOLDER;
     }
     else if (ctsIsAbstract(somSelf))
     {
-        _flFlags = OBJFL_WPABSTRACT;
+        _flObject = OBJFL_WPABSTRACT;
         if (ctsIsShadow(somSelf))
-            _flFlags |= OBJFL_WPSHADOW;
+            _flObject |= OBJFL_WPSHADOW;
     }
 
     _pvTrashData = NULL;            // V0.9.20 (2002-07-25) [umoeller]
 
-    // _fDeleted = FALSE;
-    // _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
-
-    // _pObjectLongs = NULL;        // removed V0.9.19 (2002-07-01) [umoeller]
-    // _cbObjectLongs = 0;          // removed V0.9.19 (2002-07-01) [umoeller]
-
-    // _pObjectStrings = NULL;      // removed V0.9.19 (2002-07-01) [umoeller]
-
     _pWszOriginalObjectID = NULL;
-
-    // _pTrashObject = NULL;        // removed V0.9.20 (2002-07-25) [umoeller]
-
-    _ulListNotify = 0;
 
     _pvllWidgetNotifies = NULL;
 
     // init the icon shares
-    treeInit((TREE**)&_IconSharesTreeRoot,
-             &_cIconShares);
+    // V0.9.20 (2002-07-25) [umoeller]
+    _pFirstIconClient = NULL;
+    _pLastIconClient = NULL;
+    _cIconClients = 0;
+
+    _pobjIconServer = NULL;
+    _pNextClient = NULL;
+    _pPreviousClient = NULL;
 }
 
 /*
@@ -1413,27 +1439,14 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
  *      get called for WPFolder instances, so we override
  *      XFolder::wpObjectReady also.
  *
- *      <B>Copying considerations</B>
+ *      Flags for ulCode:
  *
- *      Even though WPSREF doesn't really say so, this method
- *      must be used similar to a C++ copy constructor
- *      when the instance data contains pointers and the
- *      OR_REFERENCE bit is set in ulCode. When objects are
- *      copied, SOM just copies the binary instance data, so
- *      you get two objects with instance pointers pointing
- *      to the same object, which can only lead to problems.
- *
- *      According to wpobject.h, the OR_REFERENCE bit is set
- *      for OR_FROMTEMPLATE, OR_FROMCOPY, or OR_SHADOW; this
- *      means that refObject is valid.
- *
- *      When an object is copied in any way (thru wpCopyObject
- *      or wpCreateFromTemplate), the WPS first creates a
- *      new "empty" object (on which wpInitData is invoked),
- *      does a "flat" copy then,  and then invokes wpRestoreState
- *      on it. As the very last step, wpObjectReady gets called.
- *      As a result, you must only handle the instance data here
- *      which is not safely set thru wpRestoreState.
+ *      --  OR_NEW          0x00000001
+ *      --  OR_AWAKE        0x00000002
+ *      --  OR_REFERENCE    0x10000000
+ *      --  OR_FROMTEMPLATE (0x00000004 | OR_REFERENCE)
+ *      --  OR_FROMCOPY     (0x00000008 | OR_REFERENCE)
+ *      --  OR_SHADOW       (0x00000010 | OR_REFERENCE)
  *
  *@@changed V0.9.0: adjust for XFolder::wpObjectReady override
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed _ulListNotify
@@ -1467,15 +1480,14 @@ SOM_Scope void  SOMLINK xo_wpObjectReady(XFldObject *somSelf,
 
 SOM_Scope BOOL  SOMLINK xo_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
 {
-    BOOL    brc = FALSE;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSetup");
 
-    if (brc = XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
-        brc = objSetup(somSelf,
-                       pszSetupString);
+    if (XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
+        return objSetup(somSelf,
+                        pszSetupString);
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -1662,176 +1674,274 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
  *@@changed V0.9.6 (2000-10-23) [umoeller]: added support for progOpenProgram
  *@@changed V0.9.7 (2001-01-18) [umoeller]: added support for favorite and quick-open folders
  *@@changed V0.9.16 (2001-12-31) [umoeller]: added fixes for replacement icons
- *@@changed V0.9.20 (2002-07-25) [umoeller]: added mutex
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added object mutex request
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added excpt handling
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added awake objects list maintenance
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: adjusted for icon sharing
  */
 
 SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 {
+    BOOL        fAwakeSem = FALSE,
+                fIconSem = FALSE;
     PMINIRECORDCORE pmrc;
-    PTRASHDATA p;
+    PTRASHDATA  p;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpUnInitData");
 
-    // grab the object's mutex to let no-one mess with us
-    // while we're cleaning up! Note that we do NOT release
-    // it because WPObject::wpUnInitData will delete it anway.
-    // V0.9.20 (2002-07-25) [umoeller]
-    _wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-
-    #ifdef __DEBUG__
-        if (!(_flFlags & OBJFL_INITIALIZED))
+    TRY_LOUD(excpt1)
+    {
+        // maintain list of awake objects
+        // (see wpInitData for remarks)
+        // V0.9.20 (2002-07-25) [umoeller]
+        if (fAwakeSem = LockAwakeObjectsList())
         {
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Object 0x%lX (%s) was never initialized?",
-                   somSelf,
-                   STRINGORNULL(_wpQueryTitle(somSelf)));
+            XFldObjectData *somThat;
+
+            if (G_pFirstAwakeObject == somSelf)
+                // we are first: adjust first
+                G_pFirstAwakeObject = _pNextAwake;     // can be NULL
+
+            if (G_pLastAwakeObject == somSelf)
+                // we are last: adjust last
+                G_pLastAwakeObject = _pPreviousAwake;  // can be NULL
+
+            if (_pPreviousAwake)
+            {
+                // we have a previous object: make that point to
+                // our next object, taking us out from the middle
+                somThat = XFldObjectGetData(_pPreviousAwake);
+                somThat->pNextAwake = _pNextAwake;
+            }
+
+            if (_pNextAwake)
+            {
+                // we have a next object: make that point to
+                // our previous object, taking us out from the middle
+                somThat = XFldObjectGetData(_pNextAwake);
+                somThat->pPreviousAwake = _pPreviousAwake;
+            }
+
+            // decrease list count
+            --G_cAwakeObjects;
+
+            UnlockAwakeObjectsList();
+            fAwakeSem = FALSE;
         }
-    #endif
 
-    // have object removed from awake-objects list
-    xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
-                      (MPARAM)somSelf,
-                      MPNULL);
+        // maintain icon shares; we request the icon shares mutex,
+        // which makes sure that we'll wait while someone is
+        // working on those lists
+        if (fIconSem = icomLockIconShares())
+        {
+            if (_pobjIconServer)
+                // we're a client: detach ourselves from the
+                // server's list
+                icomUnShareIcon(_pobjIconServer,
+                                somSelf);
+            else if (_pFirstIconClient)
+            {
+                // we're a server:
+                // run through the list of clients and set each
+                // client's HPOINTER to NULLHANDLE; this will
+                // force a requery of each client's icon on
+                // the next client's _wpQueryIcon... at the
+                // same time, clean out the list
+                WPObject *pobjClient = _pFirstIconClient;
 
-    // destroy trash object, if there's one
-    if (p = (PTRASHDATA)_pvTrashData)
-    {
-        if (p->pTrashObject)
-            _wpFree(p->pTrashObject);
+                while (pobjClient)
+                {
+                    XFldObjectData *somClient = XFldObjectGetData(pobjClient);
 
-        _wpFreeMem(somSelf, (PBYTE)_pvTrashData);
-        _pvTrashData = NULL;
-    }
+                    if (pmrc = _wpQueryCoreRecord(pobjClient))
+                        pmrc->hptrIcon = NULLHANDLE;
 
-    // we have a problem with our replacement icons in that
-    // the WPS frees the pointer handle in WPObject::wpUnInitData
-    // if the object has the OBJSTYLE_NOTDEFAULTICON or OBJSTYLE_TEMPLATE
-    // flags set... so in these cases, check if the object has one
-    // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
-    // or the shared icon would disappear globally
-    // V0.9.16 (2001-12-31) [umoeller]
-    if (    (pmrc = _wpQueryCoreRecord(somSelf))
-         && (pmrc->hptrIcon)
-         && (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
-       )
-    {
-        #ifdef DEBUG_ICONREPLACEMENTS
-            _PmpfF(("checking hptr 0x%lX", pmrc->hptrIcon));
+                    pobjClient = somClient->pNextClient;
+
+                    // clear out client instance data
+                    somClient->pobjIconServer
+                        = somClient->pPreviousClient
+                        = somClient->pNextClient
+                        = NULL;
+                }
+            }
+
+            icomUnlockIconShares();
+            fIconSem = FALSE;
+        }
+
+        // grab the object's mutex to let no-one mess with us
+        // while we're cleaning up! Note that we do NOT release
+        // it because WPObject::wpUnInitData will delete it anway.
+        // V0.9.20 (2002-07-25) [umoeller]
+        _wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+
+        #ifdef __DEBUG__
+            if (!(_flObject & OBJFL_INITIALIZED))
+            {
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Object 0x%lX (%s) was never initialized?",
+                       somSelf,
+                       STRINGORNULL(_wpQueryTitle(somSelf)));
+            }
         #endif
 
-        if (cmnIsStandardIcon(pmrc->hptrIcon))
+        // have object removed from awake-objects list
+        // removed V0.9.20 (2002-07-25) [umoeller]
+        // xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
+        //                   (MPARAM)somSelf,
+        //                   MPNULL);
+
+        // destroy trash object, if there's one
+        if (p = (PTRASHDATA)_pvTrashData)
+        {
+            if (p->pTrashObject)
+                _wpFree(p->pTrashObject);
+
+            _wpFreeMem(somSelf, (PBYTE)_pvTrashData);
+            _pvTrashData = NULL;
+        }
+
+        // we have a problem with our replacement icons in that
+        // the WPS frees the pointer handle in WPObject::wpUnInitData
+        // if the object has the OBJSTYLE_NOTDEFAULTICON or OBJSTYLE_TEMPLATE
+        // flags set... so in these cases, check if the object has one
+        // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
+        // or the shared icon would disappear globally
+        // V0.9.16 (2001-12-31) [umoeller]
+        if (    (pmrc = _wpQueryCoreRecord(somSelf))
+             && (pmrc->hptrIcon)
+             && (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
+           )
         {
             #ifdef DEBUG_ICONREPLACEMENTS
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "WPS was about to nuke standard icon for object \"%s\"",
-                       pmrc->pszIcon);
+                _PmpfF(("checking hptr 0x%lX", pmrc->hptrIcon));
             #endif
 
-            // alright, the WPS is about to nuke this icon:
-            // set the HPOINTER in the record to NULLHANDLE
-            // to prevent the WPS from freeing it
-            pmrc->hptrIcon = NULLHANDLE;
+            if (cmnIsStandardIcon(pmrc->hptrIcon))
+            {
+                #ifdef DEBUG_ICONREPLACEMENTS
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "WPS was about to nuke standard icon for object \"%s\"",
+                           pmrc->pszIcon);
+                #endif
+
+                // alright, the WPS is about to nuke this icon:
+                // set the HPOINTER in the record to NULLHANDLE
+                // to prevent the WPS from freeing it
+                pmrc->hptrIcon = NULLHANDLE;
+            }
         }
-    }
 
-    // kill the title string we allocated in our wpSetTitle replacement
-    // V0.9.16 (2002-01-04) [umoeller]
-    if (pmrc->pszIcon)
-    {
-        _wpFreeMem(somSelf, pmrc->pszIcon);
-        // we must set the ptr to NULL or the WPS will crash
-        // in the parent method call
-        pmrc->pszIcon = NULL;
-    }
-
-    // free the object ID backup if there's one
-    // V0.9.16 (2001-12-06) [umoeller]
-    wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
-
-    // go thru list notifications, if we have any
-    if (_ulListNotify)
-    {
-        if (_ulListNotify & OBJLIST_RUNNINGSTORED)
+        // kill the title string we allocated in our wpSetTitle replacement
+        // V0.9.16 (2002-01-04) [umoeller]
+        if (pmrc->pszIcon)
         {
-            // this object is currently stored in the
-            // "running programs" list: remove it, or
-            // we'll get crashes later...
-            _ulListNotify &= ~OBJLIST_RUNNINGSTORED;
-            progRunningAppDestroyed(somSelf);
+            _wpFreeMem(somSelf, pmrc->pszIcon);
+            // we must set the ptr to NULL or the WPS will crash
+            // in the parent method call
+            pmrc->pszIcon = NULL;
         }
 
-        if (_ulListNotify & OBJLIST_CONFIGFOLDER)
+        // free the object ID backup if there's one
+        // V0.9.16 (2001-12-06) [umoeller]
+        wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
+
+        // go thru list notifications, if we have any
+        if (_flObject)
         {
-            // somSelf is in the config folder hierarchy:
-            // invalidate the content lists for the config
-            // folders so that they will be rebuilt
-            _ulListNotify &= ~OBJLIST_CONFIGFOLDER;
-            mnuInvalidateConfigCache();
-        }
+            if (_flObject & OBJLIST_RUNNINGSTORED)
+            {
+                // this object is currently stored in the
+                // "running programs" list: remove it, or
+                // we'll get crashes later...
+                _flObject &= ~OBJLIST_RUNNINGSTORED;
+                progRunningAppDestroyed(somSelf);
+            }
+
+            if (_flObject & OBJLIST_CONFIGFOLDER)
+            {
+                // somSelf is in the config folder hierarchy:
+                // invalidate the content lists for the config
+                // folders so that they will be rebuilt
+                _flObject &= ~OBJLIST_CONFIGFOLDER;
+                mnuInvalidateConfigCache();
+            }
 
 #ifndef __NOFOLDERCONTENTS__
-        if (_ulListNotify & OBJLIST_FAVORITEFOLDER)
-        {
-            _ulListNotify &= ~OBJLIST_FAVORITEFOLDER;
-            objAddToList(somSelf,
-                         &G_llFavoriteFolders,      // folder.h
-                         FALSE,         // remove
-                         INIKEY_FAVORITEFOLDERS,
-                         0);            // no modify flags... we're being destroyed
-        }
+            if (_flObject & OBJLIST_FAVORITEFOLDER)
+            {
+                _flObject &= ~OBJLIST_FAVORITEFOLDER;
+                objAddToList(somSelf,
+                             &G_llFavoriteFolders,      // folder.h
+                             FALSE,         // remove
+                             INIKEY_FAVORITEFOLDERS,
+                             0);            // no modify flags... we're being destroyed
+            }
 #endif
 
 #ifndef __NOQUICKOPEN__
-        if (_ulListNotify & OBJLIST_QUICKOPENFOLDER)
-        {
-            _ulListNotify &= ~OBJLIST_QUICKOPENFOLDER;
-            objAddToList(somSelf,
-                         &G_llQuickOpenFolders,      // folder.h
-                         FALSE,         // remove
-                         INIKEY_QUICKOPENFOLDERS,
-                         0);            // no modify flags... we're being destroyed
-        }
+            if (_flObject & OBJLIST_QUICKOPENFOLDER)
+            {
+                _flObject &= ~OBJLIST_QUICKOPENFOLDER;
+                objAddToList(somSelf,
+                             &G_llQuickOpenFolders,      // folder.h
+                             FALSE,         // remove
+                             INIKEY_QUICKOPENFOLDERS,
+                             0);            // no modify flags... we're being destroyed
+            }
 #endif
 
-        if (_ulListNotify & OBJLIST_HANDLESCACHE)
-        {
-            _ulListNotify &= ~OBJLIST_HANDLESCACHE;
-            objRemoveFromHandlesCache(somSelf);
+            if (_flObject & OBJLIST_HANDLESCACHE)
+            {
+                _flObject &= ~OBJLIST_HANDLESCACHE;
+                objRemoveFromHandlesCache(somSelf);
+            }
+
+            if (_flObject & OBJLIST_DIRTYLIST)  // V0.9.11 (2001-04-18) [umoeller]
+            {
+                objRemoveFromDirtyList(somSelf);
+                        // this unsets the flag
+            }
+
+            if (_flObject & OBJLIST_QUERYAWAKEFSOBJECT)  // V0.9.16 (2001-10-25) [umoeller]
+            {
+                _flObject &= ~OBJLIST_QUERYAWAKEFSOBJECT;
+                fdrRemoveAwakeRootFolder(somSelf);
+            }
         }
 
-        if (_ulListNotify & OBJLIST_DIRTYLIST)  // V0.9.11 (2001-04-18) [umoeller]
+        if (_pvllWidgetNotifies)
         {
-            // _ulListNotify &= ~OBJLIST_DIRTYLIST;
-            objRemoveFromDirtyList(somSelf);
-                    // this unsets the flag
-        }
+            // we have windows that requested notifications:
+            // go thru list
+            PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
+            while (pNode)
+            {
+                HWND hwnd = (HWND)pNode->pItemData;
+                WinPostMsg(hwnd,
+                           WM_CONTROL,
+                           MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                        XN_OBJECTDESTROYED),
+                           (MPARAM)somSelf);
+                pNode = pNode->pNext;
+            }
 
-        if (_ulListNotify & OBJLIST_QUERYAWAKEFSOBJECT)  // V0.9.16 (2001-10-25) [umoeller]
-        {
-            _ulListNotify &= ~OBJLIST_QUERYAWAKEFSOBJECT;
-            fdrRemoveAwakeRootFolder(somSelf);
+            lstFree((LINKLIST**)&_pvllWidgetNotifies);
         }
     }
-
-    if (_pvllWidgetNotifies)
+    CATCH(excpt1)
     {
-        // we have windows that requested notifications:
-        // go thru list
-        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
-        while (pNode)
-        {
-            HWND hwnd = (HWND)pNode->pItemData;
-            WinPostMsg(hwnd,
-                       WM_CONTROL,
-                       MPFROM2SHORT(ID_XCENTER_CLIENT,
-                                    XN_OBJECTDESTROYED),
-                       (MPARAM)somSelf);
-            pNode = pNode->pNext;
-        }
+    } END_CATCH();
 
-        lstFree((LINKLIST**)&_pvllWidgetNotifies);
-    }
+    if (fAwakeSem)
+        UnlockAwakeObjectsList();
 
+    if (fIconSem)
+        icomUnlockIconShares();
+
+    // even if we crashed, call the parent... we can't
+    // afford stopping here
     XFldObject_parent_WPObject_wpUnInitData(somSelf);
 }
 
@@ -1888,7 +1998,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
             else
             {
                 ULONG           ulStyle = _wpQueryStyle(somSelf);
-                BOOL            fIsInitialized = (0 != (_flFlags & OBJFL_INITIALIZED));
+                BOOL            fIsInitialized = (0 != (_flObject & OBJFL_INITIALIZED));
 
                 // LOCK the object if it is already initialized... no need
                 // to do so if this gets called in the process of setting
@@ -1896,11 +2006,19 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
 
                 // (moved the lock up here V0.9.20 (2002-07-25) [umoeller])
 
+                _PmpfF(("[%s]{%s} fIsInitialized = %d",
+                       pszNewTitle,
+                       _somGetClassName(somSelf),
+                       fIsInitialized));
+
                 if (    (!fIsInitialized)
                      || (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                    )
                 {
                     PSZ p;
+
+                    _PmpfF(("    now: fLocked = %d",
+                           fLocked));
 
                     memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
 
@@ -1937,10 +2055,10 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                         // this was missing V0.9.17 (2002-02-05) [umoeller]
                         // abstracts don't save themselves otherwise
                         if (    (fIsInitialized)
-                             && (_flFlags & OBJFL_WPABSTRACT)
+                             && (_flObject & OBJFL_WPABSTRACT)
                            )
                         {
-                            _PmpfF(("obj is abstract, saving"));
+                            _Pmpf(("obj is abstract, saving"));
                             _wpSaveDeferred(somSelf);
                         }
 
@@ -1982,6 +2100,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
+    _PmpfF(("done"));
+
     return brc;
 }
 
@@ -2005,11 +2125,62 @@ SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
     // now this is a true overwrite of the object ID,
     // so nuke the one we backed up, but only if the
     // object has been initialized
-    if (_flFlags & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
+    if (_flObject & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
         wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
 
     return XFldObject_parent_WPObject_wpSetObjectID(somSelf,
                                                     pszObjectID);
+}
+
+/*
+ *@@ wpSetIcon:
+ *      this WPObject method sets the new icon for the object
+ *      and updates all views where the icon is currently
+ *      visible.
+ *
+ *      We override this icon to FINALLY be able to refresh
+ *      data file icons when a program object's icon changes.
+ *      To be precise, this works for any client/server icon
+ *      relationship; see icomShareIcon.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
+
+    // call parent first to have the default processing done
+    if (XFldObject_parent_WPObject_wpSetIcon(somSelf, hptrNewIcon))
+    {
+#if 1
+        BOOL fLocked = FALSE;
+
+        // now check if we have any icon clients
+        TRY_LOUD(excpt1)
+        {
+            if (fLocked = icomLockIconShares())
+            {
+                WPObject *pobjClient = _pFirstIconClient;
+
+                while (pobjClient)
+                {
+                    XFldObjectData *somThat = XFldObjectGetData(pobjClient);
+                    _wpSetIcon(pobjClient, hptrNewIcon);
+                    pobjClient = somThat->pNextClient;
+                }
+            }
+        }
+        CATCH(excpt1) {} END_CATCH();
+
+        if (fLocked)
+            icomUnlockIconShares();
+#endif
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*
@@ -2363,7 +2534,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyPopupMenu(XFldObject *somSelf,
         // descriptions, but DONT do this for folders or data files,
         // because those menu items will only be added later... for
         // folders, we call this function in XFolder::wpMenuItemSelected
-        if (!(_flFlags & OBJFL_WPFILESYSTEM))
+        if (!(_flObject & OBJFL_WPFILESYSTEM))
             fdrAddHotkeysToMenu(somSelf,
                                 hwndCnr,
                                 hwndMenu);
@@ -2960,7 +3131,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
         {
             ULONG ul;
             // add the "Icon" page 2 on top if we have animation icons
-            if (icoClsQueryMaxAnimationIcons(_somGetClass(somSelf)))
+            if (icomClsQueryMaxAnimationIcons(_somGetClass(somSelf)))
                 _wpAddObjectGeneralPage2(somSelf, hwndNotebook);
 
             // add the "Icon" page on top

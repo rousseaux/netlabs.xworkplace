@@ -89,6 +89,8 @@
 
     /*
      *@@ XWPNOTIFY:
+     *      one file-system notification for our refresh
+     *      replacements.
      *
      *      These things are variable in size, depending
      *      on the length of the short file name.

@@ -1330,6 +1330,7 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
  *      in turn, most notably fonInstallFont or fonDeInstallFont.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: font uninstall was missing status bar update, fixed
  */
 
 APIRET fopsFileThreadFontProcessing(HAB hab,
@@ -1337,7 +1338,7 @@ APIRET fopsFileThreadFontProcessing(HAB hab,
                                     WPObject *pObjectThis,
                                     PULONG pulIgnoreSubsequent)
 {
-    WPObject *pFree = NULL;
+    WPObject *pFreeFont = NULL;
     APIRET frc = FOPSERR_INTEGRITY_ABORT;
 
     switch (pftl->ulOperation)
@@ -1359,7 +1360,7 @@ APIRET fopsFileThreadFontProcessing(HAB hab,
                 // in these two cases only, destroy the
                 // font object after we've called the error
                 // callback... it still needs the object!
-                pFree = pObjectThis;
+                pFreeFont = pObjectThis;
         break;
     }
 
@@ -1381,8 +1382,12 @@ APIRET fopsFileThreadFontProcessing(HAB hab,
             frc = NO_ERROR;
     }
 
-    if (pFree)
-        _wpFree(pFree);
+    if (pFreeFont)
+    {
+        _wpFree(pFreeFont);
+        _xwpChangeFontsCount(pftl->pSourceFolder, -1);
+                // status bar update was missing V0.9.20 (2002-07-25) [umoeller]
+    }
 
     return frc;
 }

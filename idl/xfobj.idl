@@ -105,9 +105,6 @@ interface XFldObject : WPObject
                                     in ULONG ulPageID,
                                     in ULONG ulDefaultHelpPanel);
 
-    HPOINTER xwpShareIconWith(in WPObject pobjClient,
-                              in BOOL fMakeGlobal);
-
     ULONG xwpQueryRealDefaultView();
     PSZ xwpQueryOriginalObjectID();
 
@@ -117,7 +114,6 @@ interface XFldObject : WPObject
     BOOL xwpSetTrashObject(in WPObject pTrashObject);
 
     ULONG xwpQueryListNotify();
-    BOOL xwpSetListNotify(in ULONG flNotifyFlags);
     BOOL xwpModifyListNotify(in ULONG flNotifyFlags,
                              in ULONG flNotifyMask);
 
@@ -148,7 +144,6 @@ interface XFldObject : WPObject
                   xwpQuerySetup,
                   xwpQuerySetup2,
                   xwpQueryListNotify,
-                  xwpSetListNotify,
                   xwpModifyListNotify,
                   xwpAddWidgetNotify,
                   xwpRemoveDestroyNotify,
@@ -159,8 +154,7 @@ interface XFldObject : WPObject
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,
                   xwpHotkeyOrBorderAction,
-                  xwpAddReplacementIconPage,
-                  xwpShareIconWith;
+                  xwpAddReplacementIconPage;
 
     /*
      * Class Modifiers:
@@ -180,9 +174,6 @@ interface XFldObject : WPObject
      * Internal instance variables for XFldObject:
      *
      */
-
-    ULONG       flFlags;        // OBJFL_* flag (include\filesys\object.h)
-                                // V0.9.18 (2002-03-23) [umoeller]
 
     // the following have been added with V0.9.0
     // BOOL        fDeleted;       // if TRUE, the following two fields are valid
@@ -212,19 +203,48 @@ interface XFldObject : WPObject
     // the following has been added with V0.9.16 (2001-12-06) [umoeller]
     //# PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
 
-    ULONG       ulListNotify;   // OBJLIST_* flags set with xwpSetListNotify
+    ULONG       flObject;           // OBJFL_* and OBJLIST_* flags
+                                    // V0.9.20 (2002-07-25) [umoeller]
 
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
-
-    // tree of WPFileSystem objects
-    // V0.9.20 (2002-07-25) [umoeller]
-    PVOID           IconSharesTreeRoot;        // a TREE* really
-    LONG            cIconShares;
 
     // ULONG       ulDefaultView;
                             // for xwpQueryRealDefaultView
                             // V0.9.16 (2001-11-25) [umoeller]
                             // no longer needed V0.9.19 (2002-07-01) [umoeller]
+
+    // doubly-linked list of awake objects
+    // (the root of the list is a global variable in xfobj.c)
+    // V0.9.20 (2002-07-25) [umoeller]
+
+    XFldObject  pNextAwake;     // next object for the list of currently awake objects
+    XFldObject  pPreviousAwake; // previous object for the list of currently awake objects
+
+    // icon server/client stuff (see icomShareIcon):
+    // V0.9.20 (2002-07-25) [umoeller]
+
+    // We implement a linked list here, using object instance data. This
+    // looks like the best solution to me since the LARGE majority of awake
+    // WPS objects will be data files and thus icon clients.
+
+    // 1) If we are an icon server, pFirstIconClient and pLastIconClient
+    //    implement a linked list of icon clients, pointing to the first
+    //    and the last WPObject* client.
+
+    // 2) In each icon client object, pNextClient and pPreviousClient
+    //    implement the linked list.
+
+    WPObject    pFirstIconClient;       // if != NULL, we have clients, and this is the
+                                        // first one (where pFirstClient->pNextClient is
+                                        // the next etc.)
+    WPObject    pLastIconClient;        // last item in list (for speedy append)
+
+    ULONG       cIconClients;           // total clients count
+
+    // the object that _we_ took our icon from, or NULL
+    WPObject    pobjIconServer;         // if != NULL, our icon server
+    XFldObject  pNextClient;            // next object for pobjIconServer's list of clients
+    XFldObject  pPreviousClient;        // previous object for pobjIconServer's list of clients
 
     /*
      * WPObject methods overridden by XFldObject:
@@ -243,6 +263,8 @@ interface XFldObject : WPObject
     wpSetTitle: override;
 //# wpSetDefaultView: override; removed V0.9.19 (2002-07-01) [umoeller]
     wpSetObjectID: override;
+
+    wpSetIcon: override;
 
     wpSaveDeferred: override;
     wpSaveImmediate: override;

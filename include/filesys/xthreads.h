@@ -47,7 +47,8 @@
      *          WPObject* mp1: somSelf as in XFldObject::wpObjectReady
      */
 
-    #define WOM_ADDAWAKEOBJECT          (WM_USER+151)
+    // #define WOM_ADDAWAKEOBJECT          (WM_USER+151)
+            // removed V0.9.20 (2002-07-25) [umoeller]
 
     /*
      *@@ WOM_REMOVEAWAKEOBJECT:
@@ -66,7 +67,9 @@
      *          WPObject* mp1: somSelf as in XFldObject::wpUnInitData
      */
 
-    #define WOM_REMOVEAWAKEOBJECT       (WM_USER+152)
+    // #define WOM_REMOVEAWAKEOBJECT       (WM_USER+152)
+            // removed V0.9.20 (2002-07-25) [umoeller]
+
     #define WOM_SHOWFOLDERDATA          (WM_USER+153)
     #define WOM_REFRESHFOLDERVIEWS      (WM_USER+154)
 
@@ -186,15 +189,15 @@
      *
      ********************************************************************/
 
-    BOOL xthrLockAwakeObjectsList(VOID);
+    // BOOL xthrLockAwakeObjectsList(VOID);
 
-    VOID xthrUnlockAwakeObjectsList(VOID);
+    // VOID xthrUnlockAwakeObjectsList(VOID);
 
-    APIRET xthrQueryAwakeObjectsMutexOwner(PPID ppid,
-                                           PTID ptid,
-                                           PULONG pulCount);
+    // APIRET xthrQueryAwakeObjectsMutexOwner(PPID ppid,
+    //                                        PTID ptid,
+    //                                        PULONG pulCount);
 
-    LONG xthrQueryAwakeObjectsCount(VOID);
+    // LONG xthrQueryAwakeObjectsCount(VOID);
 
     VOID xthrResetWorkerThreadPriority(VOID);
 

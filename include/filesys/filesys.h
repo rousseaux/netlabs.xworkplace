@@ -213,8 +213,10 @@
                                        PBOOL pfExit);
     #endif
 
-    APIRET fsysRefresh(WPFileSystem *somSelf,
-                       PVOID pvReserved);
+    #ifdef SOM_WPFileSystem_h
+        APIRET fsysRefresh(WPFileSystem *somSelf,
+                           PVOID pvReserved);
+    #endif
 
     /* ******************************************************************
      *

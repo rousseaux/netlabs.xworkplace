@@ -98,61 +98,18 @@ static const char *G_pcszInstanceFilter = "*.OFM,*.FON,*.TTF,*.TTC";
  ********************************************************************/
 
 /*
- *@@ wpInitData:
- *      this WPObject instance method gets called when the
- *      object is being initialized (on wake-up or creation).
- *      We initialize our additional instance data here.
- *      Always call the parent method first.
- */
-
-SOM_Scope void  SOMLINK fonf_wpInitData(XWPFontFile *somSelf)
-{
-    XWPFontFileData *somThis = XWPFontFileGetData(somSelf);
-    XWPFontFileMethodDebug("XWPFontFile","fonf_wpInitData");
-
-    XWPFontFile_parent_WPDataFile_wpInitData(somSelf);
-
-    _fFontInstalled = FALSE;
-}
-
-/*
- *@@ wpUnInitData:
- *      this WPObject instance method is called when the object
- *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
- *      The parent method must always be called last.
- */
-
-SOM_Scope void  SOMLINK fonf_wpUnInitData(XWPFontFile *somSelf)
-{
-    /* XWPFontFileData *somThis = XWPFontFileGetData(somSelf); */
-    XWPFontFileMethodDebug("XWPFontFile","fonf_wpUnInitData");
-
-    XWPFontFile_parent_WPDataFile_wpUnInitData(somSelf);
-}
-
-/*
- *@@ wpObjectReady:
- *      this WPObject notification method gets called by the
- *      WPS when object instantiation is complete, for any reason.
- *      ulCode and refObject signify why and where from the
- *      object was created.
- *      The parent method must be called first.
+ *@@ xwpIsInstalled:
+ *      returns TRUE if the font is currently installed.
  *
- *      See XFldObject::wpObjectReady for remarks about using
- *      this method as a copy constructor.
+ *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-SOM_Scope void  SOMLINK fonf_wpObjectReady(XWPFontFile *somSelf,
-                                           ULONG ulCode, WPObject* refObject)
+SOM_Scope BOOL  SOMLINK fonf_xwpIsInstalled(XWPFontFile *somSelf)
 {
     CHAR szFilename[CCHMAXPATH];
-    XWPFontFileData *somThis = XWPFontFileGetData(somSelf);
-    XWPFontFileMethodDebug("XWPFontFile","fonf_wpObjectReady");
 
-    XWPFontFile_parent_WPDataFile_wpObjectReady(somSelf, ulCode,
-                                                refObject);
+    /* XWPFontFileData *somThis = XWPFontFileGetData(somSelf); */
+    XWPFontFileMethodDebug("XWPFontFile","fonf_xwpIsInstalled");
 
     // no matter what the reason is that we've been created,
     // we check whether this font file is installed in OS2.INI...
@@ -162,17 +119,19 @@ SOM_Scope void  SOMLINK fonf_wpObjectReady(XWPFontFile *somSelf,
     {
         ULONG cb = 0;
         nlsUpper(szFilename, 0);
-        if (   (PrfQueryProfileSize(HINI_USER,
-                                    (PSZ)PMINIAPP_FONTS, // "PM_Fonts",
-                                    szFilename,
-                                    &cb))
-            && (cb)
+        if (    (PrfQueryProfileSize(HINI_USER,
+                                     (PSZ)PMINIAPP_FONTS, // "PM_Fonts",
+                                     szFilename,
+                                     &cb))
+             && (cb)
            )
         {
             // yes, we exist:
-            _fFontInstalled = TRUE;
+            return TRUE;
         }
     }
+
+    return FALSE;
 }
 
 /* ******************************************************************
@@ -245,6 +204,7 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryTitle(M_XWPFontFile *somSelf)
  *@@ wpclsQueryStyle:
  *
  *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: removed CLSSTYLE_NEVERCOPY
  */
 
 SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
@@ -253,7 +213,7 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryStyle");
 
     return (CLSSTYLE_NEVERTEMPLATE      // V0.9.16 (2001-11-25) [umoeller]
-                | CLSSTYLE_NEVERCOPY
+                // | CLSSTYLE_NEVERCOPY  bullshit V0.9.20 (2002-07-25) [umoeller]
                 | CLSSTYLE_NEVERDROPON
                 | CLSSTYLE_NEVERPRINT);
 }

@@ -73,13 +73,14 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
-#include "helpers\winh.h"               // PM helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -3118,6 +3119,7 @@ MRESULT setStatusItemChanged(PNOTEBOOKPAGE pnbp,
  *
  *@@changed V0.9.1 (99-12-29) [umoeller]: added "Desktop restarts" field
  *@@changed V0.9.4 (2000-07-03) [umoeller]: "Desktop restarts" was 1 too large; fixed
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added thousands separator to awake objects
  */
 
 VOID setStatusTimer(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -3126,13 +3128,17 @@ VOID setStatusTimer(PNOTEBOOKPAGE pnbp,   // notebook info struct
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PTIB            ptib;
     PPIB            ppib;
-    // TID             tid;
 
     CHAR            szTemp[200];
 
     // awake Desktop objects
+    // added thousands sep V0.9.20 (2002-07-25) [umoeller]
+    nlsThousandsULong(szTemp,
+                      G_cAwakeObjects,
+                               // xfobj.c global variable, declared in kernel.h
+                               // V0.9.20 (2002-07-25) [umoeller]
+                      cmnQueryThousandsSeparator());
 
-    sprintf(szTemp, "%d", xthrQueryAwakeObjectsCount());
     WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_AWAKEOBJECTS,
                       szTemp);
 

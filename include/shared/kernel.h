@@ -93,6 +93,10 @@
 
     #ifdef SOM_WPObject_h
 
+        // declare these two global variables in xfobj.c
+        extern WPObject     *G_pAwakeWarpCenter;
+        extern ULONG        G_cAwakeObjects;
+
         /*
          *@@ KERNELGLOBALS:
          *      this structure is stored in a static global
@@ -214,7 +218,8 @@
 
             // address of awake WarpCenter; stored by Worker
             // thread, read by Shutdown thread
-            WPObject            *pAwakeWarpCenter;
+            // WPObject            *pAwakeWarpCenter;
+                    // removed V0.9.20 (2002-07-25) [umoeller]
 
             /*
              * Bush thread:
@@ -374,8 +379,7 @@
 
     #define T1M_OPENRUNDIALOG           (WM_USER+292)    // V0.9.14 (2001-08-07) [pr]
 
-    // #define T1M_PROGOPENPROGRAM         (WM_USER+293)    // V0.9.16 (2001-12-02) [umoeller]
-            // removed again V0.9.19 (2002-03-28) [umoeller]
+    #define T1M_NOTIFYWAKEUP            (WM_USER+293)    // V0.9.20 (2002-07-25) [umoeller]
 
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 

@@ -297,32 +297,18 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
                 pcszFamily,
                 pcszSetup);     // extra setup
 
-        pNew = _wpclsNew(_XWPFontObject,
-                         (PSZ)pcszFace,          // object title
-                         szSetup,
-                         pFolder,
-                         TRUE);             // lock
-        if (pNew)
+        if (pNew = _wpclsNew(_XWPFontObject,
+                             (PSZ)pcszFace,          // object title
+                             szSetup,
+                             pFolder,
+                             TRUE))         // lock
         {
             // raise status count... this is for the status bar
-            WPObject *pobjLock = NULL;
-            TRY_LOUD(excpt1)
-            {
-                if (pobjLock = (!_wpRequestObjectMutexSem(pFolder, SEM_INDEFINITE_WAIT)) ? pFolder : NULL)
-                {
-                    XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
+            _xwpChangeFontsCount(pFolder, +1);
+                    // V0.9.20 (2002-07-25) [umoeller]
 
-                    _ulFontsCurrent++;
-                    stbUpdate(pFolder);
-
-                    if (fInsert)
-                        fdrCnrInsertObject(pNew);
-                }
-            }
-            CATCH(excpt1) {} END_CATCH();
-
-            if (pobjLock)
-                _wpReleaseObjectMutexSem(pobjLock);
+            if (fInsert)
+                fdrCnrInsertObject(pNew);
         }
     }
 
@@ -345,6 +331,8 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
  *
  *      If pFontFolder has already been filled with font objects,
  *      this creates a new font object as well.
+ *
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed bad "already installed" report if font was previously uninstalled
  */
 
 APIRET fonInstallFont(HAB hab,
@@ -371,7 +359,7 @@ APIRET fonInstallFont(HAB hab,
         {
             // we got the filename in szFilename:
             // check if that font is already installed
-            if (__get_fFontInstalled(pNewFontFile))
+            if (_xwpIsInstalled(pNewFontFile))       // fixed V0.9.20 (2002-07-25) [umoeller]
                 arc = FOPSERR_FONT_ALREADY_INSTALLED;
             else
             {
@@ -435,9 +423,6 @@ APIRET fonInstallFont(HAB hab,
                                         // caller wants font object:
                                         *ppNewFontObj = pNew;
                                 }
-
-                                // update font file's install state
-                                __set_fFontInstalled(pNewFontFile, TRUE);
                             }
                         }
                     }
@@ -494,8 +479,8 @@ APIRET fonDeInstallFont(HAB hab,
         else
         {
             // extract short filename
-            PSZ pLastBackslash = strrchr(szFilename, '\\');
-            if (!pLastBackslash)
+            PSZ pLastBackslash;
+            if (!(pLastBackslash = strrchr(szFilename, '\\')))
                 arc = ERROR_INVALID_NAME;
             else
             {

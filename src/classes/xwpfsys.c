@@ -575,7 +575,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetIconData");
 
-    if (icoRunReplacement())
+    if (icomRunReplacement())
     {
         BOOL    brc = FALSE;
         BOOL    fNotDefaultIcon = FALSE;

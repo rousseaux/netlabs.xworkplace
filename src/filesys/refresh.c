@@ -401,6 +401,7 @@ static VOID Refresh(WPObject *pobj)
  *@@changed V0.9.12 (2001-05-31) [umoeller]: added REMOVE_* return value for caller
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  *@@changed V0.9.16 (2002-01-09) [umoeller]: folder refresh wasn't always working, fixed
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed system deadlock if data file was made awake that needed a previously unused association icon
  */
 
 static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
@@ -412,10 +413,35 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
     {
         case RCNF_FILE_ADDED:
         case RCNF_DIR_ADDED:
-            _wpclsQueryObjectFromPath(_WPFileSystem,
-                                      pNotify->CNInfo.szName);
+            // _wpclsQueryObjectFromPath(_WPFileSystem,
+            //                           pNotify->CNInfo.szName);
                     // this will wake the object up
                     // if it hasn't been awakened yet
+
+            // Alright, system deadlock RIGHT HERE, produced by the
+            // above code.
+            // V0.9.20 (2002-07-25) [umoeller]
+
+            // This happens ONLY in the following situation:
+            // A data file pops up in a folder and uses an association
+            // icon from a file that is not in our handles cache yet.
+            // As a result, objFindObjFromHandle calls _wpclsQueryObject,
+            // and we hang RIGHT THERE in that call, somewhere in the WPS.
+            // I suspect the WPS is producing a mutex deadlock on something
+            // because the call here probably request the find and folder
+            // mutexes (on the pump thread) and the _wpclsQueryObject
+            // will do the same on the GUI thread because that's where
+            // the association code runs as a result of _wpQueryIcon.
+
+            // All I can think of right now is waking up the object
+            // on thread 1 in the HOPE that the folder view that causes
+            // the _wpQueryIcon is also on thread 1.
+
+            if (krnPostThread1ObjectMsg(T1M_NOTIFYWAKEUP,
+                                        (MPARAM)pNotify,
+                                        0))
+                // kernel.c then frees this notification
+                ulrc = REMOVE_NOTHING;
         break;
 
         case RCNF_CHANGED:      // V0.9.16 (2001-10-28) [umoeller]

@@ -1576,7 +1576,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetIcon(XWPTrashCan *somSelf,
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpSetIcon");
 
     if (!_fOpeningSettings)
-        return (XWPTrashCan_parent_WPFolder_wpSetIcon(somSelf, hptrNewIcon));
+        return XWPTrashCan_parent_WPFolder_wpSetIcon(somSelf, hptrNewIcon);
 
     return FALSE;
 }
