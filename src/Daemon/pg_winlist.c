@@ -742,68 +742,56 @@ BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
 
             if (brc)
             {
-                switch (pData->bWindowType)
+                if (!(pData->hsw = WinQuerySwitchHandle(hwnd, 0)))
                 {
-                    case 0:     // not found yet:
-                    case WINDOW_XWPDAEMON:
-                    case WINDOW_WPSDESKTOP:
-                    {
-                        ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
-                        if (!(pData->hsw = WinQuerySwitchHandle(hwnd, 0)))
-                        {
-                            if (!pData->bWindowType)
-                                pData->bWindowType = WINDOW_NIL;
-                        }
-                        else if (pgrIsSticky(hwnd, pData->swctl.szSwtitle))
-                        {
-                            if (!pData->bWindowType)
-                                pData->bWindowType = WINDOW_STICKY;
-                        }
-                        if (    // V0.9.15 (2001-09-14) [umoeller]:
-                                // _always_ check for visibility, and
-                                // if the window isn't visible, don't
-                                // mark it as normal
-                                // (this helps VX-REXX apps, which can
-                                // solidly lock XPager with their hidden
-                                // frame in the background, upon which
-                                // WinSetMultWindowPos fails)
-                                (!(ulStyle & WS_VISIBLE))
-                             || (pData->swp.fl & SWP_HIDE)
-                             || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
-                           )
-                        {
-                            if (!pData->bWindowType)
-                                pData->bWindowType = WINDOW_HIDDEN;
-                        }
-                        else
-                        {
-                            // window is in tasklist:
-                            if (!pData->bWindowType)
-                            {
-                                // the minimize attribute prevails the "sticky" attribute,
-                                // "sticky" prevails maximize, and maximize prevails normal
-                                // V0.9.18 (2002-02-21) [lafaix]
-                                if (pData->swp.fl & SWP_MINIMIZE)
-                                    pData->bWindowType = WINDOW_MINIMIZE;
-                                else if (pData->swp.fl & SWP_MAXIMIZE)
-                                    pData->bWindowType = WINDOW_MAXIMIZE;
-                                else
-                                    pData->bWindowType = WINDOW_NORMAL;
-                            }
-                        }
+                    if (!pData->bWindowType)
+                        pData->bWindowType = WINDOW_NIL;
+                }
+                else
+                    // get switch entry in all cases;
+                    // otherwise we have an empty switch title
+                    // for some windows in the list, which will cause
+                    // the new refresh thread to fire "window changed"
+                    // every time
+                    // V0.9.19 (2002-06-08) [umoeller]
+                    WinQuerySwitchEntry(pData->hsw,
+                                        &pData->swctl);
 
-                        // try to get switch entry in all cases;
-                        // otherwise we have an empty switch title
-                        // for some windows in the list, which will cause
-                        // the new refresh thread to fire "window changed"
-                        // every time
-                        // V0.9.19 (2002-06-08) [umoeller]
-                        if (pData->hsw)
-                            WinQuerySwitchEntry(pData->hsw,
-                                                &pData->swctl);
+                if (!pData->bWindowType)
+                {
+                    // window type not found yet:
+                    ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
+                    if (pgrIsSticky(hwnd, pData->swctl.szSwtitle))
+                        pData->bWindowType = WINDOW_STICKY;
+                    else if (    // V0.9.15 (2001-09-14) [umoeller]:
+                                 // _always_ check for visibility, and
+                                 // if the window isn't visible, don't
+                                 // mark it as normal
+                                 // (this helps VX-REXX apps, which can
+                                 // solidly lock XPager with their hidden
+                                 // frame in the background, upon which
+                                 // WinSetMultWindowPos fails)
+                                 (!(ulStyle & WS_VISIBLE))
+                              || (pData->swp.fl & SWP_HIDE)
+                              || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
+                            )
+                    {
+                        pData->bWindowType = WINDOW_HIDDEN;
+                    }
+                    else
+                    {
+                        // the minimize attribute prevails the "sticky" attribute,
+                        // "sticky" prevails maximize, and maximize prevails normal
+                        // V0.9.18 (2002-02-21) [lafaix]
+                        if (pData->swp.fl & SWP_MINIMIZE)
+                            pData->bWindowType = WINDOW_MINIMIZE;
+                        else if (pData->swp.fl & SWP_MAXIMIZE)
+                            pData->bWindowType = WINDOW_MAXIMIZE;
+                        else
+                            pData->bWindowType = WINDOW_NORMAL;
                     }
                 }
-            }
+            } // if (brc)
         }
     }
 
