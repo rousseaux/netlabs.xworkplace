@@ -15,7 +15,19 @@ the actual NLS files.
 <P>
 To be more precise:
 
-<UL><LI>In order to create <CODE>.INF</CODE> and <CODE>.HLP</CODE>
+<UL><LI>I have written my own utility which converts the HTML sources for
+the INF and HLP files to IPF format for IPFC (see below). This is in the
+<CODE>xwphelpers</CODE> repository on Netlabs, so in addition to the
+XWorkplace sources, you will need to check out <CODE>xwphelpers</CODE>
+as well. The utility is called <CODE>h2i.exe</CODE> and gets called
+automatically by the makefiles.
+
+<P><LI>The makefiles also convert the GIF files for the INF and HLP files
+to BMP format automatically. For this to work, you will need the
+&quot;Generalized Bitmap Module&quot; (GBM) package from Hobbes.
+The makefiles assume that <CODE>gbmsize.exe</CODE> is on your PATH.
+
+<P><LI>In order to create INF and HLP
 files, you need IBM's "Information Presentation Facility Compiler" (<CODE>IPFC.EXE</CODE>).
 This thing is part of the OS/2 Developer's Toolkit, which, unfortunately, still
 isn't free. <I>However,</I> I have now found that IPFC is contained in the
@@ -34,10 +46,9 @@ DMAKE or GNU make. I'd be grateful for feedback.
 If you don't have NMAKE, you can still assemble the files manually. See the
 following pages for details.
 
-<P><LI>XWorkplace V0.9.0 no longer uses OS/2 message files (those <CODE>.MSG</CODE>
-things). Instead, we have developed a new format which uses plain text ASCII
-files (with a <CODE>.TMF</CODE> extension) as input, so <CODE>MKMSGF.EXE</CODE>
-is no longer needed to compile message files.
+<P><LI>XWorkplace V0.9.0 and above can read the TMF message file directly,
+so <CODE>MKMSGF.EXE</CODE> is no longer needed to compile message files.
+
 </UL>
 <BR>
 

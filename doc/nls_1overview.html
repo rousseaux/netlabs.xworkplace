@@ -6,63 +6,36 @@ Overview
 </HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
-<P><B>Note:</B>
-If you have already started translating XWorkplace, please do read the
-<CODE>changelog.txt</CODE> file. Please mind these important changes,
-or the current XWorkplace version will not run with your NLS files properly.
 
-<P><B>Legal notes.</B> XWorkplace is placed under the
-GNU General Public License (GPL), including the National Language Support (NLS).
-If you translate the NLS part to your language, you create
-"a work based on the Program" in the GPL sense. As a result, the
-GPL automatically applies to your translation too.
-<P><B>This means that you have to publish your source code also.</B>
+National Language Support (NLS) is done by separating everything that
+is language-dependent from the actual program logic. The way XWorkplace
+does this is that all the NLS stuff is packaged into files that are
+completely separate from <CODE>XFLDR.DLL</CODE> so you can change XWorkplace's
+language without having to recompile XWorkplace itself.
 
-<P>Now, to move away from the Legalese, I suggest that you do
-not distribute XWorkplace NLS packages yourself. Note that this is
-not a legal requirement (you may do so if you ship the source code
-also), but for practical reasons, mainly the following two:
-<P>For one, all the NLS packages should be available from
-my homepage for convience.
-<P>Secondly, since
-I might update XWorkplace after you have finished your work on your
-NLS version, XWorkplace might have trouble cooperating with your
-files. Internal IDs might change and/or new features might be
-added.
-So if you have finished creating your NLS package, please contact
-me, and I will put in on my homepage and upload it to the usual
-places where XWorkplace is normally available.
-<P>This seems like the best solution
-to be, because I have a list of places which carry XWorkplace, and I
-can update all the NLS packages myself when anything changes with
-XWorkplace. This way, my homepage will always be the place to look
-for up-to-date NLS packages.
-<P>
-Thus, when you're done translating, please zip up the complete
-directory tree again and mail the ZIP file back to me.
-
-<P>
-<B>How it works.</B>
-XWorkplace NLS packages identify themselves to the XWorkplace core via
+<P>XWorkplace NLS packages identify themselves to the XWorkplace core via
 <B>country codes,</B> as described on the &quot;COUNTRY&quot; page in the
 <I>OS/2 Command Reference</I> (CMDREF.INF).
 
 <P>XWorkplace's language depends on exactly one setting in OS2.INI (application
 "XWorkplace", key "LanguageCode"). If that setting is changed, XWorkplace assumes a
-whole new set of language files to be present.
+whole new set of language files to be present. The setting is only checked once
+at WPS startup or later if you explicitly load a new language in the
+XWorkplace Setup object. If no code is present, "001" for US English is assumed.
 
-<P>With the XWorkplace sources, you will find everything for creating the English
+<P>The XWorkplace sources contain everything for creating the US English
 NLS package, as it comes with the standard XWorkplace binary release.
-The language code for English is &quot;001&quot;. Everything that is related
+The language code for US English is &quot;001&quot;. Everything that is related
 to English NLS is therefore in the <CODE>001\</CODE> directory tree.
 
 <P>The <B>first step</B> you'll have to take is finding out your country
 code. For example, Italian would be 039.
-<P>
-Unfortunately, XWorkplace's National Language Support (NLS) is spread across quite
+
+<P>Unfortunately, XWorkplace's National Language Support (NLS) is spread across quite
 a number of files, which have different file formats.
-<P>
-Basically, XWorkplace's NLS can be separated into three parts:
+
+<P>Basically, XWorkplace's NLS can be separated into three parts:
+
 <OL><LI><B>Run-time NLS:</B> this is all the language-dependent
 things that XWorkplace will ever display to the user, such as menus,
 dialogs, messages, and notebook pages.
@@ -72,27 +45,25 @@ dialogs, messages, and notebook pages.
 subdirectory.
 This file contains all language-dependent Presentation Manager (PM) resources,
 mostly dialogs and menus. Also, a lot of strings are stored here.
-<P>The NLS DLL is called <CODE>XFLDRxxx.DLL</CODE>, with &quot;xxx&quot; being your
+<P>The NLS DLL is called <CODE>xfldrXXX.dll</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
 The files neccessary to translate this DLL are in the <CODE>001\dll</CODE>
 directory. All this goes into <CODE>bin\xfldr001.dll</CODE> in the binary
 release.
 <P>See <A HREF="nls_4dll.html">"The main NLS DLL"</A> for details.
 
-<P><LI>The XWorkplace <B>message file</B> introduced with V0.80 residing in the
-HELP subdirectory. This file holds all kinds of messages which
+<P><LI>The XWorkplace <B>message file</B>, <CODE>help\xfldrXXX.tmf</CODE>.
+This file holds all kinds of messages which
 are mostly displayed in XWorkplace's message boxes and are too large to be put into
 the resources of the NLS DLL (because PM string resources are limited to 256
 characters, unfortunately).
-<P>With V0.9.0, the message file format has changed. Previously, the file was
-called <CODE>XFLDRxxx.MSG</CODE>, with &quot;xxx&quot; being your
-three-digit language code, and an IBM utility called <CODE>MKMSGF.EXE</CODE> was
-required to compile the actual message file. Now, this file has the <CODE>.TMF</CODE>
-ending and is compiled at run-time into that file's extended attributes, so there's
-no additional utilities needed.
-<P>This file is <CODE>001\misc\xfldr001.tmf</CODE> in the sources. This is
+<P>The file has a format similar to that of the source files for the
+IBM <CODE>MKMSGF.EXE</CODE> utility, but using that utility is not necessary
+for XWorkplace.
+There are several <CODE>*.tmf</CODE> files in the <CODE>001\misc</CODE>
+directory in the sources, which are combined to form
 <CODE>help\xfldr001.tmf</CODE> in the binary release.
-<P>See <A HREF="nls_4dll.html">"The main NLS DLL"</A> for details.
+<P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
 
 <P><LI>The <B>WPS class descriptions</B> which are displayed on the
 &quot;WPS Classes&quot;
@@ -114,7 +85,7 @@ part of the translation work, since I have written so much text over time.
 <P>Here we have:
 
 <BR><UL><LI>The <B>XWorkplace Online Reference (INF)</B> in the XWorkplace main directory.
-<P>This file is called <CODE>XFLDRxxx.INF</CODE>, with &quot;xxx&quot; being your
+<P>This file is called <CODE>xfldrXXX.inf</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
 The HTML source files neccessary to translate this file are in the <CODE>001/inf.001</CODE>
 subdirectory.
@@ -122,7 +93,7 @@ subdirectory.
 
 <P><LI>The <B>XWorkplace HLP file</B> in the HELP subdirectory. This file holds
 all the help panels that are displayed when you press F1.
-<P>This file is called <CODE>XFLDRxxx.HLP</CODE>, with &quot;xxx&quot; being your
+<P>This file is called <CODE>xfldrXXX.hlp</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
 The files neccessary to translate this file are in the <CODE>001/xwphelp</CODE>
 subdirectory.
@@ -136,14 +107,6 @@ directory for details.
 <P><LI>The Warp 4 SmartGuide script which was present with XFolder and XWorkplace
 before V0.9.7 is gone now.
 
-</OL>The <CODE>TOOLS</CODE> directory contains a valuable tool for converting
-HTML files to the IBM (IPF) format. This will be described on a
-<A HREF="nls_6html2ipf.html">separate page.</A>
-This directory also contains a few other needed tools. See the
-separate README in that directory.
-
-<P>
-BTW: I'm really curious how &quot;Snap to grid&quot; sounds in your language. <CODE>;-)</CODE>
-<BR>
+</OL>
 </BODY>
 </HTML>

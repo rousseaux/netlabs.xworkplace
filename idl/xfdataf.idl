@@ -44,20 +44,20 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    BOOL xwpNukePhysical();
+    BOOL xwpDestroyStorage();
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpNukePhysical;
+    releaseorder: xwpDestroyStorage;
 
     /*
      * Class Modifiers:
      *
      */
 
-    externalprefix = xfdf_;
-    externalstem = xfdf;
+    externalprefix = xdf_;
+    externalstem = xdf;
     majorversion = 1;
     minorversion = 1;
     filestem = xfdataf;           //# specifies the filestem for sc-generated files
@@ -96,6 +96,7 @@ interface XFldDataFile : WPDataFile
 
     wpAddFileTypePage: override;
 
+    wpQueryDefaultHelp: override;
     wpQueryAssociatedProgram: override;
 
     wpQueryIcon: override;
@@ -126,9 +127,9 @@ interface M_XFldDataFile : M_WPDataFile
      *
      */
 
-    externalprefix = xfdfM_;
-    externalstem = xfdfM;
-    functionprefix = xfdfM_;
+    externalprefix = xdfM_;
+    externalstem = xdfM;
+    functionprefix = xdfM_;
     majorversion = 1;
     minorversion = 1;
     filestem = xfdataf;           //# specifies the filestem for sc-generated files

@@ -1239,8 +1239,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                 if (mp1)
                 {
                     XSTRING strMsg;
-                    xstrInit(&strMsg, 0);
-                    xstrset(&strMsg, (PSZ)mp1);
+                    xstrInitSet(&strMsg, (PSZ)mp1);
                     if (mp2)
                     {
                         // restart Desktop: Yes/No box

@@ -54,7 +54,7 @@ interface XWPProgramFile : WPProgramFile
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
-    BOOL xwpNukePhysical();
+    BOOL xwpDestroyStorage();
 
 #ifdef __SOMIDL__
   implementation {
@@ -64,7 +64,7 @@ interface XWPProgramFile : WPProgramFile
                   xwpAddResourcesPage,
                   xwpAddModulePage,
                   xwpAddAssociationsPage,
-                  xwpNukePhysical;
+                  xwpDestroyStorage;
 
     /*
      * Class Modifiers:
@@ -111,6 +111,7 @@ interface XWPProgramFile : WPProgramFile
     wpSetAssociationType: override;
 
     wpQueryDefaultView: override;
+    wpQueryDefaultHelp: override;
 
     wpQueryProgDetails: override;
     wpSetProgDetails: override;

@@ -339,8 +339,7 @@ typedef WINBUILDPTRHANDLE *PWINBUILDPTRHANDLE;
  *
  *      --  ERROR_PROTECTION_VIOLATION
  *
- *      plus the return codes of DosQueryModuleHandle,
- *      DosQueryProcAddr, DosLoadModule.
+ *      plus the return codes of doshQueryProcAddr.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  *@@changed V0.9.16 (2001-12-17) [lafaix]: fixed error handling and added ERROR_INVALID_HANDLE support
@@ -362,41 +361,12 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
             if (!WinBuildPtrHandle)
             {
                 // first call:
-                HMODULE hmod;
-                if (!(arc = DosQueryModuleHandle("PMMERGE",
-                                                 &hmod)))
-                {
-                    if ((arc = DosQueryProcAddr(hmod,
-                                                5117,        // WinBuildPtrHandle (32-bit)
-                                                NULL,
-                                                (PFN*)&WinBuildPtrHandle)))
-                    {
-                        // the CP programming guide and reference says use
-                        // DosLoadModule if DosQueryProcAddr fails with this error
-
-                        if (arc == ERROR_INVALID_HANDLE)
-                        {
-                            if (!(arc = DosLoadModule(NULL, 0, "PMMERGE", &hmod)))
-                            {
-                                if ((arc = DosQueryProcAddr(hmod,
-                                                            5117,
-                                                            NULL,
-                                                            (PFN*)&WinBuildPtrHandle)))
-                                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                           "Error %d resolving WinBuildPtrHandle.", arc);
-                            }
-                            else
-                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                       "Error %d loading module PMMERGE.", arc);
-                        }
-                        else
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "Error %d resolving WinBuildPtrHandle.", arc);
-                    }
-                }
-                else
+                if (arc = doshQueryProcAddr("PMMERGE",
+                                            5117,
+                                            (PFN*)&WinBuildPtrHandle))  // WinBuildPtrHandle (32-bit)
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "Error %d querying module handle for PMMERGE.", arc);
+                           "Error %d resolving WinBuildPtrHandle from PMMERGE.",
+                           arc);
             }
 
             krnUnlock();

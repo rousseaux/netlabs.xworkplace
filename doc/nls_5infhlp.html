@@ -14,86 +14,49 @@ The INF and HLP Files
 
 The sources for the INF and HLP files are written using a slightly extended
 HTML syntax. Creating INF and HLP files is therefore a two-step process:
-<OL><LI>The HTML sources are translated into an .IPF source file, using
-the <A HREF="nls_6html2ipf.html">HTML2IPF</A> utility.
-<P><LI>Next, the .IPF source is fed into IBM's <CODE>IPFC.EXE</CODE> from the Developer's
-Toolkit. See <A HREF="nls_3prep.html">"Preparations"</A> for where to get this utility.
-</OL>
-Please use the <CODE>MAKE.CMD</CODE> file on the top level of the XWorkplace source
-files to have the doc files created. This might take a while. You will
-first need to set a few environment variables on top of <CODE>MAKE.CMD</CODE>, which
-is documented in that file itself.
-<P>
-You then have two alternatives for the translations:
 
-<UL><LI>I recommend translating all the <CODE>.HTML</CODE> files and
-keep using <CODE>MAKE.CMD</CODE>
+<OL><LI>The HTML sources are translated into an .IPF source file, using my
+the <A HREF="nls_6html2ipf.html">h2i</A> utility. I am no longer using
+<CODE>html2ipf.cmd</CODE> because it's so damn slow and doesn't support
+string replacements.
+
+<P><LI>Next, the .IPF source is fed into IBM's <CODE>ipfc</CODE> from the Developer's
+Toolkit. See <A HREF="nls_2requires.html">"Requirements"</A> for where to get this utility.
+
+</OL>
+Please use the <CODE>make.cmd</CODE> file on the top level of the XWorkplace source
+files to have the doc files created.
+
+<P>I recommend translating all the <CODE>.HTML</CODE> files and
+keep using <CODE>make.cmd</CODE>
 to have the HTML files converted into a single .IPF file
-(using the HTML2IPF utility), which can then be fed into <CODE>IPFC.EXE</CODE>.
-<P>This has the advantage that you'll only have to change some panels
+(using my <CODE>h2i</CODE> utility), which can then be fed into <CODE>ipfc</CODE>.
+This has the advantage that you'll only have to change some panels
 in future versions, of which I will keep track. Also, I always note changes
 to the INF and HLP files in the HTML source files in HTML comments tags, so
 you can easily search for what's changed.
-<P>The disadvantage is that, being a REXX program, HTML2IPF is slow.
 
-<P><LI>You can also translate the <I>one</I> <CODE>.IPF</CODE>
-file in each of the INF and
-HELP directories directly, if you're familiar with the IPF source
-language, which is a proprietary IBM format (and which I don't like
-at all).
-<P>To do this, you'll have to create the two IPF source files first, using
-<CODE>MAKE.CMD</CODE>. You can then translate this file and
-feed it into the <CODE>IPFC.EXE</CODE> compiler
-to have the .INF and .HLP files created.
-<P>This has the disadvantage that if certain panels change in future
-versions, you'll have no clue what parts changed in this single IPF
-file, because the comments about changes are only visible in the HTML sources.
-<P>If you still want to use this method, please change the text only.
-Do not change any resources, IPF tags,
-and especially not the resource ID's, or XWorkplace will not find its
-help panels any more.
-</UL>
+<P>The &quot;root&quot; file in each of the two source directories
+is called <CODE>xfldrXXX.html</CODE>, respectively, with &quot;xxx&quot; being your
+country code (which you should change in this one filename because
+<CODE>h2i</CODE> will use this name for the target IPF file also).
 
-The &quot;root&quot; file in each of the two source directories
-is called <CODE>XFLDRxxx.HTML</CODE>, respectively, with &quot;xxx&quot; being your
-country code (which you should change in this one filename because HTML2IPF will use this
-name for the target IPF file also).
-
-<P>To <B>use HTML2IPF manually</B> (instead of through <CODE>MAKE.CMD</CODE>),
-open a command line in the INF or HLP
-directory (with XWorkplace <CODE>;-)</CODE> ), and type:
-
-<P><CODE>&lt;path&gt;\html2ipf xfldr001.html</CODE>
-
-<P>This will create a <CODE>XFLDRxxx.IPF</CODE> file (in the above example,
-XFLDR001.IPF). You can then run <CODE>ipfc XFLDRxxx.IPF</CODE> to compile
-a HLP file; add an <CODE>/INF</CODE> switch to produce an &quot;INF&quot; file.
-You must have the INF or HLP directory as your current directory,
-or HTML2IPF will tumble.
-
-<P>
-In any case, mind these important notes:
+<P>In any case, mind these important notes:
 
 <UL><LI>The (slightly awkward, I admit) structure of the files is the
 following, in both directories:
 
-<P><LI><CODE>XFLDRxxx.HTML</CODE> is the &quot;root&quot; file.
-Files beginning with &quot;0&quot; appear in the contents tree of the
-produced INF and HLP files.
+<P><CODE>xfldrXXX.html</CODE> is the &quot;root&quot; file.
 All other files are somwhere below in the INF/HLP table-of-contents
 hierarchy, depending on the <CODE>SUBLINKS</CODE> tags in the HTML source files.
 
-<P><LI>Do not change filenames! HTML2IPF sorts the IPF pages internally
+<P><LI>Do not change filenames! <CODE>h2i</CODE> sorts the IPF pages internally
 alphabetically according to the filenames, that's why I've
 implemented these strange naming conventions. I admit that since
 the structure has developed over time, it may not seem very
 logical to you, but it works. Changing things here will result
-in a lot of work, since all the links in the HTML files will
-have to be renamed also.
-<P>Also, if you change the linkage of the HTML files, the resource
-IDs of the help panels will be altered, and XWorkplace will then
-get confused displaying the proper help panels.
-
+in a lot of work, since all the links in the HTML files would
+have to be adjusted also.
 
 <P><LI>Within the HTML files, do not change <I>anything</I> within angle
 brackets (&quot;&lt;xxx&gt;&quot;). Translate <I>only</I> the text outside of these.
@@ -102,22 +65,12 @@ HTML files might not look pretty when viewed with Netscape,
 certain tag combinations (especially the &lt;BR&gt;&lt;LI&gt; combinations)
 are neccessary to make the pages look good for IPF.
 
-
 <P><LI>Don't forget to translate the page titles (in between the
 &lt;TITLE&gt; tags). This is what appears in the title of a panel window
 and in the "Table of contents" tree. I've forgotten this many times...
 
-
-<P><LI>There are a number of files in the HLP directory which seem
-pretty useless. These are neccessary however in order to
-guarantee a certain sequence of the help panels in the
-resulting HLP file, on which XWorkplace relies for calling
-a certain help panel. I don't quite understand myself anymore
-how this order works, but it does, so I don't care. <CODE>;-)</CODE>
-
-
 <P><LI>I do not recommend translating <I>everything</I> for the INF book.
-I have done the German translation myself,
+For the old XFolder, I did the German translation myself,
 and I think that the &quot;Revision history&quot; section makes no
 sense translating, because it is frequently updated and
 NLS versions didn't exist for the older versions anyway.

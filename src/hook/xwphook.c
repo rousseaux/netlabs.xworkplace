@@ -116,19 +116,24 @@
  *      GNU General Public License for more details.
  */
 
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSMODULEMGR
+#define INCL_DOSMISC
+#define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
+#define INCL_WINSWITCHLIST
 #define INCL_WININPUT
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
 #define INCL_WINSCROLLBARS
+#define INCL_WINSTDCNR
 #define INCL_WINSYS
 #define INCL_WINTIMER
 #define INCL_WINHOOKS
-#define INCL_DOSSEMAPHORES
-#define INCL_DOSERRORS
-#define INCL_DOSMODULEMGR
 #include <os2.h>
 
 #include <stdio.h>
@@ -149,9 +154,9 @@
 #pragma hdrstop
 
 /******************************************************************
- *                                                                *
- *  Global variables                                              *
- *                                                                *
+ *
+ *  Global variables
+ *
  ******************************************************************/
 
 /*
@@ -182,6 +187,13 @@ ULONG           G_cFunctionKeys = 0;
 
 HMTX            G_hmtxGlobalHotkeys = NULLHANDLE;
     // mutex for protecting the keys arrays
+
+#define XM_HACKSWITCHLIST       (WM_USER + 1736)
+#define MP1_HACKSWITCHLIST      ((MPARAM)0xfa34c628)
+#define MP2_HACKSWITCH_ENABLE   ((MPARAM)0x1976c7af)
+#define MP2_HACKSWITCH_DISABLE  ((MPARAM)0xf7a12dd7)
+
+PFNWP G_pfnwpSwitchListOrig = NULL;
 
 /******************************************************************
  *
@@ -220,6 +232,76 @@ void _CRT_term(void);
  *  Helper functions
  *
  ******************************************************************/
+
+/*
+ *@@ hookLog:
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+VOID hookLog(PCSZ pcszSourceFile, // in: source file name
+             ULONG ulLine,               // in: source line
+             PCSZ pcszFunction,   // in: function name
+             PCSZ pcszFormat,     // in: format string (like with printf)
+             ...)                        // in: additional stuff (like with printf)
+{
+    APIRET      arc;
+    va_list     args;
+    CHAR        sz[1000];
+    HFILE       hf;
+    ULONG       ulAction;
+
+    ULONG       ulBootDrive;
+    DosQuerySysInfo(QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                    &ulBootDrive,
+                    sizeof(ulBootDrive));
+    sprintf(sz,
+            "%c:\\%s",
+            ulBootDrive + 'A' - 1,
+            "xwphook.log");
+
+    if (!(arc = DosOpen(sz,
+                        &hf,
+                        &ulAction,
+                        0,
+                        FILE_ARCHIVED,
+                        OPEN_ACTION_CREATE_IF_NEW | OPEN_ACTION_OPEN_IF_EXISTS,
+                        OPEN_SHARE_DENYREADWRITE | OPEN_ACCESS_READWRITE,
+                        NULL)))       // EAs
+    {
+        DATETIME DT;
+        PSZ     psz = sz;
+        ULONG   cb;
+        ULONG   ulOffset;
+
+        if (ulAction == FILE_EXISTED)
+            // get its size and set ptr to end for append
+            DosSetFilePtr(hf,
+                          0,
+                          FILE_END,
+                          &ulOffset);
+
+        DosGetDateTime(&DT);
+        psz += sprintf(psz,
+                       "%04d-%02d-%02d %02d:%02d:%02d "
+                       "%s (%s, line %d):\r\n    ",
+                       DT.year, DT.month, DT.day,
+                       DT.hours, DT.minutes, DT.seconds,
+                       pcszFunction, pcszSourceFile, ulLine);
+        va_start(args, pcszFormat);
+        psz += vsprintf(psz, pcszFormat, args);
+        *psz++ = '\r';
+        *psz++ = '\n';
+        va_end(args);
+        cb = psz - sz;
+        DosWrite(hf,
+                 sz,
+                 cb,
+                 &ulAction);
+        DosSetFileSize(hf, ulOffset + ulAction);
+        DosClose(hf);
+    }
+}
 
 /*
  *@@ InitializeGlobalsForHooks:
@@ -276,10 +358,13 @@ VOID InitializeGlobalsForHooks(VOID)
                     CHAR    szChildClass[200];
                     if (WinQueryClassName(hwndChild, sizeof(szChildClass), szChildClass))
                     {
-                        if (!strcmp(szChildClass, "WindowList"))
+                        if (    (!strcmp(szChildClass, "WindowList"))
+                             && (G_HookData.hwndSwitchListCnr = WinWindowFromID(hwndChild,
+                                                                                100))
+                           )
                         {
                             // yup, found:
-                            G_HookData.hwndWindowList = hwndThis;
+                            G_HookData.hwndSwitchList = hwndThis;
                             fFound = TRUE;
                         }
                     }
@@ -428,6 +513,15 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
                                                         HK_PREACCEL,  // pre-accelerator table hook (undocumented)
                                                         (PFN)hookPreAccelHook,
                                                         G_HookData.hmodDLL);
+
+
+            // subclass the system window list
+            /* hookLog(__FILE__, __LINE__, __FUNCTION__,
+                    "Sending XM_HACKSWITCHLIST MP2_HACKSWITCH_ENABLE");
+            WinSendMsg(G_HookData.hwndSwitchList,
+                       XM_HACKSWITCHLIST,
+                       MP1_HACKSWITCHLIST,
+                       MP2_HACKSWITCH_ENABLE); */
         }
 
         _Pmpf(("Leaving hookInit"));
@@ -455,6 +549,15 @@ BOOL EXPENTRY hookKill(void)
     BOOL brc = FALSE;
 
     _Pmpf(("hookKill"));
+
+    /* if (G_pfnwpSwitchListOrig)
+    {
+        // un-subclass the system window list
+        WinSendMsg(G_HookData.hwndSwitchList,
+                   XM_HACKSWITCHLIST,
+                   MP1_HACKSWITCHLIST,
+                   MP2_HACKSWITCH_DISABLE);
+    } */
 
     if (G_HookData.fInputHooked)
     {
@@ -637,6 +740,196 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 
 /******************************************************************
  *
+ *  Subclassed switch list
+ *
+ ******************************************************************/
+
+#if 0
+
+    /*
+     *@@ fnwpSubclassedSwitchlist:
+     *      window procedure for the subclassed PM window list.
+     *
+     *      See HackSwitchList() for how this is done.
+     *
+     *      This is for the window list's frame. This in turn has
+     *      a special client which has the container as its child.
+     *      See InitializeGlobalsForHooks().
+     *
+     *@@added V0.9.16 (2002-01-13) [umoeller]
+     */
+
+    MRESULT EXPENTRY fnwpSubclassedSwitchlist(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+    {
+        MRESULT mrc = 0;
+        DosBeep(1000, 10);
+        switch (msg)
+        {
+            default:
+                mrc = G_pfnwpSwitchListOrig(hwnd, msg, mp1, mp2);
+        }
+
+        return (mrc);
+    }
+
+    #pragma pack(1)
+
+    /*
+     *@@ MQ:
+     *      first fields of the PM message queue structure,
+     *      as far as I was able to decode that.
+     *
+     *      The "HMQ" returned by WinQueryWindowPtr(QWL_HMQ)
+     *      is really a pointer into PM's shared memory.
+     *      Yeah, this is really safe. If someone writes
+     *      into that area, PM is doomed, but that's what
+     *      we need to do.
+     *
+     *      There are many more fields following, but we
+     *      need only the PID, so I didn't bother.
+     *
+     *@@added V0.9.16 (2002-01-13) [umoeller]
+     */
+
+    typedef struct _MQ {
+        struct _MQ      *pNext;         // next MQ
+        ULONG           cbStruct;       // size of structure
+        ULONG           cMessages;      // current message count
+        ULONG           cMaxMessages;   // MQ size
+        ULONG           ulUnknown1;
+        ULONG           ulUnknown2;
+        PID             pid;            // process ID of queue
+        TID             tid;            // thread ID of queue
+    } MQ, *PMQ;
+
+    #pragma pack()
+
+    /*
+     *@@ SubclassSwitchList:
+     *      very evil hack for doing a WinSubclassWindow on the
+     *      PM switch list window that actually works.
+     *
+     *      Parameters are as with WinSubclassWindow, i.e.
+     *      running this with the old window proc will undo
+     *      subclassing. Returns the old window proc that
+     *      was replaced.
+     *
+     *      May run on the Shell process only.
+     *
+     *@@added V0.9.16 (2002-01-13) [umoeller]
+     */
+
+    PFNWP SubclassSwitchList(PFNWP pfnwpNew)
+    {
+        PFNWP   pfnwpOld = NULL;
+        PMQ pmq;
+
+        // to make WinSetWindowPtr(QWP_PFNWP) work, the processes
+        // of the caller and the window must match; actually they
+        // do since we're running on the Shell process here, but
+        // the message queue of the Shell process has a PID of 0
+        // so we must manually hack that!
+
+        DosEnterCritSec();
+
+        // 1) HMQ is really pointer into PM's shared memory
+        if (pmq = WinQueryWindowPtr(G_HookData.hwndSwitchListCnr,
+                                    QWL_HMQ))
+        {
+            // 2) remember old PID from MQ (should be 0, but to be safe)
+            ULONG   pidOld = pmq->pid;
+            // 3) get real Shell PID
+            PTIB    ptib;
+            PPIB    ppib;
+            DosGetInfoBlocks(&ptib, &ppib);
+            // 4) hack MQ with real Shell PID
+            pmq->pid = ppib->pib_ulpid;
+            // 5) subclass (WinSubclassWindow doesn't work here)
+            pfnwpOld = (PFNWP)WinQueryWindowPtr(G_HookData.hwndSwitchListCnr, QWP_PFNWP);
+            WinSetWindowPtr(G_HookData.hwndSwitchListCnr, QWP_PFNWP, (PVOID)pfnwpNew);
+            // 6) restore old PID
+            pmq->pid = pidOld;
+        }
+
+        DosExitCritSec();
+
+        return (pfnwpOld);
+    }
+
+    /*
+     *@@ HackSwitchList:
+     *      subclasses the PM window list, or undoes subclassing.
+     *
+     *      This is a truly evil hack. Simply running WinSubclassWindow
+     *      on the switch list doesn't work for two reasons:
+     *
+     *      1)  The caller must be on the same process as the window.
+     *          This is hard to do with the switch list because it
+     *          is created by the Shell process (first PMSHELL).
+     *
+     *          This is why initHook now sends a very strange user
+     *          message to the switch list so that hookSendMsgHook
+     *          can detect that (hopefully it is really unique) and
+     *          run this code in the Shell process.
+     *
+     *      2)  Instead of WinSubclassWindow, we simply run
+     *          WinSetWindowPtr(QWP_PFNWP) on the switch list. From
+     *          my testing, that function doesn't perform as many
+     *          checks which is why it works on the switch list too.
+     *
+     *          Still, for QWP_PFNWP, WinSetWindowPtr appears to
+     *          check if the processes of the caller and the window's
+     *          queue match. Since, for some reason, the shell's
+     *          queue has a PID of 0, we need to actually modify
+     *          the queue's memory for a second. Yes, very evil.
+     *
+     *      May run on the Shell process only.
+     *
+     *@@added V0.9.16 (2002-01-13) [umoeller]
+     */
+
+    VOID HackSwitchList(PSMHSTRUCT psmh,
+                        BOOL fInstall)
+    {
+        hookLog(__FILE__, __LINE__, __FUNCTION__,
+                "fInstall == %d", fInstall);
+
+        if (fInstall && !G_pfnwpSwitchListOrig)
+        {
+            // "install" mode:
+
+            // subclass the switch list
+            if (G_pfnwpSwitchListOrig = SubclassSwitchList(fnwpSubclassedSwitchlist))
+            {
+                CNRINFO CnrInfo;
+
+                hookLog(__FILE__, __LINE__, __FUNCTION__,
+                        "SubclassSwitchList returned 0x%lX", G_pfnwpSwitchListOrig);
+
+                /* CnrInfo.cb = sizeof(CnrInfo);
+                CnrInfo.flWindowAttr = CV_NAME | CA_DRAWICON | CA_OWNERDRAW;
+                WinSendMsg(G_HookData.hwndSwitchListCnr,
+                           CM_SETCNRINFO,
+                           (MPARAM)&CnrInfo,
+                           (MPARAM)CMA_FLWINDOWATTR); */
+            }
+        }
+        else
+        {
+            // "deinstall" mode:
+            // un-subclass the switch list
+            if (G_pfnwpSwitchListOrig)
+            {
+                hookLog(__FILE__, __LINE__, __FUNCTION__,
+                        "Un-subclassing");
+                SubclassSwitchList(G_pfnwpSwitchListOrig);
+            }
+        }
+    }
+#endif
+
+/******************************************************************
+ *
  *  Send-Message Hook
  *
  ******************************************************************/
@@ -735,6 +1028,11 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
 /*
  *@@ hookSendMsgHook:
  *      send-message hook.
+ *
+ *      The send-message hook runs on the thread which called
+ *      WinSendMsg, before the message is delivered to the
+ *      target window (which might be on a different thread
+ *      or even in a different process).
  *
  *      We must not do any complex processing in here, especially
  *      calling WinSendMsg(). Instead, we post msgs to other places,
@@ -909,19 +1207,31 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
          && (psmh->hwnd == G_HookData.hwndLockupFrame)
        )
     {
-        // DosBeep(1000, 100);
-            // tested, works V0.9.16 (2001-11-22) [umoeller]
+        // tested, works V0.9.16 (2001-11-22) [umoeller]
 
         // current lockup frame being destroyed
         // (system is being unlocked):
         G_HookData.hwndLockupFrame = NULLHANDLE;
-        /* WinPostMsg(G_HookData.hwndPageMageClient,
-                   PGMG_LOCKUP,
-                   MPFROMLONG(FALSE),
-                   MPVOID); */
-            // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
-            // need this
     }
+
+    /* if (    (psmh->hwnd == G_HookData.hwndSwitchList)
+         && (psmh->msg == XM_HACKSWITCHLIST)
+         && (psmh->mp1 == MP1_HACKSWITCHLIST)
+       )
+    {
+        if (psmh->mp2 == MP2_HACKSWITCH_ENABLE)
+        {
+            hookLog(__FILE__, __LINE__, __FUNCTION__,
+                    "MP2_HACKSWITCH_ENABLE");
+            HackSwitchList(psmh, TRUE);       // install
+        }
+        else if (psmh->mp2 == MP2_HACKSWITCH_DISABLE)
+        {
+            hookLog(__FILE__, __LINE__, __FUNCTION__,
+                    "MP2_HACKSWITCH_DISABLE");
+            HackSwitchList(psmh, FALSE);      // de-install
+        }
+    } */
 }
 
 /******************************************************************

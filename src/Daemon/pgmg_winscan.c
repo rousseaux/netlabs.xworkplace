@@ -584,7 +584,7 @@ BOOL pgmwIsSticky(HWND hwnd,
 
     // check for system window list
     if (    (G_pHookData)
-         && (hwnd == G_pHookData->hwndWindowList)
+         && (hwnd == G_pHookData->hwndSwitchList)
        )
         return (TRUE);
 

@@ -590,103 +590,212 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 }
 
 /*
+DLGTEMPLATE ID_SDD_CONFIRMWPS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Restart Desktop", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, ,
+            FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        ICON            ID_SDICON, ID_SDDI_ICON, 10, 53, 20, 16, WS_GROUP
+        LTEXT           "Are you sure you wish to restart the Workplace Shel"
+                        "l?", ID_SDDI_CONFIRM_TEXT, 35, 47, 105, 20,
+                        DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        DEFPUSHBUTTON   "~Yes", DID_OK, 10, 33, 50, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        PUSHBUTTON      "~No", DID_CANCEL, 65, 33, 50, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        PUSHBUTTON      "~Help", -1, 120, 33, 50, 12, BS_HELP
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        AUTOCHECKBOX    "~Close all sessions", ID_SDDI_WPS_CLOSEWINDOWS, 10,
+                        21, 160, 10
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        AUTOCHECKBOX    "~Process all XWorkplace Startup folders",
+                        ID_SDDI_WPS_STARTUPFOLDER, 10, 12, 155, 10
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        AUTOCHECKBOX    "~Show this message next time", ID_SDDI_MESSAGEAGAIN,
+                        10, 3, 160, 10
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+    END
+END
+*/
+
+
+static CONTROLDEF
+    TrafficLightIcon = CONTROLDEF_ICON(0, ID_SDDI_ICON),
+    ConfirmText = CONTROLDEF_TEXT_WORDBREAK(
+                            LOAD_STRING,
+                            ID_SDDI_CONFIRM_TEXT,
+                            200),
+    CloseAllSessionsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SDDI_WPS_CLOSEWINDOWS,
+                            -1,
+                            -1),
+    StartupFoldersCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SDDI_WPS_STARTUPFOLDER,
+                            -1,
+                            -1),
+    MessageAgainCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SDDI_MESSAGEAGAIN,
+                            -1,
+                            -1),
+    OKButton = CONTROLDEF_DEFPUSHBUTTON(
+                            0,
+                            DID_OK,
+                            100,
+                            30),
+    CancelButton = CONTROLDEF_PUSHBUTTON(
+                            0,
+                            DID_CANCEL,
+                            100,
+                            30),
+    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+                            LOAD_STRING,
+                            DID_HELP,
+                            100,
+                            30);
+
+static const DLGHITEM dlgConfirmRestartDesktop[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_TABLE,            // root table, required
+                    START_ROW(ROW_VALIGN_CENTER),       // shared settings group
+                        CONTROL_DEF(&TrafficLightIcon),
+                        CONTROL_DEF(&ConfirmText),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&CloseAllSessionsCB),
+            START_ROW(0),
+                CONTROL_DEF(&StartupFoldersCB),
+            START_ROW(0),
+                CONTROL_DEF(&MessageAgainCB),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&OKButton),
+                CONTROL_DEF(&CancelButton),
+                CONTROL_DEF(&HelpButton),
+        END_TABLE
+    };
+
+/*
  *@@ xsdConfirmRestartWPS:
  *      this displays the Desktop restart
- *      confirmation box. Returns MBID_YES/NO.
+ *      confirmation box. Returns MBID_OK/CANCEL.
  *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
  */
 
 ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 {
-    ULONG       ulReturn;
+    ULONG       ulReturn = MBID_CANCEL;
     HWND        hwndConfirm;
     HMODULE     hmodResource = cmnQueryNLSModuleHandle(FALSE);
 
-    HPOINTER hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
-                                      ID_SDICON);
+    HPOINTER    hptrShutdown = WinLoadPointer(HWND_DESKTOP,
+                                              hmodResource,
+                                              ID_SDICON);
 
     HWND        hwndDim = CreateDimScreenWindow();
 
     G_ulConfirmHelpPanel = ID_XMH_RESTARTWPS;
-    hwndConfirm = WinLoadDlg(HWND_DESKTOP,
-                             hwndDim,
-                             fnwpConfirm,
-                             hmodResource,
-                             ID_SDD_CONFIRMWPS,
-                             NULL);
 
-    WinPostMsg(hwndConfirm,
-               WM_SETICON,
-               (MPARAM)hptrShutdown,
-                NULL);
+    cmnLoadDialogStrings(dlgConfirmRestartDesktop,
+                         ARRAYITEMCOUNT(dlgConfirmRestartDesktop));
 
-    if (psdParms->ulRestartWPS == 2)
+    OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+    CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+
+    if (!dlghCreateDlg(&hwndConfirm,
+                       hwndDim,
+                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                       fnwpConfirm,
+                       cmnGetString(ID_SDDI_CONFIRMWPS_TITLE),
+                       dlgConfirmRestartDesktop,
+                       ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
+                       NULL,
+                       cmnQueryDefaultFont()))
     {
-        // logoff:
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        psdParms->optWPSCloseWindows = TRUE;
-        psdParms->optWPSReuseStartupFolder = TRUE;
-        winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
-        winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
+        /* hwndConfirm = WinLoadDlg(HWND_DESKTOP,
+                                 hwndDim,
+                                 fnwpConfirm,
+                                 hmodResource,
+                                 ID_SDD_CONFIRMWPS,
+                                 NULL); */
 
-        // replace confirmation text
-        WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
-                          cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
-    }
+        WinSendMsg(hwndConfirm,
+                   WM_SETICON,
+                   (MPARAM)hptrShutdown,
+                   NULL);
 
-    winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
-    winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
-    winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
-    winhCenterWindow(hwndConfirm);
-
-    xsdLoadAnimation(&G_sdAnim);
-    ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
-                        XSD_ANIM_COUNT,
-                        &(G_sdAnim.ahptr[0]),
-                        150,    // delay
-                        TRUE);  // start now
-
-    cmnSetControlsFont(hwndConfirm, 1, 5000);
-    winhCenterWindow(hwndConfirm);      // still hidden
-
-    // *** go!
-    ulReturn = WinProcessDlg(hwndConfirm);
-
-    ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
-    xsdFreeAnimation(&G_sdAnim);
-
-    if (ulReturn == DID_OK)
-    {
-#ifndef __NOXSHUTDOWN__
-        ULONG fl = cmnQuerySetting(sflXShutdown);
-#endif
-
-        psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
-                                                            ID_SDDI_WPS_CLOSEWINDOWS);
-        if (psdParms->ulRestartWPS != 2)
+        if (psdParms->ulRestartWPS == 2)
         {
-            // regular restart Desktop:
-            // save close windows/startup folder settings
-#ifndef __NOXSHUTDOWN__
-            if (psdParms->optWPSCloseWindows)
-                fl |= XSD_WPS_CLOSEWINDOWS;
-            else
-                fl &= ~XSD_WPS_CLOSEWINDOWS;
-#endif
-            psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
-                                                                      ID_SDDI_WPS_STARTUPFOLDER);
-        }
-#ifndef __NOXSHUTDOWN__
-        if (!(winhIsDlgItemChecked(hwndConfirm,
-                                   ID_SDDI_MESSAGEAGAIN)))
-            fl |= XSD_NOCONFIRM;
+            // logoff:
+            psdParms->optWPSCloseWindows = TRUE;
+            psdParms->optWPSReuseStartupFolder = TRUE;
+            winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
+            winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
 
-        cmnSetSetting(sflXShutdown, fl);
-#endif
+            // replace confirmation text
+            WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
+                              cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
+        }
+
+        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
+        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
+        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
+
+        xsdLoadAnimation(&G_sdAnim);
+        ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
+                            XSD_ANIM_COUNT,
+                            G_sdAnim.ahptr,
+                            150,    // delay
+                            TRUE);  // start now
+
+        // cmnSetControlsFont(hwndConfirm, 1, 5000);
+        winhCenterWindow(hwndConfirm);      // still hidden
+        WinShowWindow(hwndConfirm, TRUE);
+
+        // *** go!
+        ulReturn = WinProcessDlg(hwndConfirm);
+
+        ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
+        xsdFreeAnimation(&G_sdAnim);
+
+        if (ulReturn == DID_OK)
+        {
+    #ifndef __NOXSHUTDOWN__
+            ULONG fl = cmnQuerySetting(sflXShutdown);
+    #endif
+
+            psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
+                                                                ID_SDDI_WPS_CLOSEWINDOWS);
+            if (psdParms->ulRestartWPS != 2)
+            {
+                // regular restart Desktop:
+                // save close windows/startup folder settings
+    #ifndef __NOXSHUTDOWN__
+                if (psdParms->optWPSCloseWindows)
+                    fl |= XSD_WPS_CLOSEWINDOWS;
+                else
+                    fl &= ~XSD_WPS_CLOSEWINDOWS;
+    #endif
+                psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
+                                                                          ID_SDDI_WPS_STARTUPFOLDER);
+            }
+    #ifndef __NOXSHUTDOWN__
+            if (!(winhIsDlgItemChecked(hwndConfirm,
+                                       ID_SDDI_MESSAGEAGAIN)))
+                fl |= XSD_NOCONFIRM;
+
+            cmnSetSetting(sflXShutdown, fl);
+    #endif
+        }
+
+        WinDestroyWindow(hwndConfirm);
     }
 
-    WinDestroyWindow(hwndConfirm);
     WinDestroyWindow(hwndDim);
 
     return (ulReturn);
@@ -3521,25 +3630,25 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
  *@@changed V0.9.4 (2000-07-15) [umoeller]: extracted xsdIsClosable; fixed WarpCenter detection
  */
 
-void xsdBuildShutList(PSHUTDOWNDATA pShutdownData,
+void xsdBuildShutList(HAB hab,
+                      PSHUTDOWNDATA pShutdownData,
                       PLINKLIST pList)
 {
     PSWBLOCK        pSwBlock   = NULL;         // Pointer to information returned
-    ULONG           ul,
-                    cbItems    = 0,            // Number of items in list
-                    ulBufSize  = 0;            // Size of buffer for information
+    ULONG           ul;
+                    // cbItems    = 0,            // Number of items in list
+                    // ulBufSize  = 0;            // Size of buffer for information
 
-    HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    // CHAR            szSwUpperTitle[100];
+    // HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     WPObject        *pObj;
     BOOL            Append;
-    // BOOL            fWarpCenterFound = FALSE;
 
     // get all the tasklist entries into a buffer
-    cbItems = WinQuerySwitchList(NULLHANDLE, NULL, 0);
+    /* cbItems = WinQuerySwitchList(NULLHANDLE, NULL, 0);
     ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
     pSwBlock = (PSWBLOCK)malloc(ulBufSize);
-    cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize);
+    cbItems = WinQuerySwitchList(NULLHANDLE, pSwBlock, ulBufSize); */
+    pSwBlock = winhQuerySwitchList(hab);
 
     // loop through all the tasklist entries
     for (ul = 0;
@@ -3547,7 +3656,7 @@ void xsdBuildShutList(PSHUTDOWNDATA pShutdownData,
          ul++)
     {
         // now we check which windows we add to the shutdown list
-        LONG lrc = xsdIsClosable(habDesktop,
+        LONG lrc = xsdIsClosable(hab,
                                  &pShutdownData->SDConsts,
                                  &pSwBlock->aswentry[ul],
                                  &pObj);
@@ -3605,7 +3714,8 @@ void xsdBuildShutList(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.4 (2000-07-15) [umoeller]: PSHUTDOWNCONSTS added to prototype
  */
 
-void xsdUpdateListBox(PSHUTDOWNDATA pShutdownData,
+void xsdUpdateListBox(HAB hab,
+                      PSHUTDOWNDATA pShutdownData,
                       HWND hwndListbox)
 {
     PSHUTLISTITEM   pItem;
@@ -3623,7 +3733,9 @@ void xsdUpdateListBox(PSHUTDOWNDATA pShutdownData,
         {
             PLISTNODE pNode = 0;
             lstClear(&pShutdownData->llShutdown);
-            xsdBuildShutList(pShutdownData, &pShutdownData->llShutdown);
+            xsdBuildShutList(hab,
+                             pShutdownData,
+                             &pShutdownData->llShutdown);
 
             // clear list box
             WinEnableWindowUpdate(hwndListbox, FALSE);
@@ -3905,9 +4017,6 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     HAB             hab = ptiMyself->hab;
     PXFILE          LogFile = NULL;
 
-    // exception-occured flag
-    // BOOL fExceptionOccured = FALSE;
-
     // allocate shutdown data V0.9.9 (2001-03-07) [umoeller]
     PSHUTDOWNDATA pShutdownData = (PSHUTDOWNDATA)malloc(sizeof(SHUTDOWNDATA));
     if (!pShutdownData)
@@ -4131,7 +4240,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                       fntUpdateThread,
                       NULL, // running flag
                       "ShutdownUpdate",
-                      0,    // no msgq
+                      THRF_PMMSGQUEUE,
                       (ULONG)pShutdownData);  // V0.9.9 (2001-03-07) [umoeller]
 
             doshWriteLogEntry(LogFile,
@@ -4248,12 +4357,37 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             ULONG   cObjectsToSave = 0,
                     cObjectsSaved = 0;
             CHAR    szTitle[400];
+            PSWBLOCK psw;
 
             /*************************************************
              *
              *      close desktop and WarpCenter
              *
              *************************************************/
+
+            // save the window list position and fonts
+            // V0.9.16 (2002-01-13) [umoeller]
+            // this doesn't work... apparently we must
+            // be in the shell process for WinStoreWindowPos
+            // to work correctly
+            /* if (psw = winhQuerySwitchList(hab))
+            {
+                CHAR sz[1000];
+                sprintf(sz,
+                        "Storing window list 0x%lX",
+                        psw->aswentry[0].swctl.hwnd);
+                winhDebugBox(NULLHANDLE,
+                             "Shutdown thread",
+                             sz);
+                // window list frame is always the first entry
+                // in the switch list
+                if (!WinStoreWindowPos("PM_Workplace:WindowListPos",
+                                       "SavePos",
+                                       psw->aswentry[0].swctl.hwnd))
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "WinStoreWindowPos for tasklist failed");
+                free(psw);
+            } */
 
             WinSetActiveWindow(HWND_DESKTOP,
                                pShutdownData->SDConsts.hwndShutdownStatus);
@@ -5129,7 +5263,9 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     }
 
                     // now build our shutlist V0.9.12 (2001-04-29) [umoeller]
-                    xsdUpdateListBox(pShutdownData, hwndListbox);
+                    xsdUpdateListBox(pShutdownData->habShutdownThread,
+                                     pShutdownData,
+                                     hwndListbox);
 
                     // create the Update thread now
                     // V0.9.12 (2001-04-28) [umoeller]
@@ -5143,8 +5279,9 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                   fntUpdateThread,
                                   NULL, // running flag
                                   "ShutdownUpdate",
-                                  THRF_WAIT_EXPLICIT,    // no msgq
+                                  THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
                                         // but wait explicit V0.9.12 (2001-04-29) [umoeller]
+                                        // added msgq V0.9.16 (2002-01-13) [umoeller]
                                   (ULONG)pShutdownData);  // V0.9.9 (2001-03-07) [umoeller]
 
                         doshWriteLogEntry(pShutdownData->ShutdownLogFile,
@@ -5320,7 +5457,9 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                            "  ID_SDMI_UPDATESHUTLIST, hwnd: 0x%lX",
                            hwndFrame);
 
-                    xsdUpdateListBox(pShutdownData, hwndListbox);
+                    xsdUpdateListBox(pShutdownData->habShutdownThread,
+                                     pShutdownData,
+                                     hwndListbox);
                         // this updates the Shutdown linked list
                     DosPostEventSem(pShutdownData->hevUpdated);
                         // signal update to Update thread
@@ -6024,8 +6163,8 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
  *          this thread is responsible for monitoring the window list
  *          while XShutdown is running and windows are being closed.
  *
- *          It is created from xsd_fnwpShutdown when shutdown is about to
- *          begin.
+ *          It is created with a PM message queue from fntShutdown
+ *          when shutdown is about to begin.
  *
  *          It builds an internal second PSHUTLISTITEM linked list
  *          from the PM window list every 100 ms and then compares
@@ -6054,8 +6193,8 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 
 void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 {
-    HAB             habUpdateThread;
-    HMQ             hmqUpdateThread;
+    // HAB             habUpdateThread;
+    // HMQ             hmqUpdateThread;
     PSZ             pszErrMsg = NULL;
 
     PSHUTDOWNDATA   pShutdownData = (PSHUTDOWNDATA)ptiMyself->ulData;
@@ -6065,9 +6204,9 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                    +31,          // priority delta
                    0);           // this thread
 
-    if (    (habUpdateThread = WinInitialize(0))
-         && (hmqUpdateThread = WinCreateMsgQueue(habUpdateThread, 0))
-       )
+    // if (    (habUpdateThread = WinInitialize(0))
+       //   && (hmqUpdateThread = WinCreateMsgQueue(habUpdateThread, 0))
+       // )
     {
         BOOL            fSemOwned = FALSE;
         LINKLIST        llTestList;
@@ -6081,7 +6220,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
             BOOL            fUpdated = FALSE;
             // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
-            WinCancelShutdown(hmqUpdateThread, TRUE);
+            WinCancelShutdown(ptiMyself->hmq, TRUE);
 
             // wait until main shutdown window is up
             /* while (    (pShutdownData->SDConsts.hwndMain == 0)
@@ -6160,7 +6299,9 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                     // create a test list for comparing the task list;
                     // this is our private list, so we need no mutex
                     // semaphore
-                    xsdBuildShutList(pShutdownData, &llTestList);
+                    xsdBuildShutList(ptiMyself->hab,
+                                     pShutdownData,
+                                     &llTestList);
 
                     // count items in the test list
                     ulTestItemCount = lstCountItems(&llTestList);
@@ -6239,8 +6380,8 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 
 
     }
-    WinDestroyMsgQueue(hmqUpdateThread);
-    WinTerminate(habUpdateThread);
+    // WinDestroyMsgQueue(hmqUpdateThread);
+    // WinTerminate(habUpdateThread);
 
     #ifdef DEBUG_SHUTDOWN
         DosBeep(100, 100);

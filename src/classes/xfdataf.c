@@ -1040,7 +1040,6 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
             // be smart now...
 
             // 1) if we're an icon or pointer file, load the
-            // icon
             if (    (_somIsA(somSelf, _WPIcon))
                  || (_somIsA(somSelf, _WPPointer))
                )

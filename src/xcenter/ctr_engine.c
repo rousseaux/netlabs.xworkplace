@@ -172,8 +172,8 @@ static COUNTRYSETTINGS      G_CountrySettings = {0};
 // widget being dragged
 static PPRIVATEWIDGETVIEW     G_pWidgetBeingDragged = NULL;
 
-static PWINSETDESKTOPWORKAREA   G_pWinSetDesktopWorkArea = NULL;
-static PWINQUERYDESKTOPWORKAREA G_pWinQueryDesktopWorkArea = NULL;
+static PWINSETDESKTOPWORKAREA   G_WinSetDesktopWorkArea = (PWINSETDESKTOPWORKAREA)-1;
+static PWINQUERYDESKTOPWORKAREA G_WinQueryDesktopWorkArea = (PWINQUERYDESKTOPWORKAREA)-1;
 
 static BOOL                     G_fWorkAreaSupported = FALSE;
                                     // set by ctrpDesktopWorkareaSupported
@@ -289,42 +289,33 @@ VOID UnlockWorkAreas(VOID)
  *      semaphore protection.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: rewritten
  */
 
 APIRET ctrpDesktopWorkareaSupported(VOID)
 {
-    APIRET arc = NO_ERROR;
+    APIRET  arc = ERROR_INVALID_ORDINAL;
 
-    static HMODULE      s_hmodPMMERGE = NULLHANDLE;
-
-    if (s_hmodPMMERGE == NULLHANDLE)
+    if ((ULONG)G_WinSetDesktopWorkArea == -1)
     {
-        // first call: load PMMERGE (we must load that again...
-        // retrieving the existing module handle from the kernel
-        // module table is too risky)
-        CHAR        szFailure[100];
-        if (!(arc = DosLoadModule(szFailure,
-                                  sizeof(szFailure),
-                                  "PMMERGE",
-                                  &s_hmodPMMERGE)))
+        // first call:
+        if (    (!(arc = doshQueryProcAddr("PMMERGE",
+                                           5468,
+                                           (PFN*)&G_WinSetDesktopWorkArea)))
+             && (!(arc = doshQueryProcAddr("PMMERGE",
+                                           5469,
+                                           (PFN*)&G_WinQueryDesktopWorkArea)))
+           )
         {
-            // alright, got it:
-            arc = DosQueryProcAddr(s_hmodPMMERGE,
-                                   5468,
-                                   NULL,
-                                   (PFN*)&G_pWinSetDesktopWorkArea);
-            if (arc == NO_ERROR)
-                arc = DosQueryProcAddr(s_hmodPMMERGE,
-                                       5469,
-                                       NULL,
-                                       (PFN*)&G_pWinQueryDesktopWorkArea);
-
-            if (arc == NO_ERROR)
-            {
-                lstInit(&G_llWorkAreaViews, FALSE);
-                G_fWorkAreaSupported = TRUE;
-            }
+            lstInit(&G_llWorkAreaViews, FALSE);
+            G_fWorkAreaSupported = TRUE;
         }
+    }
+
+    if (arc)
+    {
+        G_WinSetDesktopWorkArea = NULL;
+        G_WinQueryDesktopWorkArea = NULL;
     }
 
     return (arc);
@@ -452,7 +443,7 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                             ulCutTop = 0;
 
                     // get current first
-                    G_pWinQueryDesktopWorkArea(HWND_DESKTOP, &rclCurrent);
+                    G_WinQueryDesktopWorkArea(HWND_DESKTOP, &rclCurrent);
 
                     // compose new workarea; start out with screen size
                     rclNew.xLeft = 0;
@@ -504,7 +495,7 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                          *
                          */
 
-                        G_pWinSetDesktopWorkArea(HWND_DESKTOP, &rclNew);
+                        G_WinSetDesktopWorkArea(HWND_DESKTOP, &rclNew);
 
                         brc = TRUE;
                     }
@@ -1733,16 +1724,17 @@ HWND ctrpDragWidget(HWND hwnd,
                     PXCENTERWIDGET pWidget)     // in: widget or subwidget
 {
     HWND hwndDrop = NULLHANDLE;
-    // HWND hwndClient = pWidget->pGlobals->hwndClient;
-    // PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
+
     if (pWidget)
     {
-        HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
-        if (hpsScreen)
+        // create a bitmap from the widget display for dragging
+        HPS hpsScreen;
+        if (hpsScreen = WinGetScreenPS(HWND_DESKTOP))
         {
-            SWP swpWidget;
-            RECTL rclWidget;
-            PXBITMAP pbmWidget;
+            SWP         swpWidget;
+            RECTL       rclWidget;
+            PXBITMAP    pbmWidget;
+            HBITMAP     hbmWidget = NULLHANDLE;
 
             HWND hwndParent = WinQueryWindow(hwnd, QW_PARENT);  // XCenter client or tray
 
@@ -1756,16 +1748,22 @@ HWND ctrpDragWidget(HWND hwnd,
                                HWND_DESKTOP,
                                (PPOINTL)&rclWidget,
                                2);
-            pbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
-                                            hpsScreen,
-                                            &rclWidget);
+            if (pbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
+                                                hpsScreen,
+                                                &rclWidget))
+            {
+                hbmWidget = gpihDetachBitmap(pbmWidget);
+                gpihDestroyXBitmap(&pbmWidget);
+            }
 
             WinReleasePS(hpsScreen);
 
-            if (pbmWidget)
+            if (hbmWidget)
             {
-                PDRAGINFO pdrgInfo = DrgAllocDraginfo(1);
-                if (pdrgInfo)
+                // got bitmap:
+                // prepare dragging then
+                PDRAGINFO pdrgInfo;
+                if (pdrgInfo = DrgAllocDraginfo(1))
                 {
                     DRAGITEM  drgItem = {0};
 
@@ -1795,7 +1793,7 @@ HWND ctrpDragWidget(HWND hwnd,
                         DRAGIMAGE drgImage;             // DRAGIMAGE structure
                         drgImage.cb = sizeof(DRAGIMAGE);
                         drgImage.cptl = 0;
-                        drgImage.hImage = pbmWidget->hbm;
+                        drgImage.hImage = hbmWidget;
                         drgImage.fl = DRG_BITMAP;
                         drgImage.cxOffset = 0;           // Offset of the origin of
                         drgImage.cyOffset = 0;           // the image from the pointer
@@ -1818,7 +1816,7 @@ HWND ctrpDragWidget(HWND hwnd,
                     DrgFreeDraginfo(pdrgInfo);
                 }
 
-                gpihDestroyXBitmap(&pbmWidget);
+                GpiDeleteBitmap(hbmWidget);
             }
         }
     }
@@ -2111,8 +2109,7 @@ ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
                 return (1);
             }
         }
-        else
-        if (pView->Widget.ulClassFlags & WGTF_TRANSPARENT)
+        else if (pView->Widget.ulClassFlags & WGTF_TRANSPARENT)
         {
             // widget supports transparency and we are over a transparent
             // part of it (or else we wouldn't be there)
@@ -3101,6 +3098,32 @@ VOID FrameCommand(HWND hwnd, USHORT usCmd)
 }
 
 /*
+ *@@ FrameMenuEnd:
+ *      implementation for WM_MENUEND in fnwpXCenterMainFrame.
+ *
+ *      Even though the client handles WM_CONTEXTMENU, it
+ *      specifies the frame as the window's owner, so it
+ *      is the frame that must remove emphasis.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+VOID FrameMenuEnd(HWND hwnd, MPARAM mp2)
+{
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+
+    if (    (pXCenterData->hwndContextMenu)
+         && (((HWND)mp2) == pXCenterData->hwndContextMenu)
+       )
+    {
+        // context menu closing:
+        // remove emphasis
+        WinInvalidateRect(pXCenterData->Globals.hwndClient, NULL, FALSE);
+        pXCenterData->hwndContextMenu = NULLHANDLE;
+    }
+}
+
+/*
  *@@ FrameTimer:
  *      implementation for WM_TIMER in fnwpXCenterMainFrame.
  *
@@ -3380,6 +3403,11 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     if (pXCenterData->Globals.hwndTooltip)
         WinDestroyWindow(pXCenterData->Globals.hwndTooltip);
 
+    // destroy the client... this no longer happens
+    // automatically since we are no longer a WC_FRAME
+    // V0.9.16 (2002-01-13) [umoeller]
+    WinDestroyWindow(pXCenterData->Globals.hwndClient);
+
     // remove this window from the object's use list
     _wpDeleteFromObjUseList(pXCenterData->somSelf,
                             &pXCenterData->UseItem);
@@ -3410,6 +3438,10 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     pfnwpOrig(hwnd, msg, mp1, mp2);
 }
 
+// found these two in the DKK headers
+#define WM_QUERYOBJECTPTR    0x0407
+#define WM_SETOBJECTPTR      0x0408
+
 /*
  *@@ fnwpXCenterMainFrame:
  *      window proc for the XCenter frame.
@@ -3439,6 +3471,8 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added WM_QUERYFRAMEINFO, which returns 0
  *@@changed V0.9.16 (2001-10-02) [umoeller]: fixed 100% CPU load while mouse was over disabled XCenter (settings dlg etc)
  *@@changed V0.9.16 (2001-10-23) [umoeller]: removed all activation message handling as a temporary fix for Mozilla problems
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: fixed bad WPS object reports for this frame
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: context menu emphasis was never removed, fixed
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3465,6 +3499,50 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             break;
 
             /*
+             * WM_QUERYOBJECTPTR:
+             *      this undocumented message gets sent to
+             *      a subclassed WPS frame all the time to
+             *      find out which SOM object a frame refers
+             *      to. Since we are no longer a WC_FRAME,
+             *      we must answer this message explicitly,
+             *      or the correlation between XCenter views
+             *      and its actual object pointer will no
+             *      longer work.
+             *
+             * added V0.9.16 (2002-01-13) [umoeller]
+             */
+
+            case WM_QUERYOBJECTPTR:
+            {
+                PXCENTERWINDATA pXCenterData;
+                if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER))
+                    mrc = pXCenterData->somSelf;
+            }
+            break;
+
+// this is only in the Warp 4 toolkit
+#ifndef WM_QUERYCTLTYPE
+    #define WM_QUERYCTLTYPE            0x0130
+#endif
+#ifndef CCT_FRAME
+    #define CCT_FRAME                       11L
+#endif
+
+            /*
+             * WM_QUERYCTLTYPE:
+             *      tell anyone we're a frame, or
+             *      M_WPDesktop::wpclsQueryObjectFromFrame
+             *      won't work (which is used by XShutdown,
+             *      among other things).
+             *
+             * added V0.9.16 (2002-01-13) [umoeller]
+             */
+
+            case WM_QUERYCTLTYPE:
+                mrc = (MPARAM)CCT_FRAME;
+            break;
+
+            /*
              * WM_SYSCOMMAND:
              *      we must intercept this; since we don't have
              *      a system menu, closing from the task list
@@ -3478,7 +3556,6 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              *      separate thread, the tasklist posts WM_QUIT
              *      directly into the queue. Anyway, this msg
              *      does NOT come in for the tasklist close.
-             *
              *
              */
 
@@ -3537,8 +3614,6 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                     case QFC_FRAME:
                            // return the handle of the first frame window associated
                            // with this window
-/* #define QFC_SWITCHTSKLST 0x0006
-                    case QFC_SWITCHTSKLST: */
                         mrc = (MRESULT)hwnd;
                     break;
 
@@ -3578,35 +3653,6 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             break;
 
             /*
-             * WM_ADJUSTWINDOWPOS:
-             *      we never want to become active.
-             */
-
-            /* case WM_ADJUSTWINDOWPOS:
-            {
-                PSWP pswp = (PSWP)mp1;
-                if (pswp->fl & SWP_ACTIVATE)
-                {
-                    pswp->fl &= ~SWP_ACTIVATE;
-                    pswp->fl |= SWP_DEACTIVATE;
-                }
-                mrc = (MRESULT)AWP_DEACTIVATE;
-            }
-            break; */       // @@disabled V0.9.16 (2001-10-02) [umoeller]
-
-            /*
-             * WM_QUERYFRAMEINFO:
-             *
-             *added V0.9.14 (2001-08-21) [umoeller]
-             */
-
-            /* case WM_QUERYFRAMEINFO:
-                mrc = (MPARAM)(0);
-                        // default frame window proc returns
-                        // FI_FRAME | FI_OWNERHIDE | FI_NOMOVEWITHOWNER | FI_ACTIVATEOK
-            break; */ // @@disabled V0.9.16 (2001-10-02) [umoeller]
-
-            /*
              * WM_FOCUSCHANGE:
              *      the default frame window proc sends out
              *      the flurry of WM_SETFOCUS and WM_ACTIVATE
@@ -3644,10 +3690,6 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 // do nothing!
                 // DosBeep(100, 100);
             break;
-
-            case WM_ADJUSTFRAMEPOS:
-                // do NOTHING!
-            break; */ // @@disabled V0.9.16 (2001-10-02) [umoeller]
 
             /*
              * WM_HITTEST:
@@ -3721,27 +3763,6 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             }
             break;
 
-
-
-            /*
-             * WM_ACTIVATE:
-             *      we must swallow this because we _never_
-             *      want to become active, no matter what.
-             *      If we don't do this, the frame will
-             *      be invalidated with WPS context menus,
-             *      for example.
-             */
-
-            /* case WM_ACTIVATE:
-                // test added V0.9.16 (2001-10-02) [umoeller]
-                _Pmpf((__FUNCTION__ ": WM_ACTIVATE %d", mp1));
-                if (mp1)
-                    DosBeep(5000, 30);
-                else
-                    DosBeep(3000, 30);
-                fCallDefault = TRUE;
-            break; */
-
             /*
              * WM_COMMAND:
              *      menu command posted to the client's owner
@@ -3755,6 +3776,15 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
 
             case WM_COMMAND:
                 FrameCommand(hwnd, (USHORT)mp1);
+            break;
+
+            /*
+             * WM_MENUEND:
+             *
+             */
+
+            case WM_MENUEND:
+                FrameMenuEnd(hwnd, mp2);
             break;
 
             /*
@@ -4315,27 +4345,6 @@ MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
 }
 
 /*
- *@@ ClientMenuEnd:
- *      implementation for WM_MENUEND in fnwpXCenterMainClient.
- */
-
-VOID ClientMenuEnd(HWND hwnd, MPARAM mp2)
-{
-    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
-
-    if (   (pXCenterData->hwndContextMenu)
-        && (((HWND)mp2) == pXCenterData->hwndContextMenu)
-       )
-    {
-        // context menu closing:
-        // remove emphasis
-        WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
-        pXCenterData->hwndContextMenu = NULLHANDLE;
-    }
-}
-
-/*
  *@@ ClientControl:
  *      implementation for WM_CONTROL.
  *
@@ -4572,15 +4581,6 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             break;
 
             /*
-             * WM_MENUEND:
-             *
-             */
-
-            case WM_MENUEND:
-                ClientMenuEnd(hwnd, mp2);
-            break;
-
-            /*
              * DM_DRAGOVER:
              *
              */
@@ -4625,13 +4625,15 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
              * WM_CLOSE:
              *      this is sent to the client by the frame if
              *      it receives WM_CLOSE itself.
+             *
+             *  V0.9.16: No it isn't... the frame handles this
              */
 
-            case WM_CLOSE:
+            /* case WM_CLOSE:
                 // destroy parent (the frame)
                 WinDestroyWindow(WinQueryWindow(hwnd, QW_PARENT));
                             // after this pXCenterData is invalid!!
-            break;
+            break; */
 
             /*
              * WM_DESTROY:
@@ -5385,6 +5387,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             pXCenterData->pfnwpFrameOrig = WinDefWindowProc;
 
             // now go create XCenter frame and client
+            // V0.9.16: no longer using WC_FRAME
             if (    (pGlobals->hwndFrame = WinCreateWindow(HWND_DESKTOP,    // parent
                                                            WC_XCENTER_FRAME, // WC_BUTTON, // WC_FRAME,
                                                            _wpQueryTitle(pXCenterData->somSelf),

@@ -754,8 +754,6 @@ MRESULT MwgtCreate(HWND hwnd,
     MRESULT mrc = 0;        // continue window creation
     ULONG ulUpdateFreq = 1000;
 
-    // PSZ p;
-
     PMONITORPRIVATE pPrivate = malloc(sizeof(MONITORPRIVATE));
     memset(pPrivate, 0, sizeof(MONITORPRIVATE));
     // link the two together
@@ -819,11 +817,12 @@ MRESULT MwgtCreate(HWND hwnd,
                     if (!(pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm, NULL)))
                     {
                         // and load the icons
+                        HMODULE hmod = pcmnQueryMainResModuleHandle();
                         pPrivate->hptrAC = WinLoadPointer(HWND_DESKTOP,
-                                                          pcmnQueryMainResModuleHandle(),
+                                                          hmod,
                                                           ID_POWER_AC);
                         pPrivate->hptrBattery = WinLoadPointer(HWND_DESKTOP,
-                                                               pcmnQueryMainResModuleHandle(),
+                                                               hmod,
                                                                ID_POWER_BATTERY);
 
                         pPrivate->Setup.cyCurrent = pWidget->pGlobals->cxMiniIcon + 2;
@@ -844,15 +843,6 @@ MRESULT MwgtCreate(HWND hwnd,
             // allocate new array of LONGs for the KB values
             pPrivate->paDiskDatas = malloc(sizeof(DISKDATA) * 27);
             memset(pPrivate->paDiskDatas, 0, sizeof(DISKDATA) * 27);
-
-            /* pPrivate->palKBs = malloc(sizeof(LONG) * 27);
-            memset(pPrivate->palKBs, 0, sizeof(LONG) * 27);
-
-            pPrivate->paulFlags = malloc(sizeof(ULONG) * 27);
-            memset(pPrivate->paulFlags, 0, sizeof(ULONG) * 27);
-
-            pPrivate->palXPoses = malloc(sizeof(LONG) * 27);
-            memset(pPrivate->palXPoses, 0, sizeof(LONG) * 27); */
 
             // tell XWPDaemon about ourselves
             UpdateDiskMonitors(hwnd,
@@ -1272,16 +1262,6 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
                             GpiQueryCurrentPosition(hpsMem,
                                                     &ptlNow1);
                             ptlNow1.x += (X_OFS / 2);
-
-                            /* {
-                                CHAR c2 = pPrivate->Setup.pszDisks[ul+1];
-                                if ((c2 > 'A') && (c2 <= 'Z'))
-                                {
-                                    GpiQueryCurrentPosition(hpsMem,
-                                                            &ptlNow);
-                                    pPrivate->paDiskDatas[c2 - 'A' + 1].lX = ptlNow.x;
-                                }
-                            } */
                         }
                     }
                 }
@@ -1334,6 +1314,7 @@ VOID FreeBitmapData(PMONITORPRIVATE pPrivate)
  *      painting.
  *
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: no longer allowing the widget to shrink, just expand
  */
 
 VOID MwgtPaint(HWND hwnd,
@@ -1401,7 +1382,8 @@ VOID MwgtPaint(HWND hwnd,
                           pCountrySettings->cDateSep,
                           pCountrySettings->ulTimeFormat,
                           pCountrySettings->cTimeSep);
-        break; }
+        }
+        break;
 
         case MWGT_SWAPPER:
         break;
@@ -1409,8 +1391,8 @@ VOID MwgtPaint(HWND hwnd,
         case MWGT_MEMORY:
         {
             ULONG ulMem = 0;
-               //    ulLogicalSwapDrive = 8;
-            if (Dos16MemAvail(&ulMem) == NO_ERROR)
+            APIRET arc;
+            if (!(arc = Dos16MemAvail(&ulMem)))
             {
                 pnlsThousandsULong(szPaint,
                                     ulMem / 1024,
@@ -1418,8 +1400,9 @@ VOID MwgtPaint(HWND hwnd,
                 strcat(szPaint, " KB");
             }
             else
-                strcpy(szPaint, "?!?!?");
-        break; }
+                pdrv_sprintf(szPaint, "E %d", arc);
+        }
+        break;
 
         case MWGT_POWER:
             if (pPrivate->arcAPM == -1)
@@ -1486,8 +1469,13 @@ VOID MwgtPaint(HWND hwnd,
                         szPaint,
                         TXTBOX_COUNT,
                         aptlText);
-        if (    abs((aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth) + 4 - rclWin.xRight)
+        /* if (    abs((aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth) + 4 - rclWin.xRight)
                 > 4
+           ) */
+        // expand ourselves only, but never shrink
+        // V0.9.16 (2002-01-13) [umoeller]
+        if (   (aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth) + 4
+             > rclWin.xRight
            )
         {
             // we need more space: tell XCenter client
@@ -1503,7 +1491,8 @@ VOID MwgtPaint(HWND hwnd,
         else
         {
             // sufficient space:
-            GpiSetBackMix(hps, BM_OVERPAINT);
+            // GpiSetBackMix(hps, BM_OVERPAINT);
+                    // now using DT_ERASERECT V0.9.16 (2002-01-13) [umoeller]
             rclWin.xLeft += ulExtraWidth;
             WinDrawText(hps,
                         ulPaintLen,
@@ -1511,7 +1500,7 @@ VOID MwgtPaint(HWND hwnd,
                         &rclWin,
                         pPrivate->Setup.lcolForeground,
                         pPrivate->Setup.lcolBackground,
-                        DT_CENTER | DT_VCENTER);
+                        DT_ERASERECT | DT_CENTER | DT_VCENTER);
         }
     }
 }
@@ -1768,24 +1757,32 @@ VOID MwgtPresParamChanged(HWND hwnd,
 
             case PP_FONTNAMESIZE:
             {
-                PSZ pszFont = 0;
+                PSZ pszFont;
                 if (pPrivate->Setup.pszFont)
                 {
                     free(pPrivate->Setup.pszFont);
                     pPrivate->Setup.pszFont = NULL;
                 }
 
-                pszFont = pwinhQueryWindowFont(hwnd);
-                if (pszFont)
+                if (pszFont = pwinhQueryWindowFont(hwnd))
                 {
                     // we must use local malloc() for the font
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
 
+                // resize ourselves based on the font in WM_PAINT
+                // V0.9.16 (2002-01-13) [umoeller]
+                if (pPrivate->ulType != MWGT_DISKFREE)
+                    WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
+                               XCM_SETWIDGETSIZE,
+                               (MPARAM)hwnd,
+                               (MPARAM)10);
+
                 // re-match the font now
                 pPrivate->fFontMatched = FALSE;
-            break; }
+            }
+            break;
 
             default:
                 fInvalidate = FALSE;
@@ -2167,9 +2164,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_PAINT:
         {
-            HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
-
-            if (hps)
+            HPS hps;
+            if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
             {
                 // get widget data and its button data from QWL_USER
                 PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
@@ -2183,7 +2179,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
                 WinEndPaint(hps);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_TIMER:

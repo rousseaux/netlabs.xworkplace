@@ -583,18 +583,21 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
                                 (TREE*)pMapping,
                                 fnCompareStrings))
                 {
-                    // this is a new file... check if this exists
-                    if (access(pcszFilename, 0))
+                    // this is a new file...
+                    // if it's not an HTML link, check if this exists
+                    if (    (strncmp(pcszFilename, "http://", 7))
+                         && (strncmp(pcszFilename, "ftp://", 6))
+                         && (access(pcszFilename, 0))
+                       )
                     {
                         // does not exist:
                         // probably a URL or something...
-                        if (G_ulVerbosity > 1)
-                            printf("  Warning: file \"%s\" was not found.\n"
-                                   "  Referenced from file \"%s\".\n",
-                                   (PSZ)pMapping->Tree.ulKey, // pszFilename,
+                        if (G_ulVerbosity)
+                            printf("\n  Warning: Link from \"%s\" to \"%s\" was not found.",
                                    (pParent)
                                        ? (PSZ)pParent->Tree.ulKey // pszFilename,
-                                       : "none");
+                                       : "none",
+                                   (PSZ)pMapping->Tree.ulKey), // pszFilename,
                         pMapping->ulHeaderLevel = -1; // special flag
                     }
 
@@ -2137,10 +2140,12 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                        "Processing file %s",
                        (PSZ)pFile2Process->Tree.ulKey);
 
+            ULONG cbRead = 0;
             if (!(arc = doshLoadTextFile((PSZ)pFile2Process->Tree.ulKey, // pszFilename,
-                                         &pszContents)))
+                                         &pszContents,
+                                         &cbRead)))
             {
-                xstrset(&strSource, pszContents);
+                xstrset2(&strSource, pszContents, cbRead - 1);
                 xstrConvertLineFormat(&strSource, CRLF2LF);
 
                 ResolveEntities(pFile2Process,
@@ -2576,11 +2581,13 @@ APIRET ParseCHeader(const char *pcszHeaderFile,
     PSZ pszContents;
     APIRET arc;
     ULONG cDefines = 0;
+    ULONG cbRead = 0;
     if (!(arc = doshLoadTextFile(pcszHeaderFile,
-                                 &pszContents)))
+                                 &pszContents,
+                                 &cbRead)))
     {
         XSTRING strSource;
-        xstrInitSet(&strSource, pszContents);
+        xstrInitSet2(&strSource, pszContents, cbRead - 1);
         xstrConvertLineFormat(&strSource, CRLF2LF);
 
         PSZ p = strSource.psz;

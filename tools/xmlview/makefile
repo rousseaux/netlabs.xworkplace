@@ -30,8 +30,7 @@
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize in inference
-# rules.
+# defining file extensions that NMAKE will recognize.
 .SUFFIXES: .cpp .obj .h
 
 # OUTPUTDIR specifies the directory where all the output .OBJ

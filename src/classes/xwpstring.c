@@ -915,7 +915,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
                                            "SETUPSTRING", psz, &cbValue))
                     {
                         XSTRING str;
-                        xstrInitSet(&str, psz);
+                        xstrInitSet2(&str, psz, cbValue - 1);
 
                         xstrDecode(&str);
 
@@ -1043,27 +1043,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpRestoreState(XWPString *somSelf,
 }
 
 /*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
- */
-
-SOM_Scope ULONG  SOMLINK xwstr_wpFilterPopupMenu(XWPString *somSelf,
-                                                 ULONG ulFlags,
-                                                 HWND hwndCnr,
-                                                 BOOL fMultiSelect)
-{
-    /* XWPStringData *somThis = XWPStringGetData(somSelf); */
-    XWPStringMethodDebug("XWPString","xwstr_wpFilterPopupMenu");
-
-    return (XWPString_parent_WPAbstract_wpFilterPopupMenu(somSelf,
-                                                          ulFlags,
-                                                          hwndCnr,
-                                                          fMultiSelect));
-}
-
-/*
  *@@ wpModifyPopupMenu:
  *      this WPObject instance methods gets called by the WPS
  *      when a context menu needs to be built for the object
@@ -1085,11 +1064,10 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
     XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpModifyPopupMenu");
 
-    brc = XWPString_parent_WPAbstract_wpModifyPopupMenu(somSelf,
-                                                        hwndMenu,
-                                                        hwndCnr,
-                                                        iPosition);
-    if (brc)
+    if (brc = XWPString_parent_WPAbstract_wpModifyPopupMenu(somSelf,
+                                                            hwndMenu,
+                                                            hwndCnr,
+                                                            iPosition))
     {
         if ((_hobjStatic) && (_pszSetupString))
         {

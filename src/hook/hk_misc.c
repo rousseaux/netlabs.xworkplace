@@ -158,7 +158,7 @@ VOID WMChord_WinList(VOID)
     // get mouse coordinates (absolute coordinates)
     WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
     // get position of window list window
-    WinQueryWindowPos(G_HookData.hwndWindowList,
+    WinQueryWindowPos(G_HookData.hwndSwitchList,
                       &WinListPos);
     // calculate window list position (mouse pointer is center)
     WinListX = ptlMouse.x - (WinListPos.cx / 2);
@@ -172,12 +172,12 @@ VOID WMChord_WinList(VOID)
     if (WinListY + WinListPos.cy > G_HookData.lCYScreen)
         WinListY = G_HookData.lCYScreen - WinListPos.cy;
     // set window list window to calculated position
-    WinSetWindowPos(G_HookData.hwndWindowList, HWND_TOP,
+    WinSetWindowPos(G_HookData.hwndSwitchList, HWND_TOP,
                     WinListX, WinListY, 0, 0,
                     SWP_MOVE | SWP_SHOW | SWP_ZORDER);
     // now make it the active window
     WinSetActiveWindow(HWND_DESKTOP,
-                       G_HookData.hwndWindowList);
+                       G_HookData.hwndSwitchList);
 }
 
 

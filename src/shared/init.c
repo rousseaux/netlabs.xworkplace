@@ -72,6 +72,7 @@
 
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
@@ -88,17 +89,20 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfldr.ih"
+// #include "xfldr.ih"
+#include "xfstart.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "xwpapi.h"                     // public XWorkplace definitions
 
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -156,7 +160,8 @@ static CHAR             G_szDesktopPath[CCHMAXPATH];
 
 /* ******************************************************************
  *
- *   XWorkplace initialization
+ *   XWorkplace initialization part 1
+ *   (M_XFldObject::wpclsInitData)
  *
  ********************************************************************/
 
@@ -880,10 +885,7 @@ VOID ReplaceWheelWatcher(PXFILE pLogFile)
  *      --  DESKTOP_IS_NO_DIRECTORY: The handle pointed to by <WP_DESKTOP>
  *          points to a file, not a directory.
  *
- *      Note that this function gets called twice: first, from
- *      initMain so we can disable archiving if the desktop
- *      is broken, secondly from initRepairDesktopIfBroken a
- *      little bit later.
+ *      Gets called from initMain.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
@@ -978,200 +980,6 @@ ULONG CheckDesktop(PXFILE pLogFile,
 }
 
 /*
- *@@ initRepairDesktopIfBroken:
- *      calls CheckDesktop to find out if the desktop
- *      is valid. If not, we offer a text entry dialog
- *      where the user may the full path of the desktop.
- *
- *      This does _not_ get called from initMain because
- *      initMain gets processed in the context of
- *      M_XFldObject::wpclsInitData, where the file-system
- *      objects are not yet initialized.
- *
- *      Instead, this gets called from
- *      M_XFldDesktop::wpclsInitData, which gets called
- *      while the WPS startup code is trying to open the
- *      default desktop. Essentially, we are changing
- *      the desktop's object ID behind the WPS's back
- *      (while it is trying to find the object from it),
- *      so this might or might not work.
- *
- *@@added V0.9.16 (2001-09-29) [umoeller]
- */
-
-BOOL initRepairDesktopIfBroken(VOID)
-{
-    BOOL        brc = FALSE;
-
-    CHAR        szMsg[1000] = "";
-
-    switch (G_ulDesktopValid)
-    {
-        case DESKTOP_VALID:
-            brc = TRUE;
-        break;
-
-        case NO_DESKTOP_ID:
-            sprintf(szMsg,
-                    "The object ID <WP_DESKTOP> was not found in the user profile.");
-        break;
-
-        case DESKTOP_HANDLE_NOT_FOUND:
-            sprintf(szMsg,
-                    "The object ID <WP_DESKTOP> points to the object handle 0x%lX,"
-                    "but that handle was not found in the system profile.",
-                    G_hobjDesktop);
-        break;
-
-        case DESKTOP_DIR_DOESNT_EXIST:
-            sprintf(szMsg,
-                    "The object ID <WP_DESKTOP> points to \"%s\","
-                    "but that path does not exist on the system.",
-                    G_szDesktopPath);
-        break;
-
-        case DESKTOP_IS_NO_DIRECTORY:
-            sprintf(szMsg,
-                    "The object ID <WP_DESKTOP> points to \"%s\","
-                    "but that path is a file, not a directory.",
-                    G_szDesktopPath);
-        break;
-
-        default:
-            sprintf(szMsg,
-                    "Unknown error %d occured.",
-                    G_ulDesktopValid);
-        break;
-    }
-
-    if (!brc)
-    {
-        BOOL fRepeat = FALSE;
-        HAPP happCmd;
-
-        PCSZ pcszTitle = "Desktop Error";
-        PCSZ pcszOKMsg =
-                    "\nIf you press \"OK\", the object ID <WP_DESKTOP> will be set "
-                    "upon that directory. Please make sure that the path you enter is "
-                    "valid.";
-        PCSZ pcszRetryMsg =
-                    "\nPress \"Retry\" to enter another path.";
-        PCSZ pcszCancelMsg =
-                    "\nPress \"Cancel\" in order not to set a new object ID and open "
-                    "a temporary desktop, which is the default WPS behavior.";
-
-        // start a CMD.EXE for the frightened user
-        StartCmdExe(NULLHANDLE,
-                    &happCmd);
-        do
-        {
-            XSTRING str;
-            PSZ     pszNew;
-            CHAR    szDefault[CCHMAXPATH];
-            PSZ     pszDesktopEnv;
-
-            fRepeat = FALSE;
-
-            xstrInitCopy(&str,
-                         "Your desktop could not be found in the system's INI files. ",
-                         0);
-            xstrcat(&str, szMsg, 0);
-            xstrcat(&str,
-                    "\nA command window has been opened for your convenience. "
-                    "You can now attempt to enter the full path of where your desktop "
-                    "resides.",
-                    0);
-            xstrcat(&str,
-                    pcszOKMsg,
-                    0);
-            xstrcat(&str,
-                    pcszCancelMsg,
-                    0);
-
-            // set a meaningful default for the desktop;
-            // if the user has set the DESKTOP variable, use that
-            if (!DosScanEnv("DESKTOP",
-                            &pszDesktopEnv))
-                strcpy(szDefault, pszDesktopEnv);
-            else
-                // check if we can find the path that was last
-                // saved during XShutdown
-                if (PrfQueryProfileString(HINI_USER,
-                                          (PSZ)INIAPP_XWORKPLACE,
-                                          (PSZ)INIKEY_LASTDESKTOPPATH,
-                                          "",       // default
-                                          szDefault,
-                                          sizeof(szDefault))
-                        < 3)
-                {
-                    // didn't work either:
-                    sprintf(szDefault,
-                            "%c:\\Desktop",
-                            doshQueryBootDrive());
-                }
-
-            if (pszNew = cmnTextEntryBox(NULLHANDLE,
-                                         pcszTitle,
-                                         str.psz,
-                                         szDefault,
-                                         CCHMAXPATH - 1,
-                                         TEBF_SELECTALL))
-            {
-                // check that path
-                APIRET arc;
-                ULONG ulAttr;
-                PCSZ pcszMsg2 = NULL;
-                if (arc = doshQueryPathAttr(pszNew,
-                                            &ulAttr))
-                    pcszMsg2 = "The path you have entered (\"%s\") does not exist.";
-                else
-                    if (0 == (ulAttr & FILE_DIRECTORY))
-                        pcszMsg2 = "The path you have entered (\"%s\") is a file, not a directory.";
-
-                if (!pcszMsg2)
-                {
-                    WPFileSystem *pobj;
-                    if (    (pobj = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                                              pszNew))
-                         && (_wpSetObjectID(pobj,
-                                            (PSZ)WPOBJID_DESKTOP))
-                       )
-                    {
-                        // alright, this worked:
-                        brc = TRUE;
-                    }
-                    else
-                        pcszMsg2 = "Error setting <WP_DESKTOP> on \"%s\".";
-                }
-
-                if (pcszMsg2)
-                {
-                    sprintf(szMsg,
-                            pcszMsg2,
-                            pszNew);
-                    xstrcpy(&str, szMsg, 0);
-                    xstrcat(&str, pcszRetryMsg, 0);
-                    xstrcat(&str, pcszCancelMsg, 0);
-
-                    if (cmnMessageBox(NULLHANDLE,
-                                      pcszTitle,
-                                      str.psz,
-                                      MB_RETRYCANCEL)
-                            == MBID_RETRY)
-                        fRepeat = TRUE;
-                }
-
-                free(pszNew);
-            }
-            xstrClear(&str);
-
-        } while (fRepeat);
-    }
-
-    return (brc);
-}
-
-/*
  *@@ initMain:
  *      this gets called from M_XFldObject::wpclsInitData
  *      when the WPS is initializing. See remarks there.
@@ -1208,7 +1016,7 @@ BOOL initRepairDesktopIfBroken(VOID)
  *         the KERNELGLOBALS, and such.
  *
  *      b) Create the Thread-1 object window (fnwpThread1Object)
- *         and API object window (fnwpAPIObject).
+ *         and the API object window (fnwpAPIObject).
  *
  *      c) If the "Shift" key is pressed, show the "Panic" dialog
  *         (new with V0.9.0). In that case, we pause the WPS
@@ -1218,18 +1026,20 @@ BOOL initRepairDesktopIfBroken(VOID)
  *      d) Hack out the WPS folder auto-refresh threads, if enabled,
  *         and start the Sentinel thread (see ReplaceWheelWatcher).
  *
- *      e) Call xthrStartThreads to have the additional XWorkplace
+ *      e) Call CheckDesktop().
+ *
+ *      f) Call xthrStartThreads to have the additional XWorkplace
  *         threads started. The Speedy thread will then display the
  *         boot logo, if allowed.
  *
- *      f) Start the XWorkplace daemon (XWPDAEMN.EXE, xwpdaemn.c),
- *         which will register the XWorkplace hook (XWPHOOK.DLL,
- *         xwphook.c, all new with V0.9.0). See xwpdaemon.c for details.
- *
- *      g) Finally, we call arcCheckIfBackupNeeded (archives.c)
+ *      g) Call arcCheckIfBackupNeeded (archives.c)
  *         to enable Desktop archiving, if necessary. The WPS will
  *         then archive the Desktop, after we return from this
  *         function (also new with V0.9.0).
+ *
+ *      h) Start the XWorkplace daemon (XWPDAEMN.EXE, xwpdaemn.c),
+ *         which will register the XWorkplace hook (XWPHOOK.DLL,
+ *         xwphook.c, all new with V0.9.0). See xwpdaemon.c for details.
  *
  *@@changed V0.9.0 [umoeller]: renamed from xthrInitializeThreads
  *@@changed V0.9.0 [umoeller]: added dialog for shift key during Desktop startup
@@ -1340,7 +1150,7 @@ VOID initMain(VOID)
     G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
 
     // create API object window V0.9.9 (2001-03-23) [umoeller]
-    WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+    WinRegisterClass(G_habThread1,
                      (PSZ)WNDCLASS_APIOBJECT,    // class name
                      (PFNWP)fnwpAPIObject,   // Window procedure
                      0,                  // class style
@@ -1651,4 +1461,664 @@ VOID initMain(VOID)
 
 }
 
+/* ******************************************************************
+ *
+ *   XWorkplace initialization part 2
+ *   (M_XFldDesktop::wpclsInitData)
+ *
+ ********************************************************************/
+
+/*
+ *@@ initRepairDesktopIfBroken:
+ *      calls CheckDesktop to find out if the desktop
+ *      is valid. If not, we offer a text entry dialog
+ *      where the user may the full path of the desktop.
+ *
+ *      This does _not_ get called from initMain because
+ *      initMain gets processed in the context of
+ *      M_XFldObject::wpclsInitData, where the file-system
+ *      objects are not yet initialized.
+ *
+ *      Instead, this gets called from
+ *      M_XFldDesktop::wpclsInitData, which gets called
+ *      while the WPS startup code is trying to open the
+ *      default desktop. Essentially, we are changing
+ *      the desktop's object ID behind the WPS's back
+ *      (while it is trying to find the object from it),
+ *      so this might or might not work.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+BOOL initRepairDesktopIfBroken(VOID)
+{
+    BOOL        brc = FALSE;
+
+    CHAR        szMsg[1000] = "";
+
+    switch (G_ulDesktopValid)
+    {
+        case DESKTOP_VALID:
+            brc = TRUE;
+        break;
+
+        case NO_DESKTOP_ID:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> was not found in the user profile.");
+        break;
+
+        case DESKTOP_HANDLE_NOT_FOUND:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> points to the object handle 0x%lX,"
+                    "but that handle was not found in the system profile.",
+                    G_hobjDesktop);
+        break;
+
+        case DESKTOP_DIR_DOESNT_EXIST:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> points to \"%s\","
+                    "but that path does not exist on the system.",
+                    G_szDesktopPath);
+        break;
+
+        case DESKTOP_IS_NO_DIRECTORY:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> points to \"%s\","
+                    "but that path is a file, not a directory.",
+                    G_szDesktopPath);
+        break;
+
+        default:
+            sprintf(szMsg,
+                    "Unknown error %d occured.",
+                    G_ulDesktopValid);
+        break;
+    }
+
+    if (!brc)
+    {
+        BOOL fRepeat = FALSE;
+        HAPP happCmd;
+
+        PCSZ pcszTitle = "Desktop Error";
+        PCSZ pcszOKMsg =
+                    "\nIf you press \"OK\", the object ID <WP_DESKTOP> will be set "
+                    "upon that directory. Please make sure that the path you enter is "
+                    "valid.";
+        PCSZ pcszRetryMsg =
+                    "\nPress \"Retry\" to enter another path.";
+        PCSZ pcszCancelMsg =
+                    "\nPress \"Cancel\" in order not to set a new object ID and open "
+                    "a temporary desktop, which is the default WPS behavior.";
+
+        // start a CMD.EXE for the frightened user
+        StartCmdExe(NULLHANDLE,
+                    &happCmd);
+        do
+        {
+            XSTRING str;
+            PSZ     pszNew;
+            CHAR    szDefault[CCHMAXPATH];
+            PSZ     pszDesktopEnv;
+
+            fRepeat = FALSE;
+
+            xstrInitCopy(&str,
+                         "Your desktop could not be found in the system's INI files. ",
+                         0);
+            xstrcat(&str, szMsg, 0);
+            xstrcat(&str,
+                    "\nA command window has been opened for your convenience. "
+                    "You can now attempt to enter the full path of where your desktop "
+                    "resides.",
+                    0);
+            xstrcat(&str,
+                    pcszOKMsg,
+                    0);
+            xstrcat(&str,
+                    pcszCancelMsg,
+                    0);
+
+            // set a meaningful default for the desktop;
+            // if the user has set the DESKTOP variable, use that
+            if (!DosScanEnv("DESKTOP",
+                            &pszDesktopEnv))
+                strcpy(szDefault, pszDesktopEnv);
+            else
+                // check if we can find the path that was last
+                // saved during XShutdown
+                if (PrfQueryProfileString(HINI_USER,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_LASTDESKTOPPATH,
+                                          "",       // default
+                                          szDefault,
+                                          sizeof(szDefault))
+                        < 3)
+                {
+                    // didn't work either:
+                    sprintf(szDefault,
+                            "%c:\\Desktop",
+                            doshQueryBootDrive());
+                }
+
+            if (pszNew = cmnTextEntryBox(NULLHANDLE,
+                                         pcszTitle,
+                                         str.psz,
+                                         szDefault,
+                                         CCHMAXPATH - 1,
+                                         TEBF_SELECTALL))
+            {
+                // check that path
+                APIRET arc;
+                ULONG ulAttr;
+                PCSZ pcszMsg2 = NULL;
+                if (arc = doshQueryPathAttr(pszNew,
+                                            &ulAttr))
+                    pcszMsg2 = "The path you have entered (\"%s\") does not exist.";
+                else
+                    if (0 == (ulAttr & FILE_DIRECTORY))
+                        pcszMsg2 = "The path you have entered (\"%s\") is a file, not a directory.";
+
+                if (!pcszMsg2)
+                {
+                    WPFileSystem *pobj;
+                    if (    (pobj = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                              pszNew))
+                         && (_wpSetObjectID(pobj,
+                                            (PSZ)WPOBJID_DESKTOP))
+                       )
+                    {
+                        // alright, this worked:
+                        brc = TRUE;
+                    }
+                    else
+                        pcszMsg2 = "Error setting <WP_DESKTOP> on \"%s\".";
+                }
+
+                if (pcszMsg2)
+                {
+                    sprintf(szMsg,
+                            pcszMsg2,
+                            pszNew);
+                    xstrcpy(&str, szMsg, 0);
+                    xstrcat(&str, pcszRetryMsg, 0);
+                    xstrcat(&str, pcszCancelMsg, 0);
+
+                    if (cmnMessageBox(NULLHANDLE,
+                                      pcszTitle,
+                                      str.psz,
+                                      MB_RETRYCANCEL)
+                            == MBID_RETRY)
+                        fRepeat = TRUE;
+                }
+
+                free(pszNew);
+            }
+            xstrClear(&str);
+
+        } while (fRepeat);
+    }
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   XWorkplace initialization part 3
+ *   (after desktop is populated)
+ *
+ ********************************************************************/
+
+/*
+ *@@ QUICKOPENDATA:
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
+ */
+
+typedef struct _QUICKOPENDATA
+{
+    LINKLIST    llQuicks;            // linked list of quick-open folders,
+                                    // plain WPFolder* pointers
+    HWND        hwndStatus;
+
+    ULONG       cQuicks,
+                ulQuickThis;
+
+    BOOL        fCancelled;
+
+} QUICKOPENDATA, *PQUICKOPENDATA;
+
+/*
+ *@@ fnwpQuickOpenDlg:
+ *      dlg proc for the QuickOpen status window.
+ *
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: moved this here from kernel.c
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
+ */
+
+MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+        {
+            WinSetWindowPtr(hwnd, QWL_USER, mp2);       // ptr to QUICKOPENDATA
+            ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
+                                     PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+        }
+        break;
+
+        case WM_COMMAND:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case DID_CANCEL:
+                {
+                    PQUICKOPENDATA pqod = (PQUICKOPENDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                    pqod->fCancelled = TRUE;
+                    // this will cause the callback below to
+                    // return FALSE
+                }
+                break;
+
+                default:
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+            }
+        break;
+
+        case WM_SYSCOMMAND:
+        {
+            switch (SHORT1FROMMP(mp1))
+            {
+                case SC_HIDE:
+                {
+                    cmnSetSetting(sfShowStartupProgress, 0);
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+                }
+                break;
+
+                default:
+                    mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+            }
+        }
+        break;
+
+        case WM_DESTROY:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ fncbQuickOpen:
+ *      callback func for fdrQuickOpen.
+ *
+ *      If this returns FALSE, processing is
+ *      terminated.
+ *
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: adjusted parameters for new prototype
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
+ */
+
+BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
+                            WPObject *pObject,
+                            ULONG ulNow,
+                            ULONG ulMax,
+                            ULONG ulCallbackParam)
+{
+    PQUICKOPENDATA pqod = (PQUICKOPENDATA)ulCallbackParam;
+
+    WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
+                      WM_UPDATEPROGRESSBAR,
+                      (MPARAM)(
+                                  pqod->ulQuickThis * 100
+                                   + ( (100 * ulNow) / ulMax )
+                              ),
+                      (MPARAM)(pqod->cQuicks * 100));
+
+    // if "Cancel" has been pressed, return FALSE
+    return (!pqod->fCancelled);
+}
+
+#ifndef __NOQUICKOPEN__
+
+/*
+ *@@ fntQuickOpenFolders:
+ *      synchronous thread created from fntStartupThread
+ *      to process the quick-open folders.
+ *
+ *      The thread data is a PQUICKOPENDATA.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
+ */
+
+void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
+{
+    PQUICKOPENDATA pqod = (PQUICKOPENDATA)ptiMyself->ulData;
+    PLISTNODE pNode;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    for (pNode = lstQueryFirstNode(&pqod->llQuicks);
+         pNode;
+         pNode = pNode->pNext)
+    {
+        WPFolder *pFolder = (WPFolder*)pNode->pItemData;
+
+        if (    (pFolder)
+             && (_somIsA(pFolder, _WPFolder))
+           )
+        {
+            if (cmnQuerySetting(sfShowStartupProgress))
+            {
+                CHAR szTemp[256];
+                _wpQueryFilename(pFolder, szTemp, TRUE);
+                WinSetDlgItemText(pqod->hwndStatus, ID_SDDI_STATUS, szTemp);
+
+                if (cmnQuerySetting(sfShowStartupProgress))
+                    WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
+                                      WM_UPDATEPROGRESSBAR,
+                                      (MPARAM)(pqod->ulQuickThis * 100),
+                                      (MPARAM)(pqod->cQuicks * 100));
+            }
+
+            fdrQuickOpen(pFolder,
+                         fncbQuickOpen,
+                         (ULONG)pqod);
+        }
+
+        pqod->ulQuickThis++;
+    }
+
+    // done: set 100%
+    if (cmnQuerySetting(sfShowStartupProgress))
+        WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
+                          WM_UPDATEPROGRESSBAR,
+                          (MPARAM)1,
+                          (MPARAM)1);
+
+    DosSleep(500);
+
+    // tell thrRunSync that we're done
+    WinPostMsg(ptiMyself->hwndNotify,
+               WM_USER,
+               0, 0);
+}
+
+#endif
+
+/*
+ *@@ fntStartupThread:
+ *      startup thread, which does the XWorkplace startup
+ *      processing.
+ *
+ *      This is a transient thread created from the File
+ *      thread after the desktop window has been opened
+ *      (FIM_DESKTOPPOPULATED). This thread now does
+ *      all the startup processing (V0.9.12), replacing
+ *      the ugly messaging in the file and worker threads
+ *      and with the thread-1 object window we had
+ *      previously. The file thread now just starts
+ *      this thread and need not worry about anything
+ *      else... it doesn't even wait for this to finish.
+ *
+ *      In detail, this does:
+ *
+ *      --  startup folder processing;
+ *
+ *      --  quick-open populate;
+ *
+ *      --  post-installation processing, i.e. after install,
+ *          create the objects and such.
+ *
+ *      This thread is created with a PM message queue
+ *      so we can do WinSendMsg in here. Also, the status
+ *      windows are now displayed on this thread.
+ *
+ *      No thread data.
+ *
+ *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V0.9.13 (2001-06-14) [umoeller]: removed archive marker file destruction, no longer needed
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: added exception handling
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
+ */
+
+void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
+{
+    PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
+
+    // sleep a little while more
+    // V0.9.4 (2000-08-02) [umoeller]
+    DosSleep(cmnQuerySetting(sulStartupInitialDelay));
+
+    TRY_LOUD(excpt1)
+    {
+        // notify daemon of WPS desktop window handle
+        // V0.9.9 (2001-03-27) [umoeller]: moved this up,
+        // we don't have to wait here
+        // V0.9.9 (2001-04-08) [umoeller]: wrong, we do
+        // need to wait.. apparently, on some systems,
+        // this doesn't work otherwise
+        krnPostDaemonMsg(XDM_DESKTOPREADY,
+                         (MPARAM)cmnQueryActiveDesktopHWND(),
+                         (MPARAM)0);
+
+        /*
+         *  startup folders
+         *
+         */
+
+        // check if startup folder is to be skipped
+        if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+                // V0.9.3 (2000-04-25) [umoeller]
+        {
+            // OK, process startup folder
+            WPFolder    *pFolder;
+
+            // load XFldStartup class if not already loaded
+            if (!_XFldStartup)
+            {
+                #ifdef DEBUG_STARTUP
+                    _Pmpf(("Loading XFldStartup class"));
+                #endif
+                XFldStartupNewClass(XFldStartup_MajorVersion,
+                                    XFldStartup_MinorVersion);
+                // and make sure this is never unloaded
+                _wpclsIncUsage(_XFldStartup);
+            }
+
+            // find startup folder(s)
+            for (pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, NULL);
+                 pFolder;
+                 pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, pFolder))
+            {
+                // pFolder now has the startup folder to be processed
+
+                // _Pmpf((__FUNCTION__ ": found startup folder %s",
+                   //          _wpQueryTitle(pFolder)));
+
+                // skip folders which should only be started on bootup
+                // except if we have specified that we want to start
+                // them again when restarting the WPS
+                if (    (_xwpQueryXStartupType(pFolder) != XSTARTUP_REBOOTSONLY)
+                     || (krnNeed2ProcessStartupFolder())
+                   )
+                {
+                    ULONG ulTiming = 0;
+                    if (_somIsA(pFolder, _XFldStartup))
+                        ulTiming = _xwpQueryXStartupObjectDelay(pFolder);
+                    else
+                        ulTiming  = cmnQuerySetting(sulStartupObjectDelay);
+
+                    // start the folder contents synchronously;
+                    // this func now displays the progress dialog
+                    // and does not return until the folder was
+                    // fully processed (this calls another thrRunSync
+                    // internally, so the SIQ is not blocked)
+                    _xwpStartFolderContents(pFolder,
+                                            ulTiming);
+                }
+                // else
+                   //  _Pmpf(("  skipping this one"));
+            }
+
+            // _Pmpf((__FUNCTION__ ": done with startup folders"));
+
+            // done with startup folders:
+            krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
+        } // if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+
+        /*
+         *  quick-open folders
+         *
+         */
+
+#ifndef __NOQUICKOPEN__
+        // "quick open" disabled because Shift key pressed?
+        if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+        {
+            // no:
+            // get the quick-open folders
+            XFolder *pQuick = NULL;
+            QUICKOPENDATA qod;
+            memset(&qod, 0, sizeof(qod));
+            lstInit(&qod.llQuicks, FALSE);
+
+            for (pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, NULL);
+                 pQuick;
+                 pQuick = _xwpclsQueryQuickOpenFolder(_XFolder, pQuick))
+            {
+                lstAppendItem(&qod.llQuicks, pQuick);
+            }
+
+            // if we have any quick-open folders: go
+            if (qod.cQuicks = lstCountItems(&qod.llQuicks))
+            {
+                if (cmnQuerySetting(sfShowStartupProgress))
+                {
+                    qod.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                                                fnwpQuickOpenDlg,
+                                                cmnQueryNLSModuleHandle(FALSE),
+                                                ID_XFD_STARTUPSTATUS,
+                                                &qod);      // param
+                    WinSetWindowText(qod.hwndStatus,
+                                     cmnGetString(ID_XFSI_QUICKSTATUS)) ; // pszQuickStatus
+
+                    winhRestoreWindowPos(qod.hwndStatus,
+                                         HINI_USER,
+                                         INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
+                                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                    WinSendDlgItemMsg(qod.hwndStatus, ID_SDDI_PROGRESSBAR,
+                                      WM_UPDATEPROGRESSBAR,
+                                      (MPARAM)0,
+                                      (MPARAM)qod.cQuicks);
+                }
+
+                // run the Quick Open thread synchronously
+                // which updates the status window
+                thrRunSync(ptiMyself->hab,
+                           fntQuickOpenFolders,
+                           "QuickOpen",
+                           (ULONG)&qod);
+
+                if (cmnQuerySetting(sfShowStartupProgress))
+                {
+                    winhSaveWindowPos(qod.hwndStatus,
+                                      HINI_USER,
+                                      INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
+                    WinDestroyWindow(qod.hwndStatus);
+                }
+
+            }
+        } // end if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPQUICKOPEN))
+#endif
+
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    /*
+     *  other stuff
+     *
+     */
+
+#ifndef __NOBOOTLOGO__
+    // destroy boot logo, if present
+    xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
+#endif
+
+#ifndef __XWPLITE__
+    // if XWorkplace was just installed, check for
+    // existence of config folders and
+    // display welcome msg
+    if (PrfQueryProfileInt(HINI_USER,
+                           (PSZ)INIAPP_XWORKPLACE,
+                           (PSZ)INIKEY_JUSTINSTALLED,
+                           0x123)
+            != 0x123)
+    {
+        // XWorkplace was just installed:
+        // delete "just installed" INI key
+        PrfWriteProfileString(HINI_USER,
+                              (PSZ)INIAPP_XWORKPLACE,
+                              (PSZ)INIKEY_JUSTINSTALLED,
+                              NULL);
+
+        // say hello on thread 1
+        krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
+    }
+#endif
+}
+
+/*
+ *@@ initDesktopPopulated:
+ *      called when the desktop has finished populating
+ *      and XFldDesktop::wpPopulate then posts
+ *      FIM_DESKTOPPOPULATED, whose implementation is here.
+ *
+ *      Runs on the File thread.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+VOID initDesktopPopulated(VOID)
+{
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    PKERNELGLOBALS pKernelGlobals = NULL;
+
+    #ifdef DEBUG_STARTUP
+        _Pmpf(("fnwpFileObject: got FIM_DESKTOPPOPULATED"));
+    #endif
+
+    // V0.9.9 (2001-03-10) [umoeller]
+    TRY_LOUD(excpt1)
+    {
+        if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
+            pKernelGlobals->fDesktopPopulated = TRUE;
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (pKernelGlobals)
+        krnUnlockGlobals();
+
+    // create the startup thread which now does the
+    // processing for us V0.9.12 (2001-04-29) [umoeller]
+    if (!thrCreate(NULL,
+                   fntStartupThread,
+                   NULL,
+                   "StartupThread",
+                   THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                   0))
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot create startup thread.");
+
+    // moved all the rest to fntStartupThread
+}
 

@@ -39,6 +39,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
 
+#define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINSWITCHLIST
 #define INCL_WINMENUS
@@ -98,6 +99,9 @@ typedef struct _WINLISTRECORD
     CHAR        szHWND[20];
     PSZ         pszHWND;
 
+    CHAR        szWinClass[30];
+    PSZ         pszWinClass;
+
     HPROGRAM    hPgm;
     PID         pid;
     ULONG       sid;
@@ -124,10 +128,10 @@ typedef struct _WINLISTRECORD
 ULONG winlCreateRecords(HWND hwndCnr)
 {
     PSWBLOCK        pSwBlock   = NULL;         // Pointer to information returned
-    ULONG           ul,
+    ULONG           ul; /*
                     cbItems    = 0,            // Number of items in list
                     ulBufSize  = 0;            // Size of buffer for information
-
+       */
     HAB             hab = WinQueryAnchorBlock(hwndCnr);
 
     PWINLISTRECORD  pFirstRec = NULL,
@@ -137,91 +141,100 @@ ULONG winlCreateRecords(HWND hwndCnr)
     SHUTDOWNCONSTS  SDConsts;
 
     // get all the tasklist entries into a buffer
-    cbItems = WinQuerySwitchList(hab, NULL, 0);
+    /* cbItems = WinQuerySwitchList(hab, NULL, 0);
     ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
     pSwBlock = (PSWBLOCK)malloc(ulBufSize);
-    cbItems = WinQuerySwitchList(hab, pSwBlock, ulBufSize);
+    cbItems = WinQuerySwitchList(hab, pSwBlock, ulBufSize); */
 
-    xsdGetShutdownConsts(&SDConsts);
-
-    // allocate records
-    pFirstRec = (PWINLISTRECORD)cnrhAllocRecords(hwndCnr,
-                                                 sizeof(WINLISTRECORD),
-                                                 pSwBlock->cswentry);
-    if (pFirstRec)
+    if (pSwBlock = winhQuerySwitchList(hab))
     {
-        pRecThis = pFirstRec;
+        xsdGetShutdownConsts(&SDConsts);
 
-        // loop through all the tasklist entries
-        for (ul = 0;
-             (ul < pSwBlock->cswentry) && (pRecThis);
-             ul++)
+        // allocate records
+        pFirstRec = (PWINLISTRECORD)cnrhAllocRecords(hwndCnr,
+                                                     sizeof(WINLISTRECORD),
+                                                     pSwBlock->cswentry);
+        if (pFirstRec)
         {
-            WPObject    *pObject;
-            LONG        lClosable;
+            pRecThis = pFirstRec;
 
-            pRecThis->ulIndex = ulIndex++;
-
-            pRecThis->hSwitch = pSwBlock->aswentry[ul].hswitch;
-
-            pRecThis->hwnd = pSwBlock->aswentry[ul].swctl.hwnd;
-            sprintf(pRecThis->szHWND, "0x%lX", pSwBlock->aswentry[ul].swctl.hwnd);
-            pRecThis->pszHWND = pRecThis->szHWND;
-
-            pRecThis->hPgm = pSwBlock->aswentry[ul].swctl.hprog;
-            pRecThis->pid = pSwBlock->aswentry[ul].swctl.idProcess;
-            pRecThis->sid = pSwBlock->aswentry[ul].swctl.idSession;
-            pRecThis->ulVisibility = pSwBlock->aswentry[ul].swctl.uchVisibility;
-
-            strhncpy0(pRecThis->szSwTitle,
-                      pSwBlock->aswentry[ul].swctl.szSwtitle,
-                      sizeof(pRecThis->szSwTitle));
-            pRecThis->pszSwTitle = pRecThis->szSwTitle;
-
-            WinQueryWindowText(pSwBlock->aswentry[ul].swctl.hwnd,
-                               sizeof(pRecThis->szWinTitle),
-                               pRecThis->szWinTitle);
-            pRecThis->pszWinTitle = pRecThis->szWinTitle;
-
-            lClosable = xsdIsClosable(hab,
-                                      &SDConsts,
-                                      &pSwBlock->aswentry[ul],
-                                      &pObject);
-            sprintf(pRecThis->szClosable, "%d", lClosable);
-            pRecThis->pszClosable = pRecThis->szClosable;
-
-            sprintf(pRecThis->szObject, "0x%lX", pObject);
-            pRecThis->pszObject = pRecThis->szObject;
-
-            if (pObject)
+            // loop through all the tasklist entries
+            for (ul = 0;
+                 (ul < pSwBlock->cswentry) && (pRecThis);
+                 ul++)
             {
-                PVIEWITEM pvi;
+                WPObject    *pObject;
+                LONG        lClosable;
 
-                pRecThis->pszObjectTitle = _wpQueryTitle(pObject);
+                pRecThis->ulIndex = ulIndex++;
 
-                if (pvi = _wpFindViewItem(pObject,
-                                          VIEW_RUNNING,
-                                          NULL))
+                pRecThis->hSwitch = pSwBlock->aswentry[ul].hswitch;
+
+                pRecThis->hwnd = pSwBlock->aswentry[ul].swctl.hwnd;
+                sprintf(pRecThis->szHWND, "0x%lX", pSwBlock->aswentry[ul].swctl.hwnd);
+                pRecThis->pszHWND = pRecThis->szHWND;
+
+                if (pRecThis->hwnd)
+                    WinQueryClassName(pRecThis->hwnd,
+                                      sizeof(pRecThis->szWinClass),
+                                      pRecThis->szWinClass);
+                pRecThis->pszWinClass = pRecThis->szWinClass;
+
+                pRecThis->hPgm = pSwBlock->aswentry[ul].swctl.hprog;
+                pRecThis->pid = pSwBlock->aswentry[ul].swctl.idProcess;
+                pRecThis->sid = pSwBlock->aswentry[ul].swctl.idSession;
+                pRecThis->ulVisibility = pSwBlock->aswentry[ul].swctl.uchVisibility;
+
+                strhncpy0(pRecThis->szSwTitle,
+                          pSwBlock->aswentry[ul].swctl.szSwtitle,
+                          sizeof(pRecThis->szSwTitle));
+                pRecThis->pszSwTitle = pRecThis->szSwTitle;
+
+                WinQueryWindowText(pSwBlock->aswentry[ul].swctl.hwnd,
+                                   sizeof(pRecThis->szWinTitle),
+                                   pRecThis->szWinTitle);
+                pRecThis->pszWinTitle = pRecThis->szWinTitle;
+
+                lClosable = xsdIsClosable(hab,
+                                          &SDConsts,
+                                          &pSwBlock->aswentry[ul],
+                                          &pObject);
+                sprintf(pRecThis->szClosable, "%d", lClosable);
+                pRecThis->pszClosable = pRecThis->szClosable;
+
+                sprintf(pRecThis->szObject, "0x%lX", pObject);
+                pRecThis->pszObject = pRecThis->szObject;
+
+                if (pObject)
                 {
-                    pRecThis->happObject = pvi->handle;
-                    sprintf(pRecThis->szHAPP, "%lX", pvi->handle);
-                    pRecThis->pszHAPP = pRecThis->szHAPP;
+                    PVIEWITEM pvi;
+
+                    pRecThis->pszObjectTitle = _wpQueryTitle(pObject);
+
+                    if (pvi = _wpFindViewItem(pObject,
+                                              VIEW_RUNNING,
+                                              NULL))
+                    {
+                        pRecThis->happObject = pvi->handle;
+                        sprintf(pRecThis->szHAPP, "%lX", pvi->handle);
+                        pRecThis->pszHAPP = pRecThis->szHAPP;
+                    }
                 }
+
+                pRecThis = (PWINLISTRECORD)pRecThis->recc.preccNextRecord;
             }
-
-            pRecThis = (PWINLISTRECORD)pRecThis->recc.preccNextRecord;
         }
+
+        cnrhInsertRecords(hwndCnr,
+                          NULL,         // parent
+                          (PRECORDCORE)pFirstRec,
+                          TRUE,
+                          NULL,
+                          CRA_RECORDREADONLY,
+                          ulIndex);
+
+        free(pSwBlock);
     }
-
-    cnrhInsertRecords(hwndCnr,
-                      NULL,         // parent
-                      (PRECORDCORE)pFirstRec,
-                      TRUE,
-                      NULL,
-                      CRA_RECORDREADONLY,
-                      ulIndex);
-
-    free(pSwBlock);
 
     return (ulIndex);
 }
@@ -255,7 +268,7 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                                           NULL, NULL);
                 if (hwndCnr)
                 {
-                    XFIELDINFO      xfi[20];
+                    XFIELDINFO      xfi[21];
                     PFIELDINFO      pfi = NULL;
                     PWINLISTRECORD  pMemRecordFirst;
                     int             i = 0;
@@ -292,6 +305,11 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                     xfi[i].pszColumnTitle = "hwnd";
                     xfi[i].ulDataType = CFA_STRING;
                     xfi[i++].ulOrientation = CFA_RIGHT;
+
+                    xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszWinClass);
+                    xfi[i].pszColumnTitle = "Class";
+                    xfi[i].ulDataType = CFA_STRING;
+                    xfi[i++].ulOrientation = CFA_LEFT;
 
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, hPgm);
                     xfi[i].pszColumnTitle = "hPgm";
@@ -388,6 +406,16 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
             {
                 switch (usNotifyCode)
                 {
+                    // V0.9.16 (2002-01-13) [umoeller]
+                    case CN_ENTER:
+                    {
+                        PNOTIFYRECORDENTER pnre = (PNOTIFYRECORDENTER)mp2;
+                        PWINLISTRECORD prec;
+                        if (prec = (PWINLISTRECORD)pnre->pRecord)
+                            WinSwitchToProgram(prec->hSwitch);
+                    }
+                    break;
+
                     case CN_CONTEXTMENU:
                     {
                         PWINLISTRECORD precc = (PWINLISTRECORD)mp2;
@@ -465,16 +493,15 @@ HWND winlCreateWinListWindow(VOID)
                          winl_fnwpWinList, 0L, 0))
     {
         HWND hwndClient;
-        hwndFrame = WinCreateStdWindow(HWND_DESKTOP,
-                                       0L,
-                                       &flStyle,
-                                       "XWPWinList",
-                                       "Window List",
-                                       0L,
-                                       NULLHANDLE,     // resource
-                                       0,
-                                       &hwndClient);
-        if (hwndFrame)
+        if (hwndFrame = WinCreateStdWindow(HWND_DESKTOP,
+                                           0L,
+                                           &flStyle,
+                                           "XWPWinList",
+                                           "Window List",
+                                           0L,
+                                           NULLHANDLE,     // resource
+                                           0,
+                                           &hwndClient))
         {
             WinSetWindowPos(hwndFrame,
                             HWND_TOP,

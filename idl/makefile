@@ -27,7 +27,7 @@
 
 # OUTPUTDIR specifies the directory where we will put the
 # files created by this makefile.
-OUTPUTDIR = ..\include\classes
+OUTPUTDIR = $(PROJECT_BASE_DIR)\include\classes
 
 # Some SOM variables. You won't have to change these.
 SOMTEMP = $(TEMP)
@@ -35,8 +35,15 @@ SOMTEMP = $(TEMP)
     [set SMTMP=$(SOMTEMP)] || \
     [set SMEMIT=ih;h;c] || \
     [set SMADDSTAR=1] || \
-    [set SMNOTC=1]
+    [set SMNOTC=1] || \
+    [set SMINCLUDE=$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 !endif
+
+# SMTMP=$(SOMTEMP)
+# SMEMIT=ih;h;c
+# SMADDSTAR=1
+# SMNOTC=1
+# SMINCLUDE=$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.
 
 # Specify the main target.
 
@@ -88,14 +95,17 @@ all: $(OUTPUTDIR)\anand.h \
 # The ugly {} brackets are some awkward syntax for specifying
 # files in other directories.
 
+RUNSC = sc -p -v -r -maddstar -mnoint -S128000 -C128000
+#-I $(TKBASE)\SOM\include -I . -I $(TKBASE)\idl -I $(TKBASE)\h
+
 # -- emit .IH, .DEF files when .IDL has changed
 .idl{$(OUTPUTDIR)}.h:
 # emit H, IH (include\classes):
-        sc -p -v -r -d$(OUTPUTDIR) -maddstar -mnoint -S128000 -C128000 -sh;ih $(@B).idl
+        $(RUNSC) -d$(OUTPUTDIR) -sh;ih $(@B).idl
 # emit C (src\classes):
-        sc -p -v -r -d..\src\classes -maddstar -mnoint -S128000 -C128000 -sc $(@B).idl
+        $(RUNSC) -d$(PROJECT_BASE_DIR)\src\classes -sc $(@B).idl
 # emit DEF (this dir):
-        sc -p -v -r -maddstar -mnoint -S128000 -C128000 -s def $(@B).idl
+        $(RUNSC) -s def $(@B).idl
 # cleanup IH: this removes the ugly #pragma's for VAC++ 3.0
         $(RUN_STRRPL) $(OUTPUTDIR)\$(@B).ih "#pragma checkout(suspend)" " "
         $(RUN_STRRPL) $(OUTPUTDIR)\$(@B).ih "#pragma checkout(resume)" " "

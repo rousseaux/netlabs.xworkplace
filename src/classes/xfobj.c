@@ -2406,8 +2406,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
         PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
         while (pNode)
         {
-            HWND hwnd = (HWND)pNode->pItemData;
-            WinPostMsg(hwnd,
+            WinPostMsg((HWND)pNode->pItemData,
                        WM_CONTROL,
                        MPFROM2SHORT(ID_XCENTER_CLIENT,
                                     XN_INUSECHANGED),
@@ -2434,9 +2433,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
  *      given object. This extra function is
  *      necessary because if an object handle
  *      for an object with a hotkey gets lost
- *      e.g. because the object was deleted),
- *      there's no way to invoke XFldObject::xwpSetObjectHotkey
- *      on it.
+ *      (e.g. because the object was deleted),
+ *      there's no way to invoke
+ *      XFldObject::xwpSetObjectHotkey on it.
  *
  *@@added V0.9.0 (99-11-12) [umoeller]
  */
@@ -2577,13 +2576,14 @@ SOM_Scope BOOL  SOMLINK xfobjM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
     return (TRUE);
 }
 
-
 /*
  *@@ wpclsSetIconData:
  *      this WPObject class method sets the icon information
  *      for the given class object.
  *
- *      Doesn't make much sense? Never made sense to me either.
+ *      Doesn't make much sense? Welcome to the club. See
+ *      icons.c for an introduction to the WPS icon mess.
+ *
  *      What I found out is that when the WPS calls
  *      M_WPObject::wpclsQueryIcon to get the default icon of
  *      an object's class (because an object is not using a
@@ -2592,15 +2592,15 @@ SOM_Scope BOOL  SOMLINK xfobjM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
  *      wpclsQueryIconData (which is the method to be overridden
  *      to change the class default icon) and then this method,
  *      wpclsSetIconData, to have the class icon set. For that,
- *      wpclsSetIconData calls wpclsSetIcon, which is then
- *      returned in subsequent calls to wpclsQueryIcon.
+ *      wpclsSetIconData calls wpclsSetIcon to set the _class_
+ *      icon handle, which is then returned in subsequent calls
+ *      to wpclsQueryIcon.
  *
  *      The problem with this method (wpclsSetIconData) is
- *      that it only appears to support the ICON_RESOURCE
- *      format in ICONINFO. We'd love to be able to support
- *      ICON_FILE too because that would come in handy with
- *      the way cmnGetStandardIcon works, so we have to rewrite
- *      this method too.
+ *      that it doesn't support the ICON_FILE format in
+ *      ICONINFO. So in order to support ICON_FILE, which
+ *      would be handy with the way cmnGetStandardIcon
+ *      works, we have to override this method too.
  *
  *@@added V0.9.16 (2002-01-13) [umoeller]
  */

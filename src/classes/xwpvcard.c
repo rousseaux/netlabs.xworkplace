@@ -411,7 +411,7 @@ APIRET vcfRead(PCSZ pcszFilename,
     {
         XSTRING str;
         PSZ p;
-        xstrInitSet(&str, pszData);
+        xstrInitSet2(&str, pszData, cbRead - 1);
         xstrConvertLineFormat(&str, CRLF2LF);
         p = str.psz;
         arc = vcfTokenize(&p,

@@ -27,7 +27,7 @@
 # CVS_WORK_ROOT: the root of your CVS tree
 # (the parent dir of "xworkplace" and "xwphelpers")
 !ifndef CVS_WORK_ROOT
-CVS_WORK_ROOT = D:\projects\cvs
+CVS_WORK_ROOT = D:\projects\R_cvs
 !endif
 
 # XWPDIR: name of the directory this file resides in

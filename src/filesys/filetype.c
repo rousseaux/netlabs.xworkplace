@@ -4943,16 +4943,13 @@ VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
                                       + 1);     // for \0
             if (pszNew)
             {
-                sprintf(pszNew,
-                        "%s%s%s",
-                        pstrTypes->psz,
-                        pcszSeparator,
-                        precc->pliFileType->pszFileType);
+                ULONG ul = sprintf(pszNew,
+                                   "%s%s%s",
+                                   pstrTypes->psz,
+                                   pcszSeparator,
+                                   precc->pliFileType->pszFileType);
 
-                xstrset(pstrTypes, pszNew);
-
-                // _wpSetType(pcnbp->somSelf, pszNew, 0);
-                // free(pszNew);
+                xstrset2(pstrTypes, pszNew, ul);
             }
         }
         else

@@ -1827,7 +1827,9 @@ PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
  *
  *      --  The various wpclsQueryIconData overrides to
  *          change WPS default icons (folders, data files,
- *          desktops).
+ *          desktops). To support ICON_FILE, we have also
+ *          overridden XFldObject::wpclsSetIconData (see
+ *          remarks there).
  *
  *      --  The trash can to load the open and closed
  *          icons.

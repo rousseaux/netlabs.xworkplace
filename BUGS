@@ -13,12 +13,19 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
+### release
+    rewrite icon replacements in INF
 
---  pronews.exe not handled correctly in program object
+override all wpQuery/SetIconData too
 
---  TMF file ends with strange char
+MINOR PROBLEMS
+--------------
 
---  install: subdir plugins\drvdlgs not created?!
+--  turbo folders:
+    --  VIO executable icons keep disappearing when templates folder
+        was opened
+
+    --  pronews.exe not handled correctly in program object
 
 --  XCenter:
     --  double-click on tray empty space produces click on icon too
@@ -26,76 +33,6 @@ Ulrich M”ller.
     --  if tray is on top, icons are moved down (xwpbug.jpg)
     --  dragging XCenter widget text files can hang WPS (check file types?)
 
---  rc.exe fails on recreating icons.dll
-
---  startup:
-    --  boot logo remains on screen forever (check startup sequence for whether
-        this might be lost somwhere)
-
---  drive not ready:
-    reports garbage with TVFS drives
-
---  Font folder:
-    b8) Fontfolder: Deinstalling OS2\DLL\COURIERI.FON, HELVI.FON,
-    TIMESI.FON (file not found errors), fails with error 30024.
-    b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
-    (i.e. non-sized)
-
---  folder content functions ignore INCLUDe settings
-
---  setup strings for WPShadow: SHADOWID (?) not reported
-
---  ext assocs:
-    >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object
-    associated with ZIP files, that has this string as parameter:
-    "O:\TMP %*"
-    to specify where to unpack and Zip file name. Using extended file type association,
-    the script fails to open Zip files stored in folders containing spaces in their
-    name. Maybe this problem is common to all objects that use "%*" as parameter...
-
-
-MINOR PROBLEMS
---------------
-
-all windows filters (pagemage etc.):
-        -- allow wildcards
-
-sort:
-    --  sort by type doesn't sort files with same (or no) type
-
-install:
-    --  if lockup on start is enabled, first xwp msg box hangs the system
-        after install.
-
-trash can:
-    --  When deleting a folder wich has an other folder inside wich has the
-        attribut "read only", destroying of this folder in trashcan will fail,
-        some beeps are played and a message appears
-        "object xxx cant be deleted - either it is use or write protected"
-
-documentation:
-    -- some subsections in the TOC of the user guide are currently
-       sorted wrong. This will be fixed in a future release, didn't
-       have time now.
-
-trash can:
-    -- When I activate "Replace true delete" (I don't use the TrashCan), I get the
-       new XWP dialog when I delete objects via popup menus, but the regular OS/2
-       one if I just press the "del" key. Of course I get it all the time if
-       "replace true delete" is not active <g>.
-
-    -- When you delete an object, it probably retains its object ID, because
-       if a program tries to UPDATE the object that has been deleted, it
-       effectively updates the object in the TrashCan, while it should
-       create a new one.
-
-       --> not easy to fix at this point, but will be fixed once the file
-           handles engine has been reworked.
-
-prog start:
-    --  cmd files not started minimized?
-
-XCenter:
     --  "show frame" setting on a per-widget basis
 
     --  winlist widget behavior: make buttons wider (configurable)
@@ -133,6 +70,68 @@ XCenter:
         that would be for a maximized window, should be 0
         and 0 ?)
 
+--  TMF file ends with strange char
+
+--  install: subdir plugins\drvdlgs not created?!
+
+--  startup:
+    --  boot logo remains on screen forever (check startup sequence for whether
+        this might be lost somwhere)
+
+--  drive not ready:
+    reports garbage with TVFS drives
+
+--  Font folder:
+    b8) Fontfolder: Deinstalling OS2\DLL\COURIERI.FON, HELVI.FON,
+    TIMESI.FON (file not found errors), fails with error 30024.
+    b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
+    (i.e. non-sized)
+
+--  setup strings for WPShadow: SHADOWID (?) not reported
+
+--  ext assocs:
+    >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object
+    associated with ZIP files, that has this string as parameter:
+    "O:\TMP %*"
+    to specify where to unpack and Zip file name. Using extended file type association,
+    the script fails to open Zip files stored in folders containing spaces in their
+    name. Maybe this problem is common to all objects that use "%*" as parameter...
+
+sort:
+    --  sort by type doesn't sort files with same (or no) type
+
+install:
+    --  if lockup on start is enabled, first xwp msg box hangs the system
+        after install.
+
+trash can:
+    --  When deleting a folder wich has an other folder inside wich has the
+        attribut "read only", destroying of this folder in trashcan will fail,
+        some beeps are played and a message appears
+        "object xxx cant be deleted - either it is use or write protected"
+
+documentation:
+    -- some subsections in the TOC of the user guide are currently
+       sorted wrong. This will be fixed in a future release, didn't
+       have time now.
+
+trash can:
+    -- When I activate "Replace true delete" (I don't use the TrashCan), I get the
+       new XWP dialog when I delete objects via popup menus, but the regular OS/2
+       one if I just press the "del" key. Of course I get it all the time if
+       "replace true delete" is not active <g>.
+
+    -- When you delete an object, it probably retains its object ID, because
+       if a program tries to UPDATE the object that has been deleted, it
+       effectively updates the object in the TrashCan, while it should
+       create a new one.
+
+       --> not easy to fix at this point, but will be fixed once the file
+           handles engine has been reworked.
+
+prog start:
+    --  cmd files not started minimized?
+
 --  In the "keyboard" object, looking at the "hotkeys" page I see an object
     associated with "LeftWin" key. This is one of 3 key mappings I defined
     to use the new "Windows" keys on my keyboard. The (little) problem is
@@ -151,17 +150,6 @@ folders:
 
     --  dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
-
-file exists dlg:
-    --  Right click on a file object (program object does not cause this bug)
-        select copy.
-        >-enter new name(different one), leave it to default folder which should be
-        >the one where the file was selected
-        >and voila pop-up appears telling user that there is a name conflict, but the
-        >new name is not in that folder!
-    --  When i try to copy an existing object in an folder e.g. 123.bmp and
-        give it a new name e.g. 456.bmp and press the "copy" button next
-        then, the file exists dialog appears telling me that file 123.bmp already exists.
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of

@@ -99,7 +99,7 @@ interface XFldObject : WPObject
      *
      */
 
-    BOOL xwpNukePhysical();
+    BOOL xwpDestroyStorage();
 
     //# ULONG xwpAddObjectInternalsPage(in HWND hwndNotebook);
 
@@ -147,7 +147,7 @@ interface XFldObject : WPObject
                   xwpRemoveDestroyNotify,
                   xwpSetNextObj,
                   xwpQueryNextObj,
-                  xwpNukePhysical,
+                  xwpDestroyStorage,
                   xwpQueryRealDefaultView,
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID;
@@ -296,6 +296,9 @@ interface M_XFldObject : M_WPObject
     wpclsInitData: override;
 
     wpclsQuerySettingsPageSize: override;
+
+    wpclsSetIconData: override;
+
   };
 #endif /* __SOMIDL__ */
 };

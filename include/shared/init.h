@@ -28,8 +28,10 @@
      *
      ********************************************************************/
 
+    VOID initMain(VOID);
+
     BOOL initRepairDesktopIfBroken(VOID);
 
-    VOID initMain(VOID);
+    VOID initDesktopPopulated(VOID);
 
 #endif

@@ -1028,7 +1028,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
     // _Pmpf((__FUNCTION__ ": FOLDERS_FIRST = %d", fFoldersFirst));
 
     if (lSort == SET_DEFAULT)
-        lSort =  cmnQuerySetting(slDefSortCrit);
+        lSort = cmnQuerySetting(slDefSortCrit);
 
     switch (lSort)
     {
@@ -1080,8 +1080,8 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                 // _Pmpf(("  returning compare class, NO folders first"));
                 return ((PFN)fnCompareExt);
             }
+
         default:
-        {
             // looks like caller wants a details column... well then.
             if (lSort >= 0)
             {
@@ -1168,7 +1168,8 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                     return ((PFN)fnCompareDetailsColumn);
                 }
             }
-        }
+
+        // end default
     }
 
     cmnLog(__FILE__, __LINE__, __FUNCTION__,

@@ -1301,7 +1301,7 @@
 #define ID_SDD_CONFIRM                  4202
 #define ID_SDD_CAD                      4203
 #define ID_SDD_CLOSEVIO                 4204
-#define ID_SDD_CONFIRMWPS               4205
+// #define ID_SDD_CONFIRMWPS               4205     // removed V0.9.16 (2002-01-13) [umoeller]
 #define ID_SDD_BOOTMGR                  4206
 
 /* dlg items */
@@ -1324,6 +1324,7 @@
 #define ID_SDDI_REBOOTTO                4318
 #define ID_SDDI_EMPTYTRASHCAN           4319
 #define ID_SDDI_CONFIRM_TEXT            4320  // V0.9.5 (2000-08-10) [umoeller]
+#define ID_SDDI_CONFIRMWPS_TITLE        4205        // V0.9.16 (2002-01-13) [umoeller]
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400

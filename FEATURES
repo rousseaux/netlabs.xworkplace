@@ -19,6 +19,11 @@ is, that the name of the key is language dependent.
 
 --  "Create program object" menu item
 
+all windows filters (pagemage etc.):
+        -- allow wildcards
+
+prog objects: NLS settings, codepages
+
 XCenter:
     -- X button: give it any icon
     -- XCenter run command: history log

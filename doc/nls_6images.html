@@ -7,44 +7,25 @@ Images and Screenshots
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
 
-<P>
+The images in both the INF and HELP directory are in GIF format.
+Unfortunately, HTML does not support the OS/2 BMP format, and <CODE>ipfc</CODE>
+does not support GIF.
 
+<P>So the makefiles in INF and HELP automatically convert all GIF images to
+BMP format, if required. This requires <CODE>gbmsize.exe</CODE> to be on your PATH
+(see <A HREF="nls_2requires.html">"Requirements"</A>)
 
-<P>
-The images in both the INF and HELP directory are always available
-in both GIF and uncompressed OS/2 1.3 BMP format. The reason for
-this is that HTML does not support BMP, and IPF does not support
-GIF. <CODE>:-(</CODE>
-<P>HTML2IPF is very comfortable in this respect: it will
-automatically convert all GIF images to BMP format every time it
-finds an &lt;IMG&gt; tag, but only if no BMP file of the same filestem
-was found (see <CODE>HTML2IPF.INF</CODE> for details).
-<P>
-The image conversion program which HTML2IPF requires is specified
-in line 20 of <CODE>HTML2IPF.CMD</CODE>. The original had Image Alchemy in here,
-I have changed it to &quot;GBMSIZE&quot;, which is part of the freeware
-&quot;Generalized Bitmap Module&quot; (GBM) package available at Hobbes.
+<P>If you do not want to use <CODE>gbmsize</CODE>, you can convert all the
+GIFs to BMPs manually, e.g. using PMView.
+Be careful though: <B>IPFC only supports uncompressed OS/2 1.3 bitmaps.</B>
+That is, neither compressed bitmaps nor Windows or OS/2 2.0 bitmaps work.
+This is annoying, because IPFC's own image compression is totally outdated,
+but there's nothing we can do about this.
 
-<UL><LI>
-If you don't have GBMSIZE on your PATH, you can add the path to
-this line.
+<P>I'd be very grateful if you could create your own screenshots
+for the online documentation to reflect your language.
 
-<P><LI>If you wish to use a different converter, specify it here. Be
-careful though: <B>IPFC only supports uncompressed OS/2 1.3 bitmaps</B>
-(see <CODE>HTML2IPF.INF</CODE>). That is, neither compressed bitmaps nor
-Windows or OS/2 2.0 bitmaps work. This is annoying, because
-IPFC's own image compression is totally outdated, but there's nothing we
-can do about this.
-
-</UL>
-I'd be very grateful if you could create your own screenshots
-for the online documentation, because I own German versions of OS/2
-and for your NLS package, screenshots of your language are
-preferrable, at least for those pictures which have language-dependent
-stuff in them.
-<P>
-
-I have used the following settings for the screenshots (just for your
+<P>I have used the following settings for the screenshots (just for your
 information, you don't have to use these):
 
 <PRE>

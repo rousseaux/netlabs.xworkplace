@@ -930,7 +930,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     }
 
     // always ignore window list
-    if (hwnd2Activate == G_pHookData->hwndWindowList)
+    if (hwnd2Activate == G_pHookData->hwndSwitchList)
         return;
 
     if (WinQueryWindowULong(hwnd2Activate, QWL_STYLE) & WS_DISABLED)
@@ -940,7 +940,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     hwndCurrentlyActive = WinQueryActiveWindow(HWND_DESKTOP);
 
     // and stop if currently active window is the window list too
-    if (hwndCurrentlyActive == G_pHookData->hwndWindowList)
+    if (hwndCurrentlyActive == G_pHookData->hwndSwitchList)
         return;
 
     // handle seamless Win-OS/2 windows: those have a frame
@@ -1841,7 +1841,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // get mouse coordinates (absolute coordinates)
                 WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
                 // get position of window list window
-                WinQueryWindowPos(G_pHookData->hwndWindowList,
+                WinQueryWindowPos(G_pHookData->hwndSwitchList,
                                   &WinListPos);
                 // calculate window list position (mouse pointer is center)
                 WinListX = ptlMouse.x - (WinListPos.cx / 2);
@@ -1855,12 +1855,13 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 if (WinListY + WinListPos.cy > G_pHookData->lCYScreen)
                     WinListY = G_pHookData->lCYScreen - WinListPos.cy;
                 // set window list window to calculated position
-                WinSetWindowPos(G_pHookData->hwndWindowList, HWND_TOP,
+                WinSetWindowPos(G_pHookData->hwndSwitchList,
+                                HWND_TOP,
                                 WinListX, WinListY, 0, 0,
                                 SWP_MOVE | SWP_SHOW | SWP_ZORDER);
                 // now make it the active window
                 WinSetActiveWindow(HWND_DESKTOP,
-                                   G_pHookData->hwndWindowList);
+                                   G_pHookData->hwndSwitchList);
             break; }
 
             /*
@@ -2391,7 +2392,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *      for any process termination exception. main()
  *      will then deregister the hook and do other
  *      cleanup in the proper order. It looks like this
- *      fixes the PM cleanup problem.
+ *      fixes the PM cleanup problem, or at least gives
+ *      us a few more restarts.
  *
  *      This replaces the exit list that was present
  *      previously.

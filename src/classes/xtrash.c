@@ -306,7 +306,6 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
 #ifndef __ALWAYSREPLACEICONPAGE__
     else
     {
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
         pcnbp->ulDlgID = ID_XTD_ICONPAGE;
         pcnbp->ulPageID = SP_TRASHCAN_ICON;
         pcnbp->usPageStyleFlags = BKA_MAJOR;

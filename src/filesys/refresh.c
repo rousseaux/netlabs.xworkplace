@@ -1,8 +1,8 @@
 
 /*
  *@@sourcefile refresh.c:
- *      new code for folder auto-refresh support, if the
- *      XWP replacement is enabled.
+ *      code for the folder auto-refresh replacement, if
+ *      the replacement is enabled.
  *
  *      If the user has replaced folder auto-refresh in
  *      XWPSetup, on Desktop startup, krnReplaceWheelWatcher
@@ -15,8 +15,8 @@
  *      a Desktop restart, because we can only stop that thread
  *      if it has not done any processing yet.
  *
- *      Instead, the following three (!) threads are responsible
- *      for processing folder auto-refresh:
+ *      Instead, with XWP, the following three (!) threads are
+ *      responsible for processing folder auto-refresh:
  *
  *      1)  The "Sentinel" thread (refr_fntSentinel). This is
  *          our replacement for the WPS wheel watcher.

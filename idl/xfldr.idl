@@ -175,7 +175,7 @@ interface XFolder : WPFolder
      *
      */
 
-    BOOL xwpNukePhysical();
+    BOOL xwpDestroyStorage();
 
     BOOL xwpQueryFldrSort(in PLONG plDefaultSort,
                           in PLONG plFoldersFirst,
@@ -250,7 +250,7 @@ interface XFolder : WPFolder
         xwpQueryDefaultDocument,
         xwpSetDisableCnrAdd,
         xwpProcessObjectCommand,
-        xwpNukePhysical;
+        xwpDestroyStorage;
 
     /*
      * Class Modifiers:

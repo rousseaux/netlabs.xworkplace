@@ -114,7 +114,6 @@ interface XWPString : WPAbstract
     wpSaveState: override;
     wpRestoreState: override;
 
-    wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
 
     wpMenuItemSelected: override;

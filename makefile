@@ -120,9 +120,7 @@ DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize in inference
-# rules.
-
+# defining file extensions that NMAKE will recognize.
 .SUFFIXES: .obj .dll .exe .h .rc .res
 
 # The LIBS macro contains all the .LIB files, either from the compiler or
@@ -249,8 +247,8 @@ nls:
     @cd misc
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\xwphelp
-    @cd xwphelp
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\xwphelp2
+    @cd xwphelp2
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
@@ -678,7 +676,7 @@ release: really_all
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
 !else
-    $(COPY) _private\eWorkplace.txt $(XWPRELEASE_MAIN)
+    $(COPY) _private\status.txt $(XWPRELEASE_MAIN)
 !endif
 #
 # 2) bin
@@ -745,13 +743,17 @@ release: really_all
 !endif
 #    $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWPRUNNING)\help\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+!ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+!endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
+!ifndef XWPLITE
 # 5) icons
 !if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
 !endif
     $(COPY) release\icons\* $(XWPRELEASE_MAIN)\icons
+!endif
 # 6) install
 !if [@md $(XWPRELEASE_MAIN)\install 2> NUL]
 !endif
@@ -764,13 +766,13 @@ release: really_all
     $(COPY) release\install\freshini_lite.cmd $(XWPRELEASE_MAIN)\install\freshini.cmd
 !else
     $(COPY) release\install\freshini.cmd $(XWPRELEASE_MAIN)\install
-!endif
     $(COPY) release\install\od.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\soundoff.cmd $(XWPRELEASE_MAIN)\install
 #   $(COPY) release\install\test.cmd $(XWPRELEASE_MAIN)\install
-    $(COPY) release\install\xfolder.ico $(XWPRELEASE_MAIN)\install
+#    $(COPY) release\install\xfolder.ico $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\xwp.ico $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\xwp_o.ico $(XWPRELEASE_MAIN)\install
+!endif
 #    $(COPY) release\install\xwpusers.xml $(XWPRELEASE_MAIN)\install
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\crobj001.cmd $(XWPRELEASE_NLS)\install\crobj001.cmd
@@ -782,8 +784,8 @@ release: really_all
 !else
     $(COPY) $(XWP_LANG_CODE)\misc\instl001_lite.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
 !endif
-    $(COPY) $(XWP_LANG_CODE)\misc\sound001.cmd $(XWPRELEASE_NLS)\install
 !ifndef XWPLITE
+    $(COPY) $(XWP_LANG_CODE)\misc\sound001.cmd $(XWPRELEASE_NLS)\install
     $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
 !endif
 # 7) wav
@@ -796,7 +798,9 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAIN)\plugins\xcenter 2> NUL]
 !endif
+!ifndef XWPLITE
 !if [@md $(XWPRELEASE_MAIN)\plugins\drvdlgs 2> NUL]
+!endif
 !endif
 !ifndef XWPLITE
 !if [@md $(XWPRELEASE_HEALTH)\plugins 2> NUL]
@@ -812,9 +816,9 @@ release: really_all
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\d_cdfs.dll $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\d_cdfs.sym $(XWPRELEASE_MAIN)\plugins\drvdlgs
-!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
 !endif
@@ -823,11 +827,15 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAIN)\toolkit\shared 2> NUL]
 !endif
+!ifndef XWPLITE
 !if [@md $(XWPRELEASE_MAIN)\toolkit\config 2> NUL]
+!endif
 !endif
     $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
     $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
+!ifndef XWPLITE
     $(COPY) include\config\drivdlgs.h $(XWPRELEASE_MAIN)\toolkit\config
+!endif
     @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 # now go shrink executables V0.9.13 (2001-06-17) [umoeller]
 !ifndef XWP_DEBUG

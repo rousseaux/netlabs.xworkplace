@@ -16,14 +16,36 @@
 #       macros, which will all be properly set for debug or non-debug mode
 #       and with the include directories set properly:
 #
-#       $(CC_DLL_MT)    compile DLL code (multi-threaded)
-#       $(CC_EXE_MT)    compile EXE code (multi-threaded)
-#       $(CC_EXE_ST)    compile EXE code (single-threaded)
-#       $(CC_WIDGET_DLL) compile widget DLL (single-threaded)
+#           $(CC_DLL_MT)    compile DLL code (multi-threaded)
+#           $(CC_DLL_SUBSYS compile DLL code (single-threaded, subsystem libraries)
+#           $(CC_EXE_MT)    compile EXE code (multi-threaded)
+#           $(CC_EXE_ST)    compile EXE code (single-threaded)
 #
-#       $(LINK)      call linker (ILINK.EXE per default)
+#           $(LINK)      call linker (ILINK.EXE per default)
 #
-#       $(RC)        call resource compiler
+#           $(RC)        call resource compiler
+#
+#       In addition, the following variables will be set to
+#       values that will be useful for the makefiles:
+#
+#           $(PROJECT_BASE_DIR)     root directory of the local
+#                                   XWorkplace repository, e.g.
+#                                   "K:\cvs\xworkplace"
+#
+#           $(HELPERS_BASE)         root directory of the local
+#                                   xwphelpers repository, e.g.
+#                                   "K:\cvs\xwphelpers"
+#
+#           $(XWP_OUTPUT_ROOT)      directory where to place output
+#                                   files in, e.g.
+#                                   "K:\cvs\xworkplace\bin"
+#
+#           $(MODULESDIR)           modules subdirectory of the above, e.g.
+#                                   "K:\cvs\xworkplace\bin\modules"
+#
+#           $(XWP_LANG_CODE)        language code that is being built, e.g.
+#                                   "001"
+#
 
 !include config.in
 
@@ -53,16 +75,16 @@ HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 # MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
 # PROJECT_OUTPUT_DIR has been set by setup.in based on the environment.
 MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
-!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
-!endif
+#!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
+#!endif
 
-!ifdef XWP_DEBUG
-!if [@echo ---^> Debug build has been enabled.]
-!endif
-!else
-!if [@echo ---^> Building release code (debugging disabled).]
-!endif
-!endif
+#!ifdef XWP_DEBUG
+#!if [@echo ---^> Debug build has been enabled.]
+#!endif
+#!else
+#!if [@echo ---^> Building release code (debugging disabled).]
+#!endif
+#!endif
 
 # create output directory
 !if [@md $(PROJECT_OUTPUT_DIR) 2> NUL]
@@ -397,8 +419,8 @@ LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers $(LIBDI
 LINK =  $(LINK_BASE) /debug
 LINK_ALWAYSPACK = $(LINK_BASE) /exepack:2
 !else
-LINK =  $(LINK_BASE) /exepack:2
-LINK_ALWAYSPACK = $(LINK)
+LINK =  $(LINK_BASE) /optfunc /exepack:2
+LINK_ALWAYSPACK = $(LINK) /optfunc
 #/packcode /packdata
 # /optfunc
 !endif

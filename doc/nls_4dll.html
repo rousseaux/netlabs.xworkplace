@@ -25,10 +25,17 @@ contains all the XWorkplace dialogs (i.e. notebook pages and other dialog window
 Sorry, there are no comments in there because I'm using <CODE>DLGEDIT.EXE</CODE>
 to create the dialogs, which rewrites the DLG file at every change, so all comments
 in there get lost.
+
+<P><B>Note:</B> Because of this stupid limitation, I am currently trying to get
+rid of all the dialog resources and eventually the <CODE>.DLG</CODE> file altogether.
+Starting with V0.9.16, more and more dialog resources are converted so that XWorkplace
+only loads the strings for the dialog elements from the string tables in the
+<CODE>.RC</CODE> file any more and creates the dialog dynamically at run time. This
+also saves you from realigning the controls if you don't have enough space.
 </UL>
 
-<B>Using a dialog editor.</B>
-You can use <CODE>DLGEDIT.EXE</CODE>, the IBM dialog editor from the Developer's Toolkit,
+For the remaining dialogs,
+you can use <CODE>DLGEDIT.EXE</CODE>, the IBM dialog editor from the Developer's Toolkit,
 to change the dialogs. (This will not affect the <CODE>.RC</CODE> file.) For this,
 you will need to create the <CODE>.RES</CODE> file first. This is done by
 <CODE>MAKE.CMD</CODE>; alternatively, you can start <CODE>RC.EXE</CODE> with the "-r" option,
@@ -38,16 +45,16 @@ executable.
 <P>If you then open the <CODE>.RES</CODE> file with the dialog editor, you can
 choose <CODE>src/main/dlgids.h</CODE> as an include file so that all the numerical ID's
 have a more meaningful name.
-<P>
-When you then save the file, the <CODE>.RES</CODE> and <CODE>.DLG</CODE> files will be
+
+<P>When you then save the file, the <CODE>.RES</CODE> and <CODE>.DLG</CODE> files will be
 recreated by DLGEDIT.
 The <CODE>.RC</CODE> file remains untouched though.
-<P>
-The dialog editor has a helpful &quot;Translate mode&quot; in its &quot;Options&quot; menu
-which disables a lot of menu items so you don't accidentally change dlg ID's
+
+<P>The dialog editor has a helpful &quot;Translate mode&quot; in its &quot;Options&quot;
+menu which disables a lot of menu items so you don't accidentally change dlg ID's
 or other important stuff.
-<P>
-I don't know if you can use the URE editor also, I have not tried that.
+
+<P>I don't know if you can use the URE editor also, I have not tried that.
 <BR>
 </BODY>
 </HTML>
