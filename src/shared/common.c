@@ -60,7 +60,6 @@
 #define INCL_DOSNLS
 #define INCL_DOSERRORS
 
-#define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINMESSAGEMGR
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR        // SC_CLOSE etc.
@@ -77,6 +76,7 @@
 #define INCL_WINCOUNTRY
 #define INCL_WINPROGRAMLIST
 #define INCL_WINSYS
+#define INCL_WINSHELLDATA       // Prf* functions
 
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIBITMAPS
@@ -3320,11 +3320,20 @@ STATIC VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
 
 VOID cmnLoadGlobalSettings(VOID)
 {
-    ULONG cb, ul2;
+    ULONG       cb,
+                ul2;
     POLDGLOBALSETTINGS pSettings;
 
     #ifdef __DEBUG__
+        // in debug mode, load debug flags, if we have any
+        // V0.9.21 (2002-09-02) [umoeller]
         memset(G_aDebugs, 0, sizeof(G_aDebugs));
+        cb = sizeof(G_aDebugs);
+        PrfQueryProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_DEBUGFLAGS,
+                            G_aDebugs,
+                            &cb);
     #endif
 
     // first set all settings to safe defaults

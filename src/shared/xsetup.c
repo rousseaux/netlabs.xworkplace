@@ -54,6 +54,7 @@
 #define INCL_WINSTDSLIDER
 #define INCL_WINSTDSPIN
 #define INCL_WINSYS
+#define INCL_WINSHELLDATA       // Prf* functions
 
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIBITMAPS
@@ -1752,6 +1753,12 @@ STATIC const XWPSETTING G_FeaturesBackup[] =
         sfNewFileDlg,
 #endif
         ___LAST_SETTING             // dummy
+    };
+
+STATIC MPARAM G_ampFeaturesPage[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XCDI_CONTAINER, XAC_SIZEX | XAC_SIZEY)
     };
 
 /*
@@ -3814,5 +3821,301 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
     return ((MPARAM)-1);
 }
 
+/* ******************************************************************
+ *
+ *   XWPSetup "Debug" page
+ *
+ ********************************************************************/
+
+#ifdef __DEBUG__
+
+STATIC const struct
+    {
+        DEBUGGINGFLAGS  i;
+        PCSZ            pcsz;
+    } G_aDebugDescrs[] =
+    {
+        #define DEBUGSETTING(s) s, # s
+
+        DEBUGSETTING(DBGSET_LANGCODES),
+        DEBUGSETTING(DBGSET_NOTEBOOKS),
+        DEBUGSETTING(DBGSET_RESTOREDATA),
+        DEBUGSETTING(DBGSET_ICONREPLACEMENTS),
+        DEBUGSETTING(DBGSET_STARTUP),
+        DEBUGSETTING(DBGSET_SHUTDOWN),
+        DEBUGSETTING(DBGSET_ORDEREDLIST),
+        DEBUGSETTING(DBGSET_CNRCONTENT),
+        DEBUGSETTING(DBGSET_STATUSBARS),
+        DEBUGSETTING(DBGSET_SORT),
+        DEBUGSETTING(DBGSET_KEYS),
+        DEBUGSETTING(DBGSET_MENUS),
+        DEBUGSETTING(DBGSET_TURBOFOLDERS),
+        DEBUGSETTING(DBGSET_CNRBITMAPS),
+        DEBUGSETTING(DBGSET_POPULATESPLITVIEW),
+        DEBUGSETTING(DBGSET_DISK),
+        DEBUGSETTING(DBGSET_TITLECLASH),
+        DEBUGSETTING(DBGSET_ASSOCS),
+        DEBUGSETTING(DBGSET_FOPS),
+        DEBUGSETTING(DBGSET_TRASHCAN),
+        DEBUGSETTING(DBGSET_PROGRAMSTART),
+        DEBUGSETTING(DBGSET_WINDOWLIST),
+        DEBUGSETTING(DBGSET_SOUNDS),
+    };
+
+STATIC MPARAM G_ampDebugPage[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_GROUPTITLE, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY)
+    };
+
+/*
+ *@@ setDebugInitPage:
+ *
+ *@@added V0.9.21 (2002-09-02) [umoeller]
+ */
+
+VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                      ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    HWND hwndFeaturesCnr = WinWindowFromID(pnbp->hwndDlgPage,
+                                           ID_XFDI_CNR_CNR);
+
+    if (flFlags & CBI_INIT)
+    {
+        PCHECKBOXRECORDCORE preccThis,
+                            pFeatureRecordsList;
+        ULONG               ul,
+                            cRecords;
+
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = malloc(sizeof(G_aDebugs));        // setup.h
+
+        if (!ctlMakeCheckboxContainer(pnbp->hwndDlgPage,
+                                      ID_XFDI_CNR_CNR))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "ctlMakeCheckboxContainer failed.");
+        else
+        {
+            cRecords = ARRAYITEMCOUNT(G_aDebugDescrs);
+
+            pFeatureRecordsList
+                = (PCHECKBOXRECORDCORE)cnrhAllocRecords(hwndFeaturesCnr,
+                                                        sizeof(CHECKBOXRECORDCORE),
+                                                        cRecords);
+            // insert feature records:
+            // start for-each-record loop
+            preccThis = pFeatureRecordsList;
+            ul = 0;
+            while (preccThis)
+            {
+                ULONG i = G_aDebugDescrs[ul].i;
+
+                // copy FEATURESITEM to record core
+                preccThis->ulStyle = WS_VISIBLE | BS_AUTOCHECKBOX;
+                _PmpfF(("inserting item i = %d (ul = %d)", i, ul));
+                preccThis->ulItemID = 1000 + i;
+                preccThis->usCheckState = G_aDebugs[i];
+                preccThis->recc.pszTree = strdup(G_aDebugDescrs[ul].pcsz);
+
+                cnrhInsertRecords(hwndFeaturesCnr,
+                                  NULL,
+                                  (PRECORDCORE)preccThis,
+                                  TRUE, // invalidate
+                                  NULL,
+                                  CRA_RECORDREADONLY,
+                                  1);
+
+                // next record
+                preccThis = (PCHECKBOXRECORDCORE)preccThis->recc.preccNextRecord;
+                ++ul;
+            }
+        } // end if (ctlMakeCheckboxContainer(inbp.hwndPage,
+    }
+
+}
+
+/*
+ *@@ setDebugItemChanged:
+ *
+ *@@added V0.9.21 (2002-09-02) [umoeller]
+ */
+
+MRESULT setDebugItemChanged(PNOTEBOOKPAGE pnbp,
+                            ULONG ulItemID,
+                            USHORT usNotifyCode,
+                            ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = 0;
+
+    if (    (ulItemID == ID_XFDI_CNR_CNR)
+         && (usNotifyCode == CN_RECORDCHECKED)
+       )
+    {
+        PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)ulExtra;
+        ULONG   ul;
+
+        _PmpfF(("ulitemID is %d", precc->ulItemID));
+
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(G_aDebugDescrs);
+             ++ul)
+        {
+            ULONG i = G_aDebugDescrs[ul].i;
+            if (precc->ulItemID - 1000 == i)
+            {
+                _PmpfF(("found item %d (%s)", i, G_aDebugDescrs[ul].pcsz));
+
+                G_aDebugs[i] = precc->usCheckState;     // 1 or 0
+
+                PrfWriteProfileData(HINI_USER,
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    (PSZ)INIKEY_DEBUGFLAGS,
+                                    G_aDebugs,
+                                    sizeof(G_aDebugs));
+                break;
+            }
+        }
+    }
+
+    return mrc;
+}
+
+#endif // __DEBUG__
+
+/* ******************************************************************
+ *
+ *   Pages manager
+ *
+ ********************************************************************/
+
+/*
+ *@@ setInsertNotebookPages:
+ *
+ *@@added V [umoeller]
+ */
+
+ULONG setInsertNotebookPages(XWPSetup *somSelf,
+                             HWND hwndDlg)
+{
+    INSERTNOTEBOOKPAGE  inbp;
+    HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
+
+#ifndef __XWPLITE__
+    // insert "Paranoia" page
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_PARANOIA);  // pszParanoia
+    inbp.ulDlgID = ID_XFD_EMPTYDLG, // ID_XCD_PARANOIA; V0.9.19 (2002-04-17) [umoeller]
+    // inbp.usFirstControlID = ID_XCDI_VARMENUOFFSET;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
+    inbp.ulPageID = SP_SETUP_PARANOIA;
+    inbp.pfncbInitPage    = setParanoiaInitPage;
+    inbp.pfncbItemChanged = setParanoiaItemChanged;
+    ntbInsertPage(&inbp);
+
+    // insert "objects" page
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_OBJECTS);  // pszObjects
+    inbp.ulDlgID = ID_XCD_OBJECTS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_OBJECTS;
+    inbp.ulPageID = SP_SETUP_OBJECTS;
+    inbp.pfncbInitPage    = setObjectsInitPage;
+    inbp.pfncbItemChanged = setObjectsItemChanged;
+    ntbInsertPage(&inbp);
+
+    // insert "Threads" page
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_THREADSPAGE);  // pszThreadsPage
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_THREADS;
+    inbp.ulPageID = SP_SETUP_THREADS;
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = setThreadsInitPage;
+    ntbInsertPage(&inbp);
+
+    // insert "XWorkplace Info" page
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_XWPSTATUS);  // pszXWPStatus
+    inbp.ulDlgID = ID_XCD_STATUS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_INFO;
+    inbp.ulPageID = SP_SETUP_INFO;
+    inbp.pfncbInitPage    = setStatusInitPage;
+    inbp.pfncbItemChanged = setStatusItemChanged;
+    // for this page, start a timer
+    inbp.ulTimer = 1000;
+    inbp.pfncbTimer       = setStatusTimer;
+    ntbInsertPage(&inbp);
+#endif
+
+    // insert "XWorkplace Features" page
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_FEATURES);  // pszFeatures
+    inbp.ulDlgID = ID_XCD_FEATURES;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
+    inbp.ulPageID = SP_SETUP_FEATURES;
+    inbp.pampControlFlags = G_ampFeaturesPage;
+    inbp.cControlFlags = sizeof(G_ampFeaturesPage) / sizeof(G_ampFeaturesPage[0]);
+    inbp.pfncbInitPage    = setFeaturesInitPage;
+    inbp.pfncbItemChanged = setFeaturesItemChanged;
+    inbp.pfncbMessage = setFeaturesMessages;
+#ifndef __XWPLITE__
+    ntbInsertPage(&inbp);
+
+    // insert logo page  V0.9.6 (2000-11-04) [umoeller]
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = "XWorkplace";
+    inbp.ulDlgID = ID_XCD_FIRST;
+    inbp.ulPageID = SP_SETUP_XWPLOGO;
+    inbp.pfncbInitPage    = setLogoInitPage;
+    inbp.pfncbMessage = setLogoMessages;
+#endif
+
+    #ifdef __DEBUG__
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = "Debug";
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
+        inbp.ulDefaultHelpPanel  = 0;
+        inbp.ulPageID = SP_SETUP_DEBUG;
+        inbp.pampControlFlags = G_ampDebugPage;
+        inbp.cControlFlags = ARRAYITEMCOUNT(G_ampDebugPage);
+        inbp.pfncbInitPage    = setDebugInitPage;
+        inbp.pfncbItemChanged = setDebugItemChanged;
+    #endif // __DEBUG__
+
+    return ntbInsertPage(&inbp);
+}
+
 #endif // __NOXWPSETUP__
+
 

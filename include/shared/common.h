@@ -125,6 +125,11 @@
 
     // DECLARE_CMN_STRING(INIKEY_DEFAULTTITLE, "DefaultTitle");       removed V0.9.0
     DECLARE_CMN_STRING(INIKEY_GLOBALSETTINGS, "GlobalSettings");
+
+    #ifdef __DEBUG__
+        DECLARE_CMN_STRING(INIKEY_DEBUGFLAGS, "DebugSettings");
+    #endif
+
     // DECLARE_CMN_STRING(INIKEY_XFOLDERPATH, "XFolderPath");        removed V0.81 (I think)
     DECLARE_CMN_STRING(INIKEY_ACCELERATORS, "Accelerators");
     DECLARE_CMN_STRING(INIKEY_LANGUAGECODE, "Language");
@@ -571,6 +576,9 @@
     #define SP_SETUP_OBJECTS        33      // new with V0.9.0
     #define SP_SETUP_XWPLOGO        34      // new with V0.9.6 (2000-11-04) [umoeller]
     #define SP_SETUP_THREADS        35      // new with V0.9.9 (2001-03-07) [umoeller]
+    #ifdef __DEBUG__
+        #define SP_SETUP_DEBUG      36      // new with V0.9.21 (2002-09-02) [umoeller]
+    #endif
 
     // 4) "Sort" pages both in folder notebooks and
     //    "Workplace Shell"

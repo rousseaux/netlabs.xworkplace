@@ -29,58 +29,19 @@
                                  BOOL fConfirm,
                                  BOOL fXWPObject);
 
-    /* ******************************************************************
-     *
-     *   XWPSetup "Status" page notebook callbacks (notebook.c)
-     *
-     ********************************************************************/
-
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY setLogoInitPage(PNOTEBOOKPAGE pnbp,
-                                      ULONG flFlags);
+        VOID setLogoInitPage(PNOTEBOOKPAGE pnbp,
+                             ULONG flFlags);
 
         BOOL setLogoMessages(PNOTEBOOKPAGE pnbp,
                              ULONG msg, MPARAM mp1, MPARAM mp2,
                              MRESULT *pmrc);
-
-        VOID XWPENTRY setThreadsInitPage(PNOTEBOOKPAGE pnbp,
-                                         ULONG flFlags);
-
-        VOID XWPENTRY setStatusInitPage(PNOTEBOOKPAGE pnbp,
-                                        ULONG flFlags);
-
-        MRESULT XWPENTRY setStatusItemChanged(PNOTEBOOKPAGE pnbp,
-                                     ULONG ulItemID, USHORT usNotifyCode,
-                                     ULONG ulExtra);
-
-        VOID setStatusTimer(PNOTEBOOKPAGE pnbp,
-                            ULONG ulTimer);
-
-        VOID XWPENTRY setFeaturesInitPage(PNOTEBOOKPAGE pnbp,
-                                          ULONG flFlags);
-
-        MRESULT XWPENTRY setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
-                                       ULONG ulItemID, USHORT usNotifyCode,
-                                       ULONG ulExtra);
-
-        BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
-                                 ULONG msg, MPARAM mp1, MPARAM mp2,
-                                 MRESULT *pmrc);
-
-        VOID XWPENTRY setObjectsInitPage(PNOTEBOOKPAGE pnbp,
-                                         ULONG flFlags);
-
-        MRESULT XWPENTRY setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
-                                      ULONG ulItemID, USHORT usNotifyCode,
-                                      ULONG ulExtra);
-
-        VOID XWPENTRY setParanoiaInitPage(PNOTEBOOKPAGE pnbp,
-                                          ULONG flFlags);
-
-        MRESULT XWPENTRY setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
-                                       ULONG ulItemID, USHORT usNotifyCode,
-                                       ULONG ulExtra);
-
     #endif
+
+    #ifdef SOM_XWPSetup_h
+        ULONG setInsertNotebookPages(XWPSetup *somSelf,
+                                     HWND hwndDlg);
+    #endif
+
 #endif
 

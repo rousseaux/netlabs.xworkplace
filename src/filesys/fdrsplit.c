@@ -567,7 +567,7 @@ VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
 #ifdef __DEBUG__
 VOID DumpFlags(ULONG fl)
 {
-    _Pmpf(("  fl %s %s %s",
+    PMPF_POPULATESPLITVIEW(("  fl %s %s %s",
                 (fl & FFL_FOLDERSONLY) ? "FFL_FOLDERSONLY " : "",
                 (fl & FFL_SCROLLTO) ? "FFL_SCROLLTO " : "",
                 (fl & FFL_EXPAND) ? "FFL_EXPAND " : ""));
