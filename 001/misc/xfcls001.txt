@@ -218,7 +218,7 @@ XFldDesktop 1 XWorkplace replaces the WPDesktop class with this class to impleme
 XFldDisk 1 XWorkplace replaces the WPDisk class with this class to implement the XFolder functionality for Disk objects also.
 XFldFileSystem 1 XWorkplace replaces the WPDataFile class with this class to implement additional functionality for status bars.
 XFldObject 1 XWorkplace replaces the WObject class with this class to implement additional functionality which XFolder needs for all objects. There cannot be any objects of this class directly, but only of the subclasses.
-XFldProgramFile 1 XWorkplace replaces the WPProgramFile class with this class, mainly to implement new default icons for executables.
+XWPProgramFile 1 XWorkplace replaces the WPProgramFile class with this class, mainly to implement new default icons for executables.
 XFldShutdown 1 An object of this class represents the XWorkplace Shutdown folder. There should only be one object of this class.
 XFldStartup 1 An object of this class represents the XWorkplace Startup folder. There should only be one object of this class.
 XFldSystem 1 The new XWorkplace system settings (object "OS/2 Kernel"). An object of this class has been placed in the "System setup" folder. There should only be one object of this class.

@@ -103,14 +103,15 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\object.h"             // XFldObject implementation
-#include "filesys\program.h"            // program implementation
 
 // other SOM headers
 #pragma hdrstop
 #include <wppgm.h>                      // WPProgram
 #include <wppgmf.h>                     // WPProgramFile
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 /* ******************************************************************
  *
@@ -132,7 +133,7 @@ static LINKLIST    G_llRunning;
  *@@ fsysQueryProgramSetup:
  *      called to retrieve a setup string for programs.
  *
- *      Both XWPProgram and XFldProgramFile call
+ *      Both XWPProgram and XWPProgramFile call
  *      fsysQueryProgramFileSetup, which calls this
  *      func in turn.
  *
@@ -242,13 +243,15 @@ BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
     } // end if _wpQueryProgDetails
 
     // ASSOCFILTER
-    if ((pszValue = _wpQueryAssociationFilter(somSelf)))
-            // wpQueryAssociationFilter:
-            // supported by both WPProgram and WPProgramFile
     {
-        xstrcat(pstrSetup, "ASSOCFILTER=", 0);
-        xstrcat(pstrSetup, pszValue, 0);
-        xstrcatc(pstrSetup, ';');
+        if ((pszValue = _wpQueryAssociationFilter(somSelf)))
+                // wpQueryAssociationFilter:
+                // supported by both WPProgram and WPProgramFile
+        {
+            xstrcat(pstrSetup, "ASSOCFILTER=", 0);
+            xstrcat(pstrSetup, pszValue, 0);
+            xstrcatc(pstrSetup, ';');
+        }
     }
 
     // ASSOCTYPE
@@ -300,23 +303,30 @@ ULONG progIsProgramOrProgramFile(WPObject *somSelf)
  *      Caller must free() the returned buffer.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: now properly resolving method
  */
 
 PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram or WPProgramFile
 {
     ULONG   ulSize = 0;
-    PPROGDETAILS    pProgDetails = 0;
+    PPROGDETAILS    pProgDetails = NULL;
+
     // make sure we really have a program
     if (progIsProgramOrProgramFile(pProgObject))
     {
-        if ((_wpQueryProgDetails(pProgObject, (PPROGDETAILS)NULL, &ulSize)))
-            if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
-            {
-                if ((_wpQueryProgDetails(pProgObject, pProgDetails, &ulSize)))
-                    return (pProgDetails);
+        if (    (_wpQueryProgDetails(pProgObject,
+                                     (PPROGDETAILS)NULL,        // query size
+                                     &ulSize))
+             && (pProgDetails = (PPROGDETAILS)malloc(ulSize))
+           )
+        {
+            if (_wpQueryProgDetails(pProgObject,
+                                    pProgDetails,
+                                    &ulSize))
+                return (pProgDetails);
 
-                free(pProgDetails);
-            }
+            free(pProgDetails);
+        }
     }
 
     return (NULL);

@@ -146,7 +146,7 @@
     #define ICONERR_BUILDPTR_FAILED             (ICONS_FIRST_CODE + 2)
     #define ICONERR_EXPANDPAGE1_TOOSMALL        (ICONS_FIRST_CODE + 3)
     #define ICONERR_EXPANDPAGE1_OUTOFBOUND      (ICONS_FIRST_CODE + 4)
-    #define ICONERR_BAD_COMPRESSED_PAGE         (ICONS_FIRST_CODE + 5)
+    #define ICONERR_EXPANDPAGE2_BADDATA         (ICONS_FIRST_CODE + 5)
 
     /********************************************************************
      *
@@ -343,7 +343,7 @@
     DECLARE_CMN_STRING(G_pcszXFldDisk, "XFldDisk");
     DECLARE_CMN_STRING(G_pcszXFldDesktop, "XFldDesktop");
     DECLARE_CMN_STRING(G_pcszXFldDataFile, "XFldDataFile");
-    DECLARE_CMN_STRING(G_pcszXFldProgramFile, "XFldProgramFile");
+    DECLARE_CMN_STRING(G_pcszXWPProgramFile, "XWPProgramFile");
     DECLARE_CMN_STRING(G_pcszXWPSound, "XWPSound");
     DECLARE_CMN_STRING(G_pcszXWPMouse, "XWPMouse");
     DECLARE_CMN_STRING(G_pcszXWPKeyboard, "XWPKeyboard");
@@ -1287,7 +1287,9 @@
 
     const char* XWPENTRY cmnQueryMessageFile(VOID);
 
+#ifndef __NOICONREPLACEMENTS__
     HMODULE XWPENTRY cmnQueryIconsDLL(VOID);
+#endif
 
 #ifndef __NOBOOTLOGO__
     PSZ XWPENTRY cmnQueryBootLogoFile(VOID);
@@ -1344,7 +1346,19 @@
      *
      ********************************************************************/
 
-    HPOINTER cmnLoadPointer(ULONG idResource);
+    #define STDICON_PM                  1
+    #define STDICON_WIN16               2
+    #define STDICON_WIN32               3
+    #define STDICON_OS2WIN              4
+    #define STDICON_OS2FULLSCREEN       5
+    #define STDICON_DOSWIN              6
+    #define STDICON_DOSFULLSCREEN       7
+    #define STDICON_DLL                 8
+    #define STDICON_DRIVER              9
+    #define STDICON_PROG_UNKNOWN        10
+    #define STDICON_DATAFILE            11
+
+    HPOINTER cmnGetStandardIcon(ULONG ulStdIcon);
 
     /********************************************************************
      *

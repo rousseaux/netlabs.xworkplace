@@ -92,13 +92,8 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\apps.h"               // application helpers
-#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
-#include "helpers\linklist.h"           // linked list helper routines
-#include "helpers\prfh.h"               // INI file helper routines
-#include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
@@ -107,7 +102,6 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfstart.ih"
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
@@ -121,23 +115,15 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
-#include "filesys\refresh.h"            // folder auto-refresh
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
-#include "media\media.h"                // XWorkplace multimedia support
-
-#include "security\xwpsecty.h"          // XWorkplace Security
-
-#include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // headers in /hook
 #include "hook\xwphook.h"
 
 // other SOM headers
-// #include <wpdesk.h>                     // WPDesktop
-
 #pragma hdrstop
 
 /* ******************************************************************

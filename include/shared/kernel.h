@@ -162,7 +162,7 @@
                                 fXFldDisk,
                                 fXFldDesktop,
                                 fXFldDataFile,
-                                fXFldProgramFile,
+                                fXWPProgramFile,
                                 fXWPSound,
                                 fXWPMouse,
                                 fXWPKeyboard,

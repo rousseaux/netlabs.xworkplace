@@ -563,7 +563,7 @@ static XWPCLASSITEM G_aClasses[] =
         &G_pcszXWPProgram, &G_pcszWPProgram,
             NULL, 0,
             1273,           // V0.9.16 (2001-11-25) [umoeller]
-        &G_pcszXFldProgramFile, &G_pcszWPProgramFile,
+        &G_pcszXWPProgramFile, &G_pcszWPProgramFile,
             NULL, 0,
             1256,
         &G_pcszXWPSound, &G_pcszWPSound,
@@ -1923,6 +1923,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                     fXFldDesktop = krnIsClassReady(G_pcszXFldDesktop),
                     fXFldDataFile = krnIsClassReady(G_pcszXFldDataFile),
                     fXFldDisk = krnIsClassReady(G_pcszXFldDisk),
+                    fXWPProgramFile = krnIsClassReady(G_pcszXWPProgramFile),
                     fXWPFileSystem = krnIsClassReady(G_pcszXWPFileSystem);
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
@@ -1946,7 +1947,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (fXFolder));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
-                (fXFolder) && (fXWPFileSystem));
+                (    fXFolder
+                  && fXWPFileSystem
+                  && fXWPProgramFile            // V0.9.16 (2001-12-08) [umoeller]
+                ));
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
@@ -2735,7 +2739,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pMsg += sprintf(pMsg, "pXFldDisk: 0x%lX\n", pKernelGlobals->pXFldDisk);
             pMsg += sprintf(pMsg, "pXFldDesktop: 0x%lX\n", pKernelGlobals->pXFldDesktop);
             pMsg += sprintf(pMsg, "pXFldDataFile: 0x%lX\n", pKernelGlobals->pXFldDataFile);
-            pMsg += sprintf(pMsg, "pXFldProgramFile: 0x%lX\n", pKernelGlobals->pXFldProgramFile);
+            pMsg += sprintf(pMsg, "pXWPProgramFile: 0x%lX\n", pKernelGlobals->pXWPProgramFile);
             pMsg += sprintf(pMsg, "pXWPSound: 0x%lX\n", pKernelGlobals->pXWPSound);
             pMsg += sprintf(pMsg, "pXWPMouse: 0x%lX\n", pKernelGlobals->pXWPMouse);
             pMsg += sprintf(pMsg, "pXWPKeyboard: 0x%lX\n", pKernelGlobals->pXWPKeyboard);

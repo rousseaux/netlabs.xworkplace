@@ -158,7 +158,9 @@ rc = UnReplaceClass("WPObject", "XFldObject");
 rc = UnReplaceClass("WPDataFile", "XFldDataFile");
 rc = UnReplaceClass("WPDisk", "XFldDisk");
 rc = UnReplaceClass("WPDesktop", "XFldDesktop");
+/* V0.9.16: unreplace XFldProgramFile, which is the old name of XWPProgramFile */
 rc = UnReplaceClass("WPProgramFile", "XFldProgramFile");
+rc = UnReplaceClass("WPProgramFile", "XWPProgramFile");
 rc = UnReplaceClass("WPSound", "XWPSound");
 rc = UnReplaceClass("WPMouse", "XWPMouse");
 rc = UnReplaceClass("WPKeyboard", "XWPKeyboard");
@@ -169,7 +171,9 @@ rc = DeRegisterClass("XFldObject");
 rc = DeRegisterClass("XFldDataFile");
 rc = DeRegisterClass("XFldDisk");
 rc = DeRegisterClass("XFldDesktop");
+/* V0.9.16: unreplace XFldProgramFile, which is the old name of XWPProgramFile */
 rc = DeRegisterClass("XFldProgramFile");
+rc = DeRegisterClass("XWPProgramFile");
 rc = DeRegisterClass("XWPSound");
 rc = DeRegisterClass("XWPString");
 rc = DeRegisterClass("XWPMouse");

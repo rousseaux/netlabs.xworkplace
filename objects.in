@@ -19,7 +19,7 @@ $(OUTPUTDIR)\xfont.obj \
 $(OUTPUTDIR)\xfontfile.obj \
 $(OUTPUTDIR)\xfontobj.obj \
 $(OUTPUTDIR)\xfobj.obj \
-$(OUTPUTDIR)\xfpgmf.obj \
+$(OUTPUTDIR)\xwppgmf.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\xfsys.obj \
 !endif

@@ -242,20 +242,14 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #include "config\hookintf.h"            // daemon/hook interface
 
 // other SOM headers
 #pragma hdrstop
-// #include <wpdesk.h>                     // WPDesktop; includes WPFolder also
-// #include <wppgm.h>                      // WPProgram
-// #include <wppgmf.h>                     // WPProgramFile
-// #include <wpshadow.h>                   // WPShadow
 #include <wptrans.h>                    // WPTransient
 #include <wpclsmgr.h>                   // WPClassMgr
-// #include "filesys\folder.h"             // XFolder implementation
-// #include "filesys\program.h"            // program implementation
 
 #include "helpers\undoc.h"              // some undocumented stuff
 

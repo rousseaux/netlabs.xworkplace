@@ -538,7 +538,7 @@
 #define ID_XSDI_DISK_AVAILABLE_BYTES    781
 #define ID_XSDI_DISK_CHART              782
 
-// "Module" page (XFldProgramFile, V0.9.0)
+// "Module" page (XWPProgramFile, V0.9.0)
 // all changed, we had duplicates, and new items added
 // V0.9.12 (2001-05-19) [umoeller]
 #define ID_XSD_PGMFILE_MODULE           790

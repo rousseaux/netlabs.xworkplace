@@ -185,9 +185,11 @@
 
     /* ******************************************************************
      *
-     *   XFldProgramFile notebook callbacks (notebook.c)
+     *   XWPProgramFile notebook callbacks (notebook.c)
      *
      ********************************************************************/
+
+    PCSZ fsysGetResourceTypeName(ULONG ulResourceType);
 
 #ifndef __NOMODULEPAGES__
         VOID XWPENTRY fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,

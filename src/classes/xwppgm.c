@@ -75,7 +75,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
-#include "xfdataf.ih"
+// #include "xfdataf.ih"
 #include "xwppgm.ih"
 
 // XWorkplace implementation headers
@@ -85,9 +85,8 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
-#include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 

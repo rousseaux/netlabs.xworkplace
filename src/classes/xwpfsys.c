@@ -374,9 +374,9 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpRefresh");
 
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnIsFeatureEnabled(TurboFolders))
     {
-        fsysRefresh(somSelf, pReserved);
+        return !fsysRefresh(somSelf, pReserved);
     }
 
     return (XWPFileSystem_parent_WPFileSystem_wpRefresh(somSelf,

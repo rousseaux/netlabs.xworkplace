@@ -4733,7 +4733,7 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
 /* ******************************************************************
  *
- *   Shared code for XFldDataFile, XFldProgramFile, XWPProgram
+ *   Shared code for XFldDataFile, XWPProgramFile, XWPProgram
  *   file-type notebook pages
  *
  ********************************************************************/
@@ -4760,7 +4760,7 @@ extern ULONG G_cDatafileTypesPage = ARRAYITEMCOUNT(G_ampDatafileTypesPage);
  *@@ INSTANCEFILETYPESPAGE:
  *      notebook page structure for all the
  *      instance file-type pages
- *      (XFldDataFile, XFldProgramFile, XWPProgram).
+ *      (XFldDataFile, XWPProgramFile, XWPProgram).
  *
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
@@ -5115,7 +5115,7 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 /* ******************************************************************
  *
- *   XWPProgram/XFldProgramFile notebook callbacks (notebook.c)
+ *   XWPProgram/XWPProgramFile notebook callbacks (notebook.c)
  *
  ********************************************************************/
 
@@ -5124,7 +5124,7 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      inserts the "Associations" page into the
  *      given notebook.
  *
- *      Shared code between XFldProgramFile and XWPProgram.
+ *      Shared code between XWPProgramFile and XWPProgram.
  *
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
@@ -5159,7 +5159,7 @@ ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgra
  *      file types and instance settings.
  *
  *      Note that this is shared between XWPProgram and
- *      XFldProgramFile.
+ *      XWPProgramFile.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
@@ -5206,7 +5206,7 @@ VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *      Reacts to changes of any of the dialog controls.
  *
  *      Note that this is shared between XWPProgram and
- *      XFldProgramFile.
+ *      XWPProgramFile.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */

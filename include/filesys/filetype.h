@@ -103,7 +103,7 @@
 
         /* ******************************************************************
          *
-         *   XWPProgram/XFldProgramFile notebook callbacks (notebook.c)
+         *   XWPProgram/XWPProgramFile notebook callbacks (notebook.c)
          *
          ********************************************************************/
 

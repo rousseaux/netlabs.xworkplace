@@ -56,7 +56,7 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xfont.h \
      $(OUTPUTDIR)\xfontfile.h \
      $(OUTPUTDIR)\xfontobj.h \
-     $(OUTPUTDIR)\xfpgmf.h \
+     $(OUTPUTDIR)\xwppgmf.h \
      $(OUTPUTDIR)\xfstart.h \
      $(OUTPUTDIR)\xfsys.h \
      $(OUTPUTDIR)\xfwps.h \
@@ -136,7 +136,7 @@ $(OUTPUTDIR)\xfontfile.h:        $(@B).idl
 
 $(OUTPUTDIR)\xfontobj.h:         $(@B).idl
 
-$(OUTPUTDIR)\xfpgmf.h:           $(@B).idl
+$(OUTPUTDIR)\xwppgmf.h:           $(@B).idl
 
 $(OUTPUTDIR)\xfstart.h:          $(@B).idl
 

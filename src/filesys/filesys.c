@@ -5,7 +5,7 @@
  *      This is mostly for code which is shared between folders
  *      and data files.
  *      So this code gets interfaced from XFolder, XFldDataFile,
- *      and XFldProgramFile.
+ *      and XWPProgramFile.
  *
  *      This file is ALL new with V0.9.0.
  *
@@ -83,7 +83,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
-#include "xfpgmf.ih"
+#include "xwppgmf.ih"
 #include "xwpfsys.ih"
 
 // XWorkplace implementation headers
@@ -95,7 +95,7 @@
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\icons.h"              // icons handling
-#include "filesys\program.h"            // program implementation
+// #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
@@ -557,7 +557,7 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
     APIRET arc;
 
     if (!(arc = DosAllocMem((PVOID*)pp,
-                            FINDBUFSIZE,
+                            FINDBUFSIZE, // 64K
                             OBJ_TILE | PAG_COMMIT | PAG_READ | PAG_WRITE)))
     {
         // set up the EAs list... sigh
@@ -579,7 +579,8 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
 
         // set up FEA2LIST output buffer: right after the leading EAOP2
         peaop2->fpFEA2List          = (PFEA2LIST)(peaop2 + 1);
-        peaop2->fpFEA2List->cbList  = FINDBUFSIZE - sizeof(EAOP2);
+        peaop2->fpFEA2List->cbList  =    FINDBUFSIZE   // 64K
+                                       - sizeof(EAOP2);
         peaop2->oError              = 0;
     }
 
@@ -633,6 +634,9 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
     } FEA2;
     */
 
+    if (!pFEA2List2)
+        return (NULL);
+
     if (    (pFEA2List2->cbList > sizeof(ULONG))
                     // FAT32 and CDFS return 4 for anything here, so
                     // we better not mess with anything else; I assume
@@ -648,8 +652,15 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
         ULONG ulOfsThis = sizeof(ULONG),
               ul = 0;
 
-        do
+        while (ulOfsThis < pFEA2List2->cbList)
         {
+            /*
+            _Pmpf(("   " __FUNCTION__ ": checking EA %d [byte %d/%d]",
+                    ul,
+                    ulOfsThis, pFEA2List2->cbList));
+            _Pmpf(("        name: \"%s\" (%d bytes)", pThis->szName, pThis->cbName));
+            */
+
             if (    (ulEANameLen == pThis->cbName)
                  && (!memcmp(pThis->szName,
                              pcszEAName,
@@ -671,17 +682,15 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
             }
 
             if (!pThis->oNextEntryOffset)
+                // this was the last entry:
                 return (NULL);
 
             ulOfsThis += pThis->oNextEntryOffset;
-            if (ulOfsThis >= pFEA2List2->cbList)
-                return (NULL);
 
             pThis = (PFEA2)(((PBYTE)pThis) + pThis->oNextEntryOffset);
             ul++;
-
-        } while (TRUE);
-    }
+        } // end while
+    } // end if (    (pFEA2List2->cbList > sizeof(ULONG)) ...
 
     return (NULL);
 }
@@ -698,7 +707,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 {
     APIRET          arc = NO_ERROR;
 
-    PFILEFINDBUF3   pfb3;
+    PFILEFINDBUF3   pfb3 = NULL;
     PEAOP2          peaop = NULL;
 
     CHAR            szFilename[CCHMAXPATH];
@@ -721,11 +730,11 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                                      FILE_DIRECTORY
                                         | FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
                                      peaop,     // buffer
-                                     FINDBUFSIZE,
+                                     FINDBUFSIZE, // 64K
                                      &ulFindCount,
                                      FIL_QUERYEASFROMLIST)))
             {
-                pfb3 = (PFILEFINDBUF3)(peaop + sizeof(EAOP2));
+                pfb3 = (PFILEFINDBUF3)((PBYTE)peaop + sizeof(EAOP2));
             }
 
             DosFindClose(hdirFindHandle);
@@ -837,7 +846,10 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
     }
 
     if (peaop)
+    {
+        FREE(peaop->fpGEA2List);
         DosFreeMem(peaop);
+    }
 
     return (arc);
 }
@@ -1464,7 +1476,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
 
 /* ******************************************************************
  *
- *   XFldProgramFile notebook callbacks (notebook.c)
+ *   XWPProgramFile notebook callbacks (notebook.c)
  *
  ********************************************************************/
 
@@ -2156,7 +2168,7 @@ const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
  *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
  */
 
-const char* fsysGetResourceTypeName(ULONG ulResourceType)
+PCSZ fsysGetResourceTypeName(ULONG ulResourceType)
 {
     switch (ulResourceType)
     {

@@ -106,7 +106,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 

@@ -73,4 +73,52 @@
                            ULONG ulMenuID,
                            HAPP *phapp);
     #endif
+
+    /* ******************************************************************
+     *
+     *   Method redefinitions
+     *
+     ********************************************************************/
+
+    // if both WPProgram and WPProgramFile are included, we
+    // better redefine the method macros to call the correct
+    // methods
+    // V0.9.16 (2001-12-08) [umoeller]
+
+    #if ( defined(SOM_WPProgramFile_h) && defined(SOM_WPProgram_h) )
+        // handy macro for redefining a method name
+        #define REDEFINEMETHOD(name, pobj)                                      \
+            ((somTD_WPProgram_ ## name)(                                        \
+                _somIsA(pobj, _WPProgramFile)                                   \
+                ? somResolve(pobj,                                              \
+                             WPProgramFileClassData.name)                       \
+                : somResolve(pobj,                                              \
+                             WPProgramClassData.name)                           \
+            ))
+
+        // now the actual method redefinitions:
+        #undef _wpQueryAssociationFilter
+        #define _wpQueryAssociationFilter(pobj)                                 \
+            REDEFINEMETHOD(wpQueryAssociationFilter, pobj)(pobj)
+
+        #undef _wpQueryAssociationType
+        #define _wpQueryAssociationType(pobj)                                   \
+            REDEFINEMETHOD(wpQueryAssociationType, pobj)(pobj)
+
+        #undef _wpQueryProgDetails
+        #define _wpQueryProgDetails(pobj, pd, pul)                              \
+            REDEFINEMETHOD(wpQueryProgDetails, pobj)(pobj, pd, pul)
+
+        #undef _wpSetAssociationFilter
+        #define _wpSetAssociationFilter(pobj, psz)                              \
+            REDEFINEMETHOD(wpSetAssociationFilter, pobj)(pobj, psz)
+
+        #undef _wpSetAssociationType
+        #define _wpSetAssociationType(pobj, psz)                                \
+            REDEFINEMETHOD(wpSetAssociationType, pobj)(pobj, psz)
+
+        #undef _wpSetProgDetails
+        #define _wpSetProgDetails(pobj, p)                                      \
+            REDEFINEMETHOD(wpSetProgDetails, pobj)(pobj, p)
+    #endif
 #endif

@@ -182,12 +182,12 @@ EXPORTS
     M_XFldWPSClassData
     M_XFldWPSNewClass
 
-    XFldProgramFileCClassData
-    XFldProgramFileClassData
-    XFldProgramFileNewClass
-    M_XFldProgramFileCClassData
-    M_XFldProgramFileClassData
-    M_XFldProgramFileNewClass
+    XWPProgramFileCClassData
+    XWPProgramFileClassData
+    XWPProgramFileNewClass
+    M_XWPProgramFileCClassData
+    M_XWPProgramFileClassData
+    M_XWPProgramFileNewClass
 
     XWPSetupCClassData
     XWPSetupClassData

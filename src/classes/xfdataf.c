@@ -108,11 +108,10 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wppgmf.h>             // WPProgramFile
 
 /* ******************************************************************
  *
@@ -197,6 +196,7 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpRestoreState");
 
+#ifndef __NOICONREPLACEMENTS__
     if (cmnIsFeatureEnabled(IconReplacements))
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
@@ -231,6 +231,7 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
     }
 
     if (!pwpRestoreState)
+#endif
         brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
                                                             ulReserved);
 
@@ -475,11 +476,10 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                         // found:
 
                         // check for program files hack
-                        BOOL    fIsProgramFile = _somIsA(somSelf, _WPProgramFile);
                         LONG    lDefaultView = _wpQueryDefaultView(somSelf);
 
                         if (    (lDefaultView == OPEN_RUNNING)
-                             && (!fIsProgramFile)
+                             && (!progIsProgramOrProgramFile(somSelf))
                            )
                         {
                             // this is not a program file,
@@ -960,6 +960,7 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryIcon");
 
+#ifndef __NOICONREPLACEMENTS__
     if (cmnIsFeatureEnabled(IconReplacements))
     {
         if (!prec->hptrIcon)
@@ -984,7 +985,8 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
     }
 
     if (!hptrReturn)
-        return (XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf));
+#endif
+        hptrReturn = XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
 
     return (hptrReturn);
 }

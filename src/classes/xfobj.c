@@ -110,7 +110,7 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers

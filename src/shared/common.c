@@ -155,7 +155,9 @@ static BOOL            G_fGlobalSettingsLoaded = FALSE;
 extern BOOL            G_fTurboSettingsEnabled = FALSE;
             // initially set by initMain V0.9.16 (2001-10-25) [umoeller]
 
+#ifndef __NOICONREPLACEMENTS__
 static HMODULE         G_hmodIconsDLL = NULLHANDLE;
+#endif
 static CHAR            G_szLanguageCode[20] = "";
 
 static HPOINTER        G_hptrDlgIcon = NULLHANDLE;
@@ -818,7 +820,7 @@ VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
 
 typedef struct _ICONTREENODE
 {
-    TREE        Tree;           // ulkey has the resource ID
+    TREE        Tree;           // ulkey has the STDICON_* id
     HPOINTER    hptr;
 } ICONTREENODE, *PICONTREENODE;
 
@@ -865,17 +867,181 @@ VOID UnlockIcons(VOID)
     DosReleaseMutexSem(G_hmtxIconsCache);
 }
 
+typedef struct _STDICON
+{
+    ULONG       ulStdIcon;          // STDICON_* id
+    ULONG       ulIconsDLL,         // ptr ID in icons.dll
+                ulPMWP;             // ptr ID in pmwp.dll
+} STDICON, *PSTDICON;
+
+STDICON aStdIcons[] =
+    {
+        {
+            STDICON_PM,
+            0,                      // no icon in icons.dll yet
+            3,                      // standard icon in pmwp.dll
+                // or this one? 25
+        },
+        {
+            STDICON_WIN16,
+            0,                      // no icon in icons.dll yet
+            52,                     // standard win-os2 icon in pmwp.dll
+        },
+        {
+            STDICON_WIN32,
+            0,                      // no icon in icons.dll yet
+            52,                     // standard win-os2 icon in pmwp.dll
+        },
+        {
+            STDICON_OS2WIN,
+            108,
+            2,                      // standard os2win icon in pmwp.dll
+        },
+        {
+            STDICON_OS2FULLSCREEN,
+            107,
+            4,                      // standard os2full icon in pmwp.dll
+        },
+        {
+            STDICON_DOSWIN,
+            105,
+            46,                     // standard doswin icon in pmwp.dll
+        },
+        {
+            STDICON_DOSFULLSCREEN,
+            104,
+            1,                      // standard dosfull icon in pmwp.dll
+        },
+        {
+            STDICON_DLL,
+            103,
+            25,                     // standard program (non-pm) icon in pmwp.dll
+        },
+        {
+            STDICON_DRIVER,
+            106,
+            25,                     // standard program (non-pm) icon in pmwp.dll
+        },
+        {
+            STDICON_PROG_UNKNOWN,
+            102,
+            25,                     // standard program (non-pm) icon in pmwp.dll
+        },
+        {
+            STDICON_DATAFILE,
+            0,
+            24,                     // standard datafile icon in pmwp.dll
+        },
+    };
+
 /*
- *@@ cmnLoadPointer:
- *      attempts to load a pointer from ICONS.DLL.
- *      Always use this instead of WinLoadPointer
- *      to avoid having to load the same pointer
- *      several times.
+ *@@ LoadNewIcon:
+ *
+ *      Caller must hold the icons mutex.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-HPOINTER cmnLoadPointer(ULONG idResource)
+HPOINTER LoadNewIcon(ULONG ulStdIcon)
+{
+    HPOINTER hptrReturn = NULLHANDLE;
+    PICONTREENODE pNode;
+
+    // look up the STDICON_* id in the array
+    ULONG ul;
+    PSTDICON pStdIcon = NULL;
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(aStdIcons);
+         ul++)
+    {
+        if (aStdIcons[ul].ulStdIcon == ulStdIcon)
+        {
+            pStdIcon = &aStdIcons[ul];
+            break;
+        }
+    }
+
+    if (pStdIcon)
+    {
+        // id found:
+
+#ifndef __NOICONREPLACEMENTS__
+        // check if we have an icon in ICONS.DLL
+        if (    (pStdIcon->ulIconsDLL)
+             && (cmnIsFeatureEnabled(IconReplacements))
+           )
+        {
+            HMODULE hmodIcons;
+            if (hmodIcons = cmnQueryIconsDLL())     // loads on first call
+                hptrReturn = WinLoadPointer(HWND_DESKTOP,
+                                            hmodIcons,
+                                            pStdIcon->ulIconsDLL);
+        }
+#endif
+
+        if (!hptrReturn)
+        {
+            // icon replacements disabled, or not found,
+            // or icons.dll id was null in the first place:
+            // load from PMWP
+            HMODULE hmod;
+            DosQueryModuleHandle("PMWP", &hmod);
+            hptrReturn = WinLoadPointer(HWND_DESKTOP,
+                                        hmod,
+                                        pStdIcon->ulPMWP);
+        }
+    } // end if (pStdIcon)
+
+    // we always create an entry even if loading
+    // fails to avoid having to reload that if
+    // icons.dll is missing or something
+    if (pNode = NEW(ICONTREENODE))
+    {
+        ZERO(pNode);
+        pNode->Tree.ulKey = ulStdIcon;
+        pNode->hptr = hptrReturn;
+
+        // _Pmpf((__FUNCTION__ ": loaded new ptr %lX", hptrReturn));
+
+        treeInsert(&G_IconsCache,
+                   &G_cIconsInCache,
+                   (TREE*)pNode,
+                   treeCompareKeys);
+    }
+
+    return (hptrReturn);
+}
+
+/*
+ *@@ cmnGetStandardIcon:
+ *      returns a HPOINTER for the given STDICON_* id.
+ *
+ *      If icon replacements are enabled, this will
+ *      try to find an icon in ICONS.DLL. Otherwise,
+ *      or if no such icon exists for that id, an
+ *      icon from PMWP.DLL is returned instead.
+ *
+ *      Returns NULLHANDLE on errors.
+ *
+ *      Note that if this gets called several times for
+ *      the same STDICON_* id, this will reuse the same
+ *      HPOINTER to reduce the load on PM. This is unlike
+ *      the WPS which loads even default icons several
+ *      times.
+ *
+ *      As a result, NEVER FREE the icon that is returned,
+ *      or you will nuke a global icon that is used by
+ *      several objects. If you set the icon on an object
+ *      via _wpSetIcon, make sure you unset the
+ *      OBJSTYLE_NOTDEFAULTICON style flag afterwards, or
+ *      the icon will be nuked when the object goes
+ *      dormant.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+HPOINTER cmnGetStandardIcon(ULONG ulStdIcon)
 {
     BOOL        fLocked = FALSE;
     HPOINTER    hptrReturn = NULLHANDLE;
@@ -887,7 +1053,7 @@ HPOINTER cmnLoadPointer(ULONG idResource)
             // icon loaded yet?
             PICONTREENODE pNode;
             if (pNode = (PICONTREENODE)treeFind(G_IconsCache,
-                                                idResource,
+                                                ulStdIcon,
                                                 treeCompareKeys))
             {
                 hptrReturn = pNode->hptr;
@@ -895,28 +1061,7 @@ HPOINTER cmnLoadPointer(ULONG idResource)
             }
             else
             {
-                // go load the damn thing now; note, we
-                // always create an entry even if loading
-                // fails to avoid having to reload that if
-                // icons.dll is missing or something
-                if (pNode = NEW(ICONTREENODE))
-                {
-                    HMODULE hmodIcons = cmnQueryIconsDLL();     // loads on first call
-                    ZERO(pNode);
-                    pNode->Tree.ulKey = idResource;
-                    if (hmodIcons && idResource)
-                        pNode->hptr = WinLoadPointer(HWND_DESKTOP,
-                                                     hmodIcons,
-                                                     idResource);
-                    hptrReturn = pNode->hptr;
-
-                    // _Pmpf((__FUNCTION__ ": loaded new ptr %lX", hptrReturn));
-
-                    treeInsert(&G_IconsCache,
-                               &G_cIconsInCache,
-                               (TREE*)pNode,
-                               treeCompareKeys);
-                }
+                hptrReturn = LoadNewIcon(ulStdIcon);
             }
         }
     }
@@ -1208,6 +1353,8 @@ const char* cmnQueryMessageFile(VOID)
     return (rc);
 }
 
+#ifndef __NOICONREPLACEMENTS__
+
 /*
  *@@ cmnQueryIconsDLL:
  *      this returns the HMODULE of XFolder ICONS.DLL
@@ -1293,6 +1440,8 @@ HMODULE cmnQueryIconsDLL(VOID)
 
     return (G_hmodIconsDLL);
 }
+
+#endif
 
 #ifndef __NOBOOTLOGO__
 

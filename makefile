@@ -329,7 +329,7 @@ src\shared\xwp.def: include\bldlevel.h makefile
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) $(MODDEFFILE) objects.in
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) @<<$(TEMP)\XFLDR.LNK
-/OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS) complib.lib
+/OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<KEEP
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)

@@ -5,12 +5,78 @@
  *
  *      This file is ALL new with V0.9.16.
  *
- *      For some explanations about WPS icon methods,
- *      see:
+ *      The WPS icon methods are quite a mess. Basically,
+ *      for almost each icon method, there are two
+ *      versions (query and set), and within each version,
+ *      there is a "query" method and a "query data"
+ *      method, respectively.
  *
- *      --  icoQueryIconN
+ *      What these methods do isn't clearly explained
+ *      anywhere. Here is what I found out, and what I
+ *      think the typical flow of execution is when
+ *      objects are made awake by the WPS (usually during
+ *      folder populate).
  *
- *      --  icoQueryIconDataN
+ *      1)  Each object stores its icon in its MINIRECORDCODE
+ *          (as returned by WPObject::wpQueryCoreRecord), in
+ *          the hptrIcon field. When the object is created,
+ *          this field is initially set to NULLHANDLE.
+ *
+ *      2)  Whether the icon handle is resolved during object
+ *          instantion, usually during wpRestoreState, depends
+ *          on the object's class.
+ *
+ *          --  For file-system objects, the HPOINTER is only
+ *              created during wpRestoreState if the object
+ *              has an .ICON EA. The reason for this is speed;
+ *              wpPopulate already retrieves the .ICON EA data
+ *              during DosFindFirst/Next, and this is passed
+ *              to wpclsMakeAwake and then wpRestoreState in
+ *              the "ulReserved" parameter that is not documented
+ *              in WPSREF. Really, this is a pointer to the
+ *              FILEFINDBUF3 and the FEA2LIST that was filled
+ *              by wpPopulate.
+ *
+ *              Since the data is already present, in that case,
+ *              the WPS builds that data already during object
+ *              instantiation.
+ *
+ *          --  In all other cases (non-file-system objects or
+ *              or no .ICON EA present), I believe the hptrIcon
+ *              field is still NULLHANDLE.
+ *
+ *      3)  Now, the entry point into the icon mess is
+ *          WPObject::wpQueryIcon. This gets called by the WPS's
+ *          container owner-draw routines. As a result, the method
+ *          only gets called if the icon is actually visible; for
+ *          example, in a crowded folder where many objects are
+ *          initially outside the visible viewport rectangle,
+ *          wpQueryIcon doesn't get called until the container is
+ *          scrolled. (This is why you get a noticeable delay when
+ *          first scrolling through a folder with many file-system
+ *          objects.)
+ *
+ *          wpQueryIcon returns the hptrIcon from the MINIRECORDCORE,
+ *          if it was set. If the field is still NULLHANDLE (because
+ *          the data wasn't built during wpRestoreState, see above),
+ *          the WPS _then_ builds a proper icon.
+ *
+ *          What happens then again depends on the object's class:
+ *
+ *          --  For WPDataFile, the WPS calls
+ *              WPDataFile::wpSetAssociatedFileIcon to have the
+ *              icon of the associated program object set for
+ *              the data file too.
+ *
+ *          --  For WPDisk, WPDisk::wpSetCorrectDiskIcon is called
+ *              to set the icon to one of the hard disk, CD-ROM
+ *              or floppy icons.
+ *
+ *          --  For WPProgramFile, WPProgramFile::wpSetProgIcon
+ *              attempts to load an icon from the executable file.
+ *
+ *          If all of this fails, or for other classes, the WPS
+ *          gets the class's default icon from wpclsQueryIcon.
  *
  *      Function prefix for this file:
  *      --  ico*
@@ -380,6 +446,69 @@ APIRET ExpandIterdata1(char *pabTarget,         // out: page data (pagesize as i
 }
 
 /*
+ *@@ memcpyw:
+ *      a special memcpy for expandPage2 which performs a
+ *      word based copy. The difference between this, memmove
+ *      and memcpy is that we'll allways read words.
+ *
+ *      (C) Knut Stange Osmundsen. Used with permission.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+void memcpyw(char *pch1, const char *pch2, size_t cch)
+{
+    /*
+     * Use memcpy if possible.
+     */
+    if ((pch2 > pch1 ? pch2 - pch1 : pch1 - pch2) >= 4)
+    {
+        memcpy(pch1, pch2, cch);        /* BUGBUG! ASSUMES that memcpy move NO more than 4 bytes at the time! */
+        return;
+    }
+
+    /*
+     * Difference is less than 3 bytes.
+     */
+    if (cch & 1)
+        *pch1++ = *pch2++;
+
+    for (cch >>= 1;
+         cch > 0;
+         cch--, pch1 += 2, pch2 += 2)
+        *(PUSHORT)pch1 = *(PUSHORT)pch2;
+}
+
+/*
+ *@@ memcpyb:
+ *      a special memcpy for expandPage2 which performs a memmove
+ *      operation. The difference between this and memmove is that
+ *      this one works.
+ *
+ *      (C) Knut Stange Osmundsen. Used with permission.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+void memcpyb(char *pch1, const char *pch2, size_t cch)
+{
+    /*
+     * Use memcpy if possible.
+     */
+    if ((pch2 > pch1 ? pch2 - pch1 : pch1 - pch2) >= 4)
+    {
+        memcpy(pch1, pch2, cch);        /* BUGBUG! ASSUMES that memcpy move NO more than 4 bytes at the time! */
+        return;
+    }
+
+    /*
+     * Difference is less than 3 bytes.
+     */
+    while(cch--)
+        *pch1++ = *pch2++;
+}
+
+/*
  *@@ ExpandIterdata2:
  *      expands a page compressed with the new exepack
  *      method introduced with OS/2 Warp 3.0 (/EXEPACK:2).
@@ -398,102 +527,190 @@ int ExpandIterdata2(char *pachPage,
 
     while (cchSrcPage > 0)
     {
-        switch (*pachSrcPage & 0x03)
+        /*
+         * Bit 0 and 1 is the encoding type.
+         */
+
+        char cSrc = *pachSrcPage;
+
+        switch (cSrc & 0x03)
         {
+            /*
+             *
+             *  0  1  2  3  4  5  6  7
+             *  type  |              |
+             *        ----------------
+             *             cch        <cch bytes of data>
+             *
+             * Bits 2-7 is, if not zero, the length of an uncompressed run
+             *   starting at the following byte.
+             *
+             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+             *  type  |              |  |                    | |                     |
+             *        ----------------  ---------------------- -----------------------
+             *             zero                 cch                char to multiply
+             *
+             * If the bits are zero, the following two bytes describes a
+             *   1 byte interation run. First byte is count, second is the byte to copy.
+             *   A count of zero is means end of data, and we simply stops. In that case
+             *   the rest of the data should be zero.
+             */
+
             case 0:
             {
-                if (*pachSrcPage)
+                if (cSrc)
                 {
-                    int cch = *pachSrcPage >> 2;
-                    if (cchPage  < cch || cchSrcPage < cch + 1)
-                        return ICONERR_BAD_COMPRESSED_PAGE;
-                    memcpy(pachPage, pachSrcPage+1, cch);
-                    pachPage += cch, cchPage -= cch;
-                    pachSrcPage += cch + 1, cchSrcPage -= cch + 1;
-                    break;
+                    int cch = cSrc >> 2;
+                    if (!(    (cchPage  < cch)
+                           || (cchSrcPage < cch + 1)
+                         )
+                       )
+                    {
+                        memcpy(pachPage, pachSrcPage+1, cch);
+                        pachPage += cch, cchPage -= cch;
+                        pachSrcPage += cch + 1, cchSrcPage -= cch + 1;
+                        break;
+                    }
+                    return ICONERR_EXPANDPAGE2_BADDATA;
                 }
 
-                if (cchSrcPage < 2)
-                    return ICONERR_BAD_COMPRESSED_PAGE;
-                else
+                if (cchSrcPage >= 2)
                 {
-                    int cch = pachSrcPage[1];
-                    if (cch == 0)
+                    int cch;
+                    if (cch = pachSrcPage[1])
                     {
-                        pachSrcPage += 2, cchSrcPage -= 2;
-                        goto endloop;
+                        if (!(    (cchSrcPage < 3)
+                               || (cchPage < cch)
+                             )
+                           )
+                        {
+                            memset(pachPage, pachSrcPage[2], cch);
+                            pachPage += cch, cchPage -= cch;
+                            pachSrcPage += 3, cchSrcPage -= 3;
+                            break;
+                        }
                     }
-                    if (cchSrcPage < 3 || cchPage < cch)
-                        return ICONERR_BAD_COMPRESSED_PAGE;
-                    memset(pachPage, pachSrcPage[2], cch);
-                    pachPage += cch, cchPage -= cch;
-                    pachSrcPage += 3, cchSrcPage -= 3;
+                    else
+                        goto endloop;
                 }
+
+                return ICONERR_EXPANDPAGE2_BADDATA;
             }
-            break;
+
+
+            /*
+             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+             *  type  |  |  |     |  |                       |
+             *        ----  -------  -------------------------
+             *        cch1  cch2 - 3          offset            <cch1 bytes of data>
+             *
+             *  Two bytes layed out as described above, followed by cch1 bytes of data to be copied.
+             *  The cch2(+3) and offset describes an amount of data to be copied from the expanded
+             *    data relative to the current position. The data copied as you would expect it to be.
+             */
 
             case 1:
             {
-                if (cchSrcPage < 2)
-                    return ICONERR_BAD_COMPRESSED_PAGE;
-                else
+                if (cchSrcPage >= 2)
                 {
-                    int off = *(unsigned short*)pachSrcPage >> 7;
-                    int cch1 = *pachSrcPage >> 2 & 3;
-                    int cch2 = (*pachSrcPage >> 4 & 7) + 3;
+                    int off = *(PUSHORT)pachSrcPage >> 7;
+                    int cch1 = cSrc >> 2 & 3;
+                    int cch2 = (cSrc >> 4 & 7) + 3;
                     pachSrcPage += 2, cchSrcPage -= 2;
-                    if (cchSrcPage < cch1 || cchPage < cch1 + cch2 || pachPage + cch1 - off < pachDestPage)
-                        return ICONERR_BAD_COMPRESSED_PAGE;
-                    memcpy(pachPage, pachSrcPage, cch1);
-                    pachPage += cch1, cchPage -= cch1;
-                    pachSrcPage += cch1, cchSrcPage -= cch1;
-                    memcpy(pachPage, pachPage - off, cch2);
-                    pachPage += cch2, cchPage -= cch2;
+                    if (!(    (cchSrcPage < cch1)
+                           || (cchPage < cch1 + cch2)
+                           || (pachPage + cch1 - off < pachDestPage)
+                         )
+                       )
+                    {
+                        memcpy(pachPage, pachSrcPage, cch1);
+                        pachPage += cch1, cchPage -= cch1;
+                        pachSrcPage += cch1, cchSrcPage -= cch1;
+                        memcpyb(pachPage, pachPage - off, cch2); //memmove doesn't do a good job here for some stupid reason.
+                        pachPage += cch2, cchPage -= cch2;
+                        break;
+                    }
                 }
+                return ICONERR_EXPANDPAGE2_BADDATA;
             }
-            break;
+
+            /*
+             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+             *  type  |  |  |                                |
+             *        ----  ----------------------------------
+             *       cch-3              offset
+             *
+             *  Two bytes layed out as described above.
+             *  The cch(+3) and offset describes an amount of data to be copied from the expanded
+             *  data relative to the current position.
+             *
+             *  If offset == 1 the data is not copied as expected, but in the memcpyw manner.
+             */
 
             case 2:
             {
-                if (cchSrcPage < 2)
-                    return ICONERR_BAD_COMPRESSED_PAGE;
-                else
+                if (cchSrcPage >= 2)
                 {
-                    int off  = *(unsigned short*)pachSrcPage >> 4;
-                    int cch1 = (*pachSrcPage >> 2 & 3) + 3;
-                    if (cchPage < cch1 || pachPage - off < pachDestPage)
-                        return ICONERR_BAD_COMPRESSED_PAGE;
-                    memcpy(pachPage,  pachPage - off, cch1);
-                    pachPage += cch1, cchPage -= cch1;
+                    int off = *(PUSHORT)pachSrcPage >> 4;
+                    int cch = (cSrc >> 2 & 3) + 3;
                     pachSrcPage += 2, cchSrcPage -= 2;
+                    if (!(    (cchPage < cch)
+                           || (pachPage - off < pachDestPage)
+                         )
+                       )
+                    {
+                        memcpyw(pachPage, pachPage - off, cch);
+                        pachPage += cch, cchPage -= cch;
+                        break;
+                    }
                 }
+                return ICONERR_EXPANDPAGE2_BADDATA;
             }
-            break;
+
+
+            /*
+             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+             *  type  |        |  |              |  |                                |
+             *        ----------  ----------------  ----------------------------------
+             *           cch1           cch2                     offset                <cch1 bytes of data>
+             *
+             *  Three bytes layed out as described above, followed by cch1 bytes of data to be copied.
+             *  The cch2 and offset describes an amount of data to be copied from the expanded
+             *  data relative to the current position.
+             *
+             *  If offset == 1 the data is not copied as expected, but in the memcpyw manner.
+             */
 
             case 3:
             {
-                if (cchSrcPage < 3)
-                    return ICONERR_BAD_COMPRESSED_PAGE;
-                else
+                if (cchSrcPage >= 3)
                 {
-                    int cch1 = *(unsigned short*)pachSrcPage >> 2 & 0x000f;
-                    int cch2 = *(unsigned short*)pachSrcPage >> 6 & 0x003f;
-                    int off  = *(unsigned short*)(pachSrcPage+1) >> 4;
+                    int cch1 = cSrc >> 2 & 0x000f;
+                    int cch2 = *(PUSHORT)pachSrcPage >> 6 & 0x003f;
+                    int off  = *(PUSHORT)(pachSrcPage+1) >> 4;
                     pachSrcPage += 3, cchSrcPage -= 3;
-                    if (cchSrcPage < cch1 || cchPage < cch1 + cch2 || pachPage - off + cch1 < pachDestPage)
-                        return ICONERR_BAD_COMPRESSED_PAGE;
-                    memcpy(pachPage, pachSrcPage, cch1);
-                    pachPage += cch1, cchPage -= cch1;
-                    pachSrcPage += cch1, cchSrcPage -= cch1;
-                    memcpy(pachPage, pachPage - off, cch2);
-                    pachPage += cch2, cchPage -= cch2;
+                    if (!(    (cchSrcPage < cch1)
+                           || (cchPage < cch1 + cch2)
+                           || (pachPage - off + cch1 < pachDestPage)
+                         )
+                       )
+                    {
+                        memcpy(pachPage, pachSrcPage, cch1);
+                        pachPage += cch1, cchPage -= cch1;
+                        pachSrcPage += cch1, cchSrcPage -= cch1;
+                        memcpyw(pachPage, pachPage - off, cch2);
+                        pachPage += cch2, cchPage -= cch2;
+                        break;
+                    }
                 }
+                return ICONERR_EXPANDPAGE2_BADDATA;
             }
-            break;
         }
     }
 
 endloop:;
+
+
     /*
      * Zero the rest of the page.
      */
@@ -660,7 +877,8 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
 /*
  *@@ LoadLXResource:
  *      attempts to load the data of the resource
- *      with the specified type and id.
+ *      with the specified type and id from an LX
+ *      executable.
  *
  *      If idResource == 0, the first resource of
  *      the specified type is loaded.
@@ -685,17 +903,19 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
 {
     APIRET          arc = NO_ERROR;
     ULONG           cResources = 0;
-    PFSYSRESOURCE   paResources = NULL;
 
     ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
 
-    PLXHEADER       pLXHeader = pExec->pLXHeader;
+    PLXHEADER       pLXHeader;
+
+    if (!(pLXHeader = pExec->pLXHeader))
+        return (ERROR_INVALID_EXE_SIGNATURE);
 
     if (pExec->pDosExeHeader)
         // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
         ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
 
-    if (!(cResources = pExec->pLXHeader->ulResTblCnt))
+    if (!(cResources = pLXHeader->ulResTblCnt))
         // no resources at all:
         return (ERROR_NO_DATA);
 
@@ -807,20 +1027,500 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
 }
 
 /*
+ *@@ LoadOS2NEResource:
+ *      attempts to load the data of the resource
+ *      with the specified type and id from an OS/2
+ *      NE executable.
+ *
+ *      Note that NE executables with resources in
+ *      OS/2 format are very, very rare. The
+ *      only OS/2 NE executables with resources I
+ *      could find at this point were in an old 1.3
+ *      Toolkit, but with them, this code works.
+ *
+ *      If idResource == 0, the first resource of
+ *      the specified type is loaded.
+ *
+ *      If NO_ERROR is returned, *ppbResData receives
+ *      a new buffer with the icon data. The caller
+ *      must free() that buffer.
+ *
+ *      Otherwise this returns:
+ *
+ *      --  ERROR_NO_DATA: resource not found.
+ *
+ *      --  ERROR_BAD_FORMAT: cannot handle resource format.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET LoadOS2NEResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+                         ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
+                         ULONG idResource,      // in: resource ID or 0 for first
+                         PBYTE *ppbResData)     // out: icon data (to be free()'d)
+{
+    APIRET          arc = NO_ERROR;
+    ULONG           cResources = 0;
+
+    ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
+
+    PNEHEADER       pNEHeader;
+
+    if (!(pNEHeader = pExec->pNEHeader))
+        return (ERROR_INVALID_EXE_SIGNATURE);
+
+    if (pExec->pDosExeHeader)
+        // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
+        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
+
+    _Pmpf((__FUNCTION__ ": entering, checking %d resources", pNEHeader->usResSegmCount));
+
+    if (!(cResources = pNEHeader->usResSegmCount))
+        // no resources at all:
+        return (ERROR_NO_DATA);
+
+    if (!pExec->fOS2NEMapsLoaded)
+        arc = doshLoadOS2NEMaps(pExec);
+
+    if (!arc)
+    {
+        // alright, we're in:
+
+        // run thru the resources
+        BOOL fPtrFound = FALSE;
+
+        ULONG i;
+        POS2NERESTBLENTRY pResTblEntryThis = pExec->paOS2NEResTblEntry;
+        POS2NESEGMENT pSegThis = pExec->paOS2NESegments;
+        for (i = 0;
+             i < cResources;
+             i++, pResTblEntryThis++, pSegThis++)
+        {
+            // check resource type and ID
+            if (    (pResTblEntryThis->usType == ulType)
+                 && (    (idResource == 0)
+                      || (idResource == pResTblEntryThis->usID)
+                    )
+               )
+            {
+                // hooray, we found the resource...
+
+                // look up the corresponding segment
+
+                ULONG ulOffset = (    (ULONG)pSegThis->ns_sector
+                                   << pNEHeader->usLogicalSectShift
+                                 );
+
+                ULONG cb = pSegThis->ns_cbseg;        // resource size
+                PBYTE pb;
+                if (!(*ppbResData = malloc(cb)))
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+                else
+                {
+                    if (!(arc = doshReadAt(pExec->hfExe,
+                                           ulOffset,
+                                           FILE_BEGIN,
+                                           &cb,
+                                           *ppbResData)))
+                        fPtrFound = TRUE;
+                    else
+                        // error reading:
+                        free(*ppbResData);
+                }
+            }
+
+            if (fPtrFound || arc)
+                break;
+
+        } // end for
+
+        if ((!fPtrFound) && (!arc))
+            arc = ERROR_NO_DATA;
+    }
+    else
+        _Pmpf(("doshLoadOS2NEMaps returned %d"));
+
+    return (arc);
+}
+
+/*
+
+Resource Table
+
+The resource table describes and identifies the location of each resource in the
+executable file.
+
+Following are the members in the resource table:
+
+                       struct new_rsrc
+                           {
+                           unsigned short rs_align;    // alignment shift count for resources
+                           struct rsrc_typeinfo rs_typeinfo;
+                           };
+
+rscAlignShift   The alignment shift count for resource data. When the
+                shift count is used as an exponent of 2, the resulting value
+                specifies the factor, in bytes, for computing the location of
+                a resource in the executable file.
+rscTypes        An array of TTYPEINFO structures containing information
+                about resource types. There must be one TTYPEINFO
+                structure for each type of resource in the executable file.
+
+                Following are the members in the TTYPEINFO structure:
+
+                                         // Resource type information block
+                                         struct rsrc_typeinfo
+                                             {
+                                             unsigned short rt_id;
+                                             unsigned short rt_nres;
+                                             long rt_proc;
+                                             };
+
+                rtTypeID    The type identifier of the resource. This integer value is either
+                            a resource-type value or an offset to a resource-type name. If
+                            the high bit in this member is set (0x8000), the value is one of
+                            the following resource-type values:
+
+                            Value   Resource type
+
+                            RT_ACCELERATOR      Accelerator table
+                            RT_BITMAP           Bitmap
+                            RT_CURSOR           Cursor
+                            RT_DIALOG           Dialog box
+                            RT_FONT             Font component
+                            RT_FONTDIR          Font directory
+                            RT_GROUP_CURSOR     Cursor directory
+                            RT_GROUP_ICON       Icon directory
+                            RT_ICON             Icon
+                            RT_MENU             Menu
+                            RT_RCDATA           Resource data
+                            RT_STRING           String table
+
+                            If the high bit of the value in this member is not set, the value
+                            represents an offset, in bytes relative to the beginning of the
+                            resource table, to a name in the rscResourceNames
+                            member.
+
+                rtResourceCount The number of resources of this type in the executable file.
+                rtReserved  Reserved.
+                rtNameInfo  An array of TNAMEINFO structures containing information
+                            about individual resources. The rtResourceCount member
+                            specifies the number of structures in the array.
+
+                Following are the members in the TNAMEINFO structure:
+
+                                       // Resource name information block
+                                       struct rsrc_nameinfo
+                                           {
+                                           // The following two fields must be shifted left by the value of
+                                           // the rs_align field to compute their actual value.  This allows
+                                           // resources to be larger than 64k, but they do not need to be
+                                           // aligned on 512 byte boundaries, the way segments are
+                                           unsigned short rn_offset;   // file offset to resource data
+                                           unsigned short rn_length;   // length of resource data
+                                           unsigned short rn_flags;    // resource flags
+                                           unsigned short rn_id;       // resource name id
+                                           unsigned short rn_handle;   // If loaded, then global handle
+                                           unsigned short rn_usage;    // Initially zero.  Number of times
+                                                                       // the handle for this resource has
+                                                                       // been given out
+                                           };
+
+                rnOffset    An offset to the contents of the resource data (relative to the beginning
+                            of the file). The offset is in terms of alignment units specified by the
+                            rscAlignShift member at the beginning of the resource table.
+                rnLength    The resource length, in bytes.
+                rnFlags     Whether the resource is fixed, preloaded, or shareable. This member
+                            can be one or more of the following values:
+
+                            Value   Meaning
+
+                            0x0010  Resource is movable (MOVEABLE). Otherwise, it is fixed.
+                            0x0020  Resource can be shared (PURE).
+                            0x0040  Resource is preloaded (PRELOAD). Otherwise, it is loaded
+                                    on demand.
+
+                rnID        Specifies or points to the resource identifier. If the identifier is an
+                            integer, the high bit is set (8000h). Otherwise, it is an offset to a
+                            resource string, relative to the beginning of the resource table.
+                rnHandle    Reserved.
+                rnUsage     Reserved.
+
+rscEndTypes     The end of the resource type definitions. This member
+                must be zero.
+rscResourceNames    The names (if any) associated with the resources in this
+                table. Each name is stored as consecutive bytes; the first
+                byte specifies the number of characters in the name.
+rscEndNames     The end of the resource names and the end of the
+                resource table. This member must be zero.
+
+*/
+
+#define WINRT_ACCELERATOR          9
+#define WINRT_BITMAP               2
+#define WINRT_CURSOR               1
+#define WINRT_DIALOG               5
+#define WINRT_FONT                 8
+#define WINRT_FONTDIR              7
+#define WINRT_ICON                 3
+#define WINRT_MENU                 4
+#define WINRT_RCDATA               10
+#define WINRT_STRING               6
+
+PCSZ GetWinResourceTypeName(ULONG ulTypeThis)
+{
+    switch (ulTypeThis)
+    {
+        case WINRT_ACCELERATOR: return "WINRT_ACCELERATOR";
+        case WINRT_BITMAP: return "WINRT_BITMAP";
+        case WINRT_CURSOR: return "WINRT_CURSOR";
+        case WINRT_DIALOG: return "WINRT_DIALOG";
+        case WINRT_FONT: return "WINRT_FONT";
+        case WINRT_FONTDIR: return "WINRT_FONTDIR";
+        case WINRT_ICON: return "WINRT_ICON";
+        case WINRT_MENU: return "WINRT_MENU";
+        case WINRT_RCDATA: return "WINRT_RCDATA";
+        case WINRT_STRING: return "WINRT_STRING";
+    }
+
+    return ("unknown");
+}
+
+/*
+ *@@ LoadWinNEResource:
+ *      attempts to load the data of the resource
+ *      with the specified type and id from a Win16
+ *      NE executable.
+ *
+ *      If idResource == 0, the first resource of
+ *      the specified type is loaded.
+ *
+ *      If NO_ERROR is returned, *ppbResData receives
+ *      a new buffer with the icon data. The caller
+ *      must free() that buffer.
+ *
+ *      Otherwise this returns:
+ *
+ *      --  ERROR_NO_DATA: resource not found.
+ *
+ *      --  ERROR_BAD_FORMAT: cannot handle resource format.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+                         ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
+                         ULONG idResource,      // in: resource ID or 0 for first
+                         PBYTE *ppbResData)     // out: icon data (to be free()'d)
+{
+    APIRET          arc = NO_ERROR;
+    ULONG           cb;
+
+    ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
+
+    PNEHEADER       pNEHeader;
+
+    USHORT          usAlignShift;
+
+    if (!(pNEHeader = pExec->pNEHeader))
+        return (ERROR_INVALID_EXE_SIGNATURE);
+
+    if (pExec->pDosExeHeader)
+        // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
+        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
+
+    // 1) res tbl starts with align leftshift
+    cb = sizeof(usAlignShift);
+    if (!(arc = doshReadAt(pExec->hfExe,
+                           // start of res table
+                           pNEHeader->usResTblOfs
+                             + ulNewHeaderOfs,
+                           FILE_BEGIN,
+                           &cb,
+                           (PBYTE)&usAlignShift)))
+    {
+        // run thru the resources
+        BOOL fPtrFound = FALSE;
+
+        while (!arc)
+        {
+            ULONG cbRead;
+
+            #pragma pack(1)
+            struct rsrc_typeinfo
+            {
+                unsigned short  rt_id;
+                unsigned short  rt_nres;
+                long            reserved;
+            } typeinfo;
+            #pragma pack()
+
+            //    then array of typeinfo structures, one for each res type
+            //    in the file; last one has byte 0 first
+            //          rtTypeID (RT_* value for this table; if 0, end of table)
+            //          count of res's of this type
+            //          reserved
+            //          array of nameinfo structures
+            //              offset rel. to beginning of file (leftshift!)
+            //              length
+            //              flags
+            //              id (int if 0x8000 set), otherwise offset to string
+            //              reserved
+            //              reserved
+            if (!(arc = DosRead(pExec->hfExe,
+                                &typeinfo,
+                                sizeof(typeinfo),
+                                &cbRead)))
+            {
+                if (    (cbRead < sizeof(typeinfo))
+                     || (typeinfo.rt_id == 0)
+                   )
+                    // this was the last array item:
+                    break;
+                else
+                {
+                    // next comes array of nameinfo structures
+                    // we know how many array items follow,
+                    // so we can read them in one flush, or
+                    // skip them if it's not what we're looking for
+
+                    #pragma pack(1)
+                    typedef struct rsrc_nameinfo
+                    {
+                        // The following two fields must be shifted left by the value of
+                        // the rs_align field to compute their actual value.  This allows
+                        // resources to be larger than 64k, but they do not need to be
+                        // aligned on 512 byte boundaries, the way segments are
+                        unsigned short rn_offset;   // file offset to resource data
+                        unsigned short rn_length;   // length of resource data
+                        unsigned short rn_flags;    // resource flags
+                        unsigned short rn_id;       // resource name id
+                        unsigned short rn_handle;   // If loaded, then global handle
+                        unsigned short rn_usage;    // Initially zero.  Number of times
+                                                    // the handle for this resource has
+                                                    // been given out
+                    } nameinfo;
+                    #pragma pack()
+
+                    ULONG ulTypeThis = typeinfo.rt_id & ~0x8000;
+
+                    if (    (!(typeinfo.rt_id & 0x8000))
+                         || (ulTypeThis != ulType)
+                       )
+                    {
+                        _Pmpf((__FUNCTION__ ": skipping type %d (%s), %d entries",
+                                      ulTypeThis,
+                                      GetWinResourceTypeName(ulTypeThis),
+                                      typeinfo.rt_nres));
+                        arc = DosSetFilePtr(pExec->hfExe,
+                                            typeinfo.rt_nres * sizeof(nameinfo),
+                                            FILE_CURRENT,
+                                            &cbRead);
+                    }
+                    else
+                    {
+                        // this is our type:
+                        nameinfo *paNameInfos = NULL;
+                        ULONG cbNameInfos;
+
+                        _Pmpf((__FUNCTION__ ": entering type %d (%s), %d entries",
+                                      ulTypeThis,
+                                      GetWinResourceTypeName(ulTypeThis),
+                                      typeinfo.rt_nres));
+
+                        if (    (!(arc = doshAllocArray(typeinfo.rt_nres,
+                                                        sizeof(nameinfo),
+                                                        (PBYTE*)&paNameInfos,
+                                                        &cbNameInfos)))
+                             && (!(arc = DosRead(pExec->hfExe,
+                                                 paNameInfos,
+                                                 cbNameInfos,
+                                                 &cbRead)))
+                           )
+                        {
+                            ULONG ul;
+                            nameinfo *pThis = paNameInfos;
+
+                            if (cbRead < cbNameInfos)
+                                arc = ERROR_BAD_FORMAT;
+                            else
+                            {
+                                for (ul = 0;
+                                     ul < typeinfo.rt_nres;
+                                     ul++, pThis++)
+                                {
+                                    ULONG ulIDThis = pThis->rn_id;
+                                    ULONG ulOffset = pThis->rn_offset << usAlignShift;
+                                    ULONG cbThis =   pThis->rn_length << usAlignShift;
+                                    _Pmpf(("   found res type %d, id %d, length %d",
+                                                ulTypeThis,
+                                                ulIDThis & ~0x8000,
+                                                cbThis));
+
+                                    if (    (!idResource)
+                                         || (    (ulIDThis & 0x8000)
+                                              && ((ulIDThis & ~0x8000) == idResource)
+                                            )
+                                       )
+                                    {
+                                        // found:
+                                        PBYTE pb;
+                                        if (!(*ppbResData = malloc(cbThis)))
+                                            arc = ERROR_NOT_ENOUGH_MEMORY;
+                                        else
+                                        {
+                                            if (!(arc = doshReadAt(pExec->hfExe,
+                                                                   ulOffset,
+                                                                   FILE_BEGIN,
+                                                                   &cbThis,
+                                                                   *ppbResData)))
+                                                fPtrFound = TRUE;
+                                            else
+                                                // error reading:
+                                                free(*ppbResData);
+                                        }
+
+                                        break;
+                                    }
+                                } // end for
+                            }
+
+                            if (arc)
+                                break;
+                        }
+
+                        if (paNameInfos)
+                            free(paNameInfos);
+
+                        break;  // while
+                    } // end if our type
+                }
+            }
+        } // end while (!arc)
+
+        if ((!fPtrFound) && (!arc))
+            arc = ERROR_NO_DATA;
+    }
+
+    return (arc);
+}
+
+/*
  *@@ icoLoadExeIcon:
  *      smarter replacement for WinLoadFileIcon, which
  *      takes ages on PE executables.
  *
  *      Note that as opposed to WinLoadFileIcon, this
  *      is intended for executables _only_. This does
- *      not check for an .ICO file in the same directory;
- *      instead, this will try to find a default icon
- *      in the resources.
+ *      not check for an .ICO file in the same directory.
  *
  *      Neither will this check for an .ICON EA because
  *      this is intended for XWPFileSystem::wpSetProgIcon
  *      which never gets called in the first place for
  *      that case.
+ *
+ *      Instead, this will "only" try to find a default
+ *      icon in the executable's resources.
  *
  *      Also, if no icon resource could be found in the
  *      executable, this returns ERROR_NO_DATA instead
@@ -847,40 +1547,76 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,
 {
     APIRET arc;
 
-    PBYTE pbIconData = NULL;
-
-    if (!pExec)
-        return ERROR_INVALID_PARAMETER;
-
-    // check the executable type
-    switch (pExec->ulExeFormat)
+    TRY_LOUD(excpt1)
     {
-        case EXEFORMAT_LX:
-            // these two we can handle for now
-            arc = LoadLXResource(pExec,
-                                 RT_POINTER,
-                                 0,         // first one found
-                                 &pbIconData);
-        break;
+        PBYTE pbIconData = NULL;
 
-        case EXEFORMAT_OLDDOS:
-        case EXEFORMAT_TEXT_BATCH:
-        case EXEFORMAT_TEXT_REXX:
+        if (!pExec)
+            return ERROR_INVALID_PARAMETER;
 
-        case EXEFORMAT_NE:
-        case EXEFORMAT_PE:          // @@todo later
-        default:
-            arc = ERROR_INVALID_EXE_SIGNATURE;
-        break;
+        // check the executable type
+        switch (pExec->ulExeFormat)
+        {
+            case EXEFORMAT_LX:
+                // these two we can handle for now
+                arc = LoadLXResource(pExec,
+                                     RT_POINTER,
+                                     0,         // first one found
+                                     &pbIconData);
+            break;
+
+            case EXEFORMAT_NE:
+                switch (pExec->ulOS)
+                {
+                    case EXEOS_OS2:
+                        arc = LoadOS2NEResource(pExec,
+                                                RT_POINTER,
+                                                0,         // first one found
+                                                &pbIconData);
+                        if (arc)
+                            _Pmpf((__FUNCTION__ ": LoadOS2NEResource returned %d", arc));
+                    break;
+
+                    case EXEOS_WIN16:
+                    case EXEOS_WIN386:
+                        arc = LoadWinNEResource(pExec,
+                                                WINRT_ICON,
+                                                0,         // first one found
+                                                &pbIconData);
+                        if (arc)
+                            _Pmpf((__FUNCTION__ ": LoadWinNEResource returned %d", arc));
+                    break;
+
+                    default:
+                        arc = ERROR_INVALID_EXE_SIGNATURE;
+                }
+            break;
+
+            case EXEFORMAT_PE:          // @@todo later
+
+            case EXEFORMAT_OLDDOS:
+            case EXEFORMAT_TEXT_BATCH:
+            case EXEFORMAT_TEXT_REXX:
+
+            default:
+                arc = ERROR_INVALID_EXE_SIGNATURE;
+            break;
+        }
+
+        if (!arc && pbIconData)
+        {
+            if (!(arc = icoBuildPtrHandle(pbIconData,
+                                          phptr)))
+                _Pmpf(("Built hptr %lX", *phptr));
+            else
+                _Pmpf(("icoBuildPtrHandle returned %d", arc));
+            free(pbIconData);
+        }
     }
-
-    if (!arc && pbIconData)
+    CATCH(excpt1)
     {
-        if (!(arc = icoBuildPtrHandle(pbIconData,
-                                      phptr)))
-            _Pmpf(("Built hptr %lX", *phptr));
-        free(pbIconData);
-    }
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
 
     if (arc)
         _Pmpf((__FUNCTION__ ": returning %d", arc));
@@ -900,21 +1636,6 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,
  *      or wpQueryIconN, which is undocumented.
  *
  *      Returns 0 on errors.
- *
- *      The "query icon" methods return an HPOINTER,
- *      but will usually only load the icon on the
- *      first call and then return that icon always.
- *      If wpSetIcon is called on the object,
- *      wpQueryIcon will then return _that_ icon
- *      subsequently.
- *
- *      Some WPS classes have a special "set the right
- *      icon" method, which calls wpSetIcon depending
- *      on the subtype of the object. Examples are
- *
- *      --  WPDisk::wpSetCorrectDiskIcon
- *
- *      --  WPDataFile::wpSetAssociatedFileIcon
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */

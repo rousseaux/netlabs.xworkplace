@@ -215,36 +215,34 @@ PVOID wpshResolveFor(SOMObject *somSelf,  // in: instance
 {
     PVOID pvrc = 0;
 
-    if (pClass == NULL)
-        pClass = _somGetClass(somSelf);
+    somId somidMethod;
 
-    if (pClass)
+    if (!pClass)
+        if (!(pClass = _somGetClass(somSelf)))
+            return NULL;
+
+    if (somidMethod = somIdFromString((PSZ)pcszMethodName))
     {
-        somId somidMethod = somIdFromString((PSZ)pcszMethodName);
-        if (somidMethod)
+        somMToken tok;;
+        if (tok = _somGetMethodToken(pClass,
+                                     somidMethod))
         {
-            somMToken tok = _somGetMethodToken(pClass,
-                                               somidMethod);
-            if (tok)
-            {
-                // finally, resolve method
-                // now using somClassResolve V0.9.12 (2001-05-22) [umoeller]
-                pvrc = (PVOID)somClassResolve(pClass,
-                                              tok);
-                if (!pvrc)
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "somClassResolved failed for %s", pcszMethodName);
-            }
-            else
+            // finally, resolve method
+            // now using somClassResolve V0.9.12 (2001-05-22) [umoeller]
+            if (!(pvrc = (PVOID)somClassResolve(pClass,
+                                                tok)))
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Cannot get method token for %s.", pcszMethodName);
-
-            SOMFree(somidMethod);
+                       "somClassResolved failed for %s", pcszMethodName);
         }
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Cannot get somId for %s.", pcszMethodName);
+                   "Cannot get method token for %s.", pcszMethodName);
+
+        SOMFree(somidMethod);
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot get somId for %s.", pcszMethodName);
 
     return (pvrc);
 }

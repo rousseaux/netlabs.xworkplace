@@ -198,7 +198,7 @@ select
         "bin\repclass.exe WPFolder XFolder"
         "bin\repclass.exe WPFileSystem XFldFileSystem"
         "bin\repclass.exe WPObject XFldObject"
-        "bin\repclass.exe WPProgramFile XFldProgramFile"
+        "bin\repclass.exe WPProgramFile XWPProgramFile"
         "bin\repclass.exe WPSound XWPSound"
         "bin\repclass.exe WPMouse XWPMouse"
         "bin\repclass.exe WPKeyboard XWPKeyboard"
@@ -215,7 +215,7 @@ select
         "bin\repclass.exe WPDataFile XFldDataFile" mydir||"\bin\xfldr.dll";
         "bin\repclass.exe WPDisk XFldDisk" mydir||"\bin\xfldr.dll";
         "bin\repclass.exe WPDesktop XFldDesktop" mydir||"\bin\xfldr.dll";
-        "bin\repclass.exe WPProgramFile XFldProgramFile" mydir||"\bin\xfldr.dll";
+        "bin\repclass.exe WPProgramFile XWPProgramFile" mydir||"\bin\xfldr.dll";
         "bin\repclass.exe WPSound XWPSound" mydir||"\bin\xfldr.dll";
         "bin\repclass.exe WPMouse XWPMouse" mydir||"\bin\xfldr.dll";
         "bin\repclass.exe WPKeyboard XWPKeyboard" mydir||"\bin\xfldr.dll";
@@ -337,7 +337,7 @@ select
         "bin\repclass.exe WPFolder XFolder"
         "bin\repclass.exe WPFileSystem XFldFileSystem"
         "bin\repclass.exe WPObject XFldObject"
-        "bin\repclass.exe WPProgramFile XFldProgramFile"
+        "bin\repclass.exe WPProgramFile XWPProgramFile"
         "bin\repclass.exe WPSound XWPSound"
         "bin\repclass.exe WPMouse XWPMouse"
         "bin\repclass.exe WPKeyboard XWPKeyboard"

@@ -139,6 +139,7 @@
 #include "xfobj.ih"                     // XFldObject
 #include "xwpstring.ih"                 // XWPString
 #include "xfdisk.ih"                    // XFldDisk
+#include "xfdataf.ih"
 #include "xfldr.ih"                     // XFolder
 
 // XWorkplace implementation headers
@@ -149,12 +150,12 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-#include "config\partitions.h"          // WPDrives "Partitions" view
+// #include "config\partitions.h"          // WPDrives "Partitions" view
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
-#include "filesys\program.h"            // program implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -163,10 +164,7 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wppgm.h>                      // WPProgram
 #include <wpshadow.h>                   // WPShadow
-// #include <wpdesk.h>                     // WPDesktop
-#include <wpdataf.h>                    // WPDataFile
 #include <wprootf.h>                    // WPRootFolder
-#include <wpdrives.h>                   // WPDrives (Drives folder)
 
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 #include "helpers\undoc.h"              // some undocumented stuff

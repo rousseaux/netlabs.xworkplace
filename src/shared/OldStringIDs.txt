@@ -828,7 +828,7 @@
                 pszSoundsPage,      // title of "Sounds" page (XWPSound)
                 pszViewPage,        // title of "View" page (XFldWPS, XCenter)
                 pszArchivesPage,    // title of WPDesktop "Archives" page replacement
-                pszModulePage,      // title of XFldProgramFile "Module" page
+                pszModulePage,      // title of XWPProgramFile "Module" page
                 pszObjectHotkeysPage, // title of XWPKeyboard "Hotkeys" page
                 pszFunctionKeysPage, // title of XWPKeyboard "Function keys " page V0.9.3 (2000-04-18) [umoeller]
                 pszMouseHookPage,   // title of XWPMouse "Mouse hook" page
@@ -987,7 +987,7 @@
                 pszByte,
                 pszBytes,
 
-                // title of XFldProgramFile "Resources" page V0.9.7 (2000-12-20) [umoeller]
+                // title of XWPProgramFile "Resources" page V0.9.7 (2000-12-20) [umoeller]
                 pszResourcesPage,
 
                 // title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller]
@@ -1442,7 +1442,7 @@ const char *G_pcszXFolder = "XFolder";
 const char *G_pcszXFldDisk = "XFldDisk";
 const char *G_pcszXFldDesktop = "XFldDesktop";
 const char *G_pcszXFldDataFile = "XFldDataFile";
-const char *G_pcszXFldProgramFile = "XFldProgramFile";
+const char *G_pcszXWPProgramFile = "XWPProgramFile";
 const char *G_pcszXWPSound = "XWPSound";
 const char *G_pcszXWPMouse = "XWPMouse";
 const char *G_pcszXWPKeyboard = "XWPKeyboard";
