@@ -1511,10 +1511,12 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          */
 
         // hack in split view V0.9.21 (2002-08-24) [umoeller]
-        if (fOpen = winhQueryMenuItem(hwndMenu,
-                                      WPMENUID_OPEN,
-                                      TRUE,
-                                      &mi))
+        if (    (fOpen = winhQueryMenuItem(hwndMenu,
+                                           WPMENUID_OPEN,
+                                           TRUE,
+                                           &mi))
+             && (cmnQuerySetting(sfFdrSplitViews))
+           )
         {
             winhInsertMenuItem(mi.hwndSubMenu,
                                MIT_END,

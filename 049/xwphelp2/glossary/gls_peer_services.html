@@ -1,39 +1,41 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: File and Print Client
+        &xwp;: Datei- und Druck-Dienste
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.20 -->
 <BODY>
-Typically, the following &link_peer; services will be started on your system:
+öblicherweise werden die folgenden &link_peer;-Dienste auf Ihrem System gestartet:
 
-<UL><LI>The <CODE>REQUESTER</CODE> service allows your computer to
-see other resources on the LAN. The "requester" is a synonym for "client",
-really. After the requester has been started, you can access remote
-files and printers on the LAN. In addition, you can assign directories
-that are shared by other computers to a driver letter on your own system.
+<UL><LI>Der <CODE>REQUESTER</CODE>-Dienst erlaubt es Ihrem Rechner,
+auf andere Ressourcen im LAN zuzugreifen. "Requester" ist insoweit ein
+Synonym fÅr "Client". Nachdem der Requester gestartet wurde, kînnen
+Sie entfernte Dateien und Drucker im LAN benutzen. ZusÑtzlich kînnen Sie
+entfernten Verzeichnissen lokal einen Laufwerksbuchstaben zuweisen, um
+diese wie ein lokales Laufwerk benutzen zu kînnen.
 
-<P><LI>The <CODE>PEER</CODE> service is a stripped-down version
-of the server services that are only part of server versions of
-&os2;. After the peer service has started, your computer can share
-local directories, files, and printers with other computers on the
-LAN.
+<P><LI>Der <CODE>PEER</CODE>-Dienst ist eine reduzierte Version der
+Dienste, die mit den Server-Versionen von &os2; geliefert werden. Nachdem
+der Peer-Dienst gestartet wurde, kînnen Sie Verzeichnisse, Dateien und
+Drucker Ihres Rechners fÅr das
+Netzwerk freigeben, so da· andere Rechner im Netzwerk diese ebenfalls
+benutzen kînnen.
 
-<P>This service requires that the <CODE>REQUESTER</CODE> service
-is active too.
+<P>Der Peer-Dienst erfordert, da· der <CODE>REQUESTER</CODE>-Dienst ebenfalls
+lÑuft.
 
-</UL>Use a <A HREF="glossary/gls_cmd.html">command prompt</A> for dealing
-with services in detail:
+</UL>Benutzen Sie eine <A HREF="glossary/gls_cmd.html">Kommandozeile</A>, um
+Dienste im Detail zu steuern:
 
-<UL><LI>To start a service explicitly, use
-<CODE>NET START <I>service</I></CODE>, for example, <CODE>NET START REQUESTER</CODE>.
+<UL><LI>Um einen Dienst explizit zu starten, geben Sie
+<CODE>NET START <I>service</I></CODE> ein (z.B. <CODE>NET START REQUESTER</CODE>).
 
-<P><LI>To stop a service explicitly, use
-<CODE>NET STOP <I>service</I></CODE>, for example, <CODE>NET STOP REQUESTER</CODE>.
+<P><LI>Um einen Dienst explizit anzuhalten, geben Sie
+<CODE>NET STOP <I>service</I></CODE> ein (z.B. <CODE>NET STOP REQUESTER</CODE>).
 
-<P><LI>To find out which services are currently running, type
-<CODE>NET START</CODE>, without a service name.
+<P><LI>Um herauszufinden, welche Dienste momentan aktiv sind, geben Sie
+<CODE>NET START</CODE> ohne den Namen eines Dienstes an.
 
 </UL>
 </BODY>

@@ -3055,6 +3055,10 @@ STATIC const SETTINGINFO G_aSettingInfos[] =
             "fTurboFolders",
 #endif
 
+        sfFdrSplitViews, -1, 0,            // V0.9.21 (2002-09-09) [umoeller]
+            SP_SETUP_FEATURES, 0,
+            "fFdrSplitViews",
+
         sulVarMenuOfs, FIELDOFFSET(OLDGLOBALSETTINGS, VarMenuOffset), 4,
             SP_SETUP_PARANOIA, 700,
             "ulVarMenuOffset",

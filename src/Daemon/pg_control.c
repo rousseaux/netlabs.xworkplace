@@ -551,6 +551,7 @@ STATIC VOID DestroyBitmaps(PPAGERWINDATA pWinData)
         GpiDeleteBitmap(pWinData->hbmTemplate);
         pWinData->hbmTemplate = NULLHANDLE;
     }
+
     gpihDestroyXBitmap(&pWinData->pbmClient);
 }
 
@@ -858,8 +859,7 @@ STATIC VOID RefreshPagerBitmap(HWND hwnd,
                             // one of them being that it won't get the
                             // clipping right except with a major overhead
                             // and messing with the clip rectangle, so
-                            // paint the icon manually (see gpihIcon2Bitmap
-                            // on whose code this is based)
+                            // paint the icon manually
                             DrawPointer(hpsMem,
                                         pMiniThis,
                                         lcolCenter);
@@ -1202,47 +1202,47 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
         {
             if (msg == WM_BUTTON1CLICK)
             {
-               // we first force a desktop switch if follow focus
-               // is disabled
-               // V0.9.19 (2002-06-14) [lafaix]
-               if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
-               {
-                   SWP swpActive;
+                // we first force a desktop switch if follow focus
+                // is disabled
+                // V0.9.19 (2002-06-14) [lafaix]
+                if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
+                {
+                    SWP swpActive;
 
-                   if (WinQueryWindowPos(hwndClicked, &swpActive))
-                   {
-                       // calculate the absolute coordinate of the center
-                       // of the active window relative to the bottom
-                       // left desktop:
-                       LONG    cx = G_pHookData->szlEachDesktopFaked.cx,
-                               cy = G_pHookData->szlEachDesktopFaked.cy,
-                               xCurrent = G_pHookData->ptlCurrentDesktop.x,
-                               yCurrent = G_pHookData->ptlCurrentDesktop.y,
-                               x =      (    swpActive.x
-                                           + (swpActive.cx / 2)
-                                           + xCurrent
-                                        ) / cx
-                                          * cx,
-                               y =      (    swpActive.y
-                                           + (swpActive.cy / 2)
-                                           + yCurrent
-                                        ) / cy
-                                          * cy;
+                    if (WinQueryWindowPos(hwndClicked, &swpActive))
+                    {
+                        // calculate the absolute coordinate of the center
+                        // of the active window relative to the bottom
+                        // left desktop:
+                        LONG    cx = G_pHookData->szlEachDesktopFaked.cx,
+                                cy = G_pHookData->szlEachDesktopFaked.cy,
+                                xCurrent = G_pHookData->ptlCurrentDesktop.x,
+                                yCurrent = G_pHookData->ptlCurrentDesktop.y,
+                                x =      (    swpActive.x
+                                            + (swpActive.cx / 2)
+                                            + xCurrent
+                                         ) / cx
+                                           * cx,
+                                y =      (    swpActive.y
+                                            + (swpActive.cy / 2)
+                                            + yCurrent
+                                         ) / cy
+                                           * cy;
 
-                       // bump boundaries
-                       if (    (x >= 0)
-                            && (x <= (G_pHookData->PagerConfig.cDesktopsX * cx))
-                            && (y >= 0)
-                            && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
-                          )
-                       {
-                           WinPostMsg(G_pHookData->hwndPagerMoveThread,
-                                      PGRM_MOVEBYDELTA,
-                                      (MPARAM)(xCurrent - x),
-                                      (MPARAM)(yCurrent - y));
-                       }
-                   }
-               }
+                        // bump boundaries
+                        if (    (x >= 0)
+                             && (x <= (G_pHookData->PagerConfig.cDesktopsX * cx))
+                             && (y >= 0)
+                             && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
+                           )
+                        {
+                            WinPostMsg(G_pHookData->hwndPagerMoveThread,
+                                       PGRM_MOVEBYDELTA,
+                                       (MPARAM)(xCurrent - x),
+                                       (MPARAM)(yCurrent - y));
+                        }
+                    }
+                }
 
                 // mb1: activate window
                 WinSetActiveWindow(HWND_DESKTOP, hwndClicked);

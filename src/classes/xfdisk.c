@@ -817,7 +817,9 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
         default:
             // added split view
             // V0.9.21 (2002-08-28) [umoeller]
-            if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+            if (    (cmnQuerySetting(sfFdrSplitViews))
+                 && (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+               )
             {
                 if (pRootFolder = dskCheckDriveReady(somSelf))
                     hwndNewFrame = fdrCreateSplitView(somSelf,

@@ -105,7 +105,8 @@ extern USHORT   G_pidDaemon;
  *  the window list debug window if DEBUG_WINDOWLIST
  *  is #define'd in include\setup.h.
  *
- *  Ignore this section.
+ *  Ignore this section, it causes headaches and other
+ *  bad things.
  */
 
 #ifdef DEBUG_WINDOWLIST
@@ -720,6 +721,7 @@ STATIC VOID RemoveInfo(PLISTNODE pNode)
         pWinInfo->prec = NULL;
     }
     #endif
+
     lstRemoveNode(&G_llWinInfos, pNode);
 }
 

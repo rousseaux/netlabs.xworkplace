@@ -2039,6 +2039,7 @@
 #ifndef __NOTURBOFOLDERS__
 #define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
 #endif
+#define ID_XCSI_FDRSPLITVIEWS           6016        // V0.9.21 (2002-09-09) [umoeller]
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #ifndef __ALWAYSREPLACEARCHIVING__

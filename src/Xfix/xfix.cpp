@@ -2874,9 +2874,8 @@ VOID WriteBack(VOID)
  *
  */
 
-ULONG EXPENTRY fncbSelectInvalid(HWND hwndCnr,
+ULONG XWPENTRY fncbSelectInvalid(HWND hwndCnr,
                                  PRECORDCORE precc,
-                                 ULONG ulUser1,
                                  ULONG ulUser2)
 {
     PNODERECORD pNodeRecord = (PNODERECORD)precc;

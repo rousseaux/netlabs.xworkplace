@@ -892,9 +892,12 @@
 #endif
 
 #ifndef __NOTURBOFOLDERS__
-        sfTurboFolders,            // warning: this will return the setting
-                                 // that was once determined on WPS startup
+        sfTurboFolders,             // warning: this will return the setting
+                                    // that was once determined on WPS startup
 #endif
+
+        sfFdrSplitViews,            // new folder split views
+                                    // V0.9.21 (2002-09-09) [umoeller]
 
         // menu settings
         sulVarMenuOfs,

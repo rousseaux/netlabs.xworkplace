@@ -333,6 +333,12 @@ See the &xwp; User Guide for details.
 If you enable this setting, you will probably notice a speed increase when folders are first opened and thus need to be populated, especially with folders that contain many objects.
 Also, the background threads for the replacement auto-refresh will profit from this setting.
 This requires the XWPFileSystem replacement class to be installed. Changing this setting requires a WPS restart.
+;
+; FEATURES_6016 added with V0.9.21 (2002-09-09) [umoeller]
+;
+<--FEATURES_6016-->: The "Split views" setting determines whether &xwp; adds a new standard folder view to the "Open" submenu of all context menus.
+A split view consists of two folder views, a Tree view on the left and a second view on the right which displays the objects in the folder that is currently selected in the Tree.
+You might be vaguely familiar with this feature from Windows.
 
 <--FEATURES_6051-->: The "&xwp; Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
 Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.

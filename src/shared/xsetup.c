@@ -202,6 +202,8 @@ STATIC FEATURESITEM G_FeatureItemsList[] =
 #ifndef __NOTURBOFOLDERS__
             ID_XCSI_TURBOFOLDERS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+            ID_XCSI_FDRSPLITVIEWS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+                    // V0.9.21 (2002-09-09) [umoeller]
 
             // mouse/keyboard features
             ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
@@ -1713,6 +1715,7 @@ STATIC const XWPSETTING G_FeaturesBackup[] =
 #ifndef __NOTURBOFOLDERS__
         sfTurboFolders,
 #endif
+        sfFdrSplitViews,
 #ifndef __ALWAYSHOOK__
         sfXWPHook,
 #endif
@@ -1975,6 +1978,11 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 // WPS startup setting
                 cmnQuerySetting(sfTurboFolders));
 #endif
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FDRSPLITVIEWS,
+                // return the current global setting;
+                // cmnQuerySetting would return the initial
+                // WPS startup setting
+                cmnQuerySetting(sfFdrSplitViews));
 #ifndef __ALWAYSHOOK__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 cmnQuerySetting(sfXWPHook));
@@ -2305,6 +2313,10 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                     ulNotifyMsg = 224;
             break;
 #endif
+
+            case ID_XCSI_FDRSPLITVIEWS:
+                cmnSetSetting(sfFdrSplitViews, precc->usCheckState);
+            break;
 
 #ifndef __ALWAYSOBJHOTKEYS__
             case ID_XCSI_GLOBALHOTKEYS:

@@ -180,8 +180,13 @@ BOOL fdrSetup(WPFolder *somSelf,
     ULONG       cbValue = sizeof(szValue);
 
     cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "OPEN", szValue, &cbValue))
+    if (    (cmnQuerySetting(sfFdrSplitViews))
+         && (_wpScanSetupString(somSelf,
+                                (PSZ)pszSetupString,
+                                "OPEN",
+                                szValue,
+                                &cbValue))
+       )
     {
         if (!stricmp(szValue, "SPLITVIEW"))
             krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
@@ -193,8 +198,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     }
 
 #ifndef __NOSNAPTOGRID__
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "SNAPTOGRID", szValue, &cbValue))
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pszSetupString,
+                           "SNAPTOGRID",
+                           szValue,
+                           &cbValue))
     {
         rc = TRUE;
         fChanged = TRUE;
@@ -218,8 +226,11 @@ BOOL fdrSetup(WPFolder *somSelf,
 #endif
 
     cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "FULLPATH", szValue, &cbValue))
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pszSetupString,
+                           "FULLPATH",
+                           szValue,
+                           &cbValue))
     {
         fChanged = TRUE;
         rc = TRUE;
@@ -234,8 +245,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     }
 
     cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "ACCELERATORS", szValue, &cbValue))
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pszSetupString,
+                           "ACCELERATORS",
+                           szValue,
+                           &cbValue))
     {
         fChanged = TRUE;
         rc = TRUE;
@@ -248,8 +262,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     }
 
     cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "FAVORITEFOLDER", szValue, &cbValue))
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pszSetupString,
+                           "FAVORITEFOLDER",
+                           szValue,
+                           &cbValue))
     {
         rc = TRUE;
         if (!strnicmp(szValue, "NO", 2))
@@ -260,8 +277,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     }
 
     cbValue = sizeof(szValue);
-    if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                           "QUICKOPEN", szValue, &cbValue))
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pszSetupString,
+                           "QUICKOPEN",
+                           szValue,
+                           &cbValue))
     {
         rc = TRUE;
         if (!strnicmp(szValue, "NO", 2))
@@ -277,8 +297,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     if (somSelf != cmnQueryActiveDesktop())
     {
         cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                               "STATUSBAR", szValue, &cbValue))
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "STATUSBAR",
+                               szValue,
+                               &cbValue))
         {
             rc = TRUE;
             if (!strnicmp(szValue, "NO", 2))
@@ -299,8 +322,11 @@ BOOL fdrSetup(WPFolder *somSelf,
 #endif
     {
         cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                               "ALWAYSSORT", szValue, &cbValue))
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "ALWAYSSORT",
+                               szValue,
+                               &cbValue))
         {
             rc = TRUE;
             _xwpQueryFldrSort(somSelf,
@@ -320,8 +346,11 @@ BOOL fdrSetup(WPFolder *somSelf,
                             lAlwaysSort);
         }
         cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                               "SORTFOLDERSFIRST", szValue, &cbValue))
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "SORTFOLDERSFIRST",
+                               szValue,
+                               &cbValue))
         {
             rc = TRUE;
             _xwpQueryFldrSort(somSelf,
@@ -342,8 +371,11 @@ BOOL fdrSetup(WPFolder *somSelf,
         }
 
         cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
-                               "DEFAULTSORT", szValue, &cbValue))
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "DEFAULTSORT",
+                               szValue,
+                               &cbValue))
         {
             LONG lValue;
 
@@ -367,7 +399,9 @@ BOOL fdrSetup(WPFolder *somSelf,
         cbValue = sizeof(szValue);
         if (_wpScanSetupString(somSelf,
                                (PSZ)pszSetupString,
-                               "SORTNOW", szValue, &cbValue))
+                               "SORTNOW",
+                               szValue,
+                               &cbValue))
         {
             USHORT usSort;
             LONG lValue;

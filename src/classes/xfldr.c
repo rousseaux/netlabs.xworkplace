@@ -2621,7 +2621,9 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     {
         // added split view
         // V0.9.21 (2002-08-21) [umoeller]
-        if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+        if (    (cmnQuerySetting(sfFdrSplitViews))
+             && (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+           )
         {
             hwndNewFrame = fdrCreateSplitView(somSelf,
                                               somSelf,
