@@ -481,8 +481,7 @@ VOID WwgtScanSetup(PCSZ pcszSetupString,
         ULONG ulSeparatorLength = strlen(G_pcszFilterSeparator);
         do
         {
-            pSep = strstr(pFilter, G_pcszFilterSeparator);
-            if (pSep)
+            if (pSep = strstr(pFilter, G_pcszFilterSeparator))
                 *pSep = '\0';
             // append copy filter; use plstStrDup to
             // allow auto-free of the list
@@ -1634,8 +1633,8 @@ VOID UpdateSwitchList(HWND hwnd,
     if (flRepaint & SCANF_REDRAWALL)
     {
         // redraw all:
-        HPS hps = WinGetPS(hwnd);
-        if (hps)
+        HPS hps;
+        if (hps = WinGetPS(hwnd))
         {
             RECTL rclSubclient;
             GetPaintableRect(pPrivate, &rclSubclient);
@@ -1651,8 +1650,8 @@ VOID UpdateSwitchList(HWND hwnd,
             )
     {
         // redraw only some: go thru list then
-        HPS hps = WinGetPS(hwnd);
-        if (hps)
+        HPS hps;
+        if (hps = WinGetPS(hwnd))
         {
             RECTL       rclSubclient;
             PLISTNODE   pNode;

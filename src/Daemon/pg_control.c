@@ -35,7 +35,7 @@
  *          all the time. As a result, XPager's CPU load
  *          is pretty low.
  *
- *          The code for this is in pg_winscan.c.
+ *          The code for this is in pg_winlist.c.
  *
  *      --  The XPager "move thread", which is a second
  *          thread which gets started when the pager is

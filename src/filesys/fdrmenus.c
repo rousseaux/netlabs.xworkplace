@@ -1417,9 +1417,21 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         // we only do this if the Global Settings want it
 
         /*
-         * WPDrives "Open" submenu:
+         * "Open" submenu:
          *
          */
+
+        /*if (WinSendMsg(hwndMenu,
+                       MM_QUERYITEM,
+                       MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                       (MPARAM)&mi))
+        {
+            winhInsertMenuItem(mi.hwndSubMenu,
+                               MIT_END,
+                               ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW,
+                               "Split view", // @@todo localize
+                               MIS_TEXT, 0);
+        } */
 
         /* if (_somIsA(somSelf, _WPDrives))
         {
@@ -2899,6 +2911,10 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     partCreatePartitionsView(somSelf,
                                              ulMenuId);
                 break; */ // disabled V0.9.12 (2001-05-03) [umoeller]
+
+                case ID_XFMI_OFS_SPLITVIEW:
+                    // fdrCreateSplitView(somSelf);
+                break;
 
                 /*
                  * ID_XFMI_OFS_FDRDEFAULTDOC:

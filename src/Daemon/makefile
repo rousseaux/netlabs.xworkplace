@@ -59,7 +59,7 @@ PGRDAEMNOBJS = \
 !ifndef XWPLITE
 $(OUTPUTDIR)\pg_control.obj \
 $(OUTPUTDIR)\pg_move.obj \
-$(OUTPUTDIR)\pg_winscan.obj
+$(OUTPUTDIR)\pg_winlist.obj
 !endif
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;

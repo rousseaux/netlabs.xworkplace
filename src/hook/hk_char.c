@@ -9,7 +9,6 @@
 /*
  *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
- *      Copyright (C) 1995-1999 Carlos Ugarte.
  *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -434,9 +433,9 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
     // moved all the following out of the mutex block above
     if (!brc)       // message not swallowed yet:
     {
-        if (    (G_HookData.XPagerConfig.fEnableArrowHotkeys)
+        if (    (G_HookData.PagerConfig.flPager & PGRFL_HOTKEYS)
                     // arrow hotkeys enabled?
-             && (G_HookData.hwndXPagerClient)
+             && (G_HookData.hwndPagerClient)
                     // XPager active?
            )
         {
@@ -445,8 +444,8 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
             if ((usFlags & KC_KEYUP) == 0)
             {
                 // check KC_CTRL etc. flags
-                if (   (G_HookData.XPagerConfig.ulKeyShift | KC_SCANCODE)
-                            == (usFlags & (G_HookData.XPagerConfig.ulKeyShift
+                if (   (G_HookData.PagerConfig.flKeyShift | KC_SCANCODE)
+                            == (usFlags & (G_HookData.PagerConfig.flKeyShift
                                            | KC_SCANCODE))
                    )
                     // OK: check scan codes
@@ -457,11 +456,8 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                        )
                     {
                         // cursor keys:
-                        /* ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
-                                                      ucScanCode,
-                                                      ucScanCode); */
-                        WinPostMsg(G_HookData.hwndXPagerMoveThread,
-                                   PGOM_HOOKKEY,
+                        WinPostMsg(G_HookData.hwndPagerClient,
+                                   PGRM_PAGERHOTKEY,
                                    (MPARAM)ucScanCode,
                                    0);
                         // swallow

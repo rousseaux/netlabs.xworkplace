@@ -110,38 +110,38 @@ static PFNWP   G_pfnwpOrigStatic = NULL;
 #ifndef __NOPAGER__
 
 /*
- *@@ LoadXPagerConfig:
+ *@@ LoadPagerConfig:
  *
  *@@added V0.9.3 (2000-05-21) [umoeller]
  */
 
-static BOOL LoadXPagerConfig(PAGERCONFIG* pPgmgConfig)
+static BOOL LoadPagerConfig(PAGERCONFIG* pPagerCfg)
 {
     ULONG cb = sizeof(PAGERCONFIG);
-    memset(pPgmgConfig, 0, sizeof(PAGERCONFIG));
+    memset(pPagerCfg, 0, sizeof(PAGERCONFIG));
     // overwrite from INI, if found
     return (PrfQueryProfileData(HINI_USER,
                                 INIAPP_XWPHOOK,
-                                INIKEY_HOOK_PGMGCONFIG,
-                                pPgmgConfig,
+                                INIKEY_HOOK_PAGERCONFIG,
+                                pPagerCfg,
                                 &cb));
 }
 
 /*
- *@@ SaveXPagerConfig:
+ *@@ SavePagerConfig:
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
-static VOID SaveXPagerConfig(PAGERCONFIG* pPgmgConfig,
-                               ULONG ulFlags)  // in: PGMGCFG_* flags (xwphook.h)
+static VOID SavePagerConfig(PAGERCONFIG* pPagerCfg,
+                            ULONG ulFlags)  // in: PGRCFG_* flags (xwphook.h)
 {
     // settings changed:
     // 1) write back to OS2.INI
     if (PrfWriteProfileData(HINI_USER,
                             INIAPP_XWPHOOK,
-                            INIKEY_HOOK_PGMGCONFIG,
-                            pPgmgConfig,
+                            INIKEY_HOOK_PAGERCONFIG,
+                            pPagerCfg,
                             sizeof(PAGERCONFIG)))
     {
         // 2) notify daemon, but do this delayed, because
@@ -170,42 +170,71 @@ static VOID SaveXPagerConfig(PAGERCONFIG* pPgmgConfig,
  *@@ UpdateValueSet:
  *
  *@@added V0.9.9 (2001-03-15) [lafaix]
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: rewritten to display dimensions correctly
  */
 
-static VOID UpdateValueSet(HWND hwndValueSet,
-                           PAGERCONFIG *pPgmgConfig)
+static VOID UpdateValueSet(HWND hwndPage,
+                           PAGERCONFIG *pPagerCfg)
 {
-   int row, col;
-   BOOL bValid;
+    HWND hwndValueSet = WinWindowFromID(hwndPage,
+                                        ID_SCDI_PGMG1_VALUESET);
 
-   for (row = 1; row <= 10; row++)
+    SWP     swp;
+    ULONG   flStyle = WinQueryWindowULong(hwndValueSet, QWL_STYLE);
+    VSCDATA cd;
+    WinQueryWindowPos(hwndValueSet, &swp);
+    WinDestroyWindow(hwndValueSet);
+
+    cd.cbSize = sizeof(cd);
+    cd.usRowCount = pPagerCfg->cDesktopsY;
+    cd.usColumnCount = pPagerCfg->cDesktopsX;
+
+    if (hwndValueSet = WinCreateWindow(hwndPage,
+                                       WC_VALUESET,
+                                       "",
+                                       flStyle,
+                                       swp.x,
+                                       swp.y,
+                                       swp.cx,
+                                       swp.cy,
+                                       hwndPage,        // owner
+                                       swp.hwndInsertBehind,
+                                       ID_SCDI_PGMG1_VALUESET,
+                                       &cd,
+                                       NULL))
    {
-       for (col = 1; col <= 10; col++)
+       int  row, col;
+
+       for (row = 1;
+            row <= pPagerCfg->cDesktopsY;
+            ++row)
        {
-           bValid = (col <= pPgmgConfig->ptlMaxDesktops.x)
-                 && (row <= pPgmgConfig->ptlMaxDesktops.y);
+           BOOL fCurrentRow = (pPagerCfg->cDesktopsY - row + 1) == pPagerCfg->bStartY;
+           for (col = 1;
+                col <= pPagerCfg->cDesktopsX;
+                ++col)
+           {
+               BOOL fCurrent = (    (fCurrentRow)
+                                 && (col == pPagerCfg->bStartX)
+                               );
+               WinSendMsg(hwndValueSet,
+                          VM_SETITEM,
+                          MPFROM2SHORT(row,
+                                       col),
+                          // highlight startup desktop
+                          MPFROMLONG(   fCurrent
+                                        ? pPagerCfg->lcolActiveDesktop
+                                        : pPagerCfg->lcolDesktop1
+                                     ));
 
-           WinSendMsg(hwndValueSet,
-                      VM_SETITEM,
-                      MPFROM2SHORT(row, col),
-                      MPFROMLONG(bValid ? pPgmgConfig->lcNormal
-                                        : pPgmgConfig->lcDivider));
-
-           WinSendMsg(hwndValueSet,
-                      VM_SETITEMATTR,
-                      MPFROM2SHORT(row, col),
-                      MPFROM2SHORT(VIA_DISABLED, !bValid));
+               if (fCurrent)
+                   WinSendMsg(hwndValueSet,
+                              VM_SELECTITEM,
+                              MPFROM2SHORT(row, col),
+                              0);
+           }
        }
-   }
-
-   // highlight startup desktop
-   WinSendMsg(hwndValueSet,
-              VM_SETITEM,
-              MPFROM2SHORT(min(pPgmgConfig->ptlStartDesktop.y,
-                               pPgmgConfig->ptlMaxDesktops.y),
-                           min(pPgmgConfig->ptlStartDesktop.x,
-                               pPgmgConfig->ptlMaxDesktops.x)),
-              MPFROMLONG(pPgmgConfig->lcCurrent));
+    }
 }
 
 /*
@@ -231,7 +260,7 @@ static VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info str
         // common notebook window function (notebook.c) when
         // the notebook page is destroyed
         if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
-            LoadXPagerConfig(pnbp->pUser);
+            LoadPagerConfig(pnbp->pUser);
 
         // make backup for "undo"
         if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
@@ -247,32 +276,31 @@ static VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info str
 
     if (flFlags & CBI_SET)
     {
-        PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+        PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
 
         // sliders
         winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage, ID_SCDI_PGMG1_X_SLIDER),
                                  SMA_INCREMENTVALUE,
-                                 pPgmgConfig->ptlMaxDesktops.x - 1);
+                                 pPagerCfg->cDesktopsX - 1);
         winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage, ID_SCDI_PGMG1_Y_SLIDER),
                                  SMA_INCREMENTVALUE,
-                                 pPgmgConfig->ptlMaxDesktops.y - 1);
+                                 pPagerCfg->cDesktopsY - 1);
 
         // valueset
-        UpdateValueSet(WinWindowFromID(pnbp->hwndDlgPage,
-                                       ID_SCDI_PGMG1_VALUESET),
-                       pPgmgConfig);
+        UpdateValueSet(pnbp->hwndDlgPage,
+                       pPagerCfg);
 
         // hotkeys
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_ARROWHOTKEYS,
-                              pPgmgConfig->fEnableArrowHotkeys);
+                              !!(pPagerCfg->flPager & PGRFL_HOTKEYS));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL,
-                              ((pPgmgConfig->ulKeyShift & KC_CTRL) != 0));
+                              ((pPagerCfg->flKeyShift & KC_CTRL) != 0));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT,
-                              ((pPgmgConfig->ulKeyShift & KC_SHIFT) != 0));
+                              ((pPagerCfg->flKeyShift & KC_SHIFT) != 0));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT,
-                              ((pPgmgConfig->ulKeyShift & KC_ALT) != 0));
+                              ((pPagerCfg->flKeyShift & KC_ALT) != 0));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_WRAPAROUND,
-                              ((pPgmgConfig->bWrapAround) ? TRUE : FALSE));
+                              !!(pPagerCfg->flPager & PGRFL_WRAPAROUND));
 
     }
 
@@ -309,7 +337,7 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
     ULONG   ulPgmgChangedFlags = 0;
 
     // access settings
-    PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+    PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
 
     switch (ulItemID)
     {
@@ -323,12 +351,11 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
 
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->ptlMaxDesktops.x = lSliderIndex + 1;
-            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
-            UpdateValueSet(WinWindowFromID(pnbp->hwndDlgPage,
-                                           ID_SCDI_PGMG1_VALUESET),
-                           pPgmgConfig);
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->cDesktopsX = lSliderIndex + 1;
+            ulPgmgChangedFlags = PGRCFG_REPAINT | PGRCFG_REFORMAT;
+            UpdateValueSet(pnbp->hwndDlgPage,
+                           pPagerCfg);
         }
         break;
 
@@ -342,34 +369,39 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
 
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->ptlMaxDesktops.y = lSliderIndex + 1;
-            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
-            UpdateValueSet(WinWindowFromID(pnbp->hwndDlgPage,
-                                           ID_SCDI_PGMG1_VALUESET),
-                           pPgmgConfig);
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->cDesktopsY = lSliderIndex + 1;
+            ulPgmgChangedFlags = PGRCFG_REPAINT | PGRCFG_REFORMAT;
+            UpdateValueSet(pnbp->hwndDlgPage,
+                           pPagerCfg);
         }
         break;
 
         case ID_SCDI_PGMG1_WRAPAROUND:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->bWrapAround = ulExtra;
+            LoadPagerConfig(pnbp->pUser);
+            if (ulExtra)
+                pPagerCfg->flPager |= PGRFL_WRAPAROUND;
+            else
+                pPagerCfg->flPager &= ~PGRFL_WRAPAROUND;
         break;
 
         case ID_SCDI_PGMG1_VALUESET:
             if (usNotifyCode == VN_ENTER)
             {
-                LoadXPagerConfig(pnbp->pUser);  // V0.9.19 (2002-04-23) [pr]
-                pPgmgConfig->ptlStartDesktop.x = SHORT2FROMMP((MPARAM)ulExtra);
-                pPgmgConfig->ptlStartDesktop.y = SHORT1FROMMP((MPARAM)ulExtra);
-                UpdateValueSet(pnbp->hwndControl,
-                               pPgmgConfig);
+                LoadPagerConfig(pnbp->pUser);  // V0.9.19 (2002-04-23) [pr]
+                pPagerCfg->bStartX = SHORT2FROMMP((MPARAM)ulExtra);
+                pPagerCfg->bStartY = SHORT1FROMMP((MPARAM)ulExtra);
+                UpdateValueSet(pnbp->hwndDlgPage,
+                               pPagerCfg);
             }
         break;
 
         case ID_SCDI_PGMG1_ARROWHOTKEYS:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fEnableArrowHotkeys = ulExtra;
+            LoadPagerConfig(pnbp->pUser);
+            if (ulExtra)
+                pPagerCfg->flPager |= PGRFL_HOTKEYS;
+            else
+                pPagerCfg->flPager &= ~PGRFL_HOTKEYS;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break;
 
@@ -377,23 +409,23 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_SCDI_PGMG1_HOTKEYS_SHIFT:
         case ID_SCDI_PGMG1_HOTKEYS_ALT:
         {
-            ULONG ulOldKeyShift;
-            LoadXPagerConfig(pnbp->pUser);
-            ulOldKeyShift = pPgmgConfig->ulKeyShift;
+            ULONG flOldKeyShift;
+            LoadPagerConfig(pnbp->pUser);
+            flOldKeyShift = pPagerCfg->flKeyShift;
 
-            pPgmgConfig->ulKeyShift = 0;
+            pPagerCfg->flKeyShift = 0;
             if (winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL))
-                 pPgmgConfig->ulKeyShift |= KC_CTRL;
+                 pPagerCfg->flKeyShift |= KC_CTRL;
             if (winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT))
-                 pPgmgConfig->ulKeyShift |= KC_SHIFT;
+                 pPagerCfg->flKeyShift |= KC_SHIFT;
             if (winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT))
-                 pPgmgConfig->ulKeyShift |= KC_ALT;
+                 pPagerCfg->flKeyShift |= KC_ALT;
 
-            if (pPgmgConfig->ulKeyShift == 0)
+            if (pPagerCfg->flKeyShift == 0)
             {
                 // no modifiers enabled: we really shouldn't allow this,
                 // so restore the old value
-                pPgmgConfig->ulKeyShift = ulOldKeyShift;
+                pPagerCfg->flKeyShift = flOldKeyShift;
                 WinAlarm(HWND_DESKTOP, WA_ERROR);
                 pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             }
@@ -407,18 +439,20 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
          */
 
         case DID_DEFAULT:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->ptlMaxDesktops.x = 3;
-            pPgmgConfig->ptlMaxDesktops.y = 2;
-            pPgmgConfig->ptlStartDesktop.x = 1;
-            pPgmgConfig->ptlStartDesktop.y = 1;
-            pPgmgConfig->fEnableArrowHotkeys = TRUE;
-            pPgmgConfig->ulKeyShift = KC_CTRL | KC_ALT;
-            pPgmgConfig->bWrapAround = FALSE;
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->cDesktopsX = 3;
+            pPagerCfg->cDesktopsY = 2;
+            pPagerCfg->bStartX = 1;
+            pPagerCfg->bStartY = 1;
+            pPagerCfg->flKeyShift = KC_CTRL | KC_ALT;
+            pPagerCfg->flPager =
+                (pPagerCfg->flPager
+                 & ~PGRMASK_PAGE1
+                 ) | PGRFL_PAGE1_DEFAULTS;
 
-            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
+            ulPgmgChangedFlags = PGRCFG_REPAINT | PGRCFG_REFORMAT;
 
-            SaveXPagerConfig(pPgmgConfig,
+            SavePagerConfig(pPagerCfg,
                                ulPgmgChangedFlags);
 
             // call INIT callback to reinitialize page
@@ -437,18 +471,18 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
         {
             PAGERCONFIG* pBackup = (PAGERCONFIG*)pnbp->pUser2;
 
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->ptlMaxDesktops.x = pBackup->ptlMaxDesktops.x;
-            pPgmgConfig->ptlMaxDesktops.y = pBackup->ptlMaxDesktops.y;
-            pPgmgConfig->ptlStartDesktop.x = pBackup->ptlStartDesktop.x;
-            pPgmgConfig->ptlStartDesktop.y = pBackup->ptlStartDesktop.y;
-            pPgmgConfig->fEnableArrowHotkeys = pBackup->fEnableArrowHotkeys;
-            pPgmgConfig->ulKeyShift = pBackup->ulKeyShift;
-            pPgmgConfig->bWrapAround = pBackup->bWrapAround;
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->cDesktopsX = pBackup->cDesktopsX;
+            pPagerCfg->cDesktopsY = pBackup->cDesktopsY;
+            pPagerCfg->flKeyShift = pBackup->flKeyShift;
+            pPagerCfg->flPager =
+                (pPagerCfg->flPager
+                 & ~PGRMASK_PAGE1
+                ) | (pBackup->flPager & PGRMASK_PAGE1);
 
-            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
+            ulPgmgChangedFlags = PGRCFG_REPAINT | PGRCFG_REFORMAT;
 
-            SaveXPagerConfig(pPgmgConfig,
+            SavePagerConfig(pPagerCfg,
                                ulPgmgChangedFlags);
 
             // call INIT callback to reinitialize page
@@ -467,7 +501,7 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
          && (pnbp->flPage & NBFL_PAGE_INITED) // page initialized yet?
        )
     {
-        SaveXPagerConfig(pPgmgConfig,
+        SavePagerConfig(pPagerCfg,
                            ulPgmgChangedFlags);
     }
 
@@ -482,7 +516,6 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
 
 static const CONTROLDEF
     ControlWindowGroup = LOADDEF_GROUP(ID_SCDI_PGMG1_WINDOW_GROUP, SZL_AUTOSIZE),
-    TitlebarCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_TITLEBAR),
     PreservePropsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_PRESERVEPROPS),
     StayOnTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_STAYONTOP),
     FlashToTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_FLASHTOTOP),
@@ -503,8 +536,6 @@ static const DLGHITEM dlgXPagerWindow[] =
         START_TABLE,
             START_ROW(0),
                 START_GROUP_TABLE(&ControlWindowGroup),
-                    START_ROW(0),
-                        CONTROL_DEF(&TitlebarCB),
                     START_ROW(0),
                         CONTROL_DEF(&PreservePropsCB),
                     START_ROW(0),
@@ -558,7 +589,7 @@ static VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
         // common notebook window function (notebook.c) when
         // the notebook page is destroyed
         if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
-            LoadXPagerConfig(pnbp->pUser);
+            LoadPagerConfig(pnbp->pUser);
 
         // make backup for "undo"
         if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
@@ -573,32 +604,30 @@ static VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
 
     if (flFlags & CBI_SET)
     {
-        PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
-
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_TITLEBAR,
-                              pPgmgConfig->fShowTitlebar);
+        PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
+        ULONG       flPager = pPagerCfg->flPager;
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_PRESERVEPROPS,
-                              pPgmgConfig->fPreserveProportions);
+                              !!(flPager & PGRFL_PRESERVEPROPS));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_STAYONTOP,
-                              pPgmgConfig->fStayOnTop);
+                              !!(flPager & PGRFL_STAYONTOP));
 
         // flash
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASHTOTOP,
-                              pPgmgConfig->fFlash);
+                              !!(flPager & PGRFL_FLASHTOTOP));
         winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
                                1, 30,       // min, max
-                               pPgmgConfig->ulFlashDelay / 1000);  // current
+                               pPagerCfg->ulFlashDelay / 1000);  // current
 
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINDOWS,
-                              pPgmgConfig->fMirrorWindows);
+                              !!(flPager & PGRFL_MINIWINDOWS));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
-                              pPgmgConfig->fShowWindowText);
+                              !!(flPager & PGRFL_MINIWIN_TITLES));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
-                              pPgmgConfig->fClick2Activate);
+                              !!(flPager & PGRFL_MINIWIN_MOUSE));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWSECONDARY,
-                              pPgmgConfig->ulMiniDisplayFlags & MDF_INCLUDESECONDARY);
+                              !!(flPager & PGRFL_INCLUDESECONDARY));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWSTICKY,
-                              pPgmgConfig->ulMiniDisplayFlags & MDF_INCLUDESTICKY);
+                              !!(flPager & PGRFL_INCLUDESTICKY));
 
     }
 
@@ -646,77 +675,55 @@ static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
     ULONG   ulPgmgChangedFlags = 0;
 
     // access settings
-    PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+    PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
+    ULONG   flPagerChanged = 0;
 
     switch (ulItemID)
     {
-        case ID_SCDI_PGMG1_TITLEBAR:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fShowTitlebar = ulExtra;
-            ulPgmgChangedFlags = PGMGCFG_REFORMAT | PGMGCFG_ZAPPO;
-        break;
-
         case ID_SCDI_PGMG1_PRESERVEPROPS:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fPreserveProportions = ulExtra;
-            ulPgmgChangedFlags = PGMGCFG_REFORMAT;
+            flPagerChanged = PGRFL_PRESERVEPROPS;
+            ulPgmgChangedFlags = PGRCFG_REFORMAT;
         break;
 
         case ID_SCDI_PGMG1_STAYONTOP:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fStayOnTop = ulExtra;
-            ulPgmgChangedFlags = PGMGCFG_REFORMAT;
+            flPagerChanged = PGRFL_STAYONTOP;
+            ulPgmgChangedFlags = PGRCFG_REFORMAT;
         break;
 
         case ID_SCDI_PGMG1_FLASHTOTOP:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fFlash = ulExtra;
-            // call INIT callback to re-enable controls
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
-            ulPgmgChangedFlags = PGMGCFG_REFORMAT;
+            flPagerChanged = PGRFL_FLASHTOTOP;
+            ulPgmgChangedFlags = PGRCFG_REFORMAT;
         break;
 
         case ID_SCDI_PGMG1_FLASH_SPIN:
             // delay spinbutton
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->ulFlashDelay = ulExtra * 1000;
-            ulPgmgChangedFlags = PGMGCFG_REFORMAT;
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->ulFlashDelay = ulExtra * 1000;
+            ulPgmgChangedFlags = PGRCFG_REFORMAT;
         break;
 
         case ID_SCDI_PGMG1_SHOWWINDOWS:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fMirrorWindows = ulExtra;
-            ulPgmgChangedFlags = PGMGCFG_REPAINT;
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+            flPagerChanged = PGRFL_MINIWINDOWS;
+            ulPgmgChangedFlags = PGRCFG_REPAINT;
         break;
 
         case ID_SCDI_PGMG1_SHOWWINTITLES:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fShowWindowText = ulExtra;
-            ulPgmgChangedFlags = PGMGCFG_REPAINT;
+            flPagerChanged = PGRFL_MINIWIN_TITLES;
+            ulPgmgChangedFlags = PGRCFG_REPAINT;
         break;
 
         case ID_SCDI_PGMG1_SHOWSECONDARY:
-            LoadXPagerConfig(pnbp->pUser);
-            if (ulExtra)
-                pPgmgConfig->ulMiniDisplayFlags |= MDF_INCLUDESECONDARY;
-            else
-                pPgmgConfig->ulMiniDisplayFlags &= ~MDF_INCLUDESECONDARY;
-            ulPgmgChangedFlags = PGMGCFG_REPAINT;
+            flPagerChanged = PGRFL_INCLUDESECONDARY;
+            ulPgmgChangedFlags = PGRCFG_REPAINT;
         break;
 
         case ID_SCDI_PGMG1_SHOWSTICKY:
-            LoadXPagerConfig(pnbp->pUser);
-            if (ulExtra)
-                pPgmgConfig->ulMiniDisplayFlags |= MDF_INCLUDESTICKY;
-            else
-                pPgmgConfig->ulMiniDisplayFlags &= ~MDF_INCLUDESTICKY;
-            ulPgmgChangedFlags = PGMGCFG_REPAINT;
+            flPagerChanged = PGRFL_INCLUDESTICKY;
+            ulPgmgChangedFlags = PGRCFG_REPAINT;
         break;
 
         case ID_SCDI_PGMG1_CLICK2ACTIVATE:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fClick2Activate = ulExtra;
+            flPagerChanged = PGRFL_MINIWIN_MOUSE;
         break;
 
         /*
@@ -725,19 +732,16 @@ static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
          */
 
         case DID_DEFAULT:
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fStayOnTop = FALSE;
-            pPgmgConfig->fFlash = FALSE;
-            pPgmgConfig->ulFlashDelay = 2000;
-            pPgmgConfig->fShowTitlebar = TRUE;
-            pPgmgConfig->fPreserveProportions = TRUE;
-            pPgmgConfig->fMirrorWindows = TRUE;
-            pPgmgConfig->fShowWindowText = TRUE;
-            pPgmgConfig->fClick2Activate = TRUE;
-            pPgmgConfig->ulMiniDisplayFlags = 0;
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->flPager =
+                (pPagerCfg->flPager
+                 & ~PGRMASK_PAGE2
+                 ) | PGRFL_PAGE2_DEFAULTS;
 
-            SaveXPagerConfig(pPgmgConfig,
-                               PGMGCFG_REPAINT | PGMGCFG_REFORMAT | PGMGCFG_ZAPPO);
+            pPagerCfg->ulFlashDelay = 2000;
+
+            SavePagerConfig(pPagerCfg,
+                             PGRCFG_REPAINT | PGRCFG_REFORMAT);
             fSave = FALSE;      // V0.9.9 (2001-03-27) [umoeller]
 
             // call INIT callback to reinitialize page
@@ -754,19 +758,15 @@ static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
         {
             PAGERCONFIG* pBackup = (PAGERCONFIG*)pnbp->pUser2;
 
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->fShowTitlebar = pBackup->fShowTitlebar;
-            pPgmgConfig->fPreserveProportions = pBackup->fPreserveProportions;
-            pPgmgConfig->fStayOnTop = pBackup->fStayOnTop;
-            pPgmgConfig->fFlash = pBackup->fFlash;
-            pPgmgConfig->ulFlashDelay = pBackup->ulFlashDelay;
-            pPgmgConfig->fMirrorWindows = pBackup->fMirrorWindows;
-            pPgmgConfig->fShowWindowText = pBackup->fShowWindowText;
-            pPgmgConfig->fClick2Activate = pBackup->fClick2Activate;
-            pPgmgConfig->ulMiniDisplayFlags = pBackup->ulMiniDisplayFlags;
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->ulFlashDelay = pBackup->ulFlashDelay;
+            pPagerCfg->flPager =
+                (pPagerCfg->flPager
+                 & ~PGRMASK_PAGE2
+                ) | (pBackup->flPager & PGRMASK_PAGE2);
 
-            SaveXPagerConfig(pPgmgConfig,
-                               PGMGCFG_REPAINT | PGMGCFG_REFORMAT | PGMGCFG_ZAPPO);
+            SavePagerConfig(pPagerCfg,
+                             PGRCFG_REPAINT | PGRCFG_REFORMAT);
                                         // fixed V0.9.9 (2001-03-27) [umoeller]
             fSave = FALSE;
 
@@ -780,12 +780,22 @@ static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
+    if (flPagerChanged)
+    {
+        LoadPagerConfig(pnbp->pUser);
+        if (ulExtra)
+            pPagerCfg->flPager |= flPagerChanged;
+        else
+            pPagerCfg->flPager &= ~flPagerChanged;
+    }
+
     if (    (fSave)
          && (pnbp->flPage & NBFL_PAGE_INITED)   // page initialized yet?
        )
     {
-        SaveXPagerConfig(pPgmgConfig,
-                           ulPgmgChangedFlags);
+        SavePagerConfig(pPagerCfg,
+                         ulPgmgChangedFlags);
+        pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
     }
 
     return (mrc);
@@ -808,7 +818,7 @@ static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
 typedef struct _STICKYRECORD
 {
     RECORDCORE  recc;
-    CHAR        szSticky[PGMG_TEXTLEN];
+    CHAR        szSticky[STICKYLEN];
     PSZ         pcszCriteria;
     PSZ         pcszAttribute;
     PSZ         pcszOperator;
@@ -879,7 +889,7 @@ static VOID AddStickyRecord(HWND hwndCnr,
                                                sizeof(STICKYRECORD),
                                                1))
     {
-        strhncpy0(pRec->szSticky, pszStickyName, PGMG_TEXTLEN);
+        strhncpy0(pRec->szSticky, pszStickyName, STICKYLEN);
         pRec->ulFlags = ulFlags;
 
         AdjustStickyRecord(pRec);
@@ -898,21 +908,21 @@ static VOID AddStickyRecord(HWND hwndCnr,
  *@@ SaveStickies:
  *      enumerates the STICKYRECORD's in the given
  *      container and updates XPager's stickies
- *      list. This calls SaveXPagerConfig in turn.
+ *      list. This calls SavePagerConfig in turn.
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
  *@@changed V0.9.19 (2002-04-14) [lafaix]: added flags support
  */
 
 static VOID SaveStickies(HWND hwndCnr,
-                         PAGERCONFIG* pPgmgConfig)
+                         PAGERCONFIG* pPagerCfg)
 {
     PSTICKYRECORD   pRec = NULL;
     USHORT          usCmd = CMA_FIRST;
     BOOL            fCont = TRUE;
     USHORT          usStickyIndex = 0;      // raised with each iteration
 
-    LoadXPagerConfig(pPgmgConfig); // V0.9.19 (2002-04-23) [pr]
+    LoadPagerConfig(pPagerCfg); // V0.9.19 (2002-04-23) [pr]
     do
     {
         pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
@@ -924,8 +934,8 @@ static VOID SaveStickies(HWND hwndCnr,
 
         if ((pRec) && ((ULONG)pRec != -1))
         {
-            pPgmgConfig->aulStickyFlags[usStickyIndex] = pRec->ulFlags;
-            strcpy(pPgmgConfig->aszSticky[usStickyIndex],
+            pPagerCfg->aulStickyFlags[usStickyIndex] = pRec->ulFlags;
+            strcpy(pPagerCfg->aszStickies[usStickyIndex],
                    pRec->szSticky);
             usStickyIndex++;
         }
@@ -935,12 +945,12 @@ static VOID SaveStickies(HWND hwndCnr,
     } while (fCont);
 
     // store stickies count
-    pPgmgConfig->usStickyTextNum = usStickyIndex;
+    pPagerCfg->cStickies = usStickyIndex;
 
-    SaveXPagerConfig(pPgmgConfig,
-                       PGMGCFG_REPAINT
-                         | PGMGCFG_REFORMAT
-                         | PGMGCFG_STICKIES);
+    SavePagerConfig(pPagerCfg,
+                       PGRCFG_REPAINT
+                         | PGRCFG_REFORMAT
+                         | PGRCFG_STICKIES);
 }
 
 #define ATTRWIDTH       50
@@ -1217,7 +1227,7 @@ static VOID EditStickyRecord(PSTICKYRECORD pRec,
                             break;
                         }
                         pRec->ulFlags = ulFlags;
-                        strhncpy0(pRec->szSticky, pszSticky, PGMG_TEXTLEN);
+                        strhncpy0(pRec->szSticky, pszSticky, STICKYLEN);
 
                         if (fInsert)
                             AddStickyRecord(hwndCnr,
@@ -1317,7 +1327,7 @@ static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
         // common notebook window function (notebook.c) when
         // the notebook page is destroyed
         if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
-            LoadXPagerConfig(pnbp->pUser);
+            LoadPagerConfig(pnbp->pUser);
 
         // make backup for "undo"
         if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
@@ -1368,7 +1378,7 @@ static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
     if (flFlags & CBI_SET)
     {
         // initialize container with currently sticky windows
-        PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+        PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
         USHORT          us;
 
         HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
@@ -1377,12 +1387,12 @@ static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
         cnrhRemoveAll(hwndCnr);
 
         for (us = 0;
-             us < pPgmgConfig->usStickyTextNum;
+             us < pPagerCfg->cStickies;
              us++)
         {
             AddStickyRecord(hwndCnr,
-                            pPgmgConfig->aszSticky[us],
-                            pPgmgConfig->aulStickyFlags[us],
+                            pPagerCfg->aszStickies[us],
+                            pPagerCfg->aulStickyFlags[us],
                             FALSE);
             cnrhInvalidateAll(hwndCnr);
         }
@@ -1390,17 +1400,17 @@ static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
 
     if (flFlags & CBI_ENABLE)
     {
-        PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+        PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
 
         winhEnableDlgItem(pnbp->hwndDlgPage,
                           DID_ADD,
-                          pPgmgConfig->usStickyTextNum < MAX_STICKIES);
+                          pPagerCfg->cStickies < MAX_STICKIES);
         winhEnableDlgItem(pnbp->hwndDlgPage,
                           DID_EDIT,
-                          pPgmgConfig->usStickyTextNum != 0);
+                          pPagerCfg->cStickies != 0);
         winhEnableDlgItem(pnbp->hwndDlgPage,
                           DID_REMOVE,
-                          pPgmgConfig->usStickyTextNum != 0);
+                          pPagerCfg->cStickies != 0);
     }
 }
 
@@ -1439,7 +1449,7 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                 {
                     HWND    hPopupMenu = NULLHANDLE;
 
-                    LoadXPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
+                    LoadPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
@@ -1453,7 +1463,7 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                                                      ID_XSM_STICKY_SEL))
                             WinEnableMenuItem(hPopupMenu,
                                               ID_XSMI_STICKY_NEW,
-                                              (((PAGERCONFIG*)pnbp->pUser)->usStickyTextNum < MAX_STICKIES));
+                                              (((PAGERCONFIG*)pnbp->pUser)->cStickies < MAX_STICKIES));
                     }
                     else
                     {
@@ -1464,7 +1474,7 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                                                      ID_XSM_STICKY_NOSEL))
                             WinEnableMenuItem(hPopupMenu,
                                               ID_XSMI_STICKY_NEW,
-                                              (((PAGERCONFIG*)pnbp->pUser)->usStickyTextNum < MAX_STICKIES));
+                                              (((PAGERCONFIG*)pnbp->pUser)->cStickies < MAX_STICKIES));
                     }
 
                     if (hPopupMenu)
@@ -1617,28 +1627,28 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
 
         case DID_UNDO:
         {
-            PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+            PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
             PAGERCONFIG* pBackup = (PAGERCONFIG*)pnbp->pUser2;
             USHORT       us;
 
-            LoadXPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
+            LoadPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
             // overwrite entire string array with backup
-            memcpy(pPgmgConfig->aszSticky,
-                   pBackup->aszSticky,
-                   sizeof(pPgmgConfig->aszSticky));
+            memcpy(pPagerCfg->aszStickies,
+                   pBackup->aszStickies,
+                   sizeof(pPagerCfg->aszStickies));
             // overwrite entire flags array
-            memcpy(pPgmgConfig->aulStickyFlags,
+            memcpy(pPagerCfg->aulStickyFlags,
                    pBackup->aulStickyFlags,
-                   sizeof(pPgmgConfig->aulStickyFlags));
+                   sizeof(pPagerCfg->aulStickyFlags));
             // and count too
-            pPgmgConfig->usStickyTextNum = pBackup->usStickyTextNum;
+            pPagerCfg->cStickies = pBackup->cStickies;
 
-            // SaveXPagerConfig is cheaper that SaveStickies: we don't
+            // SavePagerConfig is cheaper that SaveStickies: we don't
             // have to update the container first
-            SaveXPagerConfig(pPgmgConfig,
-                             PGMGCFG_REPAINT
-                               | PGMGCFG_REFORMAT
-                               | PGMGCFG_STICKIES);
+            SavePagerConfig(pPagerCfg,
+                             PGRCFG_REPAINT
+                               | PGRCFG_REFORMAT
+                               | PGRCFG_STICKIES);
 
             // call INIT callback to reinitialize page
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
@@ -1675,34 +1685,37 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
  */
 
 static PLONG GetColorPointer(HWND hwndStatic,
-                             PAGERCONFIG* pPgmgConfig)
+                             PAGERCONFIG* pPagerCfg)
 {
     USHORT usID = WinQueryWindowUShort(hwndStatic, QWS_ID);
     switch (usID)
     {
-        case ID_SCDI_PGMG2_DTP_INACTIVE:
-            return (&pPgmgConfig->lcNormal);
+        case ID_SCDI_PGMG2_DTP_INACTIVE_1:
+            return (&pPagerCfg->lcolDesktop1);
+
+        case ID_SCDI_PGMG2_DTP_INACTIVE_2:
+            return (&pPagerCfg->lcolDesktop2);
 
         case ID_SCDI_PGMG2_DTP_ACTIVE:
-            return (&pPgmgConfig->lcCurrent);
+            return (&pPagerCfg->lcolActiveDesktop);
 
-        case ID_SCDI_PGMG2_DTP_BORDER:
-            return (&pPgmgConfig->lcDivider);
+        case ID_SCDI_PGMG2_DTP_GRID:
+            return (&pPagerCfg->lcolGrid);
 
         case ID_SCDI_PGMG2_WIN_INACTIVE:
-            return (&pPgmgConfig->lcNormalApp);
+            return (&pPagerCfg->lcolInactiveWindow);
 
         case ID_SCDI_PGMG2_WIN_ACTIVE:
-            return (&pPgmgConfig->lcCurrentApp);
+            return (&pPagerCfg->lcolActiveWindow);
 
         case ID_SCDI_PGMG2_WIN_BORDER:
-            return (&pPgmgConfig->lcAppBorder);
+            return (&pPagerCfg->lcolWindowFrame);
 
         case ID_SCDI_PGMG2_TXT_INACTIVE:
-            return (&pPgmgConfig->lcTxtNormalApp);
+            return (&pPagerCfg->lcolInactiveText);
 
         case ID_SCDI_PGMG2_TXT_ACTIVE:
-            return (&pPgmgConfig->lcTxtCurrentApp);
+            return (&pPagerCfg->lcolActiveText);
     }
 
     return (NULL);
@@ -1723,7 +1736,7 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
     // access settings; these have been stored in QWL_USER
     PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)WinQueryWindowPtr(hwndStatic, QWL_USER);
     // get PAGERCONFIG which has been stored in user param there
-    PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+    PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
 
     switch (msg)
     {
@@ -1737,7 +1750,7 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
             gpihSwitchToRGB(hps);
             WinQueryWindowRect(hwndStatic,
                                &rclPaint);      // exclusive
-            if (plColor = GetColorPointer(hwndStatic, pPgmgConfig))
+            if (plColor = GetColorPointer(hwndStatic, pPagerCfg))
             {
                 // make rect inclusive
                 rclPaint.xRight--;
@@ -1766,12 +1779,12 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
                 case PP_BACKGROUNDCOLOR:
                 {
                     PLONG plColor;
-                    if (plColor = GetColorPointer(hwndStatic, pPgmgConfig))
+                    if (plColor = GetColorPointer(hwndStatic, pPagerCfg))
                     {
                         ULONG   ul = 0,
                                 attrFound = 0;
 
-                        LoadXPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
+                        LoadPagerConfig(pnbp->pUser); // V0.9.19 (2002-04-23) [pr]
                         WinQueryPresParam(hwndStatic,
                                           (ULONG)mp1,
                                           0,
@@ -1784,8 +1797,8 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
                                           NULL, FALSE);
 
                         if (pnbp->flPage & NBFL_PAGE_INITED)   // page initialized yet?
-                            SaveXPagerConfig(pPgmgConfig,
-                                               PGMGCFG_REPAINT);
+                            SavePagerConfig(pPagerCfg,
+                                             PGRCFG_REPAINT);
                     }
                 }
                 break;
@@ -1800,11 +1813,116 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
     return (mrc);
 }
 
+#define COLORBOX_HEIGHT 12
+
+#define COLORBOX(id)    CONTROLDEF_TEXT("", id, 32, COLORBOX_HEIGHT)
+#define TEXTBOX(id)     CONTROLDEF_TEXT(LOAD_STRING, id, SZL_AUTOSIZE, COLORBOX_HEIGHT)
+
+static const CONTROLDEF
+    ColorsGroup = LOADDEF_GROUP(ID_SCDI_PGMG2_COLORS_GROUP, SZL_AUTOSIZE),
+    ColorsInfo = LOADDEF_TEXT_WORDBREAK(ID_SCDI_PGMG2_COLORS_INFO, -100),
+    TextEmpty = CONTROLDEF_TEXT("", -1, 10, COLORBOX_HEIGHT),
+    // colum titles
+    TextInactive1 = TEXTBOX(ID_SCDI_PGMG2_COLORS_INACTIVE_1),
+    TextInactive2 = TEXTBOX(ID_SCDI_PGMG2_COLORS_INACTIVE_2),
+    TextActive = TEXTBOX(ID_SCDI_PGMG2_COLORS_ACTIVE),
+    TextBorders = TEXTBOX(ID_SCDI_PGMG2_COLORS_BORDERS),
+    // row titles
+    TextBackground = TEXTBOX(ID_SCDI_PGMG2_COLORS_BACKGROUND),
+    TextMiniWindow = TEXTBOX(ID_SCDI_PGMG2_COLORS_MINIWINDOW),
+    TextTitle = TEXTBOX(ID_SCDI_PGMG2_COLORS_TITLE),
+
+    ColorDtpInactive1 = COLORBOX(ID_SCDI_PGMG2_DTP_INACTIVE_1),
+    ColorDtpInactive2 = COLORBOX(ID_SCDI_PGMG2_DTP_INACTIVE_2),
+    ColorDtpActive    = COLORBOX(ID_SCDI_PGMG2_DTP_ACTIVE),
+    ColorDtpGrid      = COLORBOX(ID_SCDI_PGMG2_DTP_GRID),
+    ColorWinInactive  = COLORBOX(ID_SCDI_PGMG2_WIN_INACTIVE),
+    ColorWinActive    = COLORBOX(ID_SCDI_PGMG2_WIN_ACTIVE),
+    ColorWinBorder    = COLORBOX(ID_SCDI_PGMG2_WIN_BORDER),
+    ColorTxtInactive  = COLORBOX(ID_SCDI_PGMG2_TXT_INACTIVE),
+    ColorTxtActive    = COLORBOX(ID_SCDI_PGMG2_TXT_ACTIVE),
+    ColorNull         = COLORBOX(-1);
+
+static const DLGHITEM G_dlgXPagerColors[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&ColorsGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&ColorsInfo),
+                    START_ROW(0),
+                        START_TABLE,
+                            START_ROW(0),
+                                // first colum: row titles
+                                START_TABLE,
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextEmpty),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextBackground),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextMiniWindow),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextTitle),
+                                END_TABLE,
+                                // second column: inactive 1
+                                START_TABLE,
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextInactive1),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorDtpInactive1),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorWinInactive),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorTxtInactive),
+                                END_TABLE,
+                                // third column: inactive 2
+                                START_TABLE,
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextInactive2),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorDtpInactive2),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorNull),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorNull),
+                                END_TABLE,
+                                // fourth column: active
+                                START_TABLE,
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextActive),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorDtpActive),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorWinActive),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorTxtActive),
+                                END_TABLE,
+                                // fifth column: borders
+                                START_TABLE,
+                                    START_ROW(0),
+                                        CONTROL_DEF(&TextBorders),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorDtpGrid),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorWinBorder),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&ColorNull),
+                                END_TABLE,
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE,
+    };
+
 static USHORT ausStaticFrameIDs[] =
     {
-         ID_SCDI_PGMG2_DTP_INACTIVE,
+         ID_SCDI_PGMG2_DTP_INACTIVE_1,
+         ID_SCDI_PGMG2_DTP_INACTIVE_2,
          ID_SCDI_PGMG2_DTP_ACTIVE,
-         ID_SCDI_PGMG2_DTP_BORDER,
+         ID_SCDI_PGMG2_DTP_GRID,
          ID_SCDI_PGMG2_WIN_INACTIVE,
          ID_SCDI_PGMG2_WIN_ACTIVE,
          ID_SCDI_PGMG2_WIN_BORDER,
@@ -1818,6 +1936,8 @@ static USHORT ausStaticFrameIDs[] =
  *      "XPager Colors" page in the "Screen" settings object.
  *      Sets the controls on the page according to the
  *      Global Settings.
+ *
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: now using dialog formatter; updated for new colors
  */
 
 static VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1833,11 +1953,17 @@ static VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
         // common notebook window function (notebook.c) when
         // the notebook page is destroyed
         if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
-            LoadXPagerConfig(pnbp->pUser);
+            LoadPagerConfig(pnbp->pUser);
 
         // make backup for "undo"
         if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
             memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
+
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-05-07) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgXPagerColors,
+                      ARRAYITEMCOUNT(G_dlgXPagerColors));
 
         // subclass static rectangles
         for (ul = 0;
@@ -1877,6 +2003,8 @@ static VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
  *      notebook callback function (notebook.c) for the
  *      "XPager Colors" page in the "Screen" settings object.
  *      Reacts to changes of any of the dialog controls.
+ *
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: now using dialog formatter; updated for new colors
  */
 
 static MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1894,22 +2022,24 @@ static MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
 
         case DID_DEFAULT:
         {
-            PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->lcNormal = RGBCOL_DARKBLUE;
-            pPgmgConfig->lcCurrent = RGBCOL_BLUE;
-            pPgmgConfig->lcDivider = RGBCOL_GRAY;
-            pPgmgConfig->lcNormalApp = RGBCOL_WHITE;
-            pPgmgConfig->lcCurrentApp = RGBCOL_GREEN;
-            pPgmgConfig->lcAppBorder = RGBCOL_BLACK;
-            pPgmgConfig->lcTxtNormalApp = RGBCOL_BLACK;
-            pPgmgConfig->lcTxtCurrentApp = RGBCOL_BLACK;
+            PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
+            LoadPagerConfig(pnbp->pUser);
+            pPagerCfg->flPaintMode = PMOD_TOPBOTTOM;
+            pPagerCfg->lcolDesktop1 = RGBCOL_DARKBLUE;
+            pPagerCfg->lcolDesktop2 = RGBCOL_BLACK;
+            pPagerCfg->lcolActiveDesktop = RGBCOL_BLUE;
+            pPagerCfg->lcolGrid = RGBCOL_GRAY;
+            pPagerCfg->lcolInactiveWindow = RGBCOL_WHITE;
+            pPagerCfg->lcolActiveWindow = RGBCOL_GREEN;
+            pPagerCfg->lcolWindowFrame = RGBCOL_BLACK;
+            pPagerCfg->lcolInactiveText = RGBCOL_BLACK;
+            pPagerCfg->lcolActiveText = RGBCOL_BLACK;
 
             // call INIT callback to reinitialize page
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
-            SaveXPagerConfig(pPgmgConfig,
-                               PGMGCFG_REPAINT | PGMGCFG_REFORMAT);
+            SavePagerConfig(pPagerCfg,
+                               PGRCFG_REPAINT | PGRCFG_REFORMAT);
         }
         break;
 
@@ -1920,24 +2050,27 @@ static MRESULT pgmiXPagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
 
         case DID_UNDO:
         {
-            PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
+            PAGERCONFIG* pPagerCfg = (PAGERCONFIG*)pnbp->pUser;
             PAGERCONFIG* pBackup = (PAGERCONFIG*)pnbp->pUser2;
 
-            LoadXPagerConfig(pnbp->pUser);
-            pPgmgConfig->lcNormal = pBackup->lcNormal;
-            pPgmgConfig->lcCurrent = pBackup->lcCurrent;
-            pPgmgConfig->lcDivider = pBackup->lcDivider;
-            pPgmgConfig->lcNormalApp = pBackup->lcNormalApp;
-            pPgmgConfig->lcCurrentApp = pBackup->lcCurrentApp;
-            pPgmgConfig->lcAppBorder = pBackup->lcAppBorder;
-            pPgmgConfig->lcTxtNormalApp = pBackup->lcTxtNormalApp;
-            pPgmgConfig->lcTxtCurrentApp = pBackup->lcTxtCurrentApp;
+            LoadPagerConfig(pnbp->pUser);
+            #define RESTORELONG(l) pPagerCfg->l = pBackup->l
+            RESTORELONG(flPaintMode);
+            RESTORELONG(lcolDesktop1);
+            RESTORELONG(lcolDesktop2);
+            RESTORELONG(lcolActiveDesktop);
+            RESTORELONG(lcolGrid);
+            RESTORELONG(lcolInactiveWindow);
+            RESTORELONG(lcolActiveWindow);
+            RESTORELONG(lcolWindowFrame);
+            RESTORELONG(lcolInactiveText);
+            RESTORELONG(lcolActiveText);
 
             // call INIT callback to reinitialize page
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
-            SaveXPagerConfig(pPgmgConfig,
-                               PGMGCFG_REPAINT | PGMGCFG_REFORMAT);
+            SavePagerConfig(pPagerCfg,
+                               PGRCFG_REPAINT | PGRCFG_REFORMAT);
         }
         break;
     }
@@ -1970,7 +2103,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
     // inbp.pcszName = "~XPager";
-    inbp.ulDlgID = ID_SCD_PAGER_COLORS;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_COLORS;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_COLORS;
     // give this page a unique ID, which is
     // passed to the common config.sys callbacks

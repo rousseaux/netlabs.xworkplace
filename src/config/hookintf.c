@@ -496,12 +496,14 @@ BOOL hifSetObjectHotkeys(PVOID pvHotkeys,   // in: ptr to array of GLOBALHOTKEY 
  *      here.
  *
  *@@added V0.9.3 (2000-04-19) [umoeller]
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: now outputting 0 if there are no func keys
  */
 
 PFUNCTIONKEY hifQueryFunctionKeys(PULONG pcFunctionKeys)    // out: function key count (not array size!)
 {
     ULONG   cbFunctionKeys = 0;
     PFUNCTIONKEY paFunctionKeys;
+    *pcFunctionKeys = 0;        // V0.9.19 (2002-05-07) [umoeller]
     if (paFunctionKeys = (PFUNCTIONKEY)prfhQueryProfileData(HINI_USER,
                                                             INIAPP_XWPHOOK,
                                                             INIKEY_HOOK_FUNCTIONKEYS,
@@ -568,6 +570,7 @@ BOOL hifSetFunctionKeys(PFUNCTIONKEY paFunctionKeys, // in: function keys array
  *      Calls hifSetFunctionKeys in turn.
  *
  *@@added V0.9.3 (2000-04-19) [umoeller]
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: fixed crash if there were no function keys
  */
 
 BOOL hifAppendFunctionKey(PFUNCTIONKEY pNewKey)
@@ -584,22 +587,25 @@ BOOL hifAppendFunctionKey(PFUNCTIONKEY pNewKey)
                                                             &cbFunctionKeys))
         cKeys = cbFunctionKeys / sizeof(FUNCTIONKEY);
 
-    if (    (cKeys)
-         && (paNewKeys = malloc(sizeof(FUNCTIONKEY) * (cKeys + 1)))
-       )
-        // items existed already:
-        memcpy(paNewKeys, paFunctionKeys, sizeof(FUNCTIONKEY) * cKeys);
+    // the following was broken if no func keys existed
+    // V0.9.19 (2002-05-07) [umoeller]
+    if (paNewKeys = malloc(sizeof(FUNCTIONKEY) * (cKeys + 1)))
+    {
+        if (cKeys)
+            // items existed already:
+            memcpy(paNewKeys, paFunctionKeys, sizeof(FUNCTIONKEY) * cKeys);
 
-    // append new item
-    memcpy(&paNewKeys[cKeys], pNewKey, sizeof(FUNCTIONKEY));
+        // append new item
+        memcpy(&paNewKeys[cKeys], pNewKey, sizeof(FUNCTIONKEY));
 
-    brc = hifSetFunctionKeys(paNewKeys,
-                             cKeys + 1);
+        brc = hifSetFunctionKeys(paNewKeys,
+                                 cKeys + 1);
+
+        free(paNewKeys);
+    }
 
     if (paFunctionKeys)
         free(paFunctionKeys);
-    if (paNewKeys)
-        free(paNewKeys);
 
     return (brc);
 }

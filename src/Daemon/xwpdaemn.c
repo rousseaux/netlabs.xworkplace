@@ -138,7 +138,6 @@
 /*
  *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
- *      Copyright (C) 1995-1999 Carlos Ugarte.
  *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -188,7 +187,9 @@
 
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\regexp.h"             // extended regular expressions
 #include "helpers\shapewin.h"
 #include "helpers\standards.h"
 #include "helpers\threads.h"
@@ -243,11 +244,13 @@ typedef struct _CLICKWATCH
  *
  ********************************************************************/
 
-ULONG           G_pidDaemon = NULLHANDLE;
-            // process ID of XWPDAEMN.EXE
-HAB             G_habDaemon;
-HMQ             G_hmqDaemon;
-            // anchor block and HMQ of thread 1
+HAB         G_habDaemon = NULLHANDLE;
+        // anchor block of thread 1
+HMQ         G_hmqDaemon = NULLHANDLE;
+        // HMQ of thread 1
+USHORT      G_pidDaemon = NULLHANDLE;
+        // process ID of XWPDAEMN.EXE V0.9.19 (2002-05-07) [umoeller]
+
 
 // pointer to hook data in hook dll;
 // this includes HOOKCONFIG
@@ -280,25 +283,6 @@ POINTL          G_ptlMovingPtrStart,
                 G_ptlMovingPtrNow,
                 G_ptlMovingPtrEnd;
 LONG            G_lLastMovingPtrRadius = 0;
-
-// pager
-HWND            G_hwndXPagerClient = NULLHANDLE;
-POINTL          G_ptlCurrPos = {0};
-SIZEL           G_szlEachDesktopReal = {0};
-            // "real" size of each desktop; this is faked by pager to be
-            // the screen dimension plus 8 pixels so we get rid of the maximized
-            // window borders on adjacent screens
-//SIZEL           G_szlEachDesktopInClient = {0};
-            // size of each desktop's representation in the pager client,
-            // recalculated on each WM_SIZE
-            // removed V0.9.18 (2002-02-19) [lafaix]
-SIZEL           G_szlXPagerClient = {0};
-            // size of the client window; used to precisely locate
-            // mini windows in the client area
-            // V0.9.18 (2002-02-19) [lafaix]
-BOOL            G_bConfigChanged = FALSE;
-SWP             G_swpPgmgFrame = {0};
-THREADINFO      G_tiMoveThread = {0};
 
 const char *WNDCLASS_DAEMONOBJECT = "XWPDaemonObject";
 
@@ -421,8 +405,8 @@ VOID APIENTRY dmnExceptError(const char *pcszFile,
 
 /*
  *@@ dmnStartXPager:
- *      starts XPager by calling pgmwScanAllWindows
- *      and pgmcCreateMainControlWnd and starting
+ *      starts XPager by calling pgrBuildWinlist
+ *      and pgrCreatePager and starting
  *      fntMoveThread.
  *
  *      This gets called when XDM_STARTSTOPPAGER is
@@ -450,24 +434,10 @@ BOOL dmnStartXPager(VOID)
              && (G_pHookData->fPreAccelHooked)
            )
         {
-            // _Pmpf(("  Creating main window"));
-            brc = pgmcCreateMainControlWnd();
+            brc = pgrCreatePager();
                // this sets the global window handles;
                // the hook sees this and will start processing
                // XPager messages
-            // _Pmpf(("      returned %d", brc));
-
-            // _Pmpf(("dmnStartXPager: calling pgmwScanAllWindows"));
-            pgmwScanAllWindows();
-
-            // _Pmpf(("  starting Move thread"));
-            thrCreate(&G_tiMoveThread,
-                      fntMoveThread,
-                      NULL, // running flag
-                      "PgmgMove",
-                      THRF_WAIT | THRF_PMMSGQUEUE,    // PM msgq
-                      0);
-                // this creates the XPager object window
         }
 #endif
 
@@ -481,7 +451,7 @@ BOOL dmnStartXPager(VOID)
  *      destroys the XPager control window and
  *      stops the additional XPager threads.
  *      This is the reverse to dmnStartXPager and
- *      calls pgmmRecoverAllWindows in turn.
+ *      calls pgrRecoverWindows in turn.
  *
  *      This gets called when XDM_STARTSTOPPAGER is
  *      received by fnwpDaemonObject.
@@ -498,30 +468,29 @@ BOOL dmnStartXPager(VOID)
 
 VOID dmnKillXPager(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGERCLOSED (TRUE) to the kernel
 {
-    if (   G_pHookData
-        && G_pHookData->hwndXPagerFrame
-        && G_pHookData->hwndXPagerMoveThread
+    if (    G_pHookData
+         && G_pHookData->hwndPagerFrame
+         && G_pHookData->hwndPagerMoveThread
        )
     {
         // XPager running:
         // ULONG   ulRequest;
         // save page mage frame
-        HWND    hwndXPagerFrame = G_pHookData->hwndXPagerFrame;
+        HWND    hwndPagerFrame = G_pHookData->hwndPagerFrame;
 
         // stop move thread
-        WinPostMsg(G_pHookData->hwndXPagerMoveThread, WM_QUIT, 0, 0);
+        WinPostMsg(G_pHookData->hwndPagerMoveThread, WM_QUIT, 0, 0);
 
-        if (G_pHookData->XPagerConfig.fRecoverOnShutdown)
-            pgmmRecoverAllWindows();
+        pgrRecoverWindows(G_habDaemon);
 
         // set global window handles to NULLHANDLE;
         // the hook sees this and will stop processing
         // XPager messages
-        G_pHookData->hwndXPagerClient = NULLHANDLE;
-        G_pHookData->hwndXPagerFrame = NULLHANDLE;
+        G_pHookData->hwndPagerClient = NULLHANDLE;
+        G_pHookData->hwndPagerFrame = NULLHANDLE;
 
         // then destroy the XPager window
-        WinDestroyWindow(hwndXPagerFrame);
+        WinDestroyWindow(hwndPagerFrame);
 
         // notify kernel that XPager has been closed
         // so that the global settings can be updated
@@ -533,12 +502,6 @@ VOID dmnKillXPager(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGERCLOSE
 }
 
 #endif
-
-/* ******************************************************************
- *
- *   Hook interface
- *
- ********************************************************************/
 
 /*
  *@@ LoadHotkeysForHook:
@@ -623,6 +586,84 @@ VOID LoadHotkeysForHook(VOID)
 }
 
 /*
+ *@@ dmnLoadPagerSettings:
+ *      loads the XPager settings from OS2.INI,
+ *      if present. Depending on flConfig, XPager
+ *      will reformat and/or re-adjust itself.
+ *
+ *@@added V0.9.3 (2000-04-09) [umoeller]
+ *@@changed V0.9.4 (2000-07-10) [umoeller]: added PGRCFG_STICKIES
+ *@@changed V0.9.6 (2000-11-06) [umoeller]: fixed startup desktop to upper left
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: relaxed startup desktop position
+ */
+
+BOOL dmnLoadPagerSettings(ULONG flConfig)
+{
+    ULONG   cb;
+
+    cb = sizeof(PAGERCONFIG);
+    if (PrfQueryProfileData(HINI_USER,
+                            INIAPP_XWPHOOK,
+                            INIKEY_HOOK_PAGERCONFIG,
+                            &G_pHookData->PagerConfig,
+                            &cb))
+    {
+        // success:
+
+        // always set start desktop within limits V0.9.9 (2001-03-15) [lafaix]
+        if (G_pHookData->PagerConfig.bStartX > G_pHookData->PagerConfig.cDesktopsX)
+            G_pHookData->PagerConfig.bStartX = G_pHookData->PagerConfig.cDesktopsX;
+        if (G_pHookData->PagerConfig.bStartY > G_pHookData->PagerConfig.cDesktopsY)
+            G_pHookData->PagerConfig.bStartY = G_pHookData->PagerConfig.cDesktopsY;
+
+        if (    (G_pHookData->hwndPagerClient)
+             && (G_pHookData->hwndPagerFrame)
+           )
+        {
+            if (flConfig & PGRCFG_STICKIES)
+            {
+                // stickies changed:
+                if (pgrLockWinlist())
+                {
+                    // kill all regexps that were compiled
+                    // V0.9.19 (2002-04-17) [umoeller]
+                    ULONG ul;
+                    for (ul = 0;
+                         ul < MAX_STICKIES;
+                         ul++)
+                    {
+                        if (G_pHookData->paEREs[ul])
+                        {
+                            rxpFree(G_pHookData->paEREs[ul]);
+                            G_pHookData->paEREs[ul] = NULL;
+                        }
+                    }
+
+                    pgrUnlockWinlist();
+                }
+                pgrBuildWinlist();
+            }
+
+            if (flConfig & PGRCFG_REFORMAT)
+                WinSendMsg(G_pHookData->hwndPagerClient,
+                           PGRM_POSITIONFRAME,
+                           0,
+                           0);
+
+            if (flConfig & PGRCFG_REPAINT)
+                WinPostMsg(G_pHookData->hwndPagerClient,
+                           PGRM_REFRESHCLIENT,
+                           (MPARAM)TRUE,    // nuke template bitmap to get colors right
+                           0);
+        }
+
+        return (TRUE);
+    }
+
+    return (FALSE);
+}
+
+/*
  *@@ LoadHookConfig:
  *      this (re)loads the configuration data
  *      from OS2.INI directly into the shared
@@ -638,7 +679,7 @@ VOID LoadHotkeysForHook(VOID)
  */
 
 BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
-                    BOOL fXPager)     // in: reload XPager settings
+                    BOOL fXPager)       // in: reload XPager settings
 {
     BOOL brc = FALSE;
 
@@ -666,12 +707,56 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
         if (fXPager)
         {
             // safe defaults
-            pgmsSetDefaults();
+            // shortcuts to global config
+            PPAGERCONFIG pPagerCfg = &G_pHookData->PagerConfig;
+
+            // first, set the fake desktop size... we no longer move windows
+            // by the size of the PM screen (e.g. 1024x768), but instead we
+            // use eight extra pixels, so we can get rid of the borders of
+            // maximized windows.
+
+            G_pHookData->szlEachDesktopFaked.cx = G_pHookData->lCXScreen + 8;
+            G_pHookData->szlEachDesktopFaked.cy = G_pHookData->lCYScreen + 8;
+
+            pPagerCfg->cDesktopsX = 3;
+            pPagerCfg->cDesktopsY = 2;
+            pPagerCfg->bStartX = 1;
+            pPagerCfg->bStartY = 1;
+            pPagerCfg->flPager = PGRFL_PAGE1_DEFAULTS | PGRFL_PAGE2_DEFAULTS;
+            pPagerCfg->ulFlashDelay = 2000;
+
+            // stickies
+            memset(pPagerCfg->aszStickies,
+                   0,
+                   sizeof(pPagerCfg->aszStickies));
+            pPagerCfg->cStickies = 0;
+            memset(pPagerCfg->aulStickyFlags,
+                   0,
+                   sizeof(pPagerCfg->aulStickyFlags));
+
+            pPagerCfg->flPaintMode = PMOD_TOPBOTTOM;
+            pPagerCfg->lcolDesktop1 = RGBCOL_DARKBLUE;
+            pPagerCfg->lcolDesktop2 = RGBCOL_BLACK;
+            pPagerCfg->lcolActiveDesktop = RGBCOL_BLUE;
+            pPagerCfg->lcolGrid = RGBCOL_GRAY;
+            pPagerCfg->lcolInactiveWindow = RGBCOL_WHITE;
+            pPagerCfg->lcolActiveWindow = RGBCOL_GREEN;
+            pPagerCfg->lcolWindowFrame = RGBCOL_BLACK;
+            pPagerCfg->lcolInactiveText = RGBCOL_BLACK;
+            pPagerCfg->lcolActiveText = RGBCOL_BLACK;
+
+            pPagerCfg->flKeyShift = KC_CTRL | KC_ALT;
+
             // overwrite from INI, if found
-            pgmsLoadSettings(0);
+            dmnLoadPagerSettings(0);
+
             // in any case, write them back to OS2.INI because
             // otherwise XWPScreen doesn't work right
-            pgmsSaveSettings();
+            PrfWriteProfileData(HINI_USER,
+                                INIAPP_XWPHOOK,
+                                INIKEY_HOOK_PAGERCONFIG,
+                                &G_pHookData->PagerConfig,
+                                sizeof(PAGERCONFIG));
         }
 #endif
     }
@@ -938,7 +1023,7 @@ static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
 #ifndef __NOPAGER__
     // rule out XPager, if "ignore XPager" is on
     if (G_pHookData->HookConfig.__fSlidingIgnoreXPager)
-        if (hwnd2Activate == G_pHookData->hwndXPagerFrame)
+        if (hwnd2Activate == G_pHookData->hwndPagerFrame)
             return;
 #endif
 
@@ -1185,14 +1270,10 @@ static VOID ProcessHotCorner(MPARAM mp1)
 #ifndef __NOPAGER__
             case SPECIALOBJ_PAGER_SHOW: // 0xFFFF0002:
                 // yes: bring up XPager window
-                WinSetWindowPos(G_pHookData->hwndXPagerFrame,
+                WinSetWindowPos(G_pHookData->hwndPagerFrame,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
-                // start or restart timer for flashing
-                // fixed V0.9.4 (2000-07-10) [umoeller]
-                if (G_pHookData->XPagerConfig.fFlash)
-                    pgmgcStartFlashTimer();
             break;
 
             // XPager screen change?
@@ -1221,21 +1302,40 @@ static VOID ProcessHotCorner(MPARAM mp1)
                 switch(lIndex)
                 {
                     case SCREENCORNER_BOTTOMLEFT:
-                        ptlCurrent.x = G_pHookData->lCXScreen - 2; ptlCurrent.y = G_pHookData->lCYScreen - 2; break;
+                        ptlCurrent.x = G_pHookData->lCXScreen - 2;
+                        ptlCurrent.y = G_pHookData->lCYScreen - 2;
+                    break;
+
                     case SCREENCORNER_TOPLEFT:
-                        ptlCurrent.x = G_pHookData->lCXScreen - 2; ptlCurrent.y = 1; break;
+                        ptlCurrent.x = G_pHookData->lCXScreen - 2;
+                        ptlCurrent.y = 1;
+                    break;
+
                     case SCREENCORNER_BOTTOMRIGHT:
-                        ptlCurrent.x = 1; ptlCurrent.y = G_pHookData->lCYScreen - 2; break;
+                        ptlCurrent.x = 1;
+                        ptlCurrent.y = G_pHookData->lCYScreen - 2;
+                    break;
+
                     case SCREENCORNER_TOPRIGHT:
-                        ptlCurrent.x = 1; ptlCurrent.y = 1; break;
+                        ptlCurrent.x = 1;
+                        ptlCurrent.y = 1;
+                    break;
+
                     case SCREENCORNER_TOP:
-                        ptlCurrent.y = 1; break;
+                        ptlCurrent.y = 1;
+                    break;
+
                     case SCREENCORNER_LEFT:
-                        ptlCurrent.x = G_pHookData->lCXScreen - 2; break;
+                        ptlCurrent.x = G_pHookData->lCXScreen - 2;
+                    break;
+
                     case SCREENCORNER_RIGHT:
-                        ptlCurrent.x = 1; break;
+                        ptlCurrent.x = 1;
+                    break;
+
                     case SCREENCORNER_BOTTOM:
-                        ptlCurrent.y = G_pHookData->lCYScreen - 2; break;
+                        ptlCurrent.y = G_pHookData->lCYScreen - 2;
+                    break;
                 }
 
                 WinSetPointerPos(HWND_DESKTOP, ptlCurrent.x, ptlCurrent.y);
@@ -1257,27 +1357,32 @@ static VOID ProcessHotCorner(MPARAM mp1)
         if (ucScanCode)
         {
             POINTL ptlCurrScreen;
-            // shortcuts to global config
-            PPAGERCONFIG pXPagerConfig = &G_pHookData->XPagerConfig;
-            PPOINTL pptlMaxDesktops = &pXPagerConfig->ptlMaxDesktops;
-
             // we had a XPager screen change above:
             // where are we right now ?
             // (0,0) is _upper_ left, not bottom left
-            ptlCurrScreen.x = G_ptlCurrPos.x / G_szlEachDesktopReal.cx;
-            ptlCurrScreen.y = G_ptlCurrPos.y / G_szlEachDesktopReal.cy;
+            ptlCurrScreen.x = G_pHookData->ptlCurrentDesktop.x / G_pHookData->szlEachDesktopFaked.cx;
+            ptlCurrScreen.y = G_pHookData->ptlCurrentDesktop.y / G_pHookData->szlEachDesktopFaked.cy;
 
             // if we do move, wrap the pointer too so
             // that we don't move too much
-            if (   (pXPagerConfig->bWrapAround)
-                || ((ucScanCode == 0x61) && (ptlCurrScreen.y > 0))
-                || ((ucScanCode == 0x66) && (ptlCurrScreen.y < (pptlMaxDesktops->y - 1)))
-                || ((ucScanCode == 0x64) && (ptlCurrScreen.x < (pptlMaxDesktops->x - 1)))
-                || ((ucScanCode == 0x63) && (ptlCurrScreen.x > 0)))
+            if (    (G_pHookData->PagerConfig.flPager & PGRFL_WRAPAROUND)
+                 || (    (ucScanCode == 0x61)
+                      && (ptlCurrScreen.y > 0)
+                    )
+                 || (    (ucScanCode == 0x66)
+                      && (ptlCurrScreen.y < (G_pHookData->PagerConfig.cDesktopsY - 1))
+                    )
+                 || (    (ucScanCode == 0x64)
+                      && (ptlCurrScreen.x < (G_pHookData->PagerConfig.cDesktopsX - 1))
+                    )
+                 || (    (ucScanCode == 0x63)
+                      && (ptlCurrScreen.x > 0)
+                    )
+               )
             {
-                // we must send this message, not post it @@@
-                WinSendMsg(G_pHookData->hwndXPagerMoveThread,
-                           PGOM_MOUSESWITCH,
+                // we must send this message, not post it
+                WinSendMsg(G_pHookData->hwndPagerClient,
+                           PGRM_WRAPAROUND,
                            (MPARAM)ucScanCode,
                            0);
                 WinSetPointerPos(HWND_DESKTOP,
@@ -2113,7 +2218,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 #ifndef __NOPAGER__
                     // give XPager a chance to recognize the Desktop
                     // V0.9.4 (2000-08-08) [umoeller]
-                    pgmwAppendNewWinInfo(G_pHookData->hwndWPSDesktop);
+                    pgrCreateWinInfo(G_pHookData->hwndWPSDesktop);
 #endif
                 }
             break;
@@ -2158,7 +2263,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     dmnKillXPager(FALSE); // no notify
 
                 if (G_pHookData)
-                    mrc = (MRESULT)(G_pHookData->hwndXPagerFrame != NULLHANDLE);
+                    mrc = (MRESULT)(G_pHookData->hwndPagerFrame != NULLHANDLE);
             break;
 
             /*
@@ -2174,8 +2279,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             case XDM_RECOVERWINDOWS:
                 if (G_pHookData)        // V0.9.13 (2001-06-14) [umoeller]
-                    if (G_pHookData->XPagerConfig.fRecoverOnShutdown)
-                        pgmmRecoverAllWindows();
+                    pgrRecoverWindows(G_habDaemon);
             break;
 
             /*
@@ -2187,11 +2291,10 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *
              *      Parameters:
              *      -- ULONG mp1: any of the following flags:
-             *          -- PGMGCFG_REPAINT: repaint XPager client
-             *          -- PGMGCFG_REFORMAT: reformat whole window (e.g.
+             *          -- PGRCFG_REPAINT: repaint XPager client
+             *          -- PGRCFG_REFORMAT: reformat whole window (e.g.
              *                  because Desktops have changed)
-             *          -- PGMGCFG_ZAPPO: reformat title bar.
-             *          -- PGMGCFG_STICKIES: sticky windows have changed,
+             *          -- PGRCFG_STICKIES: sticky windows have changed,
              *                  rescan window list.
              *
              *      Return value:
@@ -2201,7 +2304,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_PAGERCONFIG:
                 // _Pmpf(("fnwpDaemonObject: got XDM_PAGERCONFIG"));
                 // load config from OS2.INI
-                mrc = (MRESULT)pgmsLoadSettings((ULONG)mp1);
+                mrc = (MRESULT)dmnLoadPagerSettings((ULONG)mp1);
             break;
 #endif
 
@@ -2425,19 +2528,6 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_SETPOINTER:
                 ProcessSetPointer(mp1);
             break;
-
-            /*
-             * XDM_PGMGWINLISTFULL:
-             *
-             *added V0.9.4 (2000-08-09) [umoeller]
-             *removed V0.9.7 (2001-01-21) [umoeller]
-             */
-
-            /* case XDM_PGMGWINLISTFULL:
-                winhDebugBox(NULLHANDLE,
-                             "XWorkplace Daemon",
-                             "The XPager window list is full.");
-            break; */
 
             /*
              *@@ XDM_ADDDISKWATCH:
@@ -2873,7 +2963,7 @@ int main(int argc, char *argv[])
                         // V0.9.11 (2001-04-25) [umoeller]
 
 #ifndef __NOPAGER__
-                pgmwInit();
+                pgrInit();
 #endif
 
                 G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,

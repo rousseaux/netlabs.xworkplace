@@ -2269,12 +2269,10 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
     }
 
     // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
-    rc = mnuModifyFolderPopupMenu(somSelf,
-                                  hwndMenu,
-                                  hwndCnr2,
-                                  iPosition);
-
-    if (rc)
+    if (rc = mnuModifyFolderPopupMenu(somSelf,
+                                      hwndMenu,
+                                      hwndCnr2,
+                                      iPosition))
         fdrAddHotkeysToMenu(somSelf,
                             hwndCnr,
                             hwndMenu);

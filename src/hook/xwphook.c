@@ -944,15 +944,15 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
  *@@changed V0.9.7 (2001-01-15) [dk]: WM_SETWINDOWPARAMS added
- *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pager doesn't need this
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed lockup call, pager doesn't need this
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky odin windows
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky EPM
  */
 
 VOID ProcessMsgsForXPager(HWND hwnd,
-                            ULONG msg,
-                            MPARAM mp1,
-                            MPARAM mp2)
+                          ULONG msg,
+                          MPARAM mp1,
+                          MPARAM mp2)
 {
     // first check, just for speed
     if (    (msg == WM_CREATE)
@@ -966,7 +966,7 @@ VOID ProcessMsgsForXPager(HWND hwnd,
        )
     {
         if (    (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
-             && (hwnd != G_HookData.hwndXPagerFrame)
+             && (hwnd != G_HookData.hwndPagerFrame)
                     // V0.9.7 (2001-01-23) [umoeller]
            )
         {
@@ -989,32 +989,22 @@ VOID ProcessMsgsForXPager(HWND hwnd,
                         case WM_CREATE:
                         case WM_DESTROY:
                         case WM_SETWINDOWPARAMS:
-                            WinPostMsg(G_HookData.hwndXPagerClient,
-                                       PGMG_WNDCHANGE,
-                                       MPFROMHWND(hwnd),
-                                       MPFROMLONG(msg));
+                        case WM_WINDOWPOSCHANGED:
+                            WinPostMsg(G_HookData.hwndPagerClient,
+                                       PGRM_WINDOWCHANGED,
+                                       (MPARAM)hwnd,
+                                       (MPARAM)msg);
                         break;
 
                         case WM_ACTIVATE:
-                            if (mp1)        // window being activated:
+                            if (mp1)
                             {
-                                // it's a top-level window:
-                                WinPostMsg(G_HookData.hwndXPagerMoveThread,
-                                           PGOM_FOCUSCHANGE,
-                                           0,
-                                           0);
-                                WinPostMsg(G_HookData.hwndXPagerClient,
-                                           PGMG_INVALIDATECLIENT,
-                                           (MPARAM)FALSE,   // delayed
+                                // new active window:
+                                WinPostMsg(G_HookData.hwndPagerClient,
+                                           PGRM_ACTIVECHANGED,
+                                           (MPARAM)hwnd,
                                            0);
                             }
-                        break;
-
-                        case WM_WINDOWPOSCHANGED:
-                            WinPostMsg(G_HookData.hwndXPagerClient,
-                                       PGMG_INVALIDATECLIENT,
-                                       (MPARAM)FALSE,   // delayed
-                                       0);
                         break;
                     }
                 } // end if (    (strcmp(szClass, ...
@@ -1069,9 +1059,9 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 #ifndef __NOPAGER__
 
     if (    // XPager running?
-            (G_HookData.hwndXPagerFrame)
+            (G_HookData.hwndPagerFrame)
             // switching not disabled?
-         && (!G_HookData.fDisablePgmgSwitching)
+         && (!G_HookData.cDisablePagerSwitching)
                 // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
@@ -1081,15 +1071,15 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
         PSWP pswp;
 
         ProcessMsgsForXPager(psmh->hwnd,
-                               psmh->msg,
-                               psmh->mp1,
-                               psmh->mp2);
+                             psmh->msg,
+                             psmh->mp1,
+                             psmh->mp2);
 
         // V0.9.7 (2001-01-23) [umoeller]
-        if (    (G_HookData.XPagerConfig.fStayOnTop)
+        if (    (G_HookData.PagerConfig.flPager & PGRFL_STAYONTOP)
              // && (psmh->msg == WM_ADJUSTWINDOWPOS)        doesn't work
              && (psmh->msg == WM_WINDOWPOSCHANGED)
-             && (WinIsWindowVisible(G_HookData.hwndXPagerFrame))
+             && (WinIsWindowVisible(G_HookData.hwndPagerFrame))
              && (pswp = (PSWP)psmh->mp1)
              && (pswp->fl & SWP_ZORDER)
              && (pswp->hwndInsertBehind == HWND_TOP)
@@ -1097,24 +1087,13 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
              && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
            )
         {
-            /* DosBeep(1000, 20);
-            pswp->hwndInsertBehind = G_HookData.hwndXPagerFrame; */
-
-            // notify XPager that it should go back to
-            // top by itself
-            /* WinPostMsg(G_HookData.hwndXPagerClient,
-                       PGMG_INVALIDATECLIENT,
-                       (MPARAM)FALSE,   // delayed
-                       0); */
-
             // but disable switching V0.9.12 (2001-05-31) [umoeller]
-            BOOL fOld = G_HookData.fDisablePgmgSwitching;
-            G_HookData.fDisablePgmgSwitching = TRUE;
-            WinSetWindowPos(G_HookData.hwndXPagerFrame,
+            ++G_HookData.cDisablePagerSwitching;
+            WinSetWindowPos(G_HookData.hwndPagerFrame,
                             HWND_TOP,
                             0, 0, 0, 0,
                             SWP_ZORDER | SWP_SHOW);
-            G_HookData.fDisablePgmgSwitching = fOld;
+            --G_HookData.cDisablePagerSwitching;
         }
     }
 #endif
@@ -1265,7 +1244,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.6 (2000-11-05) [pr]: fix for hotkeys not working after Lockup
- *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pager doesn't need this
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed lockup call, pager doesn't need this
  *@@changed V0.9.14 (2001-08-21) [umoeller]: now always storing lockup window, we need this in various places
  */
 
@@ -1273,22 +1252,6 @@ VOID EXPENTRY hookLockupHook(HAB hab,
                              HWND hwndLocalLockupFrame)
 {
     G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
-
-    /* if (G_HookData.hwndXPagerFrame)
-    {
-
-        WinPostMsg(G_HookData.hwndXPagerClient,
-                   PGMG_LOCKUP,
-                   MPFROMLONG(TRUE),
-                   MPVOID);
-            // removed V0.9.7 (2001-01-18) [umoeller], XPager doesn't
-            // need this
-    } */
-    /* G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
-    WinPostMsg(G_HookData.hwndXPagerClient,
-               PGMG_LOCKUP,
-               MPFROMLONG(TRUE),
-               MPVOID); */
 }
 
 /******************************************************************
@@ -1321,10 +1284,12 @@ HWND GetFrameWindow(HWND hwndTemp)
 
 /*
  *@@ hookInputHook:
- *      Input queue hook. According to PMREF, this hook gets
- *      called just before the system returns from a WinGetMsg
- *      or WinPeekMsg call -- so this does _not_ get called as
- *      a result of WinPostMsg, but before the msg is _retrieved_.
+ *      input queue hook.
+ *
+ *      This hook gets called just before the system returns
+ *      from a WinGetMsg or WinPeekMsg call. As a result, this
+ *      does _not_ get called on the thread that called
+ *      WinPostMsg, but on the thread that retrieves the msg.
  *
  *      However, only _posted_ messages go thru this hook. _Sent_
  *      messages never get here; there is a separate hook type
@@ -1384,16 +1349,19 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
 #ifndef __NOPAGER__
     if (    // XPager running?
-            (G_HookData.hwndXPagerFrame)
+            (G_HookData.hwndPagerFrame)
             // switching not disabled?
-         && (!G_HookData.fDisablePgmgSwitching)
+         && (!G_HookData.cDisablePagerSwitching)
                 // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
        )
     {
         // OK, go ahead:
-        ProcessMsgsForXPager(pqmsg->hwnd, pqmsg->msg, pqmsg->mp1, pqmsg->mp2);
+        ProcessMsgsForXPager(pqmsg->hwnd,
+                             pqmsg->msg,
+                             pqmsg->mp1,
+                             pqmsg->mp2);
     }
 #endif
 
@@ -1674,7 +1642,7 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
 #endif
 #ifndef __NOPAGER__
                         // b) pager switch-screen hotkeys are enabled
-                    ||  (G_HookData.XPagerConfig.fEnableArrowHotkeys)
+                    ||  (G_HookData.PagerConfig.flPager & PGRFL_HOTKEYS)
 #else
                     ||  (FALSE)
 #endif
