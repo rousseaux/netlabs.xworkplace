@@ -5,6 +5,19 @@
  *
  *      This is all new with V0.9.19.
  *
+ *      Thanks to Sergey I. Yevtushenko, author of PUMonitor,
+ *      for figuring out how to use ioctl() to get the IP
+ *      bandwidth.
+ *
+ *      This file is very similar to the other widgets,
+ *      especially the "Pulse", except that the data input
+ *      is different, obviously. It is however in a separate
+ *      DLL so we don't force people to have TCP/IP installed
+ *      to run XWorkplace.
+ *
+ *      I am not sure whether the linking requires a 32-bit
+ *      version of TCP/IP to be installed. I hope not.
+ *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  *@@header "shared\center.h"
  */
@@ -392,8 +405,17 @@ typedef struct _WIDGETPRIVATE
     MONITORSETUP    Setup;
             // widget settings that correspond to a setup string
 
-    int             sock;
-    struct ifmib    statif;
+    int             sock;           // the one and only socked while
+                                    // we exist (opened on create)
+
+    struct ifmib    statif;         // the sick structure filled by
+                                    // ioctl(SIOSTATIF)
+
+    // Getting the socket throughput works by periodically running
+    // ioctl(SIOSTATIF), which gives us the total no. of bytes
+    // that went in and out per interface. By comparing that with
+    // the value from the previous loop, we can get the throughput
+    // rate for input and output, respectively.
     ULONG           ulPrevTotalIn,
                     ulPrevTotalOut,
                     ulLastMilliseconds;
@@ -925,7 +947,7 @@ VOID TwgtPaint2(HWND hwnd,
                               ulOut / 10,
                               ulOut % 10);
 
-            GpiSetColor(hps, RGBCOL_BLACK);
+            GpiSetColor(hps, pPrivate->Setup.lcolForeground);
             WinDrawText(hps,
                         ul,
                         szTemp,
@@ -1274,10 +1296,6 @@ VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
         ULONG i;
         for (i = 0; i < IFMIB_ENTRIES; i++)
         {
-            _Pmpf(("pPrivate->statif.iftable[%d].ifDescr: %s",
-                    i,
-                    pPrivate->statif.iftable[i].ifDescr));
-
             if (pPrivate->statif.iftable[i].ifDescr[0])
             {
                 pwinhInsertMenuItem(hwndSubmenu,
@@ -1612,6 +1630,6 @@ VOID EXPENTRY TwgtQueryVersion(PULONG pulMajor,
 {
     *pulMajor = XFOLDER_MAJOR;              // dlgids.h
     *pulMinor = XFOLDER_MINOR;
-    *pulRevision = XFOLDER_REVISION;
+    *pulRevision = 16; // XFOLDER_REVISION;
 }
 
