@@ -156,10 +156,15 @@ SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
 
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        // replaced DosDelete with this func, which
-        // uses DosForceDelete if the file is in \trash
+        // use DosForceDelete if the file is in \trash
         // V0.9.20 (2002-07-12) [umoeller]
-        switch (fopsDeleteFile(szFilename))
+        APIRET arc;
+        if (fopsUseForceDelete(szFilename))
+            arc = DosForceDelete(szFilename);
+        else
+            arc = DosDelete(szFilename);
+
+        switch (arc)
         {
             case NO_ERROR:
             case ERROR_FILE_NOT_FOUND:

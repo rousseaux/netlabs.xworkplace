@@ -509,8 +509,8 @@ static const DLGHITEM dlgXButtonSettings[] =
                         CONTROL_DEF(&CheckRestartWPS),
                     START_ROW(0),
                         CONTROL_DEF(&CheckRunDlg),
-                    START_ROW(0),
-                        CONTROL_DEF(&CheckLogoff),
+//                     START_ROW(0),        removed for now V0.9.20 (2002-07-12) [umoeller]
+//                         CONTROL_DEF(&CheckLogoff),
                     START_ROW(0),
                         CONTROL_DEF(&CheckShutdown),
                 END_TABLE,
@@ -532,6 +532,7 @@ static const DLGHITEM dlgXButtonSettings[] =
  *      dialog proc for the properties dialog.
  *
  *@@added V0.9.19 (2002-04-14) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: removed logoff checkbox
  */
 
 static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)

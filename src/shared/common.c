@@ -6070,6 +6070,7 @@ ULONG cmnMessageBoxExt(HWND hwndOwner,   // in: owner window
  *
  *@@added V0.9.19 (2002-03-28) [umoeller]
  *@@changed V0.9.19 (2002-06-13) [umoeller]: added ERROR_PROTECTION_VIOLATION
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: optimized
  */
 
 VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be init'ed)
@@ -6077,7 +6078,8 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
                       PSZ pszReplString,    // in: string for %1 message or NULL
                       BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
 {
-    PCSZ pcszPlainMsg = NULL;
+    PCSZ pcszErrorClass = NULL,
+         pcszErrorDescription = "[no description available]";
 
     XSTRING str2;
     xstrInit(&str2, 0);
@@ -6086,405 +6088,402 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
 
     if (IS_IN_RANGE(arc, ERROR_XML_FIRST, ERROR_XML_LAST))
     {
-        PCSZ pcsz;
-        if (pcsz = xmlDescribeError(arc))
-            xstrPrintf(pstr, "XML error %d: %s", arc, pcsz);
-        else
-            xstrPrintf(pstr, "Unknown XML error %d", arc);
+        PCSZ p;
+        pcszErrorClass = "XML error";
+        if (p = xmlDescribeError(arc))
+            pcszErrorDescription = p;
     }
     else if (IS_IN_RANGE(arc, ERROR_WPH_FIRST, ERROR_WPH_LAST))
     {
-        xstrPrintf(pstr, "Handles engine error %d", arc);
+        pcszErrorClass = "Handles engine error";
     }
     else if (IS_IN_RANGE(arc, ERROR_PRF_FIRST, ERROR_PRF_LAST))
     {
-        xstrPrintf(pstr, "Profile engine error %d", arc);
+        pcszErrorClass = "Profile engine error";
     }
     else if (IS_IN_RANGE(arc, ERROR_DLG_FIRST, ERROR_DLG_LAST))
     {
-        xstrPrintf(pstr, "Dialog engine error %d", arc);
+        pcszErrorClass = "Dialog engine error";
     }
     else if (IS_IN_RANGE(arc, ERROR_REGEXP_FIRST, ERROR_REGEXP_LAST))
     {
+        pcszErrorClass = "Regular expression error";
+
         switch (arc)
         {
             case EREE_UNF_SUB:
-                pcszPlainMsg = "Unfinished sub-expression; invalid \"()\" nesting";
+                pcszErrorDescription = "Unfinished sub-expression; invalid \"()\" nesting";
             break;
 
             case EREE_UNEX_RANGE:
-                pcszPlainMsg = "Unexpected range specifier '-'";
+                pcszErrorDescription = "Unexpected range specifier '-'";
             break;
 
             case EREE_UNF_RANGE:
-                pcszPlainMsg = "Unfinished range specification; invalid \"[]\" nesting";
+                pcszErrorDescription = "Unfinished range specification; invalid \"[]\" nesting";
             break;
 
             case EREE_UNF_CCLASS:
-                pcszPlainMsg = "Unfinished character class; must be \"[:class:]\"";
+                pcszErrorDescription = "Unfinished character class; must be \"[:class:]\"";
             break;
 
             case EREE_UNEX_RSQR:
-                pcszPlainMsg = "Unexpected ']'";
+                pcszErrorDescription = "Unexpected ']'";
             break;
 
             case EREE_UNEX_RPAR:
-                pcszPlainMsg = "Unexpected ')'";
+                pcszErrorDescription = "Unexpected ')'";
             break;
 
             case EREE_UNEX_QUERY:
-                pcszPlainMsg = "Unexpected '?'";
+                pcszErrorDescription = "Unexpected '?'";
             break;
 
             case EREE_UNEX_PLUS:
-                pcszPlainMsg = "Unexpected '+'";
+                pcszErrorDescription = "Unexpected '+'";
             break;
 
             case EREE_UNEX_STAR:
-                pcszPlainMsg = "Unexpected '*'";
+                pcszErrorDescription = "Unexpected '*'";
             break;
 
             case EREE_UNEX_LCUR:
-                pcszPlainMsg = "Unexpected '{'";
+                pcszErrorDescription = "Unexpected '{'";
             break;
 
             case EREE_UNEX_RCUR:
-                pcszPlainMsg = "Unexpected '}'";
+                pcszErrorDescription = "Unexpected '}'";
             break;
 
             case EREE_BAD_CREP_M:
-                pcszPlainMsg = "Bad minimum in counted repetition";
+                pcszErrorDescription = "Bad minimum in counted repetition";
             break;
 
             case EREE_BAD_CREP_N:
-                pcszPlainMsg = "Bad maximum in counted repetition";
+                pcszErrorDescription = "Bad maximum in counted repetition";
             break;
 
             case EREE_UNF_CREP:
-                pcszPlainMsg = "Unfinished counted repetition";
+                pcszErrorDescription = "Unfinished counted repetition";
             break;
 
             case EREE_BAD_CREP:
-                pcszPlainMsg = "Bad counted repetition";
+                pcszErrorDescription = "Bad counted repetition";
             break;
 
             case EREE_TOO_MANY_SUB:
-                pcszPlainMsg = "Too many sub-expressions";
+                pcszErrorDescription = "Too many sub-expressions";
             break;
 
             case EREE_COMPILE_FSM:
-                pcszPlainMsg = "Regular expression is too complex to process";
+                pcszErrorDescription = "Regular expression is too complex to process";
             break;
 
             case EREE_POSIX_COLLATING:
-                pcszPlainMsg = "POSIX collating symbols not supported";
+                pcszErrorDescription = "POSIX collating symbols not supported";
             break;
 
             case EREE_POSIX_EQUIVALENCE:
-                pcszPlainMsg = "POSIX equivalence classes not supported";
+                pcszErrorDescription = "POSIX equivalence classes not supported";
             break;
 
             case EREE_POSIX_CCLASS_BAD:
-                pcszPlainMsg = "Bad POSIX character class";
+                pcszErrorDescription = "Bad POSIX character class";
             break;
 
             case EREE_BAD_BACKSLASH:
-                pcszPlainMsg = "Bad '\\' in substitution string";
+                pcszErrorDescription = "Bad '\\' in substitution string";
             break;
 
             case EREE_BAD_BACKREF:
-                pcszPlainMsg = "Bad backreference in substitution string";
+                pcszErrorDescription = "Bad backreference in substitution string";
             break;
 
             case EREE_SUBS_LEN:
-                pcszPlainMsg = "Substituted string is too long";
+                pcszErrorDescription = "Substituted string is too long";
             break;
         }
     }
     else if (IS_IN_RANGE(arc, ERROR_XWP_FIRST, ERROR_XWP_LAST))
     {
+        #ifndef __XWPLITE__
+            pcszErrorClass = "XWorkplace error";
+        #else
+            pcszErrorClass = "eComStation Workplace Shell error";
+        #endif
+
         switch (arc)
         {
             case FOPSERR_NOT_HANDLED_ABORT:
-                pcszPlainMsg = "Unhandled file operations error";
+                pcszErrorDescription = "Unhandled file operations error";
             break;
 
             case FOPSERR_INVALID_OBJECT:
-                pcszPlainMsg = "Invalid object in file operation";
+                pcszErrorDescription = "Invalid object in file operation";
             break;
 
             case FOPSERR_NO_OBJECTS_FOUND:
-                pcszPlainMsg = "No objects found for file operation";
+                pcszErrorDescription = "No objects found for file operation";
             break;
 
                     // no objects found to process
             case FOPSERR_INTEGRITY_ABORT:
-                pcszPlainMsg = "Data integrity error with file operation";
+                pcszErrorDescription = "Data integrity error with file operation";
             break;
 
             case FOPSERR_FILE_THREAD_CRASHED:
-                pcszPlainMsg = "File thread crashed";
+                pcszErrorDescription = "File thread crashed";
             break;
 
                     // fopsFileThreadProcessing crashed
             case FOPSERR_CANCELLEDBYUSER:
-                pcszPlainMsg = "File operation cancelled by user";
+                pcszErrorDescription = "File operation cancelled by user";
             break;
 
             case FOPSERR_NO_TRASHCAN:
-                pcszPlainMsg = "Cannot find trash can";
+                pcszErrorDescription = "Cannot find trash can";
             break;
 
                     // trash can doesn't exist, cannot delete
                     // V0.9.16 (2001-11-10) [umoeller]
             /* case FOPSERR_MOVE2TRASH_READONLY:
-                pcszPlainMsg = "Cannot move read-only file to trash can";
+                pcszErrorDescription = "Cannot move read-only file to trash can";
             break; */
                     // moving WPFileSystem which has read-only:
                     // this should prompt the user
 
             case FOPSERR_MOVE2TRASH_NOT_DELETABLE:
-                pcszPlainMsg = "Cannot move undeletable file to trash can";
+                pcszErrorDescription = "Cannot move undeletable file to trash can";
             break;
                     // moving non-deletable to trash can: this should abort
 
             /* case FOPSERR_DELETE_CONFIRM_FOLDER:
-                pcszPlainMsg = "FOPSERR_DELETE_CONFIRM_FOLDER";
+                pcszErrorDescription = "FOPSERR_DELETE_CONFIRM_FOLDER";
             break; */
                     // deleting WPFolder and "delete folder" confirmation is on:
                     // this should prompt the user (non-fatal)
                     // V0.9.16 (2001-12-06) [umoeller]
 
             /* case FOPSERR_DELETE_READONLY:
-                pcszPlainMsg = "FOPSERR_DELETE_READONLY";
+                pcszErrorDescription = "FOPSERR_DELETE_READONLY";
             break; */
                     // deleting WPFileSystem which has read-only flag;
                     // this should prompt the user (non-fatal)
 
             case FOPSERR_DELETE_NOT_DELETABLE:
-                pcszPlainMsg = "File is not deletable";
+                pcszErrorDescription = "File is not deletable";
             break;
                     // deleting not-deletable; this should abort
 
             case FOPSERR_TRASHDRIVENOTSUPPORTED:
-                pcszPlainMsg = "Drive is not supported by trash can";
+                pcszErrorDescription = "Drive is not supported by trash can";
             break;
 
             case FOPSERR_WPFREE_FAILED:
-                pcszPlainMsg = "wpFree failed on file-system object";
+                pcszErrorDescription = "wpFree failed on file-system object";
             break;
 
             case FOPSERR_LOCK_FAILED:
-                pcszPlainMsg = "Cannot get file operations lock";
+                pcszErrorDescription = "Cannot get file operations lock";
             break;
                     // requesting object mutex failed
 
             case FOPSERR_START_FAILED:
-                pcszPlainMsg = "Cannot start file task";
+                pcszErrorDescription = "Cannot start file task";
             break;
                     // fopsStartTask failed
 
             case FOPSERR_POPULATE_FOLDERS_ONLY:
-                pcszPlainMsg = "FOPSERR_POPULATE_FOLDERS_ONLY";
+                pcszErrorDescription = "FOPSERR_POPULATE_FOLDERS_ONLY";
             break;
                     // fopsAddObjectToTask works on folders only with XFT_POPULATE
 
             case FOPSERR_POPULATE_FAILED:
-                pcszPlainMsg = "Cannot populate folder";
+                pcszErrorDescription = "Cannot populate folder";
             break;
                     // wpPopulate failed on folder during XFT_POPULATE
 
             case FOPSERR_WPQUERYFILENAME_FAILED:
-                pcszPlainMsg = "wpQueryFilename failed";
+                pcszErrorDescription = "wpQueryFilename failed";
             break;
                     // wpQueryFilename failed
 
             case FOPSERR_WPSETATTR_FAILED:
-                pcszPlainMsg = "Unable to set new attributes for file";
+                pcszErrorDescription = "Unable to set new attributes for file";
             break;
                     // wpSetAttr failed
 
             case FOPSERR_GETNOTIFYSEM_FAILED:
-                pcszPlainMsg = "Cannot get notify semaphore";
+                pcszErrorDescription = "Cannot get notify semaphore";
             break;
                     // fdrGetNotifySem failed
 
             case FOPSERR_REQUESTFOLDERMUTEX_FAILED:
-                pcszPlainMsg = "Cannot get folder semaphore";
+                pcszErrorDescription = "Cannot get folder semaphore";
             break;
                     // wpshRequestFolderSem failed
 
             case FOPSERR_NOT_FONT_FILE:
-                pcszPlainMsg = "FOPSERR_NOT_FONT_FILE";
+                pcszErrorDescription = "Given object is not a font file";
             break;
                     // with XFT_INSTALLFONTS: non-XWPFontFile passed
 
             case FOPSERR_FONT_ALREADY_INSTALLED:
-                pcszPlainMsg = "Font is already installed";
+                pcszErrorDescription = "Font is already installed";
             break;
                     // with XFT_INSTALLFONTS: XWPFontFile is already installed
 
             case FOPSERR_NOT_FONT_OBJECT:
-                pcszPlainMsg = "FOPSERR_NOT_FONT_OBJECT";
+                pcszErrorDescription = "FOPSERR_NOT_FONT_OBJECT";
             break;
                     // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
 
             case FOPSERR_FONT_ALREADY_DELETED:
-                pcszPlainMsg = "Font is no longer present in OS2.INI";
+                pcszErrorDescription = "Font is no longer present in OS2.INI";
             break;
                     // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
 
             case FOPSERR_FONT_STILL_IN_USE:
-                pcszPlainMsg = "Font is still in use";
+                pcszErrorDescription = "Font is still in use";
             break;
                     // with XFT_DEINSTALLFONTS: font is still in use;
                     // this is only a warning, it will be gone after a reboot
 
             case ERROR_XCENTER_FIRST:
-                pcszPlainMsg = "ERROR_XCENTER_FIRST";
+                pcszErrorDescription = "ERROR_XCENTER_FIRST";
             break;
 
             case XCERR_INVALID_ROOT_WIDGET_INDEX:
-                pcszPlainMsg = "XCERR_INVALID_ROOT_WIDGET_INDEX";
+                pcszErrorDescription = "XCERR_INVALID_ROOT_WIDGET_INDEX";
             break;
 
             case XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY:
-                pcszPlainMsg = "XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY";
+                pcszErrorDescription = "XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY";
             break;
 
             case XCERR_INVALID_TRAY_INDEX:
-                pcszPlainMsg = "XCERR_INVALID_TRAY_INDEX";
+                pcszErrorDescription = "XCERR_INVALID_TRAY_INDEX";
             break;
 
             case XCERR_INVALID_SUBWIDGET_INDEX:
-                pcszPlainMsg = "XCERR_INVALID_SUBWIDGET_INDEX";
+                pcszErrorDescription = "XCERR_INVALID_SUBWIDGET_INDEX";
             break;
 
             case BASEERR_BUILDPTR_FAILED:
-                pcszPlainMsg = "BASEERR_BUILDPTR_FAILED";
+                pcszErrorDescription = "BASEERR_BUILDPTR_FAILED";
             break;
 
             case BASEERR_DAEMON_DEAD:
-                pcszPlainMsg = "BASEERR_DAEMON_DEAD";
+                pcszErrorDescription = "BASEERR_DAEMON_DEAD";
             break;
-
-            default:
-                xstrPrintf(pstr, "Unknown error", arc);
         }
-
-        xstrPrintf(&str2, " (code %d)", arc);
-        xstrcats(pstr, &str2);
     }
     else if (IS_IN_RANGE(arc, ERROR_XWPSEC_FIRST, ERROR_XWPSEC_LAST))
     {
+        pcszErrorClass = XWORKPLACE_STRING " security error";
+
         switch (arc)
         {
             case XWPSEC_INTEGRITY:
-                pcszPlainMsg = "Data integrity error";
+                pcszErrorDescription = "Data integrity error";
             break;
 
             case XWPSEC_INVALID_DATA:
-                pcszPlainMsg = "Invalid data.";
+                pcszErrorDescription = "Invalid data.";
             break;
 
             case XWPSEC_CANNOT_GET_MUTEX:
-                pcszPlainMsg = "Cannot get mutex.";
+                pcszErrorDescription = "Cannot get mutex.";
             break;
 
             case XWPSEC_CANNOT_START_DAEMON:
-                pcszPlainMsg = "Cannot start daemon.";
+                pcszErrorDescription = "Cannot start daemon.";
             break;
 
             case XWPSEC_INSUFFICIENT_AUTHORITY:
-                pcszPlainMsg = "Insufficient authority for processing this request.";
+                pcszErrorDescription = "Insufficient authority for processing this request.";
             break;
 
             case XWPSEC_HSUBJECT_EXISTS:
-                pcszPlainMsg = "Subject handle is already in use.";
+                pcszErrorDescription = "Subject handle is already in use.";
             break;
 
             case XWPSEC_INVALID_HSUBJECT:
-                pcszPlainMsg = "Subject handle is invalid.";
+                pcszErrorDescription = "Subject handle is invalid.";
             break;
 
             case XWPSEC_INVALID_PID:
-                pcszPlainMsg = "Invalid process ID.";
+                pcszErrorDescription = "Invalid process ID.";
             break;
 
             case XWPSEC_NO_CONTEXTS:
-                pcszPlainMsg = "No contexts.";
+                pcszErrorDescription = "No contexts.";
             break;
 
             case XWPSEC_USER_EXISTS:
-                pcszPlainMsg = "User exists already.";
+                pcszErrorDescription = "User exists already.";
             break;
 
             case XWPSEC_NO_USERS:
-                pcszPlainMsg = "No users in user database.";
+                pcszErrorDescription = "No users in user database.";
             break;
 
             case XWPSEC_NO_GROUPS:
-                pcszPlainMsg = "No groups in user database.";
+                pcszErrorDescription = "No groups in user database.";
             break;
 
             case XWPSEC_INVALID_USERID:
-                pcszPlainMsg = "Invalid user ID.";
+                pcszErrorDescription = "Invalid user ID.";
             break;
 
             case XWPSEC_INVALID_GROUPID:
-                pcszPlainMsg = "Invalid group ID.";
+                pcszErrorDescription = "Invalid group ID.";
             break;
 
             case XWPSEC_NOT_AUTHENTICATED:
-                pcszPlainMsg = "Authentication failed.";
+                pcszErrorDescription = "Authentication failed.";
             break;
 
             case XWPSEC_NO_USER_PROFILE:
-                pcszPlainMsg = "User profile (OS2.INI) could not be found.";
+                pcszErrorDescription = "User profile (OS2.INI) could not be found.";
             break;
 
             case XWPSEC_CANNOT_START_SHELL:
-                pcszPlainMsg = "Cannot start shell.";
+                pcszErrorDescription = "Cannot start shell.";
             break;
 
             case XWPSEC_INVALID_PROFILE:
-                pcszPlainMsg = "Invalid profile.";
+                pcszErrorDescription = "Invalid profile.";
             break;
 
             case XWPSEC_NO_LOCAL_USER:
-                pcszPlainMsg = "No local user.";
+                pcszErrorDescription = "No local user.";
             break;
 
             case XWPSEC_DB_GROUP_SYNTAX:
-                pcszPlainMsg = "Syntax error with group entries in user database.";
+                pcszErrorDescription = "Syntax error with group entries in user database.";
             break;
 
             case XWPSEC_DB_USER_SYNTAX:
-                pcszPlainMsg = "Syntax error with user entries in user database.";
+                pcszErrorDescription = "Syntax error with user entries in user database.";
             break;
 
             case XWPSEC_DB_INVALID_GROUPID:
-                pcszPlainMsg = "Invalid group ID in user database.";
+                pcszErrorDescription = "Invalid group ID in user database.";
             break;
 
             case XWPSEC_DB_ACL_SYNTAX:
-                pcszPlainMsg = "Syntax error in ACL database.";
+                pcszErrorDescription = "Syntax error in ACL database.";
             break;
 
             case XWPSEC_RING0_NOT_FOUND:
-                pcszPlainMsg = "Error contacting ring-0 device driver.";
+                pcszErrorDescription = "Error contacting ring-0 device driver.";
             break;
 
             case XWPSEC_QUEUE_INVALID_CMD:
-                pcszPlainMsg = "Invalid command code in security queue.";
+                pcszErrorDescription = "Invalid command code in security queue.";
             break;
-
-            default:
-                xstrPrintf(pstr, "Unknown error", arc);
         }
-
-        xstrPrintf(&str2, " (code %d)", arc);
-        xstrcats(pstr, &str2);
     }
     else
     {
@@ -6550,8 +6549,12 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
         }
     }
 
-    if (pcszPlainMsg)
-        xstrcpy(pstr, pcszPlainMsg, 0);
+    if (pcszErrorClass)
+        xstrPrintf(pstr,
+                   "%s (%d): %s",
+                   pcszErrorClass,
+                   arc,
+                   pcszErrorDescription);
 
     xstrClear(&str2);
 }

@@ -1978,7 +1978,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
             case MWGT_DATE:
             case MWGT_TIME:
                 pcszID = "<WP_CLOCK>";
-                pcszBackupID = "<ECSCLOCK_CLOCK>";      // V0.9.18 (2002-03-23) [umoeller]
+                pcszBackupID = "<ECSCLOCK_CLOCK>";
             break;
 
             case MWGT_SWAPPER:

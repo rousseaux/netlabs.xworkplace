@@ -1055,6 +1055,7 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
  *@@changed V0.9.16 (2001-11-22) [umoeller]: hotkeys stopped working after lockup if XPager wasn't running; fixed
  *@@changed V0.9.19 (2002-04-04) [lafaix]: enabled AMF_ALWAYSMOVE for auto move feature
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed pager stay on top
+ *@@changed V0.9.20 (2002-07-16) [lafaix]: AHF_IGNOREMENUS now recognize Mozilla menus too
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1136,24 +1137,71 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
         // in menu mode (i.e., a menu is active).
         // V0.9.14 (2001-08-01) [lafaix]
         if (    (G_HookData.HookConfig.__fAutoHideMouse)
-             && (G_HookData.HookConfig.__ulAutoHideFlags& AHF_IGNOREMENUS)
+             && (G_HookData.HookConfig.__ulAutoHideFlags & AHF_IGNOREMENUS)
            )
         {
-            if (    (psmh->msg == WM_INITMENU)
-                 && (G_hwndRootMenu == NULLHANDLE)
-               )
+            CHAR szClass[30];
+
+            do      // just a do for breaking, no loop
             {
-                G_hwndRootMenu = (HWND)psmh->mp2;
-                WMMouseMove_AutoHideMouse();
-            }
-            else
-            if (    (psmh->msg == WM_MENUEND)
-                 && (G_hwndRootMenu == (HWND)psmh->mp2)
-               )
-            {
-                G_hwndRootMenu = NULLHANDLE;
-                WMMouseMove_AutoHideMouse();
-            }
+                // messages we have no interest in are handled in just
+                // three tests, which is the best we can hope for, as we
+                // must take care of three different messages
+
+                if (psmh->msg == WM_INITMENU)
+                {
+                    if (G_hwndRootMenu == NULLHANDLE)
+                    {
+                        G_hwndRootMenu = (HWND)psmh->mp2;
+                        WMMouseMove_AutoHideMouse();
+                    }
+                    break;
+                }
+
+                if (psmh->msg == WM_MENUEND)
+                {
+                    if (G_hwndRootMenu == (HWND)psmh->mp2)
+                    {
+                        G_hwndRootMenu = NULLHANDLE;
+                        WMMouseMove_AutoHideMouse();
+                    }
+                    break;
+                }
+
+                // Mozilla's menus don't do the WM_INITMENU / WM_MENUEND
+                // stuff, so we must handle them specially
+                // V0.9.20 (2002-07-16) [lafaix]
+
+                if (psmh->msg == WM_WINDOWPOSCHANGED)
+                {
+                    if (    (G_hwndRootMenu == NULLHANDLE)
+                         && ((PSWP)PVOIDFROMMP(psmh->mp1))
+                         && (((PSWP)PVOIDFROMMP(psmh->mp1))->fl & SWP_SHOW)
+                         && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
+                         &&  WinQueryClassName(psmh->hwnd, sizeof(szClass), szClass)
+                         && (!strcmp(szClass, "MozillaWindowClass"))
+                                // we only check if this is a top level window of
+                                // the MozillaWindowClass class here, to minimize
+                                // overhead, as the check is not required in the
+                                // other case
+                       )
+                    {
+                        G_hwndRootMenu = (HWND)psmh->hwnd;
+                        WMMouseMove_AutoHideMouse();
+                    }
+                    else
+                    if (    (G_hwndRootMenu == psmh->hwnd)
+                         && ((PSWP)PVOIDFROMMP(psmh->mp1))
+                         && (((PSWP)PVOIDFROMMP(psmh->mp1))->fl & SWP_HIDE)
+                       )
+                    {
+                        G_hwndRootMenu = NULLHANDLE;
+                        WMMouseMove_AutoHideMouse();
+                    }
+                    break;
+                }
+
+            } while (FALSE); // end do
         }
 
     // yet another extra check, to find out if the
@@ -1197,7 +1245,9 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
              // ignore dialogs not direct children of desktop (fixes
              // netscape odd hierarchy)
              // V0.9.19 (2002-06-13) [lafaix]
-             && (WinQueryWindow(psmh->hwnd, QW_PARENT) == HWND_DESKTOP)
+             // was comparing to HWND_DESKTOP, fixed
+             // V0.9.20 (2002-07-16) [lafaix]
+             && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
            )
         {
             WinPostMsg(G_HookData.hwndDaemonObject,
@@ -1340,6 +1390,7 @@ HWND GetFrameWindow(HWND hwndTemp)
  *@@changed V0.9.9 (2001-03-20) [lafaix]: added MB3 Autoscroll support
  *@@changed V0.9.9 (2001-03-21) [lafaix]: added MB3 Push2Bottom support
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
+ *@@changed V0.9.20 (2002-07-16) [lafaix]: don't always raise window on MB1 click
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -1412,16 +1463,30 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 {
                     // make sure that the mouse is not currently captured
                     if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-                        WinSetWindowPos(GetFrameWindow(pqmsg->hwnd),
-                                        HWND_TOP,
-                                        0,
-                                        0,
-                                        0,
-                                        0,
-                                        SWP_NOADJUST | SWP_ZORDER);
-                            // @@todo yoo-hoo, this doesn't really work...
-                            // this activates the frame, which is not really
-                            // what we want in every case... this breaks XCenter too
+                    {
+                        CHAR szWindowClass[4];
+                                // use 4 instead of 3, or "#9whatever" is
+                                // matched too V0.9.20 (2002-07-16) [umoeller]
+                        WinQueryClassName(pqmsg->hwnd,
+                                          sizeof(szWindowClass),
+                                          szWindowClass);
+
+                        // we only raise the window if MB1 is not
+                        // pressed over the titlebar with Ctrl down
+                        // (this mimics what PM does, to allow moving
+                        // a window in the background)
+                        // V0.9.20 (2002-07-16) [lafaix]
+                        if (    ((SHORT2FROMMP(pqmsg->mp2) & KC_CTRL) == 0)
+                             || strcmp(szWindowClass, "#9")
+                           )
+                            WinSetWindowPos(GetFrameWindow(pqmsg->hwnd),
+                                            HWND_TOP,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            SWP_NOADJUST | SWP_ZORDER);
+                    }
                 }
 #endif
 

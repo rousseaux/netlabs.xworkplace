@@ -1678,7 +1678,7 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
             if (_wpQueryFilename(pSourceFolder, szSourceFolder, TRUE))
             {
                 #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("xwpDeleteIntoTrashCan: Source folder: %s", szFolder));
+                    _Pmpf(("xwpDeleteIntoTrashCan: Source folder: %s", szSourceFolder));
                 #endif
 
                 // get the \trash subdir corresponding to pSourceFolder;

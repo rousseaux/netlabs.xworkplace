@@ -1392,7 +1392,9 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
  *      bugs.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
- *@@changed V0.9.20 (2002-07-12) [umoeller]: optimized
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: optimized
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed higly broken _wpSaveImmediate call
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: added exception handling
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
@@ -1402,66 +1404,83 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpFree");
 
-    if (pKernelGlobals->fAutoRefreshReplaced)
+    TRY_LOUD(excpt1)        // V0.9.20 (2002-07-16) [umoeller]
     {
-        ULONG   ulStyle = _wpQueryStyle(somSelf);
-        PSZ     pszID = _wpQueryObjectID(somSelf);
-        somTD_XFldObject_xwpDestroyStorage pxwpDestroyStorage = NULL;
-        xfTD_wpDeleteWindowPosKeys _wpDeleteWindowPosKeys = NULL;
-        xfTD_wpMakeDormant _wpMakeDormant = NULL;
+        if (pKernelGlobals->fAutoRefreshReplaced)
+        {
+            ULONG   ulStyle = _wpQueryStyle(somSelf);
+            PSZ     pszID = _wpQueryObjectID(somSelf);
+            somTD_XFldObject_xwpDestroyStorage pxwpDestroyStorage = NULL;
+            xfTD_wpDeleteWindowPosKeys _wpDeleteWindowPosKeys = NULL;
+            xfTD_wpMakeDormant _wpMakeDormant = NULL;
 
-        // if the object has an object ID assigned, remove this...
-        // this should clean the INI entry
-        if (pszID && *pszID) // strlen(pszID)) V0.9.20 (2002-07-12) [umoeller]
-            _wpSetObjectID(somSelf, NULL);
+            // if the object has an object ID assigned, remove this...
+            // this should clean the INI entry
+            if (pszID && *pszID) // strlen(pszID)) V0.9.20 (2002-07-12) [umoeller]
+                _wpSetObjectID(somSelf, NULL);
 
-        // if the object is a template, unset that bit...
-        // this should clean the INI entry as well
-        if (ulStyle & OBJSTYLE_TEMPLATE)
-            _wpModifyStyle(somSelf, OBJSTYLE_TEMPLATE, 0);
+            // if the object is a template, unset that bit...
+            // this should clean the INI entry as well
+            if (ulStyle & OBJSTYLE_TEMPLATE)
+                _wpModifyStyle(somSelf, OBJSTYLE_TEMPLATE, 0);
 
-        // OK, here comes the fun stuff.
-        // The WPS normally calls the "wpDestroyObject" method,
-        // which is responsible for killing the physical representation
-        // of the object. Unfortunately, we cannot override that method
-        // because IBM wasn't kind enough to make it public. Our way
-        // around this (without breaking compatibility) is to introduce
-        // a new method in XFldObject, which calls wpDestroyObject per
-        // default.
+            // OK, here comes the fun stuff.
+            // The WPS normally calls the "wpDestroyObject" method,
+            // which is responsible for killing the physical representation
+            // of the object. Unfortunately, we cannot override that method
+            // because IBM wasn't kind enough to make it public. Our way
+            // around this (without breaking compatibility) is to introduce
+            // a new method in XFldObject, which calls wpDestroyObject per
+            // default.
 
-        // We resolve the method by name because it is overridden
-        // in some XWorkplace classes. If it is not overridden,
-        // XFldObject::xwpDestroyStorage calls wpDestroyObject.
-        if (pxwpDestroyStorage = (somTD_XFldObject_xwpDestroyStorage)somResolveByName(
-                                  somSelf,
-                                  "xwpDestroyStorage"))
-            pxwpDestroyStorage(somSelf);
+            // We resolve the method by name because it is overridden
+            // in some XWorkplace classes. If it is not overridden,
+            // XFldObject::xwpDestroyStorage calls wpDestroyObject.
+            if (pxwpDestroyStorage = (somTD_XFldObject_xwpDestroyStorage)somResolveByName(
+                                      somSelf,
+                                      "xwpDestroyStorage"))
+                pxwpDestroyStorage(somSelf);
 
-        // the WPS then calls wpSaveImmediate just in case the object
-        // has called wpSaveDeferred. I'm not sure this is a good idea...
-        // this will add another entry to the INI file. This should be
-        // moved up.
-        _wpSaveImmediate(somSelf);
+            // the WPS then calls wpSaveImmediate just in case the object
+            // has called wpSaveDeferred. I'm not sure this is a good idea...
+            // this will add another entry to the INI file. This should be
+            // moved up.
+            // _wpSaveImmediate(somSelf);
 
-        // then there's another undocumented method call... i'm unsure
-        // what this does, but what the heck. We need to resolve this
-        // manually.
-        if (_wpDeleteWindowPosKeys = (xfTD_wpDeleteWindowPosKeys)wpshResolveFor(
-                                                somSelf,
-                                                NULL,
-                                                "wpDeleteWindowPosKeys"))
-            _wpDeleteWindowPosKeys(somSelf);
+            // no!!
+            // V0.9.20 (2002-07-16) [umoeller]
+            xo_wpSaveImmediate(somSelf);
+                // NOTE: NO METHOD CALL!
+                // this makes sure ONLY that the object is removed from
+                // both our private dirty list AND the IBM dirty list,
+                // but does not actually save the data because only
+                // the storage classes (WPAbstract, WPFileSystem) call
+                // wpSaveState
 
-        // finally, this calls wpMakeDormant, which destroys the SOM object
-        if (_wpMakeDormant = (xfTD_wpMakeDormant)wpshResolveFor(
-                                                somSelf,
-                                                NULL,
-                                                "wpMakeDormant"))
-            brc = _wpMakeDormant(somSelf, 0);
+            // then there's another undocumented method call... i'm unsure
+            // what this does, but what the heck. We need to resolve this
+            // manually.
+            if (_wpDeleteWindowPosKeys = (xfTD_wpDeleteWindowPosKeys)wpshResolveFor(
+                                                    somSelf,
+                                                    NULL,
+                                                    "wpDeleteWindowPosKeys"))
+                _wpDeleteWindowPosKeys(somSelf);
 
-    } // if (pKernelGlobals->fAutoRefreshReplaced)
-    else
-        brc = XFldObject_parent_WPObject_wpFree(somSelf);
+            // finally, this calls wpMakeDormant, which destroys the SOM object
+            if (_wpMakeDormant = (xfTD_wpMakeDormant)wpshResolveFor(
+                                                    somSelf,
+                                                    NULL,
+                                                    "wpMakeDormant"))
+                brc = _wpMakeDormant(somSelf, 0);
+
+        } // if (pKernelGlobals->fAutoRefreshReplaced)
+        else
+            brc = XFldObject_parent_WPObject_wpFree(somSelf);
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
 
     return brc;
 }
@@ -1890,7 +1909,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveImmediate(XFldObject *somSelf)
     // problems with object IDs if we save objects that aren't
     // ours!
     // if (!cmnIsObjectFromForeignDesktop(somSelf))
-        return (XFldObject_parent_WPObject_wpSaveImmediate(somSelf));
+        return XFldObject_parent_WPObject_wpSaveImmediate(somSelf);
 
     // else: we shouldn't save...
     /* {

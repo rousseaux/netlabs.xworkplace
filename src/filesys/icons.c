@@ -3587,8 +3587,14 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
     {
         ULONG ulStyle = _wpQueryStyle(pnbp->inbp.somSelf);
 
+        _PmpfF(("[%s] setting icon text, NBFL_PAGE_INITED %d",
+            _wpQueryTitle(pnbp->inbp.somSelf),
+                !!(pnbp->flPage & NBFL_PAGE_INITED)
+                ));
+
         if (flIconPageFlags & ICONFL_TITLE)
-            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_ICON_TITLE_EF,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_ICON_TITLE_EF,
                               _wpQueryTitle(pnbp->inbp.somSelf));
 
         // no need to set icon handle, this is subclassed and can
@@ -3814,6 +3820,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *@@changed V0.9.16 (2001-12-08) [umoeller]: now disabling hotkeys while entryfield has the focus
  *@@changed V0.9.19 (2002-04-25) [umoeller]: this didn't allow empty titles, fixed
  *@@changed V0.9.19 (2002-05-23) [umoeller]: title was read before page was ready, fixed
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: fixed excessive rename when page was inited
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3852,27 +3859,41 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                      && (pnbp->flPage & NBFL_PAGE_INITED)
                    )
                 {
-                    PSZ pszNewTitle;
-                    BOOL rc;
+                    PSZ  pszNewTitle = winhQueryWindowText(pnbp->hwndControl);
 
-                    if (pszNewTitle = winhQueryWindowText(pnbp->hwndControl))
+                    // only do ANYTHING if the title actually changed,
+                    // we get MLN_KILLFOCUS from the initial WinSetWindowText
+                    // too V0.9.20 (2002-07-12) [umoeller]
+                    if (strhcmp(_wpQueryTitle(pnbp->inbp.somSelf),
+                                pszNewTitle))
                     {
-                        rc = _wpSetTitle(pnbp->inbp.somSelf, pszNewTitle);
-                        free(pszNewTitle);
-                    }
-                    else
-                        // empty titles are valid, but we can't pass in
-                        // NULL strings, so use an empty string
-                        // V0.9.19 (2002-04-25) [umoeller]
-                        rc = _wpSetTitle(pnbp->inbp.somSelf, "");
+                        BOOL rc;
 
-                    if (!rc)
-                        // failed: restore old
-                        cmnMessageBoxExt(pnbp->hwndDlgPage,
-                                         104,   // error
-                                         NULL, 0,
-                                         187,   // old name restored
-                                         MB_OK);
+                        _PmpfF(("[%s] MLN_KILLFOCUS new: \"%s\"",
+                             _wpQueryTitle(pnbp->inbp.somSelf),
+                             STRINGORNULL(pszNewTitle)));
+
+                        if (pszNewTitle)
+                        {
+                            rc = _wpSetTitle(pnbp->inbp.somSelf, pszNewTitle);
+                        }
+                        else
+                            // empty titles are valid, but we can't pass in
+                            // NULL strings, so use an empty string
+                            // V0.9.19 (2002-04-25) [umoeller]
+                            rc = _wpSetTitle(pnbp->inbp.somSelf, "");
+
+                        if (!rc)
+                            // failed: restore old
+                            cmnMessageBoxExt(pnbp->hwndDlgPage,
+                                             104,   // error
+                                             NULL, 0,
+                                             187,   // old name restored
+                                             MB_OK);
+                    }
+
+                    if (pszNewTitle)
+                        free(pszNewTitle);
 
                     fRefresh = TRUE;
                 }

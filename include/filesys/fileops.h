@@ -343,7 +343,7 @@
     APIRET fopsStartTask(HFILETASKLIST hftl,
                          HAB hab);
 
-    APIRET fopsDeleteFile(PCSZ pcszFilename);
+    BOOL fopsUseForceDelete(PCSZ pcszFilename);
 
     VOID fopsFileThreadProcessing(HAB hab,
                                   HFILETASKLIST hftl,
