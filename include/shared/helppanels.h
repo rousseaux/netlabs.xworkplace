@@ -242,5 +242,10 @@
     #define ID_XSH_XWPNETWORK_MAIN          140     // V0.9.16 (2001-10-19) [umoeller]
     #define ID_XSH_XWPNETSERVER_MAIN        141     // V0.9.16 (2001-10-19) [umoeller]
 
+    #define ID_XSH_DATAFILE_MAIN            142     // V0.9.16 (2002-01-13) [umoeller]
+    #define ID_XSH_PROGRAMFILE_MAIN         143     // V0.9.16 (2002-01-13) [umoeller]
+    #define ID_XSH_PROGRAMFILE_DLL          144     // V0.9.16 (2002-01-13) [umoeller]
+    #define ID_XSH_PROGRAMFILE_DRIVER       145     // V0.9.16 (2002-01-13) [umoeller]
+
 #endif
 

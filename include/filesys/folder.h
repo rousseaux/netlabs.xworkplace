@@ -100,7 +100,7 @@
     BOOL fdrHasShowAllInTreeView(WPFolder *somSelf);
 
     BOOL fdrSetup(WPFolder *somSelf,
-                  const char *pszSetupString);
+                  PCSZ pszSetupString);
 
     BOOL fdrQuerySetup(WPObject *somSelf,
                        PVOID pstrSetup);
@@ -147,6 +147,7 @@
                       PFNCBQUICKOPEN pfnCallback,
                       ULONG ulCallbackParam);
 
+#ifndef __NOSNAPTOGRID__
     /* ******************************************************************
      *
      *   Snap To Grid
@@ -155,6 +156,7 @@
 
     BOOL fdrSnapToGrid(WPFolder *somSelf,
                        BOOL fNotify);
+#endif
 
     /* ******************************************************************
      *
@@ -540,7 +542,7 @@
     #endif
 
     WPObject* fdrFindFSFromName(WPFolder *pFolder,
-                                const char *pcszShortName);
+                                PCSZ pcszShortName);
 
     BOOL fdrAddToContent(WPFolder *somSelf,
                          WPObject *pObject,

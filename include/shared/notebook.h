@@ -289,7 +289,7 @@
 
     #ifdef DIALOG_HEADER_INCLUDED
         APIRET ntbFormatPage(HWND hwndDlg,
-                             PDLGHITEM paDlgItems,
+                             PCDLGHITEM paDlgItems,
                              ULONG cDlgItems);
     #endif
 

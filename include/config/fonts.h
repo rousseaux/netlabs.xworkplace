@@ -46,7 +46,7 @@
      ********************************************************************/
 
     APIRET fonGetFontDescription(HAB hab,
-                                 const char *pcszFilename,
+                                 PCSZ pcszFilename,
                                  PSZ pszFamily,
                                  PSZ pszFace);
 

@@ -99,10 +99,10 @@ BOOL APIENTRY drvConfigSupported(PDRIVERSPEC pSpec);
 // exports
 
 BOOL APIENTRY drvDisplayHelp(PVOID pvKernel,
-                             const char *pcszHelpFile,
+                             PCSZ pcszHelpFile,
                              ULONG ulHelpPanel);
 typedef BOOL APIENTRY DRVDISPLAYHELP(PVOID pvKernel,
-                                     const char *pcszHelpFile,
+                                     PCSZ pcszHelpFile,
                                      ULONG ulHelpPanel);
 typedef DRVDISPLAYHELP *PDRVDISPLAYHELP;
 
@@ -110,12 +110,12 @@ int APIENTRY drv_memicmp(void *buf1, void *buf2, unsigned int cnt);
 typedef int APIENTRY DRV_MEMICMP(void *buf1, void *buf2, unsigned int cnt);
 typedef DRV_MEMICMP *PDRV_MEMICMP;
 
-int drv_sprintf(char *pBuf, const char *pcszFormat, ...);
-typedef int DRV_SPRINTF(char *pBuf, const char *pcszFormat, ...);
+int drv_sprintf(char *pBuf, PCSZ pcszFormat, ...);
+typedef int DRV_SPRINTF(char *pBuf, PCSZ pcszFormat, ...);
 typedef DRV_SPRINTF *PDRV_SPRINTF;
 
-char* APIENTRY drv_strtok(char *string1, const char *string2);
-typedef char* APIENTRY DRV_STRTOK(char *string1, const char *string2);
+char* APIENTRY drv_strtok(char *string1, PCSZ string2);
+typedef char* APIENTRY DRV_STRTOK(char *string1, PCSZ string2);
 typedef DRV_STRTOK *PDRV_STRTOK;
 
 

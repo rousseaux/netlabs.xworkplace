@@ -32,10 +32,12 @@
      *                                                                  *
      ********************************************************************/
 
+#ifndef __NOXSYSTEMSOUNDS__
     BOOL sndAddtlSoundsInstalled(HAB hab);
 
     BOOL sndInstallAddtlSounds(HAB hab,
                                BOOL fInstall);
+#endif
 
     /* ******************************************************************
      *                                                                  *

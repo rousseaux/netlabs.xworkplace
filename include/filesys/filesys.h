@@ -40,11 +40,11 @@
 
         PSZ fsysQueryEAKeyphrases(WPFileSystem *somSelf);
 
-        BOOL fsysSetEASubject(WPFileSystem *somSelf, const char *psz);
+        BOOL fsysSetEASubject(WPFileSystem *somSelf, PCSZ psz);
 
-        BOOL fsysSetEAComments(WPFileSystem *somSelf, const char *psz);
+        BOOL fsysSetEAComments(WPFileSystem *somSelf, PCSZ psz);
 
-        BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, const char *psz);
+        BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, PCSZ psz);
 
         /*
          * xfTP_wpQueryRefreshFlags:

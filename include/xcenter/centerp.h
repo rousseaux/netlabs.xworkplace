@@ -167,7 +167,7 @@
 
     VOID ctrpFreeClasses(VOID);
 
-    PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass);
+    PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass);
 
     HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                             HWND hwndMenu,
@@ -211,8 +211,8 @@
 
         XCRET XWPENTRY ctrpCreateWidgetSetting(XCenter *somSelf,
                                                PTRAYSETTING pTray,
-                                               const char *pcszWidgetClass,
-                                               const char *pcszSetupString,
+                                               PCSZ pcszWidgetClass,
+                                               PCSZ pcszSetupString,
                                                ULONG ulBeforeIndex,
                                                PPRIVATEWIDGETSETTING *ppNewSetting,
                                                PULONG pulNewItemCount,
@@ -228,7 +228,7 @@
         BOOL XWPENTRY ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget);
 
         PTRAYSETTING XWPENTRY ctrpCreateTray(PPRIVATEWIDGETSETTING ppws,
-                                             const char *pcszTrayName,
+                                             PCSZ pcszTrayName,
                                              PULONG pulIndex);
 
         BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
@@ -536,7 +536,7 @@
                       PDRAGINFO pdrgInfo);
 
         BOOL ctrpVerifyType(PDRAGITEM pdrgInfo,
-                            const char *pcszType);
+                            PCSZ pcszType);
 
     /* ******************************************************************
      *
@@ -564,8 +564,8 @@
 
     BOOL ctrpInsertWidget(XCenter *somSelf,
                           ULONG ulBeforeIndex,
-                          const char *pcszWidgetClass,
-                          const char *pcszSetupString);
+                          PCSZ pcszWidgetClass,
+                          PCSZ pcszSetupString);
 
     BOOL ctrpRemoveWidget(XCenter *somSelf,
                           ULONG ulIndex);

@@ -41,14 +41,14 @@
 
     PVOID wpshResolveFor(SOMObject *somSelf,
                          SOMClass *pClass,
-                         const char *pcszMethodName);
+                         PCSZ pcszMethodName);
 
     PVOID wpshParentNumResolve(SOMClass *pClass,
                                somMethodTabs parentMTab,
-                               const char *pcszMethodName);
+                               PCSZ pcszMethodName);
 
     BOOL wpshOverrideStaticMethod(SOMClass *somSelf,
-                                  const char *pcszMethodName,
+                                  PCSZ pcszMethodName,
                                   somMethodPtr pMethodPtr);
 
     /* ******************************************************************
@@ -59,7 +59,7 @@
 
     BOOL wpshCheckObject(WPObject *pObject);
 
-    WPObject* wpshQueryObjectFromID(const char *pcszObjectID,
+    WPObject* wpshQueryObjectFromID(PCSZ pcszObjectID,
                                     PULONG pulErrorCode);
 
     ULONG wpshQueryView(WPObject* somSelf,
@@ -104,7 +104,7 @@
 
         BOOL wpshResidesBelow(WPObject *pChild, WPFolder *pFolder);
 
-        WPFileSystem*  wpshContainsFile(WPFolder *pFolder, const char *pcszRealName);
+        WPFileSystem*  wpshContainsFile(WPFolder *pFolder, PCSZ pcszRealName);
 
         WPObject* wpshCreateFromTemplate(HAB hab,
                                          WPObject *pTemplate,
@@ -141,7 +141,7 @@
                                   ULONG ulKey);
 
         VOID wpshDumpTaskRec(WPObject *somSelf,
-                             const char *pcszMethodName,
+                             PCSZ pcszMethodName,
                              PTASKREC pTaskRec);
     #else
         #define wpshIdentifyRestoreID(psz, ul) ""

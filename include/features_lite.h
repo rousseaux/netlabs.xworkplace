@@ -13,6 +13,7 @@
 #define __ALWAYSREPLACEICONPAGE__               1
 #define __NOFILEPAGE2__                         1
 #define __ALWAYSFIXCLASSTITLES__                1
+#define __NOXSYSTEMSOUNDS__                     1
 
 // folder features
 #define __ALWAYSSUBCLASS__                      1
@@ -24,6 +25,8 @@
 #define __NOFDRDEFAULTDOCS__                    1
 #define __ALWAYSFDRHOTKEYS__                    1
 #define __ALWAYSEXTSORT__                       1
+#define __NOTURBOFOLDERS__                      1
+#define __ALWAYSREPLACEREFRESH__                1
 
 // modules features
 #define __NOMODULEPAGES__                       1

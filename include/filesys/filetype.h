@@ -128,11 +128,11 @@
      *
      ********************************************************************/
 
-    APIRET ftypImportTypes(const char *pcszFilename,
+    APIRET ftypImportTypes(PCSZ pcszFilename,
                            PSZ pszErrorBuf,
                            ULONG cbErrorBuf);
 
-    APIRET ftypExportTypes(const char *pcszFileName);
+    APIRET ftypExportTypes(PCSZ pcszFileName);
 
 #endif
 

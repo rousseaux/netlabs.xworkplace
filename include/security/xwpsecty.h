@@ -122,7 +122,7 @@ extern "C" {
                          ULONG cbName);
 
     APIRET sudbQueryID(BYTE bType,
-                       const char *pcszName,
+                       PCSZ pcszName,
                        XWPSECID *pID);
 
     APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo);
@@ -291,7 +291,7 @@ extern "C" {
     APIRET saclInit(VOID);
 
     APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,
-                            const char *pcszDir,
+                            PCSZ pcszDir,
                             ULONG ulRequiredAccess);
 
     /* ******************************************************************
@@ -326,7 +326,7 @@ extern "C" {
     APIRET slogInit(VOID);
 
     APIRET slogLogOn(PXWPLOGGEDON pNewUser,
-                     const char *pcszPassword,
+                     PCSZ pcszPassword,
                      BOOL fLocal);
 
     APIRET slogLogOff(XWPSECID uid);

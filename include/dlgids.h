@@ -207,6 +207,7 @@
 // #define ID_XFD_PRODINFO                 200      // removed V0.9.16 (2001-11-10) [umoeller]
 #define ID_XFD_PRODLOGO                 201
 // #define ID_XFDI_XFLDVERSION             202      // removed V0.9.16 (2001-11-10) [umoeller]
+#define ID_XSDI_INFO_TITLE              202     // added V0.9.16 (2002-01-13) [umoeller]
 #define ID_XSDI_INFO_STRING             203
 
 // "Select by name" dlg items
@@ -313,7 +314,9 @@
 #define ID_XFDI_PANIC_SHUTDOWN          416     // V0.9.16 (2001-10-08) [umoeller]
 #define ID_XFDI_PANIC_SHUTDOWN_TXT      417     // V0.9.16 (2001-10-08) [umoeller]
 #define ID_XFDI_PANIC_DISABLEREPLREFRESH 418    // V0.9.16 (2001-10-08) [umoeller]
+#ifndef __NOTURBOFOLDERS__
 #define ID_XFDI_PANIC_DISABLETURBOFOLDERS 419   // V0.9.16 (2001-10-25) [umoeller]
+#endif
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
@@ -720,6 +723,11 @@
 #define ID_XCDI_XWPCLS_XWPFONTS         1271
 */
 
+// new codes V0.9.16 (2002-01-13) [umoeller]
+#define ID_XCD_CLASSES_TITLE            1280
+#define ID_XCD_CLASSES_REPLACEMENTS     1281
+#define ID_XCD_CLASSES_NEW              1282
+
 /******************************************
  * XWPScreen ("Screen", PageMage) >= 1400 *
  ******************************************/
@@ -979,13 +987,16 @@
                                             // new with V0.9.0
 
 // "Menu items" page (V0.9.0)
-#define ID_XSD_DTP_MENUITEMS            2100
+// #define ID_XSD_DTP_MENUITEMS            2100     // removed V0.9.16 (2002-01-09) [umoeller]
+#define ID_XSDI_DTP_MENUITEMSGROUP      2100        // added V0.9.16 (2002-01-09) [umoeller]
 #define ID_XSDI_DTP_SORT                2101
 #define ID_XSDI_DTP_ARRANGE             2102
 #define ID_XSDI_DTP_SYSTEMSETUP         2103
 #define ID_XSDI_DTP_LOCKUP              2104
+#ifndef __NOXSHUTDOWN__
 #define ID_XSDI_DTP_SHUTDOWN            2105
 #define ID_XSDI_DTP_SHUTDOWNMENU        2106
+#endif
 #define ID_XSDI_DTP_LOGOFFNETWORKNOW    2107 // V0.9.7 (2000-12-13) [umoeller]
 
 // XFldDesktop "Startup" page  (V0.9.0)
@@ -1961,7 +1972,9 @@
 #ifndef __ALWAYSREPLACEFILEPAGE__
 #define ID_XCSI_REPLACEFILEPAGE         6003
 #endif
+#ifndef __NOXSYSTEMSOUNDS__
 #define ID_XCSI_XSYSTEMSOUNDS           6004
+#endif
 #ifndef __ALWAYSFIXCLASSTITLES__
 #define ID_XCSI_FIXCLASSTITLES          6005        // V0.9.12 (2001-05-22) [umoeller]
 #endif
@@ -1979,7 +1992,9 @@
 #ifndef __ALWAYSEXTSORT__
 #define ID_XCSI_EXTFOLDERSORT           6014
 #endif
+#ifndef __NOTURBOFOLDERS__
 #define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
+#endif
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #ifndef __ALWAYSREPLACEARCHIVING__
@@ -2007,7 +2022,9 @@
 #define ID_XCSI_REPLACEDELETE           6046
 #endif
 #define ID_XCSI_REPLHANDLES             6047
+#ifndef __ALWAYSREPLACEREFRESH__
 #define ID_XCSI_REPLACEREFRESH          6048
+#endif
 #ifndef __NEVERNEWFILEDLG__
 #define ID_XCSI_NEWFILEDLG              6049
 #endif
@@ -2146,15 +2163,28 @@
 #define ID_XSSI_WPSFDRVIEWPAGE          6193           // "Folder views"
 
 // the following added with V0.9.16 (2002-01-01) [umoeller]
-#define ID_XFSI_FDLG_DRIVES             6194
-#define ID_XFSI_FDLG_FILESLIST          6195
-#define ID_XFSI_FDLG_TYPES              6196
-#define ID_XFSI_FDLG_DIRECTORY          6197
-#define ID_XFSI_FDLG_WORKING            6198
-#define ID_XFSI_FDLG_FILE               6199
-#define ID_XFSI_FDLG_SAVEFILEAS         6200
-#define ID_XFSI_FDLG_OPENFILE           6201
-#define ID_XFSI_FDLG_ALLTYPES           6202
+#define ID_CRSI_SENTINELTOOLTIP         6194
+#define ID_CRSI_BUILTINCLASS            6195
+#define ID_CRSI_OWGT_MENUITEMS          6196
+#define ID_CRSI_PWGT_TITLE              6197
+#define ID_CRSI_PWGT_CPUGRAPHCOLORS     6198
+#define ID_CRSI_PWGT_CPUXUSERCOLOR      6199
+#define ID_CRSI_PWGT_IRQLOADCOLOR       6200
+#define ID_CRSI_PWGT_OTHERCOLORS        6201
+#define ID_CRSI_PWGT_BACKGROUNDCOLOR    6202
+#define ID_CRSI_PWGT_TEXTCOLOR          6203
+#define ID_CRSI_PWGT_TOOLTIP1           6204
+#define ID_CRSI_PWGT_TOOLTIP2           6205
+
+#define ID_XFSI_FDLG_DRIVES             6206
+#define ID_XFSI_FDLG_FILESLIST          6207
+#define ID_XFSI_FDLG_TYPES              6208
+#define ID_XFSI_FDLG_DIRECTORY          6209
+#define ID_XFSI_FDLG_WORKING            6210
+#define ID_XFSI_FDLG_FILE               6211
+#define ID_XFSI_FDLG_SAVEFILEAS         6212
+#define ID_XFSI_FDLG_OPENFILE           6213
+#define ID_XFSI_FDLG_ALLTYPES           6214
 
 /******************************************
  *  string IDs for status bar mnemonics

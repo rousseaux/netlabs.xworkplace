@@ -152,7 +152,7 @@
 
     ULONG xmmPlaySound(HWND hwndObject,
                        PUSHORT pusDeviceID,
-                       const char *pcszFile,
+                       PCSZ pcszFile,
                        ULONG ulVolume);
 
     ULONG xmmStopSound(PUSHORT pusDeviceID);
@@ -293,7 +293,7 @@
     typedef struct _XMMDEVICE
     {
         ULONG   ulDeviceType;       // MCI_DEVTYPE_* identifier
-        const char *pcszDeviceType; // NLS description (composed by xmmQueryDevices)
+        PCSZ pcszDeviceType; // NLS description (composed by xmmQueryDevices)
         ULONG   ulDeviceIndex;      // index (1 or higher); if 0, it's the last entry
 
         CHAR    szInstallName[MAX_DEVICE_NAME];

@@ -45,9 +45,9 @@
      *
      ********************************************************************/
 
-    BOOL krnLock(const char *pcszSourceFile,
+    BOOL krnLock(PCSZ pcszSourceFile,
                  ULONG ulLine,
-                 const char *pcszFunction);
+                 PCSZ pcszFunction);
 
     VOID krnUnlock(VOID);
 
@@ -66,9 +66,9 @@
                                          PTIB ptib,
                                          ULONG ulpri);  // V0.9.16 (2001-12-02) [pr]
 
-    VOID APIENTRY krnExceptError(const char *pcszFile,
+    VOID APIENTRY krnExceptError(PCSZ pcszFile,
                                  ULONG ulLine,
-                                 const char *pcszFunction,
+                                 PCSZ pcszFunction,
                                  APIRET arc);
     #endif
 
@@ -300,9 +300,9 @@
 
         PCKERNELGLOBALS krnQueryGlobals(VOID);
 
-        PKERNELGLOBALS krnLockGlobals(const char *pcszSourceFile,
+        PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
                                       ULONG ulLine,
-                                      const char *pcszFunction);
+                                      PCSZ pcszFunction);
 
         VOID krnUnlockGlobals(VOID);
 
@@ -389,7 +389,9 @@
 
     #define T1M_FOPS_TASK_DONE          (WM_USER+285)
 
+#ifndef __XWPLITE__
     #define T1M_WELCOME                 (WM_USER+286)
+#endif
 
     #define T1M_OPENOBJECTFROMPTR       (WM_USER+287)    // added V0.9.9 (2001-02-06) [umoeller]
 

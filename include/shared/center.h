@@ -217,11 +217,13 @@
 
     } XCENTERGLOBALS, *PXCENTERGLOBALS;
 
+    typedef const struct _XCENTERGLOBALS *PCXCENTERGLOBALS;
+
     // forward declaration
     typedef struct _XCENTERWIDGET *PXCENTERWIDGET;
 
-    BOOL APIENTRY ctrSetSetupString(LHANDLE hSetting, const char *pcszNewSetupString);
-    typedef BOOL APIENTRY CTRSETSETUPSTRING(LHANDLE hSetting, const char *pcszNewSetupString);
+    BOOL APIENTRY ctrSetSetupString(LHANDLE hSetting, PCSZ pcszNewSetupString);
+    typedef BOOL APIENTRY CTRSETSETUPSTRING(LHANDLE hSetting, PCSZ pcszNewSetupString);
     typedef CTRSETSETUPSTRING *PCTRSETSETUPSTRING;
 
     /*
@@ -282,7 +284,7 @@
                     // be passed to ctrSetSetupString;
                     // DO NOT CHANGE
 
-        PXCENTERGLOBALS         pGlobals;
+        PCXCENTERGLOBALS        pGlobals;
                     // if != NULL, currently open XCenter
                     // for which widget data is being changed.
                     // If NULL, the XCenter isn't currently
@@ -541,6 +543,8 @@
 
     } XCENTERWIDGETCLASS, *PXCENTERWIDGETCLASS;
 
+    typedef const struct _XCENTERWIDGETCLASS *PCXCENTERWIDGETCLASS;
+
     /*
      *@@ XCENTERWIDGETSETTING:
      *      describes one widget to be created. One instance
@@ -629,15 +633,15 @@
                 // few more) to this instead of WinDefWindowProc.
                 // See XCENTERWIDGETCLASS for details.
 
-        const XCENTERGLOBALS *pGlobals;
+        PCXCENTERGLOBALS pGlobals;
                 // ptr to client/frame window data (do not change)
 
-        PXCENTERWIDGETCLASS pWidgetClass;
+        PCXCENTERWIDGETCLASS pWidgetClass;
                 // widget class this widget was created from;
                 // this ptr is only valid during WM_CREATE and
                 // always NULL afterwards
 
-        const char  *pcszWidgetClass;
+        PCSZ        pcszWidgetClass;
                 // internal name of the widget's class; this
                 // is the same as pWidgetClass->pcszWidgetClass,
                 // but this is valid after WM_CREATE.
@@ -645,7 +649,7 @@
         ULONG       ulClassFlags;
                 // class flags copied from XCENTERWIDGETCLASS.
 
-        const char  *pcszSetupString;
+        PCSZ        pcszSetupString;
                 // class-specific setup string. This field
                 // is only valid during WM_CREATE and then holds
                 // the setup string which was last stored with
@@ -693,7 +697,7 @@
                 // when the widget window is destroyed.
                 // This is only valid after WM_CREATE.
 
-        const char  *pcszHelpLibrary;
+        PCSZ        pcszHelpLibrary;
         ULONG       ulHelpPanelID;
                 // if these two are specified, the XCenter will
                 // enable the "Help" item in the widget's context
@@ -727,14 +731,14 @@
     // can import these functions from XFLDR.DLL in the init
     // callback.
 
-    PSZ APIENTRY ctrScanSetupString(const char *pcszSetupString,
-                                    const char *pcszKeyword);
-    typedef PSZ APIENTRY CTRSCANSETUPSTRING(const char *pcszSetupString,
-                                            const char *pcszKeyword);
+    PSZ APIENTRY ctrScanSetupString(PCSZ pcszSetupString,
+                                    PCSZ pcszKeyword);
+    typedef PSZ APIENTRY CTRSCANSETUPSTRING(PCSZ pcszSetupString,
+                                            PCSZ pcszKeyword);
     typedef CTRSCANSETUPSTRING *PCTRSCANSETUPSTRING;
 
-    LONG APIENTRY ctrParseColorString(const char *p);
-    typedef LONG APIENTRY CTRPARSECOLORSTRING(const char *p);
+    LONG APIENTRY ctrParseColorString(PCSZ p);
+    typedef LONG APIENTRY CTRPARSECOLORSTRING(PCSZ p);
     typedef CTRPARSECOLORSTRING *PCTRPARSECOLORSTRING;
 
     VOID APIENTRY ctrFreeSetupValue(PSZ p);
@@ -743,12 +747,12 @@
 
     // ctrSetSetupString has been defined above
 
-    BOOL APIENTRY ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
-                        const char *pcszHelpFile,
-                        ULONG ulHelpPanelID);
-    typedef BOOL APIENTRY CTRDISPLAYHELP(PXCENTERGLOBALS pGlobals,
-                        const char *pcszHelpFile,
-                        ULONG ulHelpPanelID);
+    BOOL APIENTRY ctrDisplayHelp(PCXCENTERGLOBALS pGlobals,
+                                 PCSZ pcszHelpFile,
+                                 ULONG ulHelpPanelID);
+    typedef BOOL APIENTRY CTRDISPLAYHELP(PCXCENTERGLOBALS pGlobals,
+                                         PCSZ pcszHelpFile,
+                                         ULONG ulHelpPanelID);
     typedef CTRDISPLAYHELP *PCTRDISPLAYHELP;
 
     VOID APIENTRY ctrShowContextMenu(PXCENTERWIDGET pWidget, HWND hwndContextMenu);
@@ -1312,14 +1316,14 @@
     // PROTOTYPE IS USED
     typedef ULONG EXPENTRY FNWGTINITMODULE_OLD(HAB hab,
                                                HMODULE hmodXFLDR,
-                                               PXCENTERWIDGETCLASS *ppaClasses,
+                                               PCXCENTERWIDGETCLASS *ppaClasses,
                                                PSZ pszErrorMsg);
     typedef FNWGTINITMODULE_OLD *PFNWGTINITMODULE_OLD;
 
     typedef ULONG EXPENTRY FNWGTINITMODULE_099(HAB hab,
                                                HMODULE hmodPlugin,
                                                HMODULE hmodXFLDR,
-                                               PXCENTERWIDGETCLASS *ppaClasses,
+                                               PCXCENTERWIDGETCLASS *ppaClasses,
                                                PSZ pszErrorMsg);
     typedef FNWGTINITMODULE_099 *PFNWGTINITMODULE_099;
 

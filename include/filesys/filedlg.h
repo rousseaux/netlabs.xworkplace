@@ -27,7 +27,7 @@
     #define FILEDLG_HEADER_INCLUDED
 
     HWND APIENTRY fdlgFileDlg(HWND hwndOwner,
-                              const char *pcszStartupDir,
+                              PCSZ pcszStartupDir,
                               PFILEDLG pfd);
 
 #endif

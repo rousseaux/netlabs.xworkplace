@@ -36,7 +36,7 @@
                        PVOID pstrSetup);
 
     BOOL dtpSetup(WPDesktop *somSelf,
-                  const char *pcszSetupString);
+                  PCSZ pcszSetupString);
 
     /* ******************************************************************
      *

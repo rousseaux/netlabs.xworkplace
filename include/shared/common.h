@@ -63,9 +63,9 @@
     // see it.
 
     #ifdef INCLUDE_COMMON_PRIVATE
-        #define DECLARE_CMN_STRING(str, def) const char *str = def
+        #define DECLARE_CMN_STRING(str, def) PCSZ str = def
     #else
-        #define DECLARE_CMN_STRING(str, def) extern const char *str;
+        #define DECLARE_CMN_STRING(str, def) extern PCSZ str;
     #endif
 
     /* ******************************************************************
@@ -161,7 +161,6 @@
     // INI key used by XFolder and XWorkplace 0.9.0;
     // this is checked for if INIAPP_XWORKPLACE is not
     // found and converted
-    // DECLARE_CMN_STRING(INIAPP_OLDXFOLDER, "XFolder");
     DECLARE_CMN_STRING(INIAPP_OLDXFOLDER, "XFolder");
 
     /*
@@ -177,7 +176,9 @@
     // DECLARE_CMN_STRING(INIKEY_XFOLDERPATH, "XFolderPath");        removed V0.81 (I think)
     DECLARE_CMN_STRING(INIKEY_ACCELERATORS, "Accelerators");
     DECLARE_CMN_STRING(INIKEY_LANGUAGECODE, "Language");
+#ifndef __XWPLITE__
     DECLARE_CMN_STRING(INIKEY_JUSTINSTALLED, "JustInstalled");
+#endif
     // DECLARE_CMN_STRING(INIKEY_DONTDOSTARTUP, "DontDoStartup");      removed V0.84 (I think)
     // DECLARE_CMN_STRING(INIKEY_LASTPID, "LastPID");            removed V0.84 (I think)
 #ifndef __NOFOLDERCONTENTS__
@@ -460,13 +461,13 @@
     #define ID_FILEOBJECT           0x1237
 
     // object window class names (added V0.9.0)
-    /* extern const char *WNDCLASS_WORKEROBJECT;
-    extern const char *WNDCLASS_QUICKOBJECT;
-    extern const char *WNDCLASS_FILEOBJECT;
+    /* extern PCSZ WNDCLASS_WORKEROBJECT;
+    extern PCSZ WNDCLASS_QUICKOBJECT;
+    extern PCSZ WNDCLASS_FILEOBJECT;
 
-    extern const char *WNDCLASS_THREAD1OBJECT;
-    extern const char *WNDCLASS_SUPPLOBJECT;
-    extern const char *WNDCLASS_APIOBJECT; */
+    extern PCSZ WNDCLASS_THREAD1OBJECT;
+    extern PCSZ WNDCLASS_SUPPLOBJECT;
+    extern PCSZ WNDCLASS_APIOBJECT; */
 
     /********************************************************************
      *
@@ -536,6 +537,7 @@
 
     // new XWorkplace system sounds indices
     // (in addition to those def'd by helpers\syssound.h)
+#ifndef __NOXSYSTEMSOUNDS__
     #define MMSOUND_XFLD_SHUTDOWN   555     // shutdown
     #define MMSOUND_XFLD_RESTARTWPS 556     // restart Desktop
     #define MMSOUND_XFLD_CTXTOPEN   558     // context (sub)menu opened
@@ -543,6 +545,7 @@
     #define MMSOUND_XFLD_CNRDBLCLK  560     // folder container double-click
     #define MMSOUND_XFLD_HOTKEYPRSD 561     // XWP global hotkey pressed
                                             // added V0.9.3 (2000-04-20) [umoeller]
+#endif
 
     // default style used for XWorkplace tooltip controls
     #ifdef COMCTL_HEADER_INCLUDED
@@ -702,7 +705,7 @@
     #define XSD_DTM_LOCKUP          0x00004 */
 
     // #define XSD_ENABLED             0x00010
-    #define XSD_CONFIRM             0x000020
+    // #define XSD_CONFIRM             0x000020     // removed V0.9.16 (2002-01-09) [umoeller]
     #define XSD_REBOOT              0x000040
     // #define XSD_RESTARTWPS          0x00100
     #define XSD_DEBUG               0x001000
@@ -716,6 +719,7 @@
     #define XSD_EMPTY_TRASH         0x100000     // added V0.9.4 (2000-08-03) [umoeller]
     #define XSD_WARPCENTERFIRST     0x200000     // added V0.9.7 (2000-12-08) [umoeller]
     #define XSD_CANDESKTOPALTF4     0x400000     // added V0.9.16 (2002-01-04) [umoeller]
+    #define XSD_NOCONFIRM           0x800000     // added V0.9.16 (2002-01-09) [umoeller]
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
@@ -724,9 +728,11 @@
     #define TRSHCONF_EMPTYTRASH     0x00000001
     #define TRSHCONF_DESTROYOBJ     0x00000002
 
+#ifndef __NOCFGSTATUSBARS__
     // flags for GLOBALSETTINGS.bDereferenceShadows
     #define STBF_DEREFSHADOWS_SINGLE        0x01
     #define STBF_DEREFSHADOWS_MULTIPLE      0x02
+#endif
 
     /*
      *@@ XWPSETTING:
@@ -789,11 +795,13 @@
 #endif
 #ifndef __ALWAYSFDRHOTKEYS__
         sfFolderHotkeys,
+#endif
         sfFolderHotkeysDefault,
             // V0.9.0, was: FolderHotkeysDefault
             // default setting for enabling folder hotkeys;
             // can be overridden in XFolder instance settings
-#endif
+        sfShowHotkeysInMenus,
+            // on XFldWPS "Hotkeys" page
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
         sfResizeSettingsPages,
 #endif
@@ -847,8 +855,11 @@
 #ifndef __NOBOOTUPSTATUS__
         sfShowBootupStatus,
 #endif
+
+#ifndef __NOTURBOFOLDERS__
         sfTurboFolders,            // warning: this will return the setting
                                  // that was once determined on WPS startup
+#endif
 
         // menu settings
         sulVarMenuOffset,
@@ -885,8 +896,10 @@
         sfDTMArrange,
         sfDTMSystemSetup,
         sfDTMLockup,
+#ifndef __NOXSHUTDOWN__
         sfDTMShutdown,
         sfDTMShutdownMenu,
+#endif
         sfDTMLogoffNetwork,
             // "Logoff network now" desktop menu item (XFldDesktop)
 
@@ -922,12 +935,14 @@
             // status bar colors; can be changed via drag'n'drop
         sflSBForViews,
             // XFldWPS: SBV_xxx flags
+#ifndef __NOCFGSTATUSBARS__
         sflDereferenceShadows,
             // XFldWPS "Status bars" page 2:
             // deference shadows flag
             // changed V0.9.5 (2000-10-07) [umoeller]: now bit flags...
             // -- STBF_DEREFSHADOWS_SINGLE        0x01
             // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
+#endif
 
         // startup settings
         sfShowStartupProgress,
@@ -973,8 +988,11 @@
             // on XWPSetup "Paranoia" page
 
         // misc
+#ifndef __NOXSYSTEMSOUNDS__
         sfXSystemSounds,
             // XWPSetup: enable extended system sounds
+#endif
+
         susLastRebootExt,
             // XShutdown: last extended reboot item
         sflTrashConfirmEmpty,
@@ -983,8 +1001,6 @@
             // HLPS_* flags for various classes, whether
             // an introductory help page has been shown
             // the first time it's been opened
-        sfShowHotkeysInMenus,
-            // on XFldWPS "Hotkeys" page
         sfFdrAutoRefreshDisabled,
             // "Folder auto-refresh" on "Workplace Shell" "View" page;
             // this only has an effect if folder auto-refresh has
@@ -1005,9 +1021,9 @@
     #else
         #define cmnQuerySetting(s) cmnQuerySettingDebug(s, __FILE__, __LINE__, __FUNCTION__)
         ULONG cmnQuerySettingDebug(XWPSETTING s,
-                                   const char *pcszSourceFile,
+                                   PCSZ pcszSourceFile,
                                    ULONG ulLine,
-                                   const char *pcszFunction);
+                                   PCSZ pcszFunction);
     #endif
 
     BOOL cmnSetSetting(XWPSETTING s, ULONG ulValue);
@@ -1018,7 +1034,7 @@
         ULONG           ul;
     } SETTINGSBACKUP, *PSETTINGSBACKUP;
 
-    PSETTINGSBACKUP cmnBackupSettings(XWPSETTING *paSettings,
+    PSETTINGSBACKUP cmnBackupSettings(const XWPSETTING *paSettings,
                                       ULONG cItems);
 
     VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
@@ -1026,7 +1042,7 @@
 
     /* ******************************************************************
      *
-     *   Main module handling (XFLDR.DLL)
+     *   Modules and paths
      *
      ********************************************************************/
 
@@ -1034,38 +1050,20 @@
 
     #define cmnQueryMainModuleHandle #error Func prototype has changed.
 
-    const char* XWPENTRY cmnQueryMainModuleFilename(VOID);
+    PCSZ XWPENTRY cmnQueryMainCodeModuleFilename(VOID);
 
     HMODULE XWPENTRY cmnQueryMainResModuleHandle(VOID);
     typedef HMODULE XWPENTRY CMNQUERYMAINRESMODULEHANDLE(VOID);
     typedef CMNQUERYMAINRESMODULEHANDLE *PCMNQUERYMAINRESMODULEHANDLE;
 
-    /* ******************************************************************
-     *
-     *   Error logging
-     *
-     ********************************************************************/
-
-    VOID XWPENTRY cmnLog(const char *pcszSourceFile,
-                         ULONG ulLine,
-                         const char *pcszFunction,
-                         const char *pcszFormat,
-                         ...);
-
-    /* ******************************************************************
-     *
-     *   XWorkplace National Language Support (NLS)
-     *
-     ********************************************************************/
-
     BOOL XWPENTRY cmnQueryXWPBasePath(PSZ pszPath);
 
-    const char* XWPENTRY cmnQueryLanguageCode(VOID);
+    PCSZ XWPENTRY cmnQueryLanguageCode(VOID);
 
     BOOL XWPENTRY cmnSetLanguageCode(PSZ pszLanguage);
 
-    const char* XWPENTRY cmnQueryHelpLibrary(VOID);
-    typedef const char* XWPENTRY CMNQUERYHELPLIBRARY(VOID);
+    PCSZ XWPENTRY cmnQueryHelpLibrary(VOID);
+    typedef PCSZ XWPENTRY CMNQUERYHELPLIBRARY(VOID);
     typedef CMNQUERYHELPLIBRARY *PCMNQUERYHELPLIBRARY;
 
     VOID cmnHelpNotFound(ULONG ulPanelID);
@@ -1075,11 +1073,11 @@
                                      ULONG ulPanelID);
     #endif
 
-    const char* XWPENTRY cmnQueryMessageFile(VOID);
+    PCSZ XWPENTRY cmnQueryMessageFile(VOID);
 
-#ifndef __NOICONREPLACEMENTS__
-    HMODULE XWPENTRY cmnQueryIconsDLL(VOID);
-#endif
+// #ifndef __NOICONREPLACEMENTS__
+//     HMODULE XWPENTRY cmnQueryIconsDLL(VOID);
+// #endif
 
 #ifndef __NOBOOTLOGO__
     PSZ XWPENTRY cmnQueryBootLogoFile(VOID);
@@ -1089,22 +1087,17 @@
     typedef HMODULE XWPENTRY CMNQUERYNLSMODULEHANDLE(BOOL fEnforceReload);
     typedef CMNQUERYNLSMODULEHANDLE *PCMNQUERYNLSMODULEHANDLE;
 
-    // PNLSSTRINGS cmnQueryNLSStrings(VOID);        removed V0.9.9 (2001-04-04) [umoeller]
+    /* ******************************************************************
+     *
+     *   Error logging
+     *
+     ********************************************************************/
 
-    #ifdef NLS_HEADER_INCLUDED
-        PCOUNTRYSETTINGS XWPENTRY cmnQueryCountrySettings(BOOL fReload);
-    #endif
-
-    CHAR XWPENTRY cmnQueryThousandsSeparator(VOID);
-
-    BOOL XWPENTRY cmnIsValidHotkey(USHORT usFlags,
-                                   USHORT usKeyCode);
-
-    BOOL XWPENTRY cmnDescribeKey(PSZ pszBuf,
-                                 USHORT usFlags,
-                                 USHORT usKeyCode);
-
-    VOID XWPENTRY cmnAddCloseMenuItem(HWND hwndMenu);
+    VOID XWPENTRY cmnLog(PCSZ pcszSourceFile,
+                         ULONG ulLine,
+                         PCSZ pcszFunction,
+                         PCSZ pcszFormat,
+                         ...);
 
     /* ******************************************************************
      *
@@ -1126,7 +1119,7 @@
                           G_HelpButton,
                           G_Spacing;
 
-        VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,
+        VOID cmnLoadDialogStrings(PCDLGHITEM paDlgItems,
                                   ULONG cDlgItems);
     #endif
 
@@ -1136,7 +1129,7 @@
      *
      ********************************************************************/
 
-    BOOL cmnIsStandardIcon(HPOINTER hptrIcon);
+    PCSZ cmnQueryThemeDirectory(VOID);
 
     #define STDICON_PM                  1
     #define STDICON_WIN16               2
@@ -1151,10 +1144,16 @@
     #define STDICON_DATAFILE            11
     #define STDICON_TRASH_EMPTY         12
     #define STDICON_TRASH_FULL          13
+    #define STDICON_DESKTOP_CLOSED      14
+    #define STDICON_DESKTOP_OPEN        15
+    #define STDICON_FOLDER_CLOSED       16
+    #define STDICON_FOLDER_OPEN         17
 
     APIRET cmnGetStandardIcon(ULONG ulStdIcon,
                               HPOINTER *phptr,
                               PICONINFO pIconInfo);
+
+    BOOL cmnIsStandardIcon(HPOINTER hptrIcon);
 
     /********************************************************************
      *
@@ -1162,7 +1161,7 @@
      *
      ********************************************************************/
 
-    const char* XWPENTRY cmnQueryStatusBarSetting(USHORT usSetting);
+    PCSZ XWPENTRY cmnQueryStatusBarSetting(USHORT usSetting);
 
     BOOL XWPENTRY cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting);
 
@@ -1172,9 +1171,9 @@
 
     const GLOBALSETTINGS* XWPENTRY cmnQueryGlobalSettings(VOID);
 
-    GLOBALSETTINGS* XWPENTRY cmnLockGlobalSettings(const char *pcszSourceFile,
+    GLOBALSETTINGS* XWPENTRY cmnLockGlobalSettings(PCSZ pcszSourceFile,
                                                    ULONG ulLine,
-                                                   const char *pcszFunction);
+                                                   PCSZ pcszFunction);
 
     VOID XWPENTRY // cmnUnlockGlobalSettings(VOID);
 
@@ -1360,13 +1359,13 @@
         BOOL XWPENTRY cmnSetupSave(WPObject *somSelf,
                                    PXWPSETUPENTRY paSettings,
                                    ULONG cSettings,
-                                   const char *pcszClassName,
+                                   PCSZ pcszClassName,
                                    PVOID somThis);
 
         BOOL XWPENTRY cmnSetupRestore(WPObject *somSelf,
                                       PXWPSETUPENTRY paSettings,
                                       ULONG cSettings,
-                                      const char *pcszClassName,
+                                      PCSZ pcszClassName,
                                       PVOID somThis);
     #endif
 
@@ -1418,15 +1417,32 @@
      *
      ********************************************************************/
 
+    #ifdef NLS_HEADER_INCLUDED
+        PCOUNTRYSETTINGS XWPENTRY cmnQueryCountrySettings(BOOL fReload);
+    #endif
+
+    CHAR XWPENTRY cmnQueryThousandsSeparator(VOID);
+
+    BOOL XWPENTRY cmnIsValidHotkey(USHORT usFlags,
+                                   USHORT usKeyCode);
+
+    BOOL XWPENTRY cmnDescribeKey(PSZ pszBuf,
+                                 USHORT usFlags,
+                                 USHORT usKeyCode);
+
+    VOID XWPENTRY cmnAddCloseMenuItem(HWND hwndMenu);
+
     #ifdef SOM_WPObject_h
         BOOL XWPENTRY cmnRegisterView(WPObject *somSelf,
                                       PUSEITEM pUseItem,
                                       ULONG ulViewID,
                                       HWND hwndFrame,
-                                      const char *pcszViewTitle);
+                                      PCSZ pcszViewTitle);
     #endif
 
+#ifndef __NOXSYSTEMSOUNDS__
     BOOL XWPENTRY cmnPlaySystemSound(USHORT usIndex);
+#endif
 
     #ifdef SOM_WPObject_h
         BOOL cmnIsADesktop(WPObject *somSelf);
@@ -1443,10 +1459,10 @@
     #define RUN_MAXITEMS 20
 
     HAPP XWPENTRY cmnRunCommandLine(HWND hwndOwner,
-                                    const char *pcszStartupDir);
+                                    PCSZ pcszStartupDir);
 
-    const char* XWPENTRY cmnQueryDefaultFont(VOID);
-    typedef const char* XWPENTRY CMNQUERYDEFAULTFONT(VOID);
+    PCSZ XWPENTRY cmnQueryDefaultFont(VOID);
+    typedef PCSZ XWPENTRY CMNQUERYDEFAULTFONT(VOID);
     typedef CMNQUERYDEFAULTFONT *PCMNQUERYDEFAULTFONT;
 
     VOID XWPENTRY cmnSetControlsFont(HWND hwnd, SHORT usIDMin, SHORT usIDMax);
@@ -1456,8 +1472,8 @@
     HPOINTER XWPENTRY cmnQueryDlgIcon(VOID);
 
     ULONG XWPENTRY cmnMessageBox(HWND hwndOwner,
-                                 const char *pcszTitle,
-                                 const char *pcszMessage,
+                                 PCSZ pcszTitle,
+                                 PCSZ pcszMessage,
                                  ULONG flStyle);
 
     #ifdef XSTRING_HEADER_INCLUDED
@@ -1504,9 +1520,9 @@
     #endif
 
     PSZ XWPENTRY cmnTextEntryBox(HWND hwndOwner,
-                                 const char *pcszTitle,
-                                 const char *pcszDescription,
-                                 const char *pcszDefault,
+                                 PCSZ pcszTitle,
+                                 PCSZ pcszDescription,
+                                 PCSZ pcszDefault,
                                  ULONG ulMaxLen,
                                  ULONG fl);
 
@@ -1518,7 +1534,7 @@
                              PSZ pszFile,
                              ULONG flFlags,
                              HINI hini,
-                             const char *pcszApplication,
-                             const char *pcszKey);
+                             PCSZ pcszApplication,
+                             PCSZ pcszKey);
 #endif
 

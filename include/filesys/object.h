@@ -33,8 +33,6 @@
      *
      ********************************************************************/
 
-    BOOL objFree(WPObject *somSelf);
-
     VOID objRefreshUseItems(WPObject *somSelf,
                             PSZ pszNewTitleCopy);
 
@@ -70,7 +68,7 @@
         BOOL objAddToList(WPObject *somSelf,
                           POBJECTLIST pllFolders,
                           BOOL fInsert,
-                          const char *pcszIniKey,
+                          PCSZ pcszIniKey,
                           ULONG ulListFlag);
 
         BOOL objIsOnList(WPObject *somSelf,
@@ -78,7 +76,7 @@
 
         WPObject* objEnumList(POBJECTLIST pllFolders,
                               WPObject *pFolder,
-                              const char *pcszIniKey,
+                              PCSZ pcszIniKey,
                               ULONG ulListFlag);
 
     #endif
@@ -188,7 +186,7 @@
     #ifdef SOM_WPFolder_h
 
         APIRET objCreateObjectScript(WPObject *pObject,
-                                     const char *pcszRexxFile,
+                                     PCSZ pcszRexxFile,
                                      WPFolder *pFolderForFiles,
                                      ULONG flCreate);
     #endif
