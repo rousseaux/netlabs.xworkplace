@@ -86,21 +86,22 @@
 #pragma hdrstop
 
 /*
- *@@ xwpAddXWPKeyboardPages:
+ *@@ xwpAddKeyboardHotkeysPage:
  *      this actually adds the XWorkplace pages into the
  *      "Keyboard" notebook.
  */
 
-SOM_Scope ULONG  SOMLINK xkb_xwpAddXWPKeyboardPages(XWPKeyboard *somSelf,
+SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
                                                     HWND hwndDlg)
 {
+    ULONG               ulrc = 0;
     PCREATENOTEBOOKPAGE pcnbp;
-    HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
-    XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddXWPKeyboardPages");
+    XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
 
     // insert "Hotkeys" page if the hook has been enabled
     if (hifXWPHookReady())
@@ -110,17 +111,17 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddXWPKeyboardPages(XWPKeyboard *somSelf,
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_OBJECTHOTKEYS;
+        pcnbp->ulDlgID = ID_XSD_KEYB_OBJHOTKEYS;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszObjectHotkeysPage;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJECTHOTKEYS;
-        pcnbp->ulPageID = SP_OBJECTHOTKEYS;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_KEYB_OBJHOTKEYS;
+        pcnbp->ulPageID = SP_KEYB_OBJHOTKEYS;
         pcnbp->pfncbInitPage    = hifKeybdHotkeysInitPage;
         pcnbp->pfncbItemChanged = hifKeybdHotkeysItemChanged;
-        ntbInsertPage(pcnbp);
+        ulrc = ntbInsertPage(pcnbp);
     }
 
-    return (1);
+    return (ulrc);
 }
 
 /*
@@ -129,7 +130,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddXWPKeyboardPages(XWPKeyboard *somSelf,
  *      Needs" page into the keyboard object's settings notebook.
  *      We override this to get an opportunity to insert our
  *      own pages behind that page by calling
- *      XWPKeyboard::xwpAddXWPKeyboardPages.
+ *      XWPKeyboard::xwpAddKeyboardHotkeysPage.
  */
 
 SOM_Scope ULONG  SOMLINK xkb_wpAddKeyboardSpecialNeedsPage(XWPKeyboard *somSelf,
@@ -138,7 +139,7 @@ SOM_Scope ULONG  SOMLINK xkb_wpAddKeyboardSpecialNeedsPage(XWPKeyboard *somSelf,
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_wpAddKeyboardSpecialNeedsPage");
 
-    _xwpAddXWPKeyboardPages(somSelf, hwndNotebook);
+    _xwpAddKeyboardHotkeysPage(somSelf, hwndNotebook);
 
     return (XWPKeyboard_parent_WPKeyboard_wpAddKeyboardSpecialNeedsPage(somSelf,
                                                                         hwndNotebook));

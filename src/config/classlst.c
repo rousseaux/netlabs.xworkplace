@@ -9,15 +9,15 @@
  *
  *      This file implements the actual "WPS Class List"
  *      object (an instance of XWPClassList), which uses the
- *      first part internally. This consists mainly of window
- *      procedures which are specified when XWPClassList::wpOpen
- *      opens a new class list view. See fnwpClassListClient for
+ *      parse-SOM-classes code in shared\classes.c intensively.
+ *
+ *      The code in this file consists of window procedures mainly
+ *      which are specified when XWPClassList::wpOpen opens
+ *      a new class list view. This creates a fairly complex
+ *      hierarchy of split windows. See fnwpClassListClient for
  *      details.
  *
- *      This uses the WPS classes functions in shared\classes.c
- *      intensively.
- *
- *@@header "classlst.h"
+ *@@header "config\classlst.h"
  */
 
 /*
@@ -87,6 +87,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\threads.h"            // thread helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xclslist.ih"
@@ -192,19 +193,35 @@ typedef struct _CLASSLISTCLIENTDATA
     HWND                hwndMethodInfoDlg;  // bottom right child of hwndSplitRight
     LINKLIST            llCnrStrings;       // linked list of container strings which must be free()'d
     PMETHODINFO         pMethodInfo;        // method info for currently selected class (classlist.h)
+    PTHREADINFO         ptiMethodCollectThread; // temporary thread for creating method info
 } CLASSLISTCLIENTDATA, *PCLASSLISTCLIENTDATA;
 
 /*
- *@@ CLASSLISTCNRDATA:
- *      this holds data for the class list container
- *      subwindow (fnwpClassCnrDlg, stored in its QWL_USER).
+ *@@ METHODTHREADINFO:
+ *      user data structure used with
+ *      cll_fntMethodCollectThread.
+ *
+ *@@added V0.9.1 (99-12-20) [umoeller]
  */
 
-typedef struct _CLASSLISTCNRDATA
+typedef struct _METHODTHREADINFO
+{
+    SOMClass            *pClassObject;
+    BOOL                fClassMethods;
+    HWND                hwndMethodInfoDlg;
+} METHODTHREADINFO, *PMETHODTHREADINFO;
+
+/*
+ *@@ CLASSLISTTREECNRDATA:
+ *      this holds data for the class list container
+ *      subwindow (fnwpClassTreeCnrDlg, stored in its QWL_USER).
+ */
+
+typedef struct _CLASSLISTTREECNRDATA
 {
     PCLASSLISTCLIENTDATA pClientData;
     XADJUSTCTRLS        xacClassCnr;        // for winhAdjustControls
-} CLASSLISTCNRDATA, *PCLASSLISTCNRDATA;
+} CLASSLISTTREECNRDATA, *PCLASSLISTTREECNRDATA;
 
 /*
  *@@ CLASSLISTINFODATA:
@@ -235,7 +252,7 @@ typedef struct _CLASSLISTMETHODDATA
  *@@ ampClassCnrCtls:
  *      static array used with winhAdjustControls
  *      for the class list container subwindow
- *      (fnwpClassCnrDlg).
+ *      (fnwpClassTreeCnrDlg).
  */
 
 MPARAM ampClassCnrCtls[] =
@@ -344,7 +361,7 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                         if (strlen(prcd->szClassName))
                             fEnable = TRUE;
                     }
-                    winhEnableDlgItem(hwndDlg, DID_OK, fEnable);
+                    WinEnableControl(hwndDlg, DID_OK, fEnable);
                 }
 
         break; }
@@ -485,42 +502,42 @@ BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text fi
  *      properly, depending on _fShowMethods.
  */
 
-VOID RelinkWindows(PCLASSLISTCLIENTDATA pWindowData,
+VOID RelinkWindows(PCLASSLISTCLIENTDATA pClientData,
                    BOOL fReformat)
 {
-    XWPClassListData *somThis = pWindowData->somThis;
+    XWPClassListData *somThis = pClientData->somThis;
 
     // a) main split window:
-    WinSendMsg(pWindowData->hwndSplitMain,
+    WinSendMsg(pClientData->hwndSplitMain,
                SPLM_SETLINKS,
                // left window: class list container dlg
-               (MPARAM)pWindowData->hwndClassCnrDlg,
+               (MPARAM)pClientData->hwndClassCnrDlg,
                // right window:
                // depending on whether method info is to be shown:
                (MPARAM)( (_fShowMethods)
                          // right split window
-                         ? pWindowData->hwndSplitRight
+                         ? pClientData->hwndSplitRight
                          // or class info
-                         : pWindowData->hwndClassInfoDlg
+                         : pClientData->hwndClassInfoDlg
                        ));
     if (fReformat)
-        ctlUpdateSplitWindow(pWindowData->hwndSplitMain);
+        ctlUpdateSplitWindow(pClientData->hwndSplitMain);
 
     if (_fShowMethods)
     {
         // b) right split window
-        WinSendMsg(pWindowData->hwndSplitRight,
+        WinSendMsg(pClientData->hwndSplitRight,
                    SPLM_SETLINKS,
                    // bottom window: method info dlg
-                   (MPARAM)pWindowData->hwndMethodInfoDlg,
+                   (MPARAM)pClientData->hwndMethodInfoDlg,
                    // top window: class info dlg
-                   (MPARAM)pWindowData->hwndClassInfoDlg);
+                   (MPARAM)pClientData->hwndClassInfoDlg);
         if (fReformat)
-            ctlUpdateSplitWindow(pWindowData->hwndSplitRight);
+            ctlUpdateSplitWindow(pClientData->hwndSplitRight);
     }
 
-    WinShowWindow(pWindowData->hwndSplitRight, _fShowMethods);
-    WinShowWindow(pWindowData->hwndMethodInfoDlg, _fShowMethods);
+    WinShowWindow(pClientData->hwndSplitRight, _fShowMethods);
+    WinShowWindow(pClientData->hwndMethodInfoDlg, _fShowMethods);
 }
 
 /*
@@ -528,25 +545,52 @@ VOID RelinkWindows(PCLASSLISTCLIENTDATA pWindowData,
  *      cleans up the methods container.
  */
 
-VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pWindowData)
+VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
 {
     // clear methods container first; the container
     // uses the strings from METHODINFO, so
     // we better do this first
-    WinSendMsg(WinWindowFromID(pWindowData->hwndMethodInfoDlg, ID_XLDI_CNR),
+    WinSendMsg(WinWindowFromID(pClientData->hwndMethodInfoDlg, ID_XLDI_CNR),
                CM_REMOVERECORD,
                NULL,
                MPFROM2SHORT(0, CMA_FREE | CMA_INVALIDATE));
 
     // did we allocate a method info before?
-    if (pWindowData->pMethodInfo)
+    if (pClientData->pMethodInfo)
     {
         // yes: clean up
-        clsFreeMethodInfo(&pWindowData->pMethodInfo);
+        clsFreeMethodInfo(&pClientData->pMethodInfo);
     }
 
     // now clean up container strings
-    lstClear(&pWindowData->llCnrStrings);
+    lstClear(&pClientData->llCnrStrings);
+}
+
+/*
+ *@@ cll_fntMethodCollectThread:
+ *
+ *      This gets a METHODTHREADINFO in the user
+ *      parameter.
+ *
+ *@@added V0.9.1 (99-12-20) [umoeller]
+ */
+
+void _Optlink cll_fntMethodCollectThread(PVOID ptiMyself)
+{
+    PMETHODTHREADINFO pmti = (PMETHODTHREADINFO)(((PTHREADINFO)ptiMyself)->ulData);
+    // now update method info
+    PMETHODINFO pMethodInfo = clsQueryMethodInfo(pmti->pClassObject,
+                                                 // return-class-methods flag
+                                                 pmti->fClassMethods);
+    // notify method info dlg;
+    // WinPostMsg works even though we don't
+    // have a message queue
+    WinPostMsg(pmti->hwndMethodInfoDlg,
+               WM_FILLCNR,
+               (MPARAM)pMethodInfo,
+               0);
+    free(pmti);
+    thrGoodbye((PTHREADINFO)ptiMyself);
 }
 
 /*
@@ -554,7 +598,7 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pWindowData)
  *      this is called every time a new class gets selected
  *      in the "WPS classes" page (CN_EMPHASIS in
  *      fnwpSettingsWpsClasses), after the update timer
- *      has elapsed in fnwpClassCnrDlg.
+ *      has elapsed in fnwpClassTreeCnrDlg.
  *
  *      We will then update the class info display
  *      and the method information.
@@ -562,21 +606,20 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pWindowData)
  *@@changed V0.9.0 [umoeller]: moved this func here from xfsys.c; updated for new window hierarchy
  *@@changed V0.9.0 [umoeller]: added method information
  *@@changed V0.9.0 [umoeller]: now using a delay timer
+ *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
  */
 
-VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
+VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
 {
-    PWPSLISTITEM    pwps = pWindowData->pscd->preccSelection->pwps;
+    PWPSLISTITEM    pwps = pClientData->pscd->preccSelection->pwps;
     CHAR            szInfo[1000] = "",
                     szInfo2[256] = "";
     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
-    HWND            hwndMethodsCnr = WinWindowFromID(pWindowData->hwndMethodInfoDlg,
-                                                     ID_XLDI_CNR);
+    CleanupMethodsInfo(pClientData);
+        // ### this still causes memory leaks when the methods thread is running
 
-    CleanupMethodsInfo(pWindowData);
-
-    if ((pwps) && (pWindowData->hwndClassInfoDlg))
+    if ((pwps) && (pClientData->hwndClassInfoDlg))
     {
         // pwps != NULL: valid class selected (and not the "Orphans" item)
 
@@ -595,14 +638,14 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
          */
 
         // dll name
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, pwps->pszModName);
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, pwps->pszModName);
 
         // class name
         strcpy(szInfo, pwps->pszClassName);
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, szInfo);
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, szInfo);
 
         // "replaced with"
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY,
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY,
                 (pwps->pszReplacedWithClasses)
                     ? pwps->pszReplacedWithClasses
                     : "");
@@ -611,7 +654,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
         if (pwps->pClassObject)
             if (fIsWPSClass)
                 hClassIcon = _wpclsQueryIcon(pwps->pClassObject);
-        WinSendMsg(WinWindowFromID(pWindowData->hwndClassInfoDlg, ID_XLDI_ICON),
+        WinSendMsg(WinWindowFromID(pClientData->hwndClassInfoDlg, ID_XLDI_ICON),
                    SM_SETHANDLE,
                    (MPARAM)hClassIcon,  // NULLHANDLE if error -> hide
                    MPNULL);
@@ -628,9 +671,10 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
                     pszClassTitle);
             else
                 strcpy(szInfo2, "?");
-        } else
+        }
+        else
             strcpy(szInfo2, pNLSStrings->pszWpsClassLoadingFailed);
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, szInfo2);
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, szInfo2);
 
         // class information
         if (pszClassInfo)
@@ -656,92 +700,18 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
 
         if (pwps->pClassObject)
         {
-            // now update method info
-            pWindowData->pMethodInfo = clsQueryMethodInfo(pwps->pClassObject,
-                                                          // return-class-methods flag
-                                                          (pWindowData->somThis->ulMethodsRadioB
-                                                              == ID_XLDI_RADIO_CLASSMETHODS));
-            if (pWindowData->pMethodInfo)
-            {
-                // allocate as many records as methods exist;
-                // we get a linked list now
-                PMETHODRECORD precc = (PMETHODRECORD)cnrhAllocRecords(
-                                                    hwndMethodsCnr,
-                                                    sizeof(METHODRECORD),
-                                                    pWindowData->pMethodInfo->ulMethodCount),
-                              preccThis = precc;
-                PLISTNODE     pNode = lstQueryFirstNode(&pWindowData->pMethodInfo->llMethods);
-                ULONG         ulIndex = 0;
+            PMETHODTHREADINFO pmti = (PMETHODTHREADINFO)malloc(sizeof(METHODTHREADINFO));
+            pmti->pClassObject = pwps->pClassObject;
+            pmti->fClassMethods = (pClientData->somThis->ulMethodsRadioB
+                                                   == ID_XLDI_RADIO_CLASSMETHODS);
+            pmti->hwndMethodInfoDlg = pClientData->hwndMethodInfoDlg;
 
-                // now set up the METHODRECORD according
-                // to the method data returned by clsQueryMethodInfo
-                while ((preccThis) && (pNode))
-                {
-                    PSOMMETHOD psm = (PSOMMETHOD)pNode->pItemData;
-                    PLISTNODE pnodeOverride;
+            // class object exists:
+            // start thread for collecting method info
+            thrCreate(&pClientData->ptiMethodCollectThread,
+                      cll_fntMethodCollectThread,
+                      (ULONG)pmti);
 
-                    // set up information
-                    preccThis->ulMethodIndex = ulIndex;
-                    preccThis->recc.pszIcon = psm->pszMethodName;
-
-                    switch(psm->ulType)  // 0=static, 1=dynamic, 2=nonstatic
-                    {
-                        case 0: preccThis->pszType = "S"; break;
-                        case 1: preccThis->pszType = "D"; break;
-                        case 2: preccThis->pszType = "N"; break;
-                        default: preccThis->pszType = "?"; break;
-                    }
-
-                    if (psm->pIntroducedBy)
-                        preccThis->pszIntroducedBy = _somGetName(psm->pIntroducedBy);
-                    preccThis->ulIntroducedBy = psm->ulIntroducedBy;
-
-                    // go thru list of class objects which overrode this method
-                    // and create a string from the class names
-                    pnodeOverride = lstQueryFirstNode(&psm->llOverriddenBy);
-                    while (pnodeOverride)
-                    {
-                        SOMClass *pClassObject = (SOMClass*)pnodeOverride->pItemData;
-
-                        if (pClassObject)
-                        {
-                            if (preccThis->pszOverriddenBy)
-                                // not first class: append comma
-                                strhxcat(&preccThis->pszOverriddenBy, ", ");
-
-                            strhxcat(&preccThis->pszOverriddenBy, _somGetName(pClassObject));
-                        }
-
-                        pnodeOverride = pnodeOverride->pNext;
-                    }
-
-                    if (preccThis->pszOverriddenBy)
-                        // store this string in list of items to be freed later
-                        lstAppendItem(&pWindowData->llCnrStrings,
-                                      preccThis->pszOverriddenBy);
-
-                    preccThis->ulOverriddenBy = psm->ulOverriddenBy;
-
-                    // write method address to recc's string buffer
-                    sprintf(preccThis->szMethodProc, "0x%lX",
-                            psm->pMethodProc);
-                    // and point PSZ to that buffer
-                    preccThis->pszMethodProc = preccThis->szMethodProc;
-
-                    // go for next
-                    preccThis = (PMETHODRECORD)preccThis->recc.preccNextRecord;
-                    pNode = pNode->pNext;
-                    ulIndex++;
-                }
-
-                cnrhInsertRecords(hwndMethodsCnr,
-                                  NULL,         // no parent record
-                                  (PRECORDCORE)precc,        // first record
-                                  NULL,         // no text
-                                  CRA_RECORDREADONLY,
-                                  pWindowData->pMethodInfo->ulMethodCount);
-                                                // record count
-            } // end if (pWindowData->pMethodInfo)
         } // end if (pwps->pClassObject)
     } // end if (pwps)
     else
@@ -749,24 +719,24 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
         // if (pwps == NULL), the "Orphans" item has been
         // selected: give info for this
         strcpy(szInfo, pNLSStrings->pszWpsClassOrphansInfo);
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, "");
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, "");
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY, "");
-        WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, "");
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, "");
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, "");
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY, "");
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, "");
 
-        WinSendMsg(WinWindowFromID(pWindowData->hwndClassInfoDlg, ID_XLDI_ICON),
+        WinSendMsg(WinWindowFromID(pClientData->hwndClassInfoDlg, ID_XLDI_ICON),
                    SM_SETHANDLE,
                    (MPARAM)NULLHANDLE,  // hide icon
                    MPNULL);
     }
 
     // give MLE new text
-    WinSetDlgItemText(pWindowData->hwndClassInfoDlg, ID_XLDI_TEXT2, szInfo);
+    WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_TEXT2, szInfo);
     // scroll MLE to top
-    WinSendDlgItemMsg(pWindowData->hwndClassInfoDlg, ID_XLDI_TEXT2,
-            MLM_SETFIRSTCHAR,
-            (MPARAM)0,
-            MPNULL);
+    WinSendDlgItemMsg(pClientData->hwndClassInfoDlg, ID_XLDI_TEXT2,
+                      MLM_SETFIRSTCHAR,
+                      (MPARAM)0,
+                      MPNULL);
 }
 
 /*
@@ -776,23 +746,23 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pWindowData)
  *      the methods info will be re-retrieved.
  */
 
-VOID StartMethodsUpdateTimer(PCLASSLISTCLIENTDATA pWindowData)
+VOID StartMethodsUpdateTimer(PCLASSLISTCLIENTDATA pClientData)
 {
-    HAB     habDlg = WinQueryAnchorBlock(pWindowData->hwndClassCnrDlg);
+    HAB     habDlg = WinQueryAnchorBlock(pClientData->hwndClassCnrDlg);
     // start one-shot timer to update other
     // dlgs delayed
-    if (pWindowData->ulUpdateTimerID != 0)
+    if (pClientData->ulUpdateTimerID != 0)
     {
         // timer already running:
         // restart
-        WinStopTimer(habDlg, pWindowData->hwndClassCnrDlg,
+        WinStopTimer(habDlg, pClientData->hwndClassCnrDlg,
                      2);
     }
 
     // (re)start timer
-    pWindowData->ulUpdateTimerID
+    pClientData->ulUpdateTimerID
             = WinStartTimer(habDlg,
-                            pWindowData->hwndClassCnrDlg,
+                            pClientData->hwndClassCnrDlg,
                             2,          // timer ID
                             100);       // ms
 }
@@ -1006,11 +976,11 @@ SHORT EXPENTRY fnCompareMethodOverride(PMETHODRECORD precc1,
  *      according to the current instance data.
  */
 
-PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pWindowData)
+PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pClientData)
 {
     PFNCNRSORT  pfnCnrSort = NULL;
 
-    switch (pWindowData->somThis->ulSortID)
+    switch (pClientData->somThis->ulSortID)
     {
         // "Sort by" commands
         case ID_XLMI_METHOD_SORT_INDEX:
@@ -1039,7 +1009,7 @@ PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pWindowData)
  *                                                                  *
  ********************************************************************/
 
-MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
@@ -1074,21 +1044,21 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  +        |
  +        +-- FID_CLIENT   (this window proc)
  +              |
- +              +-- ID_SPLITMAIN (vertical split, fnwpSplitWindow, comctl.c)
+ +              +-- ID_SPLITMAIN (vertical split, ctl_fnwpSplitWindow, comctl.c)
  +                    |
- +                    +-- ID_XLD_CLASSLIST  (fnwpClassCnrDlg, loaded from resources)
+ +                    +-- ID_XLD_CLASSLIST  (fnwpClassTreeCnrDlg, loaded from resources)
  +                    |      |
  +                    |      +-- container with actual class list
  +                    |
- +                    +-- ID_SPLITBAR     (fnwpSplitBar, comctl.c)
+ +                    +-- ID_SPLITBAR     (ctl_fnwpSplitBar, comctl.c)
  +                    |
- +                    +-- ID_SPLITRIGHT (horizontal split on the right, fnwpSplitWindow)
+ +                    +-- ID_SPLITRIGHT (horizontal split on the right, ctl_fnwpSplitWindow)
  +                           |
  +                           +-- ID_XLD_CLASSINFO (fnwpClassInfoDlg, loaded from resources)
  +                           |      |
  +                           |      +-- ... all the class info subwindows
  +                           |
- +                           +-- ID_SPLITBAR     (fnwpSplitBar, comctl.c)
+ +                           +-- ID_SPLITBAR     (ctl_fnwpSplitBar, comctl.c)
  +                           |
  +                           +-- ID_XLD_METHODINFO (fnwpMethodInfoDlg, loaded from resources)
  +                                  |
@@ -1103,7 +1073,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  +      |                         |   loaded from NLS resrcs)   |
  +      |                         |                             |
  +      |  ID_XLD_CLASSLIST       +-----------------------------+
- +      |  (fnwpClassCnrDlg,      |                             |
+ +      |  (fnwpClassTreeCnrDlg,      |                             |
  +      |   loaded from NLS       |  ID_XLD_METHODINFO          |
  +      |   resources)            |  (fnwpMethodInfoDlg,        |
  +      |                         |   loaded from NLS rescrs)   |
@@ -1118,9 +1088,9 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *          CLASSLISTCLIENTDATA structure in its QWL_USER
  *          window word.
  *
- *      --  The class list container dialog (fnwpClassCnrDlg)
+ *      --  The class list container dialog (fnwpClassTreeCnrDlg)
  *          gets the client's CLASSLISTCLIENTDATA with WM_INITDLG
- *          and creates a CLASSLISTCNRDATA in its own QWL_USER
+ *          and creates a CLASSLISTTREECNRDATA in its own QWL_USER
  *          window word.
  *
  *      --  The class info dialog (fnwpClassInfoDlg)
@@ -1136,7 +1106,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *      When the main window (the frame of the view) is resized,
  *      fnwpClassListClient gets a WM_WINDOWPOSCHANGED message,
  *      as usual. We then call WinSetWindowPos on the main split
- *      window (ID_SPLITMAIN), whose window proc (fnwpSplitWindow,
+ *      window (ID_SPLITMAIN), whose window proc (ctl_fnwpSplitWindow,
  *      comctl.c) will then automatically resize all the subwindows.
  *
  *      When any of the three subdialogs receive WM_WINDOWPOSCHANGED
@@ -1149,7 +1119,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = (MRESULT)0;
-    PCLASSLISTCLIENTDATA pWindowData
+    PCLASSLISTCLIENTDATA pClientData
             = (PCLASSLISTCLIENTDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
 
     switch(msg)
@@ -1173,34 +1143,34 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             // wpClose to check for existing open views.
 
             // get storage for and initialize a use list item
-            pWindowData = (PCLASSLISTCLIENTDATA)_wpAllocMem(pCData->somSelf,
+            pClientData = (PCLASSLISTCLIENTDATA)_wpAllocMem(pCData->somSelf,
                                                             sizeof(CLASSLISTCLIENTDATA),
                                                             NULL);
-            memset((PVOID)pWindowData, 0, sizeof(CLASSLISTCLIENTDATA));
-            pWindowData->somSelf         = pCData->somSelf;
-            pWindowData->UseItem.type    = USAGE_OPENVIEW;
-            pWindowData->ViewItem.view   = pCData->ulView;
-            pWindowData->ViewItem.handle = hwndFrame;
+            memset((PVOID)pClientData, 0, sizeof(CLASSLISTCLIENTDATA));
+            pClientData->somSelf         = pCData->somSelf;
+            pClientData->UseItem.type    = USAGE_OPENVIEW;
+            pClientData->ViewItem.view   = pCData->ulView;
+            pClientData->ViewItem.handle = hwndFrame;
 
             // add the use list item to the object's use list
-            _wpAddToObjUseList(pCData->somSelf, &(pWindowData->UseItem));
+            _wpAddToObjUseList(pCData->somSelf, &(pClientData->UseItem));
             _wpRegisterView(pCData->somSelf, hwndFrame, pNLSStrings->pszOpenClassList);
 
             // initialize list of cnr items to be freed later
-            lstInit(&pWindowData->llCnrStrings, TRUE);
+            lstInit(&pClientData->llCnrStrings, TRUE);
 
             // save the pointer to the use item in the window words so that
             // the window procedure can remove it from the list when the window
             // is closed
-            WinSetWindowPtr(hwndClient, QWL_USER, pWindowData);
+            WinSetWindowPtr(hwndClient, QWL_USER, pClientData);
 
             // hab = WinQueryAnchorBlock(hwndFrame);
 
             // store instance data
-            pWindowData->somThis = XWPClassListGetData(pCData->somSelf);
+            pClientData->somThis = XWPClassListGetData(pCData->somSelf);
 
             // store client HWND in window data too
-            pWindowData->hwndClient = hwndClient;
+            pClientData->hwndClient = hwndClient;
 
             /*
              * "Class info" dlg subwindow (top right):
@@ -1209,15 +1179,15 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
             // this will be linked to the right split window later,
             // which will in turn be linked to the main split window.
-            pWindowData->hwndClassInfoDlg = WinLoadDlg(hwndClient, hwndClient,
+            pClientData->hwndClassInfoDlg = WinLoadDlg(hwndClient, hwndClient,
                                                          // parent and owner;
                                                          // the parent will be changed
                                                          // by ctlCreateSplitWindow
                                                        fnwpClassInfoDlg,
                                                        cmnQueryNLSModuleHandle(FALSE),
                                                        ID_XLD_CLASSINFO,
-                                                       pWindowData);     // create param
-            WinSetWindowBits(pWindowData->hwndClassInfoDlg,
+                                                       pClientData);     // create param
+            WinSetWindowBits(pClientData->hwndClassInfoDlg,
                              QWL_STYLE,
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
@@ -1227,14 +1197,14 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
              *
              */
 
-            pWindowData->hwndMethodInfoDlg = WinLoadDlg(hwndClient, hwndClient,
+            pClientData->hwndMethodInfoDlg = WinLoadDlg(hwndClient, hwndClient,
                                                             // parent and owner;
                                                             // the parent will be changed
                                                             // by ctlCreateSplitWindow
                                                         fnwpMethodInfoDlg,
                                                         cmnQueryNLSModuleHandle(FALSE), ID_XLD_METHODINFO,
-                                                        pWindowData);     // create param
-            WinSetWindowBits(pWindowData->hwndMethodInfoDlg,
+                                                        pClientData);     // create param
+            WinSetWindowBits(pClientData->hwndMethodInfoDlg,
                              QWL_STYLE,
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
@@ -1246,13 +1216,14 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
             // this will be linked to the split window later.
             // This is a sizeable dialog defined in the NLS resources.
-            pWindowData->hwndClassCnrDlg = WinLoadDlg(hwndClient, hwndClient,
-                                    // parent and owner;
-                                    // the parent will be changed by ctlCreateSplitWindow
-                              fnwpClassCnrDlg,
-                              cmnQueryNLSModuleHandle(FALSE), ID_XLD_CLASSLIST,
-                              pWindowData);     // create param
-            WinSetWindowBits(pWindowData->hwndClassCnrDlg,
+            pClientData->hwndClassCnrDlg = WinLoadDlg(hwndClient, hwndClient,
+                                                            // parent and owner;
+                                                            // the parent will be changed
+                                                            // by ctlCreateSplitWindow
+                                                      fnwpClassTreeCnrDlg,
+                                                      cmnQueryNLSModuleHandle(FALSE), ID_XLD_CLASSLIST,
+                                                      pClientData);     // create param
+            WinSetWindowBits(pClientData->hwndClassCnrDlg,
                              QWL_STYLE,
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
@@ -1269,7 +1240,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             sbcd.ulLeftOrBottomLimit = 100;
             sbcd.ulRightOrTopLimit = 100;
             sbcd.ulSplitWindowID = ID_SPLITMAIN;
-            pWindowData->hwndSplitMain = ctlCreateSplitWindow(hab,
+            pClientData->hwndSplitMain = ctlCreateSplitWindow(hab,
                                                               &sbcd);
 
             // create right split window (horizontal split bar)
@@ -1280,21 +1251,21 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                     // | SBCF_3DSUNK       // we already have one
                                     | SBCF_MOVEABLE;    // moveable split bar
             sbcd.lPos = 50;
-            sbcd.hwndParentAndOwner = pWindowData->hwndSplitMain;
+            sbcd.hwndParentAndOwner = pClientData->hwndSplitMain;
             sbcd.ulLeftOrBottomLimit = 100;
             sbcd.ulRightOrTopLimit = 100;
             sbcd.ulSplitWindowID = ID_SPLITRIGHT;
-            pWindowData->hwndSplitRight = ctlCreateSplitWindow(hab,
+            pClientData->hwndSplitRight = ctlCreateSplitWindow(hab,
                                                                &sbcd);
 
 
 
             // now set the "split links"
-            RelinkWindows(pWindowData, FALSE);
+            RelinkWindows(pClientData, FALSE);
 
             // and fill the container with the classes;
-            // this is handled in fnwpClassCnrDlg
-            WinPostMsg(pWindowData->hwndClassCnrDlg, WM_FILLCNR, MPNULL, MPNULL);
+            // this is handled in fnwpClassTreeCnrDlg
+            WinPostMsg(pClientData->hwndClassCnrDlg, WM_FILLCNR, MPNULL, MPNULL);
 
             // show help panel if opened for the first time
             /* if ((pGlobalSettings->ulIntroHelpShown & HLPS_CLASSLIST) == 0)
@@ -1323,8 +1294,8 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             // resizing?
             if (pswpNew->fl & SWP_SIZE)
             {
-                if (pWindowData)
-                    WinSetWindowPos(pWindowData->hwndSplitMain, HWND_TOP,
+                if (pClientData)
+                    WinSetWindowPos(pClientData->hwndSplitMain, HWND_TOP,
                                     0, 0,
                                     pswpNew->cx, pswpNew->cy, // sCXNew, sCYNew,
                                     SWP_SIZE);
@@ -1344,9 +1315,9 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
         {
             PSWP pswp = (PSWP)mp1;
             if (pswp->fl & SWP_MINIMIZE)
-                WinShowWindow(pWindowData->hwndSplitMain, FALSE);
+                WinShowWindow(pClientData->hwndSplitMain, FALSE);
             else if (pswp->fl & SWP_RESTORE)
-                WinShowWindow(pWindowData->hwndSplitMain, TRUE);
+                WinShowWindow(pClientData->hwndSplitMain, TRUE);
         break; }
 
         /*
@@ -1363,7 +1334,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             // save window position
             winhSaveWindowPos(hwndFrame,
                               HINI_USER,
-                              INIAPP_XFOLDER,
+                              INIAPP_XWORKPLACE,
                               INIKEY_WNDPOSCLASSINFO);
             // destroy the window and return
             WinDestroyWindow(hwndFrame);
@@ -1377,15 +1348,20 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
          */
 
         case WM_DESTROY:
-            if (pWindowData)
+            if (pClientData)
             {
-                // remove this window from the object's use list
-                _wpDeleteFromObjUseList(pWindowData->somSelf,
-                                        &pWindowData->UseItem);
-                // free the use list item
-                _wpFreeMem(pWindowData->somSelf, (PBYTE)pWindowData);
+                // wait for method thread to terminate
+                thrWait(pClientData->ptiMethodCollectThread);
+                if (pClientData->ptiMethodCollectThread)
+                    free(pClientData->ptiMethodCollectThread);
 
-                pWindowData->somThis->hwndOpenView = NULLHANDLE;
+                // remove this window from the object's use list
+                _wpDeleteFromObjUseList(pClientData->somSelf,
+                                        &pClientData->UseItem);
+                // free the use list item
+                _wpFreeMem(pClientData->somSelf, (PBYTE)pClientData);
+
+                pClientData->somThis->hwndOpenView = NULLHANDLE;
             }
 
             // return default NULL
@@ -1397,7 +1373,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
          */
 
         case WM_HELP:
-            cmnDisplayHelp(pWindowData->somSelf,
+            cmnDisplayHelp(pClientData->somSelf,
                            ID_XSH_SETTINGS_WPSCLASSES);
         break;
 
@@ -1408,10 +1384,142 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
     return (mrc);
 }
 
+/*
+ *@@ ShowClassContextMenu:
+ *      this gets called from fnwpClassTreeCnrDlg
+ *      when a context menu is requested for a
+ *      class in the class tree. This builds,
+ *      sets up, and shows that class's context menu.
+ *
+ *@@added V0.9.1 (99-12-28) [umoeller]
+ */
+
+VOID ShowClassContextMenu(HWND hwndDlg,
+                          PSELECTCLASSDATA pscd)
+{
+    LONG lrc2;
+    HWND hPopupMenu = WinLoadMenu(hwndDlg,
+                                  cmnQueryNLSModuleHandle(FALSE),
+                                  ID_XLM_CLASS_SEL);
+
+    if (pscd->preccSource->pwps)
+    {
+        BOOL fAllowDeregister = TRUE;
+        BOOL fAllowCreateObjects = TRUE;
+        BOOL fIsWPSClass = FALSE;
+
+        if (pscd->preccSource->pwps->pClassObject)
+            fIsWPSClass = _somDescendedFrom(pscd->preccSource->pwps->pClassObject, _WPObject);
+
+        // allow deregistering?
+        if (   (pscd->preccSource->pwps->pszModName == NULL)
+                       // DLL == NULL: not in WPS class list,
+                       // so we better not allow touching this
+            || (pscd->preccSource->pwps->pszReplacesClass)
+            || (pscd->preccSource->pwps->pszReplacedWithClasses)
+                       // or replacement class;
+                       // the user should undo the replacement first
+            || (!fIsWPSClass)
+                       // no WPS class:
+           )
+            fAllowDeregister = FALSE;
+
+        if (pszClassInfo)
+        {
+            CHAR szDummy[2000];
+
+            ULONG ulFlagsSelected = 0;
+            // parse class info text whether this
+            // class may be deregistered
+            if (ParseDescription(pszClassInfo,
+                                 pscd->preccSource->pwps->pszClassName,
+                                 &ulFlagsSelected,
+                                 szDummy))
+            {
+                // bit 0 signifies whether this class may
+                // be deregistered
+                if ((ulFlagsSelected & 1) == 0)
+                    fAllowDeregister = FALSE;
+
+                // bit 2 signifies whether this class
+                // can have instances created from it
+                if ((ulFlagsSelected & 4) != 0)
+                                // bit set
+                    fAllowCreateObjects = FALSE;
+            }
+        }
+
+        if (   (pscd->preccSource->pwps->pszModName == NULL)
+            || (pscd->preccSource->pwps->pszReplacesClass)
+            || (pscd->preccSource->pwps->pClassObject
+                   == 0)   // class object invalid
+            || (pscd->preccSource->pwps->pszReplacesClass)
+                       // or replacement class;
+                       // we'll only allow creation
+                       // of objects of the _replaced_
+                       // class
+            || (!fIsWPSClass)
+                       // no WPS class:
+           )
+            fAllowCreateObjects = FALSE;
+
+        if (!fAllowDeregister)
+            // disable "Deregister" menu item
+            WinEnableMenuItem(hPopupMenu,
+                              ID_XLMI_DEREGISTER,
+                              FALSE);
+
+        // allow replacements only if the
+        // class has subclasses
+        lrc2 = (LONG)WinSendMsg(pscd->hwndCnr,
+                                CM_QUERYRECORD,
+                                (MPARAM)pscd->preccSource,
+                                MPFROM2SHORT(CMA_FIRSTCHILD,
+                                             CMA_ITEMORDER));
+        if (    (lrc2 == 0)
+             || (lrc2 == -1)
+                // disallow if the class replaces something itself
+             || (pscd->preccSource->pwps->pszReplacesClass)
+             || (!fIsWPSClass)
+           )
+            WinEnableMenuItem(hPopupMenu,
+                ID_XLMI_REPLACE, FALSE);
+
+        // allow un-replacement only if the class
+        // replaces another class
+        if (    (pscd->preccSource->pwps->pszReplacesClass == NULL)
+             || (!fIsWPSClass)
+           )
+            WinEnableMenuItem(hPopupMenu,
+                ID_XLMI_UNREPLACE, FALSE);
+
+        // allow creating objects?
+        if (!fAllowCreateObjects)
+            // disable "Create Objects" menu item
+            WinEnableMenuItem(hPopupMenu,
+                    ID_XLMI_CREATEOBJECT, FALSE);
+
+    } // end if (pscd->preccSource->pwps)
+    else
+    {
+        WinEnableMenuItem(hPopupMenu,
+                          ID_XLMI_DEREGISTER, FALSE);
+        WinEnableMenuItem(hPopupMenu,
+                          ID_XLMI_REPLACE, FALSE);
+        WinEnableMenuItem(hPopupMenu,
+                          ID_XLMI_UNREPLACE, FALSE);
+    }
+
+    cnrhShowContextMenu(pscd->hwndCnr,
+                        (PRECORDCORE)(pscd->preccSource),
+                        hPopupMenu,
+                        hwndDlg);
+}
+
 BOOL fFillingCnr = FALSE;
 
 /*
- *@@ fnwpClassCnrDlg:
+ *@@ fnwpClassTreeCnrDlg:
  *      this is the window proc for the dialog window
  *      with the actual WPS class list container (in Tree view).
  *      This dlg is a child of the abstract "split window"
@@ -1435,11 +1543,11 @@ BOOL fFillingCnr = FALSE;
  *@@added V0.9.0 [umoeller]
  */
 
-MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
 
-    PCLASSLISTCNRDATA pWindowData = (PCLASSLISTCNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PCLASSLISTTREECNRDATA pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
 
     TRY_LOUD(excpt1, NULL)
     {
@@ -1462,14 +1570,14 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                 memset(pscd, 0, sizeof(SELECTCLASSDATA));
 
                 // create our own structure for QWL_USER
-                pWindowData = malloc(sizeof(CLASSLISTCNRDATA));
-                memset(pWindowData, 0, sizeof(CLASSLISTCNRDATA));
-                WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pWindowData);
+                pClassTreeCnrData = malloc(sizeof(CLASSLISTTREECNRDATA));
+                memset(pClassTreeCnrData, 0, sizeof(CLASSLISTTREECNRDATA));
+                WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pClassTreeCnrData);
 
                 // store the client data (create param from mp2)
-                pWindowData->pClientData = (PCLASSLISTCLIENTDATA)mp2;
+                pClassTreeCnrData->pClientData = (PCLASSLISTCLIENTDATA)mp2;
 
-                pWindowData->pClientData->pscd = pscd;
+                pClassTreeCnrData->pClientData->pscd = pscd;
 
                 // setup container child
                 pscd->hwndCnr = WinWindowFromID(hwndDlg, ID_XLDI_CNR);
@@ -1489,7 +1597,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                                    ampClassCnrCtls,    // MPARAMs array
                                    sizeof(ampClassCnrCtls) / sizeof(MPARAM), // items count
                                    NULL,                // pswpNew == NULL: initialize
-                                   &pWindowData->xacClassCnr);  // storage area
+                                   &pClassTreeCnrData->xacClassCnr);  // storage area
 
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             break; }
@@ -1531,13 +1639,13 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                 // resizing?
                 if (pswpNew->fl & SWP_SIZE)
                 {
-                    if (pWindowData)
+                    if (pClassTreeCnrData)
                     {
                         BOOL brc = winhAdjustControls(hwndDlg,             // dialog
                                            ampClassCnrCtls,    // MPARAMs array
                                            sizeof(ampClassCnrCtls) / sizeof(MPARAM), // items count
                                            pswpNew,             // mp1
-                                           &pWindowData->xacClassCnr);  // storage area
+                                           &pClassTreeCnrData->xacClassCnr);  // storage area
                     }
                 }
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -1562,14 +1670,14 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
 
                 // pscd is the SELECTCLASSDATA structure in our window words;
                 // this is used for communicating with the classlist functions
-                PSELECTCLASSDATA pscd = pWindowData->pClientData->pscd;
+                PSELECTCLASSDATA pscd = pClassTreeCnrData->pClientData->pscd;
 
                 fFillingCnr = TRUE;
 
                 // class to start with: either WPObject or SOMObject,
                 // depending on instance data
                 pscd->pszRootClass =
-                    (pWindowData->pClientData->somThis->fShowSOMObject)
+                    (pClassTreeCnrData->pClientData->somThis->fShowSOMObject)
                         ? "SOMObject"
                         : "WPObject";
                 // class to select: the same
@@ -1617,7 +1725,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
 
                     // pscd is the SELECTCLASSDATA structure in our window words;
                     // this is used for communicating with the classlist functions
-                    PSELECTCLASSDATA pscd = pWindowData->pClientData->pscd;
+                    PSELECTCLASSDATA pscd = pClassTreeCnrData->pClientData->pscd;
 
                     switch (SHORT2FROMMP(mp1)) // notify code
                     {
@@ -1652,120 +1760,34 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
 
                         case CN_CONTEXTMENU:
                         {
-                            HWND   hPopupMenu;
-                            CHAR szDummy[2000];
-
                             pscd->preccSource = (PCLASSRECORDCORE)mp2;
                             if (pscd->preccSource)
                             {
-                                // we have a selection
-                                LONG lrc2;
-                                hPopupMenu = WinLoadMenu(hwndDlg,
-                                                         cmnQueryNLSModuleHandle(FALSE),
-                                                         ID_XLM_CLASS_SEL);
-
-                                if (pscd->preccSource->pwps)
-                                {
-                                    BOOL fAllowDeregister = TRUE;
-                                    BOOL fAllowCreateObjects = TRUE;
-
-                                    // allow deregistering?
-                                    if (   (pscd->preccSource->pwps->pszModName == NULL)
-                                                   // DLL == NULL: not in WPS class list,
-                                                   // so we better not allow touching this
-                                        || (pscd->preccSource->pwps->pszReplacesClass)
-                                        || (pscd->preccSource->pwps->pszReplacedWithClasses)
-                                                   // or replacement class;
-                                                   // the user should undo the replacement first
-                                       )
-                                        fAllowDeregister = FALSE;
-
-                                    if (pszClassInfo)
-                                    {
-                                        ULONG ulFlagsSelected = 0;
-                                        // parse class info text whether this
-                                        // class may be deregistered
-                                        if (ParseDescription(pszClassInfo,
-                                                pscd->preccSource->pwps->pszClassName,
-                                                &ulFlagsSelected,
-                                                szDummy))
-                                        {
-                                            // bit 0 signifies whether this class may
-                                            // be deregistered
-                                            if ((ulFlagsSelected & 1) == 0)
-                                                fAllowDeregister = FALSE;
-
-                                            // bit 2 signifies whether this class
-                                            // can have instances created from it
-                                            if ((ulFlagsSelected & 4) != 0)
-                                                            // bit set
-                                                fAllowCreateObjects = FALSE;
-                                        }
-                                    }
-
-                                    if (   (pscd->preccSource->pwps->pszModName == NULL)
-                                        || (pscd->preccSource->pwps->pszReplacesClass)
-                                        || (pscd->preccSource->pwps->pClassObject
-                                               == 0)   // class object invalid
-                                        || (pscd->preccSource->pwps->pszReplacesClass)
-                                                   // or replacement class;
-                                                   // we'll only allow creation
-                                                   // of objects of the _replaced_
-                                                   // class
-                                       )
-                                        fAllowCreateObjects = FALSE;
-
-                                    if (!fAllowDeregister)
-                                        // disable "Deregister" menu item
-                                        WinEnableMenuItem(hPopupMenu,
-                                                ID_XLMI_DEREGISTER, FALSE);
-
-                                    // allow replacements only if the
-                                    // class has subclasses
-                                    lrc2 = (LONG)WinSendMsg(
-                                            pscd->hwndCnr, CM_QUERYRECORD,
-                                            (MPARAM)pscd->preccSource,
-                                            MPFROM2SHORT(CMA_FIRSTCHILD, CMA_ITEMORDER));
-                                    if (    (lrc2 == 0)
-                                         || (lrc2 == -1)
-                                            // disallow if the class replaces something itself
-                                         || (pscd->preccSource->pwps->pszReplacesClass)
-                                       )
-                                        WinEnableMenuItem(hPopupMenu,
-                                            ID_XLMI_REPLACE, FALSE);
-
-                                    // allow un-replacement only if the class
-                                    // replaces another class
-                                    if (pscd->preccSource->pwps->pszReplacesClass == NULL)
-                                        WinEnableMenuItem(hPopupMenu,
-                                            ID_XLMI_UNREPLACE, FALSE);
-
-                                    // allow creating objects?
-                                    if (!fAllowCreateObjects)
-                                        // disable "Create Objects" menu item
-                                        WinEnableMenuItem(hPopupMenu,
-                                                ID_XLMI_CREATEOBJECT, FALSE);
-
-                                } // end if (pscd->preccSource->pwps)
-                                else
-                                {
-                                    WinEnableMenuItem(hPopupMenu,
-                                        ID_XLMI_DEREGISTER, FALSE);
-                                    WinEnableMenuItem(hPopupMenu,
-                                        ID_XLMI_REPLACE, FALSE);
-                                    WinEnableMenuItem(hPopupMenu,
-                                        ID_XLMI_UNREPLACE, FALSE);
-                                }
-
-                            } else
-                                // no selection: different menu
-                                hPopupMenu = WinLoadMenu(hwndDlg, cmnQueryNLSModuleHandle(FALSE),
-                                        ID_XLM_CLASS_NOSEL);
-
-                            cnrhShowContextMenu(pscd->hwndCnr,
-                                                (PRECORDCORE)(pscd->preccSource),
-                                                hPopupMenu,
-                                                hwndDlg);
+                                // we have a selection:
+                                ShowClassContextMenu(hwndDlg,
+                                                     pscd);
+                            }
+                            else
+                            {
+                                // no selection: use default
+                                // "open view" context menu
+                                POINTL ptl = { 0, 0 };
+                                WinQueryPointerPos(HWND_DESKTOP,
+                                                   &ptl);
+                                // convert from screen to cnr coords
+                                WinMapWindowPoints(HWND_DESKTOP,
+                                                   pscd->hwndCnr,
+                                                   &ptl,
+                                                   2);
+                                _wpDisplayMenu(pClassTreeCnrData->pClientData->somSelf,
+                                               pClassTreeCnrData->pClientData->ViewItem.handle,
+                                                        // owner: the frame
+                                               pscd->hwndCnr,
+                                                        // client: the tree cnr
+                                               &ptl,
+                                               MENU_OPENVIEWPOPUP,
+                                               0);
+                            }
                         break; }
 
                         /*
@@ -1791,7 +1813,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                                         // in SELECTCLASSDATA
                                         pscd->preccSelection = (PCLASSRECORDCORE)(pnre->pRecord);
 
-                                        StartMethodsUpdateTimer(pWindowData->pClientData);
+                                        StartMethodsUpdateTimer(pClassTreeCnrData->pClientData);
                                     }
                                 }
                         break; }
@@ -1802,7 +1824,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                          */
 
                         case CN_HELP:
-                            WinPostMsg(pWindowData->pClientData->hwndClient,
+                            WinPostMsg(pClassTreeCnrData->pClientData->hwndClient,
                                        WM_HELP, 0, 0);
                         break;
                     }
@@ -1835,7 +1857,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                     {
                         // pscd is the SELECTCLASSDATA structure in our window words;
                         // this is used for communicating with the classlist functions
-                        PSELECTCLASSDATA pscd = pWindowData->pClientData->pscd;
+                        PSELECTCLASSDATA pscd = pClassTreeCnrData->pClientData->pscd;
 
                         if ( ( pscd->preccExpanded->flRecordAttr & CRA_EXPANDED) != 0 )
                         {
@@ -1864,9 +1886,9 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                      */
 
                     case 2:
-                        pWindowData->pClientData->ulUpdateTimerID = 0;
+                        pClassTreeCnrData->pClientData->ulUpdateTimerID = 0;
                         // update other windows with class info
-                        NewClassSelected(pWindowData->pClientData);
+                        NewClassSelected(pClassTreeCnrData->pClientData);
                     break;
                 }
             break;
@@ -1880,61 +1902,17 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
             {
                 // pscd is the SELECTCLASSDATA structure in our window words;
                 // this is used for communicating with the classlist functions
-                PSELECTCLASSDATA pscd = pWindowData->pClientData->pscd;
+                PSELECTCLASSDATA pscd = pClassTreeCnrData->pClientData->pscd;
 
                 switch (SHORT1FROMMP(mp1))  // menu command
                 {
                     // "Help" menu command
                     case ID_XFMI_HELP:
-                        WinPostMsg(pWindowData->pClientData->hwndClient,
+                        WinPostMsg(pClassTreeCnrData->pClientData->hwndClient,
                                    WM_HELP, 0, 0);
                     break;
 
-                    // "Register" menu command
-                    case ID_XLMI_REGISTER:
-                    {
-                        REGISTERCLASSDATA rcd;
-                        rcd.pszHelpLibrary = cmnQueryHelpLibrary();
-                        rcd.ulHelpPanel = ID_XFH_REGISTERCLASS;
-                        if (WinDlgBox(HWND_DESKTOP, hwndDlg,
-                                                 fnwpRegisterClass,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XLD_REGISTERCLASS,
-                                                 &rcd) == DID_OK)
-                        {
-                            PSZ pTable[1];
-                            HPOINTER hptrOld = winhSetWaitPointer();
-                            pTable[0] = rcd.szClassName;
-
-                            WinSendMsg(pscd->hwndCnr,
-                                       CM_REMOVERECORD,
-                                       (MPARAM)NULL,
-                                       MPFROM2SHORT(0, // remove all records
-                                                CMA_FREE | CMA_INVALIDATE));
-                            clsCleanupWpsClasses(pscd->pwpsc);
-                            WinSetPointer(HWND_DESKTOP, hptrOld);
-                            free(pszClassInfo);
-                            pszClassInfo = NULL;
-
-                            if (WinRegisterObjectClass(rcd.szClassName, rcd.szModName))
-                                // success
-                                cmnMessageBoxMsgExt(hwndDlg,
-                                        121,
-                                        pTable, 1, 131,
-                                        MB_OK);
-                            else
-                                // error
-                                cmnMessageBoxMsgExt(hwndDlg,
-                                        104,
-                                        pTable, 1, 132,
-                                        MB_OK);
-
-                            // fill cnr again
-                            WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
-                        }
-                    break; }
-
-                    // "Deregister" menu command
+                    // "Deregister" menu command:
                     case ID_XLMI_DEREGISTER:
                     {
                         if (pscd->preccSource)
@@ -2168,7 +2146,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
             {
                 // pscd is the SELECTCLASSDATA structure in our window words;
                 // this is used for communicating with the classlist functions
-                PSELECTCLASSDATA pscd = pWindowData->pClientData->pscd;
+                PSELECTCLASSDATA pscd = pClassTreeCnrData->pClientData->pscd;
                 cnrhSetSourceEmphasis(pscd->hwndCnr,
                                       pscd->preccSource,
                                       FALSE);
@@ -2190,7 +2168,7 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
              */
 
             case WM_HELP:
-                WinPostMsg(pWindowData->pClientData->hwndClient, msg, mp1, mp2);
+                WinPostMsg(pClassTreeCnrData->pClientData->hwndClient, msg, mp1, mp2);
             break;
 
             /*
@@ -2209,8 +2187,8 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                                    CMA_FREE | CMA_INVALIDATE));
 
                 // cleanup allocated WPS data (classlst.c)
-                clsCleanupWpsClasses(pWindowData->pClientData->pscd->pwpsc);
-                free(pWindowData->pClientData->pscd);
+                clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
+                free(pClassTreeCnrData->pClientData->pscd);
 
                 free(pszClassInfo);
                 pszClassInfo = NULL;
@@ -2220,9 +2198,9 @@ MRESULT EXPENTRY fnwpClassCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2
                                    NULL,                // clean up
                                    0,                   // items count
                                    NULL,                // clean up
-                                   &pWindowData->xacClassCnr); // storage area
+                                   &pClassTreeCnrData->xacClassCnr); // storage area
 
-                free(pWindowData);
+                free(pClassTreeCnrData);
 
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -2267,7 +2245,7 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 {
     MRESULT mrc = 0;
 
-    PCLASSLISTINFODATA pWindowData
+    PCLASSLISTINFODATA pClassInfoData
             = (PCLASSLISTINFODATA)WinQueryWindowULong(hwndDlg, QWL_USER);
 
     switch (msg)
@@ -2288,19 +2266,19 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
                 // class icons
 
             // create our own structure for QWL_USER
-            pWindowData = malloc(sizeof(CLASSLISTINFODATA));
-            memset(pWindowData, 0, sizeof(CLASSLISTINFODATA));
-            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pWindowData);
+            pClassInfoData = malloc(sizeof(CLASSLISTINFODATA));
+            memset(pClassInfoData, 0, sizeof(CLASSLISTINFODATA));
+            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pClassInfoData);
 
             // store the client data (create param from mp2)
-            pWindowData->pClientData = (PCLASSLISTCLIENTDATA)mp2;
+            pClassInfoData->pClientData = (PCLASSLISTCLIENTDATA)mp2;
 
             // initialize XADJUSTCTRLS structure
             winhAdjustControls(hwndDlg,             // dialog
                                ampClassInfoCtls,    // MPARAMs array
                                sizeof(ampClassInfoCtls) / sizeof(MPARAM), // items count
                                NULL,                // pswpNew == NULL: initialize
-                               &pWindowData->xacClassInfo);  // storage area
+                               &pClassInfoData->xacClassInfo);  // storage area
         break;
 
         /*
@@ -2325,13 +2303,13 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
             // resizing?
             if (pswpNew->fl & SWP_SIZE)
             {
-                if (pWindowData)
+                if (pClassInfoData)
                 {
                     BOOL brc = winhAdjustControls(hwndDlg,             // dialog
                                        ampClassInfoCtls,    // MPARAMs array
                                        sizeof(ampClassInfoCtls) / sizeof(MPARAM), // items count
                                        pswpNew,             // mp1
-                                       &pWindowData->xacClassInfo);  // storage area
+                                       &pClassInfoData->xacClassInfo);  // storage area
                 }
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -2354,7 +2332,7 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
         case WM_HELP:
         {
-            WinPostMsg(pWindowData->pClientData->hwndClient, msg, mp1, mp2);
+            WinPostMsg(pClassInfoData->pClientData->hwndClient, msg, mp1, mp2);
         break; }
 
         /*
@@ -2369,8 +2347,8 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
                                NULL,                // clean up
                                0,                   // items count
                                NULL,                // clean up
-                               &pWindowData->xacClassInfo); // storage area
-            free(pWindowData);
+                               &pClassInfoData->xacClassInfo); // storage area
+            free(pClassInfoData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
 
@@ -2385,13 +2363,14 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 /*
  *@@ fnwpMethodInfoDlg:
  *
+ *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
  */
 
 MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
 
-    PCLASSLISTMETHODDATA pWindowData = (PCLASSLISTMETHODDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PCLASSLISTMETHODDATA pMethodInfoData = (PCLASSLISTMETHODDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
 
     switch(msg)
     {
@@ -2413,19 +2392,19 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
             // create our own structure for QWL_USER
-            pWindowData = (PCLASSLISTMETHODDATA)malloc(sizeof(CLASSLISTMETHODDATA));
-            memset(pWindowData, 0, sizeof(CLASSLISTMETHODDATA));
-            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pWindowData);
+            pMethodInfoData = (PCLASSLISTMETHODDATA)malloc(sizeof(CLASSLISTMETHODDATA));
+            memset(pMethodInfoData, 0, sizeof(CLASSLISTMETHODDATA));
+            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pMethodInfoData);
 
             // store the client data (create param from mp2)
-            pWindowData->pClientData = (PCLASSLISTCLIENTDATA)mp2;
+            pMethodInfoData->pClientData = (PCLASSLISTCLIENTDATA)mp2;
 
             // initialize XADJUSTCTRLS structure
             winhAdjustControls(hwndDlg,             // dialog
                                ampMethodInfoCtls,    // MPARAMs array
                                sizeof(ampMethodInfoCtls) / sizeof(MPARAM), // items count
                                NULL,                // pswpNew == NULL: initialize
-                               &pWindowData->xacMethodInfo);  // storage area
+                               &pMethodInfoData->xacMethodInfo);  // storage area
 
             // set up cnr details view
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, ulMethodIndex);
@@ -2464,12 +2443,12 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                 cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
                 cnrhSetSplitBarAfter(pfi);
                 cnrhSetSplitBarPos(200);
-                cnrhSetSortFunc(QueryMethodsSortFunc(pWindowData->pClientData));
+                cnrhSetSortFunc(QueryMethodsSortFunc(pMethodInfoData->pClientData));
             } END_CNRINFO(hwndCnr);
 
             // check "instance methods"
             winhSetDlgItemChecked(hwndDlg,
-                                  pWindowData->pClientData->somThis->ulMethodsRadioB,
+                                  pMethodInfoData->pClientData->somThis->ulMethodsRadioB,
                                   TRUE);
         break; }
 
@@ -2495,17 +2474,118 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             // resizing?
             if (pswpNew->fl & SWP_SIZE)
             {
-                if (pWindowData)
+                if (pMethodInfoData)
                 {
                     BOOL brc = winhAdjustControls(hwndDlg,             // dialog
                                        ampMethodInfoCtls,    // MPARAMs array
                                        sizeof(ampMethodInfoCtls) / sizeof(MPARAM), // items count
                                        pswpNew,             // mp1
-                                       &pWindowData->xacMethodInfo);  // storage area
+                                       &pMethodInfoData->xacMethodInfo);  // storage area
                 }
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
+
+        /*
+         * WM_FILLCNR:
+         *      this gets posted from cll_fntMethodCollectThread
+         *      after the thread is done collecting the method
+         *      info.
+         *
+         *      This has a newly allocated PMETHODINFO in mp1.
+         */
+
+        case WM_FILLCNR:
+        {
+            PMETHODINFO pMethodInfo = (PMETHODINFO)mp1;
+            if (pMethodInfo)
+            {
+                HWND hwndMethodsCnr = WinWindowFromID(hwndDlg,
+                                                      ID_XLDI_CNR);
+
+                // allocate as many records as methods exist;
+                // we get a linked list now
+                PMETHODRECORD precc = (PMETHODRECORD)cnrhAllocRecords(
+                                                    hwndMethodsCnr,
+                                                    sizeof(METHODRECORD),
+                                                    pMethodInfo->ulMethodCount),
+                              preccThis = precc;
+                PLISTNODE     pNode = lstQueryFirstNode(&pMethodInfo->llMethods);
+                ULONG         ulIndex = 0;
+
+                // now set up the METHODRECORD according
+                // to the method data returned by clsQueryMethodInfo
+                while ((preccThis) && (pNode))
+                {
+                    PSOMMETHOD psm = (PSOMMETHOD)pNode->pItemData;
+                    PLISTNODE pnodeOverride;
+
+                    // set up information
+                    preccThis->ulMethodIndex = ulIndex;
+                    preccThis->recc.pszIcon = psm->pszMethodName;
+
+                    switch(psm->ulType)  // 0=static, 1=dynamic, 2=nonstatic
+                    {
+                        case 0: preccThis->pszType = "S"; break;
+                        case 1: preccThis->pszType = "D"; break;
+                        case 2: preccThis->pszType = "N"; break;
+                        default: preccThis->pszType = "?"; break;
+                    }
+
+                    if (psm->pIntroducedBy)
+                        preccThis->pszIntroducedBy = _somGetName(psm->pIntroducedBy);
+                    preccThis->ulIntroducedBy = psm->ulIntroducedBy;
+
+                    // go thru list of class objects which overrode this method
+                    // and create a string from the class names
+                    pnodeOverride = lstQueryFirstNode(&psm->llOverriddenBy);
+                    while (pnodeOverride)
+                    {
+                        SOMClass *pClassObject = (SOMClass*)pnodeOverride->pItemData;
+
+                        if (pClassObject)
+                        {
+                            if (preccThis->pszOverriddenBy)
+                                // not first class: append comma
+                                strhxcat(&preccThis->pszOverriddenBy, ", ");
+
+                            strhxcat(&preccThis->pszOverriddenBy, _somGetName(pClassObject));
+                        }
+
+                        pnodeOverride = pnodeOverride->pNext;
+                    }
+
+                    if (preccThis->pszOverriddenBy)
+                        // store this string in list of items to be freed later
+                        lstAppendItem(&pMethodInfoData->pClientData->llCnrStrings,
+                                      preccThis->pszOverriddenBy);
+
+                    preccThis->ulOverriddenBy = psm->ulOverriddenBy;
+
+                    // write method address to recc's string buffer
+                    sprintf(preccThis->szMethodProc, "0x%lX",
+                            psm->pMethodProc);
+                    // and point PSZ to that buffer
+                    preccThis->pszMethodProc = preccThis->szMethodProc;
+
+                    // go for next
+                    preccThis = (PMETHODRECORD)preccThis->recc.preccNextRecord;
+                    pNode = pNode->pNext;
+                    ulIndex++;
+                }
+
+                cnrhInsertRecords(hwndMethodsCnr,
+                                  NULL,         // no parent record
+                                  (PRECORDCORE)precc,        // first record
+                                  NULL,         // no text
+                                  CRA_RECORDREADONLY,
+                                  pMethodInfo->ulMethodCount);
+                                                // record count
+                // store in main window data
+                // so we can release that later
+                pMethodInfoData->pClientData->pMethodInfo = pMethodInfo;
+            } // end if (pMethodInfoData->pMethodInfo)
+        break; }  // WM_FILLCNR
 
         /*
          * WM_CONTROL:
@@ -2520,13 +2600,13 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                     if (    (SHORT2FROMMP(mp1) == BN_CLICKED)
                          || (SHORT2FROMMP(mp1) == BN_DBLCLICKED)
                        )
-                        if (pWindowData->pClientData->somThis->ulMethodsRadioB != SHORT1FROMMP(mp1))
+                        if (pMethodInfoData->pClientData->somThis->ulMethodsRadioB != SHORT1FROMMP(mp1))
                         {
                             // radio button selection changed:
-                            pWindowData->pClientData->somThis->ulMethodsRadioB = SHORT1FROMMP(mp1);
-                            _wpSaveDeferred(pWindowData->pClientData->somSelf);
+                            pMethodInfoData->pClientData->somThis->ulMethodsRadioB = SHORT1FROMMP(mp1);
+                            _wpSaveDeferred(pMethodInfoData->pClientData->somSelf);
                             // update method info
-                            StartMethodsUpdateTimer(pWindowData->pClientData);
+                            StartMethodsUpdateTimer(pMethodInfoData->pClientData);
                         }
                 break;
 
@@ -2534,15 +2614,15 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                     switch (SHORT2FROMMP(mp1)) // notify code
                     {
                         case CN_HELP:
-                            WinPostMsg(pWindowData->pClientData->hwndClient,
+                            WinPostMsg(pMethodInfoData->pClientData->hwndClient,
                                        WM_HELP, 0, 0);
                         break;
 
                         case CN_CONTEXTMENU:
                         {
                             HWND            hPopupMenu = 0;
-                            pWindowData->pMethodReccSource = (PMETHODRECORD)mp2;
-                            if (pWindowData->pMethodReccSource)
+                            pMethodInfoData->pMethodReccSource = (PMETHODRECORD)mp2;
+                            if (pMethodInfoData->pMethodReccSource)
                             {
                                 // we have a selection
                             }
@@ -2553,11 +2633,11 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                                                          ID_XLM_METHOD_NOSEL);
                                 // check current sort item
                                 WinCheckMenuItem(hPopupMenu,
-                                                 pWindowData->pClientData->somThis->ulSortID, TRUE);
+                                                 pMethodInfoData->pClientData->somThis->ulSortID, TRUE);
                             }
                             if (hPopupMenu)
                                 cnrhShowContextMenu(WinWindowFromID(hwndDlg, ID_XLDI_CNR),
-                                                    (PRECORDCORE)pWindowData->pMethodReccSource,
+                                                    (PRECORDCORE)pMethodInfoData->pMethodReccSource,
                                                     hPopupMenu,
                                                     hwndDlg);
                         break; }
@@ -2579,7 +2659,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             {
                 // "Help" menu command
                 case ID_XFMI_HELP:
-                    WinPostMsg(pWindowData->pClientData->hwndClient,
+                    WinPostMsg(pMethodInfoData->pClientData->hwndClient,
                                WM_HELP, 0, 0);
                 break;
 
@@ -2590,12 +2670,12 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                 case ID_XLMI_METHOD_SORT_OVERRIDE:
                     // store sort item in window data for
                     // menu item checks above
-                    pWindowData->pClientData->somThis->ulSortID = SHORT1FROMMP(mp1);
-                    _wpSaveDeferred(pWindowData->pClientData->somSelf);
+                    pMethodInfoData->pClientData->somThis->ulSortID = SHORT1FROMMP(mp1);
+                    _wpSaveDeferred(pMethodInfoData->pClientData->somSelf);
                     // update container's sort func
                     BEGIN_CNRINFO()
                     {
-                        cnrhSetSortFunc(QueryMethodsSortFunc(pWindowData->pClientData));
+                        cnrhSetSortFunc(QueryMethodsSortFunc(pMethodInfoData->pClientData));
                     } END_CNRINFO(WinWindowFromID(hwndDlg, ID_XLDI_CNR));
                 break;
             }
@@ -2610,7 +2690,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
         case WM_MENUEND:
             cnrhSetSourceEmphasis(WinWindowFromID(hwndDlg, ID_XLDI_CNR),
-                                  pWindowData->pMethodReccSource,
+                                  pMethodInfoData->pMethodReccSource,
                                   FALSE);
         break;
 
@@ -2630,7 +2710,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case WM_HELP:
-            WinPostMsg(pWindowData->pClientData->hwndClient, msg, mp1, mp2);
+            WinPostMsg(pMethodInfoData->pClientData->hwndClient, msg, mp1, mp2);
         break;
 
         case WM_DESTROY:
@@ -2639,9 +2719,9 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                                NULL,                // clean up
                                0,                   // items count
                                NULL,                // clean up
-                               &pWindowData->xacMethodInfo); // storage area
-            CleanupMethodsInfo(pWindowData->pClientData);
-            free(pWindowData);
+                               &pMethodInfoData->xacMethodInfo); // storage area
+            CleanupMethodsInfo(pMethodInfoData->pClientData);
+            free(pMethodInfoData);
         break;
 
         default:
@@ -2757,11 +2837,148 @@ MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // reformat open view:
             HWND hwndClient = WinWindowFromID(_hwndOpenView, FID_CLIENT);
-            PCLASSLISTCLIENTDATA pWindowData = WinQueryWindowPtr(hwndClient, QWL_USER);
-            RelinkWindows(pWindowData, TRUE);
+            PCLASSLISTCLIENTDATA pClientData = WinQueryWindowPtr(hwndClient, QWL_USER);
+            RelinkWindows(pClientData, TRUE);
         }
 
     return ((MPARAM)0);
+}
+
+/*
+ *@@ cllModifyPopupMenu:
+ *      implementation for XWPClassList::wpModifyPopupMenu.
+ *
+ *      This gets called after a successful call to the
+ *      WPAbstract parent method.
+ *
+ *@@added V0.9.1 (99-12-28) [umoeller]
+ */
+
+BOOL cllModifyPopupMenu(XWPClassList *somSelf,
+                        HWND hwndMenu,
+                        HWND hwndCnr,
+                        ULONG iPosition)
+{
+    MENUITEM mi;
+    // get handle to the "Open" submenu in the
+    // the folder's popup menu
+    if (WinSendMsg(hwndMenu,
+                   MM_QUERYITEM,
+                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                   (MPARAM)&mi))
+    {
+        // mi.hwndSubMenu now contains "Open" submenu handle,
+        // which we add items to now
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST),
+                           pNLSStrings->pszOpenClassList,
+                           MIS_TEXT, 0);
+        // insert "register class" only if this is
+        // for an open class list view
+        if (hwndCnr)
+        {
+            if (WinQueryWindowUShort(hwndCnr, QWS_ID) == ID_XLDI_CNR)
+            {
+                winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                winhInsertMenuItem(hwndMenu, MIT_END,
+                                   ID_XLMI_REGISTER, // is above WPMENUID_USER
+                                   pNLSStrings->pszRegisterClass,
+                                   MIS_TEXT, 0);
+            }
+        }
+
+        return (TRUE);
+    }
+    else
+        return (FALSE);
+}
+
+/*
+ *@@ cllMenuItemSelected:
+ *      implementation for XWPClassList::wpMenuItemSelected.
+ *      If this returns FALSE, the parent gets called.
+ *
+ *@@added V0.9.1 (99-12-28) [umoeller]
+ */
+
+BOOL cllMenuItemSelected(XWPClassList *somSelf,
+                         HWND hwndFrame,
+                         ULONG ulMenuId)
+{
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
+    {
+        // "Open" --> "Class list":
+        // wpViewObject will call wpOpen if a new view is necessary
+        _wpViewObject(somSelf,
+                      NULLHANDLE,   // hwndCnr; "WPS-internal use only", IBM says
+                      ulMenuId,     // ulView; must be the same as menu item
+                      0);           // parameter passed to wpOpen
+        brc = TRUE;
+    }
+    else if (ulMenuId == ID_XLMI_REGISTER)
+    {
+        // "Register" menu command:
+        REGISTERCLASSDATA rcd;
+
+        // get class tree cnr dlg
+        HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
+        HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
+        HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
+        PCLASSLISTTREECNRDATA pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(
+                                                        hwndDlg, QWL_USER);
+        if (pClassTreeCnrData)
+        {
+            rcd.pszHelpLibrary = cmnQueryHelpLibrary();
+            rcd.ulHelpPanel = ID_XFH_REGISTERCLASS;
+            if (WinDlgBox(HWND_DESKTOP,
+                          hwndDlg,
+                          fnwpRegisterClass,
+                          cmnQueryNLSModuleHandle(FALSE),
+                          ID_XLD_REGISTERCLASS,
+                          &rcd)
+                    == DID_OK)
+            {
+                PSZ pTable[1];
+                HPOINTER hptrOld = winhSetWaitPointer();
+                pTable[0] = rcd.szClassName;
+
+                WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
+                           CM_REMOVERECORD,
+                           (MPARAM)NULL,
+                           MPFROM2SHORT(0, // remove all records
+                                    CMA_FREE | CMA_INVALIDATE));
+                clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+                free(pszClassInfo);
+                pszClassInfo = NULL;
+
+                if (WinRegisterObjectClass(rcd.szClassName, rcd.szModName))
+                    // success
+                    cmnMessageBoxMsgExt(hwndDlg,
+                            121,
+                            pTable, 1, 131,
+                            MB_OK);
+                else
+                    // error
+                    cmnMessageBoxMsgExt(hwndDlg,
+                            104,
+                            pTable, 1, 132,
+                            MB_OK);
+
+                // fill cnr again
+                WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
+            }
+            brc = TRUE;
+        }
+    }
+
+    return (brc);
 }
 
 /*
@@ -2836,7 +3053,7 @@ HWND cllCreateClassListView(WPObject *somSelf,
             // 1) frame
             if (!winhRestoreWindowPos(hwndFrame,
                               HINI_USER,
-                              INIAPP_XFOLDER,
+                              INIAPP_XWORKPLACE,
                               INIKEY_WNDPOSCLASSINFO,
                               SWP_MOVE | SWP_SIZE))
                 // INI data not found:

@@ -29,7 +29,7 @@
  *      does), but this separate structure instead. See arcQuerySettings.
  *
  *@@added V0.9.0 [umoeller]
- *@@header "archives.h"
+ *@@header "startshut\archives.h"
  */
 
 /*
@@ -237,24 +237,24 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 fAlways = ((pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0),
                 fINI = winhIsDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_INI),
                 fDays = winhIsDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARC_DAYS);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_ALWAYS,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_ALWAYS,
                           fEnabled);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_NEXT,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_NEXT,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_INI,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_INI,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPIN,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPIN,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPINTXT1,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_INI_SPINTXT1,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_DAYS,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_DAYS,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPIN,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPIN,
                           ( (fEnabled) && (fDays) ) && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPINTXT1,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_DAYS_SPINTXT1,
                           ( (fEnabled) && (fDays) ) && !fAlways);
 
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ARC_SHOWSTATUS,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ARC_SHOWSTATUS,
                           fEnabled);
     }
 }
@@ -497,7 +497,7 @@ BOOL arcSaveSettings(VOID)
  *      to destroy it later.
  *
  *      krnInitializeXWorkplace sets this to the XWorkplace
- *      Thread-1 object window (fnwpThread1Object), which in
+ *      Thread-1 object window (krn_fnwpThread1Object), which in
  *      turn starts a timer to destroy the window later.
  */
 

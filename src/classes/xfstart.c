@@ -134,7 +134,7 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = pNLSStrings->pszStartupPage;
     pcnbp->ulDlgID = ID_XSD_STARTUPFOLDER;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XFLDSTARTUP;        // xxx
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XFLDSTARTUP;        // ### still to be written
     pcnbp->ulPageID = SP_STARTUPFOLDER;
     pcnbp->pfncbInitPage    = fdrStartupFolderInitPage;
     pcnbp->pfncbItemChanged = fdrStartupFolderItemChanged;

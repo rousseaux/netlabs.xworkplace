@@ -8,6 +8,10 @@
  *      If this file is changed, this will cause the
  *      makefiles to recompile _all_ XWorkplace sources,
  *      because this is included will all source files.
+ *
+ *      Include this _after_ os2.h and standard C includes
+ *      (stdlib.h et al), but _before_ any project includes,
+ *      because this modifies some standard definitions.
  */
 
 #ifdef SETUP_HEADER_INCLUDED
@@ -21,8 +25,8 @@
      *
      *  1)  The general DONTDEBUGATALL flag will disable all other
      *      debugging flags, if defined. DONTDEBUGATALL gets set
-     *      automatically if __XWPDEBUG__ is not defined (that is,
-     *      if XWPDEBUG is disabled in setup.in).
+     *      automatically if __DEBUG__ is not defined (that is,
+     *      if DEBUG is disabled in setup.in).
      *
      *      Alternatively, set DONTDEBUGATALL explicitly here to
      *      disable the debugging flags completely. Of course, that
@@ -30,11 +34,11 @@
      */
 
     // disable debugging if debug code is off
-    #ifndef __XWPDEBUG__
+    #ifndef __DEBUG__
         #define DONTDEBUGATALL
     #endif
 
-    // or set it explicitly:
+    // or set it here explicitly even though debugging is on:
         // #define DONTDEBUGATALL
 
     #ifndef DONTDEBUGATALL
@@ -178,6 +182,16 @@
             #define  SOMMethodDebug(c,m) _Pmpf(("%s::%s", c,m))
         #else
             #define  SOMMethodDebug(c,m) ;
+        #endif
+    #endif
+
+    #ifdef __DEBUG__
+        #ifdef __string_h
+            // string.h included and debugging is on:
+            // redefine strdup to use memory debugging
+            #define strdup(psz)                                 \
+                strcpy( (char*)_debug_malloc(strlen(psz) + 1, __FILE__, __LINE__), psz)
+                // the original crashes also if psz is NULL
         #endif
     #endif
 

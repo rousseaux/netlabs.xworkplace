@@ -1437,7 +1437,7 @@ BOOL LoadNLS(VOID)
     BOOL Proceed = TRUE;
 
     if (PrfQueryProfileString(HINI_USER,
-                              "XFolder",
+                              "XWorkplace",
                               "XFolderPath",
                               "",
                               szNLSDLL, sizeof(szNLSDLL)) < 3)
@@ -1459,7 +1459,7 @@ BOOL LoadNLS(VOID)
 
         // now compose module name from language code
         PrfQueryProfileString(HINI_USERPROFILE,
-                              "XFolder", "Language",
+                              "XWorkplace", "Language",
                               "001",
                               (PVOID)szLanguageCode,
                               sizeof(szLanguageCode));

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* DEFTREE.CMD
  *
  * Change current directory's default view to Tree view.

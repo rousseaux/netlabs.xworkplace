@@ -20,7 +20,7 @@
  *      Function prefix for this file:
  *      --  xthr*
  *
- *@@header "xthreads.h"
+ *@@header "filesys\xthreads.h"
  */
 
 /*
@@ -1243,14 +1243,14 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     // if XFolder was just installed, check for
                     // existence of config folders and
                     // display welcome msg
-                    if (PrfQueryProfileInt(HINI_USER, INIAPP_XFOLDER,
-                            INIKEY_JUSTINSTALLED,
-                            0x123) != 0x123)
+                    if (PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
+                                           INIKEY_JUSTINSTALLED,
+                                           0x123) != 0x123)
                     {   // XFolder was just installed:
                         // delete "just installed" INI key
-                        PrfWriteProfileString(HINI_USER, INIAPP_XFOLDER,
-                                INIKEY_JUSTINSTALLED,
-                                NULL);
+                        PrfWriteProfileString(HINI_USER, INIAPP_XWORKPLACE,
+                                              INIKEY_JUSTINSTALLED,
+                                              NULL);
                         // even if the installation folder exists, create a
                         // a new one
                         // if (!_wpclsQueryFolder(_WPFolder, XFOLDER_MAINID, TRUE))
@@ -1388,10 +1388,10 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                     // "creating config" window
                     hwndCreating = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                            WinDefDlgProc,
-                            cmnQueryNLSModuleHandle(FALSE),
-                            ID_XFD_CREATINGCONFIG,
-                            0);
+                                              WinDefDlgProc,
+                                              cmnQueryNLSModuleHandle(FALSE),
+                                              ID_XFD_CREATINGCONFIG,
+                                              0);
                     WinShowWindow(hwndCreating, TRUE);
                     doshQuickStartSession("cmd.exe",
                                           szPath2,
@@ -1414,7 +1414,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         /*
          * FIM_TREEVIEWAUTOSCROLL:
-         *     this msg is posted mainly by fnwpSubclassedFolderFrame
+         *     this msg is posted mainly by fdr_fnwpSubclassedFolderFrame
          *     (subclassed folder windows) after the "plus" sign has
          *     been clicked on (WM_CONTROL for containers with
          *     CN_EXPANDTREE notification).
@@ -1495,7 +1495,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             if (pGlobalSettings)
             {
                 PrfWriteProfileData(HINI_USERPROFILE,
-                                    INIAPP_XFOLDER, INIKEY_GLOBALSETTINGS,
+                                    INIAPP_XWORKPLACE, INIKEY_GLOBALSETTINGS,
                                     pGlobalSettings, sizeof(GLOBALSETTINGS));
             }
             else
@@ -2156,9 +2156,9 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 
             // get system sound from MMPM.INI
             if (sndQuerySystemSound((USHORT)mp1,
-                            szDescr,
-                            pszFile,
-                            &ulVolume))
+                                    szDescr,
+                                    pszFile,
+                                    &ulVolume))
             {
                 // OK, sound file found in MMPM.INI:
                 #ifdef DEBUG_SOUNDS
@@ -2167,8 +2167,9 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 
                 // play!
                 WinPostMsg(hwndObject,
-                            QM_PLAYSOUND,
-                            (MPARAM)pszFile, (MPARAM)ulVolume);
+                           QM_PLAYSOUND,
+                           (MPARAM)pszFile,
+                           (MPARAM)ulVolume);
             }
             else
                 // any error: do nothing
@@ -2207,9 +2208,9 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 
         case QM_PLAYSOUND:
         {
-            PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
             if (mp1)
             {
+                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
                 if (psndOpenSound) // func ptr into SOUND.DLL
                     // check for whether that sound file really exists
                     if (access(mp1, 0) == 0)
@@ -2222,8 +2223,8 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 // free the PSZ passed to us
                 free((PSZ)mp1);
                 ulVolumeTemp = (ULONG)mp2;
+                krnUnlockGlobals();
             }
-            krnUnlockGlobals();
         break; }
 
         /*

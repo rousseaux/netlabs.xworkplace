@@ -271,7 +271,7 @@ ULONG AddTrashObjectsForTrashDir(XWPTrashCan *pTrashCan,  // in: trashcan to add
                     }
                 }
             }
-        }
+        } // end for (   pObject = _wpQueryContent(...
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -283,6 +283,14 @@ ULONG AddTrashObjectsForTrashDir(XWPTrashCan *pTrashCan,  // in: trashcan to add
         #ifdef DEBUG_TRASHCAN
             _Pmpf(("  wpPopulate: fTrashDirSemOwned = %d", fTrashDirSemOwned));
         #endif
+    }
+
+    if (ulObjectCount == 0)
+    {
+        // no objects found in this trash folder and
+        // subfolders (if any):
+        // delete this folder, it's useless
+        _wpFree(pTrashDir);
     }
 
     #ifdef DEBUG_TRASHCAN
@@ -354,7 +362,7 @@ VOID fncbTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
     if (flFlags & CBI_ENABLE)
     {
         PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XTDI_DELETE,
+        WinEnableControl(pcnbp->hwndPage, ID_XTDI_DELETE,
                           (pKernelGlobals->fXFldObject));
     }
 
@@ -471,14 +479,14 @@ VOID fncbTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
     {
         // enable "Add" button if items are selected
         // in the "Unsupported" listbox
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XTDI_ADD_SUPPORTED,
+        WinEnableControl(pcnbp->hwndPage, ID_XTDI_ADD_SUPPORTED,
                           (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndPage,
                                                                      ID_XTDI_UNSUPPORTED_LB),
                                                      LIT_FIRST)
                                 != LIT_NONE));
         // enable "Remove" button if items are selected
         // in the "Supported" listbox
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XTDI_REMOVE_SUPPORTED,
+        WinEnableControl(pcnbp->hwndPage, ID_XTDI_REMOVE_SUPPORTED,
                           (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndPage,
                                                                      ID_XTDI_SUPPORTED_LB),
                                                      LIT_FIRST)
@@ -887,6 +895,14 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
 
     return (ntbInsertPage(pcnbp));
 }
+
+/*
+ *@@ xwpAddTrashCanDrivesPage:
+ *      this adds the "Drives support" page to
+ *      the trash can settings notebook.
+ *
+ *@@added V0.9.1 (99-12-19) [umoeller]
+ */
 
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
                                                        HWND hwndDlg)
@@ -1519,7 +1535,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                         WPFolder    *pTrashDir;
 
                         sprintf(szTrashDir, "%c:\\Trash",
-                                cDrive);       // xxx
+                                cDrive);
                         #ifdef DEBUG_TRASHCAN
                             _Pmpf(("  Getting trash dir %s", szTrashDir));
                         #endif
@@ -1827,7 +1843,7 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsSetDrivesSupport(M_XWPTrashCan *somSelf,
             memcpy(abSupportedDrives, pabSupportedDrives, CB_SUPPORTED_DRIVES);
             // write to INI
             PrfWriteProfileData(HINI_USER,
-                                INIAPP_XFOLDER, INIKEY_TRASHCANDRIVES,
+                                INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
                                 abSupportedDrives,
                                 sizeof(abSupportedDrives));
         }
@@ -1866,7 +1882,7 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsSetDrivesSupport(M_XWPTrashCan *somSelf,
 
             // delete INI key
             PrfWriteProfileString(HINI_USER,
-                                  INIAPP_XFOLDER, INIKEY_TRASHCANDRIVES,
+                                  INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
                                   NULL);        // delete
         }
 
@@ -1945,7 +1961,7 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
         ULONG   cbSupportedDrives = sizeof(abSupportedDrives);
         memset(abSupportedDrives, XTRC_INVALID, cbSupportedDrives);
         if (!PrfQueryProfileData(HINI_USER,
-                                 INIAPP_XFOLDER, INIKEY_TRASHCANDRIVES,
+                                 INIAPP_XWORKPLACE, INIKEY_TRASHCANDRIVES,
                                  abSupportedDrives,
                                  &cbSupportedDrives))
             // data not found:

@@ -42,7 +42,7 @@
  *      Most of these use WinCompareString instead of strcmp so that
  *      PM's country settings are respected.
  *
- *@@header "cnrsort.h"
+ *@@header "shared\cnrsort.h"
  */
 
 /*

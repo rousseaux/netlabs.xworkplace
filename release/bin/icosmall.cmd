@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* ICONORM.CMD
  *
  * Switches the icon size for both Icon and Tree views to small icons.

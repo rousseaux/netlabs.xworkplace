@@ -9,7 +9,7 @@
  *      for filling this in, and to Roman Stangl (rstangl@vnet.ibm.com)
  *      for finding out all the APM stuff in the first place.
  *
- *@@header apm.h
+ *@@header "startshut\apm.h"
  */
 
 /*
@@ -266,7 +266,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
  *      none.
  *      </LL>
  *
- *@@header "apm.h"
+ *@@header "startshut\apm.h"
  */
 
 VOID apmDoPowerOff(VOID)

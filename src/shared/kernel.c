@@ -24,7 +24,7 @@
  *
  *      All functions in this file have the "krn*" prefix (V0.9.0).
  *
- *@@header "kernel.h"
+ *@@header "shared\kernel.h"
  */
 
 /*
@@ -64,6 +64,7 @@
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINTIMER
+#define INCL_WINSYS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
@@ -84,6 +85,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
@@ -207,14 +209,14 @@ FILE* _System krnExceptOpenLogFile(VOID)
             DT.month, DT.day, DT.year,
             DT.hours, DT.minutes, DT.seconds);
         fprintf(file, "--------------------------------------------------------\n"
-                      "\nAn internal error occurred within XFolder.\n"
+                      "\nAn internal error occurred within XWorkplace.\n"
                       "Please contact the author so that this error may be removed\n"
-                      "in future XFolder versions. The author's e-mail address may\n"
-                      "be obtained from the XFolder Online Reference. Please supply\n"
+                      "in future XWorkplace versions. A contact address may be\n"
+                      "obtained from the XWorkplace User Guide. Please supply\n"
                       "this file (?:\\XFLDTRAP.LOG) with your e-mail and describe as\n"
                       "exactly as possible the conditions under which the error\n"
                       "occured.\n"
-                      "\nRunning XFolder version: " XFOLDER_VERSION "\n");
+                      "\nRunning XWorkplace version: " XFOLDER_VERSION "\n");
 
     }
     return (file);
@@ -232,6 +234,7 @@ FILE* _System krnExceptOpenLogFile(VOID)
  *
  *@@changed V0.9.0 [umoeller]: moved this stuff here from except.c
  *@@changed V0.9.0 [umoeller]: renamed function
+ *@@changed V0.9.1 (99-12-28) [umoeller]: updated written information; added File thread
  */
 
 VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen()
@@ -248,30 +251,27 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
 
             // find out which thread trapped
             fprintf(file,
-                "Thread information: \n    TID 0x%lX",
-                ptib->tib_ptib2->tib2_ultid);
+                "Thread information: \n    TID 0x%lX (%d) ",
+                ptib->tib_ptib2->tib2_ultid,        // hex
+                ptib->tib_ptib2->tib2_ultid);       // dec
 
-            if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiWorkerThread)) {
-                    fprintf(file,
-                        " (XFolder's Worker thread)\n");
-            } else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiQuickThread)) {
-                    fprintf(file,
-                            " (XFolder's Quick thread)\n");
-            } else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiUpdateThread)) {
-                    fprintf(file,
-                            " (XFolder's Update thread)");
-            } else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiShutdownThread)) {
-                    fprintf(file,
-                            " (XFolder's Shutdown thread)\n");
-            } else if (ptib->tib_ptib2->tib2_ultid == pKernelGlobals->tidWorkplaceThread) {
-                    fprintf(file,
-                            " (PMSHELL's Workplace thread)\n");
-            } else {
+            if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiWorkerThread))
+                fprintf(file, " (XWorkplace Worker thread)");
+            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiQuickThread))
+                fprintf(file, " (XWorkplace Quick thread)");
+            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiFileThread))
+                fprintf(file, " (XWorkplace File thread)");
+            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiUpdateThread))
+                fprintf(file, " (XWorkplace Update thread)");
+            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiShutdownThread))
+                fprintf(file, " (XWorkplace Shutdown thread)");
+            else if (ptib->tib_ptib2->tib2_ultid == pKernelGlobals->tidWorkplaceThread)
+                fprintf(file, " (PMSHELL's Workplace thread)");
+            else
                 fprintf(file, " (unknown thread)");
-            }
 
             fprintf(file,
-                    "\n    Thread priority: %08X, ordinal: %04X\n",
+                    "\n    Thread priority: 0x%lX, ordinal: 0x%lX\n",
                     ptib->tib_ptib2->tib2_ulpri,
                     ptib->tib_ordinal);
         }
@@ -281,28 +281,24 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
         fprintf(file, "Thread information was not available.\n");
 
     // running XFolder threads
-    fprintf(file, "\nThe following running XFolder threads could be identified:\n");
-    fprintf(file,  "    Workplace thread ID: 0x%lX\n", pKernelGlobals->tidWorkplaceThread);
+    fprintf(file, "\nThe following running XWorkplace threads could be identified:\n");
+
+    fprintf(file,  "    PMSHELL Workplace thread ID: 0x%lX\n", pKernelGlobals->tidWorkplaceThread);
+
     if (tid = thrQueryID(pKernelGlobals->ptiWorkerThread))
-    {
-        fprintf(file,  "    XFolder Worker thread ID: 0x%lX\n",
-            tid);
-    }
+        fprintf(file,  "    XWorkplace Worker thread ID: 0x%lX (%d)\n", tid, tid);
+
     if (tid = thrQueryID(pKernelGlobals->ptiQuickThread))
-    {
-        fprintf(file,  "    XFolder Quick thread ID: 0x%lX\n",
-            tid);
-    }
+        fprintf(file,  "    XWorkplace Quick thread ID: 0x%lX (%d)\n", tid, tid);
+
+    if (tid = thrQueryID(pKernelGlobals->ptiFileThread))
+        fprintf(file,  "    XWorkplace File thread ID: 0x%lX (%d)\n", tid, tid);
+
     if (tid = thrQueryID(pKernelGlobals->ptiShutdownThread))
-    {
-        fprintf(file,  "    Shutdown thread ID: 0x%lX\n",
-            tid);
-    }
+        fprintf(file,  "    XWorkplace Shutdown thread ID: 0x%lX (%d)\n", tid, tid);
+
     if (tid = thrQueryID(pKernelGlobals->ptiUpdateThread))
-    {
-        fprintf(file,  "    Update thread ID: 0x%lX\n",
-            tid);
-    }
+        fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid);
 
 }
 
@@ -364,53 +360,6 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
     krnUnlockGlobals();
 
     return (brc);
-
-    /*
-    // We only do startup if the current process ID of the
-    // WPS is <= the one which was stored in the file
-    // "/bin/lastpid", when the WPS last started up.
-    // This happens in two situations:
-    // a)   the computer has been rebooted;
-    // b)   the "Restart WPS" function has deleted the
-    //      "lastpid" file because the user wants to have
-    //      the Startup folder processed. In this case,
-    //      we have the default 0xFFFF value from above
-    //      for the last WPS PID.;-)
-    // This will prevent the startup folder from being executed
-    // when the WPS has crashed and restarted itself.
-
-    BOOL    brc = FALSE;
-    PID     pidWPSLast = 0xFFFF, pidWPSNow;
-    CHAR    szPidWPSLast[10];
-    CHAR    szPIDFile[CCHMAXPATH];
-    PSZ     pszLastPID = "FFFF";
-
-    // get last WPS PID from "lastpid" file
-    pKernelGlobals->ulWorkerFunc2 = 1010;
-    cmnQueryXFolderBasePath(szPIDFile);
-    strcat(szPIDFile, "\\bin\\lastpid");
-    pKernelGlobals->ulWorkerFunc2 = 1020;
-    if (doshReadTextFile(szPIDFile, &pszLastPID) == NO_ERROR)
-    {
-        sscanf(pszLastPID, "%lX", &pidWPSLast);
-        free(pszLastPID);
-    }
-
-    // get current PID
-    pKernelGlobals->ulWorkerFunc2 = 1040;
-    WinQueryWindowProcess(hwndObject, &pidWPSNow, NULL);
-
-    if (pidWPSNow <= pidWPSLast)
-        brc = TRUE;
-
-    pKernelGlobals->ulWorkerFunc2 = 1050;
-    sprintf(szPidWPSLast, "%lX", pidWPSNow);
-    pKernelGlobals->ulWorkerFunc2 = 1060;
-    doshWriteTextFile(szPIDFile, szPidWPSLast,
-                        FALSE); // no backup
-    pKernelGlobals->ulWorkerFunc2 = 1070;
-
-    return (brc); */
 }
 
 /*
@@ -434,10 +383,7 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     if (pDaemonShared)
         // get the handle of the daemon's object window
         if (pDaemonShared->hwndDaemonObject)
-            brc = WinPostMsg(pDaemonShared->hwndDaemonObject,
-                             msg,
-                             mp1,
-                             mp2);
+            brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
 
     return (brc);
 }
@@ -458,7 +404,7 @@ HWND     hwndArchiveStatus = NULLHANDLE;
  *      This is needed for processing messages which must be
  *      processed on thread 1. We cannot however process these
  *      messages in the subclassed folder frame wnd proc
- *      (fnwpSubclassedFolderFrame in folder.c),
+ *      (fdr_fnwpSubclassedFolderFrame in folder.c),
  *      because adding user messages to that wnd proc could
  *      conflict with default WPFolder messages or those of
  *      some other WPS enhancer, and we can also never be
@@ -484,10 +430,11 @@ HWND     hwndArchiveStatus = NULLHANDLE;
  *      for every folder view that is opened, because sometimes
  *      folder views do _not_ run on thread 1 and manipulating
  *      frame controls from thread 1 would then hang the PM.
- *      See fnwpSupplObject in filesys\folder.c for details.
+ *      See fdr_fnwpSupplFolderObject in filesys\folder.c for details.
  *
  *@@changed V0.9.0 [umoeller]: T1M_QUERYXFOLDERVERSION message handling
  *@@changed V0.9.0 [umoeller]: T1M_OPENOBJECTFROMHANDLE added
+ *@@changed V0.9.1 (99-12-19) [umoeller]: added "show Desktop menu" to T1M_OPENOBJECTFROMHANDLE
  */
 
 MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -497,7 +444,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
     switch(msg)
     {
         /*
-         * T1M_BEGINSTARTUP:
+         *@@ T1M_BEGINSTARTUP:
          *      this is an XFolder msg posted by the Worker thread after
          *      the Desktop has been populated; this performs initialization
          *      of the Startup folder process, which will then be further
@@ -536,7 +483,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         // get last window position from INI
                         winhRestoreWindowPos(hwndStartupStatus,
                                              HINI_USER,
-                                             INIAPP_XFOLDER, INIKEY_WNDPOSSTARTUP,
+                                             INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
                                              // move only, no resize
                                              SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
                         #ifdef DEBUG_STARTUP
@@ -567,7 +514,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break; }
 
         /*
-         * T1M_POCCALLBACK:
+         *@@ T1M_POCCALLBACK:
          *      this msg is posted from the Worker thread whenever
          *      a callback func needs to be called during those
          *      "process ordered content" (POC) functions (initiated by
@@ -575,10 +522,10 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
          *      have the callback func run on the folder's thread.
          *
          *      Parameters:
-         *          PPROCESSCONTENTINFO mp1
+         *      --  PPROCESSCONTENTINFO mp1:
          *                          structure with all the information;
          *                          this routine must set the hwndView field
-         *          MPARAM mp2      always NULL
+         *      --  mp2: always NULL.
          */
 
         case T1M_POCCALLBACK:
@@ -594,7 +541,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break; }
 
         /*
-         * T1M_BEGINQUICKOPEN:
+         *@@ T1M_BEGINQUICKOPEN:
          *      this is posted by the Worker thread after the startup
          *      folder has been processed; we will now go for the
          *      "Quick Open" folders by populating them and querying
@@ -633,7 +580,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     {
                         fWorkToDo = TRUE;
                         // if we have any quick-open folders: go
-                        if (pGlobalSettings->ShowStartupProgress) {
+                        if (pGlobalSettings->ShowStartupProgress)
+                        {
                             PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                             hwndQuickStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
                                                          fnwpQuickOpenDlg,
@@ -645,7 +593,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
                             winhRestoreWindowPos(hwndQuickStatus,
                                         HINI_USER,
-                                        INIAPP_XFOLDER, INIKEY_WNDPOSSTARTUP,
+                                        INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP,
                                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
                             #ifdef DEBUG_STARTUP
                                 DosBeep(2000, 1000);
@@ -700,7 +648,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     {
                         winhSaveWindowPos(hwndQuickStatus,
                                           HINI_USER,
-                                          INIAPP_XFOLDER, INIKEY_WNDPOSSTARTUP);
+                                          INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
                         WinDestroyWindow(hwndQuickStatus);
                     }
                 }
@@ -744,12 +692,12 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break; }
 
         /*
-         * T1M_LIMITREACHED:
+         *@@ T1M_LIMITREACHED:
          *      this is posted by cmnAppendMi2List when too
          *      many menu items are in use, i.e. the user has
          *      opened a zillion folder content menus; we
          *      will display a warning dlg, which will also
-         *      destroy the open menu
+         *      destroy the open menu.
          */
 
         case T1M_LIMITREACHED:
@@ -770,7 +718,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break; }
 
         /*
-         * T1M_EXCEPTIONCAUGHT:
+         *@@ T1M_EXCEPTIONCAUGHT:
          *      this is posted from the various XFolder threads
          *      when something trapped; it is assumed that
          *      mp1 is a PSZ to an error msg allocated with
@@ -804,7 +752,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break; }
 
         /*
-         * T1M_QUERYXFOLDERVERSION:
+         *@@ T1M_QUERYXFOLDERVERSION:
          *      this msg may be send to the XFolder object
          *      window from external programs to query the
          *      XFolder version number which is currently
@@ -829,7 +777,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break; }
 
         /*
-         * T1M_EXTERNALSHUTDOWN:
+         *@@ T1M_EXTERNALSHUTDOWN:
          *      this msg may be posted to the XFolder object
          *      window from external programs to initiate
          *      the eXtended shutdown. mp1 is assumed to
@@ -837,7 +785,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
          *      a SHUTDOWNPARAMS structure.
          */
 
-        case T1M_EXTERNALSHUTDOWN:
+        case T1M_EXTERNALSHUTDOWN: // ###
         {
 /*             PSHUTDOWNPARAMS psdp = (PSHUTDOWNPARAMS)mp1;
             if ((ULONG)mp2 != 1234)
@@ -859,11 +807,11 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 // second call
                 xsdInitiateShutdownExt(psdp);
                 DosFreeMem(psdp);
-            } */ // xxx
+            } */
         break; }
 
         /*
-         * T1M_DESTROYARCHIVESTATUS:
+         *@@ T1M_DESTROYARCHIVESTATUS:
          *      this gets posted from arcCheckIfBackupNeeded,
          *      which gets called from krnInitializeXWorkplace
          *      with the handle of this object wnd and this message ID.
@@ -883,7 +831,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         break;
 
         /*
-         * T1M_OPENOBJECTFROMHANDLE:
+         *@@ T1M_OPENOBJECTFROMHANDLE:
          *      this can be posted to the thread-1 object
          *      window from anywhere to have an object
          *      opened in its default view. As opposed to
@@ -896,7 +844,13 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
          *      -- HOBJECT mp1: object handle to open.
          *              The following "special objects" exist:
          *              0xFFFF0000: show window list.
-         *      -- mp2: not used, always 0.
+         *              0xFFFF0001: show Desktop's context menu.
+         *      -- ULONG mp2: corner reached;
+         *                  1 = lower left,
+         *                  2 = top left,
+         *                  3 = lower right,
+         *                  4 = top right;
+         *                  0 = no corner.
          */
 
         case T1M_OPENOBJECTFROMHANDLE:
@@ -939,13 +893,49 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                        MPFROM2SHORT(CMDSRC_MENU,
                                                     TRUE));
                         break;
+
+                        case 0xFFFF0001:
+                        {
+                            // show Desktop's context menu V0.9.1 (99-12-19) [umoeller]
+                            WPDesktop* pActiveDesktop = _wpclsQueryActiveDesktop(_WPDesktop);
+                            HWND hwndFrame = _wpclsQueryActiveDesktopHWND(_WPDesktop);
+                            if ((pActiveDesktop) && (hwndFrame))
+                            {
+                                HWND hwndClient = wpshQueryCnrFromFrame(hwndFrame);
+                                POINTL ptlPopup = { 0, 0 }; // default: lower left
+                                switch ((ULONG)mp2)
+                                {
+                                    // corner reached:
+                                    case 2: // top left
+                                        ptlPopup.x = 0;
+                                        ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+                                    break;
+
+                                    case 3: // lower right
+                                        ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+                                        ptlPopup.y = 0;
+                                    break;
+
+                                    case 4: // top right
+                                        ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+                                        ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+                                    break;
+                                }
+                                _wpDisplayMenu(pActiveDesktop,
+                                               hwndFrame,       // owner
+                                               hwndClient,
+                                               &ptlPopup,
+                                               MENU_OPENVIEWPOPUP,
+                                               0);      // reserved
+                            }
+                        break; }
                     }
                 }
             }
         break;
 
         /*
-         * T1M_DAEMONREADY:
+         *@@ T1M_DAEMONREADY:
          *      posted by the XWorkplace daemon after it has
          *      successfully created its object window. The
          *      thread-1 object window will then send XDM_HOOKINSTALL
@@ -1122,7 +1112,7 @@ MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mpNow, MPAR
     else
     {
         // NULL: last object, close window
-        winhSaveWindowPos(hwndStatus, HINI_USER, INIAPP_XFOLDER, INIKEY_WNDPOSSTARTUP);
+        winhSaveWindowPos(hwndStatus, HINI_USER, INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
         WinDestroyWindow(hwndStatus);
         // and notify File thread to go on
         xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
@@ -1229,6 +1219,142 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
  ********************************************************************/
 
 /*
+ *@@ krnShowStartupDlgs:
+ *      this gets called from krnInitializeXWorkplace
+ *      to show dialogs while the WPS is starting up.
+ *
+ *      If XWorkplace has just been installed, we show
+ *      an introductory message that "Shift" will show
+ *      the "panic" dialog.
+ *
+ *      If "Shift" is currently pressed, we'll show the
+ *      "Panic" dialog.
+ *
+ *@@added V0.9.1 (99-12-18) [umoeller]
+ */
+
+VOID krnShowStartupDlgs(VOID)
+{
+    ULONG   cbData = 0;
+
+    // check if XWorkplace was just installed
+    if (PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
+                           INIKEY_JUSTINSTALLED,
+                           0x123) != 0x123)
+    {
+        // yes: explain the "Panic" feature
+        cmnMessageBoxMsg(HWND_DESKTOP,
+                         121,       // "XWorkplace"
+                         159,       // "press shift for panic"
+                         MB_OK);
+    }
+
+    /*
+     * convert XFolder settings
+     *
+     */
+
+    if (PrfQueryProfileSize(HINI_USER,
+                            INIAPP_XWORKPLACE, INIKEY_GLOBALSETTINGS,
+                            &cbData)
+            == FALSE)
+    {
+        // XWorkplace keys do _not_ exist:
+        // check if we have old XFolder settings
+        if (PrfQueryProfileSize(HINI_USER,
+                                INIAPP_OLDXFOLDER, INIKEY_GLOBALSETTINGS,
+                                &cbData))
+        {
+            if (cmnMessageBoxMsg(HWND_DESKTOP,
+                                 121,       // "XWorkplace"
+                                 160,       // "convert?"
+                                 MB_YESNO)
+                    == MBID_YES)
+            {
+                // yes, convert:
+                // copy application from "XFolder" to "XWorkplace"
+                prfhCopyApp(HINI_USER,
+                            INIAPP_OLDXFOLDER,      // source
+                            HINI_USER,
+                            INIAPP_XWORKPLACE,
+                            NULL);
+                // reload
+                cmnLoadGlobalSettings(FALSE);
+            }
+        }
+    }
+
+    /*
+     * "Panic" dlg
+     *
+     */
+
+    if (doshQueryShiftState())
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // shift pressed: show "panic" dialog
+        HWND    hwndPanic = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                                       WinDefDlgProc,
+                                       cmnQueryNLSModuleHandle(FALSE),
+                                       ID_XFD_STARTUPPANIC,
+                                       NULL);
+
+        winhCenterWindow(hwndPanic);
+
+        // disable items which are irrelevant
+        WinEnableControl(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
+                          pGlobalSettings->BootLogo);
+        WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
+                          pGlobalSettings->fReplaceArchiving);
+        WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
+                          pGlobalSettings->fReplaceIcons);
+
+        if (WinProcessDlg(hwndPanic) == DID_OK)
+        {
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
+                ThreadGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
+                ThreadGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
+                ThreadGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
+            {
+                PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
+                // disable "check archives" flag
+                pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
+            }
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
+            {
+                GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
+                pGlobalSettings2->fReplaceIcons = FALSE;
+                cmnUnlockGlobalSettings();
+                cmnStoreGlobalSettings();
+            }
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
+            {
+                cmnLoadGlobalSettings(TRUE);        // reset defaults
+                cmnStoreGlobalSettings();
+            }
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
+                PrfWriteProfileData(HINI_USER,
+                                    INIAPP_XWPHOOK,
+                                    INIKEY_HOOK_HOTKEYS,
+                                    0, 0);      // delete INI key
+        }
+        else
+        {
+            // "Shutdown" pressed:
+            WinShutdownSystem(WinQueryAnchorBlock(HWND_DESKTOP),
+                              WinQueryWindowULong(HWND_DESKTOP, QWL_HMQ));
+            while (TRUE)
+                DosSleep(1000);
+        }
+
+        WinDestroyWindow(hwndPanic);
+    }
+}
+
+/*
  *@@ krnInitializeXWorkplace:
  *      this gets called from M_XFldObject::wpclsInitData
  *      when the WPS is initializing. See remarks there.
@@ -1288,6 +1414,7 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
  *@@changed V0.9.0 [umoeller]: added dialog for shift key during WPS startup
  *@@changed V0.9.0 [umoeller]: added XWorkplace daemon/hook
  *@@changed V0.9.0 [umoeller]: added WPS archiving
+ *@@changed V0.9.1 (99-12-19) [umoeller]: added NumLock at startup
  */
 
 VOID krnInitializeXWorkplace(VOID)
@@ -1314,58 +1441,8 @@ VOID krnInitializeXWorkplace(VOID)
         // plain WPObject* pointers)
         ThreadGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
 
-        if (doshQueryShiftState())
-        {
-            // shift pressed: show "panic" dialog
-            HWND    hwndPanic = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                                           WinDefDlgProc,
-                                           cmnQueryNLSModuleHandle(FALSE),
-                                           ID_XFD_STARTUPPANIC,
-                                           NULL);
-            winhCenterWindow(hwndPanic);
-            if (WinProcessDlg(hwndPanic) == DID_OK)
-            {
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
-                    ThreadGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
-                    ThreadGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
-                    ThreadGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
-                {
-                    PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
-                    // disable "check archives" flag
-                    pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
-                }
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
-                {
-                    GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
-                    pGlobalSettings2->fReplaceIcons = FALSE;
-                    cmnUnlockGlobalSettings();
-                    cmnStoreGlobalSettings();
-                }
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
-                {
-                    cmnLoadGlobalSettings(TRUE);        // reset defaults
-                    cmnStoreGlobalSettings();
-                }
-                if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
-                    PrfWriteProfileData(HINI_USER,
-                                        INIAPP_XWPHOOK,
-                                        INIKEY_HOOK_HOTKEYS,
-                                        0, 0);      // delete INI key
-            }
-            else
-            {
-                // "Shutdown" pressed:
-                WinShutdownSystem(WinQueryAnchorBlock(HWND_DESKTOP),
-                                  WinQueryWindowULong(HWND_DESKTOP, QWL_HMQ));
-                while (TRUE)
-                    DosSleep(1000);
-            }
-
-            WinDestroyWindow(hwndPanic);
-        }
+        // if shift is pressed, show "Panic" dialog
+        krnShowStartupDlgs();
 
         // create main object window
         WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
@@ -1389,6 +1466,14 @@ VOID krnInitializeXWorkplace(VOID)
             DebugBox("XFolder: Error",
                     "XFolder failed to create the XFolder Workplace object window.");
     }
+
+    /*
+     *  enable NumLock at startup
+     *      V0.9.1 (99-12-19) [umoeller]
+     */
+
+    if (pGlobalSettings->fNumLockStartup)
+        winhSetNumLock(TRUE);
 
     /*
      *  initialize threads
@@ -1416,9 +1501,10 @@ VOID krnInitializeXWorkplace(VOID)
         //    This happens after a WPS restart. We'll then
         //    skip the rest.
         // -- If requesting the shared memory fails, this means
-        //    that the daemon is _not_ running. We then allocate
-        //    the shared memory and start the daemon, which in
-        //    turn requests this shared memory block.
+        //    that the daemon is _not_ running (the WPS is started
+        //    for the first time). We then allocate the shared
+        //    memory and start the daemon, which in turn requests
+        //    this shared memory block.
 
         PDAEMONSHARED pDaemonShared = 0;
         APIRET arc = DosGetNamedSharedMem((PVOID*)&pDaemonShared,
@@ -1433,7 +1519,8 @@ VOID krnInitializeXWorkplace(VOID)
         {
             BOOL    fDaemonStarted = FALSE;
 
-            // shared mem does not exist: probably first WPS
+            // shared mem does not exist:
+            // --> daemon not running; probably first WPS
             // startup, so we allocate the shared mem now and
             // start the XWorkplace daemon
             arc = DosAllocSharedMem((PVOID*)&pDaemonShared,
@@ -1490,15 +1577,18 @@ VOID krnInitializeXWorkplace(VOID)
 
                     ThreadGlobals.happDaemon = WinStartApp(ThreadGlobals.hwndThread1Object, // hwndNotify,
                                                            &pd,
-                                                           "-D",           // params
+                                                           "-D", // params; otherwise the daemon
+                                                                 // displays a msg box
                                                            NULL,
                                                            0);// no SAF_INSTALLEDCMDLINE,
                     if (ThreadGlobals.happDaemon)
+                        // success:
                         fDaemonStarted = TRUE;
                 }
             } // end if DosAllocSharedMem
 
             if (!fDaemonStarted)
+                // error:
                 DebugBox("XWorkplace",
                          "The XWorkplace daemon (XWPDAEMON.EXE) could not be started.");
         } // end if DosGetNamedSharedMem
@@ -1525,7 +1615,8 @@ VOID krnInitializeXWorkplace(VOID)
                     // this returns only after the hook has been re-initialized
             }
             // we leave the "reuse startup folder" flag alone,
-            // because this was set by XShutdown during WPS restart
+            // because this was already set by XShutdown before
+            // the last WPS restart
         }
 
         ThreadGlobals.pDaemonShared = pDaemonShared;

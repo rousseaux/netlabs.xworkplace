@@ -19,7 +19,7 @@
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.
- *      The implementation for this class is in filesys\classlst.c.
+ *      The implementation for this class is in config\classlst.c.
  *
  *      Installation of this class is optional.
  *
@@ -293,27 +293,13 @@ SOM_Scope BOOL  SOMLINK xwlist_wpModifyPopupMenu(XWPClassList *somSelf,
     XWPClassListMethodDebug("XWPClassList","xwlist_wpModifyPopupMenu");
 
     if (XWPClassList_parent_WPAbstract_wpModifyPopupMenu(somSelf,
-                                                             hwndMenu,
-                                                             hwndCnr,
-                                                             iPosition))
-    {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        MENUITEM mi;
-        // get handle to the "Open" submenu in the
-        // the folder's popup menu
-        WinSendMsg(hwndMenu,
-                   MM_QUERYITEM,
-                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                   (MPARAM)&mi);
-        // mi.hwndSubMenu now contains "Open" submenu handle,
-        // which we add items to now
-        winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST),
-                           pNLSStrings->pszOpenClassList,
-                           MIS_TEXT, 0);
-        return (TRUE);
-    }
+                                                         hwndMenu,
+                                                         hwndCnr,
+                                                         iPosition))
+        return (cllModifyPopupMenu(somSelf,
+                                   hwndMenu,
+                                   hwndCnr,
+                                   iPosition));
     else
         return (FALSE);
 }
@@ -329,22 +315,13 @@ SOM_Scope BOOL  SOMLINK xwlist_wpMenuItemSelected(XWPClassList *somSelf,
                                                   ULONG ulMenuId)
 {
     BOOL brc = TRUE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XWPClassListData *somThis = XWPClassListGetData(somSelf); */
     XWPClassListMethodDebug("XWPClassList","xwlist_wpMenuItemSelected");
 
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST))
-    {
-        // "Open" --> "Class list":
-        // wpViewObject will call wpOpen if a new view is necessary
-        _wpViewObject(somSelf,
-                      NULLHANDLE,   // hwndCnr; "WPS-internal use only", IBM says
-                      ulMenuId,     // ulView; must be the same as menu item
-                      0);           // parameter passed to wpOpen
-        brc = TRUE; // processed
-    }
-    else
+    brc = cllMenuItemSelected(somSelf, hwndFrame, ulMenuId);
+
+    if (!brc)
         // not our menu item (maybe settings): call parent
         brc = XWPClassList_parent_WPAbstract_wpMenuItemSelected(somSelf,
                                                                 hwndFrame,

@@ -34,8 +34,11 @@
 #include <os2.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "setup.h"
+
 #include "netscdde.h"
-#pragma  linkage (main,optlink)
+#include "dlgids.h"
 
 void            ShowMessage(PSZ);
 MRESULT EXPENTRY fnwpMain(HWND, ULONG, MPARAM, MPARAM);
@@ -43,6 +46,9 @@ MRESULT EXPENTRY fnwpMain(HWND, ULONG, MPARAM, MPARAM);
 HAB             hab;
 HWND            hwndDebug, hwndListbox, hServerWnd = NULLHANDLE;
 PFNWP           SysWndProc;
+
+// NLS Resource DLL
+HMODULE     hmodNLS = NULLHANDLE;
 
 CHAR            szURL[400] = "";
 
@@ -74,7 +80,7 @@ HWND            hwndContacting = NULLHANDLE;
  *      The window should not be visible to avoid flickering.
  */
 
-void            CenterWindow(HWND hwnd)
+void CenterWindow(HWND hwnd)
 {
     RECTL           rclParent;
     RECTL           rclWindow;
@@ -101,13 +107,21 @@ ULONG WinCenteredDlgBox(HWND hwndParent,
                         ULONG idDlg,
                         PVOID pCreateParams)
 {
-    ULONG           ulReply;
+    ULONG           ulReply = DID_CANCEL;
     HWND            hwndDlg = WinLoadDlg(hwndParent, hwndOwner, pfnDlgProc,
                                          hmod, idDlg, pCreateParams);
 
-    CenterWindow(hwndDlg);
-    ulReply = WinProcessDlg(hwndDlg);
-    WinDestroyWindow(hwndDlg);
+    if (hwndDlg)
+    {
+        CenterWindow(hwndDlg);
+        ulReply = WinProcessDlg(hwndDlg);
+        WinDestroyWindow(hwndDlg);
+    }
+    else
+        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                        "Error loading dlg", "NetscDDE",
+                        0, MB_OK | MB_MOVEABLE);
+
     return (ulReply);
 }
 
@@ -123,9 +137,77 @@ VOID ExplainParams(VOID)
 {
     WinCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
                       WinDefDlgProc,
-                      NULLHANDLE,
+                      hmodNLS,
                       ID_NDD_EXPLAIN,
                       NULL);
+}
+
+/*
+ *@@ LoadNLS:
+ *      NetscDDE NLS interface.
+ *
+ *@@added V0.9.1 (99-12-19) [umoeller]
+ */
+
+BOOL LoadNLS(VOID)
+{
+    CHAR        szNLSDLL[2*CCHMAXPATH];
+    BOOL Proceed = TRUE;
+
+    if (PrfQueryProfileString(HINI_USER,
+                              "XWorkplace",
+                              "XFolderPath",
+                              "",
+                              szNLSDLL, sizeof(szNLSDLL)) < 3)
+
+    {
+        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                      "NetscapeDDE was unable to determine the location of the "
+                      "XWorkplace National Language Support DLL, which is "
+                      "required for operation. The OS2.INI file does not contain "
+                      "this information. "
+                      "NetscapeDDE cannot proceed. Please re-install XWorkplace.",
+                      "NetscapeDDE: Fatal Error",
+                      0, MB_OK | MB_MOVEABLE);
+        Proceed = FALSE;
+    }
+    else
+    {
+        CHAR    szLanguageCode[50] = "";
+
+        // now compose module name from language code
+        PrfQueryProfileString(HINI_USERPROFILE,
+                              "XWorkplace", "Language",
+                              "001",
+                              (PVOID)szLanguageCode,
+                              sizeof(szLanguageCode));
+        strcat(szNLSDLL, "\\bin\\xfldr");
+        strcat(szNLSDLL, szLanguageCode);
+        strcat(szNLSDLL, ".dll");
+
+        // try to load the module
+        if (DosLoadModule(NULL,
+                          0,
+                          szNLSDLL,
+                          &hmodNLS))
+        {
+            CHAR    szMessage[2000];
+            sprintf(szMessage,
+                    "NetscapeDDE was unable to load \"%s\", "
+                    "the National Language DLL which "
+                    "is specified for XWorkplace in OS2.INI.",
+                    szNLSDLL);
+            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                          szMessage,
+                          "Treesize: Fatal Error",
+                          0, MB_OK | MB_MOVEABLE);
+            Proceed = FALSE;
+        }
+
+        _Pmpf(("Loaded %s --> hmodNLS 0x%lX", szNLSDLL, hmodNLS));
+    }
+
+    return (Proceed);
 }
 
 /*
@@ -147,189 +229,197 @@ int main(int argc,
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return FALSE;
 
-    // parse parameters on cmd line
-    if (argc > 1)
-    {
-        SHORT           i = 0;
-
-        while (i++ < argc - 1)
-        {
-            if (argv[i][0] == '-')
-            {
-                SHORT           i2;
-
-                for (i2 = 1; i2 < strlen(argv[i]); i2++)
-                {
-                    switch (argv[i][i2])
-                    {
-                        case 'n':
-                            optNewWindow = TRUE;
-                            break;
-
-                        case 'x':
-                            optExecute = FALSE;
-                            break;
-
-                        case 'm':
-                            optMinimized = TRUE;
-                            break;
-
-                        case 'h':
-                            optHidden = TRUE;
-                            break;
-
-                        case 'X':
-                            optConfirmStart = FALSE;
-                            break;
-
-                        case 'p':   // netscape path
-
-                            if (i < argc)
-                            {
-                                strcpy(szNetscapeApp, argv[i + 1]);
-                                i++;
-                                i2 = 1000;
-                            }
-                            else
-                            {
-                                ExplainParams();
-                                Proceed = FALSE;
-                            }
-                            break;
-
-                        case 'P':   // netscape parameters
-
-                            if (i < argc)
-                            {
-                                strcpy(szNetscapeParams, argv[i + 1]);
-                                i++;
-                                i2 = 1000;
-                            }
-                            else
-                            {
-                                ExplainParams();
-                                Proceed = FALSE;
-                            }
-                            break;
-
-                        case 'D':   // debug, show list box window w/ DDE msgs
-
-                            optDebug = TRUE;
-                            break;
-
-                        default:    // unknown parameter
-
-                            ExplainParams();
-                            Proceed = FALSE;
-                            break;
-                    }
-                }
-            }
-            else
-            {
-                // no option ("-"): seems to be URL
-                if (strchr(argv[i], ' '))
-                {
-                    // if the URL contains spaces, we enclose it in quotes
-                    sprintf(szURL, "\"%s\"", argv[i]);
-                }
-                else
-                    strcpy(szURL, argv[i]);
-            }
-        }
-    }
-
-    if (strlen(szURL) == 0)
-    {
-        // no URL given: explain
-        ExplainParams();
-        Proceed = FALSE;
-    }
+    // now attempt to find the XWorkplace NLS resource DLL,
+    // which we need for all resources (new with XWP 0.9.0)
+    Proceed = LoadNLS();
 
     if (Proceed)
     {
-        // OK, parameters seemed to be correct:
-        // create the main window, which is only
-        // visible in Debug mode ("-D" param). But
-        // even if not in debug mode, this window is
-        // used for DDE message processing.
-        fcd.cb = sizeof(FRAMECDATA);
-        fcd.flCreateFlags = FCF_TITLEBAR |
-            FCF_SYSMENU |
-            FCF_MENU |
-            FCF_SIZEBORDER |
-            FCF_SHELLPOSITION |
-            FCF_MINMAX |
-            FCF_TASKLIST;
-
-        fcd.hmodResources = NULLHANDLE;
-        // set our resource key (so PM can find menus, icons, etc).
-        fcd.idResources = DDEC;
-        // create the frame
-        hwndDebug = WinCreateWindow(HWND_DESKTOP,
-                                    WC_FRAME,
-                                    "Netscape DDE",
-                                    0, 0, 0, 0, 0,
-                                    NULLHANDLE,
-                                    HWND_TOP,
-                                    DDEC,
-                                    &fcd,
-                                    NULL);
-
-        if (!hwndDebug)
-            return FALSE;
-
-        // set the NetscDDE icon for the frame window
-        WinSendMsg(hwndDebug,
-                   WM_SETICON,
-                   (MPARAM) WinLoadPointer(HWND_DESKTOP, NULLHANDLE,
-                                           ID_ICON),
-                   NULL);
-
-        // create a list window child
-        hwndListbox = WinCreateWindow(hwndDebug,
-                                      WC_LISTBOX,
-                                      NULL,
-                                      LS_HORZSCROLL,
-                                      0, 0, 0, 0,
-                                      hwndDebug,
-                                      HWND_BOTTOM,
-                                      FID_CLIENT,
-                                      NULL,
-                                      NULL);
-
-        // we must intercept the frame window's messages;
-        // we save the return value (the current WndProc),
-        // so we can pass it all the other messages the frame gets.
-        SysWndProc = WinSubclassWindow(hwndDebug, (PFNWP) fnwpMain);
-
-        // the window we just created is normally invisible; we
-        // will only display it if the (undocumented) "-D" option
-        // was given on the command line.
-        if (optDebug)
-            WinShowWindow(hwndDebug, TRUE);
-
-        // now show "Contacting Netscape"
-        hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
-                                    WinDefDlgProc,
-                                    0, ID_NDD_CONTACTING,
-                                    0);
-
-        WinShowWindow(hwndContacting, TRUE);
-
-        // now post msg to main window to initiate DDE
-        WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_INITIATE, 0), 0);
-
-        //  standard PM message loop
-        while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+        // parse parameters on cmd line
+        if (argc > 1)
         {
-            WinDispatchMsg(hab, &qmsg);
-        }
-    }                           // end if (proceed)
+            SHORT           i = 0;
 
-    // clean up on the way out
-    if (hwndContacting)
-        WinDestroyWindow(hwndContacting);
+            while (i++ < argc - 1)
+            {
+                if (argv[i][0] == '-')
+                {
+                    SHORT           i2;
+
+                    for (i2 = 1; i2 < strlen(argv[i]); i2++)
+                    {
+                        switch (argv[i][i2])
+                        {
+                            case 'n':
+                                optNewWindow = TRUE;
+                                break;
+
+                            case 'x':
+                                optExecute = FALSE;
+                                break;
+
+                            case 'm':
+                                optMinimized = TRUE;
+                                break;
+
+                            case 'h':
+                                optHidden = TRUE;
+                                break;
+
+                            case 'X':
+                                optConfirmStart = FALSE;
+                                break;
+
+                            case 'p':   // netscape path
+
+                                if (i < argc)
+                                {
+                                    strcpy(szNetscapeApp, argv[i + 1]);
+                                    i++;
+                                    i2 = 1000;
+                                }
+                                else
+                                {
+                                    ExplainParams();
+                                    Proceed = FALSE;
+                                }
+                                break;
+
+                            case 'P':   // netscape parameters
+
+                                if (i < argc)
+                                {
+                                    strcpy(szNetscapeParams, argv[i + 1]);
+                                    i++;
+                                    i2 = 1000;
+                                }
+                                else
+                                {
+                                    ExplainParams();
+                                    Proceed = FALSE;
+                                }
+                                break;
+
+                            case 'D':   // debug, show list box window w/ DDE msgs
+
+                                optDebug = TRUE;
+                                break;
+
+                            default:    // unknown parameter
+
+                                ExplainParams();
+                                Proceed = FALSE;
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    // no option ("-"): seems to be URL
+                    if (strchr(argv[i], ' '))
+                    {
+                        // if the URL contains spaces, we enclose it in quotes
+                        sprintf(szURL, "\"%s\"", argv[i]);
+                    }
+                    else
+                        strcpy(szURL, argv[i]);
+                }
+            }
+        }
+
+        if (strlen(szURL) == 0)
+        {
+            // no URL given: explain
+            ExplainParams();
+            Proceed = FALSE;
+        }
+
+        if (Proceed)
+        {
+            // OK, parameters seemed to be correct:
+            // create the main window, which is only
+            // visible in Debug mode ("-D" param). But
+            // even if not in debug mode, this window is
+            // used for DDE message processing.
+            fcd.cb = sizeof(FRAMECDATA);
+            fcd.flCreateFlags = FCF_TITLEBAR |
+                FCF_SYSMENU |
+                FCF_MENU |
+                FCF_SIZEBORDER |
+                FCF_SHELLPOSITION |
+                FCF_MINMAX |
+                FCF_TASKLIST;
+
+            fcd.hmodResources = NULLHANDLE;
+            // set our resource key (so PM can find menus, icons, etc).
+            fcd.idResources = DDEC;
+            // create the frame
+            hwndDebug = WinCreateWindow(HWND_DESKTOP,
+                                        WC_FRAME,
+                                        "Netscape DDE",
+                                        0, 0, 0, 0, 0,
+                                        NULLHANDLE,
+                                        HWND_TOP,
+                                        DDEC,
+                                        &fcd,
+                                        NULL);
+
+            if (!hwndDebug)
+                return FALSE;
+
+            // set the NetscDDE icon for the frame window
+            WinSendMsg(hwndDebug,
+                       WM_SETICON,
+                       (MPARAM)WinLoadPointer(HWND_DESKTOP, hmodNLS,
+                                              ID_ND_ICON),
+                       NULL);
+
+            // create a list window child
+            hwndListbox = WinCreateWindow(hwndDebug,
+                                          WC_LISTBOX,
+                                          NULL,
+                                          LS_HORZSCROLL,
+                                          0, 0, 0, 0,
+                                          hwndDebug,
+                                          HWND_BOTTOM,
+                                          FID_CLIENT,
+                                          NULL,
+                                          NULL);
+
+            // we must intercept the frame window's messages;
+            // we save the return value (the current WndProc),
+            // so we can pass it all the other messages the frame gets.
+            SysWndProc = WinSubclassWindow(hwndDebug, (PFNWP) fnwpMain);
+
+            // the window we just created is normally invisible; we
+            // will only display it if the (undocumented) "-D" option
+            // was given on the command line.
+            if (optDebug)
+                WinShowWindow(hwndDebug, TRUE);
+
+            // now show "Contacting Netscape"
+            hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
+                                        WinDefDlgProc,
+                                        hmodNLS, ID_NDD_CONTACTING,
+                                        0);
+
+            WinShowWindow(hwndContacting, TRUE);
+
+            // now post msg to main window to initiate DDE
+            WinPostMsg(hwndDebug, WM_COMMAND, MPFROM2SHORT(IDM_INITIATE, 0), 0);
+
+            //  standard PM message loop
+            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+            {
+                WinDispatchMsg(hab, &qmsg);
+            }
+        }                           // end if (proceed)
+
+        // clean up on the way out
+        if (hwndContacting)
+            WinDestroyWindow(hwndContacting);
+    }
+
     WinDestroyMsgQueue(hmq);
     WinTerminate(hab);
 
@@ -596,7 +686,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                             || (WinCenteredDlgBox(HWND_DESKTOP,
                                                   hwndDebug,
                                                   WinDefDlgProc,
-                                                  NULLHANDLE,
+                                                  hmodNLS,
                                                   ID_NDD_QUERYSTART,
                                                   NULL)
                                 == DID_OK)
@@ -626,7 +716,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                             hwndContacting = WinLoadDlg(HWND_DESKTOP, hwndDebug,
                                                         WinDefDlgProc,
-                                                        0, ID_NDD_STARTING,
+                                                        hmodNLS, ID_NDD_STARTING,
                                                         0);
 
                             WinShowWindow(hwndContacting, TRUE);

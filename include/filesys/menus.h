@@ -184,9 +184,6 @@
     BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,
                      MPARAM mp1, MPARAM mp2);
 
-    MRESULT EXPENTRY fnwpFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2);
-            // in folder.c
-
     /* ******************************************************************
      *                                                                  *
      *   Notebook callbacks (notebook.c) for XFldWPS "Menu" pages       *

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* ALWSSORT.CMD:
  *
  * Switches on "Always maintain sort order" for the

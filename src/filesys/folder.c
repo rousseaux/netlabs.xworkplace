@@ -11,7 +11,7 @@
  *      --  fdr*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "folder.h"
+ *@@header "filesys\folder.h"
  */
 
 /*
@@ -118,8 +118,8 @@ LINKLIST            llSubclassed;                   // changed V0.9.0
 // mutex semaphore for access to this list
 HMTX                hmtxSubclassed = NULLHANDLE;
 
-// flags for fnwpSubclassedFolderFrame;
-// these are set by fnwpFolderContentMenu.
+// flags for fdr_fnwpSubclassedFolderFrame;
+// these are set by fdr_fnwpSubclFolderContentMenu.
 // We can afford using global variables here
 // because opening menus is a modal operation.
 BOOL                fFldrContentMenuMoved = FALSE,
@@ -448,9 +448,9 @@ PFN fdrQuerySortFunc(USHORT usSort)
  */
 
 MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwnd
-                                  ULONG ulSort,     // sort flag
-                                  MPARAM mpView,    // OPEN_xxx flag
-                                  MPARAM mpFolder)  // XFolder*
+                                 ULONG ulSort,     // sort flag
+                                 MPARAM mpView,    // OPEN_xxx flag
+                                 MPARAM mpFolder)  // XFolder*
 {
     XFolder     *somSelf = (XFolder*)mpFolder;
     MRESULT     mrc = (MPARAM)FALSE;
@@ -939,7 +939,7 @@ PSUBCLASSEDLISTITEM fdrQueryPSLI(HWND hwndFrame,        // in: folder frame to f
  *
  *      Every list item contains (among other things) the
  *      original wnd proc of the subclassed window, which the
- *      subclassed wnd proc (fnwpSubclassedFolderFrame, xfldr.c)
+ *      subclassed wnd proc (fdr_fnwpSubclassedFolderFrame, xfldr.c)
  *      needs to call the the original folder wnd proc for a
  *      given frame window, because these procs might differ
  *      depending on the class or view type or installed WPS
@@ -1007,9 +1007,9 @@ PSUBCLASSEDLISTITEM fdrSubclassFolderFrame(HWND hwndFrame,
                     // now check if frame wnd has already been subclassed;
                     // just another security check
                     pfnwpCurrent = (PFNWP)WinQueryWindowPtr(hwndFrame, QWP_PFNWP);
-                    if (pfnwpCurrent != (PFNWP)fnwpSubclassedFolderFrame)
+                    if (pfnwpCurrent != (PFNWP)fdr_fnwpSubclassedFolderFrame)
                     {
-                        if (!(pfnwpOriginal = WinSubclassWindow(hwndFrame, (PFNWP)fnwpSubclassedFolderFrame)))
+                        if (!(pfnwpOriginal = WinSubclassWindow(hwndFrame, (PFNWP)fdr_fnwpSubclassedFolderFrame)))
                             // error occured subclassing:
                             DebugBox("XFolder", "Folder subclassing failed.");
                             // should never happen
@@ -1032,7 +1032,7 @@ PSUBCLASSEDLISTITEM fdrSubclassFolderFrame(HWND hwndFrame,
                             psliNew->hwndStatusBar = NULLHANDLE;
                             // create a supplementary object window
                             // for this folder frame (see
-                            // fnwpSupplObject for details)
+                            // fdr_fnwpSupplFolderObject for details)
                             psliNew->hwndSupplObject = WinCreateWindow(
                                            HWND_OBJECT,
                                            WNDCLASS_SUPPLOBJECT, // class name
@@ -1107,7 +1107,7 @@ VOID fdrRemovePSLI(PSUBCLASSEDLISTITEM psli)
 
 /*
  * CalcFrameRect:
- *      this gets called from fnwpSubclassedFolderFrame
+ *      this gets called from fdr_fnwpSubclassedFolderFrame
  *      when WM_CALCFRAMERECT is received. This implements
  *      folder status bars.
  *
@@ -1157,7 +1157,7 @@ VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
 
 /*
  * FormatFrame:
- *      this gets called from fnwpSubclassedFolderFrame
+ *      this gets called from fdr_fnwpSubclassedFolderFrame
  *      when WM_FORMATFRAME is received. This implements
  *      folder status bars.
  *
@@ -1251,7 +1251,7 @@ PFNWP   pfnwpFolderContentMenuOriginal = NULL;
 
 /*
  * InitMenu:
- *      this gets called from fnwpSubclassedFolderFrame
+ *      this gets called from fdr_fnwpSubclassedFolderFrame
  *      when WM_INITMENU is received, _after_ the parent
  *      window proc has been given a chance to process this.
  *
@@ -1432,7 +1432,7 @@ VOID InitMenu(PSUBCLASSEDLISTITEM psli, // in: frame information
 
 /*
  * MenuSelect:
- *      this gets called from fnwpSubclassedFolderFrame
+ *      this gets called from fdr_fnwpSubclassedFolderFrame
  *      when WM_MENUSELECT is received.
  *      We need this for three reasons:
  *
@@ -1478,14 +1478,14 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
     psli->ulLastSelMenuItem = SHORT1FROMMP(mp1);
 
     // check if we have moved a folder content menu
-    // (this flag is set by fnwpFolderContentMenu); for
+    // (this flag is set by fdr_fnwpSubclFolderContentMenu); for
     // some reason, PM gets confused with the menu items
     // then and automatically tries to select the menu
     // item under the mouse, so we swallow this one
     // message if (a) the folder content menu has been
-    // moved by fnwpFolderContentMenu and (b) no mouse
+    // moved by fdr_fnwpSubclFolderContentMenu and (b) no mouse
     // button is pressed. These flags are all set by
-    // fnwpFolderContentMenu.
+    // fdr_fnwpSubclFolderContentMenu.
     if (fFldrContentMenuMoved)
     {
         #ifdef DEBUG_MENUS
@@ -1595,7 +1595,7 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
 }
 
 /*
- *@@ fnwpSubclassedFolderFrame:
+ *@@ fdr_fnwpSubclassedFolderFrame:
  *          New window proc for subclassed folder frame windows.
  *          Folder frame windows are subclassed in fdrSubclassFolderFrame
  *          (which gets called from XFolder::wpOpen or XFldDisk::wpOpen
@@ -1629,7 +1629,7 @@ BOOL MenuSelect(PSUBCLASSEDLISTITEM psli, // in: frame information
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-MRESULT EXPENTRY fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     // ULONG           *pulWorkplaceFunc2 = &(pKernelGlobals->ulWorkplaceFunc2);
@@ -2157,23 +2157,23 @@ MRESULT EXPENTRY fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
 }
 
 /*
- *@@ fnwpSupplObject:
+ *@@ fdr_fnwpSupplFolderObject:
  *      this is the wnd proc for the "Supplementary Object wnd"
  *      which is created for each folder frame window when it's
  *      subclassed. We need this window to handle additional
  *      messages which are not part of the normal message set,
- *      which is handled by fnwpSubclassedFolderFrame.
+ *      which is handled by fdr_fnwpSubclassedFolderFrame.
  *
  *      This window gets created in fdrSubclassFolderFrame, when
  *      the folder frame is also subclassed.
  *
- *      If we processed additional messages in fnwpSubclassedFolderFrame,
+ *      If we processed additional messages in fdr_fnwpSubclassedFolderFrame,
  *      we'd probably ruin other WPS enhancers which might use the same
  *      message in a different context (ObjectDesktop?), so we use a
  *      different window, which we own all alone.
  *
  *      We cannot use the global XFolder object window either
- *      (fnwpThread1Object, kernel.c) because sometimes
+ *      (krn_fnwpThread1Object, kernel.c) because sometimes
  *      folder windows do not run in the main PM thread
  *      (TID 1), esp. when they're opened using WinOpenObject or
  *      REXX functions. I have found that manipulating windows
@@ -2188,7 +2188,7 @@ MRESULT EXPENTRY fnwpSubclassedFolderFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-MRESULT EXPENTRY fnwpSupplObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MPARAM mrc = NULL;
     PSUBCLASSEDLISTITEM psli = (PSUBCLASSEDLISTITEM)
@@ -2373,14 +2373,14 @@ BOOL fdrAddToList(WPFolder *somSelf,
                     }
 
                     PrfWriteProfileString(HINI_USERPROFILE,
-                                          INIAPP_XFOLDER, (PSZ)pcszIniKey,
+                                          INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
                                           szFavoriteFolders);
                 }
                 else
                 {
                     // list is empty: remove
                     PrfWriteProfileData(HINI_USERPROFILE,
-                                        INIAPP_XFOLDER, (PSZ)pcszIniKey,
+                                        INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
                                         NULL, 0);
                 }
             }
@@ -2502,7 +2502,7 @@ WPFolder* fdrEnumList(PLINKLIST pllFolders,     // in: linked list of CONTENTMEN
                 PSZ         pszFavorites;
 
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XFOLDER, (PSZ)pcszIniKey,
+                                      INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
                                       "", &szFavorites, sizeof(szFavorites));
                 pszFavorites = szFavorites;
 
@@ -2838,6 +2838,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
  *@@changed V0.9.0 [umoeller]: now using new XFolder methods to encapsulate status bar updates
  *@@changed V0.9.0 [umoeller]: adjusted to new gpihDraw3DFrame
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.1 (99-12-19) [umoeller]: finally fixed the context menu problems with MB2 right-click on status bar
  */
 
 MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3289,7 +3290,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              *      if the user right-clicks on status bar,
              *      display folder's context menu. Parameters:
              *      mp1:
-             *          POINTS mp1      pointer position
+             *          POINTS mp1      pointer position, win coords
              *      mp2:
              *          USHORT usReserved  should be 0
              *          USHORT fPointer    if TRUE: results from keyboard
@@ -3300,33 +3301,15 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                 if (psbd->psli)
                 {
                     POINTL  ptl;
-                    HWND    hwndFolderView = WinQueryWindow(hwndBar, QW_PARENT);
-                    WinSetFocus(HWND_DESKTOP, psbd->psli->hwndCnr);
-                    // give the cnr source emphasis
-                    // (needed for some wpSelectingMenu funcs)
-                    WinSendMsg(psbd->psli->hwndCnr,
-                                CM_SETRECORDEMPHASIS,
-                                (MPARAM)NULL,   // undocumented: if precc == NULL,
-                                                // the whole cnr is given emphasis
-                                MPFROM2SHORT(TRUE,  // set emphasis
-                                        CRA_SOURCE));
 
-                    ptl.x = SHORT1FROMMP(mp1)-30;
-                    ptl.y = SHORT2FROMMP(mp1);
+                    ptl.x = SHORT1FROMMP(mp1);
+                    ptl.y = SHORT2FROMMP(mp1)-20; // this is in cnr coords!
                     _wpDisplayMenu(psbd->somSelf,
-                                hwndFolderView, // owner
-                                hwndFolderView, // parent
-                                &ptl,
-                                MENU_OPENVIEWPOPUP, // was: MENU_OBJECTPOPUP, V0.9.0
-                                0);
-
-
-                    /// xxx there's still a problem with submenus
-
-                    // set flag so that the fnwpSubclassedFolderFrame
-                    // can remove the cnr source emphasis after the
-                    // menu has been terminated
-                    psbd->psli->fRemoveSrcEmphasis = TRUE;
+                                   psbd->psli->hwndFrame, // hwndFolderView, // owner
+                                   psbd->psli->hwndCnr, // NULLHANDLE, // hwndFolderView, // parent
+                                   &ptl,
+                                   MENU_OPENVIEWPOPUP, // was: MENU_OBJECTPOPUP, V0.9.0
+                                   0);
                 }
             break; }
 
@@ -3353,7 +3336,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
 }
 
 /*
- *@@ fnwpFolderContentMenu:
+ *@@ fdr_fnwpSubclFolderContentMenu:
  *      this is the subclassed wnd proc for folder content menus;
  *      we need to intercept mouse button 2 msgs to open a folder
  *      (WarpCenter behavior).
@@ -3364,7 +3347,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-MRESULT EXPENTRY fnwpFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     // ULONG       *pulWorkplaceFunc2 = &(pKernelGlobals->ulWorkplaceFunc2);
@@ -3405,7 +3388,7 @@ MRESULT EXPENTRY fnwpFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPA
                             #endif
                             // avoid several changes for this menu;
                             // this flag is reset by WM_INITMENU in
-                            // fnwpSubclassedFolderFrame
+                            // fdr_fnwpSubclassedFolderFrame
                             fFldrContentMenuMoved = TRUE;
                             fAdjusted = TRUE;
                         }
@@ -3418,7 +3401,7 @@ MRESULT EXPENTRY fnwpFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPA
                             #endif
                             // avoid several changes for this menu;
                             // this flag is reset by WM_INITMENU in
-                            // fnwpSubclassedFolderFrame
+                            // fdr_fnwpSubclassedFolderFrame
                             fFldrContentMenuMoved = TRUE;
                             fAdjusted = TRUE;
                         }
@@ -3546,7 +3529,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
             // load last 10 selections from OS2.INI (V0.9.0)
             pszLast10 = prfhQueryProfileData(HINI_USER,
-                                             INIAPP_XFOLDER,
+                                             INIAPP_XWORKPLACE,
                                              INIKEY_LAST10SELECTSOME, // "SelectSome"
                                              &cbLast10);
             if (pszLast10)
@@ -3756,7 +3739,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
         if (cbToSave)
             PrfWriteProfileData(HINI_USER,
-                                INIAPP_XFOLDER,
+                                INIAPP_XWORKPLACE,
                                 INIKEY_LAST10SELECTSOME, // "SelectSome"
                                 pszToSave,
                                 cbToSave);
@@ -3905,7 +3888,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_TREEVIEWAUTOSCROLL,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                 (    (pGlobalSettings->NoWorkerThread == FALSE)
                   && (pGlobalSettings->NoSubclassing == FALSE)
                 ));
@@ -4142,6 +4125,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.1 (99-12-28) [umoeller]: "snap to grid" was enabled even if disabled globally; fixed
  */
 
 VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
@@ -4195,19 +4179,23 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         // disable items
-        winhEnableDlgItem(pcnbp->hwndPage,
-                          ID_XSDI_ACCELERATORS,
-                          (    !(pGlobalSettings->NoSubclassing)
-                            && (pGlobalSettings->fEnableFolderHotkeys)
-                          ));
+        WinEnableControl(pcnbp->hwndPage,
+                         ID_XSDI_ACCELERATORS,
+                         (    !(pGlobalSettings->NoSubclassing)
+                           && (pGlobalSettings->fEnableFolderHotkeys)
+                         ));
 
-        winhEnableDlgItem(pcnbp->hwndPage,
-                          ID_XSDI_ENABLESTATUSBAR,
-                          // always disable for Desktop
-                          (   (pcnbp->somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
-                           && (!(pGlobalSettings->NoSubclassing))
-                           && (pGlobalSettings->fEnableStatusBars)
-                          ));
+        WinEnableControl(pcnbp->hwndPage,
+                         ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
+                         (pGlobalSettings->fEnableSnap2Grid));
+
+        WinEnableControl(pcnbp->hwndPage,
+                         ID_XSDI_ENABLESTATUSBAR,
+                         // always disable for Desktop
+                         (   (pcnbp->somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
+                          && (!(pGlobalSettings->NoSubclassing))
+                          && (pGlobalSettings->fEnableStatusBars)
+                         ));
     }
 }
 

@@ -1,5 +1,3 @@
-# $Id$ 
-
 !if [@echo ***** $(MAKEDIR)\makefile: Entering]
 !endif
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* */
 /*  RAISEBLD.CMD (new with V1.00):
  *      this little script reads in the "build.h" file

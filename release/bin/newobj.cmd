@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* NEWOBJ.CMD
  *
  * See the XFolder Online Reference for a description of what this

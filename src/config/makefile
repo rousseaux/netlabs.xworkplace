@@ -1,5 +1,3 @@
-# $Id$ 
-
 #
 # makefile:
 #       makefile for src/main directory.
@@ -133,7 +131,8 @@ $(OUTPUTDIR)\cfgsys.obj: \
 
 $(OUTPUTDIR)\classlst.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
+            $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\threads.h \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \
     $(INC)\classes\xclslist.ih \
@@ -141,14 +140,15 @@ $(OUTPUTDIR)\classlst.obj: \
 
 $(OUTPUTDIR)\drivdlgs.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\winh.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\hookintf.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \

@@ -19,6 +19,18 @@
 #           As a result, there is NORMALLY NO NEED to modify this
 #           file. Set external variables instead (see MAKE.CMD for
 #           a list).
+#
+#       After including this file, you can use the following macros,
+#       which will all be properly set for debug or non-debug mode
+#       and with the include directories set properly:
+#
+#       $(CC_DLL)    compile DLL code (multi-threaded)
+#       $(CC_EXE)    compile EXE code (multi-threaded)
+#       $(CC_EXE_ST) compile EXE code (single-threaded)
+#
+#       $(LINK)      call linker (ILINK.EXE per default)
+#
+#       $(RC)        call resource compiler
 
 !ifndef PROJECT_BASE_DIR
 !error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
@@ -27,17 +39,21 @@
 # DEBUG CODE
 # ----------
 
-# If XWPDEBUG is set to anything, we will produce debug code.
-# Otherwise, release code will be produced, and all debugging
-# #define's in include\setup.h will automagically be disabled.
-# This overrides the environment variable which you might have set
-# in MAKE.CMD.
+# If DEBUG is set to anything, the following is enabled:
 #
-# Also, if XWPDEBUG is on, the compiler settings below will be
-# changed to use debug heaps for detecting memory leaks. Also,
-# this will compile extra heap checking functions into XWorkplace.
+# -- The compiler flags below will be changed to produce debug
+#    code. Otherwise, release code will be produced.
+#
+# -- __DEBUG__ will be #define'd in all source files.
+#    include\setup.h reacts to that and redefines a number of
+#    debugging macros.
+#
+# -- The compiler settings below will be changed to use debug
+#    heaps for detecting memory leaks. Also, this will compile
+#    extra heap checking functions into XWorkplace.
+#    This will slow down XWorkplace's performance SIGNIFICANTLY.
 
-XWPDEBUG=YES
+# DEBUG=YES
 
 
 # DYNAMIC TRACE
@@ -71,12 +87,14 @@ XWPDEBUG=YES
 XWPRUNNING = J:\Tools\WPS\XWorkplace
 !endif
 
+
 # RUNNING XWORKPLACE
 # ------------------
 
 !ifndef XWPRELEASE
-XWPRELEASE = K:\projects\distrib\XFolder\current
+XWPRELEASE = K:\projects\distrib\XWorkplace\current.cpl
 !endif
+
 
 # HELPERS DIRECTORIES
 # -------------------
@@ -169,26 +187,28 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classe
 # ----------------
 
 # Compiler macro. This is used for each .OBJ file to be created.
-# If the XWPDEBUG environment variable was set to anything, we
+# If the DEBUG environment variable was set to anything, we
 # will use debugging compiler options.
-# XWPDEBUG is set by MAKE.CMD or above.
+# DEBUG is set by MAKE.CMD or above.
 #
 # No need to change this. Change the variables above instead.
 
 CC = error_in_setup_in_do_not_use_CC_directly
 
-!ifdef XWPDEBUG
+!ifdef DEBUG
 # debug code
-CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /gm+ /q+ /se /ss /o- /oi- /ol- /ti+ /tm+ /tn+ /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru /Wuse- /D__XWPDEBUG__=1
+CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /o- /oi- /ol- /ti+ /tm+ /tn+ /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru /Wuse- /D__DEBUG__=1
 !else
 # release code
-CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /gm+ /q+ /se /ss /o+ /oi- /ol- /Tn+ /W2
+CC_TEMP      = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /o+ /oi- /ol- /Tn+ /W2
 !endif
 
 # DLL code
-CC_DLL = $(CC_TEMP) /ge-
-# EXE code
-CC_EXE = $(CC_TEMP) /ge+
+CC_DLL = $(CC_TEMP) /ge- /gm+
+# EXE code (multi-threaded)
+CC_EXE = $(CC_TEMP) /ge+ /gm+
+# EXE code (single-threaded)
+CC_EXE_ST = $(CC_TEMP) /ge+ /gm-
 
 # compiler options for WarpIN helpers;
 # this is necessary because WarpIN uses a different compiler
@@ -251,7 +271,7 @@ CC_HELPERS = $(CC_DLL)
 
 LINK_BASE = ilink /nologo /noe /map:$(OUTPUTDIR)\$(@B).map /linenumbers
 
-!ifdef XWPDEBUG
+!ifdef DEBUG
 LINK =  $(LINK_BASE) /linenumbers /debug
 !else
 LINK =  $(LINK_BASE) /optfunc /exepack:2

@@ -27,9 +27,4 @@
 #define IDM_CHAIN2          112
 #define IDM_CHAIN3          113
 
-#define ID_NDD_EXPLAIN      200
-#define ID_NDD_QUERYSTART   201
-#define ID_NDD_CONTACTING   202
-#define ID_NDD_STARTING     203
 
-#define ID_ICON             1000

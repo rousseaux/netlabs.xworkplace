@@ -1,5 +1,3 @@
-# $Id$ 
-
 #
 # makefile:
 #       makefile for src/main directory.
@@ -98,9 +96,9 @@ $(OUTPUTDIR)\exes\xwpdaemn.obj: \
     $(@B).c $(MYOWNINC)\xwphook.h
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
-        $(CC_EXE) -I$(INCLUDE) /Fo$(OUTPUTDIR)\exes\$(@B).obj $(@B).c
+        $(CC_EXE_ST) -I$(INCLUDE) /Fo$(OUTPUTDIR)\exes\$(@B).obj $(@B).c
 !else
-        $(CC_EXE) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\exes\$(@B).obj $(@B).c
+        $(CC_EXE_ST) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\exes\$(@B).obj $(@B).c
 !endif
 
 $(OUTPUTDIR)\exes\xwpdaemn.res: *.ico $(@B).rc

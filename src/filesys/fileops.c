@@ -11,7 +11,7 @@
  *      --  fops*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "fileops.h"
+ *@@header "filesys\fileops.h"
  */
 
 /*
@@ -161,13 +161,13 @@ MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                     // store focus
                     sprintf(szLastFocusID, "%d",
                             ulLastFocusID);
-                    PrfWriteProfileString(HINI_USER, INIAPP_XFOLDER,
+                    PrfWriteProfileString(HINI_USER, INIAPP_XWORKPLACE,
                                           INIKEY_NAMECLASHFOCUS,
                                           szLastFocusID);
                     // store window pos
                     winhSaveWindowPos(hwndDlg,
                                 HINI_USER,
-                                INIAPP_XFOLDER, INIKEY_WNDPOSNAMECLASH);
+                                INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH);
                     WinDismissDlg(hwndDlg, ulSelection);
                 break; }
 
@@ -479,7 +479,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
 
                 // find the selection the user has made last time;
                 // this INI key item is maintained by fnwpTitleClashDlg above
-                ulLastFocusID = PrfQueryProfileInt(HINI_USER, INIAPP_XFOLDER,
+                ulLastFocusID = PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
                                     INIKEY_NAMECLASHFOCUS,
                                     ID_XFDI_CLASH_RENAMENEWTXT); // default value if not set
 
@@ -490,9 +490,9 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                      || (pobjExisting == _wpQueryFolder(somSelf))
                    )
                 {
-                    winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
-                    winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
-                    winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
+                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
+                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
                     // if the last focus is one of the disabled items,
                     // change it
                     if (   (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
@@ -504,7 +504,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                 {
                     // disable "Replace" for "Rename" mode; this is
                     // not allowed
-                    winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
                     // if the last focus is one of the disabled items,
                     // change it
                     if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
@@ -519,7 +519,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                 // *** go!
                 winhRestoreWindowPos(hwndConfirm,
                         HINI_USER,
-                        INIAPP_XFOLDER, INIKEY_WNDPOSNAMECLASH,
+                        INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
                         // move only, no resize
                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
                 ulDlgReturn = WinProcessDlg(hwndConfirm);

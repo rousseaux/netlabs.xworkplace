@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* XWorkplace installation program
    (C) 1998-99 Ulrich M”ller */
 

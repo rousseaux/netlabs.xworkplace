@@ -6,17 +6,27 @@
 ; appear mostly in the new XWorkplace message boxes (cmnMessageBox in
 ; common.c also).
 ;
-; Required changes: Look at each line after the message identifier in
-; angle brackets) and translate only that part.
-; Do not change the beginning of each line, and do not insert
-; additional line breaks, because these will confuse XWorkplace.
+; Required changes: Look at each line after the message identifier (in
+; angle brackets) and translate only that part. Beware of line breaks,
+; as these messages will normally be formatted by XWorkplace. Inserting
+; line breaks will cause _additional_ line breaks to be displayed.
 ;
-; This file used to be XFLDR001.TXT in versions before 1.00.
+; This file used to be XFLDR001.TXT in versions before 0.9.0.
 ; This no longer requires MKMSGF.EXE from the toolkit to be
 ; compiled. Instead, XWorkplace compiles this file on the fly
-; into the extended attributes of this file.
+; into the extended attributes of this file. XWorkplace is smart
+; enough to find out whether this file has changed and will
+; automatically recompile it.
+;
 ; The format of this file has slightly changed. We now use
-; the angle-bracket syntax, as seen below.
+; the angle-bracket syntax, as seen below. Whatever is in angle
+; brackets at the beginning of a line will be used by XWorkplace
+; to find the corresponding message, which must follow. If you
+; change the identifiers, XWorkplace can no longer find the message!
+;
+; Also, make sure to keep all those "%1" etc. stuff in place,
+; because those placeholders will be replaced at run-time with
+; variable information.
 ;
 ;       Copyright (C) 1997-99 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
@@ -111,12 +121,12 @@
 <--XFL0139-->: The class "%1" is currently replaced by the class "%2". You must undo this replacement before this class can be deregistered.
 
 ;
-; the following items have changed with V1.00
+; the following items have changed with V0.9.0
 
 <--XFL0140-->: XWorkplace is free software. The full source code is available from the author's homepage in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GNU General Public License (GPL). XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the COPYING file in the XWorkplace installation directory.
 
 ;
-; the following items are new with V1.00
+; the following items are new with V0.9.0
 
 <--XFL0141-->: This will create an object of the class "%1" named "%2" on the Desktop. Warning: Some WPS classes were not designed to have objects created of them, and some may cause trouble with your system configuration only. Continue anyway?
 
@@ -164,10 +174,55 @@ Are you sure you want to do this?
 
 <--XFL0158-->: The XWorkplace Hook has now been deinstalled. Object hotkeys and mouse movement features are no longer available in the "Keyboard" and "Mouse" settings objects.
 
-; Here follow the toolinfos for the new IBM1S506/DANIS506.ADD dialog (OS/2 Kernel).
+;
+; the following items have been added with V0.9.1
+;
+
+<--XFL0159-->: Welcome to XWorkplace. The Workplace Shell is now starting up with XWorkplace installed for the first time.
+
+Initially, all XWorkplace settings are disabled, so WPS startup should cause no problems at this point.
+
+If you run into any trouble with XWorkplace, e.g. should the system hang upon startup, press Ctrl+Alt+Del to restart the system.
+
+When the WPS is starting up the next time, hold down the "Shift" key. This will cause XWorkplace to display a "Panic" dialog where you can disable certain XWorkplace features.
+
+Press "OK" to continue WPS startup now. This message will not be shown again.
+
+<--XFL0160-->: No settings for XWorkplace exist in your OS2.INI file. However, settings for an older XFolder version were found.
+
+XWorkplace can now convert your old XFolder settings so that you don't have to reconfigure everything. In that case, XWorkplace will initially behave just like your existing XFolder version. Your old XFolder settings will not be changed, so you can re-install XFolder instead of XWorkplace later.
+
+If you don't want this, all XWorkplace features will initially be disabled.
+
+Do you wish to have your old XFolder settings converted for XWorkplace?
+
+<--XFL0161-->: This will create the XWorkplace Configuration Folder in the XWorkplace installation folder or, if that folder does not exist, on your Desktop.
+
+Do you wish to continue?
+
+<--XFL0162-->: Are you sure you wish to remove the hotkey "%1" for the object "%2"?
+
+<--XFL0163-->: This will create the object "%1" on the Desktop with the setup string "%2".
+
+Do you wish to continue?
+
+<--XFL0164-->: The object was successfully created on your Desktop.
+
+<--XFL0165-->: Error: The object could not be created. Make sure you have the corresponding WPS class installed.
+
+<--XFL0166-->: You have selected to enable the extended system sounds, but the additional XWorkplace system sounds have not been installed in the "Sound" object yet. Do you wish to have this done now?
+
+<--XFL0167-->: You have selected to disable the extended system sounds. Do you wish to remove the additional XWorkplace system sounds from the "Sound" object?
+
+; ---------------------------------------------------------------------------------
+;
+; Here follow the toolinfos (fly-over help) for the new IBM1S506/DANIS506.ADD dialog
+; in "OS/2 Kernel".
 ; Each item starts with "S506DLG_", followed by the dialog ID from include\dlgids.h.
 ; NOTE: The internal string buffer for these messages is limited to 3000 characters,
 ;       so no string may exceed this value.
+;
+; ---------------------------------------------------------------------------------
 
 <--S506DLG_1621-->: "Quiet" means that the driver will produce no output at all during system startup. This is the default.
 
@@ -362,20 +417,17 @@ Availability: DANIS506.ADD only.
 
 <--S506DLG_0095-->: Pressing "All defaults" will reset the dialog to a default state, as if no driver parameters had been specified in CONFIG.SYS.
 
+; ---------------------------------------------------------------------------------
 ;
-; Here follow the toolinfos for the new "Features" page (XWPSetup).
+; Here follow the toolinfos (fly-over help) for the new "Features" page (XWPSetup).
 ; Each item starts with "FEATURES_", followed by the dialog ID from include\dlgids.h.
 ; NOTE: The internal string buffer for these messages is limited to 3000 characters,
 ;       so no string may exceed this value.
+;
+; ---------------------------------------------------------------------------------
 
 <--FEATURES_6000-->: If "Replace icons" is enabled, XWorkplace will replace the WPS default icons with prettier ones (in my view, that is). Those icons are freely configurable.
 This was new with XFolder 0.84.
-See the XWorkplace User Guide for details.
-<--FEATURES_6001-->: The "XWorkplace Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
-Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.
-Also, the XWorkplace Hook is required for global object hotkeys to work.
-If this is enabled, you'll get additional settings pages in the "Keyboard" and "Mouse" objects in your "System setup" folder.
-This is new with XWorkplace 0.9.0.
 See the XWorkplace User Guide for details.
 <--FEATURES_6002-->: If "Add Object page..." is enabled, a new "Object" page will be added to the settings notebooks of all objects on your system.
 On that page, you can view object internals and set a global hotkey for an object, if the XWorkplace Hook is also enabled.
@@ -387,9 +439,6 @@ This is new with XWorkplace 0.9.0.
 You'll get additional sounds for context menus, object selections, and more.
 You can set up those new sounds in the regular "Sound" object, as usual.
 This was new with XFolder 0.70.
-<--FEATURES_6005-->: "Animated mouse pointers" replaces the "Pointers" page in the "Mouse" object (in your "System Setup" folder) with a new page which allows you to define animated mouse pointers, instead of the default static ones of OS/2.
-This feature used to be in the separate "Animated Mouse Pointers for OS/2" program, but is now part of XWorkplace 0.9.0.
-See the XWorkplace User Guide for details.
 
 <--FEATURES_6011-->: If "Enable status bars" is checked, you may configure folders to show status bars with detailed information for the selected objects in a folder.
 If this is enabled, you'll get two additional settings pages in XWorkplace's "Workplace Shell" object, which allow you to configure status bars in detail.
@@ -406,6 +455,18 @@ See the XWorkplace User Guide for details and the default hotkeys setup.
 Also, this introduces new sort criteria, such as "Sort by extension" or "Sort folders first".
 This was new with XFolder 0.70.
 See the XWorkplace User Guide for details.
+
+<--FEATURES_6051-->: The "XWorkplace Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
+Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.
+Also, the XWorkplace Hook is required for global object hotkeys to work.
+If this is enabled, you'll get additional settings pages in the "Keyboard" and "Mouse" objects in your "System setup" folder.
+This is new with XWorkplace 0.9.0.
+See the XWorkplace User Guide for details.
+<--FEATURES_6052-->: "Animated mouse pointers" replaces the "Pointers" page in the "Mouse" object (in your "System Setup" folder) with a new page which allows you to define animated mouse pointers, instead of the default static ones of OS/2.
+This feature used to be in the separate "Animated Mouse Pointers for OS/2" program, but is now part of XWorkplace 0.9.0.
+See the XWorkplace User Guide for details.
+<--FEATURES_6053-->: This setting determines whether the NumLock key will be enabled automatically at WPS startup, since IBM does not seem to be willing to ever implement this feature.
+This is new with XWorkplace V0.9.1.
 
 <--FEATURES_6021-->: This replaces the "Archives" page in the Desktop's settings notebook. If this is enabled, you can define precise conditions for whether the Workplace Shell should be backed up automatically -- instead of just being able to enable or disable archiving altogether.
 This functionality used to be in the separate "WPSArcO" program, but is now part of XWorkplace 0.9.0, and can be configured more easily.
@@ -439,11 +500,15 @@ This includes pressing the "Del" key and selecting the "Delete" context menu ite
 This requires that the XWPTrashCan class is installed and that you have created the trash can object.
 This is new with XWorkplace 0.9.1.
 
+; ---------------------------------------------------------------------------------
 ;
-; Here follow the toolinfos for the new "XWorkplace Classes" dialog (XWPSetup).
+; Here follow the toolinfos (fly-over help) for the new "XWorkplace Classes" dialog
+; (XWPSetup).
 ; Each item starts with "XWPCLS_", followed by the dialog ID from include\dlgids.h.
 ; NOTE: The internal string buffer for these messages is limited to 3000 characters,
 ;       so no string may exceed this value.
+;
+; ---------------------------------------------------------------------------------
 
 <--XWPCLS_1251-->: "XFldObject" is the XWorkplace replacement for the WPObject class and is required for XWorkplace's operation. This cannot be deselected.
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* DEFDETLS.CMD
  *
  * Change current directory's default view to Details view.

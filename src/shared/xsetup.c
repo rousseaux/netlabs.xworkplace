@@ -4,7 +4,7 @@
  *      this file contains the implementation of the XWPSetup
  *      class.
  *
- *@@header "xsetup.h"
+ *@@header "shared\xsetup.h"
  */
 
 /*
@@ -67,6 +67,8 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
+
+#include "config\sound.h"               // XWPSound implementation
 
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -364,7 +366,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             pxwpc->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
                                                  COMCTL_TOOLTIP_CLASS, // wnd class
                                                  "",            // window text
-                                                 TTS_SHADOW | TTS_ROUNDED | TTS_ALWAYSTIP, // window style, ignored except for TTS_* flags
+                                                 XWP_TOOLTIP_STYLE,
+                                                      // tooltip window style (common.h)
                                                  10, 10, 10, 10,    // window pos and size, ignored
                                                  hwndDlg,       // owner window -- important!
                                                  HWND_TOP,      // hwndInsertBehind, ignored
@@ -421,13 +424,13 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             BOOL fXFolder = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFOLDER);
             BOOL fXFldDesktop = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDESKTOP);
 
-            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
+            WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
 
-            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
+            WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
 
-            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
+            WinEnableControl(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
                                 fXFolder && fXFldDesktop);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
                                 fXFolder && fXFldDesktop);
@@ -998,6 +1001,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             if (pxwpcOld->pszTooltipString)
                 free(pxwpcOld->pszTooltipString);
 
+            WinDestroyWindow(pxwpcOld->hwndTooltip);
+
             // free two XWPCLASSES structures
             free(pxwpcOld);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -1251,9 +1256,8 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (strncmp(szOldLanguageCode, cmnQueryLanguageCode(), 3) != 0)
                 {
                     // enforce reload of resource DLL
-                    if (cmnQueryNLSModuleHandle(
-                                TRUE        // reload flag
-                       ) == NULLHANDLE)
+                    if (cmnQueryNLSModuleHandle(TRUE)    // reload flag
+                             == NULLHANDLE)
                     {
                         // error occured loading the module: restore
                         //   old language
@@ -1261,7 +1265,8 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // update display
                         (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
                     }
-                    else {
+                    else
+                    {
                         HWND      hwndSystemFrame,
                                   hwndCurrent = pcnbp->hwndPage;
                         HWND      hwndDesktop = WinQueryDesktopWindow(
@@ -1269,21 +1274,21 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         // "closing system window"
                         cmnMessageBoxMsg(pcnbp->hwndPage,
-                                        // set the page as the owner, so the
-                                        // user cannot switch pages any more
-                                102, 103,
-                                MB_OK);
+                                         102, 103,
+                                         MB_OK);
 
                         // find frame window handle of "Workplace Shell" window
-                        while ((hwndCurrent) && (hwndCurrent != hwndDesktop)) {
+                        while ((hwndCurrent) && (hwndCurrent != hwndDesktop))
+                        {
                             hwndSystemFrame = hwndCurrent;
                             hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
                         }
+
                         if (hwndCurrent)
                             WinPostMsg(hwndSystemFrame,
-                                WM_SYSCOMMAND,
-                                (MPARAM)SC_CLOSE,
-                                MPFROM2SHORT(0, 0));
+                                       WM_SYSCOMMAND,
+                                       (MPARAM)SC_CLOSE,
+                                       MPFROM2SHORT(0, 0));
                     }
                 } // end if (strcmp(szOldLanguageCode, szLanguageCode) != 0)
             } // end if (usNotifyCode == LN_SELECT)
@@ -1299,6 +1304,8 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      XWPSetup "Status" page.
  *      This gets called every two seconds to update
  *      variable data on the page.
+ *
+ *@@changed V0.9.1 (99-12-29) [umoeller]: added "WPS restarts" field
  */
 
 VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1321,9 +1328,9 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PRCPROCESS       prcp;
         // WPS thread count
         prcQueryProcessInfo(ppib->pib_ulpid, &prcp);
-        sprintf(szTemp, "%d", prcp.usThreads);
-        WinSetDlgItemText(pcnbp->hwndPage, ID_XCDI_INFO_WPSSTHREADS,
-                        szTemp);
+        WinSetDlgItemShort(pcnbp->hwndPage, ID_XCDI_INFO_WPSTHREADS,
+                           prcp.usThreads,
+                           FALSE);  // unsigned
 
         // Worker thread status
         tid = thrQueryID(pKernelGlobals->ptiWorkerThread);
@@ -1357,6 +1364,11 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PSZ         psz = "Disabled";
         if (pDaemonShared)
         {
+            // WPS restarts V0.9.1 (99-12-29) [umoeller]
+            WinSetDlgItemShort(pcnbp->hwndPage, ID_XCDI_INFO_WPSRESTARTS,
+                               pDaemonShared->ulWPSStartupCount,
+                               FALSE);  // unsigned
+
             if (pDaemonShared->fHookInstalled)
                 psz = "Loaded, OK";
             else
@@ -1364,6 +1376,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         }
         WinSetDlgItemText(pcnbp->hwndPage, ID_XCDI_INFO_HOOKSTATUS,
                           psz);
+
     }
 }
 
@@ -1375,16 +1388,36 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
 /*
  *@@ FEATURESITEM:
- *
+ *      structure used for feature checkboxes
+ *      on the "Features" page. Each item
+ *      represents one record in the container.
  */
 
 typedef struct _FEATURESITEM
 {
     USHORT  usFeatureID;
+                // string ID (dlgids.h, *.rc file in NLS DLL) for feature;
+                // this also identifies the item for processing
     USHORT  usParentID;
+                // string ID of the parent record or null if root record.
+                // If you specify a parent record, this must appear before
+                // the child record in FeaturesItemsList.
     ULONG   ulStyle;
+                // style flags for the record; OR the following:
+                // -- WS_VISIBLE: record is visible
+                // -- BS_AUTOCHECKBOX: give the record a checkbox
+                // For parent records (without checkboxes), use 0 only.
     PSZ     pszNLSString;
+                // resolved NLS string; this must be NULL initially.
 } FEATURESITEM, *PFEATURESITEM;
+
+/*
+ * FeatureItemsList:
+ *      array of FEATURESITEM which are inserted into
+ *      the container on the "Features" page.
+ *
+ *added V0.9.1 (99-12-19) [umoeller]
+ */
 
 FEATURESITEM FeatureItemsList[] =
         {
@@ -1393,14 +1426,17 @@ FEATURESITEM FeatureItemsList[] =
             ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XSYSTEMSOUNDS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_XWPHOOK, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_ANIMOUSE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             ID_XCSI_FOLDERFEATURES, 0, 0, NULL,
             ID_XCSI_ENABLESTATUSBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_ENABLESNAP2GRID, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
+            ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
+            ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_NUMLOCKON, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
             ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1462,16 +1498,19 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 = (PCHECKBOXRECORDCORE)cnrhAllocRecords(hwndFeaturesCnr,
                                                         sizeof(CHECKBOXRECORDCORE),
                                                         cRecords);
-            // insert feature records
+            // insert feature records:
+            // start for-each-record loop
             preccThis = pFeatureRecordsList;
             ul = 0;
             while (preccThis)
             {
+                // load NLS string for feature
                 cmnLoadString(hab,
                               hmodNLS,
-                              FeatureItemsList[ul].usFeatureID,
-                              &(FeatureItemsList[ul].pszNLSString));
+                              FeatureItemsList[ul].usFeatureID, // in: string ID
+                              &(FeatureItemsList[ul].pszNLSString)); // out: NLS string
 
+                // copy FEATURESITEM to record core
                 preccThis->ulStyle = FeatureItemsList[ul].ulStyle;
                 preccThis->usItemID = FeatureItemsList[ul].usFeatureID;
                 preccThis->usCheckState = 0;        // unchecked
@@ -1479,6 +1518,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
                 preccParent = NULL;
 
+                // find parent record if != 0
                 if (FeatureItemsList[ul].usParentID)
                 {
                     // parent specified:
@@ -1502,6 +1542,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                   NULL,
                                   CRA_RECORDREADONLY,
                                   1);
+
                 // next record
                 preccThis = (PCHECKBOXRECORDCORE)preccThis->recc.preccNextRecord;
                 ul++;
@@ -1512,19 +1553,19 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         if (ctlRegisterTooltip(WinQueryAnchorBlock(pcnbp->hwndPage)))
         {
             // create tooltip
-            HWND hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
-                                               COMCTL_TOOLTIP_CLASS, // wnd class
-                                               "",            // window text
-                                               TTS_SHADOW | TTS_ROUNDED | TTS_ALWAYSTIP,
-                                                    // window style, ignored except for TTS_* flags
-                                               10, 10, 10, 10,    // window pos and size, ignored
-                                               pcnbp->hwndPage, // owner window -- important!
-                                               HWND_TOP,      // hwndInsertBehind, ignored
-                                               DID_TOOLTIP, // window ID, optional
-                                               NULL,          // control data
-                                               NULL);         // presparams
+            pcnbp->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
+                                                 COMCTL_TOOLTIP_CLASS, // wnd class
+                                                 "",            // window text
+                                                 XWP_TOOLTIP_STYLE,
+                                                      // tooltip window style (common.h)
+                                                 10, 10, 10, 10,    // window pos and size, ignored
+                                                 pcnbp->hwndPage, // owner window -- important!
+                                                 HWND_TOP,      // hwndInsertBehind, ignored
+                                                 DID_TOOLTIP, // window ID, optional
+                                                 NULL,          // control data
+                                                 NULL);         // presparams
 
-            if (hwndTooltip)
+            if (pcnbp->hwndTooltip)
             {
                 // tooltip successfully created:
                 // add tools (i.e. controls of the dialog)
@@ -1537,13 +1578,13 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 ti.lpszText = LPSTR_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 // add cnr as tool to tooltip control
                 ti.uId = hwndFeaturesCnr;
-                WinSendMsg(hwndTooltip,
+                WinSendMsg(pcnbp->hwndTooltip,
                            TTM_ADDTOOL,
                            (MPARAM)0,
                            &ti);
 
                 // set timers
-                WinSendMsg(hwndTooltip,
+                WinSendMsg(pcnbp->hwndTooltip,
                            TTM_SETDELAYTIME,
                            (MPARAM)TTDT_AUTOPOP,
                            (MPARAM)(40*1000));        // 40 secs for autopop (hide)
@@ -1557,14 +1598,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->fReplaceIcons);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ADDOBJECTPAGE,
                 pGlobalSettings->AddObjectPage);
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
-                pGlobalSettings->fEnableXWPHook);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
                 pGlobalSettings->fReplaceFilePage);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 pGlobalSettings->fXSystemSounds);
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
-                pGlobalSettings->fAniMouse);
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
                 pGlobalSettings->fEnableStatusBars);
@@ -1576,6 +1613,13 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->ExtFolderSort);
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_MONITORCDROMS,
            //      pGlobalSettings->MonitorCDRoms);
+
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
+                pGlobalSettings->fAniMouse);
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
+                pGlobalSettings->fEnableXWPHook);
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_NUMLOCKON,
+                pGlobalSettings->fNumLockStartup);
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
                 pGlobalSettings->fReplaceArchiving);
@@ -1658,11 +1702,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         case ID_XCSI_REPLACEICONS:
             pGlobalSettings->fReplaceIcons = ulExtra;
-            break;
+        break;
 
         case ID_XCSI_ADDOBJECTPAGE:
             pGlobalSettings->AddObjectPage = ulExtra;
-            break;
+        break;
 
         case ID_XCSI_XWPHOOK:
         {
@@ -1683,20 +1727,31 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         fShowHookDeinstalled = TRUE;
                 }
             }
-            break;
-        }
+        break; }
 
         case ID_XCSI_REPLACEFILEPAGE:
             pGlobalSettings->fReplaceFilePage = ulExtra;
-            break;
+        break;
 
         case ID_XCSI_XSYSTEMSOUNDS:
             pGlobalSettings->fXSystemSounds = ulExtra;
-            break;
+            // check if sounds are to be installed or de-installed:
+            if (sndAddtlSoundsInstalled() != ulExtra)
+                if (cmnMessageBoxMsg(pcnbp->hwndPage,
+                                     148,       // "XWorkplace Setup"
+                                     (ulExtra)
+                                        ? 166   // "install?"
+                                        : 167,  // "de-install?"
+                                     MB_YESNO)
+                        == MBID_YES)
+                {
+                    sndInstallAddtlSounds(ulExtra);
+                }
+        break;
 
         case ID_XCSI_ANIMOUSE:
             pGlobalSettings->fAniMouse = ulExtra;
-            break;
+        break;
 
         case ID_XCSI_ENABLESTATUSBARS:
             pGlobalSettings->fEnableStatusBars = ulExtra;
@@ -1707,25 +1762,30 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // and open settings notebooks
             ntbUpdateVisiblePage(NULL,   // all somSelf's
                                  SP_XFOLDER_FLDR);
-            break;
+        break;
 
         case ID_XCSI_ENABLESNAP2GRID:
             pGlobalSettings->fEnableSnap2Grid = ulExtra;
             // update open settings notebooks
             ntbUpdateVisiblePage(NULL,   // all somSelf's
                                  SP_XFOLDER_FLDR);
-            break;
+        break;
 
         case ID_XCSI_ENABLEFOLDERHOTKEYS:
             pGlobalSettings->fEnableFolderHotkeys = ulExtra;
             // update open settings notebooks
             ntbUpdateVisiblePage(NULL,   // all somSelf's
                                  SP_XFOLDER_FLDR);
-            break;
+        break;
 
         case ID_XCSI_EXTFOLDERSORT:
             pGlobalSettings->ExtFolderSort = ulExtra;
-            break;
+        break;
+
+        case ID_XCSI_NUMLOCKON:
+            pGlobalSettings->fNumLockStartup = ulExtra;
+            winhSetNumLock(ulExtra);
+        break;
 
         /* case ID_XCSI_MONITORCDROMS:
             pGlobalSettings->MonitorCDRoms = ulExtra;
@@ -1733,18 +1793,18 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_ARCHIVING:
             pGlobalSettings->fReplaceArchiving = ulExtra;
-            break;
+        break;
 
         case ID_XCSI_RESTARTWPS:
             pGlobalSettings->fRestartWPS = ulExtra;
-            break;
+        break;
 
         case ID_XCSI_XSHUTDOWN:
             pGlobalSettings->fXShutdown = ulExtra;
             // update "Desktop" menu page
             ntbUpdateVisiblePage(NULL,   // all somSelf's
                                  SP_DTP_MENUITEMS);
-            break;
+        break;
 
         case ID_XCSI_EXTASSOCS:
             pGlobalSettings->fExtAssocs = ulExtra;
@@ -1752,7 +1812,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (ulExtra)
                 DebugBox("XWorkplace",
                          "Warning: Extended file associations don't work properly yet. Daily use is NOT recommended.");
-            break;
+        break;
 
         /* case ID_XCDI_IGNOREFILTERS:
             pGlobalSettings->fIgnoreFilters = ulExtra;
@@ -2035,18 +2095,20 @@ BOOL CreateObjectFromMenuID(USHORT usMenuID,        // in: selected menu item
     {
         if (pso2->usMenuID == usMenuID)
         {
-            CHAR    szMsg[3000];
             CHAR    szSetupString[2000];
+            PSZ     apsz[2] = {  pso2->pszObjectClass,
+                                 szSetupString
+                              };
             sprintf(szSetupString, "%sOBJECTID=%s",
                     pso2->pszSetupString,       // can be empty or ";"-terminated string
                     pso2->pszDefaultID);
-            sprintf(szMsg, "This will create the object \"%s\" on the Desktop "
-                           "with the setup string \"%s\". "
-                           "Are you sure you want to do this?",
-                           pso2->pszObjectClass,
-                           szSetupString);
-            if (cmnMessageBox(HWND_DESKTOP, "XWorkplace Setup", szMsg, MB_YESNO)
-                == MBID_YES)
+            if (cmnMessageBoxMsgExt(HWND_DESKTOP,
+                                    148, // "XWorkplace Setup",
+                                    apsz,
+                                    2,
+                                    163,        // "create object?"
+                                    MB_YESNO)
+                         == MBID_YES)
             {
                 HOBJECT hobj;
                 hobj = WinCreateObject(pso2->pszObjectClass,       // class
@@ -2055,12 +2117,15 @@ BOOL CreateObjectFromMenuID(USHORT usMenuID,        // in: selected menu item
                                        "<WP_DESKTOP>",
                                        CO_FAILIFEXISTS);
                 if (hobj)
-                    sprintf(szMsg,
-                            "Object successfully created, handle: 0x%lX.",
-                            hobj);
+                    cmnMessageBoxMsg(HWND_DESKTOP,
+                                     148, // "XWorkplace Setup",
+                                     164, // "success"
+                                     MB_OK);
                 else
-                    strcpy(szMsg, "Object creation failed.");
-                cmnMessageBox(HWND_DESKTOP, "XWorkplace Setup", szMsg, MB_OK);
+                    cmnMessageBoxMsg(HWND_DESKTOP,
+                                     148, // "XWorkplace Setup",
+                                     165, // "failed!"
+                                     MB_OK);
             }
             brc = TRUE;
             break;
@@ -2143,6 +2208,17 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             mrc = (MRESULT)hwndMenu;
             WinSetPointer(HWND_DESKTOP, hptrOld);
         break; }
+
+        case ID_XCD_OBJECTS_CONFIGFOLDER:
+            if (cmnMessageBoxMsg(pcnbp->hwndPage,
+                                 148,       // XWorkplace Setup
+                                 161,       // config folder?
+                                 MB_YESNO)
+                    == MBID_YES)
+                xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
+                                (MPARAM)RCF_DEFAULTCONFIGFOLDER,
+                                MPNULL);
+        break;
 
         /*
          * default:
@@ -2228,13 +2304,13 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_TEXT1,
+        WinEnableControl(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_TEXT1,
                         !(pGlobalSettings->NoWorkerThread));
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_SLIDER,
+        WinEnableControl(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_SLIDER,
                         !(pGlobalSettings->NoWorkerThread));
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_TEXT2,
+        WinEnableControl(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_TEXT2,
                         !(pGlobalSettings->NoWorkerThread));
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_BEEP,
+        WinEnableControl(pcnbp->hwndPage, ID_XCDI_WORKERPRTY_BEEP,
                         !(pGlobalSettings->NoWorkerThread));
     }
 }

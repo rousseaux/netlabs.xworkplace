@@ -13,7 +13,7 @@
  *      --  fsys*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "filesys.h"
+ *@@header "filesys\filesys.h"
  */
 
 /*
@@ -76,7 +76,7 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpfolder.h>
+#include <wpdesk.h>             // this includes wpfolder.h
 
 /* ******************************************************************
  *                                                                  *
@@ -152,6 +152,19 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 winhShowDlgItem(pcnbp->hwndPage, ID_XSDI_FILES_LASTACCESSDATE,
                               FALSE);
             }
+
+            if (!_somIsA(pcnbp->somSelf, _WPFolder))
+            {
+                // this page is not for a folder, but
+                // a data file:
+                // hide "Work area" item
+                winhShowDlgItem(pcnbp->hwndPage, ID_XSDI_FILES_WORKAREA, FALSE);
+            }
+            else if (_somIsA(pcnbp->somSelf, _WPDesktop))
+                // for the Desktop, disable work area;
+                // this must not be changed
+                WinEnableControl(pcnbp->hwndPage, ID_XSDI_FILES_WORKAREA,
+                                  FALSE);
         }
 
         // .SUBJECT EA is limited to 40 chars altogether (CPREF);
@@ -191,6 +204,14 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         strhThousandsULong(szTemp, fs3.cbFile, cs.cThousands);
         WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_FILES_FILESIZE,
                         szTemp);
+
+        // for folders: set work-area flag
+        if (_somIsA(pcnbp->somSelf, _WPFolder))
+            // this page is not for a folder, but
+            // a data file:
+            // hide "Work area" item
+            winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FILES_WORKAREA,
+                                  ((_wpQueryFldrFlags(pcnbp->somSelf) & FOI_WORKAREA) != 0));
 
         // creation date/time
         strhFileDate(szTemp, &(fs3.fdateCreation), cs.ulDateFormat, cs.cDateSep);
@@ -282,10 +303,6 @@ VOID fsysFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             free(pszString);
     }
 
-    if (flFlags & CBI_ENABLE)
-    {
-    }
-
     if (flFlags & CBI_DESTROY)
     {
         // notebook page is being destroyed:
@@ -320,6 +337,19 @@ MRESULT fsysFileItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
 
     switch (usItemID)
     {
+
+        case ID_XSDI_FILES_WORKAREA:
+            if (_somIsA(pcnbp->somSelf, _WPFolder))
+            {
+                ULONG ulFlags = _wpQueryFldrFlags(pcnbp->somSelf);
+                if (ulExtra)
+                    // checked:
+                    ulFlags |= FOI_WORKAREA;
+                else
+                    ulFlags &= ~FOI_WORKAREA;
+                _wpSetFldrFlags(pcnbp->somSelf, ulFlags);
+            }
+        break;
 
         /*
          * ID_XSDI_FILES_ATTR_ARCHIVED:

@@ -2,8 +2,8 @@
 /*
  *@@sourcefile notebook.c:
  *      this file is new with V0.82 and contains very useful code for
- *      Settings notebooks pages. Most XFolder notebook pages are
- *      now implemented using these routines.
+ *      Settings notebooks pages. Most XWorkplace notebook pages are
+ *      implemented using these routines.
  *
  *      All the functions in this file have the ntb* prefix.
  *
@@ -11,12 +11,12 @@
  *      by overriding the proper WPS methods for an object, you call
  *      ntbInsertPage here instead of calling wpInsertSettingsPage.
  *      This function will always use the same window procedure
- *      (ntb_fnwpNotebookCommon) and call CALLBACKS for certain notebook
+ *      (ntb_fnwpPageCommon) and call CALLBACKS for certain notebook
  *      events which you can specify in your call to ntbInsertPage.
  *
  *      Callbacks exist for everything you will need on a notebook page;
- *      this saves you from having to rewrite the same window proc for
- *      every notebook page, especially all the boring  "Undo" and
+ *      this saves you from having to rewrite the same dumb window proc
+ *      for every notebook page, especially all the dull "Undo" and
  *      "Default" button handling.
  *
  *      See the declaration of CREATENOTEBOOKPAGE in notebook.h for
@@ -26,11 +26,17 @@
  *      notebook pages, i.e. pages that are currently instantiated
  *      in memory. You can iterate over these pages in order to
  *      have controls on other pages updated, if this is necessary,
- *      using ntbQueryOpenPages and ntbUpdateVisiblePage.
+ *      using ntbQueryOpenPages and ntbUpdateVisiblePage. This is
+ *      useful when a global setting is changed which should affect
+ *      other possibly open notebook pages. For example, if status
+ *      bars are disabled globally, the status bar checkboxes should
+ *      be disabled in folder settings notebooks.
  *
- *      All the notebook functions are thread-safe.
+ *      All the notebook functions are fully thread-safe and protected
+ *      by mutex semaphores. ntb_fnwpPageCommon installs an exception
+ *      handler, so all the callbacks are protected by that handler too.
  *
- *@@header "notebook.h"
+ *@@header "shared\notebook.h"
  */
 
 /*
@@ -115,8 +121,432 @@ PLINKLIST       pllSubclNotebooks = NULL;
 // mutex semaphore for both lists
 HMTX            hmtxNotebookLists = NULLHANDLE;
 
+/* ******************************************************************
+ *                                                                  *
+ *   Notebook page dialog function                                  *
+ *                                                                  *
+ ********************************************************************/
+
 /*
- *@@ ntb_fnwpNotebookCommon:
+ *@@ ntbInitPage:
+ *
+ *@@added V0.9.1 (99-12-31) [umoeller]
+ */
+
+VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                 HWND hwndDlg)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    #ifdef DEBUG_NOTEBOOKS
+        _Pmpf(("ntb_fnwpPageCommon: WM_INITDLG"));
+    #endif
+
+    // store the dlg hwnd in notebook structure
+    pcnbp->hwndPage = hwndDlg;
+
+    // store the WM_INITDLG parameter in the
+    // window words; the CREATENOTEBOOKPAGE
+    // structure is passed to us by ntbInsertPage
+    // as a creation parameter in mp2
+    WinSetWindowULong(pcnbp->hwndPage, QWL_USER, (ULONG)pcnbp);
+    pcnbp->fPageInitialized = FALSE;
+
+    // make Warp 4 notebook buttons and move controls
+    winhAssertWarp4Notebook(pcnbp->hwndPage,
+                            100,         // ID threshold
+                            14);
+
+    // set controls font to 8.Helv, if global settings
+    // want this (paranoia page, V0.9.0)
+    if (pGlobalSettings->fUse8HelvFont)
+        winhSetControlsFont(pcnbp->hwndPage,
+                            0,
+                            8000,
+                            "8.Helv");
+
+    // initialize the other fields
+    pcnbp->preccSource = (PRECORDCORE)-1;
+    pcnbp->hwndSourceCnr = NULLHANDLE;
+
+    // call "initialize" callback
+    if (pcnbp->pfncbInitPage)
+        (*(pcnbp->pfncbInitPage))(pcnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
+
+    // timer desired?
+    if (pcnbp->ulTimer)
+    {
+        WinStartTimer(WinQueryAnchorBlock(hwndDlg),
+                      hwndDlg,
+                      1,
+                      pcnbp->ulTimer);
+        // call timer callback already now;
+        // let's not wait until the first downrun
+        if (pcnbp->pfncbTimer)
+            (*(pcnbp->pfncbTimer))(pcnbp, 1);
+    }
+
+    pcnbp->fPageInitialized = TRUE;
+}
+
+/*
+ *@@ ntbDestroyPage:
+ *
+ *@@added V0.9.1 (99-12-31) [umoeller]
+ */
+
+VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
+                    PBOOL pfSemOwned)
+{
+    #ifdef DEBUG_NOTEBOOKS
+        _Pmpf(("ntb_fnwpPageCommon: WM_DESTROY"));
+    #endif
+
+    if (pcnbp)
+    {
+        #ifdef DEBUG_NOTEBOOKS
+            _Pmpf(("  found pcnbp"));
+        #endif
+
+        // stop timer, if started
+        if (pcnbp->ulTimer)
+        {
+            #ifdef DEBUG_NOTEBOOKS
+                _Pmpf(("  stopping timer"));
+            #endif
+            WinStopTimer(WinQueryAnchorBlock(pcnbp->hwndPage),
+                         pcnbp->hwndPage,
+                         1);
+        }
+
+        // call INIT callback with CBI_DESTROY
+        if (pcnbp->pfncbInitPage)
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_DESTROY);
+
+        // window to be destroyed?
+        if (pcnbp->hwndTooltip)
+            WinDestroyWindow(pcnbp->hwndTooltip);
+
+        // remove the NOTEBOOKPAGELISTITEM from the
+        // linked list of open notebook pages
+        #ifdef DEBUG_NOTEBOOKS
+            _Pmpf(("  trying to remove page ID %d from list",
+                    pcnbp->ulPageID));
+        #endif
+        if (pcnbp->pnbli)
+        {
+            *pfSemOwned = (DosRequestMutexSem(hmtxNotebookLists,
+                                            4000)
+                                 == NO_ERROR);
+            if (*pfSemOwned)
+            {
+                if (!lstRemoveItem(pllOpenPages,
+                                   pcnbp->pnbli))
+                    DebugBox("XWorkplace: Error in ntb_fnwpPageCommon",
+                             "WM_DESTROY: lstRemoveItem returned FALSE.");
+                        // this free's the pnbli
+                DosReleaseMutexSem(hmtxNotebookLists);
+                *pfSemOwned = FALSE;
+            }
+            else
+                DebugBox("XWorkplace: Error in ntb_fnwpPageCommon",
+                         "WM_DESTROY: Error requesting mutex.");
+        }
+
+        // free allocated user memory
+        if (pcnbp->pUser)
+            free(pcnbp->pUser);
+        if (pcnbp->pUser2)
+            free(pcnbp->pUser2);
+        free(pcnbp);
+    }
+}
+
+/*
+ *@@ ntbPageWmControl:
+ *      WM_CONTROL handler called from ntb_fnwpPageCommon.
+ *      hwndDlg is not passed because this can be retrieved
+ *      thru pcnbp->hwndPage.
+ *
+ *@@added V0.9.1 (99-12-31) [umoeller]
+ */
+
+MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
+                                  ULONG msg, MPARAM mp1, MPARAM mp2) // in: as in WM_CONTROL
+{
+    // code returned to ntb_fnwpPageCommon
+    MRESULT mrc = 0;
+
+    // identify the source of the msg
+    USHORT  usItemID = SHORT1FROMMP(mp1),
+            usNotifyCode = SHORT2FROMMP(mp1);
+
+    BOOL    fCallItemChanged = FALSE;
+            // if this becomes TRUE, we'll call the "item changed" callback
+
+    CHAR    szClassName[100];
+    ULONG   ulClassCode = 0;
+
+    #ifdef DEBUG_NOTEBOOKS
+        _Pmpf(("ntb_fnwpPageCommon: WM_CONTROL"));
+    #endif
+
+    // "item changed" callback defined?
+    if (pcnbp->pfncbItemChanged)
+    {
+        ULONG   ulExtra = -1;
+
+        pcnbp->hwndControl = WinWindowFromID(pcnbp->hwndPage, usItemID);
+
+        // we identify the control by querying its class.
+        // The standard PM classes have those wicked "#xxxx" classnames;
+        // when we find a supported control, we filter out messages
+        // which are not of interest, and call the
+        // callbacks only for these messages by setting fCallItemChanged to TRUE
+        if (WinQueryClassName(pcnbp->hwndControl,
+                              sizeof(szClassName),
+                              szClassName))
+        {
+            if (szClassName[0] == '#')
+            {
+                // system class:
+                // now translate the class name into a ULONG
+                sscanf(&(szClassName[1]), "%d", &ulClassCode);
+
+                if (ulClassCode)
+                {
+                    switch (ulClassCode)
+                    {
+                        // checkbox? radio button?
+                        case 3:
+                        {
+                            if (    (usNotifyCode == BN_CLICKED)
+                                 || (usNotifyCode == BN_DBLCLICKED) // added V0.9.0
+                               )
+                            {
+                                // code for WC_BUTTON...
+                                ULONG ulStyle = WinQueryWindowULong(pcnbp->hwndControl,
+                                                                    QWL_STYLE);
+                                if (ulStyle & BS_PRIMARYSTYLES)
+                                        // == 0x000F; BS_PUSHBUTTON has 0x0,
+                                        // so we exclude pushbuttons here
+                                {
+                                    // for checkboxes and radiobuttons, pass
+                                    // the new check state to the callback
+                                    ulExtra = (ULONG)WinSendMsg(pcnbp->hwndControl,
+                                                                BM_QUERYCHECK,
+                                                                MPNULL,
+                                                                MPNULL);
+                                    fCallItemChanged = TRUE;
+                                }
+                            }
+                        break; }
+
+                        // spinbutton?
+                        case 32:
+                        {
+                            if (    (usNotifyCode == SPBN_UPARROW)
+                                 || (usNotifyCode == SPBN_DOWNARROW)
+                                 || (usNotifyCode == SPBN_CHANGE)   // manual input
+                               )
+                            {
+                                // for spinbuttons, pass the new spbn
+                                // value in ulExtra
+                                WinSendMsg(pcnbp->hwndControl,
+                                           SPBM_QUERYVALUE,
+                                           (MPARAM)&ulExtra,
+                                           MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                                fCallItemChanged = TRUE;
+                            }
+                        break; }
+
+                        // listbox?
+                        case 7:
+                        // combobox?
+                        case 2:
+                            if (usNotifyCode == LN_SELECT)
+                                fCallItemChanged = TRUE;
+                        break;
+
+                        // entry field?
+                        case 6:
+                            if (    (usNotifyCode == EN_CHANGE)
+                                 || (usNotifyCode == EN_SETFOCUS)
+                                 || (usNotifyCode == EN_KILLFOCUS)
+                               )
+                                fCallItemChanged = TRUE;
+                            else if (usNotifyCode == EN_HOTKEY)
+                            {
+                                // from hotkey entry field (comctl.c):
+                                fCallItemChanged = TRUE;
+                                ulExtra = (ULONG)mp2;
+                                    // HOTKEYNOTIFY struct pointer
+                            }
+                        break;
+
+                        // multi-line entry field?
+                        case 10:
+                            if (    (usNotifyCode == MLN_CHANGE)
+                                 || (usNotifyCode == MLN_SETFOCUS)
+                                 || (usNotifyCode == MLN_KILLFOCUS)
+                               )
+                                fCallItemChanged = TRUE;
+                        break;
+
+                        // container?
+                        case 37:
+                            switch (usNotifyCode)
+                            {
+                                case CN_EMPHASIS:
+                                {
+                                    // get cnr notification struct
+                                    PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
+                                    if (pnre)
+                                        if (    (pnre->fEmphasisMask & CRA_SELECTED)
+                                             && (pnre->pRecord)
+                                             && (pnre->pRecord != pcnbp->preccLastSelected)
+                                           )
+                                        {
+                                            fCallItemChanged = TRUE;
+                                            ulExtra = (ULONG)(pnre->pRecord);
+                                            pcnbp->preccLastSelected = pnre->pRecord;
+                                        }
+                                break; }
+
+                                case CN_CONTEXTMENU:
+                                {
+                                    fCallItemChanged = TRUE;
+                                    ulExtra = (ULONG)mp2;
+                                        // record core for context menu
+                                        // or NULL for cnr whitespace
+                                    WinQueryPointerPos(HWND_DESKTOP,
+                                                       &(pcnbp->ptlMenuMousePos));
+                                break; }
+
+                                case CN_PICKUP:
+                                case CN_INITDRAG:
+                                {
+                                    // get cnr notification struct (mp2)
+                                    PCNRDRAGINIT pcdi = (PCNRDRAGINIT)mp2;
+                                    if (pcdi)
+                                    {
+                                        fCallItemChanged = TRUE;
+                                        ulExtra = (ULONG)pcdi;
+                                    }
+                                break; }
+
+                                case CN_DRAGAFTER:
+                                case CN_DRAGOVER:
+                                case CN_DROP:
+                                {
+                                    // get cnr notification struct (mp2)
+                                    PCNRDRAGINFO pcdi = (PCNRDRAGINFO)mp2;
+                                    if (pcdi)
+                                    {
+                                        fCallItemChanged = TRUE;
+                                        ulExtra = (ULONG)pcdi;
+                                    }
+                                break; }
+
+                                case CN_DROPNOTIFY:
+                                {
+                                    // get cnr notification struct (mp2)
+                                    PCNRLAZYDRAGINFO pcldi = (PCNRLAZYDRAGINFO)mp2;
+                                    if (pcldi)
+                                    {
+                                        fCallItemChanged = TRUE;
+                                        ulExtra = (ULONG)pcldi;
+                                    }
+                                break; }
+
+                                case CN_RECORDCHECKED:
+                                {
+                                    // extra check-box cnr notification
+                                    // code: we make this work just like
+                                    // BN_CLICKED
+                                    PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)mp2;
+                                    if (precc)
+                                    {
+                                        ulExtra = precc->usCheckState;
+                                        // change usItemID to that of
+                                        // the record
+                                        usItemID = precc->usItemID;
+                                        fCallItemChanged = TRUE;
+                                    }
+                                break; }
+
+                                /*
+                                 * CN_EXPANDTREE:
+                                 *      do tree-view auto scroll
+                                 *      (added V0.9.1)
+                                 */
+
+                                case CN_EXPANDTREE:
+                                {
+                                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                                    mrc = WinDefDlgProc(pcnbp->hwndPage, msg, mp1, mp2);
+                                    if (pGlobalSettings->TreeViewAutoScroll)
+                                    {
+                                        // store record for WM_TIMER later
+                                        pcnbp->preccExpanded = (PRECORDCORE)mp2;
+                                        // and container also
+                                        pcnbp->hwndExpandedCnr = pcnbp->hwndControl;
+                                        WinStartTimer(WinQueryAnchorBlock(pcnbp->hwndPage),
+                                                      pcnbp->hwndPage,
+                                                      999,      // ID
+                                                      100);
+                                    }
+                                break; }
+
+                            } // end switch (usNotifyCode)
+                        break;    // container
+
+                        // linear slider?
+                        case 38:
+                        {
+                            if (    (usNotifyCode == SLN_CHANGE)
+                                 || (usNotifyCode == SLN_SLIDERTRACK)
+                               )
+                                fCallItemChanged = TRUE;
+                        break; }
+
+                        // circular slider?
+                        case 65:
+                        {
+                            if (    (usNotifyCode == CSN_SETFOCUS)
+                                            // mp2 is TRUE or FALSE
+                                 || (usNotifyCode == CSN_CHANGED)
+                                            // mp2 has new slider value
+                                 || (usNotifyCode == CSN_TRACKING)
+                                            // mp2 has new slider value
+                               )
+                            {
+                                fCallItemChanged = TRUE;
+                                ulExtra = (ULONG)mp2;
+                            }
+                        break; }
+
+                    } // end switch (ulClassCode)
+
+                    if (fCallItemChanged)
+                    {
+                        // "important" message found:
+                        // call "item changed" callback
+                        mrc = (*(pcnbp->pfncbItemChanged))(pcnbp,
+                                                           usItemID,
+                                                           usNotifyCode,
+                                                           ulExtra);
+                    }
+                } // end if (ulClassCode)
+            } // end if (szClassName[0] == '#')
+        } // end if (WinQueryClassName(pcnbp->hwndControl, ...
+    } // end if (pcnbp->pfncbItemChanged)
+
+    return (mrc);
+}
+
+/*
+ *@@ ntb_fnwpPageCommon:
  *      this is the common notebook window procedure which is
  *      always set if you use ntbInsertPage to insert notebook
  *      pages. This function will analyze all incoming messages
@@ -145,14 +575,21 @@ HMTX            hmtxNotebookLists = NULLHANDLE;
  *@@changed V0.9.1 (99-11-29) [umoeller]: added checkbox container support (ctlMakeCheckboxContainer)
  *@@changed V0.9.1 (99-11-29) [umoeller]: added container auto-scroll
  *@@changed V0.9.1 (99-11-29) [umoeller]: reworked message flow
+ *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
+ *@@changed V0.9.1 (99-12-19) [umoeller]: added EN_HOTKEY support (ctlMakeHotkeyEntryField)
+ *@@changed V0.9.1 (99-12-31) [umoeller]: extracted ntbInitPage, ntbDestroyPage, ntbPageWmControl
  */
 
-MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = NULL;
     BOOL                fSemOwned = FALSE;
     BOOL                fProcessed = FALSE;
 
+    // protect ALL the processing with the
+    // loud exception handler; this includes
+    // all message processing, including the
+    // callbacks defined by the implementor
     TRY_LOUD(excpt1, NULL)
     {
         PCREATENOTEBOOKPAGE pcnbp = NULL;
@@ -164,82 +601,37 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 
         if (msg == WM_INITDLG)
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("ntb_fnwpNotebookCommon: WM_INITDLG"));
-            #endif
-
-            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-
-            // store the WM_INITDLG parameter in the
-            // window words; the CREATENOTEBOOKPAGE
-            // structure is passed to us by ntbInsertPage
-            // as a creation parameter in mp2
             pcnbp = (PCREATENOTEBOOKPAGE)mp2;
-            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pcnbp);
-            pcnbp->fPageInitialized = FALSE;
-
-            // make Warp 4 notebook buttons and move controls
-            winhAssertWarp4Notebook(hwndDlg,
-                                    100,         // ID threshold
-                                    14);
-
-            // set controls font to 8.Helv, if global settings
-            // want this (paranoia page, V0.9.0)
-            if (pGlobalSettings->fUse8HelvFont)
-                winhSetControlsFont(hwndDlg,
-                                    0,
-                                    8000,
-                                    "8.Helv");
-
-            // store the dlg hwnd in notebook structure
-            pcnbp->hwndPage = hwndDlg;
-            // initialize the other fields
-            pcnbp->preccSource = (PRECORDCORE)-1;
-            pcnbp->hwndCnr = NULLHANDLE;
-
-            // call "initialize" callback
-            if (pcnbp->pfncbInitPage)
-                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
-
-            // timer desired?
-            if (pcnbp->ulTimer)
-            {
-                WinStartTimer(WinQueryAnchorBlock(hwndDlg),
-                              hwndDlg,
-                              1,
-                              pcnbp->ulTimer);
-                // call timer callback already now;
-                // let's not wait until the first downrun
-                if (pcnbp->pfncbTimer)
-                    (*(pcnbp->pfncbTimer))(pcnbp, 1);
-            }
-
-            pcnbp->fPageInitialized = TRUE;
-
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            ntbInitPage(pcnbp, hwndDlg);
             fProcessed = TRUE;
         }
+        else
+        {
+            // get the notebook creation struct, which was passed
+            // to ntbInsertPage, from the window words
+            pcnbp = (PCREATENOTEBOOKPAGE)WinQueryWindowULong(hwndDlg, QWL_USER);
 
-        // get the notebook creation struct, which was passed
-        // to ntbInsertPage, from the window words
-        pcnbp = (PCREATENOTEBOOKPAGE)WinQueryWindowULong(hwndDlg, QWL_USER);
+            if (pcnbp)
+            {
+                if (pcnbp->pfncbMessage)
+                {
+                    // message callback defined by caller:
+                    // call it
+                    MRESULT     mrc2 = 0;
+                    if ((*(pcnbp->pfncbMessage))(pcnbp, msg, mp1, mp2, &mrc2))
+                    {
+                        // TRUE returned == msg processed:
+                        // return return value
+                        mrc = mrc2;
+                        fProcessed = TRUE;
+                    }
+                }
+            }
+        }
 
         if (pcnbp)
         {
-            if (pcnbp->pfncbMessage)
-            {
-                // call message callback
-                MRESULT     mrc2 = 0;
-                if ((*(pcnbp->pfncbMessage))(pcnbp, msg, mp1, mp2, &mrc2))
-                {
-                    // TRUE returned == msg processed:
-                    // return return value
-                    mrc = mrc2;
-                    fProcessed = TRUE;
-                }
-            }
-
             if (!fProcessed)
             {
                 fProcessed = TRUE;
@@ -253,266 +645,8 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                      */
 
                     case WM_CONTROL:
-                    {
-                        // identify the source of the msg
-                        USHORT  usItemID = SHORT1FROMMP(mp1),
-                                usNotifyCode = SHORT2FROMMP(mp1);
-                        BOOL    fCallItemChanged = FALSE;
-                        CHAR    szClassName[100];
-                        ULONG   ulClassCode = 0;
-
-                        #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_CONTROL"));
-                        #endif
-
-                        if (!pcnbp)
-                            break;
-
-                        // "item changed" callback defined?
-                        if (pcnbp->pfncbItemChanged)
-                        {
-                            ULONG   ulExtra = -1;
-
-                            pcnbp->hwndControl = WinWindowFromID(hwndDlg, usItemID);
-
-                            // we identify the control by querying
-                            // its class; the standard PM classes have
-                            // wicked "#xxxx" classnames; when we find
-                            // a supported control, we filter out messages
-                            // which are not of interest, and call the
-                            // callbacks only for these messages
-                            if (!WinQueryClassName(pcnbp->hwndControl,
-                                    sizeof(szClassName), szClassName))
-                                break;
-
-                            if (szClassName[0] != '#')
-                                // not a system class: get outta here
-                                break;
-
-                            // now translate the class name into a ULONG
-                            sscanf(&(szClassName[1]), "%d", &ulClassCode);
-
-                            if (!ulClassCode)
-                                break;
-
-                            switch (ulClassCode)
-                            {
-                                // checkbox? radio button?
-                                case 3:
-                                {
-                                    if (    (usNotifyCode == BN_CLICKED)
-                                         || (usNotifyCode == BN_DBLCLICKED) // added V0.9.0
-                                       )
-                                    {
-                                        // code for WC_BUTTON...
-                                        ULONG ulStyle = WinQueryWindowULong(pcnbp->hwndControl,
-                                                                QWL_STYLE);
-                                        if (ulStyle & BS_PRIMARYSTYLES)
-                                                // == 0x000F; BS_PUSHBUTTON has 0x0,
-                                                // so we exclude pushbuttons here
-                                        {
-                                            // for checkboxes and radiobuttons, pass
-                                            // the new check state to the callback
-                                            ulExtra = (ULONG)WinSendMsg(pcnbp->hwndControl,
-                                                        BM_QUERYCHECK,
-                                                        MPNULL,
-                                                        MPNULL);
-                                            fCallItemChanged = TRUE;
-                                        }
-                                    }
-                                break; }
-
-                                // spinbutton?
-                                case 32:
-                                {
-                                    if (    (usNotifyCode == SPBN_UPARROW)
-                                         || (usNotifyCode == SPBN_DOWNARROW)
-                                         || (usNotifyCode == SPBN_CHANGE)   // manual input
-                                       )
-                                    {
-                                        // for spinbuttons, pass the new spbn
-                                        // value in ulExtra
-                                        WinSendMsg(pcnbp->hwndControl,
-                                              SPBM_QUERYVALUE,
-                                              (MPARAM)&ulExtra,
-                                              MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
-                                        fCallItemChanged = TRUE;
-                                    }
-                                break; }
-
-                                // listbox?
-                                case 7:
-                                // combobox?
-                                case 2:
-                                    if (usNotifyCode == LN_SELECT)
-                                        fCallItemChanged = TRUE;
-                                break;
-
-                                // entry field?
-                                case 6:
-                                    if (    (usNotifyCode == EN_CHANGE)
-                                         || (usNotifyCode == EN_SETFOCUS)
-                                         || (usNotifyCode == EN_KILLFOCUS)
-                                       )
-                                        fCallItemChanged = TRUE;
-                                break;
-
-                                // multi-line entry field?
-                                case 10:
-                                    if (    (usNotifyCode == MLN_CHANGE)
-                                         || (usNotifyCode == MLN_SETFOCUS)
-                                         || (usNotifyCode == MLN_KILLFOCUS)
-                                       )
-                                        fCallItemChanged = TRUE;
-                                break;
-
-                                // container?
-                                case 37:
-                                    switch (usNotifyCode)
-                                    {
-                                        case CN_EMPHASIS:
-                                        {
-                                            // get cnr notification struct
-                                            PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
-                                            if (pnre)
-                                                if (    (pnre->fEmphasisMask & CRA_SELECTED)
-                                                     && (pnre->pRecord)
-                                                     && (pnre->pRecord != pcnbp->preccLastSelected)
-                                                   )
-                                                {
-                                                    fCallItemChanged = TRUE;
-                                                    ulExtra = (ULONG)(pnre->pRecord);
-                                                    pcnbp->preccLastSelected = pnre->pRecord;
-                                                }
-                                        break; }
-
-                                        case CN_CONTEXTMENU:
-                                        {
-                                            fCallItemChanged = TRUE;
-                                            ulExtra = (ULONG)mp2;
-                                                // record core for context menu
-                                                // or NULL for cnr whitespace
-                                            WinQueryPointerPos(HWND_DESKTOP,
-                                                               &(pcnbp->ptlMenuMousePos));
-                                        break; }
-
-                                        case CN_PICKUP:
-                                        case CN_INITDRAG:
-                                        {
-                                            // get cnr notification struct (mp2)
-                                            PCNRDRAGINIT pcdi = (PCNRDRAGINIT)mp2;
-                                            if (pcdi)
-                                            {
-                                                fCallItemChanged = TRUE;
-                                                ulExtra = (ULONG)pcdi;
-                                            }
-                                        break; }
-
-                                        case CN_DRAGAFTER:
-                                        case CN_DRAGOVER:
-                                        case CN_DROP:
-                                        {
-                                            // get cnr notification struct (mp2)
-                                            PCNRDRAGINFO pcdi = (PCNRDRAGINFO)mp2;
-                                            if (pcdi)
-                                            {
-                                                fCallItemChanged = TRUE;
-                                                ulExtra = (ULONG)pcdi;
-                                            }
-                                        break; }
-
-                                        case CN_DROPNOTIFY:
-                                        {
-                                            // get cnr notification struct (mp2)
-                                            PCNRLAZYDRAGINFO pcldi = (PCNRLAZYDRAGINFO)mp2;
-                                            if (pcldi)
-                                            {
-                                                fCallItemChanged = TRUE;
-                                                ulExtra = (ULONG)pcldi;
-                                            }
-                                        break; }
-
-                                        case CN_RECORDCHECKED:
-                                        {
-                                            // extra check-box cnr notification
-                                            // code: we make this work just like
-                                            // BN_CLICKED
-                                            PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)mp2;
-                                            if (precc)
-                                            {
-                                                ulExtra = precc->usCheckState;
-                                                // change usItemID to that of
-                                                // the record
-                                                usItemID = precc->usItemID;
-                                                fCallItemChanged = TRUE;
-                                            }
-                                        break; }
-
-                                        /*
-                                         * CN_EXPANDTREE:
-                                         *      do tree-view auto scroll
-                                         *      (added V0.9.1)
-                                         */
-
-                                        case CN_EXPANDTREE:
-                                        {
-                                            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                                            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                                            if (pGlobalSettings->TreeViewAutoScroll)
-                                            {
-                                                // store record for WM_TIMER later
-                                                pcnbp->preccExpanded = (PRECORDCORE)mp2;
-                                                // and container also
-                                                pcnbp->hwndExpandedCnr = pcnbp->hwndControl;
-                                                WinStartTimer(WinQueryAnchorBlock(hwndDlg),
-                                                              hwndDlg,
-                                                              999,      // ID
-                                                              100);
-                                            }
-                                        break; }
-
-                                    } // end switch (usNotifyCode)
-                                break;    // container
-
-                                // linear slider?
-                                case 38:
-                                {
-                                    if (    (usNotifyCode == SLN_CHANGE)
-                                         || (usNotifyCode == SLN_SLIDERTRACK)
-                                       )
-                                        fCallItemChanged = TRUE;
-                                break; }
-
-                                // circular slider?
-                                case 65:
-                                {
-                                    if (    (usNotifyCode == CSN_SETFOCUS)
-                                                    // mp2 is TRUE or FALSE
-                                         || (usNotifyCode == CSN_CHANGED)
-                                                    // mp2 has new slider value
-                                         || (usNotifyCode == CSN_TRACKING)
-                                                    // mp2 has new slider value
-                                       )
-                                    {
-                                        fCallItemChanged = TRUE;
-                                        ulExtra = (ULONG)mp2;
-                                    }
-                                break; }
-
-                            } // end switch (ulClassCode)
-
-                            if (fCallItemChanged)
-                            {
-                                // "important" message found:
-                                // call "item changed" callback
-                                mrc = (*(pcnbp->pfncbItemChanged))(pcnbp,
-                                                                   usItemID,
-                                                                   usNotifyCode,
-                                                                   ulExtra);
-                            }
-                        } // end if (pcnbp->pfncbItemChanged)
-
-                    break; } // WM_CONTROL
+                        mrc = ntbPageWmControl(pcnbp, msg, mp1, mp2);
+                    break;
 
                     /*
                      *@@ WM_DRAWITEM:
@@ -565,19 +699,19 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     case WM_MENUEND:
                     {
                         #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_MENUEND"));
+                            _Pmpf(("ntb_fnwpPageCommon: WM_MENUEND"));
                         #endif
 
                         if (    (pcnbp->preccSource != (PRECORDCORE)-1)
-                             && (pcnbp->hwndCnr)
+                             && (pcnbp->hwndSourceCnr)
                            )
                         {
-                            WinSendMsg(pcnbp->hwndCnr, CM_SETRECORDEMPHASIS,
-                                    (MPARAM)(pcnbp->preccSource),
-                                    MPFROM2SHORT(FALSE, CRA_SOURCE));
+                            WinSendMsg(pcnbp->hwndSourceCnr, CM_SETRECORDEMPHASIS,
+                                       (MPARAM)(pcnbp->preccSource),
+                                       MPFROM2SHORT(FALSE, CRA_SOURCE));
                             // reset hwndCnr to make sure we won't
                             // do this again
-                            pcnbp->hwndCnr = 0;
+                            pcnbp->hwndSourceCnr = 0;
                             // but leave preccSource as it is, because
                             // WM_MENUEND is posted before WM_COMMAND,
                             // and the caller might still need this
@@ -598,7 +732,7 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         USHORT usItemID = SHORT1FROMMP(mp1);
 
                         #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_COMMAND"));
+                            _Pmpf(("ntb_fnwpPageCommon: WM_COMMAND"));
                         #endif
 
                         // call "item changed" callback
@@ -622,7 +756,7 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     case WM_HELP:
                     {
                         #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_HELP"));
+                            _Pmpf(("ntb_fnwpPageCommon: WM_HELP"));
                         #endif
 
                         // this routine checks the current focus
@@ -653,7 +787,7 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         PSWP pswp = (PSWP)mp1;
 
                         #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_WINDOWPOSCHANGED"));
+                            _Pmpf(("ntb_fnwpPageCommon: WM_WINDOWPOSCHANGED"));
                         #endif
 
                         if (!pcnbp)
@@ -673,18 +807,6 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                                         // that the callback can re-enable
                                         // controls when the page is being
                                         // turned to
-
-                                /* if (pcnbp->pszSubtitle)
-                                {
-                                    // special status bar text != NULL:
-                                    // send message to notebook control
-                                    // (added V0.9.0)
-                                    WinSendMsg(pcnbp->hwndNotebook,
-                                               BKM_SETTABTEXT,
-                                               (MPARAM)pcnbp->ulNotebookPageID,
-                                                        // notebook page ID
-                                               (MPARAM)pcnbp->pszSubtitle);
-                                } */
 
                                 WinEnableWindowUpdate(hwndDlg, TRUE);
                             }
@@ -734,12 +856,13 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     case WM_TIMER:
                     {
                         #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_TIMER"));
+                            _Pmpf(("ntb_fnwpPageCommon: WM_TIMER"));
                         #endif
 
                         switch ((USHORT)mp1)    // timer ID
                         {
-                            case 1:     // timer for caller: call callback
+                            case 1:
+                                // timer for caller: call callback
                                 if (pcnbp)
                                     if (pcnbp->pfncbTimer)
                                         (*(pcnbp->pfncbTimer))(pcnbp, 1);
@@ -781,68 +904,10 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                      */
 
                     case WM_DESTROY:
-                    {
-                        #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpNotebookCommon: WM_DESTROY"));
-                        #endif
-
-                        if (pcnbp)
-                        {
-                            #ifdef DEBUG_NOTEBOOKS
-                                _Pmpf(("  found pcnbp"));
-                            #endif
-
-                            // stop timer, if started
-                            if (pcnbp->ulTimer)
-                            {
-                                #ifdef DEBUG_NOTEBOOKS
-                                    _Pmpf(("  stopping timer"));
-                                #endif
-                                WinStopTimer(WinQueryAnchorBlock(hwndDlg),
-                                             hwndDlg,
-                                             1);
-                            }
-
-                            // call INIT callback with CBI_DESTROY
-                            if (pcnbp->pfncbInitPage)
-                                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_DESTROY);
-
-                            // remove the NOTEBOOKPAGELISTITEM from the
-                            // linked list of open notebook pages
-                            #ifdef DEBUG_NOTEBOOKS
-                                _Pmpf(("  trying to remove page ID %d from list",
-                                        pcnbp->ulPageID));
-                            #endif
-                            if (pcnbp->pnbli)
-                            {
-                                fSemOwned = (DosRequestMutexSem(hmtxNotebookLists,
-                                                                4000)
-                                                     == NO_ERROR);
-                                if (fSemOwned)
-                                {
-                                    if (!lstRemoveItem(pllOpenPages,
-                                                       pcnbp->pnbli))
-                                        DebugBox("XWorkplace: Error in ntb_fnwpNotebookCommon",
-                                                 "WM_DESTROY: lstRemoveItem returned FALSE.");
-                                            // this free's the pnbli
-                                    DosReleaseMutexSem(hmtxNotebookLists);
-                                    fSemOwned = FALSE;
-                                }
-                                else
-                                    DebugBox("XWorkplace: Error in ntb_fnwpNotebookCommon",
-                                             "WM_DESTROY: Error requesting mutex.");
-                            }
-
-                            // free allocated user memory
-                            if (pcnbp->pUser)
-                                free(pcnbp->pUser);
-                            if (pcnbp->pUser2)
-                                free(pcnbp->pUser2);
-                            free(pcnbp);
-                        }
-
+                        ntbDestroyPage(pcnbp,
+                                       &fSemOwned);
                         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                    break; }
+                    break;
 
                     default:
                         fProcessed = FALSE;
@@ -853,6 +918,8 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
     }
     CATCH(excpt1)
     {
+        // exception occured:
+        // free semaphores
         if (fSemOwned)
         {
             DosReleaseMutexSem(hmtxNotebookLists);
@@ -871,15 +938,15 @@ MRESULT EXPENTRY ntb_fnwpNotebookCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
  *      window procedure for notebook controls subclassed
  *      by ntbInsertPage.
  *
- *      Notebooks are automatically subclassed by ntbInsertPage
- *      if they haven't been subclassed yet. Subclassing is
- *      necessary because, with V0.9.1, I finally realized
+ *      The notebook control itself is automatically subclassed
+ *      by ntbInsertPage if it hasn't been subclassed yet. Subclassing
+ *      is necessary because, with V0.9.1, I finally realized
  *      that each call to ntbInsertPage allocates memory for
  *      the CREATENOTEBOOKPAGE items, but this is only
  *      released upon WM_DESTROY with pages that have actually
- *      been opened. Pages which were inserted but never turned
- *      to will never get WM_DESTROY, so for those pages this
- *      subclassed notebook proc does the cleanup.
+ *      been switched to. Pages which were inserted but never
+ *      switched to will never get WM_DESTROY, so for those pages
+ *      this subclassed notebook proc does the cleanup.
  *
  *      Er, these memory leaks must have been in XFolder for
  *      ages. Quite embarassing.
@@ -923,7 +990,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                      *      by ntbInsertPage and destroy those
                      *      which haven't been initialized yet,
                      *      because those won't get WM_DESTROY
-                     *      in ntb_fnwpNotebookCommon.
+                     *      in ntb_fnwpPageCommon.
                      */
 
                     case WM_DESTROY:
@@ -946,7 +1013,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                                         // our page:
                                         if (!pPageLI->pcnbp->fPageInitialized)
                                             // page has NOT been initialized
-                                            // (this flag is set by ntb_fnwpNotebookCommon):
+                                            // (this flag is set by ntb_fnwpPageCommon):
                                             // remove it from list
                                         {
                                              #ifdef DEBUG_NOTEBOOKS
@@ -955,6 +1022,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                                             free(pPageLI->pcnbp);
                                             lstRemoveItem(pllOpenPages,
                                                           pPageLI);
+
+                                            // restart loop with first item
                                             pPageNode = lstQueryFirstNode(pllOpenPages);
                                             continue;
                                         }
@@ -963,6 +1032,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                             pPageNode = pPageNode->pNext;
                         }
 
+                        // remove notebook control from list
                         lstRemoveItem(pllSubclNotebooks,
                                       pSubclNBLI);      // this frees the pSubclNBLI
                         #ifdef DEBUG_NOTEBOOKS
@@ -993,7 +1063,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *@@ ntbInsertPage:
  *      this function inserts the specified notebook page
  *      using the wpInsertSettingsPage function. However,
- *      this always uses ntb_fnwpNotebookCommon for the notebook's
+ *      this always uses ntb_fnwpPageCommon for the notebook's
  *      window procedure, which then calls the callbacks which
  *      you may specify in the CREATENOTEBOOKPAGE structure.
  *
@@ -1035,7 +1105,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      --  ULONG flFlags:           CBI_* flags (notebook.h), which determine
  *                                   the context of the call.
  *
- *      ntb_fnwpNotebookCommon will call this init callback itself
+ *      ntb_fnwpPageCommon will call this init callback itself
  *      in the following situations:
  *      -- When the page is initialized (WM_INITDLG), flFlags is
  *         CBI_INIT | CBI_SET | CBI_ENABLE.
@@ -1063,7 +1133,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  +
  +          if (flFlags & CBI_SET)
  +                   ... // set controls' data; this gets called only once
- +                       // from ntb_fnwpNotebookCommon, but you can call this yourself
+ +                       // from ntb_fnwpPageCommon, but you can call this yourself
  +                       // several times
  +          if (flFlags & CBI_ENABLE)
  +                   ... // enable/disable controls; this can get called several times
@@ -1086,8 +1156,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *
  *      <B>The "item changed" callback</B>
  *
- *      This gets called from ntb_fnwpNotebookCommon when either
- *      WM_CONTROL or WM_COMMAND comes in. Note that ntb_fnwpNotebookCommon
+ *      This gets called from ntb_fnwpPageCommon when either
+ *      WM_CONTROL or WM_COMMAND comes in. Note that ntb_fnwpPageCommon
  *      _filters_ these messages and calls the "item changed" callback
  *      only for notifications which I have considered useful so far.
  *      If this is not sufficient for you, you must use the pfncbMessage
@@ -1125,7 +1195,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      -- For all other controls/messages, this is always -1.
  *
  *      Whatever the "item changed" callback returns will be the
- *      return value ntb_fnwpNotebookCommon. Normally, you should return 0,
+ *      return value ntb_fnwpPageCommon. Normally, you should return 0,
  *      except for the container d'n'd messages.
  *
  *      <B>Implementing an "Undo" button</B>
@@ -1139,7 +1209,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      updated with the backed-up data.
  *
  *      If pUser or pUser2 are != NULL, free() will automatically be
- *      invoked on them by ntb_fnwpNotebookCommon when the page is destroyed.
+ *      invoked on them by ntb_fnwpPageCommon when the page is destroyed.
  *      This is done _after_ the INIT callback has been called which
  *      CBI_DESTROY, so if you store something in there which should
  *      not be free()'d, set those pointers to NULL upon CBI_DESTROY.
@@ -1161,6 +1231,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      --  ULONG ulTimer:             timer id (always 1)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
+ *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
  */
 
 ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
@@ -1173,7 +1244,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
 
     pi.cb                  = sizeof(PAGEINFO);
     pi.hwndPage            = NULLHANDLE;
-    pi.pfnwp               = ntb_fnwpNotebookCommon;
+    pi.pfnwp               = ntb_fnwpPageCommon;
     pi.resid               = pcnbp->hmod;
     pi.dlgid               = pcnbp->ulDlgID;
     pi.pCreateParams       = pcnbp;
@@ -1294,7 +1365,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
  *@@ ntbQueryOpenPages:
  *      this function returns the CREATENOTEBOOKPAGE
  *      structures for currently open notebook pages, which
- *      are maintained by ntbInsertPage and ntb_fnwpNotebookCommon.
+ *      are maintained by ntbInsertPage and ntb_fnwpPageCommon.
  *      This way you can iterate over all open pages and call
  *      the callbacks of certain pages to have pages updated,
  *      if necessary.
@@ -1375,7 +1446,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 /*
  *@@ ntbUpdateVisiblePage:
  *      this will go thru all currently open notebook
- *      pages (which are maintained by ntb_fnwpNotebookCommon
+ *      pages (which are maintained by ntb_fnwpPageCommon
  *      in a linked list) and update a page (by calling its
  *      "init" callback with CBI_SET | CBI_ENABLE) if it
  *      matches the specified criteria.
@@ -1405,7 +1476,7 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
     PCREATENOTEBOOKPAGE pcnbp = NULL;
 
     while (pcnbp = ntbQueryOpenPages(pcnbp))
-        // xxx this keeps allocating semaphores -- is this thread-safe?
+        // ### this keeps allocating semaphores -- is this thread-safe?
     {
         if (pcnbp->fPageVisible)
         {
@@ -1429,30 +1500,37 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
 
 /*
  *@@ ntbDisplayFocusHelp:
- *      this is used from all kinds of settings dlg procs to display help panels.
+ *      this is used from all kinds of settings dlg procs to
+ *      display help panels.
  *
- *      This will either display a sub-panel for the dialog control which currently
- *      has the keyboard focus or a "global" help page for the whole dialog.
+ *      This will either display a sub-panel for the dialog
+ *      control which currently has the keyboard focus or a
+ *      "global" help page for the whole dialog.
  *
  *      This works as follows:
  *
- *      1)  First, the dialog item which currently has the keyboard focus
- *          is queried.
+ *      1)  First, the dialog item which currently has the
+ *          keyboard focus is queried.
  *
- *      2)  We then attempt to open a help panel which corresponds to that
- *          ID, depending on the usFirstControlID and ulFirstSubpanel parameters:
- *          the ID of the focused control is queried, usFirstControlID is subtracted,
- *          and the result is added to ulFirstSubpanel (to get the help panel which
- *          is to be opened).
+ *      2)  We then attempt to open a help panel which
+ *          corresponds to that ID, depending on the
+ *          usFirstControlID and ulFirstSubpanel parameters:
+ *          the ID of the focused control is queried,
+ *          usFirstControlID is subtracted, and the result
+ *          is added to ulFirstSubpanel (to get the help panel
+ *          which is to be opened).
  *
- *          For example, if the control with the ID (usFirstControlID + 1) currently
- *          has the focus, (usFirstSubpanel + 1) will be displayed.
+ *          For example, if the control with the ID
+ *          (usFirstControlID + 1) currently has the focus,
+ *          (usFirstSubpanel + 1) will be displayed.
  *
- *          You should therefore assign the control IDs on the page in ascending
- *          order and order your help panels accordingly.
+ *          You should therefore assign the control IDs on
+ *          the page in ascending order and order your help
+ *          panels accordingly.
  *
- *      3)  If that fails (or if ulFirstSubpanel == 0), ulPanelIfNotFound will be
- *          displayed instead, which should be the help panel for the whole dialog.
+ *      3)  If that fails (or if ulFirstSubpanel == 0),
+ *          ulPanelIfNotFound will be displayed instead, which
+ *          should be the help panel for the whole dialog.
  *
  *      This returns FALSE if step 3) failed also.
  *

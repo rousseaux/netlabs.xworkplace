@@ -1871,7 +1871,7 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
 
         case WM_CHAR:
         {
-            // if (HookData.HookConfig.fObjectHotkeys) // xxxx!!!
+            // if (HookData.HookConfig.fObjectHotkeys) // ### !!!
             {
                 USHORT usFlags    = SHORT1FROMMP(pqmsg->mp1);
                 UCHAR  ucRepeat   = CHAR3FROMMP(pqmsg->mp1);

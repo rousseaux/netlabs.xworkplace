@@ -1,5 +1,3 @@
-# $Id$ 
-
 #
 # makefile:
 #       makefile for IDL directory.

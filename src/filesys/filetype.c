@@ -12,7 +12,7 @@
  *      --  ftyp*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "filetype.h"
+ *@@header "filesys\filetype.h"
  */
 
 /*
@@ -638,7 +638,7 @@ WPObject* ftypQueryAssociatedProgram(XFldDataFile *somSelf,     // in: data file
  *      --  XFldDataFile::wpDisplayMenu, after a context
  *          menu has been completely built for a data file.
  *
- *      --  fnwpSubclassedFolderFrame, after the "Selected"
+ *      --  fdr_fnwpSubclassedFolderFrame, after the "Selected"
  *          pulldown menu has been built completely for a
  *          data file.
  *
@@ -1955,7 +1955,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndCnr = pcnbp->hwndControl;
+                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
                     if (pcnbp->preccSource)
                     {
@@ -2162,7 +2162,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndCnr = pcnbp->hwndControl;
+                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
                     if (pcnbp->preccSource)
                     {
@@ -2513,7 +2513,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndCnr = pcnbp->hwndControl;
+                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
 
                     if (ulExtra)

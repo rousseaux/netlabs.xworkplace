@@ -52,11 +52,13 @@
      *
      */
 
-    // Note that we're still using the "XFolder" application for
-    // compatibility reasons, even though this should be called
-    // "XWorkplace", so that people can install XWorkplace over
-    // XFolder without having to redo all the settings.
-    #define INIAPP_XFOLDER          "XFolder"
+    // INI key used with V0.9.1 and above
+    #define INIAPP_XWORKPLACE       "XWorkplace"
+
+    // INI key used by XFolder and XWorkplace 0.9.0;
+    // this is checked for if INIAPP_XWORKPLACE is not
+    // found and converted
+    #define INIAPP_OLDXFOLDER       "XFolder"
 
     /*
      * XWorkplace keys:
@@ -130,8 +132,8 @@
      */
 
     // application for file type hierarchies
-    #define INIAPP_XWPFILETYPES     "XWorkplace:FileTypes"
-    #define INIAPP_XWPFILEFILTERS   "XWorkplace:FileFilters"
+    #define INIAPP_XWPFILETYPES     "XWorkplace:FileTypes"   // added V0.9.0
+    #define INIAPP_XWPFILEFILTERS   "XWorkplace:FileFilters" // added V0.9.0
 
     /*
      * some default WPS INI keys:
@@ -180,7 +182,7 @@
     #define WNDCLASS_FILEOBJECT           "XWPFileObject"
 
     #define WNDCLASS_THREAD1OBJECT        "XWPThread1Object"
-    #define WNDCLASS_SUPPLOBJECT          "XFolderSupplementaryObjectWindow"
+    #define WNDCLASS_SUPPLOBJECT          "XWPFolderSupplObjWindow"
 
     /********************************************************************
      *                                                                  *
@@ -242,9 +244,10 @@
     #define ID_XSH_DRIVER_HPFS               52     // V0.9.0: XFldSystem "Drivers" page
     #define ID_XSH_DRIVER_CDFS               53     // V0.9.0: XFldSystem "Drivers" page
     #define ID_XSH_DRIVER_S506               54     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_OBJECTHOTKEYS             55     // V0.9.0: XWPKeyboard "Object hotkeys" page
+    #define ID_XSH_KEYB_OBJHOTKEYS           55     // V0.9.0: XWPKeyboard "Object hotkeys" page
     #define ID_XSH_MOUSEHOOK                 56     // V0.9.0: XWPMouse "Mouse hook" page
     #define ID_XSH_MOUSEMAPPINGS2            57     // V0.9.1: XWPMouse "Mappings" page 2
+    #define ID_XSH_KEYB_EXTMAPPINGS          58     // V0.9.1: XWPMouse "Mappings" page 2
 
     // "subpanels" for pages with context-sensitive help
     #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
@@ -334,6 +337,11 @@
     #define MMSOUND_XFLD_CTXTSELECT 559
     #define MMSOUND_XFLD_CNRDBLCLK  560
 
+    // default style used for XWorkplace tooltip controls
+    #ifdef COMCTL_HEADER_INCLUDED
+        #define XWP_TOOLTIP_STYLE (TTS_SHADOW | TTS_ROUNDED | TTS_ALWAYSTIP)
+    #endif
+
     /********************************************************************
      *                                                                  *
      *   Notebook settings page IDs (notebook.c)                        *
@@ -416,7 +424,8 @@
     #define SP_CLASSLIST            110     // new with V0.9.0
 
     // 13) XWPKeyboard
-    #define SP_OBJECTHOTKEYS        120     // new with V0.9.0
+    #define SP_KEYB_OBJHOTKEYS      120     // new with V0.9.0
+    #define SP_KEYB_EXTMAPPINGS     121     // new with V0.9.1 (99-12-19) [umoeller]
 
     // 13) XWPMOUSE
     #define SP_MOUSEHOOK            130     // new with V0.9.0
@@ -453,7 +462,8 @@
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
 
-    #pragma pack(4)     // just to make sure
+    #pragma pack(4)     // just to make sure;
+                        // the following is stored as binary in OS2.INI
 
     /*
      *@@ GLOBALSETTINGS:
@@ -462,7 +472,7 @@
      *      all kinds of configuration data.
      *
      *      This structure is stored in OS2.INI, in the
-     *      key specified by the INIAPP_XFOLDER / INIKEY_GLOBALSETTINGS
+     *      key specified by the INIAPP_XWORKPLACE / INIKEY_GLOBALSETTINGS
      *      strings above. This is loaded once at WPS
      *      startup (in M_XFldObject::wpclsInitData)
      *      and remains in a global variable in common.c
@@ -479,7 +489,7 @@
      *
      *      Usage notes:
      *
-     *      a) Do not change this structure. This has
+     *      a) Do not change this structure definition. This has
      *         existed since XFolder 0.20 or something, and
      *         has always been extended to the bottom only.
      *         Since this gets loaded in one flush from OS2.INI,
@@ -492,12 +502,12 @@
      *         If you need to store your own global settings,
      *         use some other INI key, and maintain your settings
      *         yourself. This structure has only been moved
-     *         to the shared\ directories so you can _query_
+     *         to the shared\ directories so you can _read_
      *         certain settings if you need them.
      *
      *      b) Never load this structure from the INIs yourself.
-     *         Always use cmnQueryGlobalSettings to access this
-     *         structure to get the up-to-date version, because
+     *         Always use cmnQueryGlobalSettings to get a "const"
+     *         pointer to the up-to-date version, because
      *         this thing is saved to the INIs asynchronously
      *         by the File thread (xthreads.c).
      */
@@ -624,88 +634,90 @@
                         // XFolder: extend Warp 4 "View" submenu
 
     /* XWorkplace 0.9.0 */
-        BOOL      fNoExcptBeeps,
+        BOOL        fNoExcptBeeps,
                         // XWPSetup "Paranoia": disable exception beeps
-                  fUse8HelvFont,
+                    fUse8HelvFont,
                         // XWPSetup "Paranoia": use "8.Helv" font for dialogs;
                         // on Warp 3, this is enabled per default
-                  fReplaceFilePage,
+                    fReplaceFilePage,
                         // XFolder/XFldDataFile: replace three "File" pages
                         // into one
-                  fExtAssocs,
+                    fExtAssocs,
                         // XFldDataFile/XFldWPS: extended associations
 
-                  // Desktop menu items
-                  fDTMSort,
-                  fDTMArrange,
-                  fDTMSystemSetup,
-                  fDTMLockup,
-                  fDTMShutdown,
-                  fDTMShutdownMenu,
+                    // Desktop menu items
+                    fDTMSort,
+                    fDTMArrange,
+                    fDTMSystemSetup,
+                    fDTMLockup,
+                    fDTMShutdown,
+                    fDTMShutdownMenu,
 
-                  _ulRemoved4, // fIgnoreFilters,
+                    _ulRemoved4, // fIgnoreFilters,
                         // XFldDataFile/XFldWPS: extended associations
-                  fMonitorCDRoms,
-                  fRestartWPS,
+                    fMonitorCDRoms,
+                    fRestartWPS,
                         // XWPSetup: enable "Restart WPS"
-                  fXShutdown,
+                    fXShutdown,
                         // XWPSetup: enable XShutdown
 
-                  fEnableStatusBars,
+                    fEnableStatusBars,
                         // XWPSetup: whether to enable the status bars at all;
                         // unlike fDefaultStatusBarVisibility above
-                  fEnableSnap2Grid,
+                    fEnableSnap2Grid,
                         // XWPSetup: whether to enable "Snap to grid" at all;
                         // unlike fAddSnapToGridDefault above
-                  fEnableFolderHotkeys;
+                    fEnableFolderHotkeys;
                         // XWPSetup: whether to enable folder hotkeys at all;
                         // unlike fFolderHotkeysDefault above
 
-        BYTE      bDefaultWorkerThreadPriority,
+        BYTE        bDefaultWorkerThreadPriority,
                         // XWPSetup "Paranoia": default priority of Worker thread:
                         //      0: idle +/-0
                         //      1: idle +31
                         //      2: regular +/-0
 
-                  fXSystemSounds,
+                    fXSystemSounds,
                         // XWPSetup: enable extended system sounds
-                  fWorkerPriorityBeep,
+                    fWorkerPriorityBeep,
                         // XWPSetup "Paranoia": beep on priority change
 
-                  bBootLogoStyle,
+                    bBootLogoStyle,
                         // XFldDesktop "Startup" page:
                         // boot logo style:
                         //      0 = transparent
                         //      1 = blow-up
 
-                  fDereferenceShadows,
+                    fDereferenceShadows,
                         // XFldWPS "Status bars" page 2:
                         // deference shadows flag
 
         // trashcan settings
-                  fTrashDelete,
-                  fTrashEmptyStartup,
-                  fTrashEmptyShutdown,
-                  fTrashConfirmEmpty,
+                    fTrashDelete,
+                    fTrashEmptyStartup,
+                    fTrashEmptyShutdown,
+                    fTrashConfirmEmpty,
 
-                  fReplDriveNotReady;
+                    fReplDriveNotReady;
                         // XWPSetup: replace "Drive not ready" dialog
 
-        ULONG     ulIntroHelpShown;
+        ULONG       ulIntroHelpShown;
                         // HLPS_* flags for various classes, whether
                         // an introductory help page has been shown
                         // the first time it's been opened
 
-        BYTE      fEnableXWPHook;
+        BYTE        fEnableXWPHook;
                         // XWPSetup: enable hook (enables object hotkeys,
                         // mouse movement etc.)
 
-        BYTE      fReplaceArchiving;
+        BYTE        fReplaceArchiving;
                         // XWPSetup: enable WPS archiving replacement
 
-        BYTE      fAniMouse;
+        BYTE        fAniMouse;
                         // XWPSetup: enable "animated mouse pointers" page in XWPMouse
 
+        BYTE        fNumLockStartup;
+                        // XWPSetup: set NumLock to ON on WPS startup
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -866,10 +878,11 @@
                 pszModulePage,      // title of XFldProgramFile "Module" page
                 pszObjectHotkeysPage, // title of XWPKeyboard "Hotkeys" page
                 pszMouseHookPage,   // title of XWPMouse "Mouse hook" page
-                pszMouseMappings2Page, // title of XWPMouse "Mappings" page 2 (V0.9.1)
+                pszMappingsPage,    // title of XWPKeyboard/XWPMouse "Mappings" pages (V0.9.1)
 
                 pszOpenClassList,   // "WPS Class List" (XWPClassList, new with V0.9.0)
                 pszXWPClassList,    // XWPClassList default title
+                pszRegisterClass,   // XWPClassList: "Register new class" V0.9.1 (99-12-28) [umoeller]
 
                 pszSoundSchemeNone, // XWPSound
                 pszItemsSelected,   // "x items selected" on System Paths page
@@ -901,7 +914,11 @@
                 pszClsListMethod,
                 pszClsListAddress,
                 pszClsListClass,
-                pszClsListOverriddenBy;
+                pszClsListOverriddenBy,
+
+                // "Special functions" on XWPMouse "Movement" page
+                pszSpecialWindowList,
+                pszSpecialDesktopPopup;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1005,6 +1022,8 @@
      ********************************************************************/
 
     MRESULT EXPENTRY cmn_fnwpMemDebug(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    VOID cmnCreateMemDebugWindow(VOID);
 
     /* ******************************************************************
      *                                                                  *

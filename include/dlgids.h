@@ -351,6 +351,7 @@
 #define ID_XSDI_FILES_VERSION           745
 #define ID_XSDI_FILES_FILESIZE          746
 #define ID_XSDI_FILES_EASIZE            747
+#define ID_XSDI_FILES_WORKAREA          748     // added V0.9.1 (99-12-20) [umoeller]
 
 // "Details" page replacement (XFldDisk, V0.9.0)
 #define ID_XSD_DISK_DETAILS             760
@@ -403,8 +404,9 @@
 #define ID_XCDI_INFO_KERNEL_RELEASE     1101
 #define ID_XCDI_INFO_KERNEL_BUILD       1102
 // #define ID_XCDI_INFO_KERNEL_LOCALE      1103
-#define ID_XCDI_INFO_AWAKEOBJECTS       1104
-#define ID_XCDI_INFO_WPSSTHREADS        1105
+#define ID_XCDI_INFO_AWAKEOBJECTS       1103
+#define ID_XCDI_INFO_WPSTHREADS         1104
+#define ID_XCDI_INFO_WPSRESTARTS        1105
 #define ID_XCDI_INFO_WORKERSTATUS       1106
 #define ID_XCDI_INFO_FILESTATUS         1107
 #define ID_XCDI_INFO_QUICKSTATUS        1108
@@ -445,6 +447,7 @@
 #define ID_XCD_OBJECTS                  1180
 #define ID_XCD_OBJECTS_SYSTEM           1181
 #define ID_XCD_OBJECTS_XWORKPLACE       1182
+#define ID_XCD_OBJECTS_CONFIGFOLDER     1183
 
 // logo window
 #define ID_XFDI_LOGOBITMAP              1190
@@ -763,7 +766,7 @@
  * XWPKeyboard (V0.9.0)          >= 3200   *
  ******************************************/
 
-#define ID_XSD_OBJECTHOTKEYS            3200
+#define ID_XSD_KEYB_OBJHOTKEYS          3200
 #define ID_XSDI_HOTK_CNR                3201
 
 /******************************************
@@ -861,7 +864,7 @@
 // context menu in "WPS Classes" container;
 // all the identifiers have changed with V0.9.0
 #define ID_XLM_CLASS_SEL                (WPMENUID_USER+1001)
-#define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002)
+// #define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002) // removed V0.9.1 (99-12-28) [umoeller]
 #define ID_XLMI_REGISTER                (WPMENUID_USER+1003)
 #define ID_XLMI_DEREGISTER              (WPMENUID_USER+1004)
 #define ID_XLMI_REPLACE                 (WPMENUID_USER+1005)
@@ -1152,6 +1155,7 @@
 #define ID_XSSI_PGMFILE_MODULE          5645
 #define ID_XSSI_OBJECTHOTKEYSPAGE       5646
 #define ID_XSSI_MOUSEHOOKPAGE           5647
+#define ID_XSSI_MAPPINGSPAGE            5648
 
 // sort criteria
 #define ID_XSSI_SV_NAME                 5650
@@ -1221,39 +1225,43 @@
 // "WPS Class List" (XWPClassList, new with V0.9.0)
 #define ID_XFSI_OPENCLASSLIST           5835
 #define ID_XFSI_XWPCLASSLIST            5836
-
+#define ID_XFSI_REGISTERCLASS           5837
 // XWPSound (new with V0.9.0)
-#define ID_XSSI_SOUNDSCHEMENONE         5837
+#define ID_XSSI_SOUNDSCHEMENONE         5838
 // "System paths" page
-#define ID_XSSI_ITEMSSELECTED           5838    // new with V0.9.0
+#define ID_XSSI_ITEMSSELECTED           5839    // new with V0.9.0
 
 // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-#define ID_XTSI_TRASHEMPTY              5839
-#define ID_XTSI_TRASHRESTORE            5840
-#define ID_XTSI_TRASHDESTROY            5841
+#define ID_XTSI_TRASHEMPTY              5840
+#define ID_XTSI_TRASHRESTORE            5841
+#define ID_XTSI_TRASHDESTROY            5842
 
-#define ID_XTSI_TRASHCAN                5842
-#define ID_XTSI_TRASHOBJECT             5843
+#define ID_XTSI_TRASHCAN                5843
+#define ID_XTSI_TRASHOBJECT             5844
 
-#define ID_XTSI_TRASHSETTINGS           5844
+#define ID_XTSI_TRASHSETTINGS           5845
 
-#define ID_XTSI_ORIGFOLDER              5845
-#define ID_XTSI_DELDATE                 5846
-#define ID_XTSI_DELTIME                 5847
-#define ID_XTSI_SIZE                    5848
+#define ID_XTSI_ORIGFOLDER              5846
+#define ID_XTSI_DELDATE                 5847
+#define ID_XTSI_DELTIME                 5848
+#define ID_XTSI_SIZE                    5849
 
 // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-#define ID_XSSI_HOTKEY_TITLE            5849
-#define ID_XSSI_HOTKEY_FOLDER           5850
-#define ID_XSSI_HOTKEY_HANDLE           5851
-#define ID_XSSI_HOTKEY_HOTKEY           5852
+#define ID_XSSI_HOTKEY_TITLE            5850
+#define ID_XSSI_HOTKEY_FOLDER           5851
+#define ID_XSSI_HOTKEY_HANDLE           5852
+#define ID_XSSI_HOTKEY_HOTKEY           5853
 
 // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-#define ID_XSSI_CLSLIST_INDEX           5853
-#define ID_XSSI_CLSLIST_METHOD          5854
-#define ID_XSSI_CLSLIST_ADDRESS         5855
-#define ID_XSSI_CLSLIST_CLASS           5856
-#define ID_XSSI_CLSLIST_OVERRIDDENBY    5857
+#define ID_XSSI_CLSLIST_INDEX           5854
+#define ID_XSSI_CLSLIST_METHOD          5855
+#define ID_XSSI_CLSLIST_ADDRESS         5856
+#define ID_XSSI_CLSLIST_CLASS           5857
+#define ID_XSSI_CLSLIST_OVERRIDDENBY    5858
+
+// "Special functions" on XWPMouse "Movement" page
+#define ID_XSSI_SPECIAL_WINDOWLIST      5859
+#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5860
 
 /******************************************
  *  Features on XWPSetup "Features" page  *
@@ -1266,11 +1274,9 @@
 
 #define ID_XCSI_GENERALFEATURES         5999
 #define ID_XCSI_REPLACEICONS            6000
-#define ID_XCSI_XWPHOOK                 6001
 #define ID_XCSI_ADDOBJECTPAGE           6002
 #define ID_XCSI_REPLACEFILEPAGE         6003
 #define ID_XCSI_XSYSTEMSOUNDS           6004
-#define ID_XCSI_ANIMOUSE                6005
 
 #define ID_XCSI_FOLDERFEATURES          6010
 #define ID_XCSI_ENABLESTATUSBARS        6011
@@ -1289,6 +1295,11 @@
 #define ID_XCSI_REPLFILEEXISTS          6043
 #define ID_XCSI_REPLDRIVENOTREADY       6044
 #define ID_XCSI_DELETEINTOTRASHCAN      6045
+
+#define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
+#define ID_XCSI_XWPHOOK                 6051
+#define ID_XCSI_ANIMOUSE                6052
+#define ID_XCSI_NUMLOCKON               6053
 
 /******************************************
  *          Treesize                      *
@@ -1319,6 +1330,17 @@
 
 #define ID_TS_ICON                      10020
 
+/******************************************
+ *          NetscapeDDE                   *
+ ******************************************/
 
+#define ID_NDD_EXPLAIN                  10100
+#define ID_NDD_QUERYSTART               10101
+#define ID_NDD_CONTACTING               10102
+#define ID_NDD_STARTING                 10103
+
+#define ID_ND_ICON                      10110
 
 #endif
+
+

@@ -8,7 +8,7 @@
  *      XFolder is probably the most complex class of this
  *      package. Not only are context menus manipulated, but
  *      open folder view windows are also subclassed to
- *      introduce additional functionality (fnwpSubclassedFolderFrame),
+ *      introduce additional functionality (fdr_fnwpSubclassedFolderFrame),
  *      and we manipulate folder sorting and add status bars
  *      to open folder views.
  *
@@ -240,6 +240,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     {
         // update open views of this folder
         _xwpForEachOpenView(somSelf, 0, &fdrUpdateFolderSorts);
+        // save instance data
         _wpSaveDeferred(somSelf);
         // update folder "Sort" notebook page, if open
         ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
@@ -682,7 +683,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
  *
  *      2)   The Worker thread then goes thru the (ordered) contents of
  *                the specified folder. For each object found, it posts
- *                T1M_POCCALLBACK to fnwpThread1Object, which will then in
+ *                T1M_POCCALLBACK to krn_fnwpThread1Object, which will then in
  *                turn call your callback on thread 1.
  *
  *      3)   The Worker thread then either waits for the object to
@@ -1277,153 +1278,181 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
  *      this instance method is called to allow a
  *      newly created object to initialize itself.
  *      XFolder will examine its setup strings here.
+ *
+ *@@changed V0.9.1 (2000-01-03) [umoeller]: now processing our own strings first
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
 {
-    BOOL        rc,
-                fChanged = FALSE;
-    CHAR        szValue[CCHMAXPATH+1];
+    BOOL        rc = FALSE,             // processed
+                fChanged = FALSE,       // instance data changed
+                fCallParent = TRUE;
+    CHAR        szValue[CCHMAXPATH + 1];
     ULONG       cbValue;
-    USHORT      usDefaultSort, usAlwaysSort;
 
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpSetup");
 
     rc = (XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString));
 
-    if (rc)
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "SNAPTOGRID", szValue, &cbValue))
+    {
+        rc = TRUE;
+        fChanged = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _bSnapToGridInstance = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _bSnapToGridInstance = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            _bSnapToGridInstance = 2;
+        else if (strnicmp(szValue, "EXEC", 4) == 0)
+        {
+            fdrSnapToGrid(somSelf, FALSE);
+            fChanged = FALSE;
+        }
+        else
+        {
+            fChanged = FALSE;
+            rc = FALSE;
+        }
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "FULLPATH", szValue, &cbValue))
+    {
+        fChanged = TRUE;
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _bFullPathInstance = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _bFullPathInstance = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            _bFullPathInstance = 2;
+
+        fdrUpdateAllFrameWndTitles(somSelf);
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "ACCELERATORS", szValue, &cbValue))
+    {
+        fChanged = TRUE;
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _bFolderHotkeysInstance = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _bFolderHotkeysInstance = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            _bFolderHotkeysInstance = 2;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "FAVORITEFOLDER", szValue, &cbValue))
+    {
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _xwpMakeFavoriteFolder(somSelf, FALSE);
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _xwpMakeFavoriteFolder(somSelf, TRUE);
+        // fChanged = TRUE;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "QUICKOPEN", szValue, &cbValue))
+    {
+        rc = TRUE;
+        if (strnicmp(szValue, "NO", 2) == 0)
+            _xwpSetQuickOpen(somSelf, FALSE);
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            _xwpSetQuickOpen(somSelf, TRUE);
+        // fChanged = TRUE;
+    }
+
+    if (somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
     {
         cbValue = sizeof(szValue);
         if (_wpScanSetupString(somSelf, pszSetupString,
-                    "SNAPTOGRID", szValue, &cbValue))
+                               "STATUSBAR", szValue, &cbValue))
         {
+            rc = TRUE;
             if (strnicmp(szValue, "NO", 2) == 0)
-                _bSnapToGridInstance = 0;
+                _bStatusBarInstance = STATUSBAR_OFF;
             else if (strnicmp(szValue, "YES", 3) == 0)
-                _bSnapToGridInstance = 1;
+                _bStatusBarInstance = STATUSBAR_ON;
             else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-                _bSnapToGridInstance = 2;
-            else if (strnicmp(szValue, "EXEC", 4) == 0)
-                fdrSnapToGrid(somSelf, FALSE);
-            fChanged = TRUE;
+                _bStatusBarInstance = STATUSBAR_DEFAULT;
         }
+        xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
+                          (MPARAM)1,  // show/hide flag
+                          MPNULL);
+        fChanged = TRUE;
+    }
 
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "FULLPATH", szValue, &cbValue))
-        {
-            if (strnicmp(szValue, "NO", 2) == 0)
-                _bFullPathInstance = 0;
-            else if (strnicmp(szValue, "YES", 3) == 0)
-                _bFullPathInstance = 1;
-            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-                _bFullPathInstance = 2;
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "ALWAYSSORT", szValue, &cbValue))
+    {
+        USHORT      usDefaultSort, usAlwaysSort;
 
-            fdrUpdateAllFrameWndTitles(somSelf);
-            fChanged = TRUE;
-        }
-
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "ACCELERATORS", szValue, &cbValue))
-        {
-            if (strnicmp(szValue, "NO", 2) == 0)
-                _bFolderHotkeysInstance = 0;
-            else if (strnicmp(szValue, "YES", 3) == 0)
-                _bFolderHotkeysInstance = 1;
-            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-                _bFolderHotkeysInstance = 2;
-            fChanged = TRUE;
-        }
-
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "FAVORITEFOLDER", szValue, &cbValue))
-        {
-            if (strnicmp(szValue, "NO", 2) == 0)
-                _xwpMakeFavoriteFolder(somSelf, FALSE);
-            else if (strnicmp(szValue, "YES", 3) == 0)
-                _xwpMakeFavoriteFolder(somSelf, TRUE);
-            fChanged = TRUE;
-        }
-
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "QUICKOPEN", szValue, &cbValue))
-        {
-            if (strnicmp(szValue, "NO", 2) == 0)
-                _xwpSetQuickOpen(somSelf, FALSE);
-            else if (strnicmp(szValue, "YES", 3) == 0)
-                _xwpSetQuickOpen(somSelf, TRUE);
-            fChanged = TRUE;
-        }
-
-        if (somSelf != _wpclsQueryActiveDesktop(_WPDesktop))
-        {
-            cbValue = sizeof(szValue);
-            if (_wpScanSetupString(somSelf, pszSetupString,
-                        "STATUSBAR", szValue, &cbValue))
-            {
-                if (strnicmp(szValue, "NO", 2) == 0)
-                    _bStatusBarInstance = STATUSBAR_OFF;
-                else if (strnicmp(szValue, "YES", 3) == 0)
-                    _bStatusBarInstance = STATUSBAR_ON;
-                else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-                    _bStatusBarInstance = STATUSBAR_DEFAULT;
-            }
-            xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                    (MPARAM)1,  // show/hide flag
-                    MPNULL);
-            fChanged = TRUE;
-        }
-
+        rc = TRUE;
         _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
 
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "ALWAYSSORT", szValue, &cbValue))
-        {
-            if (strnicmp(szValue, "NO", 2) == 0)
-                usAlwaysSort = 0;
-            else if (strnicmp(szValue, "YES", 3) == 0)
-                usAlwaysSort = 1;
-            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
-                usAlwaysSort = SET_DEFAULT;
-            _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
-            fChanged = TRUE;
-        }
-
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "DEFAULTSORT", szValue, &cbValue))
-        {
-            LONG lValue;
-            sscanf(szValue, "%d", &lValue);
-            if ( (lValue >=0) && (lValue <= SV_LAST) )
-                usDefaultSort = lValue;
-            else
-                usDefaultSort = SET_DEFAULT;
-            _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
-            fChanged = TRUE;
-        }
-
-        cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, pszSetupString,
-                    "SORTNOW", szValue, &cbValue))
-        {
-            LONG lValue;
-            sscanf(szValue, "%d", &lValue);
-            if ( (lValue >=0) && (lValue <= SV_LAST) )
-                usDefaultSort = lValue;
-            else
-                usDefaultSort = SET_DEFAULT;
-            _xwpclsForEachOpenView(_XFolder, 0, &fdrSortAllViews);
-        }
-
-        if (fChanged)
-            _wpSaveDeferred(somSelf);
+        if (strnicmp(szValue, "NO", 2) == 0)
+            usAlwaysSort = 0;
+        else if (strnicmp(szValue, "YES", 3) == 0)
+            usAlwaysSort = 1;
+        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            usAlwaysSort = SET_DEFAULT;
+        _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
+        // fChanged = TRUE;
     }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "DEFAULTSORT", szValue, &cbValue))
+    {
+        USHORT      usDefaultSort = 0,
+                    usAlwaysSort = 0;
+        LONG lValue;
+
+        rc = TRUE;
+        _xwpQueryFldrSort(somSelf, &usDefaultSort, &usAlwaysSort);
+
+        sscanf(szValue, "%d", &lValue);
+        if ( (lValue >=0) && (lValue <= SV_LAST) )
+            usDefaultSort = lValue;
+        else
+            usDefaultSort = SET_DEFAULT;
+        _xwpSetFldrSort(somSelf, usDefaultSort, usAlwaysSort);
+        // fChanged = TRUE;
+    }
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf, pszSetupString,
+                           "SORTNOW", szValue, &cbValue))
+    {
+        USHORT usSort;
+        LONG lValue;
+
+        sscanf(szValue, "%d", &lValue);
+        if ( (lValue >=0) && (lValue <= SV_LAST) )
+            usSort = lValue;
+        else
+            usSort = SET_DEFAULT;
+
+        _xwpclsForEachOpenView(_XFolder,
+                               usSort,
+                               fdrSortAllViews);
+    }
+
+    if (fChanged)
+        _wpSaveDeferred(somSelf);
+
     return (rc);
 }
 
@@ -2087,7 +2116,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
         // on container whitespace, hwndCnr is passed as
         // NULLHANDLE; we therefore use this ugly
         // workaround
-        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclassedFolderFrame
+        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fdr_fnwpSubclassedFolderFrame
     }
 
     // call menu manipulator common to XFolder and XFldDisk (menus.c)
@@ -2153,7 +2182,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *      We call the parent method first (which will create
  *      the folder window) and then subclass the
  *      resulting frame window with the new
- *      fnwpSubclassedFolderFrame window procedure.
+ *      fdr_fnwpSubclassedFolderFrame window procedure.
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
@@ -2683,6 +2712,7 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
  *
  *      The following params will be passed to pfnwpCallback:
  *      -- HWND       hwnd: the hwnd of the view frame window;
+ *      -- ULONG      msg:  ulMsg, as passed to this method
  *      -- ULONG      mp1:  the view type (as def'd in wpOpen)
  *      -- XFolder*   mp2:  the currently open folder.
  *
@@ -2816,7 +2846,7 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
             // which is opened
             WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
                              WNDCLASS_SUPPLOBJECT,    // class name
-                             (PFNWP)fnwpSupplObject,    // Window procedure
+                             (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
                              0,       // class style
                              4);      // extra window words for SUBCLASSEDLISTITEM
                                       // pointer (see fdrSubclassFolderFrame)

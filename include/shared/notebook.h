@@ -80,7 +80,7 @@
      *@@ CREATENOTEBOOKPAGE:
      *      this structure must be passed to ntbInsertPage
      *      and specifies lots of data according to which
-     *      ntb_fnwpNotebookCommon will react.
+     *      ntb_fnwpPageCommon will react.
      *
      *      Always zero the entire structure and then fill
      *      in only the fields that you need. The top fields
@@ -160,7 +160,7 @@
                 // optional callback function thru which all dialog messages are going.
                 // You can use this if you need additional handling which the above
                 // callbacks do not provide for. This gets really all the messages
-                // which go thru ntb_fnwpNotebookCommon.
+                // which go thru ntb_fnwpPageCommon.
                 //
                 // This callback gets called _after_ all other message processing
                 // (i.e. the "item changed" and "timer" callbacks).
@@ -175,7 +175,7 @@
 
         // 4) The following fields are not intended for _input_ to ntbInsertPage.
         //    Instead, these contain additional data which can be evaluated from
-        //    the callbacks. These fields are only set by ntb_fnwpNotebookCommon
+        //    the callbacks. These fields are only set by ntb_fnwpPageCommon
         //    _after_ the page has been initialized.
         ULONG       ulNotebookPageID; // the PM notebook page ID, as returned by
                                       // wpInsertSettingsPage
@@ -187,9 +187,9 @@
                                       // when the "item changed" callback is called.
                                       // In the callback, this is equivalent to
                                       // calling WinWindowFromID(pcnbp->hwndPage, usControlID).
-        HWND        hwndCnr;          // see next
+        HWND        hwndSourceCnr;    // see next
         PRECORDCORE preccSource;      // this can be set to a container record
-                                      // core in hwndCnr which will be removed
+                                      // core in hwndSourceCnr which will be removed
                                       // source emphasis from when WM_MENUEND
                                       // is received; useful for CN_CONTEXTMENU.
                                       // This gets initialized to -1, because
@@ -200,9 +200,12 @@
                                       // callback with CBI_INIT set. Useful if you
                                       // want to find out if a control should respond
                                       // to something yet.
-        BOOL        fShowWaitPointer; // while TRUE, ntb_fnwpNotebookCommon shows the "Wait" pointer;
+        BOOL        fShowWaitPointer; // while TRUE, ntb_fnwpPageCommon shows the "Wait" pointer;
                                       // only meaningful if another thread is preparing data
-
+        HWND        hwndTooltip;      // if this is != NULL, this window gets destroyed
+                                      // automatically when the notebook page is destroyed.
+                                      // Useful with tooltip controls, which are not destroyed
+                                      // automatically otherwise.
         // 5) Internal use only, do not mess with these.
         PVOID       pnbli;
         PRECORDCORE preccLastSelected;

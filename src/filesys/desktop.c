@@ -11,7 +11,7 @@
  *      --  dtp*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "desktop.h"
+ *@@header "filesys\desktop.h"
  */
 
 /*
@@ -222,9 +222,9 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     if ((fRemoveDefaultShutdownItem) || (!pGlobalSettings->fDTMShutdown))
         winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
-    #ifdef __XWPDEBUG__
-        // if XWorkplace is compiled with debug code
-        // (which includes VAC++ debug memory funcs),
+    #ifdef __DEBUG_ALLOC__
+        // if XWorkplace is compiled with
+        // VAC++ debug memory funcs,
         // add a menu item for listing all memory objects
         winhInsertMenuSeparator(hwndMenu,
                                 MIT_END,
@@ -271,37 +271,14 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
         }
     }
 
-    #ifdef __XWPDEBUG__
-        // if XWorkplace is compiled with debug code
-        // (which includes VAC++ debug memory funcs),
+    #ifdef __DEBUG_ALLOC__
+        // if XWorkplace is compiled with
+        // VAC++ debug memory funcs,
         // check the menu item for listing all memory objects
         if (ulMenuId == WPMENUID_USER)
         {
-            ULONG flStyle = FCF_TITLEBAR | FCF_SYSMENU | FCF_HIDEMAX
-                            | FCF_SIZEBORDER | FCF_SHELLPOSITION
-                            | FCF_NOBYTEALIGN | FCF_TASKLIST;
-            if (WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                                 "XWPMemDebug",
-                                 cmn_fnwpMemDebug, 0L, 0))
-            {
-                HWND hwndClient, hwndCnr;
-                HWND hwndMemFrame = WinCreateStdWindow(HWND_DESKTOP,
-                                                       0L,
-                                                       &flStyle,
-                                                       "XWPMemDebug",
-                                                       "Allocated XWorkplace Memory Objects",
-                                                       0L,
-                                                       NULLHANDLE,     // resource
-                                                       0,
-                                                       &hwndClient);
-                if (hwndMemFrame)
-                {
-                    WinSetWindowPos(hwndMemFrame,
-                                    NULLHANDLE,
-                                    0, 0, 0, 0,
-                                    SWP_SHOW | SWP_ACTIVATE);
-                }
-            }
+            cmnCreateMemDebugWindow();
+            return (TRUE);
         }
 
     #endif
@@ -362,7 +339,7 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DTP_SHUTDOWNMENU,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_SHUTDOWNMENU,
                           (     (pGlobalSettings->fXShutdown)
                             &&  (pGlobalSettings->fDTMShutdown)
                             &&  (!pGlobalSettings->NoWorkerThread)
@@ -484,7 +461,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             // backup old boot logo file
             pcnbp->pUser2 = prfhQueryProfileData(HINI_USER,
-                                                 INIAPP_XFOLDER,
+                                                 INIAPP_XWORKPLACE,
                                                  INIKEY_BOOTLOGOFILE,
                                                  NULL);
 
@@ -568,13 +545,13 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         BOOL    fBootLogoFileExists = (access(pszBootLogoFile, 0) == 0);
         free(pszBootLogoFile);
 
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DTP_LOGOBITMAP,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_LOGOBITMAP,
                           pGlobalSettings->BootLogo);
 
         if (WinQueryObject(XFOLDER_STARTUPID))
-            winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+            WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
 
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
     }
 }
 
@@ -678,13 +655,13 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 PSZ pszNewBootLogoFile = winhQueryWindowText(pcnbp->hwndControl);
                 if (usNotifyCode == EN_CHANGE)
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DTP_TESTLOGO,
+                    WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_TESTLOGO,
                                         (access(pszNewBootLogoFile, 0) == 0));
                 else if (usNotifyCode == EN_KILLFOCUS)
                 {
                     // query new file name from entry field
                     PrfWriteProfileString(HINI_USER,
-                                          INIAPP_XFOLDER,
+                                          INIAPP_XWORKPLACE,
                                           INIKEY_BOOTLOGOFILE,
                                           pszNewBootLogoFile);
                     // update the display by calling the INIT callback
@@ -736,7 +713,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ID_XSDI_DTP_LOGOFILE,
                                       fd.szFullFile);
                     PrfWriteProfileString(HINI_USER,
-                                          INIAPP_XFOLDER,
+                                          INIAPP_XWORKPLACE,
                                           INIKEY_BOOTLOGOFILE,
                                           fd.szFullFile);
                     // update the display by calling the INIT callback
@@ -838,7 +815,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            szSetup,
                                            "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
                 else
                     cmnMessageBoxMsg(pcnbp->hwndPage, 104, 105, MB_OK);
             break; }

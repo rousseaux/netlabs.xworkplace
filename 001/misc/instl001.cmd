@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* create XFolder installation objects
    English version (001)
    (W) (C) Ulrich M”ller. All rights reserved.

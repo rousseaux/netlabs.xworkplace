@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* justinstall.cmd
    set flag in OS2.INI that will make XFolder
    say hello at the next WPS bootup
@@ -9,5 +7,5 @@
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
 call SysLoadFuncs
 
-rc = SysINI('USER', "XFolder", "JustInstalled", '1'||'0'x);
+rc = SysINI('USER', "XWorkplace", "JustInstalled", '1'||'0'x);
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* SHOWALL.CMD
  *
  * This file makes Tree views of folders show all objects of the folder, instead

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* Add BootManager choices to XDesktop shutdown actions */
 /* This will modify the XFolder INI keys in OS2.INI to  */
 /* contain all Bootmanager partitions as user reboot    */

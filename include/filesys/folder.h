@@ -64,26 +64,10 @@
 
     // prototype for wpSetMenuBarVisibility;
     // this is resolved by name (menus.c)
-    /* typedef BOOL SOMLINK FNSETMENUBARVISIBILITY(WPFolder*, ULONG);
-    typedef FNSETMENUBARVISIBILITY *PFNSETMENUBARVISIBILITY; */
 
     typedef BOOL SOMLINK FN_WPSETMENUBARVISIBILITY(WPFolder *somSelf,
                                                    ULONG ulVisibility);
     #pragma linkage(FN_WPSETMENUBARVISIBILITY, system)
-    /* typedef FN_WPSETMENUBARVISIBILITY *somTD_WPFolder_wpSetMenuBarVisibility;
-    #define FN_WPSETMENUBARVISIBILITY "::WPFolder::wpSetMenuBarVisibility"
-    #define WPFolder_wpSetMenuBarVisibility(somSelf,ulVisibility) \
-        (SOM_Resolve(somSelf, WPFolder, wpSetMenuBarVisibility) \
-        (somSelf,ulVisibility))
-    #ifndef SOMGD_wpSetMenuBarVisibility
-        #if (defined(_wpSetMenuBarVisibility) || defined(__wpSetMenuBarVisibility))
-            #undef _wpSetMenuBarVisibility
-            #undef __wpSetMenuBarVisibility
-            #define SOMGD_wpSetMenuBarVisibility 1
-        #else
-            #define _wpSetMenuBarVisibility WPFolder_wpSetMenuBarVisibility
-        #endif
-    #endif */
 
     /* ******************************************************************
      *                                                                  *
@@ -210,9 +194,9 @@
 
         VOID fdrRemovePSLI(PSUBCLASSEDLISTITEM psli);
 
-        MRESULT EXPENTRY fnwpSubclassedFolderFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+        MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 
-        MRESULT EXPENTRY fnwpSupplObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+        MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
         /* ******************************************************************
          *                                                                  *
@@ -254,6 +238,8 @@
      ********************************************************************/
 
     MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* XHELP.CMD
  *
  * This is CommandPak's xhelp command.

@@ -1,5 +1,3 @@
-# $Id$ 
-
 #
 # makefile:
 #       makefile for src/shared directory.
@@ -157,7 +155,7 @@ $(OUTPUTDIR)\notebook.obj: \
 $(OUTPUTDIR)\kernel.obj: \
      $(INC)\setup.h \
      $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+        $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
      $(INC)\classes\xfldr.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
@@ -173,6 +171,7 @@ $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\classes\xwpsetup.ih \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
+     $(INC)\config\sound.h \
      $(INC)\filesys\xthreads.h \
      $(INC)\startshut\apm.h \
      $(INC)\hook\xwphook.h \

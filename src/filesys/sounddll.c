@@ -52,7 +52,7 @@
  *      requests use of the audio device, XWorkplace will stop its
  *      own playing and release the device.
  *
- *@@header "sounddll.h"
+ *@@header "filesys\sounddll.h"
  */
 
 /*

@@ -15,9 +15,7 @@
 #include <os2.h>
 #include "netscdde.h"
 
-POINTER ID_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
-
-rcinclude "netscdde.dlg"
+POINTER 1 LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
 
 MENU    DDEC
 BEGIN

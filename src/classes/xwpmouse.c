@@ -114,8 +114,8 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         pcnbp->pszName = pNLSStrings->pszMouseHookPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEHOOK;
         pcnbp->ulPageID = SP_MOUSEHOOK;
-        pcnbp->pfncbInitPage    = hifMouseHookInitPage;
-        pcnbp->pfncbItemChanged = hifMouseHookItemChanged;
+        pcnbp->pfncbInitPage    = hifMouseMovementInitPage;
+        pcnbp->pfncbItemChanged = hifMouseMovementItemChanged;
         ulrc = ntbInsertPage(pcnbp);
     }
 
@@ -154,7 +154,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->ulDlgID = ID_XSD_MOUSEMAPPINGS2;
         pcnbp->usPageStyleFlags = BKA_MINOR;
-        pcnbp->pszName = pNLSStrings->pszMouseMappings2Page;
+        pcnbp->pszName = pNLSStrings->pszMappingsPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
         pcnbp->ulPageID = SP_MOUSEMAPPINGS2;
         pcnbp->pfncbInitPage    = hifMouseMappings2InitPage;
@@ -177,7 +177,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
     XWPMouseMethodDebug("XWPMouse","xms_xwpAddAnimatedMousePointerPage");
 
-    // xxx this is the place where to insert the animated mouse
+    // ### this is the place where to insert the animated mouse
     // pointers page
 
     return (0);

@@ -102,19 +102,20 @@
          *                                                                  *
          ********************************************************************/
 
-        VOID hifMouseHookInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                  ULONG flFlags);
-
-        MRESULT hifMouseHookItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                        USHORT usItemID, USHORT usNotifyCode,
-                                        ULONG ulExtra);
-
         VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,
                                        ULONG flFlags);
 
         MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              USHORT usItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
+
+        VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG flFlags);
+
+        MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                            USHORT usItemID, USHORT usNotifyCode,
+                                            ULONG ulExtra);
+
     #endif
 
 #endif

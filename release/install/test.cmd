@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* AufrufPfad = C:\os2tools\xfolder\install> */
 
 /* DO NOT CHANGE the following */

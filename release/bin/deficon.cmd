@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* DEFICON.CMD
  *
  * Change current directory's default view to Icon view.

@@ -1,5 +1,3 @@
-# $Id$ 
-
 
 #
 # makefile:
@@ -263,7 +261,7 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
 $(XWPRUNNING)\bin\xfldr.dll: bin\$(@B).dll
         unlock $(XWPRUNNING)\bin\$(@B).dll
         cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy bin\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -289,9 +287,9 @@ $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
         @cd bin
         $(RC) xwp.res $(@B).dll
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(@B).map > NUL
+        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
 !endif
         @cd ..
 
@@ -301,7 +299,7 @@ $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 $(XWPRUNNING)\bin\xwpdaemn.exe: bin\exes\$(@B).exe
         unlock $(XWPRUNNING)\bin\exes\$(@B).exe
         cmd.exe /c copy bin\exes\$(@B).exe $(XWPRUNNING)\bin
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy bin\exes\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -319,9 +317,9 @@ bin\exes\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exes\$(
         $(LINK) /OUT:bin\exes\$(@B).exe src\hook\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
         @cd bin\exes
         $(RC) $(@B).res $(@B).exe
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(@B).map > NUL
+        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
 !endif
         @cd ..\..
 
@@ -331,7 +329,7 @@ bin\exes\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exes\$(
 $(XWPRUNNING)\bin\xwphook.dll: bin\$(@B).dll
 # no unlock, this is a hook        unlock $(XWPRUNNING)\bin\$(@B).dll
         cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy bin\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -354,9 +352,9 @@ bin\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
         @echo $(MAKEDIR)\makefile: Linking bin\$(@B).dll
         $(LINK) /OUT:bin\$(@B).dll src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
         @cd bin
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(@B).map > NUL
+        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
 !endif
         @cd ..
 
@@ -366,7 +364,7 @@ bin\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
 $(XWPRUNNING)\bin\sound.dll: bin\$(@B).dll
         unlock $(XWPRUNNING)\bin\$(@B).dll
         cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy bin\$(@B).sym $(XWPRUNNING)\bin
 !endif
@@ -379,9 +377,9 @@ bin\sound.dll: src\shared\sounddll.def bin\sounddll.obj
         @echo $(MAKEDIR)\makefile: Linking bin\$(@B).dll
         $(LINK) /OUT:bin\$(@B).dll bin\sounddll.obj src\shared\sounddll.def mmpm2.lib $(PMPRINTF_LIB)
         @cd bin
-!ifndef XWPDEBUG
+!ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(@B).map > NUL
+        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
 !endif
         @cd ..
 
@@ -415,6 +413,24 @@ dlgedit:
 # move newly created RES file back to \bin
     @cmd.exe /c copy xfldr001.res ..\bin
     @cmd.exe /c del xfldr001.res
+    @cmd.exe /c del dlgids.h
+    @nmake -nologo all "MAINMAKERUNNING=YES"
+    @cd ..\..
+
+dlgedit049:
+# added V0.9.1 (99-12-19) [umoeller]
+    @echo $(MAKEDIR)\makefile: Calling DLGEDIT.EXE
+    @cd 049_de\dll
+# rebuild RES file in bin
+    @nmake -nologo all "MAINMAKERUNNING=YES"
+# copy RES file to frontend.res so dlgedit finds it
+    @cmd.exe /c copy ..\..\bin\xfldr049.res
+    @cmd.exe /c copy ..\..\include\dlgids.h
+# invoke DLGEDIT
+    dlgedit xfldr049.res
+# move newly created RES file back to \bin
+    @cmd.exe /c copy xfldr049.res ..\bin
+    @cmd.exe /c del xfldr049.res
     @cmd.exe /c del dlgids.h
     @nmake -nologo all "MAINMAKERUNNING=YES"
     @cd ..\..

@@ -4,8 +4,14 @@
  *      implementation file for the XFolder folder hotkeys.
  *
  *      This code gets interfaced from method overrides in
- *      xfldr.c, from fnwpSubclassedFolderFrame, and from
+ *      xfldr.c, from fdr_fnwpSubclassedFolderFrame, and from
  *      XFldWPS (xfwps.c).
+ *
+ *      This is for _folder_ hotkeys only, which are implemented
+ *      thru folder subclassing (fdr_fnwpSubclassedFolderFrame),
+ *      which in turn calls fdrProcessFldrHotkey.
+ *      The global object hotkeys are instead implemented using
+ *      the XWorkplace hook (xwphook.c).
  *
  *      This file is ALL new with V0.9.0. Most of this code
  *      used to be in common.c before V0.9.0.
@@ -14,7 +20,7 @@
  *      --  fdr*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "folder.h"
+ *@@header "filesys\folder.h"
  */
 
 /*
@@ -212,7 +218,7 @@ void fdrLoadDefaultFldrHotkeys(VOID)
 void fdrLoadFolderHotkeys(VOID)
 {
     ULONG ulCopied2 = sizeof(FolderHotkeys);
-    if (!PrfQueryProfileData(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_ACCELERATORS,
+    if (!PrfQueryProfileData(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
                 &FolderHotkeys, &ulCopied2))
         fdrLoadDefaultFldrHotkeys();
 }
@@ -232,29 +238,30 @@ void fdrStoreFldrHotkeys(VOID)
     while (FolderHotkeys[i2].usCommand)
         i2++;
 
-    PrfWriteProfileData(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_ACCELERATORS,
+    PrfWriteProfileData(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
         &FolderHotkeys, (i2+1) * sizeof(XFLDHOTKEY));
 }
 
 /*
  *@@ fdrProcessFldrHotkey:
- *      this is called by the subclassed folder frame wnd proc
- *      to check for whether a given WM_CHAR message matches
+ *      this is called by fdr_fnwpSubclassedFolderFrame to
+ *      check for whether a given WM_CHAR message matches
  *      one of the folder hotkeys.
  *
  *      The parameters are those of the WM_CHAR message. This
  *      returns TRUE if the pressed key was a hotkey; in that
  *      case, the corresponding WM_COMMAND message is
  *      automatically posted to the folder frame, which will
- *      cause the defined action to occur.
+ *      cause the defined action to occur (that is, the WPS
+ *      will call the proper wpMenuItemSelected method).
  *
  *@@changed V0.9.0 [umoeller]: moved this here from common.c
  */
 
-BOOL fdrProcessFldrHotkey(HWND hwndFrame, MPARAM mp1, MPARAM mp2)
+BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
+                          MPARAM mp1,       // in: as in WM_CHAR
+                          MPARAM mp2)       // in: as in WM_CHAR
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-
     USHORT  us;
 
     USHORT usFlags    = SHORT1FROMMP(mp1);
@@ -300,23 +307,29 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame, MPARAM mp1, MPARAM mp2)
         while (FolderHotkeys[us].usCommand)
         {
             USHORT usCommand;
-            if (
-                   (  (FolderHotkeys[us].usFlags == usFlags)
+            if (      (FolderHotkeys[us].usFlags == usFlags)
                    && (FolderHotkeys[us].usKeyCode == usKeyCode)
-                   )
                )
             {   // OK: this is a hotkey; find the corresponding
                 // "command" (= menu ID) and post it to the frame
                 // window, which will execute it
                 usCommand = FolderHotkeys[us].usCommand;
-                if ( (usCommand >= WPMENUID_USER) &&
-                     (usCommand < WPMENUID_USER+FIRST_VARIABLE) )
-                        usCommand += pGlobalSettings->VarMenuOffset;
+
+                if (    (usCommand >= WPMENUID_USER)
+                     && (usCommand < WPMENUID_USER+FIRST_VARIABLE)
+                   )
+                {
+                    // it's one of the "variable" menu items:
+                    // add the global variable menu offset
+                    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+                    usCommand += pGlobalSettings->VarMenuOffset;
+                }
+
                 WinPostMsg(hwndFrame,
-                        WM_COMMAND,
-                        (MPARAM)usCommand,
-                        MPFROM2SHORT(CMDSRC_MENU,
-                                FALSE) );     // results from keyboard operation
+                           WM_COMMAND,
+                           (MPARAM)usCommand,
+                           MPFROM2SHORT(CMDSRC_MENU,
+                                   FALSE) );     // results from keyboard operation
 
                 #ifdef DEBUG_KEYS
                     _Pmpf(("  Posting command 0x%lX", usCommand));
@@ -344,7 +357,8 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame, MPARAM mp1, MPARAM mp2)
 
 CHAR  szLBEntries[FLDRHOTKEYCOUNT][MAXLBENTRYLENGTH];
 
-ULONG szLBStringIDs[FLDRHOTKEYCOUNT] = {
+ULONG szLBStringIDs[FLDRHOTKEYCOUNT] =
+    {
          ID_XSSI_LB_REFRESHNOW          ,
          ID_XSSI_LB_SNAPTOGRID          ,
          ID_XSSI_LB_SELECTALL           ,
@@ -400,7 +414,8 @@ ULONG szLBStringIDs[FLDRHOTKEYCOUNT] = {
 
     };
 
-ULONG ulLBCommands[FLDRHOTKEYCOUNT] = {
+ULONG ulLBCommands[FLDRHOTKEYCOUNT] =
+    {
         WPMENUID_REFRESH,
         ID_XFMI_OFS_SNAPTOGRID,
         WPMENUID_SELALL,
@@ -626,8 +641,9 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
                     // show description
                     cmnDescribeKey(szKeyName, usFlags, usKeyCode);
                     WinSetWindowText(hwndEdit, szKeyName);
-                    winhEnableDlgItem(WinQueryWindow(hwndEdit, QW_PARENT),
-                            ID_XSDI_CLEARACCEL, TRUE);
+                    WinEnableControl(WinQueryWindow(hwndEdit, QW_PARENT),
+                                     ID_XSDI_CLEARACCEL,
+                                     TRUE);
 
                     // save hotkeys to INIs
                     fdrStoreFldrHotkeys();
@@ -681,17 +697,17 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // second pointer
             pcnbp->pUser2 = malloc(FLDRHOTKEYSSIZE);
             memcpy(pcnbp->pUser2,
-                        fdrQueryFldrHotkeys(),
-                        FLDRHOTKEYSSIZE);
+                   fdrQueryFldrHotkeys(),
+                   FLDRHOTKEYSSIZE);
         }
 
         for (i = 0; i < FLDRHOTKEYCOUNT; i++)
         {
             if (WinLoadString(hab, hmod,
-                    szLBStringIDs[i],
-                    sizeof(szLBEntries[i]),
-                    szLBEntries[i])
-               == 0)
+                              szLBStringIDs[i],
+                              sizeof(szLBEntries[i]),
+                              szLBEntries[i])
+                     == 0)
             {
                 DebugBox("XFolder", "Unable to load strings.");
                 break;
@@ -714,9 +730,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             if (szLBEntries[i])
             {
                 WinSendMsg(hwndListbox,
-                        LM_INSERTITEM,
-                        (MPARAM)LIT_SORTASCENDING,
-                        (MPARAM)szLBEntries[i]);
+                           LM_INSERTITEM,
+                           (MPARAM)LIT_SORTASCENDING,
+                           (MPARAM)szLBEntries[i]);
             }
             else break;
         }
@@ -725,9 +741,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = !(pGlobalSettings->NoSubclassing);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ACCELERATORS, fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_LISTBOX, fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ACCELERATORS, fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_LISTBOX, fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, fEnable);
     }
 }
 
@@ -770,7 +786,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     cmnDescribeKey(szKeyName,
                                    pHotkeyFound->usFlags,
                                    pHotkeyFound->usKeyCode);
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, TRUE);
+                    WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, TRUE);
                 }
                 else
                 {
@@ -778,15 +794,15 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     strcpy(szKeyName,
                         (cmnQueryNLSStrings())->pszNotDefined);
 
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, FALSE);
                 }
 
                 // set edit field to description text
                 WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_DESCRIPTION,
                                   szKeyName);
                 // enable previously disabled items
-                winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DESCRIPTION, TRUE);
-                winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
+                WinEnableControl(pcnbp->hwndPage, ID_XSDI_DESCRIPTION, TRUE);
+                WinEnableControl(pcnbp->hwndPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
             }
         break;
 
@@ -818,7 +834,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_DESCRIPTION,
                             (cmnQueryNLSStrings())->pszNotDefined);
-                winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, FALSE);
+                WinEnableControl(pcnbp->hwndPage, ID_XSDI_CLEARACCEL, FALSE);
                 fdrStoreFldrHotkeys();
             }
         break; }

@@ -93,6 +93,15 @@
                                          ULONG ulExtra);
     #endif
 
+    BOOL cllModifyPopupMenu(XWPClassList *somSelf,
+                            HWND hwndMenu,
+                            HWND hwndCnr,
+                            ULONG iPosition);
+
+    BOOL cllMenuItemSelected(XWPClassList *somSelf,
+                             HWND hwndFrame,
+                             ULONG ulMenuId);
+
     HWND cllCreateClassListView(WPObject *somSelf,
                                 HWND hwndCnr,
                                 ULONG ulView);

@@ -58,12 +58,13 @@ BEGIN
     MENUITEM "~Help", ID_XFMI_HELP
 END
 
-MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+/* the following has been removed V0.9.1 (99-12-28) [umoeller] */
+/* MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "~Register new class...", ID_XLMI_REGISTER
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Help", ID_XFMI_HELP
-END
+END */
 
 // the following two have been added with V0.9.0 */
 MENU ID_XLM_METHOD_NOSEL LOADONCALL MOVEABLE DISCARDABLE
@@ -187,7 +188,7 @@ BEGIN
     MENUITEM "Object ~properties", ID_XSMI_HOTKEYS_PROPERTIES
     MENUITEM "Open folder", ID_XSMI_HOTKEYS_OPENFOLDER
     MENUITEM "", 1, MIS_SEPARATOR
-    MENUITEM "~Remove hotkey", ID_XSMI_HOTKEYS_REMOVE
+    MENUITEM "~Remove hotkey...", ID_XSMI_HOTKEYS_REMOVE
 END
 
 /* here come lots of little strings which XWorkplace uses in all kinds
@@ -353,6 +354,7 @@ BEGIN
     ID_XSSI_PGMFILE_MODULE          "~Module"
     ID_XSSI_OBJECTHOTKEYSPAGE       "~Hotkeys"
     ID_XSSI_MOUSEHOOKPAGE           "~Movement"
+    ID_XSSI_MAPPINGSPAGE            "~Mappings"
 
     /* sort strings */
     ID_XSSI_SV_NAME                 "Name"
@@ -423,6 +425,8 @@ BEGIN
     ID_XFSI_OPENCLASSLIST               "~Class list"
     /* default title for object */
     ID_XFSI_XWPCLASSLIST                "WPS class list"
+    /* the following is new with V0.9.1 (99-12-28) [umoeller] */
+    ID_XFSI_REGISTERCLASS               "Register new class..."
 
     /* strings for XWPSound */
     ID_XSSI_SOUNDSCHEMENONE             "<none>"
@@ -460,6 +464,10 @@ BEGIN
     ID_XSSI_CLSLIST_CLASS               "Class"
     ID_XSSI_CLSLIST_OVERRIDDENBY        "Overridden by"
 
+    /* "Special functions" on XWPMouse "Movement" page */
+    ID_XSSI_SPECIAL_WINDOWLIST          "Window list"
+    ID_XSSI_SPECIAL_DESKTOPPOPUP        "Desktop's context menu"
+
 END
 
 /* Strings for XWPSetup "Features" page
@@ -469,16 +477,19 @@ BEGIN
     ID_XCSI_GENERALFEATURES             "General features"
     ID_XCSI_REPLACEICONS                "Replace Icons"
     ID_XCSI_ADDOBJECTPAGE               "Add ""Object"" page to all settings notebooks"
-    ID_XCSI_XWPHOOK                     "Enable mouse and keyboard features (XWorkplace Hook)"
     ID_XCSI_REPLACEFILEPAGE             "Replace ""File"" and ""Details"" pages"
     ID_XCSI_XSYSTEMSOUNDS               "Extended system sounds"
-    ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
 
     ID_XCSI_FOLDERFEATURES              "Folder features"
     ID_XCSI_ENABLESTATUSBARS            "Enable folder status bars"
     ID_XCSI_ENABLESNAP2GRID             "Enable folder ""Snap to grid"""
     ID_XCSI_ENABLEFOLDERHOTKEYS         "Enable folder hotkeys"
     ID_XCSI_EXTFOLDERSORT               "Extended folder sorting"
+
+    ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
+    ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
+    ID_XCSI_XWPHOOK                     "Enable XWorkplace Hook"
+    ID_XCSI_NUMLOCKON                   "Switch NumLock on at startup"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace WPS archiving"
@@ -493,7 +504,7 @@ BEGIN
     ID_XCSI_DELETEINTOTRASHCAN          "Trash can ""Delete"" support"
 END
 
-/* Treesize definitions */
+/* Treesize definitions; added V0.9.0 */
 
 POINTER ID_TS_ICON LOADONCALL MOVEABLE DISCARDABLE treesize.ico
 
@@ -520,6 +531,9 @@ BEGIN
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Close", 1000
 END
+
+/* Netscape DDE definitions; added V0.9.1 (99-12-19) [umoeller] */
+POINTER ID_ND_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
 
 rcinclude "xfldr001.dlg"
 

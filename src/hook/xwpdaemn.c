@@ -2,9 +2,9 @@
 /*
  *@@sourcefile xwpdaemn.c:
  *      this has the code for the XWorkplace Daemon process
- *      (XWPDAEMN.EXE), which is a PM program with a single
- *      object window running in the background. This does
- *      not appear in the window list, but is only seen
+ *      (XWPDAEMN.EXE), which is an invisible PM program with
+ *      a single object window running in the background. This
+ *      doesnot appear in the window list, but is only seen
  *      by the XWorkplace main DLL (XFLDR.DLL).
  *
  *      The daemon is started automatically by XFLDR.DLL upon
@@ -24,7 +24,7 @@
  *          the hook. See xwphook.c for details.
  *
  *      2.  Keeping track of WPS restarts, since the daemon
- *          keeps running while the WPS restarts. Shared
+ *          keeps running even while the WPS restarts. Shared
  *          memory is used for communication.
  *
  *          The interaction between XWPDAEMN.EXE and XFLDR.DLL works
@@ -76,7 +76,7 @@
  *          DAEMONSHARED structure: either the WPS process (with
  *          XFLDR.DLL) or XWPDAEMON.EXE or both. The structure
  *          only gets freed if both processes are killed, which
- *          is not possible under normal circumstances.
+ *          is not probable under normal circumstances.
  *
  *          This new approach has several advantages:
  *
@@ -100,7 +100,7 @@
  *      Both the hook and the daemon are all new with V0.9.0.
  *
  *@@added V0.9.0 [umoeller]
- *@@header "xwphook.h"
+ *@@header "hook\xwphook.h"
  */
 
 /*
@@ -546,6 +546,25 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             mrc = (MPARAM)LoadHookConfig();
         break;
 
+        /*
+         *@@ XDM_HOOKINSTALL:
+         *      this must be sent while the daemon
+         *      is running to install or deinstall
+         *      the hook. This does not affect operation
+         *      of the daemon, which will keep running.
+         *
+         *      This is used by the XWPSetup "Features"
+         *      page.
+         *
+         *      Parameters:
+         *      -- BOOL mp1: if TRUE, the hook will be installed;
+         *                   if FALSE, the hook will be deinstalled.
+         *
+         *      Return value:
+         *      -- BOOL TRUE if the hook is now installed,
+         *              FALSE if it is not.
+         */
+
         case XDM_HOOKINSTALL:
             if (mp1)
             {
@@ -561,7 +580,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         break;
 
         /*
-         * XDM_DESKTOPREADY:
+         *@@ XDM_DESKTOPREADY:
          *      this gets posted from XFLDR.DLL after
          *      the WPS desktop frame has been opened
          *      so that the daemon/hook knows about the
@@ -579,7 +598,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         break;
 
         /*
-         * XDM_HOTKEYPRESSED:
+         *@@ XDM_HOTKEYPRESSED:
          *      message posted by the hook when
          *      a global hotkey is pressed. We forward
          *      this message on to the XWorkplace thread-1
@@ -608,7 +627,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         break;
 
         /*
-         * XDM_HOTKEYSCHANGED:
+         *@@ XDM_HOTKEYSCHANGED:
          *      message posted by XFLDR.DLL when the
          *      list of global object hotkeys has changed.
          *      This is posted after the new list has been
@@ -623,7 +642,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         break;
 
         /*
-         * XDM_SLIDINGFOCUS:
+         *@@ XDM_SLIDINGFOCUS:
          *      message posted by the hook when the mouse
          *      pointer has moved to a new frame window.
          *
@@ -654,7 +673,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         break;
 
         /*
-         * XDM_HOTCORNER:
+         *@@ XDM_HOTCORNER:
          *      message posted by the hook when the mouse
          *      has reached one of the four corners of the
          *      screen ("hot corners"). The daemon then
@@ -681,7 +700,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         WinPostMsg(pDaemonShared->hwndThread1Object,
                                    T1M_OPENOBJECTFROMHANDLE,
                                    (MPARAM)(pHookData->HookConfig.ahobjHotCornerObjects[lIndex]),
-                                   (MPARAM)NULL);
+                                   (MPARAM)(lIndex + 1));
 
             }
         break;

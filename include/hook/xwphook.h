@@ -28,6 +28,7 @@
      ********************************************************************/
 
     #define IDSHMEM_DAEMON          "\\SHAREMEM\\XWORKPLC\\DAEMON.DAT"
+            // DAEMONSHARED structure
     #define IDSHMEM_HOTKEYS         "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
     #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.SEM"
     #define SEM_TIMEOUT             4000
@@ -94,7 +95,8 @@
                             // If the hiword of the item is 0xFFFF, this
                             // means a special function has been defined.
                             // Currently the following exist:
-                            //      0xFFFF0000 = show window list.
+                            //      0xFFFF0000 = show window list;
+                            //      0xFFFF0001 = show Desktop's context menu.
                             // Otherwise (> 0 and < 0xFFFF0000), we have
                             // a "real" object handle, and a regular WPS
                             // object is to be opened.
@@ -172,7 +174,7 @@
                 // this is set by the daemon after it has created the object window,
                 // so if this is != NULLHANDLE, the daemon is running
         HWND        hwndThread1Object;
-                // XFLDR.DLL thread-1 object window (fnwpThread1Object, shared\kernel.c);
+                // XFLDR.DLL thread-1 object window (krn_fnwpThread1Object, shared\kernel.c);
                 // this is set by krnInitializeXWorkplace before starting the daemon
                 // and after the WPS re-initializes
         BOOL        fHookInstalled;
@@ -324,116 +326,17 @@
      *                                                                  *
      ********************************************************************/
 
-    /*
-     *@@ XDM_HOOKCONFIG:
-     *      this gets _sent_ from XFLDR.DLL when
-     *      daemon/hook settings have changed.
-     *      This causes HOOKDATA.HOOKCONFIG to be
-     *      updated from OS2.INI.
-     *
-     *      Parameters: none.
-     *
-     *      Return value:
-     *      -- BOOL TRUE if successful.
-     */
-
     #define XDM_HOOKCONFIG          WM_USER
-
-    /*
-     *@@ XDM_HOOKINSTALL:
-     *      this must be sent while the daemon
-     *      is running to install or deinstall
-     *      the hook. This does not affect operation
-     *      of the daemon, which will keep running.
-     *
-     *      This is used by the XWPSetup "Features"
-     *      page.
-     *
-     *      Parameters:
-     *      -- BOOL mp1: if TRUE, the hook will be installed;
-     *                   if FALSE, the hook will be deinstalled.
-     *
-     *      Return value:
-     *      -- BOOL TRUE if the hook is now installed,
-     *              FALSE if it is not.
-     */
 
     #define XDM_HOOKINSTALL         WM_USER + 1
 
-    /*
-     *@@ XDM_DESKTOPREADY:
-     *      this gets posted from XFLDR.DLL after
-     *      the WPS desktop frame has been opened
-     *      so that the daemon/hook knows about the
-     *      HWND of the WPS desktop. This is necessary
-     *      for the sliding focus feature.
-     *
-     *      Parameters:
-     *      -- HWND mp1: desktop frame HWND.
-     *      -- mp2: unused, always 0.
-     */
-
     #define XDM_DESKTOPREADY        WM_USER + 2
-
-    /*
-     *@@ XDM_HOTKEYPRESSED:
-     *      message posted by the hook when
-     *      a global hotkey is pressed. We forward
-     *      this message on to the XWorkplace thread-1
-     *      object window so that the object can be
-     *      started on thread 1 of the WPS. If we used
-     *      WinOpenObject here, the object would be
-     *      running on a thread other than thread 1,
-     *      which is not really desirable.
-     *
-     *      Parameters:
-     *      -- ULONG mp1: hotkey identifier, probably WPS object handle.
-     */
 
     #define XDM_HOTKEYPRESSED       WM_USER + 3
 
-    /*
-     *@@ XDM_HOTKEYSCHANGED:
-     *      message posted by XFLDR.DLL when the
-     *      list of global object hotkeys has changed.
-     *      This is posted after the new list has been
-     *      written to OS2.INI so we can safely re-read
-     *      this now and notify the hook of the change.
-     *
-     *      Parameters: none.
-     */
-
     #define XDM_HOTKEYSCHANGED      WM_USER + 4
 
-    /*
-     *@@ XDM_SLIDINGFOCUS:
-     *      message posted by the hook when the mouse
-     *      pointer has moved to a new frame window.
-     *
-     *      Parameters:
-     *      -- HWND mp1: new desktop window handle
-     *              (child of HWND_DESKTOP)
-     *      -- BOOL mp2: TRUE if mp1 is a seamless Win-OS/2
-     *              window
-     */
-
     #define XDM_SLIDINGFOCUS        WM_USER + 5
-
-    /*
-     *@@ XDM_HOTCORNER:
-     *      message posted by the hook when the mouse
-     *      has reached one of the four corners of the
-     *      screen ("hot corners"). The daemon then
-     *      determines whether to open any object.
-     *
-     *      Parameters:
-     *      -- BYTE mp1: corner reached;
-     *                  1 = lower left,
-     *                  2 = top left,
-     *                  3 = lower right,
-     *                  4 = top right.
-     *      -- mp2: unused, always 0.
-     */
 
     #define XDM_HOTCORNER           WM_USER + 6
 

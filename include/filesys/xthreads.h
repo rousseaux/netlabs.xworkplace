@@ -22,7 +22,7 @@
  */
 
 // required header files
-#include "helpers/threads.h"
+#include "helpers\threads.h"            // thread helpers
 
 #ifndef XTHREADS_HEADER_INCLUDED
     #define XTHREADS_HEADER_INCLUDED
@@ -156,7 +156,7 @@
 
     /*
      *@@ FIM_TREEVIEWAUTOSCROLL:
-     *     this msg is posted mainly by fnwpSubclassedFolderFrame
+     *     this msg is posted mainly by fdr_fnwpSubclassedFolderFrame
      *     (subclassed folder windows) after the "plus" sign has
      *     been clicked on (WM_CONTROL for containers with
      *     CN_EXPANDTREE notification).

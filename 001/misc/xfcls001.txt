@@ -214,7 +214,7 @@ WPStOfMath5 1 (StarOffice/2 5.0) Document class for StarMath formulas.
 WPStOfWri5 1 (StarOffice/2 5.0) Document class for StarWriter texts.
 WPStOfExe5 1 (StarOffice/2 5.0) Program object class for starting StarOffice.
 
-// Items changed with V1.00
+// Items changed with V0.9.0
 WPObject 4 This is the most fundamental WPS class, from which all other WPS classes are derived. This class contains functionality common to all classes. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
 WPAbstract 4 This is the first of the three base WPS storage classes which are derived from WPObject. All subclasses of this class have in common that objects of them do not physically exist as files in the file system, but save their data in OS2.INI only. As a result, objects of subclasses of this class are not visible outside the WPS. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
 WPFileSystem 4 This is the second of the three base WPS storage classes which are derived from WPObject. All subclasses of this class (WPDataFile and WPFolder) have in common that they physically exist in the file system. The WPS stores additional configuration data for those objects in the Extended Attributes of the file, mostly in .CLASSINFO. Note: This class is only an abstract superclass for subclasses. There should not be any objects of this class directly, but only of the subclasses.
@@ -242,7 +242,7 @@ MMShadow 1 Undocumented replacement class for WPShadow. This gets installed with
 WPNetwork 0 (OS/2 V3) An object of this class is the "Network" folder on your Desktop (Warp 4: in the "Connections" folder), which only exists if you are connected to a network.
 WPNetgrp 0 (OS/2 V3) Folders of this class are created in the "Network" folder (WPNetwork) for each network that you're connected to.
 
-// Items added with V1.00
+// Items added with V0.9.0
 WPCmpnp 0 Some undocumented PCMCIA plug'n'play system class.
 DwpDoc 1 (Describe 5.0) Class for Describe documents.
 DwpMac 1 (Describe 5.0) Class for Describe macros.
@@ -275,4 +275,14 @@ LSDirectory 1 Undocumented LAN Server class. This is included with the networkin
 IWFProject 1 "Project" class of IBM Workframe/2 (as it comes with Visual Age C++ 3.0). Strangely, this is a subclass of WPFileSystem directly, even though this appears to be created as a directory.
 IWFQuickStart 1 "Project Smarts" folder in the IBM Visual Age C++ 3.0 folder. Strangely, this is a subclass of WPFileSystem directly, even though this appears to be created as a directory.
 IWFRouter 1 Some class for the IBM Workframe/2 (as it comes with Visual Age C++ 3.0).
+
+// Items added with V0.9.1
+
+SOMObject 0 This is the base class of all SOM classes. In order to use SOM's features, any class must be derived from this class. WPObject (and thus all WPS classes) is derived from SOMObject too.
+Contained 0 This is used to access the SOM Interface Repository (those ".IR" files that everybody encounters at some point, but nobody really knows more about). The IR was designed to be able to retrieve information about installed SOM classes at run-time. All objects in the IR are instances of classes which are derived from this interface class.
+Container 0 Container class for the SOM Interface Repository. See "Contained".
+SOMClass 0 This is the root class for all SOM metaclasses. Since, with SOM, all classes are objects too, they need to be an instance of a class themselves, the so-called "metaclass". Per default, SOMClass is the metaclass for any SOM class, but most classes define their own metaclasses with their own methods.
+SOMClassMgr 0 An instance of this class is created by the SOM runtime automatically to manage SOM classes. This is needed for run-time class manipulation.
+
+
 

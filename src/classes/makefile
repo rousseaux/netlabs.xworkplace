@@ -1,5 +1,3 @@
-# $Id$ 
-
 #
 # makefile:
 #       makefile for src/main directory.

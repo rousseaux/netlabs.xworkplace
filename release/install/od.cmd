@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* OD.CMD: this script re-enables the Object Desktop class
    "TSEnhFolder" which might have been deregistered by the
    install script.

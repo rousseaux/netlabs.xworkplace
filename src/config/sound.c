@@ -1,12 +1,18 @@
 
 /*
  *@@sourcefile sound.c:
- *      implementation code for XWPSound class.
+ *      XWorkplace extended system sounds implementation.
+ *      Note that the actual playing of the sounds occurs
+ *      at various parts of the XWorkplace code, such as
+ *      fdr_fnwpSubclassedFolderFrame.
+ *
+ *      This also has some implementation code for XWPSound
+ *      class.
  *
  *      This file is ALL new with V0.9.0.
  *
  *@@added V0.9.0 [umoeller]
- *@@header "sound.h"
+ *@@header "config\sound.h"
  */
 
 /*
@@ -80,6 +86,22 @@
  *                                                                  *
  ********************************************************************/
 
+/*
+ * aulAddtlSystemSounds:
+ *      array of all the additional XWorkplace system sounds.
+ *      Those constants are decl'd in common.h.
+ */
+
+ULONG aulAddtlSystemSounds[] =
+        {
+            MMSOUND_XFLD_SHUTDOWN,
+            MMSOUND_XFLD_RESTARTWPS,
+            MMSOUND_XFLD_CTXTOPEN,
+            MMSOUND_XFLD_CTXTOPEN,
+            MMSOUND_XFLD_CTXTSELECT,
+            MMSOUND_XFLD_CNRDBLCLK
+        };
+
 typedef struct _SOUNDPAGEDATA
 {
     CHAR    szMMPM[CCHMAXPATH];
@@ -127,6 +149,99 @@ typedef struct _SOUNDPAGEDATA
                 // 0-100; this _always_ has the common sound
                 // volume, even if (fCommonVolume == FALSE);
 } SOUNDPAGEDATA, *PSOUNDPAGEDATA;
+
+/* ******************************************************************
+ *                                                                  *
+ *   Additional system sounds                                       *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ sndAddtlSoundsInstalled:
+ *      returns TRUE if the additional system
+ *      sounds are installed in MMPM.INI.
+ *
+ *@@added V0.9.1 (99-12-30) [umoeller]
+ */
+
+BOOL sndAddtlSoundsInstalled(VOID)
+{
+    BOOL brc = TRUE;
+
+    ULONG ul = 0;
+
+    for (ul = 0;
+         ul < (sizeof(aulAddtlSystemSounds) / sizeof(ULONG)); // sizeof array
+         ul++)
+    {
+        if (!sndQuerySystemSound(aulAddtlSystemSounds[ul], NULL, NULL, NULL))
+        {
+            // not found: return FALSE
+            brc = FALSE;
+            break;
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ sndInstallAddtlSounds:
+ *      this installs or de-installs the additional
+ *      XWorkplace sounds into MMPM.INI by calling
+ *      the NLS REXX script in the XWOrkplace bin\
+ *      directory.
+ *
+ *@@added V0.9.1 (99-12-30) [umoeller]
+ */
+
+BOOL sndInstallAddtlSounds(BOOL fInstall) // in: TRUE: install sounds; FALSE: de-install sounds
+{
+    BOOL    brc = FALSE;
+    CHAR    szPath[CCHMAXPATH], szCmdFile[CCHMAXPATH];
+
+    if (fInstall)
+    {
+        // install system sounds:
+        // call install\soundxxx.cmd in the
+        // XWorkplace install directory;
+        // this is necessary because of NLS
+        if (cmnQueryXFolderBasePath(szPath))
+        {
+            PID     pid;
+            ULONG   sid;
+            sprintf(szCmdFile,
+                    "/c %s\\install\\sound%s.cmd",
+                    szPath,
+                    cmnQueryLanguageCode());
+            if (doshQuickStartSession("cmd.exe",
+                                      szCmdFile,
+                                      SSF_CONTROL_INVISIBLE, // but auto-close
+                                      TRUE,  // wait
+                                      &sid,
+                                      &pid)
+                    == NO_ERROR)
+                brc = TRUE;
+        }
+    }
+    else
+    {
+        // deinstall system sounds:
+        HINI hiniMmpm = sndOpenMmpmIni();
+        ULONG ul = 0;
+
+        for (ul = 0;
+             ul < (sizeof(aulAddtlSystemSounds) / sizeof(ULONG)); // sizeof array
+             ul++)
+        {
+            sndWriteSoundData(hiniMmpm,
+                              aulAddtlSystemSounds[ul],
+                              NULL, NULL, 0);
+        }
+    }
+
+    return (brc);
+}
 
 /* ******************************************************************
  *                                                                  *
@@ -196,7 +311,7 @@ VOID SelectSoundScheme(PSOUNDPAGEDATA pspd, SHORT sIndex)
 
         // delete current scheme in OS2.INI
         PrfWriteProfileString(HINI_USER,
-                            INIAPP_XFOLDER,
+                            INIAPP_XWORKPLACE,
                             INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
                             NULL);                  // delete key
 
@@ -613,7 +728,7 @@ MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
 
 /* ******************************************************************
  *                                                                  *
- *   XWPSound notebook callbacks (notebook.c                        *
+ *   XWPSound notebook callbacks (notebook.c)                       *
  *                                                                  *
  ********************************************************************/
 
@@ -688,7 +803,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
                 // now query last selected scheme from OS2.INI
                 pszLastScheme = prfhQueryProfileData(HINI_USER,
-                                                    INIAPP_XFOLDER,
+                                                    INIAPP_XWORKPLACE,
                                                     INIKEY_XWPSOUNDSCHEME,
                                                     NULL);
                 if (pszLastScheme)
@@ -820,19 +935,19 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
         // enable "Save as" (sound scheme)
         // only if current scheme is "none"
-        /* winhEnableDlgItem(pcnbp->hwndPage,
+        /* WinEnableControl(pcnbp->hwndPage,
                           ID_XSDI_SOUND_SCHEMES_SAVEAS,
                           (pspd->ulSchemeSelectedHandle != 0)); */
                                 // this is != 0 for "pseudo schemes" ("none" or "no sounds")
 
         // disable "Delete" (sound scheme) button
         // if current scheme is "none"
-        winhEnableDlgItem(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndPage,
                           ID_XSDI_SOUND_SCHEMES_DELETE,
                           (pspd->sSchemeSelected != LIT_NONE));
 
         // enable "Play" button if the current sound file exists
-        winhEnableDlgItem(pcnbp->hwndPage,
+        WinEnableControl(pcnbp->hwndPage,
                           ID_XSDI_SOUND_PLAY,
                           (     (pspd->sEventSelected != LIT_NONE)
                              && (fFileExists)
@@ -841,7 +956,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
         // enable volume knob if either the current sound file
         // exists or "global volume" is enabled
-        /* winhEnableDlgItem(pcnbp->hwndPage,
+        /* WinEnableControl(pcnbp->hwndPage,
                           ID_XSDI_SOUND_VOLUMELEVER,
                           (     (   (pspd->sEventSelected != LIT_NONE)
                                 &&  (fFileExists)
@@ -849,6 +964,17 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
                              || (pspd->fCommonVolume)
                           )
                       ); */
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        // destroy subclassed entry field explicitly;
+        // this is necessary because PM destroys the
+        // parent first and _then_ the children, so
+        // that the entry field will then crash because
+        // SOUNDPAGEDATA is gone
+        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+        WinDestroyWindow(pspd->hwndSoundFile);
     }
 }
 
@@ -998,7 +1124,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                        sizeof(szSchemeSelected),
                                        szSchemeSelected);
                     PrfWriteProfileString(HINI_USER,
-                                        INIAPP_XFOLDER,
+                                        INIAPP_XWORKPLACE,
                                         INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
                                         szSchemeSelected);
                 }
@@ -1164,7 +1290,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
             // get initial directory for FOD from OS2.INI
             if (PrfQueryProfileString(HINI_USER,
-                                  INIAPP_XFOLDER,         // "XFolder"
+                                  INIAPP_XWORKPLACE,         // "XFolder"
                                   INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
                                   "",      // default string
                                   fd.szFullFile,
@@ -1192,7 +1318,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                     if (pszDir)
                     {
                         PrfWriteProfileString(HINI_USER,
-                                              INIAPP_XFOLDER,
+                                              INIAPP_XWORKPLACE,
                                               INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
                                               pszDir);
                         free(pszDir);

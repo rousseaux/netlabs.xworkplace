@@ -1,21 +1,19 @@
-/* $Id$ */
-
-/* create default XFolder configuration folder
+/* create default XWorkplace configuration folder
    English version (001)
-   (W) (C) Ulrich M”ller. All rights reserved.
+   (C) 1998-99 Ulrich M”ller. All rights reserved.
  */
 
-/* This file is executed both after XFolder installation
-   and by XFolder if no config folder is found. */
+/* This file is executed both after XWorkplace installation
+   and by XWorkplace if no config folder is found. */
 
 /* Here come the titles of the objects to be created.
    Translate these to your language. The "~" character
-   determines the character for objects in the XFolder
+   determines the character for objects in the XWorkplace
    Configuration Folder which will then be underlined
    in the respective menu items. */
 
 /* Config Folder title */
-ConfigFolder        = "XFolder Configuration Folder";
+ConfigFolder        = "XWorkplace Configuration Folder";
 /* here come the objects in the config folder */
 CommandLines        = "~Command lines";
 OS2Win              = "~OS/2 window";
@@ -88,12 +86,12 @@ rc = SysCreateObject("WPProgram", Treesize, "<XFOLDER_CONFIG>", "EXENAME="dir"tr
 if (SysSearchPath("PATH", "ZIP.EXE") \= "") then
     rc = SysCreateObject("WPProgram", PackTree, "<XFOLDER_CONFIG>", "EXENAME="dir"packtree.cmd;CCVIEW=YES;OBJECTID=<XFOLDER_PACKTREE>;", "R");
 
-rc = SysCreateObject("WPFolder", "~XFolder", "<XFOLDER_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XFOLDER_CFG4>", "U");
+rc = SysCreateObject("WPFolder", "~XWorkplace", "<XFOLDER_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XFOLDER_CFG4>", "U");
     rc = SysCreateObject("WPShadow", "Online Reference", "<XFOLDER_CFG4>", "SHADOWID=<XFOLDER_REF>;OBJECTID=<XFOLDER_REFSHADOW>;", "R");
     rc = SysCreateObject("WPShadow", ConfigFolder, "<XFOLDER_CFG4>", "SHADOWID=<XFOLDER_CONFIG>;OBJECTID=<XFOLDER_CONFIGSHADOW>;", "R");
-    rc = SysCreateObject("WPShadow", XWPSetup, "<XFOLDER_CFG4>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWORKPLACE_SETUPCFGSHADOW>;", "R");
     rc = SysCreateObject("WPShadow", WorkplaceShell, "<XFOLDER_CFG4>", "SHADOWID=<XFOLDER_WPS>;OBJECTID=<XFOLDER_WPSCFGSHADOW>;", "R");
     rc = SysCreateObject("WPShadow", "OS/2 Kernel", "<XFOLDER_CFG4>", "SHADOWID=<XFOLDER_KERNEL>;OBJECTID=<XFOLDER_KERNELCFGSHADOW>;", "R");
+    rc = SysCreateObject("WPShadow", XWPSetup, "<XFOLDER_CFG4>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWORKPLACE_SETUPCFGSHADOW>;", "R");
 
 rc = SysCreateObject("WPProgram", "---", "<XFOLDER_CONFIG>", "OBJECTID=<XFOLDER_SEP1>;", "R");
 

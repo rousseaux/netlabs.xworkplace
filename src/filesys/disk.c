@@ -9,7 +9,7 @@
  *      --  dsk*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "disk.h"
+ *@@header "filesys\disk.h"
  */
 
 /*

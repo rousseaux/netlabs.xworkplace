@@ -18,7 +18,7 @@
  *      Note that the system sound functions have been exported
  *      to helpers\syssound.c (V0.9.0).
  *
- *@@header "common.h"
+ *@@header "shared\common.h"
  */
 
 /*
@@ -220,7 +220,17 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
  *                                                                  *
  ********************************************************************/
 
-#ifdef __XWPDEBUG__
+#ifdef __DEBUG_ALLOC__
+        // if XWorkplace is compiled with
+        // VAC++ debug memory funcs,
+        // compile the heap window also
+
+    /*
+     *@@ MEMRECORD:
+     *
+     *@@added V0.9.1 (99-12-04) [umoeller]
+     */
+
     typedef struct _MEMRECORD
     {
         RECORDCORE  recc;
@@ -249,7 +259,10 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
 
     ULONG       ulHeapItemsCount1,
                 ulHeapItemsCount2;
+    ULONG       ulTotalAllocated,
+                ulTotalFreed;
     PMEMRECORD  pMemRecordThis = NULL;
+    PSZ         pszMemCnrTitle = NULL;
 
     /*
      *@@ fncbMemHeapWalkCount:
@@ -269,7 +282,13 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
         // skip all the items which seem to be
         // internal to the runtime
         if ((filename) || (useflag == _FREEENTRY))
+        {
             ulHeapItemsCount1++;
+            if (useflag == _FREEENTRY)
+                ulTotalFreed += Size;
+            else
+                ulTotalAllocated += Size;
+        }
         return (0);
     }
 
@@ -371,7 +390,7 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
      *@@ cmn_fnwpMemDebug:
      *      client window proc for the heap debugger window
      *      accessible from the Desktop context menu if
-     *      __XWPDEBUG__ is defined. Otherwise, this is not
+     *      __DEBUG_ALLOC__ is defined. Otherwise, this is not
      *      compiled.
      *
      *      Usage: this is a regular PM client window procedure
@@ -455,13 +474,6 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
                                                 TRUE,          // no draw lines
                                                 2);            // return column
 
-                        BEGIN_CNRINFO()
-                        {
-                            cnrhSetView(CV_DETAIL | CV_MINI | CA_DETAILSVIEWTITLES | CA_DRAWICON);
-                            cnrhSetSplitBarAfter(pfi);
-                            cnrhSetSplitBarPos(250);
-                        } END_CNRINFO(hwndCnr);
-
                         {
                             PSZ pszFont = "9.WarpSans";
                             WinSetPresParam(hwndCnr,
@@ -472,11 +484,13 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
 
                         // count heap items
                         ulHeapItemsCount1 = 0;
+                        ulTotalFreed = 0;
+                        ulTotalAllocated = 0;
                         _heap_walk(fncbMemHeapWalkCount);
 
                         pMemRecordFirst = (PMEMRECORD)cnrhAllocRecords(hwndCnr,
-                                                           sizeof(MEMRECORD),
-                                                           ulHeapItemsCount1);
+                                                                       sizeof(MEMRECORD),
+                                                                       ulHeapItemsCount1);
                         if (pMemRecordFirst)
                         {
                             ulHeapItemsCount2 = 0;
@@ -518,6 +532,23 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
                                               ulHeapItemsCount2);
                         }
 
+                        BEGIN_CNRINFO()
+                        {
+                            CHAR szCnrTitle[1000];
+                            sprintf(szCnrTitle,
+                                    "Total allocated: %d bytes\n"
+                                    "Total freed: %d bytes",
+                                    ulTotalAllocated,
+                                    ulTotalFreed);
+                            pszMemCnrTitle = strdup(szCnrTitle);
+                            cnrhSetTitle(pszMemCnrTitle);
+                            cnrhSetView(CV_DETAIL | CV_MINI | CA_DETAILSVIEWTITLES
+                                            | CA_DRAWICON
+                                        | CA_CONTAINERTITLE | CA_TITLEREADONLY
+                                            | CA_TITLESEPARATOR | CA_TITLELEFT);
+                            cnrhSetSplitBarAfter(pfi);
+                            cnrhSetSplitBarPos(250);
+                        } END_CNRINFO(hwndCnr);
                     }
                 }
                 CATCH(excpt1) {} END_CATCH();
@@ -594,7 +625,10 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
             break;
 
             case WM_CLOSE:
+                WinDestroyWindow(WinWindowFromID(hwndClient, ID_MEMCNR));
                 WinDestroyWindow(WinQueryWindow(hwndClient, QW_PARENT));
+                free(pszMemCnrTitle);
+                pszMemCnrTitle = NULL;
             break;
 
             default:
@@ -603,7 +637,43 @@ void cmnDumpMemoryBlock(PBYTE pb,       // in: start address
 
         return (mrc);
     }
-#endif // __XWPDEBUG__
+
+    /*
+     *@@ cmnCreateMemDebugWindow:
+     *
+     *@@added V0.9.1 (99-12-18) [umoeller]
+     */
+
+    VOID cmnCreateMemDebugWindow(VOID)
+    {
+        ULONG flStyle = FCF_TITLEBAR | FCF_SYSMENU | FCF_HIDEMAX
+                        | FCF_SIZEBORDER | FCF_SHELLPOSITION
+                        | FCF_NOBYTEALIGN | FCF_TASKLIST;
+        if (WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                             "XWPMemDebug",
+                             cmn_fnwpMemDebug, 0L, 0))
+        {
+            HWND hwndClient, hwndCnr;
+            HWND hwndMemFrame = WinCreateStdWindow(HWND_DESKTOP,
+                                                   0L,
+                                                   &flStyle,
+                                                   "XWPMemDebug",
+                                                   "Allocated XWorkplace Memory Objects",
+                                                   0L,
+                                                   NULLHANDLE,     // resource
+                                                   0,
+                                                   &hwndClient);
+            if (hwndMemFrame)
+            {
+                WinSetWindowPos(hwndMemFrame,
+                                NULLHANDLE,
+                                0, 0, 0, 0,
+                                SWP_SHOW | SWP_ACTIVATE);
+            }
+        }
+    }
+
+#endif // __DEBUG_ALLOC__
 
 /* ******************************************************************
  *                                                                  *
@@ -849,7 +919,7 @@ const char* cmnQueryLanguageCode(VOID)
         {
             if (szLanguageCode[0] == '\0')
                 PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XFOLDER, INIKEY_LANGUAGECODE,
+                                      INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
                                       DEFAULT_LANGUAGECODE,
                                       (PVOID)szLanguageCode,
                                       sizeof(szLanguageCode));
@@ -888,7 +958,7 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
             szLanguageCode[3] = 0;
 
             brc = PrfWriteProfileString(HINI_USERPROFILE,
-                                        INIAPP_XFOLDER, INIKEY_LANGUAGECODE,
+                                        INIAPP_XWORKPLACE, INIKEY_LANGUAGECODE,
                                         szLanguageCode);
         }
         CATCH(excpt1) { } END_CATCH();
@@ -1105,7 +1175,7 @@ PSZ cmnQueryBootLogoFile(VOID)
         TRY_LOUD(excpt1, cmnOnKillDuringLock)
         {
             pszReturn = prfhQueryProfileData(HINI_USER,
-                                             INIAPP_XFOLDER,
+                                             INIAPP_XWORKPLACE,
                                              INIKEY_BOOTLOGOFILE,
                                              NULL);
             if (!pszReturn)
@@ -1467,6 +1537,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     &(pNLSStrings->pszObjectHotkeysPage));
                             cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MOUSEHOOKPAGE,
                                     &(pNLSStrings->pszMouseHookPage));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MAPPINGSPAGE,
+                                    &(pNLSStrings->pszMappingsPage));
 
                             cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSMNEMONICS,
                                     &(pNLSStrings->pszSBClassMnemonics));
@@ -1541,6 +1613,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     &(pNLSStrings->pszOpenClassList));
                             cmnLoadString(habDesktop, hmodNLS, ID_XFSI_XWPCLASSLIST,
                                     &(pNLSStrings->pszXWPClassList));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_REGISTERCLASS,
+                                    &(pNLSStrings->pszRegisterClass));
 
                             cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSCHEMENONE,
                                     &(pNLSStrings->pszSoundSchemeNone));
@@ -1590,6 +1664,11 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     &(pNLSStrings->pszClsListClass));
                             cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_OVERRIDDENBY,
                                     &(pNLSStrings->pszClsListOverriddenBy));
+
+                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_WINDOWLIST,
+                                    &(pNLSStrings->pszSpecialWindowList));
+                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_DESKTOPPOPUP,
+                                    &(pNLSStrings->pszSpecialDesktopPopup));
                         }
 
                         // after all this, unload the old resource module
@@ -1821,7 +1900,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         if (pszSetting)
                         {
                             strcpy(szStatusBarFont, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_STATUSBARFONT,
+                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
                                      szStatusBarFont);
                         }
                         else
@@ -1835,7 +1914,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         if (pszSetting)
                         {
                             strcpy(szSBTextNoneSel, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_SBTEXTNONESEL,
+                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
                                      szSBTextNoneSel);
                         }
                         else
@@ -1848,7 +1927,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                         if (pszSetting)
                         {
                             strcpy(szSBTextMultiSel, pszSetting);
-                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_SBTEXTMULTISEL,
+                            PrfWriteProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
                                      szSBTextMultiSel);
                         }
                         else
@@ -1890,7 +1969,7 @@ ULONG cmnQueryStatusBarHeight(VOID)
  *      Before loading the settings, all settings are initialized
  *      in case the settings in OS2.INI do not contain all the
  *      settings for this XWorkplace version. This allows for
- *      compatibility with older versions.
+ *      compatibility with older versions, including XFolder versions.
  *
  *      If (fResetDefaults == TRUE), this only resets all settings
  *      to the default values without loading them from OS2.INI.
@@ -1953,19 +2032,19 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
             if (fResetDefaults == FALSE)
             {
                 // get global XFolder settings from OS2.INI
-                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_STATUSBARFONT,
+                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_STATUSBARFONT,
                          "8.Helv", &(szStatusBarFont), sizeof(szStatusBarFont));
                 sscanf(szStatusBarFont, "%d.*%s", &(ulStatusBarHeight));
                 ulStatusBarHeight += 15;
 
-                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_SBTEXTNONESEL,
+                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTNONESEL,
                             NULL, &(szSBTextNoneSel), sizeof(szSBTextNoneSel));
-                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XFOLDER, INIKEY_SBTEXTMULTISEL,
+                PrfQueryProfileString(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_SBTEXTMULTISEL,
                             NULL, &(szSBTextMultiSel), sizeof(szSBTextMultiSel));
 
                 ulCopied1 = sizeof(GLOBALSETTINGS);
                 PrfQueryProfileData(HINI_USERPROFILE,
-                                    INIAPP_XFOLDER,
+                                    INIAPP_XWORKPLACE,
                                     INIKEY_GLOBALSETTINGS,
                                     pGlobalSettings, &ulCopied1);
             }
@@ -2168,15 +2247,17 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         case SP_SETUP_FEATURES:   // all new with V0.9.0
             pGlobalSettings->fReplaceIcons = 0;
             pGlobalSettings->AddObjectPage = 0;
-            pGlobalSettings->fEnableXWPHook = 0;
             pGlobalSettings->fReplaceFilePage = 0;
             pGlobalSettings->fXSystemSounds = 0;
-            pGlobalSettings->fAniMouse = 0;
 
             pGlobalSettings->fEnableStatusBars = 0;
             pGlobalSettings->fEnableSnap2Grid = 0;
             pGlobalSettings->fEnableFolderHotkeys = 0;
             pGlobalSettings->ExtFolderSort = 0;
+
+            pGlobalSettings->fAniMouse = 0;
+            pGlobalSettings->fEnableXWPHook = 0;
+            pGlobalSettings->fNumLockStartup = 0;
 
             pGlobalSettings->fMonitorCDRoms = 0;
             pGlobalSettings->fRestartWPS = 0;
@@ -2187,6 +2268,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             pGlobalSettings->CleanupINIs = 0;
             pGlobalSettings->fReplFileExists = 0;
             pGlobalSettings->fReplDriveNotReady = 0;
+            pGlobalSettings->fTrashDelete = 0;
         break;
 
         case SP_SETUP_PARANOIA:   // all new with V0.9.0
@@ -2290,7 +2372,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                 free(p);
             p = strdup((PSZ)mp1);
             WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)p);
-            PrfQueryProfileString(HINI_USER, INIAPP_XFOLDER, INIKEY_DLGFONT,
+            PrfQueryProfileString(HINI_USER, INIAPP_XWORKPLACE, INIKEY_DLGFONT,
                                   (PSZ)cmnQueryDefaultFont(),
                                   szFont, sizeof(szFont)-1);
             WinSetPresParam(hwndStatic, PP_FONTNAMESIZE,
@@ -2322,7 +2404,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
                                 (ULONG)sizeof(szFont),
                                 (PVOID)&szFont,
                                 0);
-                    PrfWriteProfileString(HINI_USER, INIAPP_XFOLDER, INIKEY_DLGFONT,
+                    PrfWriteProfileString(HINI_USER, INIAPP_XWORKPLACE, INIKEY_DLGFONT,
                         szFont);
 
                     // now also change the buttons
@@ -2455,9 +2537,9 @@ MRESULT EXPENTRY fnwpMessageBox(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             // CHAR szFont[CCHMAXPATH];
             HWND hwndStatic = WinWindowFromID(hwndDlg,
-                                ID_XFDI_GENERICDLGTEXT);
+                                              ID_XFDI_GENERICDLGTEXT);
 
-            /* PrfQueryProfileString(HINI_USER, INIAPP_XFOLDER, INIKEY_DLGFONT,
+            /* PrfQueryProfileString(HINI_USER, INIAPP_XWORKPLACE, INIKEY_DLGFONT,
                     "9.WarpSans", szFont, sizeof(szFont)-1);
             WinSetPresParam(hwndStatic, PP_FONTNAMESIZE,
                  (ULONG)strlen(szFont)+1, (PVOID)szFont); */

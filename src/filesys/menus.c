@@ -17,7 +17,7 @@
  *
  *      This file also does the owner-drawing for folder-content
  *      menu items (at the bottom). Also, there are some additional
- *      ugly hack routines which get called from fnwpSubclassedFolderFrame
+ *      ugly hack routines which get called from fdr_fnwpSubclassedFolderFrame
  *      directly to allow for certain menu features which are not
  *      possible to implement otherwise.
  *
@@ -28,7 +28,7 @@
  *      be in xfldr.c and have now been exported to make their
  *      use more lucid.
  *
- *@@header "menus.h"
+ *@@header "filesys\menus.h"
  */
 
 /*
@@ -220,7 +220,7 @@ VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,
  *      this modifies the "Sort" submenu. Used for both
  *      folder context menus (mnuModifyFolderPopupMenu below)
  *      and folder menu bars (WM_INITMENU message in
- *      fnwpSubclassedFolderFrame). For speedier operation,
+ *      fdr_fnwpSubclassedFolderFrame). For speedier operation,
  *      this func takes a lot of parameters.
  *
  *      This function leaves the original (WPS) sort menu
@@ -303,7 +303,7 @@ VOID mnuModifySortMenu(WPFolder *somSelf,
  *      -- mnuModifyFolderPopupMenu for regular popup
  *         menus;
  *
- *      -- fnwpSubclassedFolderFrame upon WM_INITMENU
+ *      -- fdr_fnwpSubclassedFolderFrame upon WM_INITMENU
  *         for the "View" pulldown in folder menu bars.
  *
  *      hwndViewSubmenu contains the submenu to add
@@ -584,7 +584,7 @@ ULONG mnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to add
  *      This submenu then only contains the "empty" menu item,
  *      however, this menu will be filled with objects if
  *      the user opens it; this is then done by answering
- *      the WM_INITMENU message in fnwpSubclassedFolderFrame,
+ *      the WM_INITMENU message in fdr_fnwpSubclassedFolderFrame,
  *      which will then call mnuFillContentSubmenu.
  *
  *      This way, we can fill the folder content submenus only when
@@ -659,7 +659,7 @@ SHORT fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
  *      this fills a folder content submenu stub (which was created
  *      with mnuPrepareContentSubmenu) with the contents of the
  *      corresponding folder. This gets called from
- *      fnwpSubclassedFolderFrame when WM_INITMENU
+ *      fdr_fnwpSubclassedFolderFrame when WM_INITMENU
  *      is received for a folder content menu item.
  *
  *      This way, we can fill the folder content submenus only when
@@ -762,7 +762,7 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
 
                     // subclass menu window to allow MB2 clicks
                     *ppfnwpFolderContentOriginal =
-                            WinSubclassWindow(hwndMenu, fnwpFolderContentMenu);
+                            WinSubclassWindow(hwndMenu, fdr_fnwpSubclFolderContentMenu);
 
                     // remove "empty" item
                     winhRemoveMenuItem(hwndMenu,
@@ -788,7 +788,8 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                             fInsert = TRUE;
 
                             // exclude hidden file system objects
-                            if (_somIsA(pObject, _WPFileSystem)) {
+                            if (_somIsA(pObject, _WPFileSystem))
+                            {
                                 // _Pmpf(( "%s attr: %lX", szNewItemString, _wpQueryAttr(pObject2) ));
                                 if (_wpQueryAttr(pObject2)
                                      & (FILE_HIDDEN)
@@ -800,7 +801,8 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                             if (_wpQueryStyle(pObject2) & OBJSTYLE_NOTVISIBLE)
                                    fInsert = FALSE;
 
-                            if (fInsert) {
+                            if (fInsert)
+                            {
                                 PMENULISTITEM pmliNew = malloc(sizeof(MENULISTITEM));
                                 pmliNew->pObject = pObject2;
                                 strcpy(pmliNew->szItemString, _wpQueryTitle(pObject2));
@@ -810,15 +812,13 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                                 if (    (_somIsA(pObject2, _WPFolder))
                                      || (_somIsA(pObject2, _WPDisk))
                                    )
-                                {
                                     // folder/disk: append to folder list
                                     lstAppendItem(pllFolders,
                                                   pmliNew);
-                                } else {
+                                else
                                     // other: append to objects list
                                     lstAppendItem(pllObjects,
                                                   pmliNew);
-                                }
                             }
                         }
                     } // end for pObject
@@ -837,11 +837,12 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                     {
                         pmli = pNode->pItemData;
                         // folder items
-                        sItemId = mnuPrepareContentSubmenu(pmli->pObject,
-                            hwndMenu,
-                            pmli->szItemString,
-                            MIT_END,
-                            pGlobalSettings->FCShowIcons); // OwnerDraw flag
+                        sItemId = mnuPrepareContentSubmenu(
+                                                  pmli->pObject,
+                                                  hwndMenu,
+                                                  pmli->szItemString,
+                                                  MIT_END,
+                                                  pGlobalSettings->FCShowIcons); // OwnerDraw flag
 
                         // next folder
                         pNode = pNode->pNext;
@@ -874,9 +875,10 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
 
                     // calculate maximum number of items per column by looking
                     // at the screen and item sizes
-                    WinSendMsg(hwndMenu, MM_QUERYITEMRECT,
-                        MPFROM2SHORT(sItemId, FALSE),
-                        (MPARAM)&rtlItem);
+                    WinSendMsg(hwndMenu,
+                               MM_QUERYITEMRECT,
+                               MPFROM2SHORT(sItemId, FALSE),
+                               (MPARAM)&rtlItem);
                     sItemSize = (rtlItem.yTop-rtlItem.yBottom);
                     if (sItemSize == 0) sItemSize = 20;
                     sItemsPerColumn = (USHORT)(
@@ -901,13 +903,15 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                     {
                         sItemId = (USHORT)WinSendMsg(
                                     hwndMenu, MM_ITEMIDFROMPOSITION, (MPARAM)s, MPNULL);
-                        WinSendMsg(hwndMenu, MM_QUERYITEM,
-                            MPFROM2SHORT(sItemId, FALSE),
-                            &mi);
+                        WinSendMsg(hwndMenu,
+                                   MM_QUERYITEM,
+                                   MPFROM2SHORT(sItemId, FALSE),
+                                   &mi);
                         mi.afStyle |= MIS_BREAK;
-                        WinSendMsg(hwndMenu, MM_SETITEM,
-                            MPFROM2SHORT(sItemId, FALSE),
-                            &mi);
+                        WinSendMsg(hwndMenu,
+                                   MM_SETITEM,
+                                   MPFROM2SHORT(sItemId, FALSE),
+                                   &mi);
                     }
 
                     // clean up
@@ -1659,7 +1663,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
         // if extended associations are on, we need to remove
         // all items from the "Open" submenu
 
-        /// xxx this doesn't work. VERY FUNNY, IBM. Look what
+        /// ### this doesn't work. VERY FUNNY, IBM. Look what
         // I got when I enumerated the submenu items in the "Open"
         // submenu IN THIS FUNCTION (WPDataFile).
 
@@ -2112,12 +2116,12 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
 /*
  *@@ mnuIsSortMenuItemSelected:
  *      this is used by both mnuMenuItemSelected and
- *      fnwpSubclassedFolderFrame for checking if the selected
+ *      fdr_fnwpSubclassedFolderFrame for checking if the selected
  *      menu item is one of the folder things and, if so,
  *      setting the folder sort settings accordingly.
  *
  *      We need to have a separate proc for this because
- *      fnwpSubclassedFolderFrame needs this if the user uses
+ *      fdr_fnwpSubclassedFolderFrame needs this if the user uses
  *      the mouse and mnuMenuItemSelected gets the folder
  *      hotkeys.
  *
@@ -2134,7 +2138,7 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
                                                    // pbDismiss is NULL also
                                ULONG ulMenuId,
                                PCGLOBALSETTINGS pGlobalSettings,
-                               PBOOL pbDismiss)    // out: dismiss flag for fnwpSubclassedFolderFrame
+                               PBOOL pbDismiss)    // out: dismiss flag for fdr_fnwpSubclassedFolderFrame
 {
     BOOL        brc = FALSE;
     ULONG       ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
@@ -2352,7 +2356,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                                  (PVOID)hwndFrame);    // dlg params
                 cmnSetHelpPanel(ID_XFH_SELECTSOME);
                 WinShowWindow(hwndSelectSome, TRUE);
-                        // xxx is this window destroyed at all?!?
+                        // ### is this window destroyed at all?!?
                 brc = TRUE;
             break; }
 
@@ -2689,7 +2693,7 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
  *
  *      This call is the result of a WM_MENUSELECT intercept
  *      of the subclassed frame window procedure of an open folder
- *      (fnwpSubclassedFolderFrame, xfldr.c).
+ *      (fdr_fnwpSubclassedFolderFrame, xfldr.c).
  *
  *      We can intercept certain menu item selections here so
  *      that they are not passed to wpMenuItemSelected. This is
@@ -3062,7 +3066,7 @@ PSZ     pszFontName = NULL;
 /*
  *@@ mnuPrepareOwnerDraw:
  *      this is called from the subclassed folder frame procedure
- *      (fnwpSubclassedFolderFrame in xfldr.c) when it receives
+ *      (fdr_fnwpSubclassedFolderFrame in xfldr.c) when it receives
  *      WM_INITMENU for a folder content submenu. We can now
  *      do a few queries to get important data which we need for
  *      owner-drawing later.
@@ -3113,7 +3117,7 @@ VOID mnuPrepareOwnerDraw(SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 submen
 /*
  *@@ mnuMeasureItem:
  *      this is called from the subclassed folder frame procedure
- *      (fnwpSubclassedFolderFrame in xfldr.c) when it receives
+ *      (fdr_fnwpSubclassedFolderFrame in xfldr.c) when it receives
  *      WM_MEASUREITEM for each owner-draw folder content menu item.
  *      We will use the data queried above to calculate the dimensions
  *      of the items we're going to draw later.
@@ -3165,7 +3169,7 @@ MRESULT mnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
 /*
  *@@ mnuDrawItem:
  *      this is called from the subclassed folder frame procedure
- *      (fnwpSubclassedFolderFrame in xfldr.c) when it receives
+ *      (fdr_fnwpSubclassedFolderFrame in xfldr.c) when it receives
  *      WM_DRAWITEM for each owner-draw folder content menu item.
  *      We will draw one menu item including the icons with each
  *      call of this function.
@@ -3349,12 +3353,12 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                (    ( (fIsWarp4)  && (pGlobalSettings->RemoveViewMenu == 0) )
                  || ( (!fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                ));
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_FOLDERCONTENT,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_FOLDERCONTENT,
                 !(pGlobalSettings->NoSubclassing));
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_FC_SHOWICONS,
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_FC_SHOWICONS,
                 !(pGlobalSettings->NoSubclassing));
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SELECTSOME, fViewVisible);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_FLDRVIEWS, fViewVisible);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SELECTSOME, fViewVisible);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_FLDRVIEWS, fViewVisible);
     }
 }
 
@@ -3660,11 +3664,11 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         // disable items for Warp 3/4
         if (doshIsWarp4()) {
-            winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SELECT, FALSE);
+            WinEnableControl(pcnbp->hwndPage, ID_XSDI_SELECT, FALSE);
         } else {
-            winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_LOCKINPLACE, FALSE);
-            winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_WARP4DISPLAY, FALSE);
-            winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_INSERT, FALSE);
+            WinEnableControl(pcnbp->hwndPage, ID_XSDI_LOCKINPLACE, FALSE);
+            WinEnableControl(pcnbp->hwndPage, ID_XSDI_WARP4DISPLAY, FALSE);
+            WinEnableControl(pcnbp->hwndPage, ID_XSDI_INSERT, FALSE);
         }
     }
 }

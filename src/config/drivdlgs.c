@@ -6,25 +6,46 @@
  *      object (whose implementation is in cfgsys.c).
  *
  *      The driver dialogs have been exported to this file so that
- *      adding new driver dialogs is more easy.
+ *      new driver dialogs can be added more easily without having
+ *      to mess with the SOM interface.
  *
- *      This file exports window procedures only. When the
- *      "Configure" button is pressed on the "Drivers" page,
- *      the corresponding dialog function (if defined) gets
- *      a DRIVERDLGDATA structure in mp2 (pCreateParam), which
- *      has all the necessary data for interacting with the main
- *      settings page.
+ *      Each driver dialog function can presently handle one CONFIG.SYS
+ *      line with all the driver parameters. Presently, we have:
  *
- *      It is the responsibility of the dialog func to
- *      set its dialog items according to the CONFIG.SYS
- *      parameters passed in DRIVERDLGDATA and modify
- *      that data according to user changes. Only if the
- *      dialog returns DID_OK, cfgDriversItemChanged (xfsys.c)
- *      will update the "Parameters" field on the "Dialogs"
- *      page with the new parameters from DRIVERDLGDATA, as
- *      set up by the dialog func.
+ *      -- drv_fnwpConfigHPFS: HPFS.IFS configuration.
  *
- *      In short, each driver dialog func needs to do three things:
+ *      -- drv_fnwpConfigCDFS: CDFS.IFS configuration.
+ *
+ *      -- drv_fnwpConfigIBM1S506: IBM1S506.ADD and DANIS506.ADD
+ *         configuration.
+ *
+ *      In order to add a new driver configuration dialog, do the
+ *      following:
+ *
+ *      1)  Add a check for your driver to drvConfigSupported.
+ *          This will enable the "Configure" button on the "Drivers"
+ *          page.
+ *
+ *      2)  Create a dialog template and a window procedure for your
+ *          driver. When the "Configure" button is pressed on the
+ *          "Drivers" page, your dialog function will get a
+ *          DRIVERDLGDATA structure with WM_INITDLG in mp2
+ *          (pCreateParam), which has all the necessary data for
+ *          interacting with the main settings page.
+ *
+ *          In WM_INITDLG, you should store that pointer in the
+ *          QWL_USER window word.
+ *
+ *          It is the responsibility of your dialog func to
+ *          set its dialog items according to the CONFIG.SYS
+ *          parameters passed in DRIVERDLGDATA and modify
+ *          that data according to user changes. Only if the
+ *          dialog is dismissed with DID_OK, cfgDriversItemChanged
+ *          will update the "Parameters" field on the "Dialogs"
+ *          page with the new parameters from DRIVERDLGDATA, as
+ *          set up by the dialog func.
+ *
+ *      So in short, each driver dialog func needs to do three things:
  *
  *      1)  parse DRIVERDLGDATA.szParams and set up the dialog
  *          controls accordingly;
@@ -33,12 +54,11 @@
  *          (just the normal PM dialog programming);
  *
  *      3)  on "OK", write a new params string into DRIVERDLGDATA.szParams
- *          and return DID_OK, or return something else to discard
- *          the changes.
+ *          and return DID_OK, or return DID_CANCEL to discard the changes.
  *
  *      Notes:
  *
- *      1)  The dialog template should not have the
+ *      1)  Your dialog template should not have the
  *          WS_VISIBLE flag set, because we will center the
  *          dialog on the screen (causes flicker otherwise).
  *
@@ -49,7 +69,7 @@
  *      This file (and its functionality) is completely new with V0.9.0.
  *
  *@@added V0.9.0 [umoeller]
- *@@header "drivdlgs.h"
+ *@@header "config\drivdlgs.h"
  */
 
 /*
@@ -159,9 +179,12 @@ VOID drvConfigSupported(PDRIVERSPEC pSpec)
         pSpec->idConfigDlg = ID_OSD_DRIVER_CDFS;
         pSpec->pfnwpConfigure = drv_fnwpConfigCDFS;
     }
+    // add new driver checks here:
+    // else if ...
+    // ...
     else
     {
-        // no config:
+        // no config: disable "Configure" button
         pSpec->hmodConfigDlg = 0;
         pSpec->idConfigDlg = 0;
         pSpec->pfnwpConfigure = 0;
@@ -209,7 +232,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             if (pszParamsCopy)
             {
                 pszToken = strtok(pszParamsCopy, " ");
-                do {
+                do
+                {
                     if (memicmp(pszToken, "/C:", 3) == 0)
                         ulCache = strtoul(pszToken+3, NULL, 0);
                     else if (memicmp(pszToken, "/CACHE:", 7) == 0)
@@ -219,6 +243,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     else if (memicmp(pszToken, "/CRECL:", 7) == 0)
                         ulCrecl = strtoul(pszToken+7, NULL, 0);
                 } while (pszToken = strtok(NULL, " "));
+
                 free(pszParamsCopy);
             }
 
@@ -274,8 +299,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                 case ID_OSDI_CACHESIZE_AUTO:
                 {
                     BOOL fChecked = winhIsDlgItemChecked(hwndDlg, usItemID);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE, !fChecked);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE_TXT, !fChecked);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE, !fChecked);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE_TXT, !fChecked);
                 break; }
             }
         break; }
@@ -330,8 +355,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
                                                              ID_OSDI_CACHE_THRESHOLD),
                                              SMA_INCREMENTVALUE, 0);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE, FALSE);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE_TXT, FALSE);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE, FALSE);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE_TXT, FALSE);
                     WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, "");
                 break;
 
@@ -1005,7 +1030,7 @@ PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
  *      controls accordingly, and recomposes the parameters
  *      string according to the controls' changes.
  *
- *      This dialog uses the new tooltip control (fnwpTooltip,
+ *      This dialog uses the new tooltip control (ctl_fnwpTooltip,
  *      comctl.c) to display fly-over help for the various
  *      dlg items. This works by setting TOOLINFO.lpszText to
  *      LPSTR_TEXTCALLBACK, which will cause a WM_CONTROL with
@@ -1407,8 +1432,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             pS506All->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
                                                     COMCTL_TOOLTIP_CLASS, // wnd class
                                                     "",            // window text
-                                                    TTS_SHADOW | TTS_ROUNDED | TTS_ALWAYSTIP,
-                                                            // window style, ignored except for TTS_* flags
+                                                    XWP_TOOLTIP_STYLE,
+                                                         // tooltip window style (common.h)
                                                     10, 10, 10, 10,    // window pos and size, ignored
                                                     hwndDlg,       // owner window -- important!
                                                     HWND_TOP,      // hwndInsertBehind, ignored
@@ -1629,40 +1654,40 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             BOOL            fUnitDisabled = FALSE;
 
             // global items
-            winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_CLOCK_SLIDER,
+            WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_SLIDER,
                               pS506All->fPCIClock);
-            winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_CLOCK_TXT,
+            WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_TXT,
                               pS506All->fPCIClock);
 
             // adapter items:
             // disable all if adapter is disabled
-            winhEnableDlgItems(hwndDlg,
+            winhEnableControls(hwndDlg,
                                ID_OSDI_S506_A_RESET,            // first
                                ID_OSDI_S506_A_DSGADDR_ENTRY,    // last
                                !pS506AdapterThis->fIgnore);
 
             if (!pS506AdapterThis->fIgnore)
             {
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY,
                                   pS506AdapterThis->fBaseAddress);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_IRQ_SLIDER,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_SLIDER,
                                   pS506AdapterThis->fIRQ);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_IRQ_TXT,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_TXT,
                                   pS506AdapterThis->fIRQ);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
                                   pS506AdapterThis->fDMAChannel);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY,
                                   pS506AdapterThis->fDMAScatterGatherAddr);
             }
 
             // unit radio buttons
-            winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT0,
+            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT0,
                               !pS506All->Adapters[0].fIgnore);
-            winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT1,
+            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT1,
                               !pS506All->Adapters[0].fIgnore);
-            winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT2,
+            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT2,
                               !pS506All->Adapters[1].fIgnore);
-            winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT3,
+            WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT3,
                               !pS506All->Adapters[1].fIgnore);
 
             // unit items:
@@ -1678,32 +1703,32 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                                     )
                                 )
                             );
-            winhEnableDlgItems(hwndDlg,
+            winhEnableControls(hwndDlg,
                                ID_OSDI_S506_U_BUSMASTER,        // first
                                ID_OSDI_DANIS506_U_REMOVEABLE,   // last
                                !fUnitDisabled);
             if (!fUnitDisabled)
             {
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_U_RECOVERY_SLIDER,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_SLIDER,
                                   pS506UnitThis->fRecoveryTime);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_U_RECOVERY_TXT,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_TXT,
                                   pS506UnitThis->fRecoveryTime);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
+                WinEnableControl(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
                                   pS506UnitThis->fGeometry);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
                                   pS506UnitThis->fTimeout);
 
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
                                   pS506UnitThis->fLimitRate);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
                                   pS506UnitThis->fLimitRate);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
                                   pS506UnitThis->fLimitRate);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
                                   pS506UnitThis->fLimitRate);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_TXT,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_TXT,
                                   pS506UnitThis->fLimitRate);
-                winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
+                WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
                                   pS506UnitThis->fLimitRate);
             }
         break; }
@@ -2176,6 +2201,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
             if (pS506All->pszTooltipString)
                 free(pS506All->pszTooltipString);
+            WinDestroyWindow(pS506All->hwndTooltip);
             free(pS506All);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }

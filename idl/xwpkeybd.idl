@@ -43,12 +43,12 @@ interface XWPKeyboard : WPKeyboard
      *
      */
 
-    ULONG xwpAddXWPKeyboardPages(in HWND hwndDlg);
+    ULONG xwpAddKeyboardHotkeysPage(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddXWPKeyboardPages;
+    releaseorder: xwpAddKeyboardHotkeysPage;
 
     /*
      * Class Modifiers:

@@ -6,7 +6,7 @@
  *      This file is ALL new with V0.9.0.
  *
  *@@include #include <os2.h>
- *@@include #include "shared\notebook.h"
+ *@@include #include "shared\notebook.h" // for notebook callbacks
  *@@include #include "setup\sound.h"
  */
 
@@ -28,7 +28,17 @@
 
     /* ******************************************************************
      *                                                                  *
-     *   XFldDisk notebook callbacks (notebook.c)                       *
+     *   Additional system sounds                                       *
+     *                                                                  *
+     ********************************************************************/
+
+    BOOL sndAddtlSoundsInstalled(VOID);
+
+    BOOL sndInstallAddtlSounds(BOOL fInstall);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   XWPSound notebook callbacks (notebook.c)                       *
      *                                                                  *
      ********************************************************************/
 
@@ -39,8 +49,6 @@
         MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       USHORT usItemID, USHORT usNotifyCode,
                                       ULONG ulExtra);
-    #else
-        #error "shared\notebook.h needs to be included before including disk.h".
     #endif
 #endif
 

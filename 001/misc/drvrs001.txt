@@ -146,7 +146,7 @@ CATEGORY "Installable File Systems"
 CATEGORY "Peripherals"
     {
         DRIVER ( "BASEDEV=", "IBM1FLPY.ADD",
-                 "IBM non-Microchannel floppy driver",
+                 "IBM floppy driver",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "IBM2FLPY.ADD",
                  "IBM Microchannel floppy driver",
@@ -155,10 +155,10 @@ CATEGORY "Peripherals"
                  "IBM 1.8MB floppy support",
                  DRVF_CMDREF | DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
-                 "IBM non-Microchannel printer driver",
+                 "IBM printer driver",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "PRINT02.SYS",
-                 "IBM non-Microchannel printer driver",
+                 "IBM printer driver",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "IBMKBD.SYS",
                  "IBM generic keyboard driver",

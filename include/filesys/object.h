@@ -33,7 +33,7 @@
      *                                                                  *
      ********************************************************************/
 
-    MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+    MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
      *                                                                  *

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* SOUNDOFF.CMD: this script disables all XFolder sounds in
    case something goes severely wrong
    (W) (C) Ulrich M”ller. All rights reserved.
@@ -20,12 +18,12 @@ end;
 say key;
 say "";
 if (key = "Y") then do
-            MMINI = GetBootDrive()||"\MMOS2\MMPM.INI";
-            rc = SysINI(MMINI, "MMPM2_AlarmSounds", "555", "DELETE:");
-            rc = SysINI(MMINI, "MMPM2_AlarmSounds", "556", "DELETE:");
-            rc = SysINI(MMINI, "MMPM2_AlarmSounds", "558", "DELETE:");
-            rc = SysINI(MMINI, "MMPM2_AlarmSounds", "559", "DELETE:");
-            rc = SysINI(MMINI, "MMPM2_AlarmSounds", "560", "DELETE:");
+    MMINI = GetBootDrive()||"\MMOS2\MMPM.INI";
+    rc = SysINI(MMINI, "MMPM2_AlarmSounds", "555", "DELETE:");
+    rc = SysINI(MMINI, "MMPM2_AlarmSounds", "556", "DELETE:");
+    rc = SysINI(MMINI, "MMPM2_AlarmSounds", "558", "DELETE:");
+    rc = SysINI(MMINI, "MMPM2_AlarmSounds", "559", "DELETE:");
+    rc = SysINI(MMINI, "MMPM2_AlarmSounds", "560", "DELETE:");
 end;
 
 exit;

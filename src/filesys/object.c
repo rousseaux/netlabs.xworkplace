@@ -9,7 +9,7 @@
  *      --  obj*
  *
  *@@added V0.9.0 [umoeller]
- *@@header "object.h"
+ *@@header "filesys\object.h"
  */
 
 /*
@@ -63,8 +63,9 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
-#include "helpers\winh.h"               // PM helper routines
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\winh.h"               // PM helper routines
 
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
 
@@ -137,7 +138,7 @@ typedef struct _XFOBJWINDATA
     CHAR            szOldObjectID[256];
     BOOL            fEscPressed;
     PRECORDCORE     preccExpanded;
-    PFNWP           pfnwpOrigEntryField;          // original wnd proc for entry field
+    // PFNWP           pfnwpOrigEntryField;          // original wnd proc for entry field
 } XFOBJWINDATA, *PXFOBJWINDATA;
 
 #define WM_FILLCNR      WM_USER+1
@@ -517,134 +518,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
 }
 
 /*
- *@@ fnwpObjectHotkeyEntryField:
- *      this is the window proc for the subclassed entry
- *      field on the "Object" notebook page. We will
- *      intercept all WM_CHAR messages and set the entry field
- *      display to the key description instead of the character.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-MRESULT EXPENTRY fnwpObjectHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = (MPARAM)FALSE; // WM_CHAR not-processed flag
-
-    // get object window data; this was stored in QWL_USER by
-    // WM_INITDLG of fnwpSettingsObjDetails
-    PXFOBJWINDATA   pWinData = (PXFOBJWINDATA)WinQueryWindowULong(hwndEdit, QWL_USER);
-    PFNWP           pfnwpOrig = WinDefWindowProc;
-    if (pWinData)
-        pfnwpOrig = pWinData->pfnwpOrigEntryField;
-
-    switch (msg)
-    {
-        case WM_CHAR:
-        {
-            /*
-                  #define KC_CHAR                    0x0001
-                  #define KC_VIRTUALKEY              0x0002
-                  #define KC_SCANCODE                0x0004
-                  #define KC_SHIFT                   0x0008
-                  #define KC_CTRL                    0x0010
-                  #define KC_ALT                     0x0020
-                  #define KC_KEYUP                   0x0040
-                  #define KC_PREVDOWN                0x0080
-                  #define KC_LONEKEY                 0x0100
-                  #define KC_DEADKEY                 0x0200
-                  #define KC_COMPOSITE               0x0400
-                  #define KC_INVALIDCOMP             0x0800
-            */
-
-            /*
-                Examples:           usFlags  usKeyCode
-                    F3                02       22
-                    Ctrl+F4           12       23
-                    Ctrl+Shift+F4     1a       23
-                    Ctrl              12       0a
-                    Alt               22       0b
-                    Shift             0a       09
-            */
-
-            USHORT usCommand;
-            USHORT usKeyCode;
-            USHORT usFlags    = SHORT1FROMMP(mp1);
-            UCHAR  ucRepeat   = CHAR3FROMMP(mp1);
-            UCHAR  ucScanCode = CHAR4FROMMP(mp1);
-            USHORT usch       = SHORT1FROMMP(mp2);
-            USHORT usvk       = SHORT2FROMMP(mp2);
-
-            if (
-                    // process only key-down messages
-                    ((usFlags & KC_KEYUP) == 0)
-                    // check flags:
-                &&  (     ((usFlags & KC_VIRTUALKEY) != 0)
-                          // Ctrl pressed?
-                       || ((usFlags & KC_CTRL) != 0)
-                          // Alt pressed?
-                       || ((usFlags & KC_ALT) != 0)
-                          // or one of the Win95 keys?
-                       || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                           && (     (usch == 0xEC00)
-                                ||  (usch == 0xED00)
-                                ||  (usch == 0xEE00)
-                              )
-                          )
-                    )
-                    // filter out those ugly composite key (accents etc.)
-               &&   ((usFlags & (KC_DEADKEY | KC_COMPOSITE | KC_INVALIDCOMP)) == 0)
-               )
-            {
-                CHAR szKeyName[200];
-
-                usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
-                if (usFlags & KC_VIRTUALKEY)
-                    usKeyCode = usvk;
-                else
-                    usKeyCode = usch;
-
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("usFlags = 0x%lX, usKeyCode = 0x%lX", usFlags, usKeyCode));
-                #endif
-
-                // show description
-                cmnDescribeKey(szKeyName, usFlags, usKeyCode);
-                WinSetWindowText(hwndEdit, szKeyName);
-
-                // now check if this thing makes up a valid
-                // hotkey just yet: if KC_VIRTUALKEY is down,
-                // we must filter out the sole CTRL, ALT, and
-                // SHIFT keys, because these are valid only
-                // when pressed with some other key. By doing
-                // this, we do get a display in the entry field
-                // if only, say, Ctrl is down, but we won't
-                // store this.
-                if (    ((usFlags & KC_VIRTUALKEY) == 0)
-                     || (   (usKeyCode != 0x09)     // shift
-                         && (usKeyCode != 0x0a)     // ctrl
-                         && (usKeyCode != 0x0b)     // alt
-                        )
-                   )
-                    // store hotkey for object;
-                    // we'll now pass the scan code, which is
-                    // used by the hook
-                    objSetObjectHotkey(pWinData->somSelf,
-                                       usFlags,
-                                       ucScanCode,
-                                       usKeyCode);
-
-                mrc = (MPARAM)TRUE; // WM_CHAR processed flag;
-            }
-        break; }
-
-        default:
-            mrc = pfnwpOrig(hwndEdit, msg, mp1, mp2);
-    }
-    return (mrc);
-}
-
-/*
- * fnwpSettingsObjDetails:
+ * obj_fnwpSettingsObjDetails:
  *      notebook dlg func for XFldObject "Details" page.
  *      Here's a trick how to interface the corresponding
  *      SOM (WPS) object from within this procedure:
@@ -665,7 +539,7 @@ MRESULT EXPENTRY fnwpObjectHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
  *@@changed V1.00 [umoeller]: added hotkey support
  */
 
-MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PXFOBJWINDATA   pWinData = (PXFOBJWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
     MRESULT         mrc = FALSE;
@@ -695,15 +569,17 @@ MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                 strcpy(pWinData->szOldID, "");
 
             // subclass entry field for hotkeys
-            pWinData->pfnwpOrigEntryField = WinSubclassWindow(hwndHotkeyEntryField,
+            ctlMakeHotkeyEntryField(hwndHotkeyEntryField);
+            /* pWinData->pfnwpOrigEntryField = WinSubclassWindow(hwndHotkeyEntryField,
                                                               fnwpObjectHotkeyEntryField);
-            WinSetWindowPtr(hwndHotkeyEntryField, QWL_USER, pWinData);
+            WinSetWindowPtr(hwndHotkeyEntryField, QWL_USER, pWinData); */
+
 
             // disable entry field if hotkeys are not working
             {
                 BOOL f = hifXWPHookReady();
                 WinEnableWindow(hwndHotkeyEntryField, f);
-                winhEnableDlgItem(hwndDlg, ID_XSDI_DTL_HOTKEY_TXT, f);
+                WinEnableControl(hwndDlg, ID_XSDI_DTL_HOTKEY_TXT, f);
             }
 
             // make Warp 4 notebook buttons and move controls
@@ -798,7 +674,9 @@ MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 
         case WM_CONTROL:
         {
-            USHORT usID = SHORT1FROMMP(mp1);
+            USHORT usID = SHORT1FROMMP(mp1),
+                   usNotifyCode = SHORT2FROMMP(mp1);
+
             switch (usID)
             {
                 /*
@@ -807,7 +685,7 @@ MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                  */
 
                 case ID_XSDI_DTL_CNR:
-                    switch (SHORT2FROMMP(mp1))
+                    switch (usNotifyCode)
                     {
                         /*
                          * CN_EXPANDTREE:
@@ -897,7 +775,7 @@ MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         default:
                             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                     } // end switch
-                break; // ID_XSDI_DTL_CNR#
+                break; // ID_XSDI_DTL_CNR
 
                 /*
                  * ID_XSDI_DTL_HOTKEY:
@@ -905,7 +783,60 @@ MRESULT EXPENTRY fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                  */
 
                 case ID_XSDI_DTL_HOTKEY:
-
+                    if (usNotifyCode == EN_HOTKEY)
+                    {
+                        PHOTKEYNOTIFY phkn = (PHOTKEYNOTIFY)mp2;
+                        // now check if this thing makes up a valid
+                        // hotkey just yet: if KC_VIRTUALKEY is down,
+                        // we must filter out the sole CTRL, ALT, and
+                        // SHIFT keys, because these are valid only
+                        // when pressed with some other key. By doing
+                        // this, we do get a display in the entry field
+                        // if only, say, Ctrl is down, but we won't
+                        // store this.
+                        if  (  (  ((phkn->usFlags & KC_VIRTUALKEY) != 0)
+                                  // Ctrl pressed?
+                               || ((phkn->usFlags & KC_CTRL) != 0)
+                                  // Alt pressed?
+                               || ((phkn->usFlags & KC_ALT) != 0)
+                                  // or one of the Win95 keys?
+                               || (   ((phkn->usFlags & KC_VIRTUALKEY) == 0)
+                                   && (     (phkn->usch == 0xEC00)
+                                        ||  (phkn->usch == 0xED00)
+                                        ||  (phkn->usch == 0xEE00)
+                                      )
+                               )
+                            )
+                            && (    ((phkn->usFlags & KC_VIRTUALKEY) == 0)
+                                 || (   (phkn->usKeyCode != 0x09)     // shift
+                                     && (phkn->usKeyCode != 0x0a)     // ctrl
+                                     && (phkn->usKeyCode != 0x0b)     // alt
+                                    )
+                               )
+                            )
+                        {
+                            // store hotkey for object;
+                            // we'll now pass the scan code, which is
+                            // used by the hook
+                            objSetObjectHotkey(pWinData->somSelf,
+                                               phkn->usFlags,
+                                               phkn->ucScanCode,
+                                               phkn->usKeyCode);
+                            // show description
+                            cmnDescribeKey(phkn->szDescription,
+                                           phkn->usFlags,
+                                           phkn->usKeyCode);
+                            // have entry field display that (comctl.c)
+                            mrc = (MPARAM)TRUE;
+                        }
+                        else
+                        {
+                            // invalid:
+                            objSetObjectHotkey(pWinData->somSelf,
+                                               0, 0, 0);
+                            mrc = (MPARAM)FALSE;
+                        }
+                    }
                 break;
 
                 default:
@@ -1205,7 +1136,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
         // updated: update the "Hotkeys" settings page
         // in XWPKeyboard, if it's open
         ntbUpdateVisiblePage(NULL,      // any somSelf
-                             SP_OBJECTHOTKEYS);
+                             SP_KEYB_OBJHOTKEYS);
 
     #ifdef DEBUG_KEYS
         _Pmpf(("Leaving xwpSetObjectHotkey"));
@@ -1274,7 +1205,7 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
         // updated: update the "Hotkeys" settings page
         // in XWPKeyboard, if it's open
         ntbUpdateVisiblePage(NULL,      // any somSelf
-                             SP_OBJECTHOTKEYS);
+                             SP_KEYB_OBJHOTKEYS);
 
     return (brc);
 }

@@ -18,7 +18,7 @@
  *      These functions have been moved to this new file with
  *      V0.9.1.
  *
- *@@header "classes.h"
+ *@@header "shared\classes.h"
  */
 
 /*
@@ -747,7 +747,7 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                         );
                                     // enable OK button according to
                                     // callback return value
-                                    winhEnableDlgItem(hwndDlg, DID_OK, pscd->fSelectionValid);
+                                    WinEnableControl(hwndDlg, DID_OK, pscd->fSelectionValid);
                                 }
                             }
                     break; }
@@ -862,6 +862,12 @@ ULONG clsSelectWpsClassDlg(HWND hwndOwner,
  *
  *      if (fClassMethods == TRUE), _class_ mehod
  *      information is returned.
+ *
+ *      This function is reentrant, so it can be
+ *      called on a thread other than thread 1.
+ *      This is recommended anyway because this
+ *      method can take several seconds on slower
+ *      systems.
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c

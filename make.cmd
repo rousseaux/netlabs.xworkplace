@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* Make XWorkplace */
 "@echo off"
 

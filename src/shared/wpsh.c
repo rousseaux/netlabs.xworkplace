@@ -33,7 +33,7 @@
  *      All the functions in this file have the wpsh* prefix (changed
  *      with V0.9.0).
  *
- *@@header "wpsh.h"
+ *@@header "shared\wpsh.h"
  */
 
 /*

@@ -270,7 +270,7 @@ SOM_Scope BOOL  SOMLINK xwset_wpAddSettingsPages(XWPSetup *somSelf,
     XWPSetupMethodDebug("XWPSetup","xwset_wpAddSettingsPages");
 
     XWPSetup_parent_WPAbstract_wpAddSettingsPages(somSelf,
-                                                           hwndNotebook);
+                                                  hwndNotebook);
     // add XWorkplace pages on top
     _xwpAddXWPSetupPages(somSelf, hwndNotebook);
 

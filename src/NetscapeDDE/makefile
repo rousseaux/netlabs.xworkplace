@@ -1,5 +1,3 @@
-# $Id$ 
-
 #
 # Makefile for NETSCDDE.EXE.
 #
@@ -53,13 +51,13 @@ all: $(XWPRUNNING)\bin\netscdde.exe
     @echo ----- Leaving $(MAKEDIR)
 
 $(OUTPUTDIR)\netscdde.obj: netscdde.c $(HEADERS)
-          $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj netscdde.c
+          $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj netscdde.c
 
 # build targets
 $(OUTPUTDIR)\netscdde.def: ..\..\include\bldlevel.h
           cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace Netscape DDE Interface"
 
-$(OUTPUTDIR)\netscdde.res: netscdde.rc netscdde.h netscdde.dlg netscdde.ico
+$(OUTPUTDIR)\netscdde.res: netscdde.rc netscdde.h netscdde.dlg
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(OUTPUTDIR)\netscdde.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res

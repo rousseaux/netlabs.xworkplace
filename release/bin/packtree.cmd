@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* PACKTREE.CMD:
  *
  * Packs a folder and all of its subfolders into a

@@ -253,7 +253,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
         // drive ready:
         rc = mnuModifyFolderPopupMenu(pFolder,
                                       hwndMenu,
-                                      hwndCnr,    // xxx this seems to be NULLHANDLE
+                                      hwndCnr,    // ### this seems to be NULLHANDLE
                                       iPosition);
 
     return (rc);

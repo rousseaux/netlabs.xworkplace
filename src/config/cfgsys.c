@@ -21,7 +21,7 @@
  *      became hard to maintain over time.
  *
  *@@added V0.9.0 [umoeller]
- *@@header "cfgsys.h"
+ *@@header "config\cfgsys.h"
  */
 
 /*
@@ -141,18 +141,21 @@ PSZ apszPathNames[SYSPATHCOUNT] =
 
 typedef struct _SYSPATH
 {
-    PSZ         pszPathType;            // "LIBPATH", "SET PATH", etc.
-    PLINKLIST   pllPaths;               // linked list of PSZs with the path entries
+    PSZ         pszPathType;
+            // "LIBPATH", "SET PATH", etc.;
+            // this is a pointer into the static apszPathNames[]
+            // array, so this must not be free()'d
+    PLINKLIST   pllPaths;
+            // linked list of PSZs with the path entries
 } SYSPATH, *PSYSPATH;
 
 /*
- * pllPathsList:
- *      this is cool: a linked list of linked lists.
+ * pllSysPathsList:
  *      Each item in this list is a SYSPATH structure,
  *      which in turn contains a linked list of path entries.
  */
 
-PLINKLIST pllPathsList;
+PLINKLIST pllSysPathsList;
 
 // the currently selected SYSPATH
 PSYSPATH  pSysPathSelected = 0;
@@ -180,7 +183,7 @@ MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
     switch (msg)
     {
         case WM_INITDLG:
-            winhEnableDlgItem(hwndDlg, DID_OK, FALSE);
+            WinEnableControl(hwndDlg, DID_OK, FALSE);
             WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
                               EM_SETTEXTLIMIT,
                               (MPARAM)250,
@@ -211,7 +214,7 @@ MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                         WinQueryDlgItemText(hwndDlg,
                                             ID_XSDI_FT_ENTRYFIELD,
                                             sizeof(szNewSysPath)-1, szNewSysPath);
-                        winhEnableDlgItem(hwndDlg,
+                        WinEnableControl(hwndDlg,
                                           DID_OK,
                                           doshQueryDirExist(szNewSysPath));
                     }
@@ -542,7 +545,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         sprintf(pKernelGlobals->szConfigSys, "%c:\\config.sys", doshQueryBootDrive());
 
-        winhEnableDlgItem(pcnbp->hwndPage, DID_APPLY, TRUE);
+        WinEnableControl(pcnbp->hwndPage, DID_APPLY, TRUE);
 
         // on the "HPFS" page:
         // if the system has any HPFS drives,
@@ -552,7 +555,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             CHAR szHPFSDrives[30];
             doshEnumDrives(szHPFSDrives, "HPFS");
             if (strlen(szHPFSDrives) > 0)
-                winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_FSINSTALLED, FALSE);
+                WinEnableControl(pcnbp->hwndPage, ID_OSDI_FSINSTALLED, FALSE);
         }
         else if (pcnbp->ulPageID == SP_ERRORS)
         {
@@ -914,18 +917,21 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     ULONG ul;
 
-                    if (pllPathsList)       // added V0.9.1 (99-12-14)
+                    /* if (pllPathsList)       // added V0.9.1 (99-12-14)
                     {
                         lstFree(pllPathsList);
                         pllPathsList = NULL;
-                    }
+                    } */
 
-                    pllPathsList = lstCreate(TRUE); // items are freeable
+                    pllSysPathsList = lstCreate(FALSE);
+                            // items are not freeable;
+                            // we'll free this manually
 
                     for (ul = 0;
                          ul < SYSPATHCOUNT;
                          ul++)
                     {
+                        // create SYSPATH structure
                         PSYSPATH pSysPath = malloc(sizeof(SYSPATH));
                         CHAR szPaths[1000] = {0};
                         PSZ p;
@@ -933,7 +939,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         memset(szPaths, 0, sizeof(szPaths));
 
                         p = strhGetParameter(pszConfigSys, apszPathNames[ul],
-                                    szPaths, sizeof(szPaths));
+                                             szPaths, sizeof(szPaths));
                         if (p)
                         {
                             // now szPaths has the path list
@@ -949,6 +955,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                             pSysPath->pszPathType = apszPathNames[ul];
                             pSysPath->pllPaths = lstCreate(TRUE);
+                                    // items are freeable;
+                                    // this holds simple PSZ's
 
                             do {
                                 PSZ pEnd = strchr(pStart, ';'),
@@ -965,12 +973,14 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                 if (pszPath)
                                     if (strlen(pszPath))
                                     {
+                                        // store path (PSZ) in list in SYSPATH
                                         lstAppendItem(pSysPath->pllPaths, pszPath);
                                         pStart = pEnd+1;
                                     }
                             } while (fContinue);
 
-                            lstAppendItem(pllPathsList, pSysPath);
+                            // store SYSPATH in global list
+                            lstAppendItem(pllSysPathsList, pSysPath);
 
                             WinSendDlgItemMsg(pcnbp->hwndPage,
                                               ID_OSDI_PATHDROPDOWN,
@@ -1003,11 +1013,11 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         {
             BOOL fLazyWrite = winhIsDlgItemChecked(pcnbp->hwndPage,
                             ID_OSDI_CACHE_LAZYWRITE);
-            winhEnableDlgItem(pcnbp->hwndPage,
+            WinEnableControl(pcnbp->hwndPage,
                         ID_OSDI_CACHE_MAXAGE, fLazyWrite);
-            winhEnableDlgItem(pcnbp->hwndPage,
+            WinEnableControl(pcnbp->hwndPage,
                         ID_OSDI_CACHE_BUFFERIDLE, fLazyWrite);
-            winhEnableDlgItem(pcnbp->hwndPage,
+            WinEnableControl(pcnbp->hwndPage,
                         ID_OSDI_CACHE_DISKIDLE, fLazyWrite);
         }
 
@@ -1015,18 +1025,18 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             ||  (pcnbp->ulPageID == SP_FAT)
            )
         {
-            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
+            WinEnableControl(pcnbp->hwndPage, ID_OSDI_CACHESIZE,
                         !winhIsDlgItemChecked(pcnbp->hwndPage,
                             ID_OSDI_CACHESIZE_AUTO));
         }
         else if (pcnbp->ulPageID == SP_WPS)
         {
-            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER, (doshIsWarp4()));
-            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS, (doshIsWarp4()));
+            WinEnableControl(pcnbp->hwndPage, ID_OSDI_AUTO_WARPCENTER, (doshIsWarp4()));
+            WinEnableControl(pcnbp->hwndPage, ID_OSDI_AUTOREFRESHFOLDERS, (doshIsWarp4()));
         }
         else if (pcnbp->ulPageID == SP_ERRORS)
         {
-            winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_SUPRESSP_DRIVE,
+            WinEnableControl(pcnbp->hwndPage, ID_OSDI_SUPRESSP_DRIVE,
                 winhIsDlgItemChecked(pcnbp->hwndPage, ID_OSDI_SUPRESSPOPUPS));
         }
         else if (pcnbp->ulPageID == SP_SYSPATHS)
@@ -1057,25 +1067,25 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             {
                 case 0:
                     // no items selected:
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDELETE, FALSE);
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHUP, FALSE);
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDOWN, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHDELETE, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHUP, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHDOWN, FALSE);
                 break;
 
                 case 1:
                     // exactly one item selected:
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDELETE, TRUE);
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHUP,
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHDELETE, TRUE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHUP,
                             (ulLastSel > 0));
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDOWN,
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHDOWN,
                             (ulLastSel < lstCountItems(pSysPathSelected->pllPaths)-1));
                 break;
 
                 default:
                     // more than one item selected:
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDELETE, TRUE);
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHUP, FALSE);
-                    winhEnableDlgItem(pcnbp->hwndPage, ID_OSDI_PATHDOWN, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHDELETE, TRUE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHUP, FALSE);
+                    WinEnableControl(pcnbp->hwndPage, ID_OSDI_PATHDOWN, FALSE);
                 break;
             }
         }
@@ -1085,15 +1095,25 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
     {
         if (pcnbp->ulPageID == SP_SYSPATHS)
         {
-            PLISTNODE pListsNode = lstQueryFirstNode(pllPathsList);
-            while (pListsNode)
+            PLISTNODE pSysPathNode = lstQueryFirstNode(pllSysPathsList);
+                    // this list holds SYSPATH entries
+                 /* typedef struct _SYSPATH
+                 {
+                     PSZ         pszPathType;            // "LIBPATH", "SET PATH", etc.
+                     PLINKLIST   pllPaths;               // linked list of PSZs with the path entries
+                 } SYSPATH, *PSYSPATH; */
+
+            _Pmpf(("cfgConfigInitPage CBI_DESTROY: Destroying lists"));
+            while (pSysPathNode)
             {
-                PLINKLIST pListThis = (PLINKLIST)pListsNode->pItemData;
-                lstFree(pListThis);
-                pListsNode = pListsNode->pNext;
+                PSYSPATH pSysPathThis = (PSYSPATH)pSysPathNode->pItemData;
+                lstFree(pSysPathThis->pllPaths);        // this frees the items automatically
+                free(pSysPathThis);
+
+                pSysPathNode = pSysPathNode->pNext;
             }
-            lstFree(pllPathsList);
-            pllPathsList = NULL;
+            lstFree(pllSysPathsList);
+            pllSysPathsList = NULL;
         }
     }
 }
@@ -1188,7 +1208,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 if (ulSelection != LIT_NONE)
                 {
-                    pSysPathSelected = lstItemFromIndex(pllPathsList, ulSelection);
+                    pSysPathSelected = lstItemFromIndex(pllSysPathsList, ulSelection);
                     // clear listbox
                     WinSendDlgItemMsg(
                                 pcnbp->hwndPage, ID_OSDI_PATHLISTBOX,
@@ -1715,7 +1735,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         case SP_SYSPATHS:
                         {
-                            PLISTNODE pSysPathNode = lstQueryFirstNode(pllPathsList);
+                            PLISTNODE pSysPathNode = lstQueryFirstNode(pllSysPathsList);
 
                             while (pSysPathNode)
                             {
@@ -2246,7 +2266,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                 cnrhInsertRecords(hwndCnr,
                                   (PRECORDCORE)preccHeading, // parent
                                   (PRECORDCORE)precc,
-                                  precc->szDriverNameOnly,
+                                  precc->pDriverSpec->pszDescription, // precc->szDriverNameOnly,
                                   CRA_RECORDREADONLY | CRA_COLLAPSED,
                                   1);
             }
@@ -2660,7 +2680,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
 
                         // disable "Apply" button
-                        winhEnableDlgItem(pcnbp->hwndPage,
+                        WinEnableControl(pcnbp->hwndPage,
                                           ID_OSDI_DRIVR_APPLYTHIS,
                                           FALSE);
                     }
@@ -2680,10 +2700,10 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     WinSetDlgItemText(pcnbp->hwndPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       pszParams);
-                    winhEnableDlgItem(pcnbp->hwndPage,
+                    WinEnableControl(pcnbp->hwndPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       fAcceptsParams);
-                    winhEnableDlgItem(pcnbp->hwndPage,
+                    WinEnableControl(pcnbp->hwndPage,
                                       ID_OSDI_DRIVR_CONFIGURE,
                                       fEnable);
                 break; } // CN_EMPHASIS
@@ -2719,7 +2739,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndCnr = pcnbp->hwndControl;
+                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
                     if (pcnbp->preccSource)
                     {
@@ -2816,7 +2836,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     WinSetWindowText(hwndMLE,
                                                      ddd.szParams);
                                     // re-enable the "Apply" button also
-                                    winhEnableDlgItem(pcnbp->hwndPage,
+                                    WinEnableControl(pcnbp->hwndPage,
                                                       ID_OSDI_DRIVR_APPLYTHIS,
                                                       TRUE);
                                 }
@@ -2836,7 +2856,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_OSDI_DRIVR_PARAMS:
             if (usNotifyCode == MLN_CHANGE)
                 // enable "Apply" button
-                winhEnableDlgItem(pcnbp->hwndPage,
+                WinEnableControl(pcnbp->hwndPage,
                                   ID_OSDI_DRIVR_APPLYTHIS,
                                   TRUE);
         break;

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*--------------------------------------------------------------------*/
 /* REXX script to convert a bunch of .html files into os/2 .ipf files */
 /*  which can be converted later into .inf files using ipfc compiler  */

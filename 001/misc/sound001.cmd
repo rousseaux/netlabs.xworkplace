@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* enable new XFolder system sounds
    English version (001)
    (W) (C) Ulrich M”ller. All rights reserved.

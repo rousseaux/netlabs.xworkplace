@@ -71,6 +71,7 @@
 
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+#define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINSTDCNR
@@ -106,8 +107,17 @@
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
 // "XFldObject" key for wpRestoreData etc.
 const char* pcszXFldObject = "XFldObject";
+
+// global variable whether XWorkplace is initialized yet
+BOOL fXWorkplaceInitialized = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -134,10 +144,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
     memset((PCH)&pi, 0, sizeof(PAGEINFO));
     pi.cb                  = sizeof(PAGEINFO);
     pi.hwndPage            = NULLHANDLE;
-    pi.pfnwp               = fnwpSettingsObjDetails;
+    pi.pfnwp               = obj_fnwpSettingsObjDetails;
     pi.resid               = cmnQueryNLSModuleHandle(FALSE);
     pi.pCreateParams       = somSelf;
-                // passed to fnwpSettingsObjDetails in mp2
+                // passed to obj_fnwpSettingsObjDetails in mp2
     pi.dlgid               = ID_XSD_OBJECTDETAILS;
     pi.usPageStyleFlags    = BKA_STATUSTEXTON | BKA_MAJOR;   // major tab;
     pi.usPageInsertFlags   = BKA_FIRST;
@@ -278,7 +288,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
  *@@ xwpSetObjectHotkey:
  *      this sets a new global object hotkey for the object.
  *      See XFldObject::xwpQueryObjectHotkey for the description
- *      of the USHORT parameters.
+ *      of the hotkey parameters.
  *
  *      If the object was given a hotkey previously, the
  *      hotkey definition is overwritten.
@@ -288,9 +298,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
  *      because only each object must have a unique hotkey
  *      definition, if any.
  *
- *      As a special exception, if both usFlags and usKeyCode
+ *      As a special exception, if all three hotkey parameters
  *      are null, the hotkey for the object is removed from
- *      the internal hotkeys list.
+ *      the internal hotkeys list (i.e. somSelf loses its
+ *      hotkey).
  *
  *      The XWorkplace hook is automatically notified of the
  *      change, so that the new hotkey definition takes effect
@@ -835,8 +846,6 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
  *                                                                  *
  ********************************************************************/
 
-BOOL fThreadsInitialized = FALSE;
-
 /*
  * @@ xwpclsRemoveObjectHotkey:
  *            this removes the object hotkey for the
@@ -896,12 +905,35 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
     // since this code is reached for every single WPS class
     // that gets initialized, we need to check if we're being
     // called for the first time
-    if (!fThreadsInitialized)
+    if (!fXWorkplaceInitialized)
     {
-        fThreadsInitialized = TRUE;
+        // check if we have any open folder windows;
+        // if so, we're not really in the process of starting
+        // up. This check is necessary because this class
+        // method also gets called when the classes are installed
+        // by WinRegisterObjectClass, unfortunately, and we don't
+        // want to start threads etc. then.
+        BOOL    fOpenFoldersFound = FALSE;
+        HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
+        HWND    hwndThis;
+        while (     (!fOpenFoldersFound)
+                 && (hwndThis = WinGetNextWindow(henum))
+              )
+        {
+            CHAR    szClass[200];
+            if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
+                if (strcmp(szClass, "wpFolder window") == 0)
+                    // folder window:
+                    fOpenFoldersFound = TRUE;
+        }
+        WinEndEnumWindows(henum);
 
-        // initialize the kernel (kernel.c)
-        krnInitializeXWorkplace();
+        fXWorkplaceInitialized = TRUE;
+
+        if (!fOpenFoldersFound)
+            // only if no open folders are found:
+            // initialize the kernel (kernel.c)
+            krnInitializeXWorkplace();
 
         {
             PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
@@ -916,8 +948,8 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
     // of class initialization
     if (pGlobalSettings->ShowBootupStatus)
         xthrPostQuickMsg(QM_BOOTUPSTATUS,
-                        (MPARAM)somSelf,       // class object
-                        MPNULL);
+                         (MPARAM)somSelf,       // class object
+                         MPNULL);
 }
 
 /*

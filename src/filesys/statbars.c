@@ -15,7 +15,7 @@
  *
  *      --  The status bar's window proc (fdr_fnwpStatusBar) is in folder.c.
  *
- *      --  When selections change in a folder view (i.e. fnwpSubclassedFolderFrame
+ *      --  When selections change in a folder view (i.e. fdr_fnwpSubclassedFolderFrame
  *          receives CN_EMPHASIS notification), fdr_fnwpStatusBar is notified,
  *          which in turn calls stbComposeText, the main entry point to the
  *          mess in this file.
@@ -36,7 +36,7 @@
  *      You will have to add a #include below for that class though
  *      to be able to access the SOM class object for that new class.
  *
- *@@header "statbars.h"
+ *@@header "filesys\statbars.h"
  */
 
 /*
@@ -211,7 +211,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
             // and stbQueryClassMnemonics will use
             // the default value
             return (PrfWriteProfileString(HINI_USERPROFILE,
-                    INIAPP_XFOLDER, INIKEY_SBTEXT_WPURL,
+                    INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
                     pszText));
         }
     }
@@ -228,7 +228,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XFOLDER, INIKEY_SBTEXT_WPFILESYSTEM,
+                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
                 pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPDisk))
@@ -242,7 +242,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XFOLDER, INIKEY_SBTEXT_WPDISK,
+                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
                 pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPProgram))
@@ -256,7 +256,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XFOLDER, INIKEY_SBTEXT_WPPROGRAM,
+                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
                 pszText));
     }
     else if (_somDescendedFrom(pClassObject, _XFldObject))
@@ -270,7 +270,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XFOLDER, INIKEY_SBTEXT_WPOBJECT,
+                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
                 pszText));
     }
 
@@ -317,7 +317,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
             if (szWPUrlStatusBarMnemonics[0] == '\0')
                 // load string if this is the first time
                 if (PrfQueryProfileString(HINI_USERPROFILE,
-                            INIAPP_XFOLDER, INIKEY_SBTEXT_WPURL,
+                            INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
                             NULL, &(szWPUrlStatusBarMnemonics),
                             sizeof(szWPUrlStatusBarMnemonics))
                         == 0)
@@ -334,7 +334,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (szWPFileSystemStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XFOLDER, INIKEY_SBTEXT_WPFILESYSTEM,
+                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
                         NULL, &(szWPFileSystemStatusBarMnemonics),
                         sizeof(szWPFileSystemStatusBarMnemonics))
                     == 0)
@@ -353,7 +353,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (szWPDiskStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XFOLDER, INIKEY_SBTEXT_WPDISK,
+                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
                         NULL, &(szWPDiskStatusBarMnemonics), sizeof(szWPDiskStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
@@ -371,7 +371,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (szWPProgramStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XFOLDER, INIKEY_SBTEXT_WPPROGRAM,
+                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
                         NULL, &(szWPProgramStatusBarMnemonics), sizeof(szWPProgramStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
@@ -390,7 +390,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (szXFldObjectStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                                      INIAPP_XFOLDER, INIKEY_SBTEXT_WPOBJECT,
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
                                       NULL,
                                       &(szXFldObjectStatusBarMnemonics),
                                       sizeof(szXFldObjectStatusBarMnemonics))
@@ -1393,15 +1393,15 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         BOOL fEnable = !(pGlobalSettings->NoSubclassing);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
 
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
-        winhEnableDlgItem(pcnbp->hwndPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
+        WinEnableControl(pcnbp->hwndPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
     }
 }
 
@@ -1570,7 +1570,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // status bar settings page: get last selected
         // class from INIs (for single-object mode)
         // and query the SOM class object from this string
-        PrfQueryProfileString(HINI_USER, INIAPP_XFOLDER,
+        PrfQueryProfileString(HINI_USER, INIAPP_XWORKPLACE,
                               INIKEY_SB_LASTCLASS,
                               "XFldObject",     // default
                               szSBClassSelected, sizeof(szSBClassSelected));
@@ -1755,7 +1755,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 strcpy(szSBClassSelected, scd.szClassSelected);
                 WinSetDlgItemText(pcnbp->hwndPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
                 PrfWriteProfileString(HINI_USER,
-                                      INIAPP_XFOLDER, INIKEY_SB_LASTCLASS,
+                                      INIAPP_XWORKPLACE, INIKEY_SB_LASTCLASS,
                                       szSBClassSelected);
                 if (pSBClassObjectSelected)
                 {
