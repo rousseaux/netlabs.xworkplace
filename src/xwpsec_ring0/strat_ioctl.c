@@ -52,6 +52,8 @@ extern PPROCESSLIST G_pplTrusted = NULL;           // global list of trusted pro
 
 extern RING0STATUS  G_R0Status = {0};
 
+extern HVDHSEM      G_hmtx = NULLHANDLE;
+
 /* ******************************************************************
  *
  *   IOCtl implementation
@@ -158,6 +160,11 @@ int sec32_open(PTR16 reqpkt)
     // already
     if (G_open_count)
         return STDON | STERR | ERROR_I24_DEVICE_IN_USE;
+
+    // create our serialization kernel mutex on the first call
+    if (!G_hmtx)
+        if (!(VDHCreateSem(&G_hmtx, VDH_MUTEXSEM)))
+            return STDON | STERR | ERROR_I24_GEN_FAILURE;
 
     // success:
     // set open count to one (will be decreased by "close"

@@ -1,9 +1,8 @@
 #
-# Makefile for xpstat.
+# Makefile for XLVM.EXE.
 #
-# For use with IBM NMAKE, which is part of IBM C-Set/2 and VisualAge C++.
-# This file will probably not work with other MAKE utilities, such as
-# GNU make or DMAKE.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
 #       Copyright (C) 1998-2003 Ulrich M”ller.
 #       This file is part of the XWorkplace source package.
@@ -17,79 +16,63 @@
 #       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# FIXED MACROS
-# ------------
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in. $(XWP_OUTPUT_ROOT) is set by
-# setup.in to point to \bin from the XWorkplace sources root,
-# but this can be modified by setting an external environment
-# variable. This approach has the advantage that
-# 1) all build files are in a common dir tree and the entire
-#    tree can be removed completely;
-# 2) the build tree can be on a different physical drive for
-#    speed.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
-MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+!include $(MAKE_INCLUDE_DIR)\compile_exe_mt.in
+#       this defines the proper OUTPUTDIR
 
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-.SUFFIXES: .c .obj .dll .h .ih .rc .res
+MODULESTEM = xpstat
 
-HLPINC = $(HELPERS_BASE)\include\helpers
+OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 
-HEADERS = $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\winh.h
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-ALL_OBJ1 = $(OUTPUTDIR)\xpstat.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
+BLDLEVELNAME = "$(XWPNAME) process status viewer"
 
-CURRENT_DIR = $(MAKEDIR)
+COPYTODIR = $(XWPRUNNING)\bin
 
-# TARGETS
-# -------
+LINKMODULE = $(MODULESTEM).exe
 
-all: helpers_exe_mt $(XWPRUNNING)\bin\xpstat.exe
-    @echo ----- Leaving $(MAKEDIR)
+RESOURCE_SOURCES = $(MODULESTEM).h $(MODULESTEM).rc $(MODULESTEM).ico
 
-$(OUTPUTDIR)\xpstat.obj: $(@B).c $(@B).h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
-        $(HLPINC)\memdebug.h $(HLPINC)\procstat.h $(HLPINC)\dosh.h $(HLPINC)\stringh.h \
-        $(HLPINC)\textview.h $(HLPINC)\winh.h \
-    ..\..\include\dlgids.h
-        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
 
-helpers_exe_mt:
-    @echo $(MAKEDIR)\makefile: Going for src\helpers (EXE MT version)
-    @cd $(HELPERS_BASE)\src\helpers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
-    @cd $(CURRENT_DIR)
+!include $(MAKE_INCLUDE_DIR)\link_exe.in
+#   this defines ALLTARGET for the next include
 
-$(OUTPUTDIR)\helpers.lib: helpers_exe_mt
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
 
-# build targets
-xpstat.def: ..\..\include\bldlevel.h makefile
-    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) process status utility"
-
-$(OUTPUTDIR)\xpstat.res: $(@B).rc *.ico
-    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
-
-$(MODULESDIR)\xpstat.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
-    $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(@B).def
-    $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
-
-# main target
-$(XWPRUNNING)\bin\xpstat.exe: $(MODULESDIR)\$(@B).exe
-    cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+!include $(MAKE_INCLUDE_DIR)\targets.in
 
 

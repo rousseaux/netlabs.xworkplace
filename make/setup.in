@@ -32,7 +32,7 @@
 #                                   XWorkplace repository, e.g.
 #                                   "K:\cvs\xworkplace"
 #
-#           $(HELPERS_BASE)         root directory of the local
+#           $(HELPERS_BASE_DIR)     root directory of the local
 #                                   xwphelpers repository, e.g.
 #                                   "K:\cvs\xwphelpers"
 #
@@ -47,10 +47,25 @@
 #                                   "001"
 #
 
+# say hello on entering a directory
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
+
+# Define the suffixes for files which NMAKE will work on.
+# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
+# defining file extensions that NMAKE will recognize.
+.SUFFIXES: .bmp .c .cpp .def .dll .exe .gif .h .hlp .html .idl .ih .inf .ipf .obj .rc .res .tmf .txt
+
 # set up PROJECT_BASE_DIR, which is required by other
 # makefiles (and most importantly by xwphelpers)
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPDIR)
 # this should give us something like K:\cvs\xworkplace
+
+
+# COMMON FILES
+# ------------
+
+BLDLEVEL_H = $(PROJECT_BASE_DIR)\include\bldlevel.h
 
 
 # OUTPUT DIRECTORIES
@@ -75,6 +90,8 @@ HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
 #!if [@echo ---^> MODULESDIR is $(MODULESDIR)]
 #!endif
+!if [@md $(MODULESDIR) 2> NUL]
+!endif
 
 #!ifdef XWP_DEBUG
 #!if [@echo ---^> Debug build has been enabled.]
@@ -153,15 +170,17 @@ XWPRELEASE_MAP = $(XWPRELEASE)\map
 # has been extracted to a separate CVS archive. We assume
 # it's in the CVS tree also, so we derive this from $(CVS_WORK_ROOT).
 
-!ifndef HELPERS_BASE
-HELPERS_BASE = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
+!ifndef HELPERS_BASE_DIR
+HELPERS_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
 !endif
 
 !ifdef XWP_DEBUG
-PMPRINTF_LIB = $(HELPERS_BASE)\src\helpers\pmprintf.lib
+PMPRINTF_LIB = $(HELPERS_BASE_DIR)\src\helpers\pmprintf.lib
 !else
 PMPRINTF_LIB =
 !endif
+
+MAKE_INCLUDE_DIR = $(HELPERS_BASE_DIR)\make
 
 
 # PRECOMPILED HEADERS
@@ -247,20 +266,22 @@ INCLUDE_TEMP3=$(LANHEADERS);
 
 LIBC_HEADERS = $(VACBASE)\include
 
-PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(TKBASE)\som\include;$(INCLUDE_TEMP3)$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
+PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(TKBASE)\som\include;$(INCLUDE_TEMP3)$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE_DIR)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
 
 
 # TOOLS SETUP
 # -----------
 
-RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -f -cy -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR) $(PROJECT_BASE_DIR)\include\classes\*.ih $(PROJECT_BASE_DIR)\include\classes\*.h $(PROJECT_BASE_DIR)\include\classes\wps\*.ih $(PROJECT_BASE_DIR)\include\classes\wps\*.h
-# RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR) *.ih *.h
+RUN_FASTDEP = $(HELPERS_BASE_DIR)\fastdep.exe -f -cy -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR)
+# $(PROJECT_BASE_DIR)\include\classes\*.ih $(PROJECT_BASE_DIR)\include\classes\*.h $(PROJECT_BASE_DIR)\include\classes\wps\*.h
+# -cy
+# RUN_FASTDEP = $(HELPERS_BASE_DIR)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR) *.ih *.h
 
 RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 
 RUN_UNLOCK = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlock.exe
 
-RUN_STRRPL = $(HELPERS_BASE)\strrpl.exe
+RUN_STRRPL = $(HELPERS_BASE_DIR)\strrpl.exe
 
 RUN_DCD = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\dcd.cmd
 
@@ -281,7 +302,7 @@ XWPNAME = XWorkplace
 !endif
 
 !ifndef RUN_H2I
-RUN_H2I = $(HELPERS_BASE)\h2i.exe
+RUN_H2I = $(HELPERS_BASE_DIR)\h2i.exe
 !endif
 
 COPY = cmd.exe /c copy

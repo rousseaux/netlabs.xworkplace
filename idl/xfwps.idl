@@ -10,8 +10,11 @@
  *
  *      The SOM stuff in this file used to be in xfsys.idl before
  *      V0.9.0, but this was moved to a separate file for clarity.
- *
+ */
+
+/*
  *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -63,63 +66,67 @@ interface XFldWPS : WPSystem
     ULONG xwpAddWPSFileTypesPage(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpAddXFldWPSPages,
+            xwpAddWPSMenuPages,
+            xwpAddWPSFdrViewsPage,
+            xwpAddWPSFdrHotkeysPage,
+            xwpAddWPSFdrSnap2GridPage,
+            xwpAddWPSFdrStatusBarPages,
+            xwpAddWPSFdrSortPage,
+            xwpAddWPSFileTypesPage;
 
-    releaseorder: xwpAddXFldWPSPages,
-                  xwpAddWPSMenuPages,
-                  xwpAddWPSFdrViewsPage,
-                  xwpAddWPSFdrHotkeysPage,
-                  xwpAddWPSFdrSnap2GridPage,
-                  xwpAddWPSFdrStatusBarPages,
-                  xwpAddWPSFdrSortPage,
-                  xwpAddWPSFileTypesPage;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xwp_;
+        externalstem = xwp;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfwps;           //# specifies the filestem for sc-generated files
+        metaclass = M_XFldWPS;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xwp_;
-    externalstem = xwp;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfwps;           //# specifies the filestem for sc-generated files
-    metaclass = M_XFldWPS;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XFldWPS:
-     *
-     */
+        passthru C_h =
+"";
 
-    ULONG       flPagesAdded;
+        /*
+         * Internal instance variables for XFldWPS:
+         *
+         */
 
-    /*
-     * WPSystem methods overridden by XFldWPS:
-     *
-     */
+        ULONG       flPagesAdded;
 
-    wpFilterPopupMenu: override;
+        /*
+         * WPSystem methods overridden by XFldWPS:
+         *
+         */
 
-//#    wpQueryDefaultHelp: override;        replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpFilterPopupMenu: override;
 
-    wpAddSystemScreenPage: override;
+    //#    wpQueryDefaultHelp: override;        replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-    wpAddDMQSDisplayTypePage: override;
+        wpAddSystemScreenPage: override;
 
-    wpAddSystemPrintScreenPage: override;
+        wpAddDMQSDisplayTypePage: override;
 
-    wpAddSettingsPages: override;
+        wpAddSystemPrintScreenPage: override;
 
-    wpInsertSettingsPage: override;
+        wpAddSettingsPages: override;
 
-#ifdef __PRIVATE__
-
+        wpInsertSettingsPage: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -132,41 +139,41 @@ interface M_XFldWPS : M_WPSystem
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xwpM_;
+        externalstem = xwpM;
+        functionprefix = xwpM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfwps;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xwpM_;
-    externalstem = xwpM;
-    functionprefix = xwpM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfwps;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal instance variables:
+         *
+         */
 
-    /*
-     * Internal instance variables:
-     *
-     */
+        /*
+         * M_WPSystem methods overridden by M_XFldWPS:
+         *
+         */
 
-    /*
-     * M_WPSystem methods overridden by M_XFldWPS:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
+        wpclsQuerySettingsPageSize: override;
+        wpclsQueryTitle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQuerySettingsPageSize: override;
-    wpclsQueryTitle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+    };
+#endif
 };
 
 

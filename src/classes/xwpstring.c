@@ -840,8 +840,12 @@ SOM_Scope void  SOMLINK xwstr_wpInitData(XWPString *somSelf)
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
  *      The parent method must always be called last.
  *
  *@@added V0.9.3 (2000-04-26) [umoeller]
@@ -1309,7 +1313,9 @@ SOM_Scope ULONG  SOMLINK xwstr_wpAddObjectWindowPage(XWPString *somSelf,
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  *
  *      We call XWPString::xwpAddXWPStringPages to have the
  *      "String" pages inserted on top.
@@ -1492,7 +1498,7 @@ SOM_Scope MRESULT  SOMLINK xwstr_wpDrop(XWPString *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -1527,7 +1533,7 @@ SOM_Scope ULONG  SOMLINK xwstrM_wpclsQueryStyle(M_XWPString *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -1543,7 +1549,7 @@ SOM_Scope PSZ  SOMLINK xwstrM_wpclsQueryTitle(M_XWPString *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -1572,7 +1578,7 @@ SOM_Scope BOOL  SOMLINK xwstrM_wpclsQueryDefaultHelp(M_XWPString *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

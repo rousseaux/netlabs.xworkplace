@@ -10,10 +10,6 @@
 # GNU General Public License for more details.
 # Required changes for translating the NLS DLL: three lines below.
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\config.in
 !include ..\make\setup.in

@@ -243,9 +243,11 @@ int APIENTRY GetCPData(PXMLDOM pDom,
     XWPENCODINGMAP *pMap = NULL;
     ULONG cEntries = 0;
 
-    if (    (id == encFindIdForCodepage(ulCP,
-                                        NULL,
-                                        NULL))
+    id = encFindIdForCodepage(ulCP,
+                              NULL,
+                              NULL);
+
+    if (    (id != UNSUPPORTED)
 
          && (encGetTable(id,
                          &pMap,
@@ -1120,8 +1122,6 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
  *   main
  *
  ********************************************************************/
-
-#define ARRAYITEMCOUNT(array) sizeof(array) / sizeof(array[0])
 
 /* typedef struct _CONTROLDEF
 {

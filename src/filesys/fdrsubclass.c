@@ -1455,38 +1455,29 @@ STATIC BOOL WMChar(HWND hwndFrame,
  */
 
 STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
-                        ULONG flOwnerDraw,          // in: OWDRFL_* flags plus maybe 0x80000000 for "force mini icon"
+                        ULONG flOwnerDraw,          // in: OWDRFL_* flags
                         POWNERITEM poi)             // in: mp2 of WM_DRAWITEM
 {
     PMINIRECORDCORE     pmrc;
     WPObject            *somSelf;
-    BOOL                fQueueLazy = FALSE,
-                        brc = FALSE;
+    BOOL                brc = FALSE;
 
     // get the object from the record that is to be drawn
     if (    (pmrc = (PMINIRECORDCORE)((PCNRDRAWITEMINFO)poi->hItem)->pRecord)
          && (somSelf = OBJECT_FROM_PREC(pmrc))
        )
     {
-        // HPOINTER            hptrPaint;
-        // ULONG               flDraw = DP_NORMAL;
-                       // #define DP_NORMAL                  0x0000
-                       // #define DP_HALFTONED               0x0001
-                       // #define DP_INVERTED                0x0002
-                       // #define DP_MINI                    0x0004
-        LONG                // x,
-                            // y,
-                            cx,
-                            cy;
-        POINTL              ptlPaint,
-                            ptl2;
-        BOOL                fSwitched = FALSE;
-        RECTL               rclBack;
-        LONG                lCursorOffset = 2;
-                                // offset to move outwards from "selected" rectangle
-                                // to dotted "cursored" rectangle; negative moves inwards
-                                // (for Details view)
-        HPOINTER            hptr2;
+        LONG        cx,
+                    cy;
+        POINTL      ptl2;
+        RECTL       rclBack,
+                    rclPaint;
+        LONG        lCursorOffset = 2;
+                        // offset to move outwards from "selected" rectangle
+                        // to dotted "cursored" rectangle; negative moves inwards
+                        // (for Details view)
+        HPOINTER    hptr2;
+        ULONG       flMethodRC = 0;
 
         /*
          * 1) calculate coordinates:
@@ -1509,10 +1500,15 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
              || (cx < G_cxIcon)
            )
         {
-            ptlPaint.x =   poi->rclItem.xLeft
-                         + (cx - G_cxIcon / 2) / 2;
-            ptlPaint.y =   poi->rclItem.yBottom
-                         + (cy - G_cyIcon / 2) / 2;
+            LONG    cxIcon = G_cxIcon / 2,
+                    cyIcon = G_cyIcon / 2;
+
+            rclPaint.xLeft   =   poi->rclItem.xLeft
+                               + (cx - cxIcon) / 2;
+            rclPaint.xRight  = rclPaint.xLeft + cxIcon;
+            rclPaint.yBottom =   poi->rclItem.yBottom
+                               + (cy - cyIcon) / 2;
+            rclPaint.yTop    = rclPaint.yBottom + cyIcon;
 
             // in Details view, the "selected" rectangle is the
             // same size as the poi rectangle, but the cursor
@@ -1535,12 +1531,14 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         }
         else
         {
-            ptlPaint.x =   poi->rclItem.xLeft
-                        + (cx - G_cxIcon) / 2
-                        + 1;
-            ptlPaint.y =   poi->rclItem.yBottom
-                         + (cy - G_cyIcon) / 2
-                         + 1;
+            rclPaint.xLeft   =   poi->rclItem.xLeft
+                               + (cx - G_cxIcon) / 2
+                               + 1;
+            rclPaint.xRight  = rclPaint.xLeft + G_cxIcon;
+            rclPaint.yBottom =   poi->rclItem.yBottom
+                               + (cy - G_cyIcon) / 2
+                               + 1;
+            rclPaint.yTop    = rclPaint.yBottom + G_cyIcon;
 
             rclBack.xLeft = poi->rclItem.xLeft + 2;
             rclBack.yBottom = poi->rclItem.yBottom + 2;
@@ -1563,12 +1561,14 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             PMPF_ICONREPLACEMENTS(("[%s] CRA_SELECTED", pmrc->pszIcon));
 
             // switch the HPS to RGB mode, or the below won't work
-            fSwitched = GpiCreateLogColorTable(poi->hps,
-                                               0,
-                                               LCOLF_RGB,
-                                               0,
-                                               0,
-                                               0);
+            if (GpiCreateLogColorTable(poi->hps,
+                                       0,
+                                       LCOLF_RGB,
+                                       0,
+                                       0,
+                                       0))
+                // tell instance method that RGB is already in RGB mode
+                flOwnerDraw |= OWDRFL_RGBMODE;
 
             lcolHiliteBgnd = winhQueryPresColor2(hwndCnr,
                                                  PP_SHADOWHILITEBGNDCOLOR,
@@ -1650,11 +1650,11 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         // the template icons are always drawn via ownerdraw,
         // so we have to do that too
         if (!(_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE))
-            fQueueLazy = _xwpOwnerDrawIcon(somSelf,
+            flMethodRC = _xwpOwnerDrawIcon(somSelf,
                                            pmrc,
                                            poi->hps,
                                            flOwnerDraw,
-                                           &ptlPaint);
+                                           &rclPaint);
                 // V1.0.1 (2002-12-08) [umoeller]
         else
         {
@@ -1665,8 +1665,8 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                                     NULL))
             {
                 WinDrawPointer(poi->hps,
-                               ptlPaint.x,
-                               ptlPaint.y,
+                               rclPaint.xLeft,
+                               rclPaint.yBottom,
                                hptr2,
                                (flOwnerDraw & OWDRFL_MINI)
                                    ? DP_MINI
@@ -1677,22 +1677,18 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 // icon only if we weren't mini yet
                 if (!(flOwnerDraw & OWDRFL_MINI))
                 {
-                    ptl2.x = ptlPaint.x + G_cxIcon / 8;
-                    ptl2.y = ptlPaint.y + G_cyIcon * 5 / 16;
+                    RECTL rcl2;
+                    rcl2.xLeft = rclPaint.xLeft + G_cxIcon / 8;
+                    rcl2.xRight = rcl2.xLeft + G_cxIcon / 2;
+                    rcl2.yBottom = rclPaint.yBottom + G_cyIcon * 5 / 16;
+                    rcl2.yTop = rcl2.yBottom + G_cyIcon / 2;
 
-                    fQueueLazy = _xwpOwnerDrawIcon(somSelf,
+                    flMethodRC = _xwpOwnerDrawIcon(somSelf,
                                                    pmrc,
                                                    poi->hps,
                                                    flOwnerDraw | OWDRFL_MINI,
-                                                   &ptl2);
+                                                   &rcl2);
                         // V1.0.1 (2002-12-08) [umoeller]
-                    /*
-                    WinDrawPointer(poi->hps,
-                                   x + G_cxIcon / 8,
-                                   y + G_cyIcon * 5 / 16,
-                                   hptrPaint,
-                                   flDraw | DP_MINI);
-                    */
                 }
             }
         }
@@ -1707,26 +1703,29 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
            )
         {
             WinDrawPointer(poi->hps,
-                           ptlPaint.x,
-                           ptlPaint.y,
+                           rclPaint.xLeft,
+                           rclPaint.yBottom,
                            hptr2,
                            (flOwnerDraw & OWDRFL_MINI)
                                    ? DP_MINI
                                    : DP_NORMAL);
         }
 
-        if (fSwitched)
+        if (flMethodRC & OWDRFL_RGBMODE)
             GpiCreateLogColorTable(poi->hps,
                                    LCOL_RESET,
                                    LCOLF_CONSECRGB,
                                    0,
                                    0,
                                    0);
+
+        if (flMethodRC & flOwnerDraw & OWDRFL_LAZYLOADICON)
+            icomQueueLazyIcon(somSelf);
+        else if (flMethodRC & flOwnerDraw & OWDRFL_LAZYLOADTHUMBNAIL)
+            icomQueueLazyIcon(somSelf);     // @@todo
+
         brc = TRUE;
     }
-
-    if (fQueueLazy)
-        icomQueueLazyIcon(somSelf);
 
     return brc;
 }
@@ -1744,9 +1743,6 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
  *      If this returns TRUE, we do NOT call the parent
  *      WPS window proc and return TRUE from WM_DRAWITEM,
  *      meaning that we've drawn the item ourselves.
- *
- *      @@todo templates
- *      @@todo background rectangle if CRA_SELECTED
  *
  *@@added V0.9.20 (2002-07-31) [umoeller]
  */
@@ -1773,12 +1769,10 @@ STATIC BOOL CnrDrawItem(PSUBCLFOLDERVIEW psfv,      // in: folder view data
         if (pfi = pcdi->pFieldInfo)
         {
             if (pfi->offStruct == FIELDOFFSET(MINIRECORDCORE, hptrIcon))
-            {
                 fWeveDrawn = CnrDrawIcon(psfv->hwndCnr,
-                                         flOwnerDraw | 0x80000000,      // force mini icon
+                                         flOwnerDraw | OWDRFL_MINI,
                                          poi);
-            }
-            // other column: let WPS do the work
+            // else other column: let WPS do the work
         }
         else
         {

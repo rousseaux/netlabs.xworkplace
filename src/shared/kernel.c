@@ -102,6 +102,7 @@
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
+#include "helpers\xwpsecty.h"           // XWorkplace Security
 
 // SOM headers which don't crash with prec. header files
 // #include "xfobj.ih"
@@ -153,6 +154,9 @@ static ULONG            G_XPagerConfigFlags = 0;
 // global structure with data needed across threads
 // (see kernel.h)
 KERNELGLOBALS           G_KernelGlobals = {0};
+
+PXWPGLOBALSHARED        G_pXwpGlobalShared = NULL;
+PXWPSHELLSHARED         G_pXWPShellShared = NULL;
 
 // classes tree V0.9.16 (2001-09-29) [umoeller]
 // see krnClassInitialized
@@ -455,41 +459,6 @@ BOOL krnIsClassReady(PCSZ pcszClassName)
  ********************************************************************/
 
 /*
- *@@ krnMakeLogFilename:
- *      produces a log filename in pszBuf.
- *      If $(XWPLOGDIR) is set, that directory
- *      is used; otherwise we use the root
- *      directory of the boot drive.
- *
- *@@added V1.0.0 (2002-09-20) [umoeller]
- */
-
-BOOL krnMakeLogFilename(PSZ pszBuf,             // out: fully qualified filename
-                        PCSZ pcszFilename)      // in: short log filename
-{
-    CHAR    szBoot[] = "?:";
-    PSZ     pszLogDir;
-    if (DosScanEnv("LOGFILES",      // new eCS 1.1 setting
-                   &pszLogDir))
-    {
-        // variable not set:
-#ifdef __EWORKPLACE__
-        return FALSE;
-#else
-        szBoot[0] = doshQueryBootDrive();
-        pszLogDir = szBoot;
-#endif
-    }
-
-    sprintf(pszBuf,
-            "%s\\%s",
-            pszLogDir,
-            pcszFilename);
-
-    return TRUE;
-}
-
-/*
  *@@ krnExceptOpenLogFile:
  *      this opens or creates C:\XFLDTRAP.LOG and writes
  *      a debug header into it (date and time); returns
@@ -511,8 +480,9 @@ FILE* _System krnExceptOpenLogFile(VOID)
     CHAR        szFilename[CCHMAXPATH];
     FILE        *file = NULL;
 
-    if (    (krnMakeLogFilename(szFilename,
-                                XFOLDER_CRASHLOG))
+    if (    (doshCreateLogFilename(szFilename,
+                                   XFOLDER_CRASHLOG,
+                                   F_ALLOW_BOOTROOT_LOGFILE))
          && (file = fopen(szFilename, "a"))
        )
     {
@@ -521,7 +491,9 @@ FILE* _System krnExceptOpenLogFile(VOID)
         fprintf(file, "\n" XWORKPLACE_STRING " trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
                 dt.year, dt.month, dt.day,
                 dt.hours, dt.minutes, dt.seconds);
-#define LOGFILENAME XFOLDER_CRASHLOG
+
+#define LOGFILENAME         XFOLDER_CRASHLOG
+
         fprintf(file,
                 "-----------------------------------------------------------\n"
                 "\nAn internal error occurred in " XWORKPLACE_STRING " (XFLDR.DLL).\n"
@@ -720,6 +692,7 @@ VOID krnEnableReplaceRefresh(BOOL fEnable)
  *      Use KERNELGLOBALS.fAutoRefreshReplaced instead.
  *
  *@@added V0.9.9 (2001-01-31) [umoeller]
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: rewritten
  */
 
 BOOL krnReplaceRefreshEnabled(VOID)
@@ -752,26 +725,26 @@ BOOL krnReplaceRefreshEnabled(VOID)
  *      because this flag does not get stored anywhere.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: rewritten
  */
 
 VOID krnSetProcessStartupFolder(BOOL fReuse)
 {
-    PKERNELGLOBALS pKernelGlobals = NULL;
+    BOOL    fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             // cast PVOID
-            PXWPGLOBALSHARED pXwpGlobalShared;
-            if (pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared)
-                pXwpGlobalShared->fProcessStartupFolder = fReuse;
+            if (G_pXwpGlobalShared)
+                G_pXwpGlobalShared->fProcessStartupFolder = fReuse;
         }
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (pKernelGlobals)
-        krnUnlockGlobals();
+    if (fLocked)
+        krnUnlock();
 }
 
 /*
@@ -784,19 +757,24 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
 
 BOOL krnNeed2ProcessStartupFolder(VOID)
 {
-    PCKERNELGLOBALS pKernelGlobals;
-    PXWPGLOBALSHARED pXwpGlobalShared;
+    BOOL    brc = TRUE;
 
-    if (    (pKernelGlobals = krnQueryGlobals())
-            // cast PVOID
-         && (pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared)
-         && (pXwpGlobalShared->fProcessStartupFolder)
-       )
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
     {
-        return TRUE;
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (G_pXwpGlobalShared)
+                brc = G_pXwpGlobalShared->fProcessStartupFolder;
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    return FALSE;
+    if (fLocked)
+        krnUnlock();
+
+    return brc;
 }
 
 /*
@@ -810,24 +788,30 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
 
 HWND krnQueryDaemonObject(VOID)
 {
-    PCKERNELGLOBALS pKernelGlobals;
-    if (pKernelGlobals = krnQueryGlobals())
-    {
-        // cast PVOID
-        PXWPGLOBALSHARED pXwpGlobalShared;
-        if (!(pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pXwpGlobalShared is NULL.");
-        else
-            // get the handle of the daemon's object window
-            if (!pXwpGlobalShared->hwndDaemonObject)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
-            else
-                return pXwpGlobalShared->hwndDaemonObject;
-    }
+    HWND    hwnd = NULLHANDLE;
 
-    return NULLHANDLE;
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (!G_pXwpGlobalShared)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "G_pXwpGlobalShared is NULL.");
+            else
+                // get the handle of the daemon's object window
+                if (!(hwnd = G_pXwpGlobalShared->hwndDaemonObject))
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "G_pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return hwnd;
 }
 
 /*
@@ -841,6 +825,7 @@ HAPP krnStartDaemon(VOID)
 {
     CHAR    szDir[CCHMAXPATH],
             szExe[CCHMAXPATH];
+    HAPP    happDaemon = NULLHANDLE;
 
     // we need to specify XWorkplace's "BIN"
     // subdir as the working dir, because otherwise
@@ -867,20 +852,18 @@ HAPP krnStartDaemon(VOID)
         pd.pszStartupDir = szDir;
         pd.pszEnvironment = "WORKPLACE\0\0";
 
-        G_KernelGlobals.happDaemon = WinStartApp(G_KernelGlobals.hwndThread1Object, // hwndNotify,
-                                                 &pd,
-                                                 "-D", // params; otherwise the daemon
-                                                       // displays a msg box
-                                                 NULL,
-                                                 0);// no SAF_INSTALLEDCMDLINE,
+        happDaemon = WinStartApp(G_KernelGlobals.hwndThread1Object, // hwndNotify,
+                                 &pd,
+                                 "-D", // params; otherwise the daemon
+                                       // displays a msg box
+                                 NULL,
+                                 0);// no SAF_INSTALLEDCMDLINE,
         initLog("  WinStartApp for \"%s\" returned HAPP 0x%lX",
                           pd.pszExecutable,
-                          G_KernelGlobals.happDaemon);
-
-        return G_KernelGlobals.happDaemon;
+                          happDaemon);
     }
 
-    return NULLHANDLE;
+    return happDaemon;
 }
 
 /*
@@ -920,6 +903,19 @@ MRESULT krnSendDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
         return WinSendMsg(hwnd, msg, mp1, mp2);
 
     return 0;
+}
+
+/*
+ *@@ krnMultiUser:
+ *      returns TRUE only if the Workplace Shell is
+ *      running under control of XWPSHELL.EXE.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+BOOL krnMultiUser(VOID)
+{
+    return (G_pXWPShellShared != NULL);
 }
 
 /* ******************************************************************
@@ -992,17 +988,17 @@ VOID krnCreateObjectWindows(VOID)
 STATIC VOID T1M_DaemonReady(VOID)
 {
     // _Pmpf(("T1M_DaemonReady"));
-    PXWPGLOBALSHARED pXwpGlobalShared;
+    // PXWPGLOBALSHARED pXwpGlobalShared;
 
-    if (    (pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared)
-         && (pXwpGlobalShared->hwndDaemonObject)
-       )
+    HWND    hwndDaemonObject;
+
+    if (hwndDaemonObject = krnQueryDaemonObject())
     {
 #ifndef __ALWAYSHOOK__
         if (cmnQuerySetting(sfXWPHook))
 #endif
         {
-            if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+            if (WinSendMsg(hwndDaemonObject,
                            XDM_HOOKINSTALL,
                            (MPARAM)TRUE,
                            0))
@@ -1024,7 +1020,7 @@ STATIC VOID T1M_DaemonReady(VOID)
 #ifndef __NOPAGER__
                 if (cmnQuerySetting(sfEnableXPager))
                     // XPager is enabled too:
-                    WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+                    WinSendMsg(hwndDaemonObject,
                                XDM_STARTSTOPPAGER,
                                (MPARAM)TRUE,
                                0);
@@ -1288,19 +1284,17 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
 #ifndef __NOPAGER__
                 case 2: // started from T1M_PAGERCONFIGDELAYED
                 {
-                    PXWPGLOBALSHARED   pXwpGlobalShared;
-
-                    if (    (pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared)
-                         && (pXwpGlobalShared->hwndDaemonObject)
-                       )
+                    HWND    hwndDaemonObject;
+                    if (hwndDaemonObject = krnQueryDaemonObject())
                     {
                         // cross-process send msg: this
                         // does not return until the daemon
                         // has re-read the data
-                        BOOL brc = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                                                    XDM_PAGERCONFIG,
-                                                    (MPARAM)G_XPagerConfigFlags,
-                                                    0);
+                        WinSendMsg(hwndDaemonObject,
+                                   XDM_PAGERCONFIG,
+                                   (MPARAM)G_XPagerConfigFlags,
+                                   0);
+
                         // reset flags
                         G_XPagerConfigFlags = 0;
                     }

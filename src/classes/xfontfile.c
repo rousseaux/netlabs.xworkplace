@@ -143,7 +143,7 @@ SOM_Scope BOOL  SOMLINK fonf_xwpIsInstalled(XWPFontFile *somSelf)
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -161,7 +161,7 @@ SOM_Scope void  SOMLINK fonfM_wpclsInitData(M_XWPFontFile *somSelf)
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
+ *      this M_WPObject class method is called by the
  *      Templates folder to allow a class to
  *      create its default templates.
  *
@@ -186,7 +186,7 @@ SOM_Scope BOOL  SOMLINK fonfM_wpclsCreateDefaultTemplates(M_XWPFontFile *somSelf
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -221,7 +221,7 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -252,7 +252,7 @@ SOM_Scope BOOL  SOMLINK fonfM_wpclsQueryDefaultHelp(M_XWPFontFile *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;
@@ -296,7 +296,7 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryIconData(M_XWPFontFile *somSelf,
 
 /*
  *@@ wpclsQueryInstanceFilter:
- *      this WPDataFile class method determines which file-system
+ *      this M_WPFileSystem class method determines which file-system
  *      objects will be instances of a certain class according
  *      to a file filter.
  *

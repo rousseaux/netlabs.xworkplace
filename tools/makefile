@@ -1,35 +1,90 @@
 #
-# makefile:
-#       makefile for TOOLS\ directory.
-#       For use with IBM NMAKE, which comes with the IBM compilers,
-#       the Developer's Toolkit, and the DDK.
+# Makefile for the tools\ directory.
+#       NOTE: "tools" only gets recursed to by the main makefile
+#       in "really_all" mode.
 #
-#       All the makefiles have been restructured with V0.9.0.
+#   SUBTARGET is defined by the main makefile to be one of:
 #
-#       Called from:    main makefile
+#       -- all: this will invoke "nmake all" on the subdirs.
 #
-#       Input:          none
-#
-#       Output:         all XWorkplace tools as EXEs, in this directory.
-#
-#       Edit "setup.in" to set up the make process.
+#       -- dep: this will invoke "nmake dep" on the subdirs.
 #
 
 # Say hello to yourself.
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
-all: repclass wpsreset
+# store current directory so we can change back later
+CURRENT_DIR = $(MAKEDIR)
+
+SUBDIRS = \
+repclass \
+wpsreset \
+ximgview \
+xlvm \
+xmakeini \
+xmlview \
+xpstat
+
+# "all" gets called from ..\makefile when either
+# "nmake all" or "nmake really_all" is running.
+# In that case, SUBTARGET is "all" also so we
+# run "nmake all" on the subdirs.
+all: $(SUBDIRS)
     @echo ----- Leaving $(MAKEDIR)
 
+# "dep" gets called from ..\makefile when
+# "nmake dep" is running.
+# In that case, SUBTARGET is "dep" also so we
+# run "nmake dep" on the subdirs.
+dep: $(SUBDIRS)
+    @echo ----- Leaving $(MAKEDIR)
+
+!ifdef RUNDEPONLY
+SUBMAKESTRING = "NOINCLUDEDEPEND=1"
+!endif
+
+PARENTDIRNAME = tools
+
 repclass:
-    @cd repclass
-    @nmake -nologo all "MAINMAKERUNNING=YES"
-    @cd ..
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
 
 wpsreset:
-    @cd wpsreset
-    @nmake -nologo all "MAINMAKERUNNING=YES"
-    @cd ..
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
 
+ximgview:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
+xlvm:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
+xmakeini:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
+xmlview:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
+xpstat:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
 

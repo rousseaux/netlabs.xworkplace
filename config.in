@@ -89,6 +89,11 @@ VACBASE = e:\ibmcpp
 XWPRUNNING = h:\Desktopextender\XWorkplace
 !endif
 
+# MMPMDIR: directory where MMPM/2 is installed.
+!ifndef MMPMDIR
+MMPMDIR = J:\MMOS2
+!endif
+
 # DEBUG CODE
 # ----------
 

@@ -18,14 +18,6 @@
 #
 
 #
-# First define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-#
-
-.SUFFIXES: .html .ipf .hlp .inf
-
-#
 # Now set up a few environment variables.
 #
 

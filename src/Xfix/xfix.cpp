@@ -69,6 +69,15 @@
 
 #include "xfix.h"
 
+
+
+#define TEST_CCTL_CNR
+
+#ifdef TEST_CCTL_CNR
+    #undef WC_CONTAINER
+    #define WC_CONTAINER WC_CCTL_CNR
+#endif
+
 /* ******************************************************************
  *
  *   Global variables
@@ -3867,6 +3876,10 @@ int main(int argc, char* argv[])
         return 1;
 
     winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
+
+    #ifdef TEST_CCTL_CNR
+        ctlRegisterXCnr(G_hab);
+    #endif
 
     G_hptrMain = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
 

@@ -105,7 +105,15 @@ SOM_Scope void  SOMLINK xsrv_wpInitData(XWPNetServer *somSelf)
 
 /*
  *@@ wpUnInitData:
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
  *
+ *      The parent method must always be called last.
  */
 
 SOM_Scope void  SOMLINK xsrv_wpUnInitData(XWPNetServer *somSelf)
@@ -315,7 +323,7 @@ SOM_Scope MRESULT  SOMLINK xsrv_wpDrop(XWPNetServer *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -400,7 +408,7 @@ SOM_Scope ULONG  SOMLINK xsrvM_wpclsQueryStyle(M_XWPNetServer *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -427,7 +435,7 @@ SOM_Scope BOOL  SOMLINK xsrvM_wpclsQueryDefaultHelp(M_XWPNetServer *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

@@ -1,89 +1,77 @@
 #
-# makefile:
-#       makefile for TOOLS\WPSRESET directory.
-#       For use with IBM NMAKE, which comes with the IBM compilers,
-#       the Developer's Toolkit, and the DDK.
+# Makefile for REPCLASS.EXE.
 #
-#       All the makefiles have been restructured with V0.9.0.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
-#       Called from:    main makefile
-#
-#       Input:          files in this directory
-#
-#       Output:         wpsreset.exe, copied to modules directory.
-#
-#       Edit "setup.in" to set up the make process.
+#       Copyright (C) 1998-2003 Ulrich M”ller.
+#       This file is part of the XWorkplace source package.
+#       XWorkplace is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published
+#       by the Free Software Foundation, in version 2 as it comes in the
+#       "COPYING" file of the XWorkplace main distribution.
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# FIXED MACROS
-# ------------
-#
-# You probably need not change the following.
-#
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .c .obj .dll .idl .h .ih .rc .res
+!include $(MAKE_INCLUDE_DIR)\compile_exe_st.in
+#       this defines the proper OUTPUTDIR
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_st
-!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
-!endif
-MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-# create output directory
-!if [@md ..\..\bin 2> NUL]
-!endif
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
+MODULESTEM = wpsreset
 
-# The main target:
-# If we're called from the main makefile, MAINMAKERUNNING is defined,
-# and we'll set $(OBJS) as our targets (which will go on).
-# Otherwise, we call the main makefile, which will again call ourselves later.
-all: $(MODULESDIR)\wpsreset.exe
-    @echo ----- Leaving $(MAKEDIR)
+OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj
 
-# main include path
-INC = ..\..\include
-# helpers include path
-HLPINC = $(HELPERS_BASE)\include\helpers
-# our own corresponding include path
-MYOWNINC = $(INC)\hook
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-# 1) files in this directory
-.c.{$(OUTPUTDIR)}.obj:
-        @ echo Compiling $(@B).c:
-!ifndef PRECH
-# precompiled headers disabled:
-        $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-        $(CC_EXE_ST) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INC) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
+BLDLEVELNAME = "$(XWPNAME) WPS restarter utility"
 
-#
-# Now define dependencies for all our .obj files by telling NMAKE
-# which .OBJ file depends on what. For each .obj we define what files
-# will enforce a recompilation when they've been changed.
-#
+COPYTODIR = $(XWPRUNNING)\bin
 
-# .OBJs for executables in this directory
-$(OUTPUTDIR)\wpsreset.obj: $(@B).c
+LINKMODULE = $(MODULESTEM).exe
 
-# "wpsreset" executable
-$(MODULESDIR)\wpsreset.exe: $(OUTPUTDIR)\$(@B).obj makefile
-          $(LINK) /OUT:$(MODULESDIR)\$(@B).exe /PMTYPE:VIO $(OUTPUTDIR)\$(@B).obj
+!undef RESOURCE_SOURCES
 
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
+
+!include $(MAKE_INCLUDE_DIR)\link_exe.in
+#   this defines ALLTARGET for the next include
+
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
+
+!include $(MAKE_INCLUDE_DIR)\targets.in
 

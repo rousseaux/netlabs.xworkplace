@@ -109,17 +109,18 @@
 #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xprf.h"               // replacement profile (INI) functions
 #include "helpers\xstring.h"            // extended string helpers
+#include "helpers\xwpsecty.h"           // XWorkplace Security base
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"                     // needed for shutdown folder
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "xwpapi.h"                     // public XWorkplace definitions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "xwpapi.h"                     // public XWorkplace definitions
 
 // headers in /hook
 #include "hook\xwphook.h"
@@ -129,7 +130,6 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "helpers\xwpsecty.h"           // XWorkplace Security base
 #include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
@@ -207,6 +207,7 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
     // psdp->ulRestartWPS = 0;         // no, do shutdown
     psdp->ulCloseMode = SHUT_SHUTDOWN;
 
+    psdp->optWPSProcessShutdown = TRUE;
     psdp->optWPSCloseWindows = TRUE;
     psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
     psdp->optLog = ((flShutdown & XSD_LOG) != 0);
@@ -346,6 +347,7 @@ BOOL xsdInitiateShutdown(VOID)
         psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
         // psdp->ulRestartWPS = 0;
         psdp->ulCloseMode = SHUT_SHUTDOWN;
+        psdp->optWPSProcessShutdown = TRUE;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
 #ifndef __EASYSHUTDOWN__
@@ -462,7 +464,9 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
         // psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
         psdp->ulCloseMode = (fLogoff) ? SHUT_LOGOFF : SHUT_RESTARTWPS;
         psdp->optWPSCloseWindows = ((flShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
-        psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
+        psdp->optWPSProcessShutdown
+        = psdp->optWPSReuseStartupFolder
+        = psdp->optWPSCloseWindows;
 #ifndef __EASYSHUTDOWN__
         psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
 #else
@@ -646,14 +650,12 @@ VOID xsdRestartWPS(HAB hab,
     // close leftover open devices
     xmmCleanup();
 
-    if (pcKernelGlobals->pXWPShellShared)
+    if (G_pXWPShellShared)
     {
         // XWPSHELL.EXE running:
-        PXWPSHELLSHARED pXWPShellShared
-            = (PXWPSHELLSHARED)pcKernelGlobals->pXWPShellShared;
         // set flag in shared memory; XWPSHELL
         // will check this once the WPS has terminated
-        pXWPShellShared->fNoLogonButRestart = !fLogoff;
+        G_pXWPShellShared->fNoLogonButRestart = !fLogoff;
     }
 
     // terminate the current process,
@@ -1760,7 +1762,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
     PSZ             pszErrMsg = NULL;
     QMSG            qmsg;
-    APIRET          arc;
+    APIRET          arc = NO_ERROR;
     HAB             hab = ptiMyself->hab;
     PXFILE          LogFile = NULL;
 
@@ -1799,10 +1801,12 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     {
         CHAR    szLogFileName[CCHMAXPATH];
         ULONG   cbFile = 0;
-        if (krnMakeLogFilename(szLogFileName,
-                               XFOLDER_SHUTDOWNLOG))
+        if (doshCreateLogFilename(szLogFileName,
+                                  XFOLDER_SHUTDOWNLOG,
+                                  F_ALLOW_BOOTROOT_LOGFILE))
             if (arc = doshOpen(szLogFileName,
-                               XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
+                               XOPEN_READWRITE_APPEND | XOPEN_WRITETHRU,        // not XOPEN_BINARY
+                                // added XOPEN_WRITETHRU V1.0.1 (2003-01-25) [umoeller]
                                &cbFile,
                                &LogFile))
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1814,14 +1818,6 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     if (LogFile)
     {
         // write log header
-        /*
-        DATETIME DT;
-        DosGetDateTime(&DT);
-        doshWriteLogEntry(LogFile,
-                "XWorkplace Shutdown Log -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d",
-                DT.year, DT.month, DT.day,
-                DT.hours, DT.minutes, DT.seconds);
-        */
         doshWriteLogEntry(LogFile, "-----------------------------------------------------------\n");
         doshWriteLogEntry(LogFile, "XWorkplace version: %s", XFOLDER_VERSION);
         doshWriteLogEntry(LogFile, "Shutdown thread started, TID: 0x%lX",
@@ -1982,26 +1978,6 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                             150,    // delay
                             TRUE);  // start now
 
-        // create update thread (moved here V0.9.9 (2001-03-07) [umoeller])
-        /* removed again; moved this down into fnwpShutdownThread
-            it is now started after the shutdown folder has
-            finished processing V0.9.12 (2001-04-29) [umoeller]
-
-        if (thrQueryID(&G_tiUpdateThread) == NULLHANDLE)
-        {
-            thrCreate(&G_tiUpdateThread,
-                      fntUpdateThread,
-                      NULL, // running flag
-                      "ShutdownUpdate",
-                      THRF_PMMSGQUEUE,
-                      (ULONG)pShutdownData);  // V0.9.9 (2001-03-07) [umoeller]
-
-            doshWriteLogEntry(LogFile,
-                   __FUNCTION__ ": Update thread started, tid: 0x%lX",
-                   thrQueryID(&G_tiUpdateThread));
-        }
-        */
-
         if (pShutdownData->sdParams.optDebug)
         {
             // debug mode: show "main" window, which
@@ -2015,102 +1991,147 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
         // tell XPager to recover all windows to the current screen
         // V0.9.12 (2001-05-15) [umoeller]
-        if (pShutdownData->SDConsts.pKernelGlobals)
+        if (    (G_pXwpGlobalShared)
+             && (G_pXwpGlobalShared->hwndDaemonObject)
+           )
         {
-            PXWPGLOBALSHARED pXwpGlobalShared;
-
-            if (    (pXwpGlobalShared = pShutdownData->SDConsts.pKernelGlobals->pXwpGlobalShared)
-                 && (pXwpGlobalShared->hwndDaemonObject)
+            BOOL fWPSOnly = FALSE;
+            // now, if we are doing a restart wps and not all
+            // sessions should be closed, we should still recover
+            // windows, but only those of the WPS process... so
+            // a flag has been added for that to XDM_RECOVERWINDOWS
+            // V0.9.20 (2002-08-10) [umoeller]
+            if (    (pShutdownData->sdParams.ulCloseMode != SHUT_SHUTDOWN)
+                            // not Desktop (1), not logoff (2)
+                 && (!pShutdownData->sdParams.optWPSCloseWindows)
                )
+                fWPSOnly = TRUE;
+
+            doshWriteLogEntry(LogFile,
+                   __FUNCTION__ ": Recovering all XPager windows...");
+
+            WinSendMsg(G_pXwpGlobalShared->hwndDaemonObject,
+                       XDM_RECOVERWINDOWS,
+                       (MPARAM)fWPSOnly,
+                       0);
+        }
+
+        WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, TRUE);
+
+        // empty trash can?
+        if (    (pShutdownData->sdParams.optEmptyTrashCan)
+             && (cmnTrashCanReady())
+           )
+        {
+            WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
+                              cmnGetString(ID_XSSI_FOPS_EMPTYINGTRASHCAN)) ; // pszFopsEmptyingTrashCan
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Emptying trash can...");
+
+            if (!(arc = cmnEmptyDefTrashCan(pShutdownData->habShutdownThread,
+                                                      // synchronously
+                                            NULL,
+                                            NULLHANDLE)))   // no confirm
+                // success:
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Done emptying trash can.");
+            else
             {
-                BOOL fWPSOnly = FALSE;
-                // now, if we are doing a restart wps and not all
-                // sessions should be closed, we should still recover
-                // windows, but only those of the WPS process... so
-                // a flag has been added for that to XDM_RECOVERWINDOWS
-                // V0.9.20 (2002-08-10) [umoeller]
-                if (    (pShutdownData->sdParams.ulCloseMode != SHUT_SHUTDOWN)
-                                // not Desktop (1), not logoff (2)
-                     && (!pShutdownData->sdParams.optWPSCloseWindows)
-                   )
-                    fWPSOnly = TRUE;
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Emptying trash can failed, rc: %d.",
+                        arc);
 
-                doshWriteLogEntry(LogFile,
-                       __FUNCTION__ ": Recovering all XPager windows...");
-
-                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                           XDM_RECOVERWINDOWS,
-                           (MPARAM)fWPSOnly,
-                           0);
+                if (cmnMessageBoxExt(pShutdownData->SDConsts.hwndShutdownStatus,
+                                     104, // "error"
+                                     NULL, 0,
+                                     189, // "empty failed"
+                                     MB_YESNO)
+                        == MBID_YES)
+                    // continue anyway:
+                    arc = NO_ERROR;
             }
         }
 
-        if (!pShutdownData->sdParams.optDebug)
+        if (!arc)
         {
-            // if we're not in debug mode, begin shutdown
-            // automatically; ID_SDDI_BEGINSHUTDOWN will
-            // first empty the trash can, process the
-            // shutdown folder, and finally start closing
-            // windows
-            doshWriteLogEntry(LogFile, __FUNCTION__ ": Posting ID_SDDI_BEGINSHUTDOWN");
-            WinPostMsg(pShutdownData->SDConsts.hwndMain,
-                       WM_COMMAND,
-                       MPFROM2SHORT(ID_SDDI_BEGINSHUTDOWN, 0),
-                       MPNULL);
+            // now run items in Shutdown folder
+            // but only if we're shutting down, not on restart wps
+            // V0.9.19 (2002-06-18) [umoeller]
+            // wrong, let user decide V1.0.1 (2003-01-29) [umoeller]
+            XFolder         *pShutdownFolder;
+            if (    (pShutdownData->sdParams.optWPSProcessShutdown)        // V1.0.1 (2003-01-29) [umoeller]
+                 && (pShutdownFolder = _wpclsQueryFolder(_WPFolder,
+                                                         (PSZ)XFOLDER_SHUTDOWNID,
+                                                         TRUE))
+               )
+            {
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile,
+                                  "    Processing shutdown folder...");
+
+                // using new implementation V0.9.12 (2001-04-29) [umoeller]
+                arc = _xwpStartFolderContents(pShutdownFolder,
+                                              0);         // wait mode
+                        // added error code V1.0.1 (2003-01-29) [umoeller]
+
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile,
+                                  "    Shutdown folder rc = %d",
+                                  arc);
+            }
         }
 
-        // if we're closing all windows,
-        // broadcast WM_SAVEAPPLICATION to all frames which
-        // are children of the desktop
-        // V0.9.12 (2001-05-29) [umoeller]
-        // V0.9.13 (2001-06-17) [umoeller]: nope, go back to doing this for each window
-        /* if (    (0 == pShutdownData->sdParams.ulRestartWPS) // restart Desktop (1) or logoff (2)
-             || (pShutdownData->sdParams.optWPSCloseWindows)
-           )
+        if (arc)
+            G_ulShutdownState = XSD_CANCELLED;
+        else
         {
-            doshWriteLogEntry(LogFile, __FUNCTION__ ": Broadcasting WM_SAVEAPPLICATION");
-        } */
+            if (!pShutdownData->sdParams.optDebug)
+            {
+                // if we're not in debug mode, begin shutdown
+                // automatically; ID_SDDI_BEGINSHUTDOWN will
+                // first empty the trash can, process the
+                // shutdown folder, and finally start closing
+                // windows
+                doshWriteLogEntry(LogFile, __FUNCTION__ ": Posting ID_SDDI_BEGINSHUTDOWN");
+                WinPostMsg(pShutdownData->SDConsts.hwndMain,
+                           WM_COMMAND,
+                           MPFROM2SHORT(ID_SDDI_BEGINSHUTDOWN, 0),
+                           MPNULL);
+            }
 
-        // pShutdownData->ulStatus is still XSD_IDLE at this point
+            // pShutdownData->ulStatus is still XSD_IDLE at this point
 
-        /*************************************************
-         *
-         *      standard PM message loop:
-         *          here we are closing the windows
-         *
-         *************************************************/
+            /*************************************************
+             *
+             *      standard PM message loop:
+             *          here we are closing the windows
+             *
+             *************************************************/
 
-        // now enter the common message loop for the main (debug) and
-        // status windows (fnwpShutdownThread); this will keep running
-        // until closing all windows is complete or cancelled, upon
-        // both of which fnwpShutdownThread will post WM_QUIT
-        while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-            WinDispatchMsg(hab, &qmsg);
+            // now enter the common message loop for the main (debug) and
+            // status windows (fnwpShutdownThread); this will keep running
+            // until closing all windows is complete or cancelled, upon
+            // both of which fnwpShutdownThread will post WM_QUIT
+            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+                WinDispatchMsg(hab, &qmsg);
 
-        doshWriteLogEntry(LogFile,
-               __FUNCTION__ ": Done with message loop.");
-
-        /*************************************************
-         *
-         *      done closing windows:
-         *
-         *************************************************/
-
-// all the following has been moved here from fnwpShutdownThread
-// with V0.9.9 (2001-04-04) [umoeller]
-
-        // in any case,
-        // close the Update thread to prevent it from interfering
-        // with what we're doing now
-        if (thrQueryID(&G_tiUpdateThread))
-        {
             doshWriteLogEntry(LogFile,
-                   __FUNCTION__ ": Closing Update thread, tid: 0x%lX...",
-                   thrQueryID(&G_tiUpdateThread));
+                   __FUNCTION__ ": Done with message loop.");
 
-            thrFree(&G_tiUpdateThread);  // close and wait
-            doshWriteLogEntry(LogFile,
-                   __FUNCTION__ ": Update thread closed.");
+            /*************************************************
+             *
+             *      done closing windows:
+             *
+             *************************************************/
+
+            // in any case,
+            // close the Update thread to prevent it from interfering
+            // with what we're doing now
+            if (thrQueryID(&G_tiUpdateThread))
+            {
+                doshWriteLogEntry(LogFile,
+                       __FUNCTION__ ": Closing Update thread, tid: 0x%lX...",
+                       thrQueryID(&G_tiUpdateThread));
+
+                thrFree(&G_tiUpdateThread);  // close and wait
+                doshWriteLogEntry(LogFile,
+                       __FUNCTION__ ": Update thread closed.");
+            }
         }
 
         // check if shutdown was cancelled (XSD_CANCELLED)
@@ -2849,10 +2870,8 @@ STATIC VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
             /// else do nothing
         }
         else
-            // if (WinWindowFromID(pItem->swctl.hwnd, FID_SYSMENU))
-            // removed V0.9.0 (UM 99-10-22)
         {
-            // window has system menu: close PM application;
+            // close PM application:
             // WM_SAVEAPPLICATION and WM_QUIT is what WinShutdown
             // does too for every message queue per process;
             // re-enabled this here per window V0.9.13 (2001-06-17) [umoeller]
@@ -2872,17 +2891,6 @@ STATIC VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
                        WM_QUIT,
                        MPNULL, MPNULL);
         }
-        /* else
-        {
-            // no system menu: try something more brutal
-            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Has no sys menu, posting WM_CLOSE to hwnd 0x%lX",
-                        pItem->swctl.hwnd);
-
-            WinPostMsg(pItem->swctl.hwnd,
-                       WM_CLOSE,
-                       MPNULL,
-                       MPNULL);
-        } */
     }
     else
     {
@@ -2962,70 +2970,9 @@ STATIC MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 
                     // pShutdownData->ulStatus is still XSD_IDLE at this point
 
-                    XFolder         *pShutdownFolder;
-
                     PMPF_SHUTDOWN((" ---> ID_SDDI_BEGINSHUTDOWN"));
 
                     doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  ID_SDDI_BEGINSHUTDOWN, hwnd: 0x%lX", hwndFrame);
-
-                    WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, TRUE);
-
-                    // empty trash can?
-                    if (    (pShutdownData->sdParams.optEmptyTrashCan)
-                         && (cmnTrashCanReady())
-                       )
-                    {
-                        APIRET arc = NO_ERROR;
-                        WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                                          cmnGetString(ID_XSSI_FOPS_EMPTYINGTRASHCAN)) ; // pszFopsEmptyingTrashCan
-                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Emptying trash can...");
-
-                        arc = cmnEmptyDefTrashCan(pShutdownData->habShutdownThread,
-                                                            // synchronously
-                                                  NULL,
-                                                  NULLHANDLE);   // no confirm
-                        if (arc == NO_ERROR)
-                            // success:
-                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Done emptying trash can.");
-                        else
-                        {
-                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Emptying trash can failed, rc: %d.",
-                                    arc);
-                            if (cmnMessageBoxExt(pShutdownData->SDConsts.hwndShutdownStatus,
-                                                 104, // "error"
-                                                 NULL, 0,
-                                                 189, // "empty failed"
-                                                 MB_YESNO)
-                                    != MBID_YES)
-                            {
-                                // stop:
-                                WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
-                                           MPFROM2SHORT(ID_SDDI_CANCELSHUTDOWN, 0),
-                                           MPNULL);
-
-                                break;      // was missing V0.9.19 (2002-06-18) [umoeller]
-                            }
-                        }
-                    }
-
-                    // now run items in Shutdown folder
-                    // but only if we're shutting down, not on restart wps
-                    // V0.9.19 (2002-06-18) [umoeller]
-                    if (    (pShutdownData->sdParams.ulCloseMode == SHUT_SHUTDOWN)
-                                // not restart Desktop (1), not logoff (2)
-                         && (pShutdownFolder = _wpclsQueryFolder(_WPFolder,
-                                                                 (PSZ)XFOLDER_SHUTDOWNID,
-                                                                 TRUE))
-                       )
-                    {
-                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Processing shutdown folder...");
-
-                        // using new implementation V0.9.12 (2001-04-29) [umoeller]
-                        _xwpStartFolderContents(pShutdownFolder,
-                                                0);         // wait mode
-
-                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Started processing shutdown folder.");
-                    }
 
                     // now build our shutlist V0.9.12 (2001-04-29) [umoeller]
                     xsdUpdateListBox(pShutdownData->habShutdownThread,

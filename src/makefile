@@ -1,3 +1,6 @@
+#
+# Makefile for the src\ directory.
+#
 
 #
 #   SUBTARGET is defined by the main makefile to be one of:
@@ -25,13 +28,14 @@ widgets \
 xcenter \
 # hook must be before daemon because we need the hook's import lib in the daemon
 hook \
-Daemon
-
+Daemon \
 !ifdef REALLYALL
-SUBDIRS = $(SUBDIRS) Treesize NetscapeDDE Xfix
-# Drvchk
+Treesize \
+NetscapeDDE \
+Xfix \
 !ifdef XWPSECURITY
-SUBDIRS = $(SUBDIRS) xwpsec_ring0 XWPShell
+xwpsec_ring0 \
+XWPShell
 !endif
 !endif
 
@@ -53,99 +57,101 @@ dep: $(SUBDIRS)
 SUBMAKESTRING = "NOINCLUDEDEPEND=1"
 !endif
 
+PARENTDIRNAME = src
+
 classes:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 config:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 filesys:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 media:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 shared:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 startshut:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 widgets:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 xcenter:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 Daemon:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 hook:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 # additional REALLYALL targets
 Drvchk:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 Treesize:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 NetscapeDDE:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 Xfix:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 xwpsec_ring0:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 XWPShell:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(PARENTDIRNAME)\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)

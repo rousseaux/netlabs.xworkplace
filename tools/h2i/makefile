@@ -15,10 +15,6 @@
 #       Edit "setup.in" to set up the make process.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -29,27 +25,19 @@
 # You probably need not change the following.
 #
 
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .cpp .obj .h
-
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
 OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
-MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
 
 COPYTODIR = ..
 
 !ifndef XWP_DEBUG
-COPYTODIR = $(HELPERS_BASE)
+COPYTODIR = $(HELPERS_BASE_DIR)
 !endif
 
 !if [@md $(XWP_OUTPUT_ROOT) 2> NUL]
 !endif
 !if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
 !endif
 
 APPNAME = h2i
@@ -70,7 +58,7 @@ all: helpers \
 SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"
 
 helpers:
-    @cd $(HELPERS_BASE)\src\helpers
+    @cd $(HELPERS_BASE_DIR)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(MAKEDIR)
@@ -102,8 +90,6 @@ helpers:
 INC = ..\..\include
 # base include path
 BSINC = $(INC)\base
-# helpers include path
-HLPINC = $(HELPERS_BASE)\include\helpers
 
 # Now define dependencies for all our .OBJ files by telling NMAKE
 # which .OBJ file depends on what. For each .OBJ we define what files

@@ -33,6 +33,7 @@ $(OUTPUTDIR)\xtrashobj.obj \
 $(OUTPUTDIR)\xwpadmin.obj \
 !endif
 $(OUTPUTDIR)\xwpfsys.obj \
+$(OUTPUTDIR)\xwpimage.obj \
 $(OUTPUTDIR)\xwpkeybd.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\xwpmedia.obj \

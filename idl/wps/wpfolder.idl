@@ -1,19 +1,44 @@
-//  Module Header
-//
-//  Module Name: WPFOLDER
-//
-//  OS/2 Presentation Manager Workplace class definitions
-//
-//  Copyright (c) International Business Machines Corporation 1991, 1992
-//
+
+/*
+ * wpfolder.idl:
+ *      beefed up SOM interface description file for the
+ *      following classes built into the WPS:
+ *
+ *      --  WPFolder
+ *
+ *      XWorkplace uses this file instead of the respective
+ *      file from whatever Toolkit you have installed to
+ *      a) make SOM aware of our class replacements and
+ *      b) allow us to override undocumented WPS methods.
+ *      See idl\wps\readme.txt for details.
+ */
+
+/*
+ *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 #ifndef wpfolder_idl
 #define wpfolder_idl
-#include "wpfsys.idl"
-// #include "xwpfsys.idl"          // WPFileSystem is replaced with XWPFileSystem
+
+//#include "wpfsys.idl"
+#include "xwpfsys.idl"          // WPFileSystem is replaced with XWPFileSystem
 #include <somcls.idl>
+
 interface M_WPFolder;
-interface WPFolder : WPFileSystem
+
+interface WPFolder : XWPFileSystem
 {
+
 //# methods originally published with Warp 3 Toolkit IDL file
 
     BOOL wpSetFldrFlags(in ULONG ulFlags);
@@ -207,130 +232,132 @@ interface WPFolder : WPFileSystem
     readonly attribute  WPObject    *LastObj;
 
 #ifdef __SOMIDL__
-  implementation {
-    releaseorder: wpSetFldrFlags,
-                  wpQueryFldrFlags,
-                  wpSetFldrFont,
-                  wpQueryFldrFont,
-                  wpSetNextIconPos,
-                  wpQueryNextIconPos,
-                  wpPopulate,
-                  wpAddToContent,
-                  wpQueryContent,
-                  wpAddFolderView1Page,
-                  wpAddFolderView2Page,
-                  wpAddFolderView3Page,
-                  wpAddFolderIncludePage,
-                  wpAddFolderSortPage,
-                  wpAddFolderBackgroundPage,
-                  wpInitIconPosData,
-                  wpFreeIconPosData,
-                  wpQueryIconPosition,
-                  wpStoreIconPosData,
-                  wpDeleteFromContent,
-                  wpSetFldrAttr,
-                  wpQueryFldrAttr,
-                  wpSetFldrSort,
-                  wpQueryFldrSort,
-                  wpRestoreFldrRunObjs,
-                  wpStoreFldrRunObjs,
-                  withdrawn30,
-                  withdrawn31,
-                  wpDeleteContents,
-                  wpQueryOpenFolders,
-                  wpSetNextOpenFldr,
-                  wpSearchFolder,
-                  wpSetFldrDetailsClass,
-                  wpQueryFldrDetailsClass,
-                  wpRefresh,
-                  wpSetDetailsColumnVisibility,
-                  wpIsDetailsColumnVisible,
-                  wpQuerySortArray,
-                  wpSetSortArray,
-                  wpQuerySortInfo,
-                  wpSetSortInfo,
-                  wpSetFldrSortClass,
-                  wpQueryFldrSortClass,
-                  wpSetSortAttribAvailable,
-                  wpIsSortAttribAvailable,
-                  wpQueryFldrFilter,
-                  wpContainsFolders,
-                  wpQueryBkgnd,
-                  wpQueryIconViewPos,
-                  wpQueryDefaultView,
-                  wpAddFirstChild,
-                  _get_FirstObj,
-                  wpHideFldrRunObjs,
-                  wpFSNotifyFolder,
-                  wpAddNotification,
-                  wpDeleteNotification,
-                  wpProcessNotification,
-                  wpModifySneakyCount,
-                  wpSneakySupported,
-                  wpAssertFolderMutexSem,
-                  wpReleaseFolderMutexSem,
-                  wpRequestFolderMutexSem,
-                  wpQueryContentHashTable,
-                  wpQueryNextOpenFldr,
-                  _get_hmtxOneFindAtATime,
-                  wpRequestFindMutexSem,
-                  wpReleaseFindMutexSem,
-                  _get_hevFillFolder,
-                  wpModifyFldrFlags,
-                  wpQueryTrueFldrFont,
-                  wpRemoveFldrFont,
-                  wpRemoveAllFldrInstanceFonts,
-                  wpRefreshNotebookPage,
-                  wpQueryRWMonitorObject,
-                  wpQueryIconTextBackgroundColor,
-                  wpSetIconTextBackgroundColor,
-                  wpRedrawFolderBackground,
-                  wpMakeInstanceBackground,
-                  wpUseDefaultBackground,
-                  wpQueryIconTextColor,
-                  wpSetIconTextColor,
-                  wpQueryIconTextVisibility,
-                  wpSetIconTextVisibility,
-                  wpAddFolderSelfClosePage,
-                  wpSetFldrSelfClose,
-                  wpQueryFldrSelfClose,
-                  _get_retaddrFindSemOwner,
-                  wpIsOwnView,
-                  wpSetIconDataN,
-                  wpSetIconN,
-                  wpQueryIconN,
-                  wpSetFolderSelfClosePageID,
-                  wpQueryFolderSelfClosePageID,
-                  wpQueryIconDataN,
-                  wpApplyIconPosData
+    implementation
+    {
+        releaseorder:
+            wpSetFldrFlags,
+            wpQueryFldrFlags,
+            wpSetFldrFont,
+            wpQueryFldrFont,
+            wpSetNextIconPos,
+            wpQueryNextIconPos,
+            wpPopulate,
+            wpAddToContent,
+            wpQueryContent,
+            wpAddFolderView1Page,
+            wpAddFolderView2Page,
+            wpAddFolderView3Page,
+            wpAddFolderIncludePage,
+            wpAddFolderSortPage,
+            wpAddFolderBackgroundPage,
+            wpInitIconPosData,
+            wpFreeIconPosData,
+            wpQueryIconPosition,
+            wpStoreIconPosData,
+            wpDeleteFromContent,
+            wpSetFldrAttr,
+            wpQueryFldrAttr,
+            wpSetFldrSort,
+            wpQueryFldrSort,
+            wpRestoreFldrRunObjs,
+            wpStoreFldrRunObjs,
+            withdrawn30,
+            withdrawn31,
+            wpDeleteContents,
+            wpQueryOpenFolders,
+            wpSetNextOpenFldr,
+            wpSearchFolder,
+            wpSetFldrDetailsClass,
+            wpQueryFldrDetailsClass,
+            wpRefresh,
+            wpSetDetailsColumnVisibility,
+            wpIsDetailsColumnVisible,
+            wpQuerySortArray,
+            wpSetSortArray,
+            wpQuerySortInfo,
+            wpSetSortInfo,
+            wpSetFldrSortClass,
+            wpQueryFldrSortClass,
+            wpSetSortAttribAvailable,
+            wpIsSortAttribAvailable,
+            wpQueryFldrFilter,
+            wpContainsFolders,
+            wpQueryBkgnd,
+            wpQueryIconViewPos,
+            wpQueryDefaultView,
+            wpAddFirstChild,
+            _get_FirstObj,
+            wpHideFldrRunObjs,
+            wpFSNotifyFolder,
+            wpAddNotification,
+            wpDeleteNotification,
+            wpProcessNotification,
+            wpModifySneakyCount,
+            wpSneakySupported,
+            wpAssertFolderMutexSem,
+            wpReleaseFolderMutexSem,
+            wpRequestFolderMutexSem,
+            wpQueryContentHashTable,
+            wpQueryNextOpenFldr,
+            _get_hmtxOneFindAtATime,
+            wpRequestFindMutexSem,
+            wpReleaseFindMutexSem,
+            _get_hevFillFolder,
+            wpModifyFldrFlags,
+            wpQueryTrueFldrFont,
+            wpRemoveFldrFont,
+            wpRemoveAllFldrInstanceFonts,
+            wpRefreshNotebookPage,
+            wpQueryRWMonitorObject,
+            wpQueryIconTextBackgroundColor,
+            wpSetIconTextBackgroundColor,
+            wpRedrawFolderBackground,
+            wpMakeInstanceBackground,
+            wpUseDefaultBackground,
+            wpQueryIconTextColor,
+            wpSetIconTextColor,
+            wpQueryIconTextVisibility,
+            wpSetIconTextVisibility,
+            wpAddFolderSelfClosePage,
+            wpSetFldrSelfClose,
+            wpQueryFldrSelfClose,
+            _get_retaddrFindSemOwner,
+            wpIsOwnView,
+            wpSetIconDataN,
+            wpSetIconN,
+            wpQueryIconN,
+            wpSetFolderSelfClosePageID,
+            wpQueryFolderSelfClosePageID,
+            wpQueryIconDataN,
+            wpApplyIconPosData
 #ifndef __NOWARP4METHODS__
-                  ,
-                  wpAddFolderMenu2Page,
-                  wpSetMenuBarVisibility,
-                  wpQueryMenuBarVisibility,
-                  wpFolderPrivate43,
-                  _get_LastObj,
-                  wpFolderPrivate45,
-                  wpFlushNotifications,
-                  wpSetShadowTextColor,
-                  wpQueryShadowTextColor,
-                  wpSetFldrBackground,
-                  wpQueryFldrBackground,
-                  wpSetFldrGrid,
-                  wpQueryFldrGrid
+            ,
+            wpAddFolderMenu2Page,
+            wpSetMenuBarVisibility,
+            wpQueryMenuBarVisibility,
+            wpFolderPrivate43,
+            _get_LastObj,
+            wpFolderPrivate45,
+            wpFlushNotifications,
+            wpSetShadowTextColor,
+            wpQueryShadowTextColor,
+            wpSetFldrBackground,
+            wpQueryFldrBackground,
+            wpSetFldrGrid,
+            wpQueryFldrGrid
 #endif
-                  ;
+            ;
 
-    externalstem = wpfdr;
-    local;
-    externalprefix = fdr_;
-    majorversion = 1;
-    minorversion = 2;
-    filestem = wpfolder;
-    metaclass = M_WPFolder;
-    callstyle = oidl;
-    dllname = "pmwp.dll";
-    passthru C_h_after =  ""
+        externalstem = wpfdr;
+        local;
+        externalprefix = fdr_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpfolder;
+        metaclass = M_WPFolder;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
+        passthru C_h_after =  ""
 "      /* Folder flags */"
 ""
 "      #define FOI_POPULATEDWITHALL      0x0001"
@@ -414,42 +441,44 @@ interface WPFolder : WPFileSystem
 "       typedef SEARCH_INFO *PSEARCH_INFO;"
 ""
 "";
-    wpInitData: override;
-    wpUnInitData: override;
-    wpFree: override;
-    wpDelete: override;
-    wpConfirmDelete: override;
-    wpSaveState: override;
-    wpRestoreState: override;
-    wpMenuItemSelected: override;
-    wpAddSettingsPages: override;
-    wpOpen: override;
-    wpSetup: override;
-    wpMoveObject: override;
-    wpDrop: override;
-    wpDragOver: override;
-    wpMenuItemHelpSelected: override;
-    wpAddFile3Page: override;
-    wpAddFile2Page: override;
-    wpFormatDragItem: override;
-    wpRender: override;
-    wpRefresh: override;
-    wpQueryDefaultView: override;
-    wpRenderComplete: override;
-    wpAddFileMenuPage: override;
-    wpQueryDefaultHelp: override;
-    wpObjectReady: override;
-    wpAddObjectWindowPage: override;
-    wpModifyMenu: override;
-    wpFilterMenu: override;
-    wpDisplayMenu: override;
-    somDefaultInit: override;
-    somDestruct: override;
-    wpSetIconData: override;
+
+        wpInitData: override;
+        wpUnInitData: override;
+        wpFree: override;
+        wpDelete: override;
+        wpConfirmDelete: override;
+        wpSaveState: override;
+        wpRestoreState: override;
+        wpMenuItemSelected: override;
+        wpAddSettingsPages: override;
+        wpOpen: override;
+        wpSetup: override;
+        wpMoveObject: override;
+        wpDrop: override;
+        wpDragOver: override;
+        wpMenuItemHelpSelected: override;
+        wpAddFile3Page: override;
+        wpAddFile2Page: override;
+        wpFormatDragItem: override;
+        wpRender: override;
+        wpRefresh: override;
+        wpQueryDefaultView: override;
+        wpRenderComplete: override;
+        wpAddFileMenuPage: override;
+        wpQueryDefaultHelp: override;
+        wpObjectReady: override;
+        wpAddObjectWindowPage: override;
+        wpModifyMenu: override;
+        wpFilterMenu: override;
+        wpDisplayMenu: override;
+        somDefaultInit: override;
+        somDestruct: override;
+        wpSetIconData: override;
+    };
+#endif
 };
-#endif /* __SOMIDL__ */
-};
-interface M_WPFolder : M_WPFileSystem
+
+interface M_WPFolder : M_XWPFileSystem
 {
     ULONG wpclsQueryIconDataN( inout ICONINFO pIconInfo, in ULONG ulIconIndex );
 
@@ -487,30 +516,32 @@ interface M_WPFolder : M_WPFileSystem
 //# no new class methods for Warp 4
 
 #ifdef __SOMIDL__
-  implementation {
-    releaseorder: wpclsGetNotifySem,
-                  wpclsReleaseNotifySem,
-                  wpclsQueryOpenFolders,
-                  wpclsQueryContainerFont,
-                  wpclsQueryIconDataN,
-                  wpclsQueryIconN;
+    implementation
+    {
+        releaseorder:
+            wpclsGetNotifySem,
+            wpclsReleaseNotifySem,
+            wpclsQueryOpenFolders,
+            wpclsQueryContainerFont,
+            wpclsQueryIconDataN,
+            wpclsQueryIconN;
 
-    externalstem = wpfdr;
-    local;
-    externalprefix = fdrM_;
-    majorversion = 1;
-    minorversion = 2;
-    filestem = wpfolder;
-    callstyle = oidl;
-    dllname = "pmwp.dll";
+        externalstem = wpfdr;
+        local;
+        externalprefix = fdrM_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpfolder;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
 
-    wpclsInitData: override;
-    wpclsQueryDefaultView: override;
-    wpclsQueryTitle: override;
-    wpclsQueryIconData: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsInitData: override;
+        wpclsQueryDefaultView: override;
+        wpclsQueryTitle: override;
+        wpclsQueryIconData: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
+    };
+#endif
 };
-#endif  /* wpfolder_idl */
+#endif

@@ -1,9 +1,8 @@
 #
 # Makefile for TREESIZE.EXE.
 #
-# For use with IBM NMAKE, which is part of IBM C-Set/2 and VisualAge C++.
-# This file will probably not work with other MAKE utilities, such as
-# GNU make or DMAKE.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
 #       Copyright (C) 1998-2003 Ulrich M”ller.
 #       This file is part of the XWorkplace source package.
@@ -17,89 +16,62 @@
 #       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in. $(XWP_OUTPUT_ROOT) is set by
-# setup.in to point to \bin from the XWorkplace sources root,
-# but this can be modified by setting an external environment
-# variable. This approach has the advantage that
-# 1) all build files are in a common dir tree and the entire
-#    tree can be removed completely;
-# 2) the build tree can be on a different physical drive for
-#    speed.
-BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
-OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
-!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
-!endif
-MODULESDIR = $(BASE_OUTPUTDIR)\modules
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# create output directory
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
+!include $(MAKE_INCLUDE_DIR)\compile_exe_mt.in
+#       this defines the proper OUTPUTDIR
 
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-# FIXED MACROS
-# ------------
+MODULESTEM = treesize
 
-.SUFFIXES: .c .obj .dll .h .ih .rc .res
+OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 
-HLPINC = $(HELPERS_BASE)\include\helpers
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-HEADERS = treesize.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\memdebug.h $(HLPINC)\winh.h $(HLPINC)\xstring.h
+BLDLEVELNAME = "$(XWPNAME) Treesize Utility"
 
-ALL_OBJ1 = $(OUTPUTDIR)\treesize.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
+COPYTODIR = $(XWPRUNNING)\bin
 
-EXENAME = treesize
+LINKMODULE = $(MODULESTEM).exe
 
-# TARGETS
-# -------
+RESOURCE_SOURCES = $(MODULESTEM).h $(MODULESTEM).rc $(MODULESTEM).ico
 
-all: $(XWPRUNNING)\bin\$(EXENAME).exe
-    @echo ----- Leaving $(MAKEDIR)
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
 
-# The "dep" target: run fastdep on the sources.
-# "nmake dep" gets called from src\makefile if nmake dep
-# is running on the main makefile.
-dep:
-    $(RUN_FASTDEP) *.c
-    @echo ----- Leaving $(MAKEDIR)
+!include $(MAKE_INCLUDE_DIR)\link_exe.in
+#   this defines ALLTARGET for the next include
 
-# V1.0.0: Use the inference rule in \make\comp_standalone.in now,
-# which is shared for all makefiles that generate code for standalone
-# executables.
-# This sets up the compiler rule to compile .c files to .obj files
-# in the $(OUTPUTDIR).
-!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
 
-# build targets
-$(EXENAME).def: ..\..\include\bldlevel.h makefile
-    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Treesize Utility"
-
-$(OUTPUTDIR)\$(EXENAME).res: $(@B).rc *.ico
-    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
-
-$(MODULESDIR)\$(EXENAME).exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
-    $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(@B).def
-    $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
-
-# main target
-$(XWPRUNNING)\bin\$(EXENAME).exe: $(MODULESDIR)\$(@B).exe
-    cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
-
-# The .OBJ-from-sources dependencies are now automatically
-# created by "nmake dep" into the .depend include file.
-# V0.9.12 (2001-05-22) [umoeller]
-
-!ifndef NOINCLUDEDEPEND
-!include .depend
-!endif
-
-
+!include $(MAKE_INCLUDE_DIR)\targets.in
 

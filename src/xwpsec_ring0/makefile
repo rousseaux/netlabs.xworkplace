@@ -17,10 +17,6 @@
 #       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -130,13 +126,14 @@ $(DRIVERNAME).def: ..\..\include\bldlevel.h makefile
     $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "$(XWPNAME) Security device driver"
 
 $(MODULESDIR)\$(DRIVERNAME).sys: \
-    $(AOBJS) \
-    $(COBJS) \
-    $(OUTPUTDIR)\sec32_start.obj \
-    $(OUTPUTDIR)\sec32_end.obj \
-    $(DRIVERNAME).def \
-    makefile
-        ilink @<<
+$(AOBJS) \
+$(COBJS) \
+$(OUTPUTDIR)\sec32_start.obj \
+$(OUTPUTDIR)\sec32_end.obj \
+$(DRIVERNAME).def \
+makefile
+    @echo Linking $@:
+    ilink /nologo @<<
 /OUT:$(MODULESDIR)\$(@B).sys
 /map:$(MODULESDIR)\$(@B).map
 /EXEPACK:2 /nod /ALIGNMENT:4 /linenumbers
@@ -144,6 +141,7 @@ $(OUTPUTDIR)\sec32_start.obj
 $(AOBJS)
 $(COBJS)
 $(DDKBASE)\lib\os2386p.lib
+$(DDKBASE)\lib\vdh.lib
 $(OUTPUTDIR)\sec32_end.obj
 $(DRIVERNAME).def
 <<

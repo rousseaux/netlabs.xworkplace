@@ -8,8 +8,11 @@
  *              which are considered fonts.
  *
  *      See src\classes\xfontfile.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -48,42 +51,46 @@ interface XWPFontFile : WPDataFile
 //#    attribute BOOL    fFontInstalled;        removed V0.9.20 (2002-07-25) [umoeller]
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpIsInstalled;
 
-    releaseorder:   xwpIsInstalled;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = fonf_;
+        externalstem = fonf;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfontfile;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPFontFile;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = fonf_;
-    externalstem = fonf;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfontfile;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPFontFile;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPFontFile:
-     *
-     */
+        passthru C_h =
+"";
 
-    /*
-     * WPDataFile methods overridden by XWPFontFile:
-     *
-     */
+        /*
+         * Internal instance variables for XWPFontFile:
+         *
+         */
 
-//# all other methods removed V0.9.20 (2002-07-25) [umoeller]
+        /*
+         * WPDataFile methods overridden by XWPFontFile:
+         *
+         */
 
-#ifdef __PRIVATE__
-
+        //# all other methods removed V0.9.20 (2002-07-25) [umoeller]
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -101,48 +108,45 @@ interface M_XWPFontFile : M_WPDataFile
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /* releaseorder:
-            xwpclsCreateTrashObject; */
+        externalprefix = fonfM_;
+        externalstem = fonfM;
+        functionprefix = fonfM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfontfile;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Internal instance variables for M_XWPFontFile:
+         *
+         */
 
-    externalprefix = fonfM_;
-    externalstem = fonfM;
-    functionprefix = fonfM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfontfile;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * M_WPDataFile methods overridden by M_XWPFontFile:
+         *
+         */
 
-    /*
-     * Internal instance variables for M_XWPFontFile:
-     *
-     */
+        wpclsInitData: override;
+        wpclsCreateDefaultTemplates: override;
 
-    /*
-     * M_WPDataFile methods overridden by M_XWPFontFile:
-     *
-     */
+        wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsInitData: override;
-    wpclsCreateDefaultTemplates: override;
+        wpclsQueryIconData: override;
 
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-
-    wpclsQueryInstanceFilter: override;
-    wpclsQueryInstanceType: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryInstanceFilter: override;
+        wpclsQueryInstanceType: override;
+    };
+#endif
 };
 
 

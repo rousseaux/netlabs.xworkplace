@@ -32,6 +32,164 @@
 
     /********************************************************************
      *
+     *   Notebook settings page IDs
+     *
+     ********************************************************************/
+
+    // XWorkplace settings page IDs; these are used by
+    // the following:
+    // --  the notebook.c functions to identify open
+    //     pages;
+    // --  the settings functions in common.c to
+    //     identify the default settings to be set.
+
+    // If you add a settings page using notebook.c, define a new
+    // ID here. Use any ULONG you like.
+
+    // Groups of settings pages:
+    // 1) in "Workplace Shell"
+    #define SP_WPS_FOLDERVIEWS      1       // renamed from SP_1GENERIC V0.9.20 (2002-07-31) [umoeller]
+    // #define SP_2REMOVEITEMS         2    // removed V0.9.19 (2002-04-17) [umoeller]
+    // #define SP_25ADDITEMS           3    // removed V0.9.19 (2002-04-17) [umoeller]
+    #define SP_MENUSETTINGS         2       // added V0.9.19 (2002-04-17) [umoeller]
+    #define SP_MENUITEMS            3       // added V0.9.19 (2002-04-17) [umoeller]
+    #define SP_26CONFIGITEMS        4
+    // #define SP_27STATUSBAR          5    // replaced with SP_STATUSBARS1 V1.0.1 (2002-12-08) [umoeller]
+    #define SP_3SNAPTOGRID          6
+    #define SP_4ACCELERATORS        7
+    // #define SP_5INTERNALS           8    // removed (V0.9.0)
+    // #define SP_DTP2                 10   // removed (V0.9.0)
+    // #define SP_28STATUSBAR2         11   // replaced with SP_STATUSBARS2 V1.0.1 (2002-12-08) [umoeller]
+    // #define SP_FILEOPS              12   // removed (V0.9.0)
+    #define SP_FILETYPES            13      // new with V0.9.0 (XFldWPS)
+
+    #define SP_STATUSBARS1          15      // V1.0.1 (2002-12-08) [umoeller]
+    #define SP_STATUSBARS2          16      // V1.0.1 (2002-12-08) [umoeller]
+    #define SP_TOOLBARS1            17      // V1.0.1 (2002-12-08) [umoeller]
+
+    // 2) in "OS/2 Kernel"
+    #define SP_SCHEDULER            20
+    #define SP_MEMORY               21
+    // #define SP_HPFS                 22   this is dead! we now have a settings dlg
+    #define SP_FAT                  23
+    #define SP_ERRORS               24
+    #define SP_WPS                  25
+    #define SP_SYSPATHS             26      // new with V0.9.0
+    #define SP_DRIVERS              27      // new with V0.9.0
+    #define SP_SYSLEVEL             28      // new with V0.9.2 (2000-03-08) [umoeller]
+
+    // 3) in "XWorkplace Setup"
+    #define SP_SETUP_INFO           30      // new with V0.9.0
+    #define SP_SETUP_FEATURES       31      // new with V0.9.0
+    #define SP_SETUP_PARANOIA       32      // new with V0.9.0
+    #define SP_SETUP_OBJECTS        33      // new with V0.9.0
+    #define SP_SETUP_XWPLOGO        34      // new with V0.9.6 (2000-11-04) [umoeller]
+    #define SP_SETUP_THREADS        35      // new with V0.9.9 (2001-03-07) [umoeller]
+    #ifdef __DEBUG__
+        #define SP_SETUP_DEBUG      36      // new with V1.0.0 (2002-09-02) [umoeller]
+    #endif
+
+    // 4) "Sort" pages both in folder notebooks and
+    //    "Workplace Shell"
+    #define SP_FLDRSORT_FLDR        40
+    #define SP_FLDRSORT_GLOBAL      41
+
+    // 5) "XFolder" page in folder notebooks
+    #define SP_XFOLDER_FLDR         45      // fixed V0.9.1 (99-12-06)
+
+    // 6) "Startup" page in XFldStartup notebook
+    #define SP_STARTUPFOLDER        50      // new with V0.9.0
+
+    // 7) "File" page in XFldDataFile/XFolder
+    #define SP_FILE1                60      // new with V0.9.0
+    #define SP_FILE2                61      // new with V0.9.1 (2000-01-22) [umoeller]
+    #define SP_DATAFILE_TYPES       62      // XFldDataFile "Types" page V0.9.9 (2001-03-27) [umoeller]
+    #define SP_FILE3_PERMISSIONS    63      // new with V1.0.1 (2003-01-10) [umoeller]
+
+    // 8) "Sounds" page in XWPSound
+    #define SP_SOUNDS               70
+
+    // 9) pages in XFldDesktop
+    #define SP_DTP_MENUITEMS        80      // new with V0.9.0
+    #define SP_DTP_STARTUP          81      // new with V0.9.0
+    #define SP_DTP_SHUTDOWN         82      // new with V0.9.0
+    #define SP_DTP_ARCHIVES         83      // new with V0.9.0
+
+    // 10) pages for XWPTrashCan
+    #define SP_TRASHCAN_SETTINGS    90      // new with V0.9.0; renamed V0.9.1 (99-12-12)
+    #define SP_TRASHCAN_DRIVES      91      // new with V0.9.1 (99-12-12)
+    #define SP_TRASHCAN_ICON        92      // new with V0.9.4 (2000-08-03) [umoeller]
+
+    // 11) "Details" pages
+    #define SP_DISK_DETAILS         100     // new with V0.9.0
+    #define SP_PROG_DETAILS         101     // new with V0.9.0
+    #define SP_PROG_RESOURCES       102     // new with V0.9.7 (2000-12-17) [lafaix]
+    #define SP_PROG_DETAILS1        103
+    #define SP_PROG_DETAILS2        104
+
+    // 12) XWPClassList
+    #define SP_CLASSLIST            110     // new with V0.9.0
+
+    // 13) XWPKeyboard
+    #define SP_KEYB_OBJHOTKEYS      120     // new with V0.9.0
+    #define SP_KEYB_FUNCTIONKEYS    121     // new with V0.9.3 (2000-04-18) [umoeller]
+    #define SP_KEYB_MACROS          122     // new with V0.9.20 (2002-07-03) [umoeller]
+
+    // 13) XWPMouse
+    #define SP_MOUSE_MOVEMENT       130     // new with V0.9.2 (2000-02-26) [umoeller]
+    #define SP_MOUSE_CORNERS        131     // new with V0.9.2 (2000-02-26) [umoeller]
+    #define SP_MOUSE_MAPPINGS2      132     // new with V0.9.1
+    #define SP_MOUSE_MOVEMENT2      133     // new with V0.9.14 (2001-08-02) [lafaix]
+
+    // 14) XWPScreen
+    #define SP_PAGER_MAIN           140     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_WINDOW         141     // new with V0.9.9 (2001-03-27) [umoeller]
+    #define SP_PAGER_STICKY         142     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_COLORS         143     // new with V0.9.3 (2000-04-09) [umoeller]
+
+    // 15) XWPString
+    #define SP_XWPSTRING            150     // new with V0.9.3 (2000-04-27) [umoeller]
+
+    // 16) XWPMedia
+    #define SP_MEDIA_DEVICES        160     // new with V0.9.3 (2000-04-29) [umoeller]
+    #define SP_MEDIA_CODECS         161     // new with V0.9.3 (2000-04-29) [umoeller]
+    #define SP_MEDIA_IOPROCS        162     // new with V0.9.3 (2000-04-29) [umoeller]
+
+    // 17) XCenter
+    #define SP_XCENTER_VIEW1        170     // new with V0.9.7 (2000-12-05) [umoeller]
+    #define SP_XCENTER_VIEW2        171     // new with V0.9.7 (2001-01-18) [umoeller]
+    #define SP_XCENTER_WIDGETS      172     // new with V0.9.7 (2000-12-05) [umoeller]
+    #define SP_XCENTER_CLASSES      173     // new with V0.9.9 (2001-03-09) [umoeller]
+
+    // 18) WPProgram/WPProgramFile
+    #define SP_PGM_ASSOCS           180     // new with V0.9.9 (2001-03-07) [umoeller]
+    #define SP_PGMFILE_ASSOCS       181     // new with V0.9.9 (2001-03-07) [umoeller]
+
+    // 19) XWPFontFolder
+    #define SP_FONT_SAMPLETEXT      190     // new with V0.9.9 (2001-03-27) [umoeller]
+
+    // 20) XWPAdmin
+    #define SP_ADMIN_LOCAL_USER     200     // new with V0.9.19 (2002-04-02) [umoeller]
+    #define SP_ADMIN_ALL_USERS      201     // new with V0.9.19 (2002-04-02) [umoeller]
+    #define SP_ADMIN_ALL_GROUPS     202     // new with V0.9.19 (2002-04-02) [umoeller]
+
+    // 21) XFldObject
+    #define SP_OBJECT_ICONPAGE1     220     // new with V0.9.16 (2001-10-15) [umoeller]
+    #define SP_OBJECT_ICONPAGE2     221     // new with V0.9.16 (2001-10-15) [umoeller]
+                // this is really a WPFolder page...
+    #define SP_OBJECT_ICONPAGE1_X   222
+                // icon page where wpAddObjectGeneralPage returned
+                // SETTINGS_PAGE_REMOVED (WPSharedDir)
+                // new with V0.9.19 (2002-06-15) [umoeller]
+
+    // 22) XWPVCard V0.9.16 (2002-02-02) [umoeller]
+    #define SP_VCARD_SUMMARY        230
+    #define SP_VCARD_NAME           231
+    #define SP_VCARD_ADDRESSES      232
+    #define SP_VCARD_PHONE          233
+
+    /********************************************************************
+     *
      *   Declarations
      *
      ********************************************************************/

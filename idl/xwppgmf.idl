@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xwppgmf.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -35,7 +38,7 @@
                                  ÀÄÄ XWPProgramFile
 */
 
-interface M_XWPProgramFile;            // Forward Reference to XWPProgramFile metaclass
+interface M_XWPProgramFile;         // forward reference to XWPProgramFile metaclass
 
 interface XWPProgramFile : WPProgramFile
 {
@@ -55,99 +58,107 @@ interface XWPProgramFile : WPProgramFile
     //# BOOL xwpQuerySetup2(in PVOID pstrSetup);        V1.0.1 (2002-12-08) [umoeller]
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpQueryProgType,
+            //# xwpQuerySetup2,       V1.0.1 (2002-12-08) [umoeller]
+            xwpAddResourcesPage,
+            xwpAddModulePage,
+            xwpAddAssociationsPage;
 
-    releaseorder: xwpQueryProgType,
-                  //# xwpQuerySetup2,       V1.0.1 (2002-12-08) [umoeller]
-                  xwpAddResourcesPage,
-                  xwpAddModulePage,
-                  xwpAddAssociationsPage;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xpgf_;
+        externalstem = xpgf;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwppgmf;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPProgramFile;
+        dllname = "xfldr.dll";
+        callstyle = oidl;            //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xpgf_;
-    externalstem = xpgf;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwppgmf;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPProgramFile;
-    dllname = "xfldr.dll";
-    callstyle = oidl;            //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPProgramFile:
-     *
-     */
+        passthru C_h =
+"";
 
-    ULONG       ulDosAppType;    // return value from DosQueryAppType
-    ULONG       ulAppType;       // XFPGMF_* flag
+        /*
+         * Internal instance variables for XWPProgramFile:
+         *
+         */
 
-    PSZ         pWszUsingIconFile;      // if we are using an .ICO file for the
-                                        // icon, this holds the icon filename
-                                        // V0.9.18 (2002-03-19) [umoeller]
+        ULONG       ulDosAppType;    // return value from DosQueryAppType
+        ULONG       ulAppType;       // XFPGMF_* flag
 
-    // pointers into WPProgramFile instance data
-    PULONG      pulStartupDirHandle;        // 16-bit file-system handle for startup dir
-    PPROGTYPE   pProgType;                  // prog type and visibility flag; two ULONGs!
-    PSZ         *ppszStartupDir;
-    PSZ         *ppszEnvironment;
-    PSWP        pswpInitial;
+        PSZ         pWszUsingIconFile;      // if we are using an .ICO file for the
+                                            // icon, this holds the icon filename
+                                            // V0.9.18 (2002-03-19) [umoeller]
 
-    /*
-     * WPProgramFile methods overridden by XWPProgramFile:
-     *
-     */
+        // pointers into WPProgramFile instance data
+        PULONG      pulStartupDirHandle;        // 16-bit file-system handle for startup dir
+        PPROGTYPE   pProgType;                  // prog type and visibility flag; two ULONGs!
+        PSZ         *ppszStartupDir;
+        PSZ         *ppszEnvironment;
+        PSWP        pswpInitial;
 
-    //# 1)  init/uninit methods
+        /*
+         * WPProgramFile methods overridden by XWPProgramFile:
+         *
+         */
 
-    wpInitData: override;
+        //# 1)  init/uninit methods
 
-    wpUnInitData: override;
-    wpDestroyObject: override;
+        wpInitData: override;
 
-    wpObjectReady: override;
+        wpUnInitData: override;
+        wpDestroyObject: override;
 
-    wpRestoreState: override;
-    wpRestoreData: override;
+        wpObjectReady: override;
 
-    //# 2)  WPObject query/set methods
+        wpRestoreState: override;
+        wpRestoreData: override;
 
-    wpQueryDefaultView: override;
-    wpQueryDefaultHelp: override;
+        //# 2)  WPObject query/set methods
 
-    xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
+        wpQueryDefaultView: override;
+        wpQueryDefaultHelp: override;
 
-    //# 3)  icon methods
+        xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
 
-    wpQueryIconData: override;
-    wpSetIconData: override;
+        //# 3)  icon methods
 
-    wpSetProgIcon: override;
+        wpQueryIconData: override;
+        wpSetIconData: override;
 
-    //# 4)  class-specific query/set methods
+        wpSetProgIcon: override;
 
-    wpQueryProgDetails: override;
-    wpSetProgDetails: override;
+        //# 4)  class-specific query/set methods
 
-    //# 5)  menu methods
+        wpQueryProgDetails: override;
+        wpSetProgDetails: override;
 
-    wpFilterPopupMenu: override;
+        //# 5)  menu methods
 
-    //# 6)  open view methods
+        wpFilterPopupMenu: override;
 
-    wpOpen: override;
+        //# 6)  open view methods
 
-    wpAddProgramAssociationPage: override;
-    wpAddProgramPage: override;
-    wpAddProgramSessionPage: override;
+        wpOpen: override;
 
-    //# 7)  file operation methods
+        wpAddProgramAssociationPage: override;
+        wpAddProgramPage: override;
+        wpAddProgramSessionPage: override;
 
-  }; // implementation
-#endif /* __SOMIDL__ */
+        //# 7)  file operation methods
+    };
+#endif
 };
 
 //#
@@ -165,37 +176,37 @@ interface M_XWPProgramFile : M_WPProgramFile
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xpgfM_;
+        externalstem = xpgfM;
+        functionprefix = xpgfM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwppgmf;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xpgfM_;
-    externalstem = xpgfM;
-    functionprefix = xpgfM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwppgmf;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_XWPProgramFile:
+         *
+         */
 
-    /*
-     * Internal class variables for M_XWPProgramFile:
-     *
-     */
+        /*
+         * M_WPProgramFile methods overridden by M_XWPProgramFile:
+         *
+         */
 
-    /*
-     * M_WPProgramFile methods overridden by M_XWPProgramFile:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
-
-    wpclsQueryInstanceFilter: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryInstanceFilter: override;
+    };
+#endif
 };
 
 

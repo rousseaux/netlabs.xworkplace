@@ -1,12 +1,23 @@
 
-//  Module Header
-//
-//  Module Name: WPTYPES
-//
-//  OS/2 Presentation Manager Workplace class definitions
-//
-//  Copyright (c) International Business Machines Corporation 1994
-//
+/*
+ * wptypes.idl:
+ *      beefed up SOM interface description file for
+ *      common SOM type definitions.
+ */
+
+/*
+ *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
 
 #ifndef WPTYPES_IDL
 #define WPTYPES_IDL
@@ -43,9 +54,12 @@ typedef LHANDLE        HFS;
 typedef LHANDLE        HDC;
 typedef LHANDLE        HAPP;
 typedef LHANDLE        HPS;
+typedef LHANDLE        HAB;             //# added V1.0.1 (2003-01-27) [umoeller]
 typedef LHANDLE        HOBJECT;
 typedef void          *PVOID;
 typedef void          *MRESULT;
+
+typedef ULONG         APIRET;           //# added V1.0.1 (2003-01-29) [umoeller]
 
 #ifdef _PPC_
 typedef ULONG         SGID;
@@ -72,21 +86,21 @@ struct USEITEM
 };
 typedef USEITEM *PUSEITEM;
 
-struct FILTERFLAGS                                                       /*pwbopend*/
-{                                                                        /*pwbopend*/
-   USHORT      cbItem;                                                   /*pwbopend*/
-   ULONG       Flags[3];                                                 /*lwb146937*/
-};                                                                       /*pwbopend*/
-typedef FILTERFLAGS *PFILTERFLAGS;                                       /*pwbopend*/
+struct FILTERFLAGS
+{
+   USHORT      cbItem;
+   ULONG       Flags[3];
+};
+typedef FILTERFLAGS *PFILTERFLAGS;
 
 struct POINTL
 {
     long  x;
     long  y;
-} ;
+};
 typedef POINTL *PPOINTL;
 
-struct MINIRECORDCORE                /* minirec */
+struct MINIRECORDCORE
 {
    ULONG       cb;
    ULONG       flRecordAttr;         /* record attributes             */
@@ -94,19 +108,19 @@ struct MINIRECORDCORE                /* minirec */
    MINIRECORDCORE *preccNextRecord;  /*ptr to next record */
    PSZ         pszIcon;              /* Text for CV_ICON view         */
    HPOINTER    hptrIcon;             /* Icon to display for ~CV_MINI  */
-} ;
+};
 typedef MINIRECORDCORE *PMINIRECORDCORE;
 
-struct TREEITEMDESC                  /* treend */
+struct TREEITEMDESC
 {
    HBITMAP       hbmExpanded;
    HBITMAP       hbmCollapsed;
    HPOINTER      hptrExpanded;
    HPOINTER      hptrCollapsed;
-} ;
+};
 typedef TREEITEMDESC *PTREEITEMDESC;
 
-struct RECORDCORE                    /* recc */
+struct RECORDCORE
 {
    ULONG       cb;
    ULONG       flRecordAttr;         /* record attributes             */
@@ -124,7 +138,7 @@ struct RECORDCORE                    /* recc */
 };
 typedef RECORDCORE  *PRECORDCORE;
 
-struct RECORDINSERT                  /* recins */
+struct RECORDINSERT
 {
    ULONG       cb;
    PRECORDCORE pRecordOrder;
@@ -148,7 +162,7 @@ struct DRAGINFO
 };
 typedef DRAGINFO  *PDRAGINFO;
 
-struct DRAGITEM                      /* ditem */
+struct DRAGITEM
 {
    HWND    hwndItem;                 /* conversation partner          */
    ULONG   ulItemID;                 /* identifies item being dragged */
@@ -163,10 +177,10 @@ struct DRAGITEM                      /* ditem */
    /*                                     image from the mouse hotspot*/
    USHORT  fsControl;                /* source item control flags     */
    USHORT  fsSupportedOps;           /* ops supported by source       */
-} ;
+};
 typedef DRAGITEM  *PDRAGITEM;
 
-struct DRAGTRANSFER                  /* dxfer */
+struct DRAGTRANSFER
 {
    ULONG      cb;                    /* size of control block         */
    HWND       hwndClient;            /* handle of target              */
@@ -176,7 +190,7 @@ struct DRAGTRANSFER                  /* dxfer */
    ULONG      ulTargetInfo;          /* reserved for target's use     */
    USHORT     usOperation;           /* operation being performed     */
    USHORT     fsReply;               /* reply flags                   */
-} ;
+};
 typedef DRAGTRANSFER  *PDRAGTRANSFER;
 
 struct PAGEINFO
@@ -209,7 +223,7 @@ struct PRINTDEST
    PDEVOPENDATA pdopData;
    ULONG        fl;
    PSZ          pszPrinter;
-} ;
+};
 typedef PRINTDEST  *PPRINTDEST;
 
 struct ICONINFO
@@ -221,7 +235,7 @@ struct ICONINFO
    ULONG   resid;               /* use when fFormat = ICON_RESOURCE */
    ULONG   cbIconData;          /* use when fFormat = ICON_DATA     */
    PVOID   pIconData;           /* use when fFormat = ICON_DATA     */
-} ;
+};
 typedef ICONINFO  *PICONINFO;
 
 struct TASKREC
@@ -238,7 +252,7 @@ struct TASKREC
    BOOL             fKeepAssociations;
    PVOID            pReserved;    /* reserved - equal null           */
 
-} ;
+};
 typedef TASKREC *PTASKREC;
 
 struct WPSRCLASSBLOCK
@@ -272,7 +286,7 @@ struct VIEWITEM                  /* USAGE_OPENVIEW struct */
    ULONG        ulViewState;     /* View State flags */
    HWND         hwndCnr;         /* System use only (window animation) */
    PMINIRECORDCORE pRecord;      /* System use only (window animation) */
-} ;
+};
 typedef VIEWITEM *PVIEWITEM;
 
 typedef long  *PLONG;
@@ -282,10 +296,10 @@ struct CLASSDETAILS              /* Class Details struct */
    PSZ          pszAttribute;    /* Translatable string for a class attribute*/
    PVOID        pSortRecord;     /* Function pointer for sort function for attribute*/
    CLASSDETAILS *pNext;          /* Next item in class details list */
-} ;
+};
 typedef CLASSDETAILS *PCLASSDETAILS;
 
-struct CLASSFIELDINFO               /*!INC*/
+struct CLASSFIELDINFO
 {
    /* Details field attributes
     */
@@ -337,7 +351,7 @@ struct CLASSFIELDINFO               /*!INC*/
    PFNCOMPARE pfnSort;              /* Sort function for this @SM09511*/
                                     /*   field. Can be NULL unless    */
                                     /*   ownerdraw is used.           */
-} ;
+};
 typedef CLASSFIELDINFO *PCLASSFIELDINFO;
 
 typedef ULONG       HFIND;
@@ -349,10 +363,10 @@ typedef CLASS      *PCLASS;
 
 
 struct SIZEL
-{          /* sizl */
+{
    long cx;
    long cy;
-} ;
+};
 typedef SIZEL  *PSIZEL;
 
 struct FEA2
@@ -362,7 +376,7 @@ struct FEA2
     BYTE    cbName;
     USHORT  cbValue;
     char    szName[1];                          /* new field */
-} ;
+};
 typedef FEA2 *PFEA2;
 
 struct FEA2LIST
@@ -387,7 +401,7 @@ struct FDATE
     * USHORT month : 4;
     * USHORT year  : 7;
     */
-} ;
+};
 typedef FDATE   *PFDATE;
 
 struct FTIME
@@ -398,10 +412,10 @@ struct FTIME
     * USHORT minutes : 6;
     * USHORT hours   : 5;
     */
-} ;
+};
 typedef FTIME   *PFTIME;
 
-struct FILEFINDBUF4                            /* findbuf4 */
+struct FILEFINDBUF4
 {
    ULONG   oNextEntryOffset;                   /* new field */
    FDATE   fdateCreation;
@@ -416,7 +430,7 @@ struct FILEFINDBUF4                            /* findbuf4 */
    ULONG   cbList;
    UCHAR   cchName;
    char    achName[CCHMAXPATHCOMP];
-} ;
+};
 typedef FILEFINDBUF4    *PFILEFINDBUF4;
 
 
@@ -429,21 +443,21 @@ struct INFOCLASS
 };
 typedef INFOCLASS * PINFOCLASS;
 
-struct CDATE                            /* cdate */
+struct CDATE
 {
    UCHAR   day;                         /* current day               */
    UCHAR   month;                       /* current month             */
    USHORT  year;                        /* current year              */
-} ;
+};
 typedef CDATE *PCDATE;
 
-struct CTIME                            /* ctime */
+struct CTIME
 {
    UCHAR   hours;                       /* current hour              */
    UCHAR   minutes;                     /* current minute            */
    UCHAR   seconds;                     /* current second            */
    UCHAR   ucReserved;                  /* reserved                  */
-} ;
+};
 typedef CTIME *PCTIME;
 
 struct FILEDETAILS
@@ -457,7 +471,7 @@ struct FILEDETAILS
    CDATE    cdateCreation;   /* Date of creation */
    CTIME    ctimeCreation;   /* Time of creation */
    ULONG    ulFlags;         /* File flags */
-} ;
+};
 typedef FILEDETAILS * PFILEDETAILS;
 
 struct FILESYS_SEARCH_INFO
@@ -495,14 +509,13 @@ struct TRANSINFO
    TRANSINFO         *pNext;         /* Next structure */
    WPObject           Object;        /* Object pointer  rcsom2 removed * */
    ULONG              Handle;        /* Object handle (low word only) */
-} ;
+};
 
 typedef TRANSINFO *PTRANSINFO;
 
+typedef LHANDLE HPROGRAM;
 
-typedef LHANDLE HPROGRAM;       /* hprog */
-
-struct SWP    /* swp */
+struct SWP
 {
    ULONG   fl;
    long    cy;
@@ -513,7 +526,7 @@ struct SWP    /* swp */
    HWND    hwnd;
    ULONG   ulReserved1;
    ULONG   ulReserved2;
-} ;
+};
 typedef SWP *PSWP;
 
 typedef ULONG PROGCATEGORY;
@@ -522,7 +535,7 @@ struct PROGTYPE
 {
     PROGCATEGORY progc;
     ULONG        fbVisible;
-} ;
+};
 typedef PROGTYPE *PPROGTYPE;
 
 struct PROGDETAILS
@@ -536,23 +549,22 @@ struct PROGDETAILS
       PSZ       pszIcon;
       PSZ       pszEnvironment; /* this is terminated by  /0/0      */
       SWP       swpInitial;     /* this replaces XYWINSIZE          */
-} ;
+};
 typedef  PROGDETAILS *PPROGDETAILS;
-
-
 
 struct ICONPOS
 {
    POINTL  ptlIcon;                    /* Location */
    char    szIdentity[1];              /* Object identity string */
-} ;
+};
 typedef ICONPOS *PICONPOS;
 
-struct SEARCH_INFO {
+struct SEARCH_INFO
+{
    M_WPObject *ClassToBeFound;
    BOOL       fSkipExtendedSearchCriteria;
    PVOID      pvoidExtendedCriteria;
-} ;
+};
 typedef SEARCH_INFO *PSEARCH_INFO;
 
 
@@ -561,7 +573,7 @@ typedef  ULONG    HEV;
 struct LINKITEM                  /* USAGE_LINK struct */
 {
    WPObject    *LinkObj;         /* The link object */
-} ;
+};
 typedef LINKITEM *PLINKITEM;
 
 struct CRITERIA
@@ -592,13 +604,13 @@ struct CELL
 };
 typedef CELL *PCELL;
 
-struct RECTL                     /* rcl */
+struct RECTL
 {
     long  xLeft;
     long  yBottom;
     long  xRight;
     long  yTop;
-} ;
+};
 typedef RECTL *PRECTL;
 
 struct PALINFO
@@ -618,20 +630,20 @@ struct CELLSTRUCT
 {
    RECTL       rclCell;          /* Cell coordinates */
    PCELL       pCell;            /* Cell data pointer */
-} ;
+};
 typedef CELLSTRUCT *PCELLSTRUCT;
 
-struct CLASSCRITERIA                                     /*!INC*/
+struct CLASSCRITERIA
 {
    CLASSCRITERIA         *pNext;
    CLASSCRITERIA         *pPrev;
    M_WPObject            *Class;          /* Class object */
    PCRITERIA              pCriteria;      /* Linked list of criteria */
    WPObject              NotifyObject;   /* Owner of the criteria list rcsom2 removed * */
-} ;
+};
 typedef CLASSCRITERIA *PCLASSCRITERIA;
 
-struct FATTRS                           /* fat */
+struct FATTRS
 {
    USHORT  usRecordLength;
    USHORT  fsSelection;
@@ -643,9 +655,47 @@ struct FATTRS                           /* fat */
    long    lAveCharWidth;
    USHORT  fsType;
    USHORT  fsFontUse;
-} ;
+};
 typedef FATTRS *PFATTRS;
 
+//# BITMAPINFOHEADER2 added V1.0.1 (2003-01-29) [umoeller]
+//# in the toolkit's pmbitmap.h, this is in a pragma pack(1)
+//# section, so this can just be copied (SOM packs structures too)
+struct BITMAPINFOHEADER2
+{
+   ULONG  cbFix;            /* Length of structure                    */
+   ULONG  cx;               /* Bit-map width in pels                  */
+   ULONG  cy;               /* Bit-map height in pels                 */
+   USHORT cPlanes;          /* Number of bit planes                   */
+   USHORT cBitCount;        /* Number of bits per pel within a plane  */
+   ULONG  ulCompression;    /* Compression scheme used to store the bitmap */
+   ULONG  cbImage;          /* Length of bit-map storage data in bytes*/
+   ULONG  cxResolution;     /* x resolution of target device          */
+   ULONG  cyResolution;     /* y resolution of target device          */
+   ULONG  cclrUsed;         /* Number of color indices used           */
+   ULONG  cclrImportant;    /* Number of important color indices      */
+   USHORT usUnits;          /* Units of measure                       */
+   USHORT usReserved;       /* Reserved                               */
+   USHORT usRecording;      /* Recording algorithm                    */
+   USHORT usRendering;      /* Halftoning algorithm                   */
+   ULONG  cSize1;           /* Size value 1                           */
+   ULONG  cSize2;           /* Size value 2                           */
+   ULONG  ulColorEncoding;  /* Color encoding                         */
+   ULONG  ulIdentifier;     /* Reserved for application use           */
+};
+typedef BITMAPINFOHEADER2 *PBITMAPINFOHEADER2;
 
-#endif /* WPTYPES_IDL  */
+//# BITMAPFILEHEADER2 added V1.0.1 (2003-01-29) [umoeller]
+struct BITMAPFILEHEADER2
+{
+   USHORT    usType;
+   ULONG     cbSize;
+   short     xHotspot;
+   short     yHotspot;
+   ULONG     offBits;
+   BITMAPINFOHEADER2 bmp2;
+};
+typedef BITMAPFILEHEADER2 *PBITMAPFILEHEADER2;
+
+#endif
 

@@ -53,6 +53,8 @@ extern struct InfoSegLDT
 
 extern RING0STATUS  G_R0Status;         // in strat_ioctl.c
 
+extern HVDHSEM      G_hmtx;             // in strat_ioctl.c
+
 extern PLOGBUF  G_pLogFirst = NULL,     // ptr to first log buffer in linklist
                 G_pLogLast = NULL;      // ptr to last log buffer in linklist
 
@@ -192,9 +194,8 @@ extern ULONG    G_idLogBlock = 0;       // if != 0, the blockid that the logging
  *      allocates and initializes a new LOGBUF
  *      as fixed kernel memory.
  *
- *      I'm not sure whether VMAlloc can block,
- *      so I guess it's a good idea for the
- *      caller to be reentrant.
+ *      Preconditions: Caller must hold the big lock
+ *      cos VMAlloc may block!
  *
  *      Context: Possibly any ring-3 thread on the system.
  */
@@ -273,72 +274,79 @@ PVOID ctxtLogEvent(ULONG ulEventCode,      // in: EVENT_* code
     ULONG   cbLogEntry =   sizeof(EVENTLOGENTRY)    // fixed-size struct first
                          + cbData;                  // event-specific data next
 
-    // do we have a log buffer allocated currently?
-    if (!G_pLogLast)
-    {
-        // no: that's easy, allocate one log buffer and
-        // set it as the first and last
-        G_pLogFirst
-        = G_pLogLast
-        = AllocLogBuffer();
-    }
-    else
-    {
-        // check if we have enough room left in this
-        // log buffer
-        if (G_pLogLast->cbUsed + cbLogEntry >= LOGBUFSIZE)      // 64K
-        {
-            // no: allocate a new one
-            G_pLogLast->pNext = AllocLogBuffer();
-            // and set this as the last buffer
-            G_pLogLast = G_pLogLast->pNext;
-
-            // G_pLogFirst remains the same
-        }
-    }
-
-    if (!G_pLogLast)
-        // error allocating memory:
-        // stop logging globally!
+    if (!VDHRequestMutexSem(G_hmtx, -1))
         ctxtStopLogging();
     else
     {
-        // determine target address of new EVENTLOGENTRY in LOGBUF
-        PEVENTLOGENTRY pEntry = (PEVENTLOGENTRY)((PBYTE)G_pLogLast + G_pLogLast->cbUsed);
+        // do we have a log buffer allocated currently?
+        if (!G_pLogLast)
+        {
+            // no: that's easy, allocate one log buffer and
+            // set it as the first and last
+            G_pLogFirst
+            = G_pLogLast
+            = AllocLogBuffer();
+        }
+        else
+        {
+            // check if we have enough room left in this
+            // log buffer
+            if (G_pLogLast->cbUsed + cbLogEntry >= LOGBUFSIZE)      // 64K
+            {
+                // no: allocate a new one
+                G_pLogLast->pNext = AllocLogBuffer();
+                // and set this as the last buffer
+                G_pLogLast = G_pLogLast->pNext;
 
-        // 1) fill fixed EVENTLOGENTRY struct
+                // G_pLogFirst remains the same
+            }
+        }
 
-        pEntry->cbStruct = cbLogEntry;
-        pEntry->ulEventCode = ulEventCode;
-        pEntry->idEvent = G_idEventNext++;      // global counter
+        if (!G_pLogLast)
+            // error allocating memory:
+            // stop logging globally!
+            ctxtStopLogging();
+        else
+        {
+            // determine target address of new EVENTLOGENTRY in LOGBUF
+            PEVENTLOGENTRY pEntry = (PEVENTLOGENTRY)((PBYTE)G_pLogLast + G_pLogLast->cbUsed);
 
-        // copy the first 16 bytes from local infoseg
-        // into log entry (these match our CONTEXTINFO
-        // declaration in ring0api.h)
-        memcpy(&pEntry->ctxt,
-               G_pLDT,
-               sizeof(CONTEXTINFO));
+            // 1) fill fixed EVENTLOGENTRY struct
 
-        // copy the first 20 bytes from global infoseg
-        // into log entry (these match our TIMESTAMP
-        // declaration in ring0api.h)
-        memcpy(&pEntry->stamp,
-               G_pGDT,
-               sizeof(TIMESTAMP));
+            pEntry->cbStruct = cbLogEntry;
+            pEntry->ulEventCode = ulEventCode;
+            pEntry->idEvent = G_idEventNext++;      // global counter
 
-        // 2) return ptr to event-specific data
-        pvReturn = (PBYTE)pEntry + sizeof(EVENTLOGENTRY);
+            // copy the first 16 bytes from local infoseg
+            // into log entry (these match our CONTEXTINFO
+            // declaration in ring0api.h)
+            memcpy(&pEntry->ctxt,
+                   G_pLDT,
+                   sizeof(CONTEXTINFO));
 
-        // update the current LOGBUF
-        G_pLogLast->cbUsed += cbLogEntry;
-        ++(G_pLogLast->cLogEntries);
+            // copy the first 20 bytes from global infoseg
+            // into log entry (these match our TIMESTAMP
+            // declaration in ring0api.h)
+            memcpy(&pEntry->stamp,
+                   G_pGDT,
+                   sizeof(TIMESTAMP));
 
-        // update global ring-0 status
-        ++(G_R0Status.cLogged);
+            // 2) return ptr to event-specific data
+            pvReturn = (PBYTE)pEntry + sizeof(EVENTLOGENTRY);
 
-        // unblock ring-3 thread, if blocked
-        if (G_idLogBlock)
-            DevHlp32_ProcRun(G_idLogBlock);
+            // update the current LOGBUF
+            G_pLogLast->cbUsed += cbLogEntry;
+            ++(G_pLogLast->cLogEntries);
+
+            // update global ring-0 status
+            ++(G_R0Status.cLogged);
+
+            // unblock ring-3 thread, if blocked
+            if (G_idLogBlock)
+                DevHlp32_ProcRun(G_idLogBlock);
+        }
+
+        VDHReleaseMutexSem(G_hmtx);
     }
 
     return pvReturn;

@@ -2056,8 +2056,6 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
-
         BOOL        fXFolder = krnIsClassReady(G_pcszXFolder),
                     fXFldDesktop = krnIsClassReady(G_pcszXFldDesktop),
                     fXFldDataFile = krnIsClassReady(G_pcszXFldDataFile),
@@ -2099,7 +2097,9 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
 #ifndef __ALWAYSHOOK__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
-                (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
+                           (G_pXwpGlobalShared)     // fixed V1.0.1 (2003-01-25) [umoeller]
+                        && (G_pXwpGlobalShared->hwndDaemonObject)
+                       );
 #endif
 #ifndef __ALWAYSOBJHOTKEYS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
@@ -3129,22 +3129,23 @@ VOID setStatusTimer(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     // XWPHook status
     {
-        PXWPGLOBALSHARED pXwpGlobalShared;
-        PSZ         psz = "Disabled";
-        if (pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared)
+        PCSZ    pcsz = "Disabled";
+
+        if (G_pXwpGlobalShared)
         {
             // Desktop restarts V0.9.1 (99-12-29) [umoeller]
             WinSetDlgItemShort(pnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,
-                               pXwpGlobalShared->ulWPSStartupCount - 1,
+                               G_pXwpGlobalShared->ulWPSStartupCount - 1,
                                FALSE);  // unsigned
 
-            if (pXwpGlobalShared->fAllHooksInstalled)
-                psz = "Loaded, OK";
+            if (G_pXwpGlobalShared->fAllHooksInstalled)
+                pcsz = "Loaded, OK";
             else
-                psz = "Not loaded";
+                pcsz = "Not loaded";
         }
+
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_HOOKSTATUS,
-                          psz);
+                          pcsz);
     }
 }
 

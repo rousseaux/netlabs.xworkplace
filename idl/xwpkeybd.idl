@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xwpkeybd.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -48,45 +51,49 @@ interface XWPKeyboard : WPKeyboard
     ULONG xwpAddKeyboardFunctionKeysPage(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpAddKeyboardHotkeysPage,
+            xwpAddKeyboardFunctionKeysPage;
 
-    releaseorder: xwpAddKeyboardHotkeysPage,
-                  xwpAddKeyboardFunctionKeysPage;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xkb_;
+        externalstem = xkb;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpkeybd;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPKeyboard;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xkb_;
-    externalstem = xkb;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpkeybd;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPKeyboard;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPKeyboard:
-     *
-     */
+        passthru C_h =
+"";
 
-    /*
-     * WPKeyboard methods overridden by XWPKeyboard:
-     *
-     */
+        /*
+         * Internal instance variables for XWPKeyboard:
+         *
+         */
 
-    wpFilterPopupMenu: override;
+        /*
+         * WPKeyboard methods overridden by XWPKeyboard:
+         *
+         */
 
-    wpAddKeyboardSpecialNeedsPage: override;
+        wpFilterPopupMenu: override;
 
-#ifdef __PRIVATE__
-
+        wpAddKeyboardSpecialNeedsPage: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -99,36 +106,35 @@ interface M_XWPKeyboard : M_WPKeyboard
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xkbM_;
+        externalstem = xkbM;
+        functionprefix = xkbM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpkeybd;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xkbM_;
-    externalstem = xkbM;
-    functionprefix = xkbM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpkeybd;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal instance variables:
+         *
+         */
 
-    /*
-     * Internal instance variables:
-     *
-     */
+        /*
+         * M_WPKeyboard methods overridden by M_XWPKeyboard:
+         *
+         */
 
-    /*
-     * M_WPKeyboard methods overridden by M_XWPKeyboard:
-     *
-     */
-
-    wpclsInitData: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsInitData: override;
+    };
+#endif
 };
 
 

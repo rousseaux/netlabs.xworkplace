@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xfobj.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -22,14 +25,16 @@
 
 #include <wpobject.idl>         // this is SOM for WPObject
 
-/*
-   CLASS: XWPObjList
-
-   CLASS HIERARCHY:
-
-       SOMObject
-         ÀÄÄ XWPObjList
-*/
+/* ******************************************************************
+ *
+ *  CLASS: XWPObjList
+ *
+ *  CLASS HIERARCHY:
+ *
+ *     SOMObject
+ *       ÀÄÄ XWPObjList
+ *
+ ********************************************************************/
 
 interface XWPObjList : SOMObject
 {
@@ -56,69 +61,67 @@ interface XWPObjList : SOMObject
     WPObject Enum(in WPObject pobj);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            SetKeys,
+            Load,
+            Write,
+            Append,
+            Count,
+            IsIn,
+            Remove,
+            Enum;
 
-    releaseorder: SetKeys,
-                  Load,
-                  Write,
-                  Append,
-                  Count,
-                  IsIn,
-                  Remove,
-                  Enum;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xl_;
+        externalstem = xl;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfobj;           //# specifies the filestem for sc-generated files
+        //# metaclass = M_XWPObjList;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xl_;
-    externalstem = xl;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfobj;           //# specifies the filestem for sc-generated files
-    //# metaclass = M_XWPObjList;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * Internal instance variables for XWPObjList:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPObjList:
-     *
-     */
+        BOOL    fLoaded;
+        PSZ     pszIniApp;
+        PSZ     pszIniKey;
 
-    BOOL    fLoaded;
-    PSZ     pszIniApp;
-    PSZ     pszIniKey;
+        PVOID   pvList;
 
-    PVOID   pvList;
+        /*
+         * SOMObject methods overridden by XWPObjList:
+         *
+         */
 
-    /*
-     * SOMObject methods overridden by XWPObjList:
-     *
-     */
-
-    somDefaultInit: override;
-    somDestruct: override;
-
-#ifdef __PRIVATE__
-
+        somDefaultInit: override;
+        somDestruct: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
-/*
-   CLASS: XFldObject
+/* ******************************************************************
+ *
+ *  CLASS: XFldObject
+ *
+ *  CLASS HIERARCHY:
+ *
+ *     SOMObject
+ *       ÀÄÄ WPObject
+ *             ÀÄÄ XFldObject
+ *
+ ********************************************************************/
 
-   CLASS HIERARCHY:
-
-       SOMObject
-         ÀÄÄ WPObject
-               ÀÄÄ XFldObject
-*/
-
-interface M_XFldObject;            // Forward Reference to XFldObject metaclass
+interface M_XFldObject;             // forward reference to XFldObject metaclass
 
 interface XFldObject : WPObject
 {
@@ -136,14 +139,14 @@ interface XFldObject : WPObject
 
     struct WPOBJECTLONGS
     {
-        LONG  lDefaultView;
-        ULONG ulHelpPanel;      // 0 means default, apparently
-        ULONG ulUnknown3;
-        ULONG ulObjectStyle;
-        ULONG ulMinWin;         // MINWIN_DEFAULT=0, MINWIN_HIDDEN=1, MINWIN_VIEWER=2, MINWIN_DESKTOP=3
-        ULONG ulConcurrent;     // CCVIEW_DEFAULT=0, CCVIEW_ON=1, CCVIEW_OFF=2
-        ULONG ulViewButton;     // HIDEBUTTON=1, MINBUTTON=2, DEFAULTBUTTON=3
-        ULONG ulMenuFlag;       // 2?
+        LONG    lDefaultView;
+        ULONG   ulHelpPanel;    // 0 means default, apparently
+        ULONG   ulUnknown3;
+        ULONG   ulObjectStyle;
+        ULONG   ulMinWin;       // MINWIN_DEFAULT=0, MINWIN_HIDDEN=1, MINWIN_VIEWER=2, MINWIN_DESKTOP=3
+        ULONG   ulConcurrent;   // CCVIEW_DEFAULT=0, CCVIEW_ON=1, CCVIEW_OFF=2
+        ULONG   ulViewButton;   // HIDEBUTTON=1, MINBUTTON=2, DEFAULTBUTTON=3
+        ULONG   ulMenuFlag;     // 2?
     };
     typedef WPOBJECTLONGS *PWPOBJECTLONGS;
 
@@ -159,9 +162,9 @@ interface XFldObject : WPObject
 
     struct WPOBJECTSTRINGS
     {
-        PSZ pszHelpLibrary;         // help library
-        PSZ pszObjectID;            // object ID
-        PSZ pszViewPos;             // strange listing of view positions... what is this?
+        PSZ pszHelpLibrary;     // help library
+        PSZ pszObjectID;        // object ID
+        PSZ pszViewPos;         // strange listing of view positions... what is this?
     };
     typedef WPOBJECTSTRINGS *PWPOBJECTSTRINGS;
 
@@ -211,10 +214,22 @@ interface XFldObject : WPObject
     VOID xwpAddedToList(in XWPObjList pList);
     VOID xwpRemovedFromList(in XWPObjList pList);
 
-    BOOL xwpOwnerDrawIcon(in PMINIRECORDCORE pmrc,
-                          in HPS hps,
-                          in ULONG flOwnerDraw,
-                          in PPOINTL pptl);
+    PUSEITEM xwpPrepareInsertRecord(in HWND hwndCnr,
+                                    in PMINIRECORDCORE pmrc,
+                                    in ULONG flObjectStyle,
+                                    in BOOL fFirstInsert);
+
+    ULONG xwpOwnerDrawIcon(in PMINIRECORDCORE pmrc,
+                           in HPS hps,
+                           in ULONG flOwnerDraw,
+                           in PRECTL prcl);
+
+    VOID xwpLazyLoadIcon(in HAB hab,
+                         in HPS *phpsMem,
+                         in ULONG flOwnerDraw,
+                         in BOOL *pbQuitEarly);
+
+    VOID xwpForceRepaint(in ULONG flRefresh);
 
     BOOL xwpAddWidgetNotify(in HWND hwnd);
     BOOL xwpRemoveDestroyNotify(in HWND hwnd);
@@ -233,194 +248,216 @@ interface XFldObject : WPObject
                             in ULONG ulMenuId);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpQueryDeletion,
+            xwpSetDeletion,
+            xwpTrashObjectID,
+            xwpSetTrashObject,
+            xwpQueryObjectHotkey,
+            xwpSetObjectHotkey,
+            xwpQuerySetup,
+            xwpQuerySetup2,
+            xwpQueryFlags,
+            xwpModifyFlags,
+            xwpAddWidgetNotify,
+            xwpRemoveDestroyNotify,
+            xwpQueryRealDefaultView,
+            xwpFreeSetupBuffer,
+            xwpQueryOriginalObjectID,
+            xwpHotkeyOrBorderAction,
+            xwpAddReplacementIconPage,
+            xwpQueryHandle,
+            xwpQueryLocks,
+            xwpSetTitleOnly,
+            xwpHandleSelfClose,
+            xwpAddedToList,
+            xwpRemovedFromList,
+            xwpPrepareInsertRecord,
+            xwpOwnerDrawIcon,
+            xwpLazyLoadIcon,
+            xwpForceRepaint;
 
-    releaseorder: xwpQueryDeletion,
-                  xwpSetDeletion,
-                  xwpTrashObjectID,
-                  xwpSetTrashObject,
-                  xwpQueryObjectHotkey,
-                  xwpSetObjectHotkey,
-                  xwpQuerySetup,
-                  xwpQuerySetup2,
-                  xwpQueryFlags,
-                  xwpModifyFlags,
-                  xwpAddWidgetNotify,
-                  xwpRemoveDestroyNotify,
-                  xwpQueryRealDefaultView,
-                  xwpFreeSetupBuffer,
-                  xwpQueryOriginalObjectID,
-                  xwpHotkeyOrBorderAction,
-                  xwpAddReplacementIconPage,
-                  xwpQueryHandle,
-                  xwpQueryLocks,
-                  xwpSetTitleOnly,
-                  xwpOwnerDrawIcon,
-                  xwpHandleSelfClose,
-                  xwpAddedToList,
-                  xwpRemovedFromList;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xo_;
+        externalstem = xo;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfobj;           //# specifies the filestem for sc-generated files
+        metaclass = M_XFldObject;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xo_;
-    externalstem = xo;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfobj;           //# specifies the filestem for sc-generated files
-    metaclass = M_XFldObject;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XFldObject:
-     *
-     */
+        passthru C_h =
+""
+"/* input flags for xwpOwnerDrawIcon */"
+"#define OWDRFL_LAZYLOADICON             0x0001"
+"        // in: defer icon loading (lazy icons)"
+"        // (flag is stored in sflOwnerDrawIcons)"
+"#define OWDRFL_SHADOWOVERLAY            0x0002"
+"        // in: overlay shadow icons with special shadow icon"
+"        // (flag is stored in sflOwnerDrawIcons)"
+"#define OWDRFL_LAZYLOADTHUMBNAIL        0x0004"
+"        // in: produce thumbnails for XWPImageFile"
+"        // (flag is stored in sflOwnerDrawIcons)"
+""
+"#define OWDRFL_INUSE                0x00010000"
+"        // in: object has a view open"
+"        // (flag is _not_ stored in sflOwnerDrawIcons)"
+"#define OWDRFL_MINI                 0x00020000"
+"        // in: must paint a mini icon"
+"        // (flag is _not_ stored in sflOwnerDrawIcons)"
+"#define OWDRFL_RGBMODE              0x00040000"
+"        // in/out: owner-draw presentation space is in TGB mode"
+"        // (flag is _not_ stored in sflOwnerDrawIcons)"
+""
+"/* flags for xwpForceRepaint */"
+"#define REFRESH_RECORDREPAINT      0x0001"
+"#define REFRESH_RECORDICON         0x0002"
+"#define REFRESH_RECORDTEXT         0x0004"
+"#define REFRESH_SHADOWS            0x0008"
+"#define REFRESH_WINDOWS            0x0010"
+"";
 
-    // trash can deletion; this is only != NULL if the object
-    // currently resides in the trash can. We use this extra
-    // pointer to avoid having to allocate all the fields
-    // with every object, even if it is not in the trash.
-    // V0.9.20 (2002-07-25) [umoeller]
-    PVOID       pvTrashData;
+        /*
+         * Internal instance variables for XFldObject:
+         *
+         */
 
-    // pointer to WPObject instance data
-    // V0.9.18 (2002-03-23) [umoeller]
-    PVOID       pvWPObjectData;         // IBMOBJECTDATA struct, include\filesys\object.h
+        /* trash can deletion; this is only != NULL if the object
+           currently resides in the trash can. We use this extra
+           pointer to avoid having to allocate all the fields
+           with every object, even if it is not in the trash.
+           V0.9.20 (2002-07-25) [umoeller] */
+        PVOID       pvTrashData;
 
-    // the following two have been added with V0.9.2
-    // and removed again because we can now use pvWPObjectData
-    // V0.9.19 (2002-07-01) [umoeller]
-    //# PWPOBJECTLONGS pObjectLongs;      // ptr to array of LONGs in instance data
-    //# ULONG       cbObjectLongs;
+        // pointer to WPObject instance data
+        // V0.9.18 (2002-03-23) [umoeller]
+        PVOID       pvWPObjectData;         // IBMOBJECTDATA struct, include\filesys\object.h
 
-    PSZ         pWszOriginalObjectID;   // copy of object ID as found with wpRestoreState
-                                        // WARNING: allocated using wpAllocMem
-                                        // V0.9.16 (2001-12-06) [umoeller]
+        PSZ         pWszOriginalObjectID;   // copy of object ID as found with wpRestoreState
+                                            // WARNING: allocated using wpAllocMem
+                                            // V0.9.16 (2001-12-06) [umoeller]
 
-    // the following has been added with V0.9.16 (2001-12-06) [umoeller]
-    //# PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
+        ULONG       flObject;           // OBJFL_* and OBJLIST_* flags
+                                        // combined V0.9.20 (2002-07-25) [umoeller]
 
-    ULONG       flObject;           // OBJFL_* and OBJLIST_* flags
-                                    // combined V0.9.20 (2002-07-25) [umoeller]
+        PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
 
-    PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
+        PVOID       pvllLists;          // a PLINKLIST of XWPObjList* objects that this
+                                        // object is currently stored in
 
-    PVOID       pvllLists;          // a PLINKLIST of XWPObjList* objects that this
-                                    // object is currently stored in
+        /* doubly-linked list of awake objects
+           (the root of the list is a global variable in xfobj.c)
+           V0.9.20 (2002-07-25) [umoeller] */
 
-    // ULONG       ulDefaultView;
-                            // for xwpQueryRealDefaultView
-                            // V0.9.16 (2001-11-25) [umoeller]
-                            // no longer needed V0.9.19 (2002-07-01) [umoeller]
+        XFldObject  pNextAwake;     // next object for the list of currently awake objects
+        XFldObject  pPreviousAwake; // previous object for the list of currently awake objects
 
-    // doubly-linked list of awake objects
-    // (the root of the list is a global variable in xfobj.c)
-    // V0.9.20 (2002-07-25) [umoeller]
+        /* icon server/client stuff (see icomShareIcon):
+           V0.9.20 (2002-07-25) [umoeller]
 
-    XFldObject  pNextAwake;     // next object for the list of currently awake objects
-    XFldObject  pPreviousAwake; // previous object for the list of currently awake objects
+           We implement a linked list here, using object instance data. This
+           looks like the best solution to me since the LARGE majority of awake
+           WPS objects will be data files and thus icon clients.
 
-    // icon server/client stuff (see icomShareIcon):
-    // V0.9.20 (2002-07-25) [umoeller]
+           1) If we are an icon server, pFirstIconClient and pLastIconClient
+              implement a linked list of icon clients, pointing to the first
+              and the last WPObject* client.
 
-    // We implement a linked list here, using object instance data. This
-    // looks like the best solution to me since the LARGE majority of awake
-    // WPS objects will be data files and thus icon clients.
+           2) In each icon client object, pNextClient and pPreviousClient
+              implement the linked list. */
 
-    // 1) If we are an icon server, pFirstIconClient and pLastIconClient
-    //    implement a linked list of icon clients, pointing to the first
-    //    and the last WPObject* client.
+        WPObject    pFirstIconClient;       // if != NULL, we have clients, and this is the
+                                            // first one (where pFirstClient->pNextClient is
+                                            // the next etc.)
+        WPObject    pLastIconClient;        // last item in list (for speedy append)
 
-    // 2) In each icon client object, pNextClient and pPreviousClient
-    //    implement the linked list.
+        ULONG       cIconClients;           // total clients count
 
-    WPObject    pFirstIconClient;       // if != NULL, we have clients, and this is the
-                                        // first one (where pFirstClient->pNextClient is
-                                        // the next etc.)
-    WPObject    pLastIconClient;        // last item in list (for speedy append)
+        // the object that _we_ took our icon from, or NULL
+        WPObject    pobjIconServer;         // if != NULL, our icon server
+        XFldObject  pNextClient;            // next object for pobjIconServer's list of clients
+        XFldObject  pPreviousClient;        // previous object for pobjIconServer's list of clients
 
-    ULONG       cIconClients;           // total clients count
+        /*
+         * WPObject methods overridden by XFldObject:
+         *
+         */
 
-    // the object that _we_ took our icon from, or NULL
-    WPObject    pobjIconServer;         // if != NULL, our icon server
-    XFldObject  pNextClient;            // next object for pobjIconServer's list of clients
-    XFldObject  pPreviousClient;        // previous object for pobjIconServer's list of clients
+        //# 1)  init/uninit methods
 
-    /*
-     * WPObject methods overridden by XFldObject:
-     *
-     */
+        wpInitData: override;
+        wpObjectReady: override;
 
-    //# 1)  init/uninit methods
+        wpSetup: override;
+        wpSetupOnce: override;
 
-    wpInitData: override;
-    wpObjectReady: override;
+        wpFree: override;
+        wpUnInitData: override;
 
-    wpSetup: override;
-    wpSetupOnce: override;
+        wpSaveDeferred: override;
+        wpSaveImmediate: override;
 
-    wpFree: override;
-    wpUnInitData: override;
+        wpSaveState: override;
+        wpRestoreState: override;
 
-    wpSaveDeferred: override;
-    wpSaveImmediate: override;
+        //# 2)  WPObject query/set methods
 
-    wpSaveState: override;
-    wpRestoreState: override;
+        wpSetObjectID: override;
 
-    //# 2)  WPObject query/set methods
+        wpQueryDefaultHelp: override;
 
-    wpSetObjectID: override;
+        //# 3)  icon methods
 
-    wpQueryDefaultHelp: override;
+        wpSetIcon: override;
 
-    //# 3)  icon methods
+        //# 4)  class-specific query/set methods
 
-    wpSetIcon: override;
+        wpAddToObjUseList: override;
+        wpDeleteFromObjUseList: override;
 
-    //# 4)  class-specific query/set methods
+        wpCnrSetEmphasis: override;
 
-    wpAddToObjUseList: override;
-    wpDeleteFromObjUseList: override;
-    wpCnrSetEmphasis: override;
+        wpCnrInsertObject: override;            //# added V1.0.1 (2003-01-25) [umoeller]
 
-    wpRequestObjectMutexSem: override;
-    wpAssertObjectMutexSem: override;
-    wpReleaseObjectMutexSem: override;
+        wpRequestObjectMutexSem: override;
+        wpAssertObjectMutexSem: override;
+        wpReleaseObjectMutexSem: override;
 
-    //# 5)  menu methods
+        //# 5)  menu methods
 
-    //# wpFilterPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
-    wpFilterMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
-    //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
-    wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
+        //# wpFilterPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+        wpFilterMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
+        //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+        wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
+        wpMenuItemSelected: override;
+        wpMenuItemHelpSelected: override;
 
-    //# 6)  open view methods
+        //# 6)  open view methods
 
-    wpDisplayHelp: override;
+        wpDisplayHelp: override;
 
-    wpViewObject: override;
+        wpAddSettingsPages: override;
+        wpAddObjectGeneralPage: override;
 
-    wpAddSettingsPages: override;
-    wpAddObjectGeneralPage: override;
+        //# 7)  file operation methods
 
-    //# 7)  file operation methods
+        wpSetTitle: override;
 
-    wpSetTitle: override;
-
-    wpConfirmObjectTitle: override;
-
-#ifdef __PRIVATE__
-
+        wpConfirmObjectTitle: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -443,42 +480,43 @@ interface M_XFldObject : M_WPObject
                                 in PSZ pcszIniKey);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpclsRemoveObjectHotkey,
+            xwpclsCreateList;
 
-    releaseorder:
-                xwpclsRemoveObjectHotkey,
-                xwpclsCreateList;
+        //# Class Modifiers
+        externalprefix = xoM_;
+        externalstem = xoM;
+        functionprefix = xoM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfobj;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    //# Class Modifiers
-    externalprefix = xoM_;
-    externalstem = xoM;
-    functionprefix = xoM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfobj;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_XFldObject:
+         *
+         */
 
-    /*
-     * Internal class variables for M_XFldObject:
-     *
-     */
+        /*
+         * M_WPObject methods overridden by M_XFldObject:
+         *
+         */
 
-    /*
-     * M_WPObject methods overridden by M_XFldObject:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
+        wpclsQueryObject: override;
 
-    wpclsQueryObject: override;
+        wpclsInsertMultipleObjects: override;       //# added V1.0.1 (2003-01-25) [umoeller]
 
-    wpclsQuerySettingsPageSize: override;
+        wpclsQuerySettingsPageSize: override;
 
-    wpclsSetIconData: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsSetIconData: override;
+    };
+#endif
 };
 
 

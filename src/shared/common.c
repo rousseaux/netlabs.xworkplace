@@ -133,6 +133,7 @@
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
@@ -311,40 +312,29 @@ VOID LoadDaemonNLSStrings(VOID);
  *@@changed V0.9.0 [umoeller]: moved this func here from module.c
  */
 
-unsigned long _System _DLL_InitTerm(unsigned long hModule,
-                                    unsigned long ulFlag)
+unsigned long _System _DLL_InitTerm(unsigned long hmod,
+                                    unsigned long fTerminate)
 {
-    APIRET rc;
-
-    switch (ulFlag)
+    if (!fTerminate)
     {
-        case 0:
-        {
-            // DLL being loaded:
+        // DLL being loaded:
 
-            // store the DLL handle in the global variable so that
-            // cmnQueryMainModuleHandle() below can return it
-            G_hmodDLL = hModule;
+        // store the DLL handle in the global variable so that
+        // cmnQueryMainModuleHandle() below can return it
+        G_hmodDLL = hmod;
 
-            // now initialize the C run-time environment before we
-            // call any runtime functions
-            if (_CRT_init() == -1)
-               return 0;  // error
+        // now initialize the C run-time environment before we
+        // call any runtime functions
+        if (_CRT_init() == -1)
+           return 0;  // error
 
-            if (rc = DosQueryModuleName(hModule, CCHMAXPATH, G_szDLLFile))
-                DosBeep(100, 100);
-        }
-        break;
-
-        case 1:
-            // DLL being freed: cleanup runtime
-            _CRT_term();
-            break;
-
-        default:
-            // other code: beep for error
+        if (DosQueryModuleName(hmod, CCHMAXPATH, G_szDLLFile))
             DosBeep(100, 100);
-            return 0;     // error
+    }
+    else
+    {
+        // DLL being freed: cleanup runtime
+        _CRT_term();
     }
 
     // a non-zero value must be returned to indicate success
@@ -1120,8 +1110,9 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
     DosBeep(100, 50);
 #endif
 
-    if (    (krnMakeLogFilename(szLogFilename,
-                                XFOLDER_LOGLOG))
+    if (    (doshCreateLogFilename(szLogFilename,
+                                   XFOLDER_LOGLOG,
+                                   F_ALLOW_BOOTROOT_LOGFILE))
          && (fileLog = fopen(szLogFilename, "a"))  // text file, append
        )
     {
@@ -1269,7 +1260,6 @@ PCSZ cmnGetString(ULONG ulStringID)
 
 VOID cmnLoadDaemonNLSStrings(VOID)
 {
-    PXWPGLOBALSHARED pXwpGlobalShared;
     BOOL    fLocked = FALSE;
 
     // check if this is != NULL, because on my system we
@@ -1279,15 +1269,15 @@ VOID cmnLoadDaemonNLSStrings(VOID)
 
     TRY_LOUD(excpt1)
     {
-        if (    (pXwpGlobalShared = (krnQueryGlobals())->pXwpGlobalShared)
-             && (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        if (    (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+             && (G_pXwpGlobalShared)
            )
         {
             USHORT  us;
-            PSZ     pszBuf = pXwpGlobalShared->achNLSStrings;
+            PSZ     pszBuf = G_pXwpGlobalShared->achNLSStrings;
 
-            PMPF_LANGCODES(("pXwpGlobalShared = 0x%lX, pszBuf = 0x%lX",
-                            pXwpGlobalShared,
+            PMPF_LANGCODES(("G_pXwpGlobalShared = 0x%lX, pszBuf = 0x%lX",
+                            G_pXwpGlobalShared,
                             pszBuf));
 
             for (us = ID_DMSI_FIRST;
@@ -1314,7 +1304,7 @@ VOID cmnLoadDaemonNLSStrings(VOID)
                 pszBuf += lLength + 1;
 
                 // check if there is still enough room for another string
-                if ((pszBuf - pXwpGlobalShared->achNLSStrings) > (3072+1-256))
+                if ((pszBuf - G_pXwpGlobalShared->achNLSStrings) > (3072+1-256))
                     break;
             }
 
@@ -2564,37 +2554,6 @@ typedef struct _OLDGLOBALSETTINGS
 #pragma pack()
 
 /*
- *@@ SETTINGINFO:
- *      gives detailed information about an
- *      XWPSETTING. This is used to find the
- *      INI key for loading and writing the
- *      data as well as converting the old
- *      XWorkplace GLOBALSETTINGS structure
- *      into an XWPSETTING array. Besides,
- *      for each setting, this gives a default
- *      value if it was not found at startup,
- *      or to reset it from a notebook page.
- *
- *      An array of these structures exists
- *      as a static, private, global variable.
- *
- *@@added V0.9.16 (2002-01-05) [umoeller]
- */
-
-typedef struct _SETTINGINFO
-{
-    XWPSETTING      s;                  // setting this item relates to
-    ULONG           ulOffsetIntoOld;    // offset into OLDGLOBALSETTINGS;
-                                        // if -1, no corresponding entry exists
-    BYTE            cbOld;              // count of bytes in OLDGLOBALSETTINGS (1, 2, or 4)
-    ULONG           ulSettingsPageID;   // SP_* settings page ID of this setting
-    ULONG           ulDefaultValue;     // default value for this setting
-    PCSZ            pcszIniKey;         // INI key for this setting
-} SETTINGINFO, *PSETTINGINFO;
-
-typedef const struct _SETTINGINFO *PCSETTINGINFO;
-
-/*
  *@@ G_aSettingInfos:
  *      describes the various XWPSETTING's available
  *      to XWorkplace. If you add a new XWPSETTING,
@@ -2800,7 +2759,7 @@ static const SETTINGINFO G_aSettingInfos[] =
 
         // added lazy icons V0.9.20 (2002-07-25) [umoeller]
         sflOwnerDrawIcons, -1, 0,
-            SP_WPS_FOLDERVIEWS, OWDRFL_LAZYICONS | OWDRFL_SHADOWOVERLAY,
+            SP_WPS_FOLDERVIEWS, OWDRFL_LAZYLOADICON | OWDRFL_SHADOWOVERLAY,
             "sflOwnerDrawIcons",
 
 #ifndef __NEVERREPLACEDRIVENOTREADY__
@@ -3034,12 +2993,12 @@ static const SETTINGINFO G_aSettingInfos[] =
     };
 
 /*
- *@@ FindSettingInfo:
+ *@@ cmnFindSettingInfo:
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-STATIC PCSETTINGINFO FindSettingInfo(XWPSETTING s)
+PCSETTINGINFO cmnFindSettingInfo(XWPSETTING s)
 {
     ULONG ul2;
     for (ul2 = 0;
@@ -3081,7 +3040,7 @@ STATIC VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
     {
         // look up the corresponding SETTINGINFO
         PCSETTINGINFO pStore;
-        if (    (pStore = FindSettingInfo(s))
+        if (    (pStore = cmnFindSettingInfo(s))
                 // does entry exist?
              && (pStore->ulOffsetIntoOld != -1)
            )
@@ -3113,6 +3072,39 @@ STATIC VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
             cmnSetSetting(s, lSetting);
         }
     }
+}
+
+/*
+ *@@ cmnLoadOneSetting:
+ *      loads the data for the given SETTINGINFO from OS2.INI
+ *      or sets the default value if no data is found.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+ULONG cmnLoadOneSetting(PCSETTINGINFO pThis)
+{
+    PULONG  pulThis = &G_aulSettings[pThis->s];
+    ULONG   cb = sizeof(ULONG);
+
+    // _Pmpf(("      trying to load %s", pThis->pcszIniKey));
+    if (!PrfQueryProfileData(HINI_USER,
+                             (PSZ)INIAPP_XWORKPLACE,
+                             (PSZ)pThis->pcszIniKey,
+                             pulThis,
+                             &cb))
+    {
+        // data not found: use default then
+        // _Pmpf(("            PrfQueryProfileData failed"));
+        *pulThis = pThis->ulDefaultValue;
+    }
+    else if (cb != sizeof(ULONG))
+    {
+        // _Pmpf(("            cb is %d", cb));
+        *pulThis = pThis->ulDefaultValue;
+    }
+
+    return *pulThis;
 }
 
 /*
@@ -3196,26 +3188,7 @@ VOID cmnLoadGlobalSettings(VOID)
              ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
              ul2++)
         {
-            PCSETTINGINFO pThis = &G_aSettingInfos[ul2];
-            PULONG pulThis = &G_aulSettings[pThis->s];
-            cb = sizeof(ULONG);
-
-            // _Pmpf(("      trying to load %s", pThis->pcszIniKey));
-            if (!PrfQueryProfileData(HINI_USER,
-                                     (PSZ)INIAPP_XWORKPLACE,
-                                     (PSZ)pThis->pcszIniKey,
-                                     pulThis,
-                                     &cb))
-            {
-                // data not found: use default then
-                // _Pmpf(("            PrfQueryProfileData failed"));
-                *pulThis = pThis->ulDefaultValue;
-            }
-            else if (cb != sizeof(ULONG))
-            {
-                // _Pmpf(("            cb is %d", cb));
-                *pulThis = pThis->ulDefaultValue;
-            }
+            cmnLoadOneSetting(&G_aSettingInfos[ul2]);
         }
     }
 
@@ -3272,6 +3245,9 @@ ULONG cmnQuerySettingDebug(XWPSETTING s,
                            ULONG ulLine,
                            PCSZ pcszFunction)
 {
+    if (s == sflOwnerDrawIcons)     // @@todo
+        return G_aulSettings[s] | OWDRFL_LAZYLOADTHUMBNAIL;
+
 #ifndef __NOTURBOFOLDERS__
     if (s == sfTurboFolders)
         return G_fTurboSettingsEnabled;
@@ -3358,7 +3334,7 @@ BOOL cmnSetSetting(XWPSETTING s,
     if (s < ___LAST_SETTING)
     {
         PCSETTINGINFO pStore;
-        if (pStore = FindSettingInfo(s))
+        if (pStore = cmnFindSettingInfo(s))
         {
             PULONG pulWrite;
 

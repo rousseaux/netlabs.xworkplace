@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xmmvolume.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2000 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -45,57 +48,65 @@ interface XMMVolume : WPAbstract
     ULONG xwpAddXMMVolumePages(in HWND hwndNotebook);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpAddXMMVolumePages;
 
-    releaseorder: xwpAddXMMVolumePages;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = vol_;
+        externalstem = vol;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xmmvolume;           //# specifies the filestem for sc-generated files
+        metaclass = M_XMMVolume;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = vol_;
-    externalstem = vol;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xmmvolume;           //# specifies the filestem for sc-generated files
-    metaclass = M_XMMVolume;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XMMVolume:
-     *
-     */
+        passthru C_h =
+"";
 
-    /*
-     * WPAbstract methods overridden by XMMVolume:
-     *
-     */
+        /*
+         * Internal instance variables for XMMVolume:
+         *
+         */
 
-    wpInitData: override;
-    wpUnInitData: override;
-    wpObjectReady: override;
+        /*
+         * WPAbstract methods overridden by XMMVolume:
+         *
+         */
 
-    wpSaveState: override;
-    wpRestoreState: override;
+        wpInitData: override;
+        wpUnInitData: override;
+        wpObjectReady: override;
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
+        wpSaveState: override;
+        wpRestoreState: override;
 
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
-    wpQueryDefaultView: override;
+        wpMenuItemSelected: override;
+        wpMenuItemHelpSelected: override;
 
-    wpOpen: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpQueryDefaultView: override;
 
-    wpAddObjectWindowPage: override;
-    wpAddSettingsPages: override;
+        wpOpen: override;
 
-  }; // implementation
-#endif /* __SOMIDL__ */
+        wpAddObjectWindowPage: override;
+        wpAddSettingsPages: override;
+    };
+#endif
 };
 
 //#
@@ -108,41 +119,41 @@ interface M_XMMVolume : M_WPAbstract
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = volM_;
+        externalstem = volM;
+        functionprefix = volM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xmmvolume;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = volM_;
-    externalstem = volM;
-    functionprefix = volM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xmmvolume;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables:
+         *
+         */
 
-    /*
-     * Internal class variables:
-     *
-     */
+        /*
+         * M_WPAbstract methods overridden by M_XMMVolume:
+         *
+         */
 
-    /*
-     * M_WPAbstract methods overridden by M_XMMVolume:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
+        wpclsQueryStyle: override;
+        wpclsQueryTitle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryStyle: override;
-    wpclsQueryTitle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+    };
+#endif
 };
 
 

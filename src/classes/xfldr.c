@@ -167,23 +167,11 @@
 extern WPFolder             *G_pConfigFolder = NULL;
                         // used in xfobj.c too
 
-#if 1 // V1.0.1 (2002-12-08) [umoeller]
-    #ifndef __NOFOLDERCONTENTS__
-        XWPObjList              *G_llFavoriteFolders = NULL;
-    #endif
-    #ifndef __NOQUICKOPEN__
-        XWPObjList              *G_llQuickOpenFolders = NULL;
-    #endif
-#else
-    // roots of linked lists for favorite/quick-open folders
-    // these hold plain WPObject pointers, no auto-free
-    #ifndef __NOFOLDERCONTENTS__
-    extern OBJECTLIST           G_llFavoriteFolders = {0};
-    #endif
-    #ifndef __NOQUICKOPEN__
-    extern OBJECTLIST           G_llQuickOpenFolders = {0};
-                            // these two are exported in folder.h
-    #endif
+#ifndef __NOFOLDERCONTENTS__
+    XWPObjList              *G_llFavoriteFolders = NULL;
+#endif
+#ifndef __NOQUICKOPEN__
+    XWPObjList              *G_llQuickOpenFolders = NULL;
 #endif
 
 ULONG                       G_ulViewForModifyMenu;
@@ -710,34 +698,33 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
 
 /*
  *@@ xwpStartFolderContents:
- *      starts the contents of the folder with a
+ *      this new XFolder method starts the contents of the folder with a
  *      specified delay for each object.
  *
- *      This displays a progress status window if
- *      the respective global setting is enabled.
+ *      This displays a progress status window if the respective global
+ *      setting is enabled.
  *
- *      If (ulTiming == 0), this operates in "wait"
- *      mode, i.e. the next object is only started
- *      after the previous one has been closed.
+ *      If (ulTiming == 0), this operates in "wait" mode, i.e. the next
+ *      object is only started after the previous one has been closed.
  *
- *      Otherwise ulTiming must specify a delay in
- *      milliseconds, being the time to wait after
- *      each object has been started.
+ *      Otherwise ulTiming must specify a delay in milliseconds, being
+ *      the time to wait after each object has been started.
  *
- *      This replaces the terrible "process ordered
- *      content" methods with three threads bombing
- *      each other with messages that nobody was
- *      able to follow. That code was still from
- *      the XFolder days and about due for retirement.
+ *      This replaces the terrible "process ordered content" methods with
+ *      three threads bombing each other with messages that nobody was
+ *      able to follow. That code was still from the XFolder days and
+ *      about due for retirement.
  *
- *      As opposed to the old implementation, this
- *      method DOES NOT RETURN until all objects have
- *      been processed or the user cancelled the
- *      operation. This does process the caller's
- *      message queue though... and therefore
- *      requires the caller to have one.
+ *      As opposed to the old implementation, this method DOES NOT RETURN
+ *      until all objects have been processed or the user cancelled the
+ *      operation. This does process the caller's message queue though...
+ *      and therefore requires the caller to have one.
+ *
+ *      Returns either NO_ERROR or ERROR_INTERRUPT if the user pressed
+ *      the "cancel" button.
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V1.0.1 (2003-01-29) [umoeller]: this always returned 0, fixed
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpStartFolderContents(XFolder *somSelf,
@@ -1583,6 +1570,11 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     XFolder_parent_WPFolder_wpInitData(somSelf);
 
+    // V1.0.1 (2003-01-25) [umoeller]
+    _xwpModifyFlags(somSelf,
+                    OBJFL_WPFOLDER,
+                    OBJFL_WPFOLDER);
+
     // get pointer to IBM WPFolder instance data;
     // see WPProgram::wpInitData for more about this hack
     if (!s_pWPFolder)
@@ -1616,6 +1608,8 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
         _pvWPFolderData = somDataResolve(somSelf, _somGetInstanceToken(s_pWPFolder));
     else
         _pvWPFolderData = NULL; // shouldn't happen, but be safe
+
+    // _PmpfF(("WPFolder data = 0x%lX, XFoldder data 0x%lX", _pvWPFolderData, somThis));
 
     // V1.0.1 (2002-11-30) [umoeller]
     _flXFolderStyle = XFFL_DEFAULTSTYLE;
@@ -1794,8 +1788,11 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
  *
  *      The parent method must always be called last.
  *
@@ -2466,11 +2463,12 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 {
     ULONG   ulDefaultView = 0;
+    BOOL    fIsDesktop = cmnIsADesktop(somSelf);
 
     XFolderMethodDebug("XFolder","xf_wpQueryDefaultView");
 
     if (    (objIsObjectInitialized(somSelf))    // wpPopulate hangs otherwise
-         && (!cmnIsADesktop(somSelf))
+         && (!fIsDesktop)
        )
     {
 #ifndef __NOFDRDEFAULTDOCS__
@@ -4036,7 +4034,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryOpenFolders(M_XFolder *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -4112,7 +4110,7 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
+ *      this M_WPObject class method is called by the
  *      Templates folder to allow a class to
  *      create its default templates.
  *
@@ -4147,7 +4145,7 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
 
 /*
  *@@ wpclsQueryDefaultView:
- *      this WPObject class method returns the default view for
+ *      this M_WPObject class method returns the default view for
  *      objects of a class.
  *      The way this works is that WPObject::wpQueryDefaultView
  *      apparently checks for whether an instance default view
@@ -4189,7 +4187,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -4215,7 +4213,7 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -4245,7 +4243,7 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsQueryDefaultHelp(M_XFolder *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

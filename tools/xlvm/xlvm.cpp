@@ -216,7 +216,7 @@ static const CONTROLDEF
 
 // LVM data
 
-COUNTRYSETTINGS         G_CountrySettings;
+COUNTRYSETTINGS2        G_CountrySettings;
 
 /* ******************************************************************
  *
@@ -702,7 +702,7 @@ MRESULT EXPENTRY fnwpConfirmCreateDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     "%s MB",
                     nlsThousandsULong(szTemp,
                                       MB_FROM_SECTORS(lSectors),
-                                      G_CountrySettings.cThousands));
+                                      G_CountrySettings.cs.cThousands));
 
             WinSetDlgItemText(hwndDlg, IDDI_CREATE_PARTITIONSIZE_MB, szMB);
 
@@ -1033,8 +1033,8 @@ PCSZ CreateVolumeString(PSZ pszBuf,
         // the volume can be hidden and have no drive letter
         if (pData->pPartitionSource->Volume_Drive_Letter)
             sprintf(pszBuf,
-                    "the volume %c: -- \"%s\" (which is "
-                    "assigned to partition %d -- \"%s\")",
+                    "the volume %c: (\"%s\"), which is "
+                    "assigned to partition %d (\"%s\"), ",
                     pData->pPartitionSource->Volume_Drive_Letter,
                     pData->pPartitionSource->Volume_Name,
                     lstIndexFromItem(&pData->llPartitions,
@@ -1042,8 +1042,8 @@ PCSZ CreateVolumeString(PSZ pszBuf,
                     pData->pPartitionSource->Partition_Name);
         else
             sprintf(pszBuf,
-                    "the hidden volume \"%s\" (which is "
-                    "assigned to partition %d -- \"%s\")",
+                    "the hidden volume \"%s\", which is "
+                    "assigned to partition %d (\"%s\"), ",
                     pData->pPartitionSource->Volume_Name,
                     lstIndexFromItem(&pData->llPartitions,
                                      pData->pPartitionSource),
@@ -1094,9 +1094,9 @@ VOID ConfirmDelete(PLVMDATA pData)
             // the volume can be hidden and have no drive letter
             if (pData->pPartitionSource->Volume_Drive_Letter)
                 xstrPrintf(&str,
-                        "You have selected to delete the volume %c: -- \"%s\", which is "
-                        "assigned to partition %d -- \"%s\". "
-                        "Deleting the volume will completely erase all the data that is "
+                        "You have selected to delete the volume %c: (\"%s\"), which is "
+                        "assigned to partition %d (\"%s\")."
+                        "\n\nDeleting the volume will completely erase all the data that is "
                         "presently stored on it, including the partition that it was assigned to. "
                         "This cannot be undone once xlvm commits your changes to disk on exit. "
                         "\n\nAre you sure you want to do this?",
@@ -1108,8 +1108,8 @@ VOID ConfirmDelete(PLVMDATA pData)
             else
                 xstrPrintf(&str,
                         "You have selected to delete the hidden volume \"%s\", which is "
-                        "assigned to partition %d -- \"%s\". "
-                        "Even though the data on this volume is currently not visible to OS/2, "
+                        "assigned to partition %d (\"%s\"). "
+                        "\n\nEven though the data on this volume is currently not visible to OS/2, "
                         "deleting the volume will completely erase all the data that is "
                         "presently stored on it, including the partition that it was assigned to. "
                         "This cannot be undone once xlvm commits your changes to disk on exit. "
@@ -1124,7 +1124,7 @@ VOID ConfirmDelete(PLVMDATA pData)
             xstrPrintf(&str,
                     "You have selected to delete the partition \"%s\", which is "
                     "currently not assigned to any volume. "
-                    "Even though the data on this partition is currently not visible to OS/2, "
+                    "\n\nEven though the data on this partition is currently not visible to OS/2, "
                     "deleting the partition will completely erase all the data that is "
                     "presently stored on it. "
                     "This cannot be undone once xlvm commits your changes to disk on exit. "
@@ -1664,10 +1664,10 @@ VOID SetControlsData(HWND hwndClient)
                     pDriveData->InfoRecord.Drive_Name,
                     nlsThousandsULong(sz2,
                                       ulMB,
-                                      G_CountrySettings.cThousands),
+                                      G_CountrySettings.cs.cThousands),
                     nlsThousandsULong(sz3,
                                       lSectorsOnDrive,
-                                      G_CountrySettings.cThousands),
+                                      G_CountrySettings.cs.cThousands),
                     pDriveData->pControlRecord->Cylinder_Count,
                     pDriveData->pControlRecord->Heads_Per_Cylinder,
                     pDriveData->pControlRecord->Sectors_Per_Track);
@@ -1853,10 +1853,10 @@ VOID GetVolumeDescription(PLVMDATA pData,
                    ", %s MB (%s sectors)",
                    nlsThousandsULong(sz2,
                                      MB_FROM_SECTORS(pBarItem->True_Partition_Size),
-                                     G_CountrySettings.cThousands),
+                                     G_CountrySettings.cs.cThousands),
                    nlsThousandsULong(sz3,
                                      pBarItem->True_Partition_Size,
-                                     G_CountrySettings.cThousands));
+                                     G_CountrySettings.cs.cThousands));
 }
 
 /*

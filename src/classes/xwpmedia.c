@@ -92,6 +92,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\mmpmh.h"              // MMPM/2 helpers
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 
@@ -441,140 +442,115 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
 
     TRY_LOUD(excpt1)
     {
-        MMFORMATINFO    mmfi;
-        LONG            lFormatCount;
-
-        memset(&mmfi, 0, sizeof(mmfi));     // zeroed struct means get all
-        mmfi.ulStructLen = sizeof(mmfi);
+        PMMFORMATINFO   pammfi;
+        LONG            cFormatsRead;
 
         pnbp->fShowWaitPointer = TRUE;
 
-        if (G_mmioQueryFormatCount(&mmfi,
-                                   &lFormatCount,
-                                   0,     // reserved
-                                   0)     // reserved
-                == 0)
+        // exported this code to the helpers V1.0.1 (2003-01-25) [umoeller]
+        if (!mmhGetIOProcs(0,
+                           &pammfi,
+                           &cFormatsRead))
         {
-            PMMFORMATINFO   pammfi = (PMMFORMATINFO)malloc(lFormatCount
-                                                            * sizeof(MMFORMATINFO)
-                                                          );
-            if (pammfi)
+            ULONG ul;
+            PMMFORMATINFO pmmfiThis = pammfi;
+
+            for (ul = 0;
+                 ul < cFormatsRead;
+                 ul++)
             {
-                LONG    lFormatsRead = 0;
-                if (G_mmioGetFormats(&mmfi,
-                                     lFormatCount,
-                                     pammfi,
-                                     &lFormatsRead,
-                                     0,     // reserved
-                                     0)     // reserved
-                        == 0)
+                HWND    hwndCnr;
+                PIOPROCRECORD precc;
+
+                if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
+                    break;
+
+                if (    (!(hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR)))
+                     || (!(precc = (PIOPROCRECORD)cnrhAllocRecords(hwndCnr,
+                                                                   sizeof(IOPROCRECORD),
+                                                                   1)))
+                   )
+                    break;
+                else
                 {
-                    ULONG ul;
-                    PMMFORMATINFO pmmfiThis = pammfi;
+                    PSZ     pszFormatName;
+                    // index
+                    precc->ulIndex = ul;
 
-                    for (ul = 0;
-                         ul < lFormatsRead;
-                         ul++)
+                    // FourCC
+                    memcpy(&precc->szFourCC, &pmmfiThis->fccIOProc, sizeof(ULONG));
+                    precc->szFourCC[4] = 0;
+                    precc->pszFourCC = precc->szFourCC;
+
+                    // format name
+                    if (    (pmmfiThis->lNameLength)
+                         && (pszFormatName = malloc(pmmfiThis->lNameLength + 1))
+                       )
                     {
-                        HWND        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+                        LONG lWritten;
+                        G_mmioGetFormatName(pmmfiThis,
+                                            pszFormatName,
+                                            &lWritten,
+                                            0,
+                                            0);
+                        if (lWritten)
+                            strhncpy0(precc->szFormatName,
+                                      pszFormatName,
+                                      sizeof(precc->szFormatName) - 1);
+                        free(pszFormatName);
+                    }
 
-                        if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
-                            break;
+                    precc->pszFormatName = precc->szFormatName;
 
-                        if (!hwndCnr)
-                            break;
-                        else
-                        {
-                            PIOPROCRECORD precc
-                                = (PIOPROCRECORD)cnrhAllocRecords(hwndCnr,
-                                                                 sizeof(IOPROCRECORD),
-                                                                 1);
-                            if (!precc)
-                                break;
-                            else
-                            {
-                                // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-                                PSZ     pszFormatName;
-                                // index
-                                precc->ulIndex = ul;
+                    // IOProc type
+                    switch(pmmfiThis->ulIOProcType)
+                    {
+                        case MMIO_IOPROC_STORAGESYSTEM:
+                            strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_STORAGE)) ; // pszTypeStorage
+                        break;
 
-                                // FourCC
-                                memcpy(&precc->szFourCC, &pmmfiThis->fccIOProc, sizeof(ULONG));
-                                precc->szFourCC[4] = 0;
-                                precc->pszFourCC = precc->szFourCC;
+                        case MMIO_IOPROC_FILEFORMAT:
+                            strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_FILE)) ; // pszTypeFile
+                        break;
 
-                                // format name
-                                if (pmmfiThis->lNameLength)
-                                {
-                                    pszFormatName = malloc(pmmfiThis->lNameLength + 1); // null term.
-                                    if (pszFormatName)
-                                    {
-                                        LONG lWritten;
-                                        G_mmioGetFormatName(pmmfiThis,
-                                                            pszFormatName,
-                                                            &lWritten,
-                                                            0,
-                                                            0);
-                                        if (lWritten)
-                                            strhncpy0(precc->szFormatName,
-                                                      pszFormatName,
-                                                      sizeof(precc->szFormatName) - 1);
-                                        free(pszFormatName);
-                                    }
-                                }
-                                precc->pszFormatName = precc->szFormatName;
+                        case MMIO_IOPROC_DATAFORMAT:
+                            strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_DATA)) ; // pszTypeData
+                        break;
 
-                                // IOProc type
-                                switch(pmmfiThis->ulIOProcType)
-                                {
-                                    case MMIO_IOPROC_STORAGESYSTEM:
-                                        strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_STORAGE)) ; // pszTypeStorage
-                                    break;
+                        default:
+                            sprintf(precc->szIOProcType, "unknown (%d)",
+                                    pmmfiThis->ulIOProcType);
+                    }
 
-                                    case MMIO_IOPROC_FILEFORMAT:
-                                        strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_FILE)) ; // pszTypeFile
-                                    break;
+                    precc->pszIOProcType = precc->szIOProcType;
 
-                                    case MMIO_IOPROC_DATAFORMAT:
-                                        strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_DATA)) ; // pszTypeData
-                                    break;
+                    // media type
+                    DescribeMediaType(precc->szMediaType,
+                                      sizeof(precc->szMediaType),
+                                      pmmfiThis->ulMediaType);
+                    precc->pszMediaType = precc->szMediaType;
 
-                                    default:
-                                        sprintf(precc->szIOProcType, "unknown (%d)",
-                                                pmmfiThis->ulIOProcType);
-                                }
-                                precc->pszIOProcType = precc->szIOProcType;
+                    // extension
+                    memcpy(&precc->szExtension, &pmmfiThis->szDefaultFormatExt,
+                           5);
+                    precc->pszExtension = precc->szExtension;
 
-                                // media type
-                                DescribeMediaType(precc->szMediaType,
-                                                  sizeof(precc->szMediaType),
-                                                  pmmfiThis->ulMediaType);
-                                precc->pszMediaType = precc->szMediaType;
+                    if (!cnrhInsertRecords(hwndCnr,
+                                           NULL,
+                                           (PRECORDCORE)precc,
+                                           TRUE, // invalidate
+                                           NULL,
+                                           CRA_RECORDREADONLY,
+                                           1))
+                        break;
+                }
 
-                                // extension
-                                memcpy(&precc->szExtension, &pmmfiThis->szDefaultFormatExt,
-                                            5);
-                                precc->pszExtension = precc->szExtension;
+                pmmfiThis++;
+            } // end for (ul = 0;
 
-                                if (!cnrhInsertRecords(hwndCnr,
-                                                       NULL,
-                                                       (PRECORDCORE)precc,
-                                                       TRUE, // invalidate
-                                                       NULL,
-                                                       CRA_RECORDREADONLY,
-                                                       1))
-                                    break;
-                            }
+            free(pammfi); // V0.9.6 (2000-11-12) [umoeller]
 
-                            pmmfiThis++;
-                        } // end if (hwndCnr)
-                    } // end for (ul = 0;
-                } // end if (G_mmioGetFormats(&mmfi,
-
-                free(pammfi); // V0.9.6 (2000-11-12) [umoeller]
-
-            } // end if (pammfi)
-        } // end if (G_mmioQueryFormatCount(&mmfi,
+        } // end if (G_mmioGetFormats(&mmfi,
     }
     CATCH(excpt1) {}  END_CATCH();
 
@@ -928,6 +904,11 @@ VOID xwmmCodecsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  ********************************************************************/
 
+/*
+ *@@ xwpAddXWPMediaPages:
+ *
+ */
+
 SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
                                                   HWND hwndDlg)
 {
@@ -1057,7 +1038,11 @@ SOM_Scope ULONG  SOMLINK xwmm_wpAddObjectWindowPage(XWPMedia *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  */
 
 SOM_Scope BOOL  SOMLINK xwmm_wpAddSettingsPages(XWPMedia *somSelf,
@@ -1083,7 +1068,7 @@ SOM_Scope BOOL  SOMLINK xwmm_wpAddSettingsPages(XWPMedia *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -1117,7 +1102,7 @@ SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryStyle(M_XWPMedia *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -1133,7 +1118,7 @@ SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -1163,7 +1148,7 @@ SOM_Scope BOOL  SOMLINK xwmmM_wpclsQueryDefaultHelp(M_XWPMedia *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

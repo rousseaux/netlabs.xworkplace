@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xwpvcard.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -45,58 +48,56 @@ interface XWPVCard : WPDataFile
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# releaseorder:
 
-    //# releaseorder:
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xvc_;
+        externalstem = xvc;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpvcard;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPVCard;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xvc_;
-    externalstem = xvc;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpvcard;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPVCard;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPVCard:
-     *
-     */
+        passthru C_h =
+"";
 
-    PVOID       pvCard;             // PVCARD ptr
+        /*
+         * Internal instance variables for XWPVCard:
+         *
+         */
 
-    /*
-     * The following is forced into the .H file:
-     *
-     */
+        PVOID       pvCard;             // PVCARD ptr
 
-    /*
-     * WPDataFile methods overridden by XWPVCard:
-     *
-     */
+        /*
+         * WPDataFile methods overridden by XWPVCard:
+         *
+         */
 
-    wpInitData: override;
-    wpUnInitData: override;
+        wpInitData: override;
+        wpUnInitData: override;
 
-    wpFilterPopupMenu: override;
+        wpFilterPopupMenu: override;
 
-    wpAddSettingsPages: override;
+        wpAddSettingsPages: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-    wpCreateFromTemplate: override;
-
-#ifdef __PRIVATE__
-
+        wpCreateFromTemplate: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -109,48 +110,47 @@ interface M_XWPVCard : M_WPDataFile
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xvcM_;
+        externalstem = xvcM;
+        functionprefix = xvcM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpvcard;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xvcM_;
-    externalstem = xvcM;
-    functionprefix = xvcM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpvcard;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_XWPVCard:
+         *
+         */
 
-    /*
-     * Internal class variables for M_XWPVCard:
-     *
-     */
+        /*
+         * M_WPDataFile methods overridden by M_XWPVCard:
+         *
+         */
 
-    /*
-     * M_WPDataFile methods overridden by M_XWPVCard:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
+        wpclsCreateDefaultTemplates: override;
 
-    wpclsCreateDefaultTemplates: override;
+        wpclsQueryTitle: override;
 
-    wpclsQueryTitle: override;
+        wpclsQueryDefaultView: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryDefaultView: override;
-    wpclsQueryDefaultHelp: override;
+        wpclsQueryIconData: override;
 
-    wpclsQueryIconData: override;
-
-    wpclsQueryInstanceFilter: override;
-    wpclsQueryInstanceType: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryInstanceFilter: override;
+        wpclsQueryInstanceType: override;
+    };
+#endif
 };
 
 

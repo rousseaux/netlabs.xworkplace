@@ -3592,14 +3592,17 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      for each startup folder that is to be processed.
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V1.0.1 (2003-01-29) [umoeller]: added proper return code
  */
 
 void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 {
-    PPROCESSFOLDER      ppf = (PPROCESSFOLDER)ptiMyself->ulData;
-    WPFolder            *pFolder = ppf->pFolder;
+    APIRET          arc = NO_ERROR;     // V1.0.1 (2003-01-29) [umoeller]
 
-    while (!ppf->fCancelled)
+    PPROCESSFOLDER  ppf = (PPROCESSFOLDER)ptiMyself->ulData;
+    WPFolder        *pFolder = ppf->pFolder;
+
+    while (!arc)
     {
         BOOL    fOKGetNext = FALSE;
         HWND    hwndCurrentView = NULLHANDLE;       // for wait mode
@@ -3623,7 +3626,9 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
             ppf->henum = _xwpBeginEnumContent(pFolder);
         }
 
-        if (ppf->henum)
+        if (!ppf->henum)
+            arc = ERROR_INVALID_HANDLE;     // whatever
+        else
         {
             // in any case, get first or next object
             ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
@@ -3661,12 +3666,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                     hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                                                     (MPARAM)ppf->pObject,
                                                                     (MPARAM)OPEN_DEFAULT);
-                    /*
-                    hwndCurrentView = _wpViewObject(ppf->pObject,
-                                                    NULLHANDLE,
-                                                    OPEN_DEFAULT,
-                                                    0);
-                    */
+
                     // update status bar
                     if (cmnQuerySetting(sfShowStartupProgress))
                         WinSendDlgItemMsg(ppf->hwndStatus, ID_SDDI_PROGRESSBAR,
@@ -3682,15 +3682,10 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                 // break out of the while loop
                 break;
         }
-        else
-            // error:
-            break;
 
         // now wait until we should process the
         // next object
-        while (    (!fOKGetNext)
-                && (!ppf->fCancelled)
-              )
+        while (!arc && !fOKGetNext)
         {
             if (ppf->ulTiming == 0)
             {
@@ -3768,14 +3763,22 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                 }
             }
 
+            // fixed cancel V1.0.1 (2003-01-29) [umoeller]
+            if (ppf->fCancelled)
+            {
+                arc = ERROR_INTERRUPT;
+                break;
+            }
+
             if (!fOKGetNext)
                 // not ready yet:
                 // sleep awhile (we could simply sleep for the
                 // wait time, but then "cancel" would not be
                 // very responsive)
                 DosSleep(100);
-        }
-    } // end while !ppf->fCancelled
+        } // while (!fOKGetNext)
+
+    } // end while (!arc)
 
     // done or cancelled:
     _xwpEndEnumContent(pFolder, ppf->henum);
@@ -3783,7 +3786,8 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
     // tell thrRunSync that we're done
     WinPostMsg(ptiMyself->hwndNotify,
                WM_USER,
-               0, 0);
+               (MPARAM)arc,         // V1.0.1 (2003-01-29) [umoeller]
+               0);
 }
 
 /*

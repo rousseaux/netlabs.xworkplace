@@ -1,94 +1,60 @@
 #
-# makefile:
-#       makefile for src/shared directory.
-#       For use with IBM NMAKE, which comes with the IBM compilers,
-#       the Developer's Toolkit, and the DDK.
+# Makefile for src\shared.
 #
-#       All the makefiles have been restructured with V0.9.0.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
-#       Called from:    main makefile
-#
-#       Input:          ./*.c
-#
-#       Output:         ../bin/*.obj
-#
-#       Edit "setup.in" to set up the make process.
+#       Copyright (C) 1998-2003 Ulrich M”ller.
+#       This file is part of the XWorkplace source package.
+#       XWorkplace is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published
+#       by the Free Software Foundation, in version 2 as it comes in the
+#       "COPYING" file of the XWorkplace main distribution.
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# FIXED MACROS
-# ------------
-#
-# You probably need not change the following.
-#
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .c .obj .dll .h .ih .rc .res
+!include $(MAKE_INCLUDE_DIR)\compile_dll_mt.in
+#       this defines the proper OUTPUTDIR
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in. $(XWP_OUTPUT_ROOT) is set by
-# setup.in to point to \bin from the XWorkplace sources root,
-# but this can be modified by setting an external environment
-# variable. This approach has the advantage that
-# 1) all build files are in a common dir tree and the entire
-#    tree can be removed completely;
-# 2) the build tree can be on a different physical drive for
-#    speed.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)
-!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-# The OBJS macro contains all the .OBJ files which need to be
-# created from the files in this directory.
-# These will be put into BIN\.
-# If you add a new source, add the corresponding .OBJ file here.
-!include $(PROJECT_BASE_DIR)\make\objects.in
-OBJS = $(XFLDR_OBJS_SHARED) \
-# add dummyfont.obj
-$(OUTPUTDIR)\dummyfont.obj
+!include ..\..\make\objects.in
 
-# The main target:
-# If we're called from the main makefile, MAINMAKERUNNING is defined,
-# and we'll set $(OBJS) as our targets (which will go on).
-# Otherwise, we call the main makefile, which will again call ourselves later.
-all:   \
-!ifndef MAINMAKERUNNING
-# we're not being called from main makefile: start main makefile
-    callmainmake
-    @echo ----- Leaving $(MAKEDIR)
-!else
-    $(OBJS) $(OUTPUTDIR)\xwpres.res
-# $(OUTPUTDIR)\xwpfonts.res
-    @echo ----- Leaving $(MAKEDIR)
-!endif
+OBJS = $(XFLDR_OBJS_SHARED) $(OUTPUTDIR)\dummyfont.obj
 
-callmainmake:
-    @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
-    @cd ..\..
-    @nmake
-    @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-# The "dep" target: run fastdep on the sources.
-# "nmake dep" gets called from src\makefile if nmake dep
-# is running on the main makefile.
-dep:
-    $(RUN_FASTDEP) *.c
-    @echo ----- Leaving $(MAKEDIR)
-
-# V1.0.0: Use the inference rule in \make\comp_classcode.in now,
-# which is shared for all makefiles that generate code for XFLDR.DLL.
-# This sets up the compiler rule to compile .c files to .obj files
-# in the $(OUTPUTDIR).
-!include $(PROJECT_BASE_DIR)\make\comp_classcode.in
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
 
 # in addition, compile the resources:
 $(OUTPUTDIR)\xwpres.res: grafx\*.ico grafx\*.bmp $(@B).rc
@@ -97,13 +63,16 @@ $(OUTPUTDIR)\xwpres.res: grafx\*.ico grafx\*.bmp $(@B).rc
 $(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc
         $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-# The .OBJ-from-sources dependencies are now automatically
-# created by "nmake dep" into the .depend include file.
-# V0.9.12 (2001-05-22) [umoeller]
+# we do not link in here, so define ALLTARGET manually
 
-!ifndef NOINCLUDEDEPEND
-!include .depend
-!endif
+ALLTARGET = $(OBJS) $(OUTPUTDIR)\xwpres.res
 
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
+
+!include $(MAKE_INCLUDE_DIR)\targets.in
 
 

@@ -407,7 +407,9 @@ SOM_Scope MRESULT  SOMLINK fon_wpDrop(XWPFontFolder *somSelf,
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  *
  *      We add the font folder settings pages.
  */
@@ -451,7 +453,7 @@ SOM_Scope XWPFontFolder*  SOMLINK fonM_xwpclsQueryDefaultFontFolder(M_XWPFontFol
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -506,7 +508,7 @@ SOM_Scope void  SOMLINK fonM_wpclsUnInitData(M_XWPFontFolder *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -541,7 +543,7 @@ SOM_Scope ULONG  SOMLINK fonM_wpclsQueryStyle(M_XWPFontFolder *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -570,7 +572,7 @@ SOM_Scope BOOL  SOMLINK fonM_wpclsQueryDefaultHelp(M_XWPFontFolder *somSelf,
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
+ *      this M_WPObject class method is called by the
  *      Templates folder to allow a class to
  *      create its default templates.
  *
@@ -591,7 +593,7 @@ SOM_Scope BOOL  SOMLINK fonM_wpclsCreateDefaultTemplates(M_XWPFontFolder *somSel
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

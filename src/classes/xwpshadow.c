@@ -202,7 +202,7 @@ SOM_Scope HWND  SOMLINK xsh_wpOpen(XWPShadow *somSelf, HWND hwndCnr,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

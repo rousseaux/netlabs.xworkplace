@@ -131,8 +131,6 @@ VOID UnlockWatchdog(VOID)
     DosReleaseMutexSem(G_hmtxWatchdog);
 }
 
-
-
 /*
  *@@ SetOperation:
  *      atomically sets G_ulOperation to op

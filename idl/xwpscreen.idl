@@ -9,8 +9,11 @@
  *      See src\classes\xwpscreen.c for details.
  *
  *      This is new with V0.9.2 (2000-02-23) [umoeller].
- *
+ */
+
+/*
  *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -48,46 +51,50 @@ interface XWPScreen : WPSystem
     ULONG xwpAddXWPScreenPages(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpAddXWPScreenPages;
 
-    releaseorder: xwpAddXWPScreenPages;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xwpscr_;
+        externalstem = xwpscr;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpscreen;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPScreen;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xwpscr_;
-    externalstem = xwpscr;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpscreen;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPScreen;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPScreen:
-     *
-     */
+        passthru C_h =
+"";
 
-    /*
-     * WPSystem methods overridden by XWPScreen:
-     *
-     */
+        /*
+         * Internal instance variables for XWPScreen:
+         *
+         */
 
-    wpFilterPopupMenu: override;
+        /*
+         * WPSystem methods overridden by XWPScreen:
+         *
+         */
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpFilterPopupMenu: override;
 
-    wpAddSettingsPages: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-#ifdef __PRIVATE__
-
+        wpAddSettingsPages: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -100,42 +107,42 @@ interface M_XWPScreen : M_WPSystem
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xwpscrM_;
+        externalstem = xwpscrM;
+        functionprefix = xwpscrM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpscreen;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xwpscrM_;
-    externalstem = xwpscrM;
-    functionprefix = xwpscrM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpscreen;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_XWPScreen:
+         *
+         */
 
-    /*
-     * Internal class variables for M_XWPScreen:
-     *
-     */
+        /*
+         * M_WPSystem methods overridden by M_XWPScreen:
+         *
+         */
 
-    /*
-     * M_WPSystem methods overridden by M_XWPScreen:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
+        wpclsQueryTitle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryTitle: override;
-    wpclsQueryDefaultHelp: override;
+        wpclsQueryIconData: override;
 
-    wpclsQueryIconData: override;
-
-    wpclsQuerySettingsPageSize: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsQuerySettingsPageSize: override;
+    };
+#endif
 };
 
 

@@ -31,10 +31,6 @@
 #ifndef KERNEL_HEADER_INCLUDED
     #define KERNEL_HEADER_INCLUDED
 
-    #ifndef INCL_DOSSEMAPHORES
-        #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
-    #endif
-
     // log file names
     #ifndef __XWPLITE__
         #define XFOLDER_CRASHLOG        "xwptrap.log"
@@ -47,6 +43,147 @@
         #define XFOLDER_LOGLOG          "ewplog.log"
         #define XFOLDER_DMNCRASHLOG     "edmntrap.log"
     #endif
+
+    /********************************************************************
+     *
+     *   Global XWOrkplace variables
+     *
+     ********************************************************************/
+
+    // anchor block of WPS thread 1 (queried in initMain)
+    extern HAB          G_habThread1;
+
+    extern USHORT       G_usHiwordAbstract;
+    extern USHORT       G_usHiwordFileSystem;
+
+    #ifdef XWPAPI_HEADER_INCLUDED
+        extern PXWPGLOBALSHARED G_pXwpGlobalShared;
+                    // in src\shared\kernel.c; see xworkplace\include\xwpapi.h
+    #endif
+
+    #ifdef XWPSECTY_HEADER_INCLUDED
+        extern PXWPSHELLSHARED  G_pXWPShellShared;
+                    // in src\shared\kernel.c; see xwphelpers\include\helpers\xwpsecty.h
+    #endif
+
+    #ifdef SOM_WPObject_h
+        // declare these two global variables in xfobj.c
+        extern WPObject     *G_pAwakeWarpCenter;
+        extern ULONG        G_cAwakeObjects;
+    #endif
+
+    // moved these two out of the KERNELGLOBALS
+    // V0.9.20 (2002-07-25) [umoeller]
+    extern PID          G_pidWPS;
+    extern TID          G_tidWorkplaceThread;
+
+    /*
+     *@@ KERNELGLOBALS:
+     *      this structure is stored in a static global
+     *      variable in kernel.c, whose address can
+     *      always be obtained thru krnQueryGlobals.
+     *
+     *      This structure is used to store information
+     *      which is of importance to all parts of XWorkplace.
+     *      This includes the old XFolder code as well as
+     *      possible new parts.
+     *
+     *      Here we store information about the classes
+     *      which have been successfully initialized and
+     *      lots of thread data.
+     *
+     *      You may extend this structure if you need to
+     *      store global data, but please do not modify
+     *      the existing fields. Also, for lucidity, use
+     *      this structure only if you need to access
+     *      data across several code files. Otherwise,
+     *      please use global variables.
+     *
+     *@@changed V0.9.9 (2001-03-07) [umoeller]: removed all THREADINFO's
+     *@@changed V0.9.9 (2001-03-10) [umoeller]: added fDesktopPopulated
+     */
+
+    typedef struct _KERNELGLOBALS
+    {
+        // PM error windows queried by initMain
+        HWND                hwndHardError,
+                            hwndSysError;
+
+        /*
+         * XWorkplace daemon
+         */
+
+        // HAPP                happDaemon;
+                // != NULLHANDLE if daemon was started
+                // removed V1.0.1 (2003-01-25) [umoeller]
+
+        // PVOID               pXwpGlobalShared;
+                // ptr to XWPGLOBALSHARED structure
+                // removed V1.0.1 (2003-01-25) [umoeller]
+
+        // PVOID               pXWPShellShared;
+                // ptr to XWPSHELLSHARED structure
+                // (if XWPSHELL.EXE is running; NULL otherwise)
+                // removed V1.0.1 (2003-01-25) [umoeller]
+
+        /*
+         * Thread-1 object window:
+         *      additional object window on thread 1.
+         *      This is always created.
+         */
+
+        HWND                hwndThread1Object;
+
+        /*
+         * API object window:
+         *      additional object window on thread 1.
+         *      This is always created.
+         */
+
+        HWND                hwndAPIObject;  // V0.9.9 (2001-03-23) [umoeller]
+
+        /*
+         * Bush thread:
+         *      this thread is always running.
+         */
+
+        HWND                hwndBushObject;
+
+        /*
+         * File thread:
+         *      this thread is always running also,
+         *      but with regular priority.
+         */
+
+        HWND                hwndFileObject;
+
+        /*
+         * Sentinel thread:
+         *      replacement thread for WPS "WheelWatcher".
+         *      This does not have a PM message queue.
+         */
+
+        BOOL                fAutoRefreshReplaced;
+                                // this is set to TRUE if, on Desktop startup,
+                                // the WPS WheelWatcher was successfully
+                                // stopped and the sentinel was started.
+                                // Always use this setting instead of
+                                // calling krnReplaceRefreshEnabled.
+
+        // desktop already populated?
+        BOOL                fDesktopPopulated;
+
+    } KERNELGLOBALS, *PKERNELGLOBALS;
+
+    typedef const KERNELGLOBALS* PCKERNELGLOBALS;
+
+    PCKERNELGLOBALS krnQueryGlobals(VOID);
+
+    PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
+                                  ULONG ulLine,
+                                  PCSZ pcszFunction);
+
+    VOID krnUnlockGlobals(VOID);
 
     /* ******************************************************************
      *
@@ -84,145 +221,15 @@
                                  APIRET arc);
     #endif
 
-    /********************************************************************
-     *
-     *   KERNELGLOBALS structure
-     *
-     ********************************************************************/
-
-    // anchor block of WPS thread 1 (queried in initMain)
-    extern HAB          G_habThread1;
-
-    extern USHORT       G_usHiwordAbstract;
-    extern USHORT       G_usHiwordFileSystem;
-
-    #ifdef SOM_WPObject_h
-
-        // declare these two global variables in xfobj.c
-        extern WPObject     *G_pAwakeWarpCenter;
-        extern ULONG        G_cAwakeObjects;
-
-        // moved these two out of the KERNELGLOBALS
-        // V0.9.20 (2002-07-25) [umoeller]
-        extern PID          G_pidWPS;
-        extern TID          G_tidWorkplaceThread;
-
-        /*
-         *@@ KERNELGLOBALS:
-         *      this structure is stored in a static global
-         *      variable in kernel.c, whose address can
-         *      always be obtained thru krnQueryGlobals.
-         *
-         *      This structure is used to store information
-         *      which is of importance to all parts of XWorkplace.
-         *      This includes the old XFolder code as well as
-         *      possible new parts.
-         *
-         *      Here we store information about the classes
-         *      which have been successfully initialized and
-         *      lots of thread data.
-         *
-         *      You may extend this structure if you need to
-         *      store global data, but please do not modify
-         *      the existing fields. Also, for lucidity, use
-         *      this structure only if you need to access
-         *      data across several code files. Otherwise,
-         *      please use global variables.
-         *
-         *@@changed V0.9.9 (2001-03-07) [umoeller]: removed all THREADINFO's
-         *@@changed V0.9.9 (2001-03-10) [umoeller]: added fDesktopPopulated
-         */
-
-        typedef struct _KERNELGLOBALS
-        {
-            // PM error windows queried by initMain
-            HWND                hwndHardError,
-                                hwndSysError;
-
-            /*
-             * XWorkplace daemon
-             */
-
-            HAPP                happDaemon;
-                    // != NULLHANDLE if daemon was started
-
-            PVOID               pXwpGlobalShared;
-                    // ptr to XWPGLOBALSHARED structure
-
-            PVOID               pXWPShellShared;
-                    // ptr to XWPSHELLSHARED structure
-                    // (if XWPSHELL.EXE is running; NULL otherwise)
-
-            /*
-             * Thread-1 object window:
-             *      additional object window on thread 1.
-             *      This is always created.
-             */
-
-            HWND                hwndThread1Object;
-
-            /*
-             * API object window:
-             *      additional object window on thread 1.
-             *      This is always created.
-             */
-
-            HWND                hwndAPIObject;  // V0.9.9 (2001-03-23) [umoeller]
-
-            /*
-             * Bush thread:
-             *      this thread is always running.
-             */
-
-            HWND                hwndBushObject;
-
-            /*
-             * File thread:
-             *      this thread is always running also,
-             *      but with regular priority.
-             */
-
-            HWND                hwndFileObject;
-
-            /*
-             * Sentinel thread:
-             *      replacement thread for WPS "WheelWatcher".
-             *      This does not have a PM message queue.
-             */
-
-            BOOL                fAutoRefreshReplaced;
-                                    // this is set to TRUE if, on Desktop startup,
-                                    // the WPS WheelWatcher was successfully
-                                    // stopped and the sentinel was started.
-                                    // Always use this setting instead of
-                                    // calling krnReplaceRefreshEnabled.
-
-            // desktop already populated?
-            BOOL                fDesktopPopulated;
-
-        } KERNELGLOBALS, *PKERNELGLOBALS;
-
-        typedef const KERNELGLOBALS* PCKERNELGLOBALS;
-
-        PCKERNELGLOBALS krnQueryGlobals(VOID);
-
-        PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
-                                      ULONG ulLine,
-                                      PCSZ pcszFunction);
-
-        VOID krnUnlockGlobals(VOID);
-
-    #endif
-
     /* ******************************************************************
      *
      *   Class maintanance
      *
      ********************************************************************/
 
-    BOOL krnClassInitialized(PCSZ pcszClassName);
+    BOOL XWPENTRY krnClassInitialized(PCSZ pcszClassName);
 
-    BOOL krnIsClassReady(PCSZ pcszClassName);
+    BOOL XWPENTRY krnIsClassReady(PCSZ pcszClassName);
 
     /* ******************************************************************
      *
@@ -230,13 +237,13 @@
      *
      ********************************************************************/
 
-    BOOL krnReplaceRefreshEnabled(VOID);
+    BOOL XWPENTRY krnReplaceRefreshEnabled(VOID);
 
-    VOID krnEnableReplaceRefresh(BOOL fEnable);
+    VOID XWPENTRY krnEnableReplaceRefresh(BOOL fEnable);
 
-    VOID krnSetProcessStartupFolder(BOOL fReuse);
+    VOID XWPENTRY krnSetProcessStartupFolder(BOOL fReuse);
 
-    BOOL krnNeed2ProcessStartupFolder(VOID);
+    BOOL XWPENTRY krnNeed2ProcessStartupFolder(VOID);
 
     HWND APIENTRY krnQueryDaemonObject(VOID);
     typedef HWND APIENTRY KRNQUERYDAEMONOBJECT(VOID);
@@ -251,6 +258,8 @@
     MRESULT krnSendDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
     typedef MRESULT KRNSENDDAEMONMSG(ULONG msg, MPARAM mp1, MPARAM mp2);
     typedef KRNSENDDAEMONMSG *PKRNSENDDAEMONMSG;
+
+    BOOL XWPENTRY krnMultiUser(VOID);
 
     /* ******************************************************************
      *

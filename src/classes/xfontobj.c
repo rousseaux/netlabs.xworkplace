@@ -385,8 +385,12 @@ SOM_Scope void  SOMLINK fono_wpInitData(XWPFontObject *somSelf)
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
  *      The parent method must always be called last.
  */
 
@@ -726,7 +730,7 @@ SOM_Scope BOOL  SOMLINK fonoM_xwpclsSetFontSampleHints(M_XWPFontObject *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -826,7 +830,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
+ *      this M_WPObject class method is called by the
  *      Templates folder to allow a class to
  *      create its default templates.
  *
@@ -923,7 +927,7 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryDetailsInfo(M_XWPFontObject *somSelf,
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -962,7 +966,7 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryStyle(M_XWPFontObject *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -993,7 +997,7 @@ SOM_Scope BOOL  SOMLINK fonoM_wpclsQueryDefaultHelp(M_XWPFontObject *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

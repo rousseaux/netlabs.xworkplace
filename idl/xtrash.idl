@@ -8,8 +8,11 @@
  *                       the actual trash can folder.
  *
  *      See src\classes\xtrash.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -75,9 +78,9 @@ interface XWPTrashCan : XFolder         //# WPFolder is replaced with XFolder
     //#
 
 #ifdef __SOMIDL__
-  implementation {
-
-    releaseorder:
+    implementation
+    {
+        releaseorder:
             xwpDeleteIntoTrashCan,
             xwpAddTrashCanSettingsPage,
             xwpAddTrashCanDrivesPage,
@@ -91,98 +94,101 @@ interface XWPTrashCan : XFolder         //# WPFolder is replaced with XFolder
             //# xwpUpdateStatusBar,
             //# xwpProcessViewCommand;
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    externalprefix = xtrc_;
-    externalstem = xtrc;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xtrash;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPTrashCan;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        externalprefix = xtrc_;
+        externalstem = xtrc;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xtrash;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPTrashCan;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    /*
-     * Internal instance variables for XWPTrashCan:
-     *
-     */
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    BOOL    fAlreadyPopulated;      // TRUE after the first call to wpPopulate
-    BOOL    fFilledIconSet;         // TRUE if "filled" icon has been set already
+        passthru C_h =
+"";
 
-    ULONG   ulTrashObjectCount;     // no. of trash objects in trash can;
-                                    // initialized to 0, updated by wpPopulate
+        /*
+         * Internal instance variables for XWPTrashCan:
+         *
+         */
 
-    double  dSizeOfAllObjects;      // size of all objects in trash can
+        double  dSizeOfAllObjects;      // size of all objects in trash can
 
-    CHAR    cDrivePopulating;       // if this is != 0, a drive is currently
-                                    // being populated; set by wpPopulate and
-                                    // used for the status bar
+        BOOL    fAlreadyPopulated;      // TRUE after the first call to wpPopulate
+        BOOL    fFilledIconSet;         // TRUE if "filled" icon has been set already
 
-    ULONG   ulBusyCount;            // raised or lowered with every xwpTrashCanBusy call
+        ULONG   ulTrashObjectCount;     // no. of trash objects in trash can;
+                                        // initialized to 0, updated by wpPopulate
 
-    // HPOINTER    hptrEmpty;          // icon for empty trash can
-    // HPOINTER    hptrFull;           // icon for full trash can
-            // removed those V0.9.16 (2002-01-01) [umoeller]
+        ULONG   ulBusyCount;            // raised or lowered with every xwpTrashCanBusy call
 
-    BOOL    fOpeningSettings;       // TRUE while in wpOpen for settings view
+        // HPOINTER    hptrEmpty;          // icon for empty trash can
+        // HPOINTER    hptrFull;           // icon for full trash can
+                // removed those V0.9.16 (2002-01-01) [umoeller]
 
-    /*
-     * WPFolder methods overridden by XWPTrashCan:
-     *
-     */
+        BOOL    fOpeningSettings;       // TRUE while in wpOpen for settings view
 
-    wpInitData: override;
-    wpObjectReady: override;
-    wpUnInitData: override;
+        CHAR    cDrivePopulating;       // if this is != 0, a drive is currently
+                                        // being populated; set by wpPopulate and
+                                        // used for the status bar
 
-    wpSaveState: override;
-    wpRestoreState: override;
+        /*
+         * WPFolder methods overridden by XWPTrashCan:
+         *
+         */
 
-    wpSetup: override;
+        wpInitData: override;
+        wpObjectReady: override;
+        wpUnInitData: override;
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
+        wpSaveState: override;
+        wpRestoreState: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpSetup: override;
 
-    wpOpen: override;
-    wpPopulate: override;
-    wpRefresh: override;
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
+        wpMenuItemSelected: override;
+        wpMenuItemHelpSelected: override;
 
-    xwpProcessViewCommand: override;    //# V1.0.1 (2002-12-08) [umoeller]
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-    xwpUpdateStatusBar: override;       //# V1.0.1 (2002-12-08) [umoeller]
+        wpOpen: override;
+        wpPopulate: override;
+        wpRefresh: override;
 
-    wpAddToContent: override;
-    wpDeleteFromContent: override;
+        xwpProcessViewCommand: override;    //# V1.0.1 (2002-12-08) [umoeller]
 
-    wpDeleteContents: override;
+        xwpUpdateStatusBar: override;       //# V1.0.1 (2002-12-08) [umoeller]
 
-    wpDragOver: override;
-    wpDrop: override;
+        wpAddToContent: override;
+        wpDeleteFromContent: override;
 
-    wpAddObjectGeneralPage: override;
-    wpAddObjectGeneralPage2: override;
-    wpAddFolderIncludePage: override;
-    wpAddFolderSelfClosePage: override;
-    wpAddFolderView2Page: override;
+        wpDeleteContents: override;
 
-    wpAddSettingsPages: override;
+        wpDragOver: override;
+        wpDrop: override;
 
-    wpSetIcon: override;
+        wpAddObjectGeneralPage: override;
+        wpAddObjectGeneralPage2: override;
+        wpAddFolderIncludePage: override;
+        wpAddFolderSelfClosePage: override;
+        wpAddFolderView2Page: override;
 
-#ifdef __PRIVATE__
+        wpAddSettingsPages: override;
 
+        wpSetIcon: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -205,50 +211,50 @@ interface M_XWPTrashCan : M_XFolder     // WPFolder is replaced with XFolder
     BOOL xwpclsQueryDrivesSupport(in PBYTE pabSupportedDrives);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpclsQueryDefaultTrashCan,
+            xwpclsSetDrivesSupport,
+            xwpclsQueryDrivesSupport;
 
-    releaseorder: xwpclsQueryDefaultTrashCan,
-                  xwpclsSetDrivesSupport,
-                  xwpclsQueryDrivesSupport;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xtrcM_;
+        externalstem = xtrcM;
+        functionprefix = xtrcM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xtrash;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xtrcM_;
-    externalstem = xtrcM;
-    functionprefix = xtrcM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xtrash;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal instance variables for M_XWPTrashCan:
+         *
+         */
 
-    /*
-     * Internal instance variables for M_XWPTrashCan:
-     *
-     */
+        /*
+         * M_WPFolder methods overridden by M_XWPTrashCan:
+         *
+         */
 
-    /*
-     * M_WPFolder methods overridden by M_XWPTrashCan:
-     *
-     */
+        wpclsInitData: override;
+        wpclsUnInitData: override;
 
-    wpclsInitData: override;
-    wpclsUnInitData: override;
+        wpclsCreateDefaultTemplates: override;
 
-    wpclsCreateDefaultTemplates: override;
+        wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-    wpclsQueryIconDataN: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+        wpclsQueryIconDataN: override;
+    };
+#endif
 };
 
 

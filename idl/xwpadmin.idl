@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xwpadmin.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -45,45 +48,53 @@ interface XWPAdmin : WPAbstract
     ULONG xwpAddXWPAdminPages(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpAddXWPAdminPages;
 
-    releaseorder: xwpAddXWPAdminPages;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = adm_;
+        externalstem = adm;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpadmin;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPAdmin;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = adm_;
-    externalstem = adm;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpadmin;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPAdmin;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPAdmin:
-     *
-     */
+        passthru C_h =
+"";
 
-    /*
-     * WPAbstract methods overridden by XWPAdmin:
-     *
-     */
+        /*
+         * Internal instance variables for XWPAdmin:
+         *
+         */
 
-    wpFilterPopupMenu: override;
+        /*
+         * WPAbstract methods overridden by XWPAdmin:
+         *
+         */
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
-    wpQueryDefaultView: override;
+        wpFilterPopupMenu: override;
 
-    wpAddObjectWindowPage: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpQueryDefaultView: override;
 
-    wpAddSettingsPages: override;
+        wpAddObjectWindowPage: override;
 
-  }; // implementation
-#endif /* __SOMIDL__ */
+        wpAddSettingsPages: override;
+    };
+#endif
 };
 
 //#
@@ -96,39 +107,39 @@ interface M_XWPAdmin : M_WPAbstract
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = admM_;
+        externalstem = admM;
+        functionprefix = admM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpadmin;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = admM_;
-    externalstem = admM;
-    functionprefix = admM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpadmin;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables:
+         *
+         */
 
-    /*
-     * Internal class variables:
-     *
-     */
+        /*
+         * M_WPAbstract methods overridden by M_XWPAdmin:
+         *
+         */
 
-    /*
-     * M_WPAbstract methods overridden by M_XWPAdmin:
-     *
-     */
+        wpclsQueryStyle: override;
+        wpclsQueryTitle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryStyle: override;
-    wpclsQueryTitle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+    };
+#endif
 };
 
 

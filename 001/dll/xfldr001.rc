@@ -1358,6 +1358,8 @@ BEGIN
         /* next one is new with V0.9.19 */
     ID_SDDI_ARCHIVEONCE                 "~Archive Desktop once after restart"
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
+        /* next one is new with V1.0.1 (2003-01-29) [umoeller] */
+    ID_SDDI_WPS_RUNSHUTDOWNFDR          "Process shutdo~wn folder before restart"
 
     /* strings formerly in ID_SDD_CONFIRM V1.0.0 */
     ID_SDDI_CONFIRM_TITLE                "&xwp;: Extended Shutdown"

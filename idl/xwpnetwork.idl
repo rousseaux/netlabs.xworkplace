@@ -8,8 +8,11 @@
  *          all visible XWPServers on the LAN.
  *
  *      See src\classes\xwpnetwork.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -46,57 +49,60 @@ interface XWPNetwork : WPFolder
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# releaseorder:
 
-    //# releaseorder:
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xnw_;
+        externalstem = xnw;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpnetwork;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPNetwork;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xnw_;
-    externalstem = xnw;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpnetwork;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPNetwork;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPNetwork:
-     *
-     */
+        passthru C_h =
+"";
 
-    BOOL    fAlreadyPopulated;
+        /*
+         * Internal instance variables for XWPNetwork:
+         *
+         */
 
-    /*
-     * WPFolder methods overridden by XWPNetwork:
-     *
-     */
+        BOOL    fAlreadyPopulated;
 
-    wpInitData: override;
+        /*
+         * WPFolder methods overridden by XWPNetwork:
+         *
+         */
 
-    wpPopulate: override;
-    wpRefresh: override;
+        wpInitData: override;
 
-    wpAddToContent: override;
-    wpDeleteFromContent: override;
+        wpPopulate: override;
+        wpRefresh: override;
 
-    wpDeleteContents: override;
+        wpAddToContent: override;
+        wpDeleteFromContent: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpDeleteContents: override;
 
-    wpDragOver: override;
-    wpDrop: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-#ifdef __PRIVATE__
-
+        wpDragOver: override;
+        wpDrop: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -116,48 +122,48 @@ interface M_XWPNetwork : M_WPFolder
     XWPNetwork xwpclsQueryNetworkFolder();
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpclsQueryNetworkFolder;
 
-    releaseorder: xwpclsQueryNetworkFolder;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xnwM_;
+        externalstem = xnwM;
+        functionprefix = xnwM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpnetwork;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xnwM_;
-    externalstem = xnwM;
-    functionprefix = xnwM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpnetwork;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal instance variables for M_XWPNetwork:
+         *
+         */
 
-    /*
-     * Internal instance variables for M_XWPNetwork:
-     *
-     */
+        /*
+         * M_WPFolder methods overridden by M_XWPNetwork:
+         *
+         */
 
-    /*
-     * M_WPFolder methods overridden by M_XWPNetwork:
-     *
-     */
+        wpclsInitData: override;
+        wpclsUnInitData: override;
 
-    wpclsInitData: override;
-    wpclsUnInitData: override;
+        wpclsCreateDefaultTemplates: override;
 
-    wpclsCreateDefaultTemplates: override;
+        wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-    wpclsQueryIconDataN: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+        wpclsQueryIconDataN: override;
+    };
+#endif
 };
 
 

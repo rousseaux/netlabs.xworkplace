@@ -1,16 +1,40 @@
-//  Module Header
-//
-//  Module Name: WPDESK
-//
-//  OS/2 Presentation Manager Workplace class definitions
-//
-//  Copyright (c) International Business Machines Corporation 1991, 1992
-//
+
+/*
+ * wpdesk.idl:
+ *      beefed up SOM interface description file for the
+ *      following classes built into the WPS:
+ *
+ *      --  WPDesktop
+ *
+ *      XWorkplace uses this file instead of the respective
+ *      file from whatever Toolkit you have installed to
+ *      a) make SOM aware of our class replacements and
+ *      b) allow us to override undocumented WPS methods.
+ *      See idl\wps\readme.txt for details.
+ */
+
+/*
+ *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 #ifndef wpdesk_idl
 #define wpdesk_idl
+
 #include "wpfolder.idl"
 #include <somcls.idl>
+
 interface M_WPDesktop;
+
 interface WPDesktop : WPFolder
 {
     BOOL wpIsCurrentDesktop();
@@ -65,80 +89,90 @@ interface WPDesktop : WPFolder
 #endif
 
 #ifdef __SOMIDL__
-  implementation {
-    releaseorder: wpIsCurrentDesktop,
-                  wpAddDesktopLockup1Page,
-                  wpAddDesktopLockup2Page,
-                  wpAddDesktopLockup3Page,
-                  wpAddDesktopArcRest1Page,
-                  wpAddDesktopDefDT1Page
+    implementation
+    {
+        releaseorder:
+            wpIsCurrentDesktop,
+            wpAddDesktopLockup1Page,
+            wpAddDesktopLockup2Page,
+            wpAddDesktopLockup3Page,
+            wpAddDesktopArcRest1Page,
+            wpAddDesktopDefDT1Page
 #ifndef __NOWARP4METHODS__
-                  ,
-                  wpQueryDefaultDropOp,
-                  wpSetDefaultDropOp,
-                  wpQueryAutoLockup,
-                  wpSetAutoLockup,
-                  wpQueryLockupTimeout,
-                  wpSetLockupTimeout,
-                  wpQueryLockupOnStartup,
-                  wpSetLockupOnStartup,
-                  wpQueryLockupFullScreen,
-                  wpSetLockupFullScreen,
-                  wpQueryLockupAutoDim,
-                  wpSetLockupAutoDim,
-                  wpQueryLockupBackground,
-                  wpSetLockupBackground
+            ,
+            wpQueryDefaultDropOp,
+            wpSetDefaultDropOp,
+            wpQueryAutoLockup,
+            wpSetAutoLockup,
+            wpQueryLockupTimeout,
+            wpSetLockupTimeout,
+            wpQueryLockupOnStartup,
+            wpSetLockupOnStartup,
+            wpQueryLockupFullScreen,
+            wpSetLockupFullScreen,
+            wpQueryLockupAutoDim,
+            wpSetLockupAutoDim,
+            wpQueryLockupBackground,
+            wpSetLockupBackground
 #endif
-                  ;
+          ;
 
-    externalstem = WPDesktop;
-    local;
-    externalprefix = desk_;
-    majorversion = 1;
-    minorversion = 2;
-    filestem = wpdesk;
-    metaclass = M_WPDesktop;
-    callstyle = oidl;
-    dllname = "pmwp.dll";
+        externalstem = WPDesktop;
+        local;
+        externalprefix = desk_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpdesk;
+        metaclass = M_WPDesktop;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
 
-    wpInitData: override;
-    wpSaveState: override;
-    wpRestoreState: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpFilterPopupMenu: override;
-    wpAddSettingsPages: override;
-    somDefaultInit: override;
-    somDestruct: override;
-  };
-#endif /* __SOMIDL__ */
+        wpInitData: override;
+        wpSaveState: override;
+        wpRestoreState: override;
+        wpModifyPopupMenu: override;
+        wpMenuItemSelected: override;
+        wpFilterPopupMenu: override;
+        wpAddSettingsPages: override;
+        somDefaultInit: override;
+        somDestruct: override;
+    };
+#endif
 };
+
 interface M_WPDesktop : M_WPFolder
 {
-   WPObject wpclsQueryObjectFromFrame(in HWND hwndFrame);
-   HWND wpclsQueryActiveDesktopHWND();
-   WPObject wpclsQueryActiveDesktop();
-#ifdef __SOMIDL__
-  implementation {
-    releaseorder: wpclsQueryObjectFromFrame,
-                  wpclsQueryActiveDesktop,
-                  wpclsQueryActiveDesktopHWND;
-    externalstem = WPDesktop;
-    local;
-    externalprefix = deskM_;
-    majorversion = 1;
-    minorversion = 2;
-    filestem = wpdesk;
-    callstyle = oidl;
-    dllname = "pmwp.dll";
 
-    wpclsQueryDefaultView: override;
-    wpclsQueryTitle: override;
-    wpclsQueryIconData: override;
-    wpclsQueryIconDataN: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-  };
-#endif /* __SOMIDL__ */
+    WPObject wpclsQueryObjectFromFrame(in HWND hwndFrame);
+
+    HWND wpclsQueryActiveDesktopHWND();
+
+    WPObject wpclsQueryActiveDesktop();
+
+#ifdef __SOMIDL__
+    implementation
+    {
+        releaseorder:
+            wpclsQueryObjectFromFrame,
+            wpclsQueryActiveDesktop,
+            wpclsQueryActiveDesktopHWND;
+
+        externalstem = WPDesktop;
+        local;
+        externalprefix = deskM_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpdesk;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
+
+        wpclsQueryDefaultView: override;
+        wpclsQueryTitle: override;
+        wpclsQueryIconData: override;
+        wpclsQueryIconDataN: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
+    };
+#endif
 };
-#endif  /* wpdesk_idl */
+#endif

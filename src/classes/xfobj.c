@@ -95,7 +95,6 @@
 // C library headers
 #include <stdio.h>
 #include <setjmp.h>             // needed for except.h
-#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -142,6 +141,7 @@
 #pragma hdrstop
 
 #include <wpdataf.h>
+#include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -169,6 +169,8 @@ ULONG               G_cAwakeObjects = 0;
 
 // mutex for all XWPObjList objects V1.0.1 (2002-12-11) [umoeller]
 static HMTX         G_hmtxObjectLists = NULLHANDLE;
+
+static BOOL         G_fInsertRecordCrashed = FALSE;
 
 /* ******************************************************************
  *
@@ -1491,22 +1493,196 @@ SOM_Scope void  SOMLINK xo_xwpRemovedFromList(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpPrepareInsertRecord:
+ *      this new XFldObject instance method gets called from
+ *      our XFldObject::wpCnrInsertObject override to set up
+ *      the MINIRECORDCORE of an object just before the object
+ *      actually gets inserted into a container.
+ *
+ *      If no error occured, this returns a new USEITEM with
+ *      the RECORDITEM following, which is allocated from
+ *      the WPS heap.
+ *
+ *      This method can be overridden by subclasses to fix
+ *      up the MINIRECORDCORE.flRecordAttr flag bits. The
+ *      XFldObject version of this method sets these up
+ *      according to the object style and state flags, but
+ *      a subclass could choose to flip on the CRA_OWNERDRAW
+ *      bit so that it will receive the
+ *      XFldObject::xwpOwnerDrawIcon method call to paint itself.
+ *
+ *      All the parameters could be retrieved via method calls
+ *      or instance data hacks, but are passed to this method
+ *      for efficiency. In detail:
+ *
+ *      --  pmrc is what _wpQueryCoreRecord would return,
+ *          where ptlIcon and pszIcon have already been
+ *          set;
+ *
+ *      --  flObjectStyle is the true object style (while
+ *          the _wpQueryStyle implementation of a subclass
+ *          could elect to manipulate some flags);
+ *
+ *      --  fFirstInsert is TRUE if the object is inserted
+ *          into a container for the very first time.
+ *
+ *      If you override this method for a subclass, be sure
+ *      to call the parent first and only _then_ manipulate
+ *      data.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+SOM_Scope PUSEITEM  SOMLINK xo_xwpPrepareInsertRecord(XFldObject *somSelf,
+                                                      HWND hwndCnr,
+                                                      PMINIRECORDCORE pmrc,
+                                                      ULONG flObjectStyle,
+                                                      BOOL fFirstInsert)
+{
+    PUSEITEM    pui;
+    ULONG       flRecordAttr;
+
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpPrepareInsertRecord");
+
+    #define CBITEM (sizeof(USEITEM) + sizeof(RECORDITEM))
+
+    // use the WPS heap for the USEITEM!
+    if (pui = (PUSEITEM)ShlAllocMem(CBITEM, NULL))
+    {
+        // RECORDITEM comes right after USEITEM
+        PRECORDITEM pri = (PRECORDITEM)(pui + 1);
+
+        // 1) set up the USEITEM and RECORDITEM
+
+        pui->type = USAGE_RECORD;
+        pri->hwndCnr = hwndCnr;
+        pri->pRecord = pmrc;
+        pri->ulUser = 0;        // "for application use"?!?
+
+        // 2) fill the MINIRECORDCORE fields
+
+        pmrc->cb = sizeof(MINIRECORDCORE);
+
+        /* #define TESTFL(f) ((pmrc->flRecordAttr & f) ? # f ## " " : "")
+        _PmpfF(("[%s] flRecordAttr first: 0x%lX (%s%s%s%s%s)",
+                pmrc->pszIcon,
+                pmrc->flRecordAttr,
+                TESTFL(CRA_SELECTED),
+                TESTFL(CRA_SOURCE),
+                TESTFL(CRA_EXPANDED),
+                TESTFL(CRA_FILTERED),
+                TESTFL(CRA_LOCKED) )); */
+
+        // add "in use" emphasis if we have an open view
+        // already; we never clear this flag afterwards,
+        // wpAddToObjUseList and wpDeleteFromObjUseList
+        // take care of that automatically when they find
+        // VIEWITEM's
+        if (    (fFirstInsert)
+             && (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
+           )
+            pmrc->flRecordAttr  |= CRA_INUSE;
+
+        // in this ULONG, we accumulate the bits that we
+        // want to see set in the record's flRecordAttr;
+        // NOTE, if you OR something to this flag, make
+        // sure it's also cleared in the big bit manipulation
+        // below
+        flRecordAttr = 0;
+
+        // now, from my testing, on the first time this gets
+        // called for an object, all flRecordAttr fields are
+        // clear, but to be on the safe side, we check or clear
+        // them all here
+
+        if (flObjectStyle & OBJSTYLE_LOCKEDINPLACE)
+            flRecordAttr |= CRA_LOCKED;
+
+        if (flObjectStyle & OBJSTYLE_NORENAME)
+            flRecordAttr |= CRA_RECORDREADONLY;
+
+        if (    (flObjectStyle & OBJSTYLE_TEMPLATE)
+             || objIsAShadow(somSelf)
+           )
+            flRecordAttr |= CRA_OWNERDRAW;
+
+        // if we have the "not visible" style, always hide
+        if (flObjectStyle & OBJSTYLE_NOTVISIBLE)
+            flRecordAttr |= CRA_FILTERED;
+        else
+            // the WPS apparently caches the "filtered" status
+            // of the object in a private bit in the object
+            // instance data; it appears that this is what
+            // the undocumented wpXXXState methods return
+            // (see IBMOBJECTDATA in object.h)... so, on
+            // the first call, test the folder's filter
+            if (fFirstInsert)
+            {
+                WPFolder *pFolder;
+                ULONG flState = 0;
+
+                if (    (pFolder = _wpQueryFolder(somSelf))
+                     && (fdrIsObjectFiltered(pFolder, somSelf))
+                   )
+                {
+                    flRecordAttr |= CRA_FILTERED;
+                    flState = STATEFL_FILTERED;
+                }
+
+                _wpModifyState(somSelf,
+                               STATEFL_FILTERED,
+                               flState);
+            }
+            else
+                // subsequent calls: use the cached value
+                if (_wpQueryState(somSelf) & STATEFL_FILTERED)
+                    flRecordAttr |= CRA_FILTERED;
+
+        pmrc->flRecordAttr =  (    pmrc->flRecordAttr
+                                // clear flags that we processed
+                                & ~ (   CRA_LOCKED
+                                      | CRA_RECORDREADONLY
+                                      | CRA_OWNERDRAW
+                                      | CRA_FILTERED
+                                      // and clear these always
+                                      | CRA_SELECTED
+                                      | CRA_SOURCE
+                                      | CRA_EXPANDED
+                                    )
+                              ) // and set those we determined above
+                              | flRecordAttr
+             // in any case, the half-documented CRA_OWNERFREE flag
+             // MUST be set for our records because otherwise the
+             // container will try to free it, but it's been
+             // allocated by the WPS itself
+                              | CRA_OWNERFREE
+                              | CRA_COLLAPSED;
+    }
+
+    return pui;
+}
+
+/*
  *@@ xwpOwnerDrawIcon:
- *      this new instance method gets called from the
+ *      this new XFldObject instance method gets called from the
  *      XWorkplace container owner-draw routines if global
  *      settings are enabled that require XWorkplace to take
- *      over owner draw for specific objects.
+ *      over owner draw for specific objects _and_ if this object's
+ *      MINIRECORDCORE.flRecordAttr has the CRA_OWNERDRAW bit set.
  *
- *      It gets called only for objects that have CRA_OWNERDRAW
- *      set in their MINIRECORDCORE.flRecordAttr. The WPS
- *      enables that flag for folders and shadows only. If
- *      that flag is not set, the container itself does the
- *      painting (using MINIRECORDCORE.hptrIcon), and this
- *      never gets called.
+ *      Per default, the WPS enables that flag for folders and
+ *      shadows only. If that flag is not set, the container itself
+ *      does the painting (using MINIRECORDCORE.hptrIcon), and this
+ *      method never gets called.
  *
- *      Otherwise, this gets called every time the icon needs
- *      to be painted for the given object. See the remarks
- *      below for how to defer icon loading lazily.
+ *      This is why XWorkplace now also introduces the
+ *      XFldObject::xwpPrepareInsertRecord method; seee remarks
+ *      there.
+ *
+ *      If that bit is set, this method gets called every time the
+ *      icon needs to be painted for the given object. See the
+ *      remarks below for how to defer icon loading lazily.
  *
  *      Parameters:
  *
@@ -1520,10 +1696,10 @@ SOM_Scope void  SOMLINK xo_xwpRemovedFromList(XFldObject *somSelf,
  *
  *      --  flOwnerDraw has a set of flags:
  *
- *          --  If OWDRFL_LAZYICONS is set, this means that
+ *          --  If OWDRFL_LAZYLOADICON is set, this means that
  *              the lazy icons thread is active and you may
- *              return TRUE from this method to queue the
- *              icon for lazy drawing.
+ *              return OWDRFL_LAZYLOADICON from this method to
+ *              queue the icon for lazy drawing (see below).
  *
  *          --  If OWDRFL_SHADOWOVERLAY is set, the "shadow
  *              overlay" setting is active, that is, shadows
@@ -1532,12 +1708,13 @@ SOM_Scope void  SOMLINK xo_xwpRemovedFromList(XFldObject *somSelf,
  *
  *          --  If OWDRFL_INUSE is set, the object currently
  *              has a view open and the icon will receive in-use
- *              (hatched) emphasis. Note that the emphasis is
- *              painted before calling this method, so this
- *              method is not required to do this; however the
- *              flag is necessary for folders to correctly
- *              figure out when to paint the animation icon
- *              instead of the regular folder icon.
+ *              (hatched) emphasis. Note that XWorkplace has
+ *              already painted in-use emphasis before calling
+ *              this method, so this method is not required to
+ *              do this; however the flag is necessary for
+ *              folders to correctly figure out when to paint
+ *              the animation icon instead of the regular folder
+ *              icon.
  *
  *          --  If OWDRFL_MINI is set, this method must paint
  *              a mini-icon instead of a regular icon. This
@@ -1549,51 +1726,78 @@ SOM_Scope void  SOMLINK xo_xwpRemovedFromList(XFldObject *somSelf,
  *              before calling this method, and pptl->x and y
  *              have been adjusted.
  *
- *      --  pptl contains the coordinates at which to paint
- *          the icon in this method. Do not add any offsets
- *          to those coordinates; they have been computed to
- *          paint the icon at exactly the correct position,
- *          taking mini-icons, different cnr views and templates
- *          into account.
+ *          --  If OWDRFL_RGBMODE is set, the given HPS has
+ *              already been switched to RGB mode. If you
+ *              only paint an icon or bitmap, this makes no
+ *              difference, but if you draw lines or something,
+ *              you might need to call GpiCreateLogColorTable.
  *
- *      About lazy icon loading:
+ *      --  prcl contains the coordinates at which to paint
+ *          the icon in this method. This rectangle has been
+ *          set to _exactly_ the coordinates at which to
+ *          paint the icon, so there is no need for additional
+ *          centering etc. This takes mini-icons, different cnr
+ *          views and templates into account automatically.
  *
- *      If this method returns TRUE, the object is queued for
- *      lazy icon loading. That is, somSelf is passed to the
- *      XWorkplace lazy icons thread, which will then
- *      invoke wpQueryIcon on the object later (which should
- *      retrieve the correct icon for the object). Eventually
- *      this will cause this method to be called again when
- *      that new icon needs to be painted, so you must check
- *      for whether pmrc->hptrIcon is currently set in this
- *      method's code to tell the two cases apart.
+ *      You must return the following flags:
  *
- *      So the usual sequence is that the first time this
- *      method gets called for an object (when a folder has
- *      just been populated and the icon has not been retrieved
- *      yet), pmrc->hptrIcon is NULLHANDLE. In that case,
- *      you may TRUE if flOwnerDraw also has the OWDRFL_LAZYICONS
- *      flag set. You still need to paint the icon then (e.g.
- *      the class default icon).
+ *      --  OWDRFL_LAZYLOADICON: if this bit is set in the return
+ *          value, the object is queued for lazy icon loading.
+ *          That is, somSelf is passed to the XWorkplace lazy
+ *          icons thread, which will then invoke wpQueryIcon
+ *          on the object later (which should retrieve the correct
+ *          icon for the object). Eventually this will cause
+ *          this method to be called again when that new icon
+ *          needs to be painted, so you must check for whether
+ *          pmrc->hptrIcon is currently set in this method's code
+ *          to tell the two cases apart.
  *
- *      When the lazy icon thread then sets the "real" icon for
- *      the object, it will set hptrIcon in the MINIRECORDCORE
- *      and invalidate the record so that this method gets
- *      called again eventually and you can just paint the
- *      icon that was set.
+ *      --  OWDRFL_RGBMODE: if this bit is set, XWorkplace
+ *          assumes that the HPS is in RGB mode on exit and
+ *          will reset the HPS to non-rgb mode before returning
+ *          from its owner-draw routine. This is very important
+ *          because the PM container expects the HPS _not_ to
+ *          be in RGB mode when an owner-draw routine exits
+ *          and will paint garbage otherwise. You must
+ *          therefore copy this flag from the input flOwnerDraw
+ *          bits unless you change the RGB mode of the HPS.
+ *
+ *      The usual sequence for lazy icon loading is this:
+ *
+ *      1)  Check that OWDRFL_LAZYLOADICON is set. If not,
+ *          call wpQueryIcon to load the icon synchronously.
+ *
+ *      2)  Otherwise, if pmrc->hptrIcon is NULLHANDLE, paint
+ *          the class default icon and set the OWDRFL_LAZYLOADICON
+ *          in the return value. This means that the object gets
+ *          painted the first time after populate and the icon
+ *          has not yet been determined.
+ *
+ *      3)  After returning from this method, the object gets
+ *          queued for lazy icon loading, which ends up in
+ *          a wpQueryIcon call on the lazy icons thread.
+ *          When wpQueryIcon calls wpSetIcon on the object,
+ *          this method gets called again because the icon
+ *          has been invalidated.
+ *
+ *      4)  Now pmrc->hptrIcon is _not_ NULLHANDLE, so paint
+ *          that (correct) icon then.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: fixed problems with animation icons of folder shadows @@fixes 329
  */
 
-SOM_Scope BOOL  SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
+SOM_Scope ULONG SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
                                             PMINIRECORDCORE pmrc,
                                             HPS hps,
                                             ULONG flOwnerDraw,
-                                            PPOINTL pptl)
+                                            PRECTL prcl)
 {
+    // return flags: preserve the OWDRFL_RGBMODE from input
+    ULONG       flReturn = (flOwnerDraw & OWDRFL_RGBMODE);
+
     ULONG       flObject = objQueryFlags(somSelf);
     HPOINTER    hptrPaint;
-    BOOL        fQueueLazy = FALSE;     // return value
 
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpOwnerDrawIcon");
@@ -1607,23 +1811,22 @@ SOM_Scope BOOL  SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
 
         // this object does not have an icon yet:
         // lazy icons enabled?
-        if (    (flOwnerDraw & OWDRFL_LAZYICONS)
+        if (    (flOwnerDraw & OWDRFL_LAZYLOADICON)
              && (flObject & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
+                                 // ^^ this includes WPProgramFile
            )
         {
             // lazy icon drawing:
             // use default class icon for now and
             // queue object for lazy icon processing
-            fQueueLazy = TRUE;
             hptrPaint = _wpclsQueryIcon(_somGetClass(somSelf));
+            flReturn |= OWDRFL_LAZYLOADICON;
         }
         else
-        {
-            // no data file, or lazy icons disabled:
+            // no data or program file, or lazy icons disabled:
             // get the icon synchronously
             hptrPaint = _wpQueryIcon(somSelf);
                     // this should set MINIRECORDCORE.hptrIcon
-        }
     }
     else
     {
@@ -1648,25 +1851,267 @@ SOM_Scope BOOL  SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
              // V1.0.0 (2002-09-17) [umoeller]
              && (flOwnerDraw & OWDRFL_INUSE) // poi->fsAttribute & CRA_INUSE)
            )
-            hptrPaint = _wpQueryIconN(pobjTest, 1);
+            if (!(hptrPaint = _wpQueryIconN(pobjTest, 1)))
+                // folder has no animation icon:
+                // V1.0.1 (2003-01-25) [umoeller] @@fixes 329
+                hptrPaint = pmrc->hptrIcon;
         // else: leave hptrPaint with pmrc->hptrIcon
     }
 
     WinDrawPointer(hps,
-                   pptl->x,
-                   pptl->y,
+                   prcl->xLeft,
+                   prcl->yBottom,
                    hptrPaint,
                    (flOwnerDraw & OWDRFL_MINI)
                         ? DP_MINI
                         : DP_NORMAL);
 
-    return fQueueLazy;
+    return flReturn;
+}
+
+/*
+ *@@ xwpLazyLoadIcon:
+ *      this new XFldObject instance method gets called on
+ *      the lazy icon thread if XFldObject::xwpOwnerDrawIcon
+ *      returned the OWDRFL_LAZYLOADICON bit set. This must
+ *      then load the icon of the object and invalidate the
+ *      object in all containers where it is currently
+ *      inserted.
+ *
+ *      The XFldObject implementation simply calls wpQueryIcon
+ *      and then wpSetIcon, which goes through all the
+ *      class-specific overhead of determining the correct
+ *      icon for the object.
+ *
+ *      However, this method can be overridden by subclasses
+ *      that implement owner-draw icon/bitmap painting, for
+ *      example to produce thumbnails.
+ *
+ *      Parameters:
+ *
+ *      --  phpsMem points to a HPS containing a memory
+ *          presentation space or NULLHANDLE if the lazy
+ *          load thread has not yet created a memory presentation
+ *          space. If you need a memory PS for bitmaps work,
+ *          create a memory PS and store the handle here if
+ *          it is NULLHANDLE. Otherwise resize the memory
+ *          PS using GpiSetPS to the size of the bitmap file
+ *          that you are loading. In any case, access to this
+ *          method is serialized so you can safely use this
+ *          buffer.
+ *
+ *      --  flOwnerDraw contains the current OWDRFL_* settings.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xo_xwpLazyLoadIcon(XFldObject *somSelf,
+                                           HAB hab, HPS* phpsMem,
+                                           ULONG flOwnerDraw,
+                                           BOOL* pbQuitEarly)
+{
+    HPOINTER hptr;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpLazyLoadIcon");
+
+    PMPF_ICONREPLACEMENTS(("[%s] calling _wpQueryIcon, hptrIcon 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryTitle(somSelf),
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON
+              ));
+
+    if (hptr = _wpQueryIcon(somSelf))
+        _wpSetIcon(somSelf, hptr);
+
+    PMPF_ICONREPLACEMENTS(("    loaded hptr 0x%lX", hptr));
+}
+
+/*
+ *@@ xwpForceRepaint:
+ *      this new XFldObject method repaints the object in
+ *      all containers where it is currently inserted.
+ *
+ *      With flRefresh, pass in the following flags:
+ *
+ *      --  REFRESH_RECORDREPAINT: invalidate the object's
+ *          record in all containers where it is currently
+ *          inserted.
+ *
+ *      --  REFRESH_RECORDICON: the object's icon has changed;
+ *          in conjunction with REFRESH_RECORDREPAINT,
+ *          REFRESH_SHADOWS, and REFRESH_WINDOWS, this
+ *          determines the messages that are sent.
+ *
+ *      --  REFRESH_RECORDTEXT: the object's title has changed;
+ *          in conjunction with REFRESH_RECORDREPAINT,
+ *          REFRESH_SHADOWS, and REFRESH_WINDOWS, this
+ *          determines the messages that are sent.
+ *
+ *      --  REFRESH_SHADOWS: update awake shadows pointing
+ *          to this object with the new icon and/or the
+ *          new title.
+ *
+ *      --  REFRESH_WINDOWS: update open views of this
+ *          object with either the new icon and/or the
+ *          new title.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xo_xwpForceRepaint(XFldObject *somSelf,
+                                           ULONG flRefresh)
+{
+    BOOL    fLocked = FALSE;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpForceRepaint");
+
+    TRY_LOUD(excpt1)
+    {
+        PIBMOBJECTDATA  pod;
+        PMINIRECORDCORE pmrc;
+
+        if (    (pod = (PIBMOBJECTDATA)_pvWPObjectData)
+             && (pmrc = pod->pmrc)
+             && (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+           )
+        {
+            PUSEITEM    pui;
+            LINKLIST    llShadows,
+                        llWindows,
+                        llCnrs;
+            PLISTNODE   pNode;
+            ULONG       flCnrInv;
+            lstInit(&llShadows, FALSE);
+            lstInit(&llWindows, FALSE);
+            lstInit(&llCnrs, FALSE);
+
+            for (pui = pod->puiFirst;
+                 pui;
+                 pui = pui->pNext)
+            {
+                switch (pui->type)
+                {
+                    case USAGE_LINK:
+                        if (flRefresh & REFRESH_SHADOWS)
+                        {
+                            PLINKITEM pli = (PLINKITEM)(pui + 1);
+                            WPShadow *pShadow;
+                            if (pShadow = pli->LinkObj)
+                                lstAppendItem(&llShadows, pShadow);
+                        }
+                    break;
+
+                    case USAGE_OPENVIEW:
+                        if (flRefresh & REFRESH_WINDOWS)
+                        {
+                            PVIEWITEM   pvi = (PVIEWITEM)(pui + 1);
+                            HWND        hwndView;
+                            // this can also be a HAPP, so check if this really
+                            // is a window
+                            if (    (hwndView = pvi->handle)
+                                 && (WinIsWindow(0, // G_habThread1,
+                                                 hwndView))
+                               )
+                                lstAppendItem(&llWindows, (PVOID)hwndView);
+                        }
+                    break;
+
+                    case USAGE_RECORD:
+                        if (flRefresh & REFRESH_RECORDREPAINT)
+                        {
+                            PRECORDITEM pri = (PRECORDITEM)(pui + 1);
+                            lstAppendItem(&llCnrs, (PVOID)pri->hwndCnr);
+                        }
+                    break;
+                }
+            }
+
+            _wpReleaseObjectMutexSem(somSelf);
+            fLocked = FALSE;
+
+            // now process the stuff outside the mutex
+
+            FOR_ALL_NODES(&llShadows, pNode)
+            {
+                if (flRefresh & REFRESH_RECORDICON)
+                    _wpSetIcon((WPShadow*)pNode->pItemData,
+                               pmrc->hptrIcon);
+
+                if (flRefresh & REFRESH_RECORDTEXT)
+                    _wpSetShadowTitle((WPShadow*)pNode->pItemData,
+                                      pmrc->pszIcon);
+
+            }
+
+            FOR_ALL_NODES(&llWindows, pNode)
+            {
+                HWND hwndView = (HWND)pNode->pItemData;
+
+                if (flRefresh & REFRESH_RECORDTEXT)
+                {
+                    HWND hwndTitleBar;
+                    // in "text changed" mode, refresh the title bar
+                    if (    (hwndTitleBar = WinWindowFromID(hwndView,
+                                                            FID_TITLEBAR))
+                         && (WinSetWindowText(hwndTitleBar,
+                                              pmrc->pszIcon))
+                       )
+                        // update the switch handle also, if we have one
+                        winhUpdateTasklist(hwndView,
+                                           pmrc->pszIcon);
+                }
+
+                if (flRefresh & REFRESH_RECORDICON)
+                {
+                    HWND hwndSysMenu;
+                    if (hwndSysMenu = WinWindowFromID(hwndView,
+                                                      FID_SYSMENU))
+                        WinSendMsg(hwndView,
+                                   WM_SETICON,
+                                   (MPARAM)pmrc->hptrIcon,
+                                   0);
+                }
+            }
+
+            if (flRefresh & REFRESH_RECORDTEXT)
+                flCnrInv = CMA_TEXTCHANGED;
+            else
+                flCnrInv = CMA_NOREPOSITION | CMA_NOTEXTCHANGED;
+
+            FOR_ALL_NODES(&llCnrs, pNode)
+            {
+                HWND hwndCnr = (HWND)pNode->pItemData;
+                // refresh the record in the useitem;
+                // the WPS shares records between containers
+                WinSendMsg(hwndCnr,
+                           CM_QUERYRECORDINFO,
+                           (MPARAM)&pmrc,
+                           (MPARAM)1);
+
+                // and refresh the view
+                WinSendMsg(hwndCnr,
+                           CM_INVALIDATERECORD,
+                           (MPARAM)&pmrc,
+                           MPFROM2SHORT(1,
+                                        flCnrInv));
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 }
 
 /*
  *@@ xwpAddWidgetNotify:
- *      adds a widget window handle to the object's
- *      internal widget-notify list.
+ *      this new XFldObject instance method adds a widget
+ *      window handle to the object's internal widget-notify
+ *      list.
  *
  *      Widget notifies are used to establish a link
  *      between a Desktop object and an object button widget
@@ -1780,11 +2225,13 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
 
 /*
  *@@ xwpQueryObjectHotkey:
- *      this returns the global object hotkey which has been defined
- *      to be monitored for in the XWorkplace hook.
+ *      this new XFldObject instance method returns the global
+ *      object hotkey which has been defined to be monitored for
+ *      in the XWorkplace hook, if any.
  *
- *      If this object has been assigned a hotkey to, TRUE is returned,
- *      and the hotkey data is stored in the OBJECTHOTKEY struct.
+ *      If this object has been assigned a hotkey to, TRUE is
+ *      returned, and the hotkey data is stored in the OBJECTHOTKEY
+ *      struct.
  *
  *      xfobj.idl defines OBJECTHOTKEY as follows:
  *
@@ -1827,7 +2274,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryObjectHotkey(XFldObject *somSelf,
 
 /*
  *@@ xwpSetObjectHotkey:
- *      this sets a new global object hotkey for the object.
+ *      this new XFldObject instance method sets a new global
+ *      object hotkey for the object.
  *
  *      See XFldObject::xwpQueryObjectHotkey for the description
  *      of the hotkey parameters.
@@ -1862,8 +2310,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetObjectHotkey(XFldObject *somSelf,
 
 /*
  *@@ xwpQuerySetup:
- *      this new XFldObject method composes a setup string
- *      for the given object which contains all non-default
+ *      this new XFldObject instance method composes a setup
+ *      string for the given object which contains all non-default
  *      settings for this object.
  *
  *      This method is the reverse to the wpSetup method.
@@ -2072,12 +2520,11 @@ SOM_Scope BOOL  SOMLINK xo_xwpQuerySetup2(XFldObject *somSelf,
 
 /*
  *@@ xwpHotkeyOrBorderAction:
- *      this new XFldObject method gets called
- *      from the thread-1 object window whenever
- *      the XWPDaemon notifies it that an object
- *      should be opened, either because a hotkey
- *      was pressed or because a screen border was
- *      touched with the mouse.
+ *      this new XFldObject instance method gets called
+ *      from the thread-1 object window whenever the
+ *      XWPDaemon notifies it that an object should be
+ *      opened, either because a hotkey was pressed or
+ *      because a screen border was touched with the mouse.
  *
  *      This method gets resolved by name from
  *      T1M_OpenObjectFromHandle. This allows WPS
@@ -2163,9 +2610,9 @@ SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
 
 /*
  *@@ xwpHandleSelfClose:
- *      this new instance method implements auto-closing the
- *      given view of a folder when somSelf was opened from
- *      it.
+ *      this new XFldObject instance method implements
+ *      auto-closing the given view of a folder when a
+ *      new view of somSelf was opened from it.
  *
  *      Warp 3 added support for the "self close" settings
  *      (IIRC), but unfortunately there are no exported
@@ -2339,7 +2786,6 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
         G_pAwakeWarpCenter = somSelf;
 
     // set the class flags
-    _flObject = 0;
     ctsSetClassFlags(somSelf, &_flObject);
 
     _pvTrashData = NULL;            // V0.9.20 (2002-07-25) [umoeller]
@@ -2604,8 +3050,12 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
  *      The parent method must always be called last.
  *
  *      We will have this object removed from our global list
@@ -3580,13 +4030,13 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
                 // so do list management
                 pUseItem->pNext = NULL;
 
-                if (!(puiThis = pod->pUseItemFirst))
+                if (!(puiThis = pod->puiFirst))
                 {
                     PMPF_ASSOCS(("    adding hwnd %lX as first ui",
                            ((PVIEWITEM)(pUseItem + 1))->handle
                          ));
 
-                    pod->pUseItemFirst = pUseItem;
+                    pod->puiFirst = pUseItem;
                 }
                 else
                 {
@@ -3672,7 +4122,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 
             if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
-                PUSEITEM    puiThis = pod->pUseItemFirst,
+                PUSEITEM    puiThis = pod->puiFirst,
                             puiPrev = NULL;
 
                 while (puiThis)
@@ -3684,7 +4134,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
                             puiPrev->pNext = puiThis->pNext;        // can be NULL
                         else
                             // we were the first in the list:
-                            pod->pUseItemFirst = puiThis->pNext;    // can be NULL
+                            pod->puiFirst = puiThis->pNext;    // can be NULL
 
                         brc = TRUE;
 
@@ -3699,7 +4149,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
                 {
                     // turn off CRA_INUSE if this was the last USAGE_OPENVIEW
                     BOOL fAnotherInuse = FALSE;
-                    puiThis = pod->pUseItemFirst;
+                    puiThis = pod->puiFirst;
                     while (puiThis)
                     {
                         if (puiThis->type == USAGE_OPENVIEW)
@@ -3788,6 +4238,284 @@ SOM_Scope BOOL  SOMLINK xo_wpCnrSetEmphasis(XFldObject *somSelf,
     }
 
     return FALSE;
+}
+
+/*
+ *@@ FigureOutWPSProc:
+ *      this function figures out the PFNWP address of
+ *      the window procedure that the WPS uses for
+ *      subclassing container owners. This will only
+ *      get called once in the WPS's lifetime, hopefully.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+PFNWP FigureOutWPSProc(WPObject *pobjTest)
+{
+    // first call: create test frame to figure
+    // out WPS subclass proc
+    ULONG   flCreate = FCF_BORDER;
+    HWND    hwndFrame,
+            hwndTestCnr;
+    PFNWP   pfnwpReturn = NULL;
+
+    if (hwndFrame = WinCreateStdWindow(HWND_DESKTOP,
+                                       0,       // NOT VISIBLE!
+                                       &flCreate,
+                                       WC_CONTAINER,
+                                       "dummy",
+                                       WS_VISIBLE,
+                                       NULLHANDLE,
+                                       0,
+                                       &hwndTestCnr))
+    {
+        POINTL ptlIcon = {10, 10};
+        if (XFldObject_parent_WPObject_wpCnrInsertObject(pobjTest,
+                                                         hwndTestCnr,
+                                                         &ptlIcon,
+                                                         NULL,
+                                                         NULL))
+        {
+            // _wpCnrInsertObject can return a record even though
+            // the thing wasn't even inserted, but what the hell
+
+            pfnwpReturn = (PFNWP)WinQueryWindowPtr(hwndFrame, QWP_PFNWP);
+            PMPF_ICONREPLACEMENTS(("test frame was subclassed with 0x%lX", pfnwpReturn));
+
+            _wpCnrRemoveObject(pobjTest, hwndTestCnr);
+        }
+
+        WinDestroyWindow(hwndFrame);
+    }
+
+    return pfnwpReturn;
+}
+
+/*
+ *@@ ContainerSubclassHack:
+ *      subclasses the given container owner (which should be
+ *      a WC_FRAME) with the window procedure that the
+ *      WPS normally subclasses windows with in the original
+ *      _wpCnrInsertObject method.
+ *
+ *      Do not look at this code too closely, it can do great
+ *      damage to your programming ethics.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+STATIC BOOL ContainerSubclassHack(HWND hwndOwner,
+                                  WPObject *pobjTest)
+{
+    static HMTX     s_hmtxCnr = NULLHANDLE;
+    static PFNWP    s_pfnwpCnrSubclass = NULL;
+    BOOL            fLocked = FALSE,
+                    brc = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (!s_hmtxCnr)
+            fLocked = !DosCreateMutexSem(NULL, &s_hmtxCnr, 0, TRUE);
+        else
+            fLocked = !DosRequestMutexSem(s_hmtxCnr, SEM_INDEFINITE_WAIT);
+
+        if (fLocked)
+        {
+            PFNWP pfnwp;
+
+            if (!(pfnwp = (PFNWP)WinQueryWindowPtr(hwndOwner,
+                                                   -6)))        // interesting window word here...
+            {
+                // alright, here's a container owner that has _not_ yet
+                // been subclassed: then we must do it ourselves. This
+                // is really ugly, since the WPS container subclass
+                // proc does not seem to be exported... so on the
+                // first call, we create a stupid test frame with
+                // a container, insert the object by calling the
+                // original WPS method, and remember the window proc,
+                // which (hopefully) is the one the WPS uses for
+                // subclassing.
+
+                // This case is very expensive on the first call,
+                // but very rare also, and from my testing it works
+                // (see the HPFS386 driver dialog in "OS/2 kernel"
+                // for example, which inserts an object into a
+                // plain container).
+
+                PMPF_ICONREPLACEMENTS(("got NULL pfnwp!"));
+
+                if (    (s_pfnwpCnrSubclass)
+                     || (s_pfnwpCnrSubclass = FigureOutWPSProc(pobjTest))
+                   )
+                {
+                    // alright, be daring
+                    if (pfnwp = WinSubclassWindow(hwndOwner,
+                                                  s_pfnwpCnrSubclass))
+                    {
+                        // store original pfnwp in that special window word
+                        brc = WinSetWindowPtr(hwndOwner, -6, (PVOID)pfnwp);
+                    }
+
+                    PMPF_ICONREPLACEMENTS(("WinSubclassWindow(0x%lX) returned 0x%lX",
+                            s_pfnwpCnrSubclass,
+                            pfnwp));
+                }
+            }
+            else
+            {
+                PMPF_ICONREPLACEMENTS(("got orig proc 0x%lX", pfnwp));
+                brc = TRUE;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        DosReleaseMutexSem(s_hmtxCnr);
+
+    if (!brc)
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot subclass container owner.");
+        G_fInsertRecordCrashed = TRUE;
+    }
+
+    return brc;
+}
+
+/*
+ *@@ wpCnrInsertObject:
+ *      this WPObject method inserts an object into a container.
+ *
+ *      We override this method with a giant amount of code for
+ *      the tiny little feature to allow for setting the CRA_OWNERDRAW
+ *      bit in MINIRECORDCORE.flRecordAttr.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+SOM_Scope PMINIRECORDCORE  SOMLINK xo_wpCnrInsertObject(XFldObject *somSelf,
+                                                        HWND hwndCnr,
+                                                        PPOINTL pptlIcon,
+                                                        PMINIRECORDCORE preccParent,
+                                                        PRECORDINSERT pRecInsert)
+{
+    PMINIRECORDCORE pmrcReturn = NULL;
+    PMINIRECORDCORE pmrc;
+    HWND            hwndOwner;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpCnrInsertObject");
+
+    // some sanity checks first
+    if (    (!G_fInsertRecordCrashed)
+         && (cmnQuerySetting(sfTurboFolders))
+         && (pmrc = (((PIBMOBJECTDATA)_pvWPObjectData)->pmrc))
+         && (hwndCnr)
+         && (hwndOwner = WinQueryWindow(hwndCnr, QW_OWNER))
+            // now, it is _this_ method that subclasses the
+            // container owner to give any container all
+            // the WPS features...
+         && (ContainerSubclassHack(hwndOwner, somSelf))
+       )
+    {
+        PUSEITEM    pui = NULL;
+
+        TRY_LOUD(excpt1)
+        {
+            ULONG   flStyle = (((PIBMOBJECTDATA)_pvWPObjectData)->flStyle);
+
+            // the WPS allocates a special ULONG before the
+            // actual record, which is zero until the object
+            // has been inserted at least once
+            PULONG  pulEverInserted = (((PULONG)pmrc) - 1);
+
+            // allocate USEITEM with RECORDITEM and
+            // set up the flRecordAttr fields
+            if (pui = _xwpPrepareInsertRecord(somSelf,
+                                              hwndCnr,
+                                              pmrc,
+                                              flStyle,
+                                              !(*pulEverInserted)))
+            {
+                // 2) set up the MINIRECORDCORE
+
+                pmrc->ptlIcon.x = pptlIcon->x;
+                pmrc->ptlIcon.y = pptlIcon->y;
+
+                // 3) now go INSERT the damn thing; here I have finally
+                // found the flag I have been looking for for so long,
+                // if this instance data BOOL is FALSE, the WPS does
+                // _not_ insert the record automatically (during folder
+                // populate, I guess)
+                if (((PIBMOBJECTDATA)_pvWPObjectData)->fAutoInsert)
+                {
+                    if (_wpAddToObjUseList(somSelf, pui))
+                    {
+                        // if we were given a NULL RECORDINSERT,
+                        // fake one cos CM_INSERTRECORD needs it
+
+                        RECORDINSERT ri2;
+
+                        if (!pRecInsert)
+                        {
+                            static const RECORDINSERT s_riTemplate =
+                                {
+                                    sizeof(RECORDINSERT),       // cb
+                                    (PRECORDCORE)CMA_END,       // pRecordOrder
+                                    NULL,                       // record parent
+                                    TRUE,                       // fInvalidateRecord
+                                    CMA_TOP,                    // zOrder
+                                    1                           // cRecordsInsert
+                                };
+
+                            memcpy(&ri2, &s_riTemplate, sizeof(RECORDINSERT));
+                            ri2.pRecordParent = (PRECORDCORE)preccParent;
+                            pRecInsert = &ri2;
+                        }
+
+                        if (WinSendMsg(hwndCnr,
+                                       CM_INSERTRECORD,
+                                       (MPARAM)pmrc,
+                                       (MPARAM)pRecInsert))
+                            pui = NULL;
+                        else
+                            _wpDeleteFromObjUseList(somSelf, pui);
+                            // pui freed below
+                    }
+                } // if (((PIBMOBJECTDATA)_pvWPObjectData)->fAutoInsert)
+                else
+                    if (_wpAddToObjUseList(somSelf, pui))
+                        pui = NULL;
+
+                // interestingly, the WPS returns the record even
+                // if the insert failed! if we don't do this, the
+                // whole WPS goes boom...
+
+                pmrcReturn = pmrc;
+
+            } // if (pui = (PUSEITEM)ShlMalloc(CBITEM, NULL))
+        }
+        CATCH(excpt1)
+        {
+            pmrcReturn = NULL;
+            G_fInsertRecordCrashed = TRUE;      // don't _ever_ call this again!
+        } END_CATCH();
+
+        // thou shalt not leak
+        if (pui)
+            ShlFreeMem(pui);
+    }
+    else
+        pmrcReturn = XFldObject_parent_WPObject_wpCnrInsertObject(somSelf,
+                                                                  hwndCnr,
+                                                                  pptlIcon,
+                                                                  preccParent,
+                                                                  pRecInsert);
+    return pmrcReturn;
 }
 
 /*
@@ -4418,38 +5146,12 @@ SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
 }
 
 /*
- *@@ wpViewObject:
- *      overridden for debugging.
- *
- *@@added V0.9.20 (2002-08-04) [umoeller]
- */
-
-SOM_Scope HWND  SOMLINK xo_wpViewObject(XFldObject *somSelf,
-                                        HWND hwndCnr, ULONG ulView,
-                                        ULONG param)
-{
-    HWND hwnd;
-
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpViewObject");
-
-    PMPF_ASSOCS(("[%s] entering", _wpQueryTitle(somSelf)));
-
-    hwnd = XFldObject_parent_WPObject_wpViewObject(somSelf,
-                                                   hwndCnr,
-                                                   ulView,
-                                                   param);
-
-    PMPF_ASSOCS(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
-
-    return hwnd;
-}
-
-/*
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  *
  *      We replace the base WPObject implementation without
  *      calling the parent if the "Icon" page replacement
@@ -4626,7 +5328,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
             else
             {
                 ULONG           ulStyle = _wpQueryStyle(somSelf);
-                BOOL            fIsInitialized = (0 != (_flObject & OBJFL_INITIALIZED));
+                BOOL            fIsInitialized = (0 != (_flObject & OBJFL_INITIALIZED)),
+                                fRefresh = FALSE;
 
                 // LOCK the object if it is already initialized... no need
                 // to do so if this gets called in the process of setting
@@ -4694,11 +5397,9 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                         // inserted into a container yet
 
                         // note: fLocked is TRUE only if the object _was_ intialized,
-                        // see above
-                        if (fLocked)
-                            objRefreshUseItems(somSelf,
-                                               pRecord->pszIcon,
-                                               NULLHANDLE);     // no new icon V0.9.20 (2002-07-31) [umoeller]
+                        // see above, so we refresh below only if the title actually
+                        // changed on an awake object
+                        fRefresh = fLocked;
 
                         if (    (ulStyle & OBJSTYLE_TEMPLATE)
                              && (fIsInitialized)
@@ -4715,6 +5416,16 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                 if (pszNewTitleCopy)
                     // title hasn't changed, or something else went wrong:
                     _wpFreeMem(somSelf, pszNewTitleCopy);
+
+                if (fRefresh)
+                    // using new method now V1.0.1 (2003-01-25) [umoeller]
+                    _xwpForceRepaint(somSelf,
+                                     REFRESH_RECORDREPAINT
+                                     | REFRESH_RECORDTEXT
+                                     | REFRESH_SHADOWS
+                                     | REFRESH_WINDOWS);
+
+                    // @@todo resort the folder
 
             } // end else if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
         } // end if (!pszNewTitle)
@@ -4969,7 +5680,7 @@ SOM_Scope XWPObjList*  SOMLINK xoM_xwpclsCreateList(M_XFldObject *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -4995,7 +5706,7 @@ SOM_Scope XWPObjList*  SOMLINK xoM_xwpclsCreateList(M_XFldObject *somSelf,
 
 SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
 {
-    BOOL    fOpenFoldersFound = FALSE;
+    BOOL    fWPSStartup = TRUE;
 
     // M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf);
     // M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsInitData");
@@ -5011,40 +5722,9 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
     // called for the first time
     if (!G_fXWorkplaceInitialized)
     {
-        HENUM   henum;
-        HWND    hwndThis;
-
         G_fXWorkplaceInitialized = TRUE;
 
-        // check if we have any open folder windows;
-        // if so, we're not really in the process of starting
-        // up. This check is necessary because this class
-        // method also gets called when the classes are installed
-        // by WinRegisterObjectClass, unfortunately, and we don't
-        // want to start threads etc. then.
-        henum = WinBeginEnumWindows(HWND_DESKTOP);
-        while (     (!fOpenFoldersFound)
-                 && (hwndThis = WinGetNextWindow(henum))
-              )
-        {
-            CHAR    szClass[200];
-            if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
-                if (!strcmp(szClass, WC_WPFOLDERWINDOW)) // "wpFolder window"))
-                    // folder window:
-                    fOpenFoldersFound = TRUE;
-        }
-        WinEndEnumWindows(henum);
-
-        if (!fOpenFoldersFound)
-        {
-            #ifdef DEBUG_SOMMETHODS
-            _PmpfF(("initializing class %s", _somGetName(somSelf)));
-            #endif
-
-            // only if no open folders are found:
-            // initialize the kernel (kernel.c)
-            initMain();
-        }
+        fWPSStartup = initMain();
 
         // initialize the XWPObjList class explicitly
         // V1.0.1 (2002-12-11) [umoeller]
@@ -5053,8 +5733,10 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
         krnClassInitialized(G_pcszXFldObject);
     }
 
+    initLog("Class %s initialized", _somGetName(somSelf));
+
 #ifndef __NOBOOTUPSTATUS__
-    if (!fOpenFoldersFound)
+    if (fWPSStartup)
     {
         // even if not first invocation (i.e. some class other
         // than WPObject gets initialized): notify Speedy thread
@@ -5086,8 +5768,153 @@ SOM_Scope WPObject*  SOMLINK xoM_wpclsQueryObject(M_XFldObject *somSelf,
 }
 
 /*
+ *@@ wpclsInsertMultipleObjects:
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xoM_wpclsInsertMultipleObjects(M_XFldObject *somSelf,
+                                                       HWND hwndCnr,
+                                                       PPOINTL pptlIcon,
+                                                       PVOID* pObjectArray,
+                                                       PVOID pRecordParent,
+                                                       ULONG NumRecords)
+{
+    BOOL        brc = TRUE;
+    HWND        hwndOwner;
+    WPObject    **papObjects;
+
+    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
+    M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsInsertMultipleObjects");
+
+    // some sanity checks first
+    if (    (!G_fInsertRecordCrashed)
+         && (cmnQuerySetting(sfTurboFolders))
+         && (hwndCnr)
+         && (hwndOwner = WinQueryWindow(hwndCnr, QW_OWNER))
+            // now, it is _this_ method that subclasses the
+            // container owner to give any container all
+            // the WPS features...
+         && (ContainerSubclassHack(hwndOwner, somSelf))
+         && (NumRecords)
+         && (papObjects = (WPObject**)pObjectArray)
+       )
+    {
+        TRY_LOUD(excpt1)
+        {
+            // now run through all objects in the array;
+            // we do this in _reverse_ order so we can
+            // set up the linked list of records for
+            // the CM_INSERTRECORD message
+
+            PMINIRECORDCORE
+                        pmrcFirst = NULL,
+                        pmrcPrev = NULL;
+
+            // start with last
+            ULONG       ul = NumRecords - 1;
+
+            while (brc)
+            {
+                WPObject *pobjThis = papObjects[ul];
+                XFldObjectData *somThis = XFldObjectGetData(pobjThis);
+                PMINIRECORDCORE pmrcThis = (((PIBMOBJECTDATA)_pvWPObjectData)->pmrc);
+
+                // the WPS allocates a special ULONG before the
+                // actual record, which is zero until the object
+                // has been inserted at least once
+                PULONG      pulEverInserted = (((PULONG)pmrcThis) - 1);
+                PUSEITEM    pui;
+
+                // allocate USEITEM with RECORDITEM and
+                // set up the flRecordAttr fields
+                if (pui = _xwpPrepareInsertRecord(pobjThis,
+                                                  hwndCnr,
+                                                  pmrcThis,
+                                                  (((PIBMOBJECTDATA)_pvWPObjectData)->flStyle),
+                                                  !(*pulEverInserted)))
+                {
+                    if (!_wpAddToObjUseList(pobjThis, pui))
+                    {
+                        ShlFreeMem(pui);
+                        brc = FALSE;
+                        break;
+                    }
+                }
+                else
+                {
+                    brc = FALSE;
+                    break;
+                }
+
+                // link these together; on the first loop
+                // (for the last record), pmrcPrev is NULL,
+                // otherwise it points to the record from
+                // the previous loop, which is the _next_
+                // in the record linklist
+                pmrcThis->preccNextRecord = pmrcPrev;
+
+                // first record reached?
+                if (!ul)
+                {
+                    if (pptlIcon)
+                    {
+                        pmrcThis->ptlIcon.x = pptlIcon->x;
+                        pmrcThis->ptlIcon.y = pptlIcon->y;
+                    }
+
+                    // remember this for CM_INSERTRECORD later
+                    pmrcFirst = pmrcThis;
+                    break;
+                }
+
+                pmrcPrev = pmrcThis;
+                --ul;
+            }
+
+            if (brc && pmrcFirst)
+            {
+                RECORDINSERT ri2;
+
+                static const RECORDINSERT s_riTemplate =
+                    {
+                        sizeof(RECORDINSERT),       // cb
+                        (PRECORDCORE)CMA_END,       // pRecordOrder
+                        NULL,                       // record parent
+                        TRUE,                       // fInvalidateRecord
+                        CMA_TOP,                    // zOrder
+                        0                           // cRecordsInsert
+                    };
+
+                memcpy(&ri2, &s_riTemplate, sizeof(RECORDINSERT));
+                ri2.pRecordParent = (PRECORDCORE)pRecordParent;
+                ri2.cRecordsInsert = NumRecords;
+
+                WinSendMsg(hwndCnr,
+                           CM_INSERTRECORD,
+                           (MPARAM)pmrcFirst,
+                           (MPARAM)&ri2);
+            }
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+            G_fInsertRecordCrashed = TRUE;      // don't _ever_ call this again!
+        } END_CATCH();
+    }
+    else
+        brc = M_XFldObject_parent_M_WPObject_wpclsInsertMultipleObjects(somSelf,
+                                                                        hwndCnr,
+                                                                        pptlIcon,
+                                                                        pObjectArray,
+                                                                        pRecordParent,
+                                                                        NumRecords);
+    return brc;
+}
+
+/*
  *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
+ *      this M_WPObject class method should return the
  *      size of the largest settings page in dialog
  *      units; if a settings notebook is initially
  *      opened, i.e. no window pos has been stored
@@ -5116,7 +5943,7 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
 
 /*
  *@@ wpclsSetIconData:
- *      this WPObject class method sets the icon information
+ *      this M_WPObject class method sets the icon information
  *      for the given class object.
  *
  *      Doesn't make much sense? Welcome to the club. See
@@ -5182,4 +6009,5 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsSetIconData(M_XFldObject *somSelf,
 
     return brc;
 }
+
 

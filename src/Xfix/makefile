@@ -1,118 +1,78 @@
 #
-# makefile:
-#       makefile for TOOLS\xfix directory.
-#       For use with IBM NMAKE, which comes with the IBM compilers,
-#       the Developer's Toolkit, and the DDK.
+# Makefile for XFIX.EXE.
 #
-#       All the makefiles have been restructured with V0.9.0.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
-#       Called from:    main makefile
-#
-#       Input:          files in this directory
-#
-#       Output:         xfix.exe, copied to parent directory (TOOLS\).
-#
-#       Edit "setup.in" to set up the make process.
+#       Copyright (C) 1998-2003 Ulrich M”ller.
+#       This file is part of the XWorkplace source package.
+#       XWorkplace is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published
+#       by the Free Software Foundation, in version 2 as it comes in the
+#       "COPYING" file of the XWorkplace main distribution.
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# FIXED MACROS
-# ------------
-#
-# You probably need not change the following.
-#
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .cpp .obj .h
+!include $(MAKE_INCLUDE_DIR)\compile_exe_mt.in
+#       this defines the proper OUTPUTDIR
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in. $(XWP_OUTPUT_ROOT) is set by
-# setup.in to point to \bin from the XWorkplace sources root,
-# but this can be modified by setting an external environment
-# variable. This approach has the advantage that
-# 1) all build files are in a common dir tree and the entire
-#    tree can be removed completely;
-# 2) the build tree can be on a different physical drive for
-#    speed.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
-MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
+MODULESTEM = xfix
 
-APPNAME = xfix
+OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 
-# The OBJS macro contains all the .OBJ files which need to be
-# created from the files in this directory.
-# These will be put into BIN\.
-OBJS = $(OUTPUTDIR)\$(APPNAME).obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-# The main target:
-# If we're called from the main makefile, MAINMAKERUNNING is defined,
-# and we'll set $(OBJS) as our targets (which will go on).
-# Otherwise, we call the main makefile, which will again call ourselves later.
-all: \
-    $(XWPRUNNING)\bin\$(APPNAME).exe
-    @echo ----- Leaving $(MAKEDIR)
+BLDLEVELNAME = "WPS handles fixer"
 
-# The "dep" target: run fastdep on the sources.
-# "nmake dep" gets called from src\makefile if nmake dep
-# is running on the main makefile.
-dep:
-    $(RUN_FASTDEP) *.cpp
-    @echo ----- Leaving $(MAKEDIR)
+COPYTODIR = $(XWPRUNNING)\bin
 
-# V1.0.0: Use the inference rule in \make\comp_standalone.in now,
-# which is shared for all makefiles that generate code for standalone
-# executables.
-# This sets up the compiler rule to compile .c files to .obj files
-# in the $(OUTPUTDIR).
-!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
+LINKMODULE = $(MODULESTEM).exe
 
-# build targets
-$(APPNAME).def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "WPS handles fixer"
+RESOURCE_SOURCES = $(MODULESTEM).rc $(MODULESTEM).h $(MODULESTEM).ico
 
-$(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
-          $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
 
-$(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(OBJS) $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
-!ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
-!endif
-          cd $(MODULESDIR)
-          mapsym /n $(@B).map > NUL
-          cmd.exe /c copy $(@B).sym $(XWPRUNNING)\bin
-!ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
-!endif
-          cd $(MAKEDIR)
+!include $(MAKE_INCLUDE_DIR)\link_exe.in
+#   this defines ALLTARGET for the next include
 
-# main target
-$(XWPRUNNING)\bin\$(APPNAME).exe: $(MODULESDIR)\$(@B).exe
-          $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).exe
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
-          cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-#          cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
 
-# The .OBJ-from-sources dependencies are now automatically
-# created by "nmake dep" into the .depend include file.
-# V0.9.12 (2001-05-22) [umoeller]
-
-!ifndef NOINCLUDEDEPEND
-!include .depend
-!endif
-
+!include $(MAKE_INCLUDE_DIR)\targets.in
 
 

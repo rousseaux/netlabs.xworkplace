@@ -1159,11 +1159,15 @@ typedef struct _FONTSAMPLEDATA
 
     PFNWP               pfnwpFrameOriginal; // orig frame wnd proc before subclassing
 
+#if 1       // V1.0.1 (2003-01-25) [umoeller]
+    SIZEL               szlWorkarea;
+    POINTL              ptlScroll;
+#else
     ULONG               cxViewport,         // extensions of viewport (for scrollbars)
                         cyViewport;
     ULONG               xOfs,               // current ofs of win in viewport
                         yOfs;
-
+#endif
     PSZ                 pszSampleText;
 } FONTSAMPLEDATA, *PFONTSAMPLEDATA;
 
@@ -1181,15 +1185,15 @@ STATIC VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
     winhUpdateScrollBar(WinWindowFromID(pWinData->ViewItem.handle,  // frame
                                         FID_VERTSCROLL),
                         ulWinCY,            // ulWinPels
-                        pWinData->cyViewport,
-                        pWinData->yOfs,     // ofs: top
+                        pWinData->szlWorkarea.cy,
+                        pWinData->ptlScroll.y,     // ofs: top
                         FALSE);             // no auto-hide
     // horizontal
     winhUpdateScrollBar(WinWindowFromID(pWinData->ViewItem.handle,  // frame
                                         FID_HORZSCROLL),
                         ulWinCX,            // ulWinPels
-                        pWinData->cxViewport,
-                        pWinData->xOfs,     // ofs: left
+                        pWinData->szlWorkarea.cx,
+                        pWinData->ptlScroll.x,     // ofs: left
                         FALSE);             // no auto-hide
 }
 
@@ -1263,7 +1267,7 @@ STATIC VOID FontSamplePaint(HWND hwnd,
         ptlCurrent.y = rclClient.yTop;
         // add y ofs from scrollbar; we paint over the top of the window
         // if the scroller is down
-        ptlCurrent.y += pWinData->yOfs;
+        ptlCurrent.y += pWinData->ptlScroll.y;
 
         for (ul = 0;
              ul < sizeof(aulSizes) / sizeof(aulSizes[0]);
@@ -1330,8 +1334,8 @@ STATIC VOID FontSamplePaint(HWND hwnd,
                 GpiSetPattern(hps,
                               PATSYM_DEFAULT);
 
-                rcl.xLeft = 0 - pWinData->xOfs;
-                rcl.xRight = 50 - pWinData->xOfs;
+                rcl.xLeft = 0 - pWinData->ptlScroll.x;
+                rcl.xRight = 50 - pWinData->ptlScroll.x;
                 rcl.yBottom = ptlCurrent.y;
                 rcl.yTop = rcl.yBottom + fm.lMaxAscender;
                 WinFillRect(hps,
@@ -1407,7 +1411,7 @@ STATIC VOID FontSamplePaint(HWND hwnd,
 
             // draw font sample at that baseline
             GpiSetColor(hps, RGBCOL_BLACK);
-            ptlCurrent.x = 5 - pWinData->xOfs;
+            ptlCurrent.x = 5 - pWinData->ptlScroll.x;
             GpiMove(hps, &ptlCurrent);
             sprintf(szTemp,
                     "%d pt: %s",
@@ -1419,8 +1423,8 @@ STATIC VOID FontSamplePaint(HWND hwnd,
             // next character would be drawn...
             // get that
             GpiQueryCurrentPosition(hps, &ptl2);
-            if (ptl2.x + pWinData->xOfs > ulMaxCX)
-                ulMaxCX = ptl2.x + pWinData->xOfs;
+            if (ptl2.x + pWinData->ptlScroll.x > ulMaxCX)
+                ulMaxCX = ptl2.x + pWinData->ptlScroll.x;
 
             // move down by max descender
             ptlCurrent.y -= fm.lMaxDescender;
@@ -1437,15 +1441,15 @@ STATIC VOID FontSamplePaint(HWND hwnd,
         ptlCurrent.y = 10;
         // ptlCurrent.y -= 12 * 1.3;
         GpiMove(hps, &ptlCurrent);
-        sprintf(szTemp, "xOfs: %d, yOfs: %d", pWinData->xOfs, pWinData->yOfs);
+        sprintf(szTemp, "ptlScroll.x: %d, ptlScroll.y: %d", pWinData->ptlScroll.x, pWinData->ptlScroll.y);
         GpiCharString(hps, strlen(szTemp), szTemp); */
 
-        if (    (ulMaxCY != pWinData->cyViewport)
-             || (ulMaxCX != pWinData->cxViewport)
+        if (    (ulMaxCY != pWinData->szlWorkarea.cy)
+             || (ulMaxCX != pWinData->szlWorkarea.cx)
            )
         {
-            pWinData->cyViewport = ulMaxCY;
-            pWinData->cxViewport = ulMaxCX;
+            pWinData->szlWorkarea.cy = ulMaxCY;
+            pWinData->szlWorkarea.cx = ulMaxCX;
 
             UpdateScrollBars(pWinData,
                              rclClient.xRight,
@@ -1562,6 +1566,8 @@ STATIC MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1
 /*
  *@@ fon_fnwpFontSampleClient:
  *      window proc for the font "Sample" view client.
+ *
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: adjusted for new scrolling code
  */
 
 STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1583,11 +1589,10 @@ STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
             pWinData = (PFONTSAMPLEDATA)mp1;
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
 
-            pWinData->hps = GpiCreatePS(WinQueryAnchorBlock(hwnd),
-                                        hdc,
-                                        &szlPage, // use same page size as device
-                                        PU_PELS | GPIT_MICRO | GPIA_ASSOC);
-            if (pWinData->hps)
+            if (pWinData->hps = GpiCreatePS(WinQueryAnchorBlock(hwnd),
+                                            hdc,
+                                            &szlPage, // use same page size as device
+                                            PU_PELS | GPIT_MICRO | GPIA_ASSOC))
             {
                 gpihSwitchToRGB(pWinData->hps);
 
@@ -1636,34 +1641,43 @@ STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
         case WM_VSCROLL:
         case WM_HSCROLL:
         {
-            RECTL rcl;
-            ULONG id, ulExt;
-            PULONG pulOfs;
+            RECTL   rcl;
+            ULONG   id, ulExt;
+            PLONG   plOfs;
+            LONG    c;
+            POINTL  ptlScroll = {0, 0};
+            PLONG   plScroll;
 
             WinQueryWindowRect(hwnd, &rcl);
 
             if (msg == WM_VSCROLL)
             {
                 id = FID_VERTSCROLL;
-                pulOfs = &pWinData->yOfs;
-                ulExt = pWinData->cyViewport;
+                plOfs = &pWinData->ptlScroll.y;
+                ulExt = pWinData->szlWorkarea.cy;
+                c = rcl.yTop - rcl.yBottom;
+                plScroll = &ptlScroll.y;
             }
             else
             {
                 id = FID_HORZSCROLL;
-                pulOfs = &pWinData->xOfs;
-                ulExt = pWinData->cxViewport;
+                plOfs = &pWinData->ptlScroll.x;
+                ulExt = pWinData->szlWorkarea.cx;
+                c = rcl.xRight - rcl.xLeft;
+                plScroll = &ptlScroll.x;
             }
 
-            winhHandleScrollMsg(hwnd,               // client to scroll
-                                WinWindowFromID(pWinData->ViewItem.handle, // frame
-                                                id),
-                                pulOfs,
-                                &rcl,
-                                ulExt,
-                                8,              // line steps
-                                msg,
-                                mp2);
+            if (*plScroll = winhHandleScrollMsg(WinWindowFromID(pWinData->ViewItem.handle, // frame
+                                                                id),
+                                                plOfs,
+                                                c,
+                                                ulExt,
+                                                8,              // line steps
+                                                msg,
+                                                mp2))
+                winhScrollWindow(hwnd,
+                                 NULL,
+                                 &ptlScroll);
         }
         break;
 

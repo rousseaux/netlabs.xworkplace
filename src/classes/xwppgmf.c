@@ -93,7 +93,6 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
-// #include "xfobj.ih"
 #include "xfdataf.ih"
 #include "xwppgmf.ih"
 
@@ -109,7 +108,6 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\icons.h"              // icons handling
-// #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -427,8 +425,12 @@ SOM_Scope void  SOMLINK xpgf_wpInitData(XWPProgramFile *somSelf)
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
  *      The parent method must always be called last.
  *
  *@@added V0.9.18 (2002-03-24) [umoeller]
@@ -1529,7 +1531,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -1549,7 +1551,7 @@ SOM_Scope void  SOMLINK xpgfM_wpclsInitData(M_XWPProgramFile *somSelf)
 
 /*
  *@@ wpclsQueryInstanceFilter:
- *      this WPDataFile class method determines which file-system
+ *      this M_WPFileSystem class method determines which file-system
  *      objects will be instances of a certain class according
  *      to a file filter.
  *
@@ -1558,7 +1560,7 @@ SOM_Scope void  SOMLINK xpgfM_wpclsInitData(M_XWPProgramFile *somSelf)
  *      we make all DLL's instances of WPProgramFile by specifying
  *      "*.DLL" too.
  *
- *      This does not work using wpclsQueryInstanceType,
+ *      This does not work using wpclsQueryInstanceType
  *      because the WPS seems to be using some default file
  *      type of "Executable", which is determined in some hidden
  *      place.

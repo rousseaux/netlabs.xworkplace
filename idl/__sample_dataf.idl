@@ -1,7 +1,7 @@
 
 /*
  * __sample.idl:
- *      Sample IDL file for adding a new class to XWorkplace.
+ *      sample IDL file for adding a new class to XWorkplace.
  *      This is for a WPDataFile subclass called SampleDataFile.
  *
  *      To adjust this to your needs, do the following:
@@ -22,6 +22,7 @@
 
 /*
  *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -63,87 +64,90 @@ interface SampleDataFile : WPDataFile   //# &&& SampleDataFile is a WPDataFile s
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# Class modifiers:
+        //#     these are special SOM compiler keywords which are
+        //#     somewhat magic. These must be specified, or the
+        //#     SOM compiler will produce garbage.
 
-    //# Class modifiers:
-    //#     these are special SOM compiler keywords which are
-    //#     somewhat magic. These must be specified, or the
-    //#     SOM compiler will produce garbage.
+        externalprefix = sdf_;              //# &&& prefix for all the function names generated
+                                            //# by the SOM compiler; this must be unique among
+                                            //# all XWorkplace classes!
+        externalstem = sdf;                 //# &&& same as above, without "_"
+        majorversion = 1;
+        minorversion = 1;
+        filestem = spldataf;                //# &&& specifies the filestem for files generated
+                                            //# by the SOM compiler (e.g. spldataf.h, spldataf.ih,
+                                            //# spldataf.c)
+        metaclass = M_SampleDataFile;
+        dllname = "xfldr.dll";              //# target DLL, do not modify
+        callstyle = oidl;                   //# forget CORBA stuff (*ev and such)
 
-    externalprefix = sdf_;              //# &&& prefix for all the function names generated
-                                        //# by the SOM compiler; this must be unique among
-                                        //# all XWorkplace classes!
-    externalstem = sdf;                 //# &&& same as above, without "_"
-    majorversion = 1;
-    minorversion = 1;
-    filestem = spldataf;                //# &&& specifies the filestem for files generated
-                                        //# by the SOM compiler (e.g. spldataf.h, spldataf.ih,
-                                        //# spldataf.c)
-    metaclass = M_SampleDataFile;
-    dllname = "xfldr.dll";              //# target DLL, do not modify
-    callstyle = oidl;                   //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for SampleDataFile:
-     *      every instance of this class will have variables
-     *      (same as member variables in C++). These can be
-     *      accessed using the variable name here prefixed
-     *      with an underscore. For example, use "_fSampleBOOL"
-     *      in your C code.
-     *
-     *      If your class defines instance variables, you need to
-     *      override the following methods:
-     *
-     *      -- wpInitData must initialize the variable to something,
-     *         or its value will be undefined. This method can be
-     *         considered a constructor.
-     *
-     *      -- If you allocated memory, wpUnInitData must clean up.
-     *         This is the equivalent of a destructor.
-     *
-     *      -- If you want a WPS setup string for this instance
-     *         variable, wpSetup must parse the setup string, set
-     *         the variable, and update open views of the object.
-     *
-     *      -- If the value of the variable is to be persistent
-     *         between Desktop restarts, wpSaveState and wpRestoreState
-     *         must save and restore the value to the object's
-     *         persistent data. Where this data is stored depends
-     *         on the class's descendant; subclasses of WPAbstract
-     *         will use OS2.INI, subclasses of WPFileSystem will
-     *         use the .CLASSINFO extended attribute.
-     */
+        passthru C_h =
+"";
 
-    BOOL    fSampleBOOL;
+        /*
+         * Internal instance variables for SampleDataFile:
+         *      every instance of this class will have variables
+         *      (same as member variables in C++). These can be
+         *      accessed using the variable name here prefixed
+         *      with an underscore. For example, use "_fSampleBOOL"
+         *      in your C code.
+         *
+         *      If your class defines instance variables, you need to
+         *      override the following methods:
+         *
+         *      -- wpInitData must initialize the variable to something,
+         *         or its value will be undefined. This method can be
+         *         considered a constructor.
+         *
+         *      -- If you allocated memory, wpUnInitData must clean up.
+         *         This is the equivalent of a destructor.
+         *
+         *      -- If you want a WPS setup string for this instance
+         *         variable, wpSetup must parse the setup string, set
+         *         the variable, and update open views of the object.
+         *
+         *      -- If the value of the variable is to be persistent
+         *         between Desktop restarts, wpSaveState and wpRestoreState
+         *         must save and restore the value to the object's
+         *         persistent data. Where this data is stored depends
+         *         on the class's descendant; subclasses of WPAbstract
+         *         will use OS2.INI, subclasses of WPFileSystem will
+         *         use the .CLASSINFO extended attribute.
+         */
 
-    /*
-     * WPDataFile methods overridden by SampleDataFile
-     *      (typical methods listed here):
-     *
-     *      for each of these methods, the SOM compiler will
-     *      generate an empty function stub in the C source
-     *      file which you must then fill in to make it do
-     *      anything meaningful.
-     */
+        BOOL    fSampleBOOL;
 
-    wpInitData: override;
-    wpSetup: override;
-    wpUnInitData: override;
+        /*
+         * WPDataFile methods overridden by SampleDataFile
+         *      (typical methods listed here):
+         *
+         *      for each of these methods, the SOM compiler will
+         *      generate an empty function stub in the C source
+         *      file which you must then fill in to make it do
+         *      anything meaningful.
+         */
 
-    wpSaveState: override;
-    wpRestoreState: override;
+        wpInitData: override;
+        wpSetup: override;
+        wpUnInitData: override;
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
+        wpSaveState: override;
+        wpRestoreState: override;
 
-#ifdef __PRIVATE__
-
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
+        wpMenuItemSelected: override;
+        wpMenuItemHelpSelected: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -199,39 +203,38 @@ interface M_SampleDataFile : M_WPDataFile
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# Class Modifiers
+        externalprefix = sdfM_;         //# &&& same prefix as above, but add "M" for the metaclass
+        externalstem = sdfM;            //# &&&
+        functionprefix = sdfM_;         //# &&&
+        majorversion = 1;
+        minorversion = 1;
+        filestem = spldataf;            //# must be same as above
+        dllname = "xfldr.dll";          //# target DLL, do not modify
+        callstyle = oidl;
 
-    //# Class Modifiers
-    externalprefix = sdfM_;         //# &&& same prefix as above, but add "M" for the metaclass
-    externalstem = sdfM;            //# &&&
-    functionprefix = sdfM_;         //# &&&
-    majorversion = 1;
-    minorversion = 1;
-    filestem = spldataf;            //# must be same as above
-    dllname = "xfldr.dll";          //# target DLL, do not modify
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_SampleDataFile:
+         *      similar to objects (as defined by the class),
+         *      classes can have member variables also (defined
+         *      by the metaclass). List them here as with the
+         *      class definition (above).
+         */
 
-    /*
-     * Internal class variables for M_SampleDataFile:
-     *      similar to objects (as defined by the class),
-     *      classes can have member variables also (defined
-     *      by the metaclass). List them here as with the
-     *      class definition (above).
-     */
+        /*
+         * M_WPDataFile methods overridden by M_SampleDataFile:
+         *
+         */
 
-    /*
-     * M_WPDataFile methods overridden by M_SampleDataFile:
-     *
-     */
+        wpclsInitData: override;
+        wpclsQueryTitle: override;
 
-    wpclsInitData: override;
-    wpclsQueryTitle: override;
-
-    wpclsQueryInstanceFilter: override;
-    wpclsQueryInstanceType: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryInstanceFilter: override;
+        wpclsQueryInstanceType: override;
+    };
+#endif
 };
 
 

@@ -31,19 +31,14 @@ InputFile = linein(InputFileName);
 parse var InputFile define ident level;
 call stream InputFileName, 'c', 'close';
 
-if (substr(level, 1, 1) \= '"') then do
-    Say "raisebld: error parsing build.h";
-    exit;
-end
+say 'old level: "'level'"';
 
-p = pos('"', substr(level, 2, 100));
-Level = substr(level, 2, length(level)-2);
 Newlevel = abs(Level)+1;
 
-Output = define" "ident' "'Newlevel'"';
-Say Output
+Output = define" "ident' 'Newlevel;
+Say 'new line: 'Output
 
-"del" InputFileName;
+"@del" InputFileName;
 call stream InputFileName, 'c', 'open write';
 rc = lineout(InputFileName, Output);
 call stream InputFileName, 'c', 'close';

@@ -25,7 +25,6 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-// #include <secure.h>
 
 #include <string.h>
 

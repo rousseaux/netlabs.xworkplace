@@ -35,9 +35,15 @@ SEGMENTS
     FREQ_CODE2   CLASS 'CODE'    LOADONCALL
 
 IMPORTS
-    DOSQPROCSTATUS = DOSCALLS.154
-    DosQuerySysState = DOSCALLS.368
-    DOS16GETINFOSEG = DOSCALLS.8
+    DOSQPROCSTATUS      = DOSCALLS.154
+    DosQuerySysState    = DOSCALLS.368
+    DOS16GETINFOSEG     = DOSCALLS.8
+
+; interesting PMWP entry points (see http://home.clara.net/orac/os2/pmwp.htm)
+    ShlAllocMem         = PMWP.150  ; added prefix to avoid confusion
+    ShlFreeMem          = PMWP.151  ; added prefix to avoid confusion
+    ShlStoreString      = PMWP.428
+    ShlFreeString       = PMWP.429
 
 EXPORTS
     apmhOpen
@@ -362,4 +368,10 @@ EXPORTS
     M_XWPVCardClassData
     M_XWPVCardNewClass
 
+   XWPImageFileCClassData
+   XWPImageFileClassData
+   XWPImageFileNewClass
+   M_XWPImageFileCClassData
+   M_XWPImageFileClassData
+   M_XWPImageFileNewClass
 

@@ -85,6 +85,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\mmpmh.h"              // MMPM/2 helpers
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
@@ -113,52 +114,6 @@ static PSZ         G_pszSoundFile = NULL;
 static THREADINFO  G_tiPartyThread = {0};
 
 static PCSZ WNDCLASS_MEDIAOBJECT = "XWPPartyThread";
-
-/* ******************************************************************
- *
- *   Function imports
- *
- ********************************************************************/
-
-// resolved function addresses...
-FNTD_MCISENDCOMMAND         *G_mciSendCommand = NULL;
-FNTD_MCIGETERRORSTRING      *G_mciGetErrorString = NULL;
-FNTD_MMIOINIFILECODEC       *G_mmioIniFileCODEC = NULL;
-FNTD_MMIOQUERYCODECNAMELENGTH *G_mmioQueryCODECNameLength;
-FNTD_MMIOQUERYCODECNAME     *G_mmioQueryCODECName = NULL;
-FNTD_MMIOINIFILEHANDLER     *G_mmioIniFileHandler = NULL;
-FNTD_MMIOQUERYFORMATCOUNT   *G_mmioQueryFormatCount = NULL;
-FNTD_MMIOGETFORMATS         *G_mmioGetFormats = NULL;
-FNTD_MMIOGETFORMATNAME      *G_mmioGetFormatName = NULL;
-
-/*
- * G_aResolveFromMDM:
- *      functions imported from MDM.DLL.
- *      Used with doshResolveImports.
- */
-
-static const RESOLVEFUNCTION G_aResolveFromMDM[] =
-        {
-                "mciSendCommand", (PFN*)&G_mciSendCommand,
-                "mciGetErrorString", (PFN*)&G_mciGetErrorString
-        };
-
-/*
- * G_aResolveFromMMIO:
- *      functions resolved from MMIO.DLL.
- *      Used with doshResolveImports.
- */
-
-static const RESOLVEFUNCTION G_aResolveFromMMIO[] =
-        {
-                "mmioIniFileCODEC", (PFN*)&G_mmioIniFileCODEC,
-                "mmioQueryCODECNameLength", (PFN*)&G_mmioQueryCODECNameLength,
-                "mmioQueryCODECName", (PFN*)&G_mmioQueryCODECName,
-                "mmioIniFileHandler", (PFN*)&G_mmioIniFileHandler,
-                "mmioQueryFormatCount", (PFN*)&G_mmioQueryFormatCount,
-                "mmioGetFormats", (PFN*)&G_mmioGetFormats,
-                "mmioGetFormatName", (PFN*)&G_mmioGetFormatName,
-        };
 
 /* ******************************************************************
  *
@@ -486,26 +441,12 @@ void _Optlink xmm_fntPartyThread(PTHREADINFO pti)
 
 BOOL xmmInit(VOID)
 {
-    HMODULE hmodMDM = NULLHANDLE,
-            hmodMMIO = NULLHANDLE;
-
     initLog("Entering " __FUNCTION__ ":");
 
     G_ulMMPM2Working = MMSTAT_WORKING;
 
-    if (doshResolveImports("MDM.DLL",
-                           &hmodMDM,
-                           G_aResolveFromMDM,
-                           sizeof(G_aResolveFromMDM) / sizeof(G_aResolveFromMDM[0]))
-            != NO_ERROR)
+    if (mmhInit())
         G_ulMMPM2Working = MMSTAT_IMPORTSFAILED;
-    else
-        if (doshResolveImports("MMIO.DLL",
-                               &hmodMMIO,
-                               G_aResolveFromMMIO,
-                               sizeof(G_aResolveFromMMIO) / sizeof(G_aResolveFromMMIO[0]))
-                != NO_ERROR)
-            G_ulMMPM2Working = MMSTAT_IMPORTSFAILED;
 
     initLog("  Resolved MMPM/2 imports, new XWP media status: %d",
                       G_ulMMPM2Working);

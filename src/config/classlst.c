@@ -1213,6 +1213,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-02) [umoeller]: moved wpRegisterView etc. to cllCreateClassListView
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: beautified split view a little
  */
 
 STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1232,9 +1233,7 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
         {
             // frame window successfully created:
             SPLITBARCDATA   sbcd;
-            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
-            // HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
             HAB             hab = WinQueryAnchorBlock(hwndClient);
 
             // now add the view to the object's use list;
@@ -1281,7 +1280,7 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
 
-            // load popup menu
+            // preload popup menu
             pClientData->hmenuClassPopup
                 = WinLoadMenu(HWND_OBJECT,
                               cmnQueryNLSModuleHandle(FALSE),
@@ -1304,7 +1303,7 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
 
-            // load popup menu
+            // preload popup menu
             pClientData->hmenuMethodsWhitespacePopup
                 = WinLoadMenu(HWND_OBJECT,
                               cmnQueryNLSModuleHandle(FALSE),
@@ -1335,7 +1334,8 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
             sbcd.ulCreateFlags = SBCF_VERTICAL          // vertical split bar
                                     | SBCF_PERCENTAGE   // lPos has split bar pos
                                                         // in percent of the client
-                                    | SBCF_3DSUNK       // draw 3D "sunk" frame
+                                    | SBCF_3DEXPLORERSTYLE // V1.0.1 (2003-01-25) [umoeller]
+                                    // SBCF_3DSUNK       // draw 3D "sunk" frame
                                     | SBCF_MOVEABLE ;    // moveable split bar
             sbcd.lPos = 50;
             sbcd.hwndParentAndOwner = hwndClient;
@@ -1387,17 +1387,17 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
          */
 
         case WM_WINDOWPOSCHANGED:
-        {
-            // this msg is passed two SWP structs:
-            // one for the old, one for the new data
-            // (from PM docs)
-            PSWP pswpNew = PVOIDFROMMP(mp1);
-            // PSWP pswpOld = pswpNew + 1;
-
-            // resizing?
-            if (pswpNew->fl & SWP_SIZE)
+            if (pClientData)
             {
-                if (pClientData)
+                // this msg is passed two SWP structs:
+                // one for the old, one for the new data
+                // (from PM docs)
+                PSWP pswpNew = PVOIDFROMMP(mp1);
+
+                // resizing?
+                if (pswpNew->fl & SWP_SIZE)
+                {
+
                     // adjust size of "split window",
                     // which will rearrange all the linked
                     // windows (comctl.c)
@@ -1405,10 +1405,8 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
                                     0, 0,
                                     pswpNew->cx, pswpNew->cy, // sCXNew, sCYNew,
                                     SWP_SIZE);
+                }
             }
-
-            // return default NULL
-        }
         break;
 
         /*

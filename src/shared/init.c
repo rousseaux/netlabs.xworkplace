@@ -103,6 +103,7 @@
 #define INCLUDE_WPHANDLE_PRIVATE
 #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
+#include "helpers\xwpsecty.h"           // XWorkplace Security
 
 // SOM headers which don't crash with prec. header files
 #include "xfstart.ih"
@@ -121,8 +122,6 @@
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
-
-#include "helpers\xwpsecty.h"           // XWorkplace Security
 
 #include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -1312,6 +1311,11 @@ VOID CheckClassOrder(VOID)
  *         which will register the XWorkplace hook (XWPHOOK.DLL,
  *         xwphook.c, all new with V0.9.0). See xwpdaemon.c for details.
  *
+ *      This now returns TRUE if the WPS is currently in the
+ *      process of starting up and FALSE if wpclsInitData got
+ *      called while the WPS was registering classes while it
+ *      was already running. V1.0.1 (2003-01-25) [umoeller]
+ *
  *@@changed V0.9.0 [umoeller]: renamed from xthrInitializeThreads
  *@@changed V0.9.0 [umoeller]: added dialog for shift key during Desktop startup
  *@@changed V0.9.0 [umoeller]: added XWorkplace daemon/hook
@@ -1331,493 +1335,527 @@ VOID CheckClassOrder(VOID)
  *@@changed V1.0.0 (2002-08-26) [umoeller]: added checks for proper class replacements ordering
  *@@changed V1.0.0 (2002-09-17) [umoeller]: added daemon NLS init
  *@@changed V1.0.1 (2002-12-08) [umoeller]: fixed stupid hwndDaemonObject log message @@fixes 64
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: moved window testing in here from wpclsInitData, returning BOOL now
  */
 
-VOID initMain(VOID)
+BOOL initMain(VOID)
 {
-    static BOOL fInitialized = FALSE;
-
-    HOBJECT     hobjDesktop;
     CHAR        szPath[CCHMAXPATH];
+    HENUM       henum;
+    HWND        hwndThis;
+    PCSETTINGINFO pSettInfo;
+    BOOL        fNoExcptBeeps = TRUE,
+                fWriteXWPStartupLog = TRUE,
+                fLogLocked = FALSE;
 
-    // check if we're called for the first time,
-    // because we better initialize this only once
-    if (fInitialized)
-        return;
-
-    fInitialized = TRUE;
+    BOOL        brc = FALSE;
 
     // initialize global vars V0.9.19 (2002-04-24) [umoeller]
     G_fIsWarp4 = doshIsWarp4();
+    G_pidWPS = doshMyPID();
+    G_tidWorkplaceThread = doshMyTID();
+    DosGetDateTime(&G_StartupDateTime);
 
     winhInitGlobals();            // V1.0.1 (2002-11-30) [umoeller]
-
-    // force loading of the global settings
-    cmnLoadGlobalSettings();
 
     // zero KERNELGLOBALS
     memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
 
-    G_pidWPS = doshMyPID();
-    G_tidWorkplaceThread = doshMyTID();
+    // Alright, the rest of this code was greatly reordered to
+    // allow for getting as much code as possible into the
+    // TRY block. Since I suspect that the desktop hangs that
+    // many people were getting with XWP 1.0.0 are somehow
+    // related to traps in unprotected code, maybe this will
+    // help finding out. V1.0.1 (2003-01-25) [umoeller]
+
+    // However, this is not exactly trivial... we must preload
+    // the following two global setting fields first in order
+    // to be able to do both exception handling and startup
+    // logging right:
+
+    if (pSettInfo = cmnFindSettingInfo(sfNoExcptBeeps))
+        fNoExcptBeeps = cmnLoadOneSetting(pSettInfo);
+
+    if (pSettInfo = cmnFindSettingInfo(sfWriteXWPStartupLog))
+        fWriteXWPStartupLog = cmnLoadOneSetting(pSettInfo);
 
     // moved the following up V0.9.16 (2001-12-08) [umoeller]
-    #ifdef __XWPMEMDEBUG__
-        // set global memory error callback
-        G_pMemdLogFunc = krnMemoryError;
-    #endif
+#ifdef __XWPMEMDEBUG__
+    // set global memory error callback
+    G_pMemdLogFunc = krnMemoryError;
+#endif
 
-    // register exception hooks for /helpers/except.c
+    // now we can register the exception hooks for /helpers/except.c
     excRegisterHooks(krnExceptOpenLogFile,
                      krnExceptExplainXFolder,
                      krnExceptError,
-#ifndef __NOPARANOIA__
-                     !cmnQuerySetting(sfNoExcptBeeps));
-#else
-                     FALSE);
-#endif
-
-    if (cmnQuerySetting(sfWriteXWPStartupLog))       // V0.9.14 (2001-08-21) [umoeller]
-    {
-        APIRET  arc;
-        ULONG   cbFile = 0;
-
-        if (    (krnMakeLogFilename(szPath,
-                                    STARTUPLOG))
-             && (!(arc = doshOpen(szPath,
-                                  XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
-                                  &cbFile,
-                                  &G_pStartupLogFile)))
-           )
-        {
-            doshWrite(G_pStartupLogFile,
-                      0,
-                      "\n\nStartup log opened, entering " __FUNCTION__ "\n");
-            doshWrite(G_pStartupLogFile,
-                      0,
-                      "------------------------------------------------------\n\n");
-
-            initLog(__FUNCTION__ ": PID 0x%lX, TID 0x%lX",
-                              G_pidWPS,
-                              G_tidWorkplaceThread);
-        }
-    }
-
-    // store Desktop startup time
-    DosGetDateTime(&G_StartupDateTime);
-
-    // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
-    winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
-                           &G_KernelGlobals.hwndSysError);
-
-    // initialize awake-objects list (which holds
-    // plain WPObject* pointers)
-    // G_KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
-                                    // moved to xthreads.c V0.9.9 (2001-04-04) [umoeller]
-
-    // create thread-1 object window
-    /* WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                     (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
-                     (PFNWP)krn_fnwpThread1Object,   // Window procedure
-                     0,                  // class style
-                     0);                 // extra window words
-    G_KernelGlobals.hwndThread1Object
-        = winhCreateObjectWindow(WNDCLASS_THREAD1OBJECT, // class name
-                                 NULL);        // create params
-    */
+                     !fNoExcptBeeps);
 
     TRY_LOUD(excpt1)
     {
-        APIRET arc;
-        PSZ pszActiveHandles;
+        APIRET      arc;
+        PSZ         pszActiveHandles;
+        HOBJECT     hobjDesktop;
+        BOOL        fOpenFoldersFound = FALSE;
 
-        // moved all the following code inside the excpt handler
-        // V1.0.1 (2002-12-11) [umoeller]
+        if (    (fWriteXWPStartupLog)       // V0.9.14 (2001-08-21) [umoeller]
+             && (fLogLocked = LockLog())
+           )
+        {
+            ULONG   cbFile = 0;
 
-        krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
-                    // sets G_habThread1 as well
+            if (    (doshCreateLogFilename(szPath,
+                                           STARTUPLOG,
+                                           F_ALLOW_BOOTROOT_LOGFILE))
+                 && (!(arc = doshOpen(szPath,
+                                      XOPEN_READWRITE_APPEND | XOPEN_WRITETHRU,  // not XOPEN_BINARY
+                                            // added XOPEN_WRITETHRU V1.0.1 (2003-01-25) [umoeller]
+                                      &cbFile,
+                                      &G_pStartupLogFile)))
+               )
+            {
+                doshWrite(G_pStartupLogFile,
+                          0,
+                          "\n\nStartup log opened, entering " __FUNCTION__ "\n");
+                doshWrite(G_pStartupLogFile,
+                          0,
+                          "------------------------------------------------------\n\n");
+
+                initLog(__FUNCTION__ ": PID 0x%lX, TID 0x%lX",
+                                  G_pidWPS,
+                                  G_tidWorkplaceThread);
+            }
+
+            UnlockLog();
+            fLogLocked = FALSE;
+        }
+
+        // force loading of _all_ the global settings
+        cmnLoadGlobalSettings();
+
+        // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
+        winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
+                               &G_KernelGlobals.hwndSysError);
 
         cmnInitEntities();
 
-        initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
-                          G_KernelGlobals.hwndThread1Object);
+        // wpclsInitData calls exactly once and then never again,
+        // but wpclsInitData also gets called during installation
+        // while the WPS is registering classes. So check if we
+        // have any open folder windows: if so, the WPS is already
+        // running, and we should _not_ perform all the remaining
+        // initialization. Otherwise, the WPS is currently starting
+        // up.
+        // Moved the following code here from wpclsInitData (xfobj.c)
+        // V1.0.1 (2003-01-25) [umoeller]
 
-        initLog("XWorkplace API object window created, HWND 0x%lX",
-                          G_KernelGlobals.hwndAPIObject);
-
-        // if shift is pressed, show "Panic" dialog
-        // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
-        // of thread-1 window... we need this for starting xfix from
-        // the "panic" dlg.
-        // NOTE: This possibly changes global settings, so the wheel
-        // watcher evaluation must come AFTER this! Same for turbo
-        // folders, which is OK because G_fTurboSettingsEnabled is
-        // enabled only in M_XWPFileSystem::wpclsInitData (because
-        // it requires XWPFileSystem to be present)
-        ShowStartupDlgs();
-
-        // check if "replace folder refresh" is enabled...
-        if (krnReplaceRefreshEnabled())
-            // yes: kick out WPS wheel watcher thread,
-            // start our own one instead
-            ReplaceWheelWatcher();
-
-        /*
-         *  enable NumLock at startup
-         *      V0.9.1 (99-12-19) [umoeller]
-         */
-
-        if (cmnQuerySetting(sfNumLockStartup))
-            winhSetNumLock(TRUE);
-
-        /*
-         * CheckClassOrder:
-         *
-         */
-
-        CheckClassOrder();
-
-        // assume defaults for the handle hiwords;
-        // these should be correct with 95% of all systems
-        // V0.9.17 (2002-02-05) [umoeller]
-        G_usHiwordAbstract = 2;
-        G_usHiwordFileSystem = 3;
-
-        if (arc = wphQueryActiveHandles(HINI_SYSTEM, &pszActiveHandles))
+        // check if we have any open folder windows;
+        // if so, we're not really in the process of starting
+        // up. This check is necessary because this class
+        // method also gets called when the classes are installed
+        // by WinRegisterObjectClass, unfortunately, and we don't
+        // want to start threads etc. then.
+        initLog("checking desktop windows");
+        henum = WinBeginEnumWindows(HWND_DESKTOP);
+        while (hwndThis = WinGetNextWindow(henum))
         {
-            // OK, new situation here. If XWP is installed via INI.RC,
-            // this code gets called on the first WPS startup before
-            // any objects are created. In that case, the handles
-            // section does indeed no exist yet. We must not bug the
-            // user with a report in that situation. So check if we
-            // have the special "fCDBoot" entry in os2.ini, which means
-            // that we're currently being installed, and only in that
-            // case, set G_ulDesktopValid to DESKTOP_VALID to shut up
-            // the message box.
-            // V1.0.0 (2002-09-20) [umoeller]
-            ULONG   fCDBoot = 0,
-                    cb = sizeof(fCDBoot);
-            PrfQueryProfileData(HINI_USER,
-                                (PSZ)INIAPP_XWORKPLACE,
-                                "fCDBoot",
-                                &fCDBoot,
-                                &cb);
-            initLog("fCDBoot is %d", fCDBoot);
-
-            if (fCDBoot)
+            if (!WinQueryClassName(hwndThis, sizeof(szPath), szPath))
+                break;
+            else if (!strcmp(szPath, WC_WPFOLDERWINDOW))
             {
-                G_ulDesktopValid = DESKTOP_VALID;
-                // assume the 99% defaults for the hiword stuff
-                G_usHiwordAbstract = 2;
-                G_usHiwordFileSystem = 3;
+                // folder window:
+                fOpenFoldersFound = TRUE;
+                break; // V1.0.1 (2003-01-25) [umoeller]
+            }
+        }
+        WinEndEnumWindows(henum);
 
-                // and delete the key
-                PrfWriteProfileData(HINI_USER,
+        initLog("  windows checked, fOpenFoldersFound is BOOL %d",
+                fOpenFoldersFound);
+
+        if (!fOpenFoldersFound)
+        {
+            // only if no open folders are found,
+            // do the rest!
+
+            krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
+                        // sets G_habThread1 as well
+
+            initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
+                              G_KernelGlobals.hwndThread1Object);
+
+            initLog("XWorkplace API object window created, HWND 0x%lX",
+                              G_KernelGlobals.hwndAPIObject);
+
+            // if shift is pressed, show "Panic" dialog
+            // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
+            // of thread-1 window... we need this for starting xfix from
+            // the "panic" dlg.
+            // NOTE: This possibly changes global settings, so the wheel
+            // watcher evaluation must come AFTER this! Same for turbo
+            // folders, which is OK because G_fTurboSettingsEnabled is
+            // enabled only in M_XWPFileSystem::wpclsInitData (because
+            // it requires XWPFileSystem to be present)
+            ShowStartupDlgs();
+
+            // check if "replace folder refresh" is enabled...
+            if (krnReplaceRefreshEnabled())
+                // yes: kick out WPS wheel watcher thread,
+                // start our own one instead
+                ReplaceWheelWatcher();
+
+            /*
+             *  enable NumLock at startup
+             *      V0.9.1 (99-12-19) [umoeller]
+             */
+
+            if (cmnQuerySetting(sfNumLockStartup))
+                winhSetNumLock(TRUE);
+
+            /*
+             * CheckClassOrder:
+             *
+             */
+
+            CheckClassOrder();
+
+            // assume defaults for the handle hiwords;
+            // these should be correct with 95% of all systems
+            // V0.9.17 (2002-02-05) [umoeller]
+            G_usHiwordAbstract = 2;
+            G_usHiwordFileSystem = 3;
+
+            if (arc = wphQueryActiveHandles(HINI_SYSTEM, &pszActiveHandles))
+            {
+                // OK, new situation here. If XWP is installed via INI.RC,
+                // this code gets called on the first WPS startup before
+                // any objects are created. In that case, the handles
+                // section does indeed no exist yet. We must not bug the
+                // user with a report in that situation. So check if we
+                // have the special "fCDBoot" entry in os2.ini, which means
+                // that we're currently being installed, and only in that
+                // case, set G_ulDesktopValid to DESKTOP_VALID to shut up
+                // the message box.
+                // V1.0.0 (2002-09-20) [umoeller]
+                ULONG   fCDBoot = 0,
+                        cb = sizeof(fCDBoot);
+                PrfQueryProfileData(HINI_USER,
                                     (PSZ)INIAPP_XWORKPLACE,
                                     "fCDBoot",
-                                    NULL,
-                                    0);
-            }
-            else
-            {
-                initLog("WARNING: wphQueryActiveHandles returned %d", arc);
-                G_ulDesktopValid = NO_ACTIVE_HANDLES;
-                        // this was missing, G_ulDesktopValid was still -1 in
-                        // that case V1.0.0 (2002-09-20) [umoeller]
-                G_arcHandles = arc;
-            }
-        }
-        else
-        {
-            HHANDLES hHandles;
+                                    &fCDBoot,
+                                    &cb);
+                initLog("fCDBoot is %d", fCDBoot);
 
-            if (arc = wphLoadHandles(HINI_USER,
-                                     HINI_SYSTEM,
-                                     pszActiveHandles,
-                                     &hHandles))
-            {
-                initLog("WARNING: wphLoadHandles returned %d", arc);
-                G_ulDesktopValid = HANDLES_BROKEN;
-                G_arcHandles = arc;
+                if (fCDBoot)
+                {
+                    G_ulDesktopValid = DESKTOP_VALID;
+                    // assume the 99% defaults for the hiword stuff
+                    G_usHiwordAbstract = 2;
+                    G_usHiwordFileSystem = 3;
+
+                    // and delete the key
+                    PrfWriteProfileData(HINI_USER,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        "fCDBoot",
+                                        NULL,
+                                        0);
+                }
+                else
+                {
+                    initLog("WARNING: wphQueryActiveHandles returned %d", arc);
+                    G_ulDesktopValid = NO_ACTIVE_HANDLES;
+                            // this was missing, G_ulDesktopValid was still -1 in
+                            // that case V1.0.0 (2002-09-20) [umoeller]
+                    G_arcHandles = arc;
+                }
             }
             else
             {
-                // get the abstract and file-system handle hiwords for
-                // future use
-                G_usHiwordAbstract = ((PHANDLESBUF)hHandles)->usHiwordAbstract;
-                G_usHiwordFileSystem = ((PHANDLESBUF)hHandles)->usHiwordFileSystem;
+                HHANDLES hHandles;
+
+                if (arc = wphLoadHandles(HINI_USER,
+                                         HINI_SYSTEM,
+                                         pszActiveHandles,
+                                         &hHandles))
+                {
+                    initLog("WARNING: wphLoadHandles returned %d", arc);
+                    G_ulDesktopValid = HANDLES_BROKEN;
+                    G_arcHandles = arc;
+                }
+                else
+                {
+                    // get the abstract and file-system handle hiwords for
+                    // future use
+                    G_usHiwordAbstract = ((PHANDLESBUF)hHandles)->usHiwordAbstract;
+                    G_usHiwordFileSystem = ((PHANDLESBUF)hHandles)->usHiwordFileSystem;
 
 #ifndef __NEVERCHECKDESKTOP__
-                if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
-                {
-                    // go build the handles cache explicitly... CheckDesktop
-                    // calls wphComposePath which would call this automatically,
-                    // but then we can't catch the error code and people get
-                    // complaints about a desktop failure even though only
-                    // one handle is invalid which doesn't endanger the system,
-                    // so give the user a different warning instead if this
-                    // fails, and allow him to disable checks for the future
-                    // V0.9.17 (2002-02-05) [umoeller]
-                    if (arc = wphRebuildNodeHashTable(hHandles,
-                                                      TRUE))        // fail on errors
+                    if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
                     {
-                        CHAR sz[30];
-                        PCSZ psz = sz;
-                        initLog("WARNING: wphRebuildNodeHashTable returned %d", arc);
-                        sprintf(sz, "%d", arc);
-                        if (cmnMessageBoxExt(NULLHANDLE,
-                                                230,        // desktop error
-                                                &psz,
-                                                1,
-                                                231,        // error %d parsing handles...
-                                                MB_YESNO)
-                                == MBID_YES)
+                        // go build the handles cache explicitly... CheckDesktop
+                        // calls wphComposePath which would call this automatically,
+                        // but then we can't catch the error code and people get
+                        // complaints about a desktop failure even though only
+                        // one handle is invalid which doesn't endanger the system,
+                        // so give the user a different warning instead if this
+                        // fails, and allow him to disable checks for the future
+                        // V0.9.17 (2002-02-05) [umoeller]
+                        if (arc = wphRebuildNodeHashTable(hHandles,
+                                                          TRUE))        // fail on errors
                         {
-                            ShowPanicDlg(TRUE);     // force
+                            CHAR sz[30];
+                            PCSZ psz = sz;
+                            initLog("WARNING: wphRebuildNodeHashTable returned %d", arc);
+                            sprintf(sz, "%d", arc);
+                            if (cmnMessageBoxExt(NULLHANDLE,
+                                                    230,        // desktop error
+                                                    &psz,
+                                                    1,
+                                                    231,        // error %d parsing handles...
+                                                    MB_YESNO)
+                                    == MBID_YES)
+                            {
+                                ShowPanicDlg(TRUE);     // force
+                            }
+
+                            // in any case, do not let the "cannot find desktop"
+                            // dialog come up
+                            G_ulDesktopValid = DESKTOP_VALID;
                         }
-
-                        // in any case, do not let the "cannot find desktop"
-                        // dialog come up
-                        G_ulDesktopValid = DESKTOP_VALID;
-                    }
+                        else
+                        {
+                            // go check if the desktop is valid
+                            G_ulDesktopValid = CheckDesktop(hHandles);
+                        }
+                    } // if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
                     else
-                    {
-                        // go check if the desktop is valid
-                        G_ulDesktopValid = CheckDesktop(hHandles);
-                    }
-                } // if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
-                else
-#endif
-                    G_ulDesktopValid = DESKTOP_VALID;
+#endif // __NEVERCHECKDESKTOP__
+                        G_ulDesktopValid = DESKTOP_VALID;
 
-                wphFreeHandles(&hHandles);
+                    wphFreeHandles(&hHandles);
+                }
+
+                free(pszActiveHandles);
             }
 
-            free(pszActiveHandles);
-        }
-    }
-    CATCH(excpt1)
-    {
-        initLog("WARNING: Crash while checking file-system handles!");
-    } END_CATCH();
+            if (G_ulDesktopValid != DESKTOP_VALID)
+                // if we couldn't find the desktop, disable archiving
+                // V0.9.16 (2001-10-25) [umoeller]
+                arcForceNoArchiving();
 
-    if (G_ulDesktopValid != DESKTOP_VALID)
-        // if we couldn't find the desktop, disable archiving
-        // V0.9.16 (2001-10-25) [umoeller]
-        arcForceNoArchiving();
+            // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
+            xmmInit();
+                    // moved this down V0.9.9 (2001-01-31) [umoeller]
 
-    // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
-    xmmInit();
-            // moved this down V0.9.9 (2001-01-31) [umoeller]
+            /*
+             *  initialize threads
+             *
+             */
 
-    /*
-     *  initialize threads
-     *
-     */
+            xthrStartThreads();
 
-    xthrStartThreads();
-
-    /*
-     *  check Desktop archiving (V0.9.0)
-     *      moved this up V0.9.7 (2000-12-17) [umoeller];
-     *      we get crashes if a msg box is displayed otherwise
-     */
+            /*
+             *  check Desktop archiving (V0.9.0)
+             *      moved this up V0.9.7 (2000-12-17) [umoeller];
+             *      we get crashes if a msg box is displayed otherwise
+             */
 
 #ifndef __ALWAYSREPLACEARCHIVING__
-    if (cmnQuerySetting(sfReplaceArchiving))
+            if (cmnQuerySetting(sfReplaceArchiving))
 #endif
-        // check whether we need a WPS backup (archives.c)
-        arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,
-                               T1M_DESTROYARCHIVESTATUS);
+                // check whether we need a WPS backup (archives.c)
+                arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,
+                                       T1M_DESTROYARCHIVESTATUS);
 
-    /*
-     *  start XWorkplace daemon (XWPDAEMN.EXE)
-     *
-     */
+            /*
+             *  start XWorkplace daemon (XWPDAEMN.EXE)
+             *
+             */
 
-    {
-        // check for the XWPGLOBALSHARED structure, which
-        // is used for communication between the daemon
-        // and XFLDR.DLL (see src/Daemon/xwpdaemn.c).
-        // We take advantage of the fact that OS/2 keeps
-        // reference of the processes which allocate or
-        // request access to a block of shared memory.
-        // The XWPGLOBALSHARED struct is allocated here
-        // (just below) and requested by the daemon.
-        //
-        // -- If requesting the shared memory works at this point,
-        //    this means that the daemon is still running!
-        //    This happens after a Desktop restart. We'll then
-        //    skip the rest.
-        //
-        // -- If requesting the shared memory fails, this means
-        //    that the daemon is _not_ running (the WPS is started
-        //    for the first time). We then allocate the shared
-        //    memory and start the daemon, which in turn requests
-        //    this shared memory block. Note that this also happens
-        //    if the daemon stopped for some reason (crash, kill)
-        //    and the user then restarts the WPS.
+            // check for the XWPGLOBALSHARED structure, which
+            // is used for communication between the daemon
+            // and XFLDR.DLL (see src/Daemon/xwpdaemn.c).
+            // We take advantage of the fact that OS/2 keeps
+            // reference of the processes which allocate or
+            // request access to a block of shared memory.
+            // The XWPGLOBALSHARED struct is allocated here
+            // (just below) and requested by the daemon.
+            //
+            // -- If requesting the shared memory works at this point,
+            //    this means that the daemon is still running!
+            //    This happens after a Desktop restart. We'll then
+            //    skip the rest.
+            //
+            // -- If requesting the shared memory fails, this means
+            //    that the daemon is _not_ running (the WPS is started
+            //    for the first time). We then allocate the shared
+            //    memory and start the daemon, which in turn requests
+            //    this shared memory block. Note that this also happens
+            //    if the daemon stopped for some reason (crash, kill)
+            //    and the user then restarts the WPS.
 
-        PXWPGLOBALSHARED pXwpGlobalShared = 0;
-        APIRET arc = DosGetNamedSharedMem((PVOID*)&pXwpGlobalShared,
-                                          SHMEM_XWPGLOBAL,
-                                          PAG_READ | PAG_WRITE);
+            arc = DosGetNamedSharedMem((PVOID*)&G_pXwpGlobalShared,
+                                       SHMEM_XWPGLOBAL,
+                                       PAG_READ | PAG_WRITE);
 
-        initLog("Attempted to access " SHMEM_XWPGLOBAL ", DosGetNamedSharedMem returned %d",
-                          arc);
+            initLog("Attempted to access " SHMEM_XWPGLOBAL ", DosGetNamedSharedMem returned %d",
+                              arc);
 
-        if (arc != NO_ERROR)
-        {
-            // BOOL    fDaemonStarted = FALSE;
+            if (arc)
+            {
+                // shared mem does not exist:
+                // --> daemon not running; probably first WPS
+                // startup, so we allocate the shared mem now and
+                // start the XWorkplace daemon
 
-            // shared mem does not exist:
-            // --> daemon not running; probably first WPS
-            // startup, so we allocate the shared mem now and
-            // start the XWorkplace daemon
+                initLog("--> XWPDAEMN not running, starting now.");
 
-            initLog("--> XWPDAEMN not running, starting now.");
+                arc = DosAllocSharedMem((PVOID*)&G_pXwpGlobalShared,
+                                        SHMEM_XWPGLOBAL,
+                                        sizeof(XWPGLOBALSHARED), // rounded up to 4KB
+                                        PAG_COMMIT | PAG_READ | PAG_WRITE);
 
-            arc = DosAllocSharedMem((PVOID*)&pXwpGlobalShared,
-                                    SHMEM_XWPGLOBAL,
-                                    sizeof(XWPGLOBALSHARED), // rounded up to 4KB
-                                    PAG_COMMIT | PAG_READ | PAG_WRITE);
+                initLog("  DosAllocSharedMem returned %d",
+                                  arc);
 
-            initLog("  DosAllocSharedMem returned %d",
+                if (!arc)
+                {
+                    // shared mem successfully allocated:
+                    memset(G_pXwpGlobalShared, 0, sizeof(XWPGLOBALSHARED));
+                    // store the thread-1 object window, which
+                    // gets messages from the daemon
+                    G_pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
+                    G_pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
+                            // V0.9.9 (2001-03-23) [umoeller]
+                    G_pXwpGlobalShared->ulWPSStartupCount = 1;
+                    // at the first Desktop start, always process startup folder
+                    G_pXwpGlobalShared->fProcessStartupFolder = TRUE;
+
+                    // now start the daemon;
+                    krnStartDaemon();
+
+                } // end if DosAllocSharedMem
+
+            } // end if DosGetNamedSharedMem
+            else
+            {
+                // shared memory block already exists:
+                // this means the daemon is already running
+                // and we have a Desktop restart
+
+                initLog("--> XWPDAEMN already running, refreshing.");
+
+                // store new thread-1 object wnd
+                G_pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
+                G_pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
+                            // V0.9.9 (2001-03-23) [umoeller]
+
+                // increase Desktop startup count
+                ++(G_pXwpGlobalShared->ulWPSStartupCount);
+
+                if (G_pXwpGlobalShared->hwndDaemonObject)
+                {
+                    BOOL fPager;
+                    WinSendMsg(G_pXwpGlobalShared->hwndDaemonObject,
+                               XDM_HOOKCONFIG,
+                               0, 0);
+                    WinSendMsg(G_pXwpGlobalShared->hwndDaemonObject,
+                               XDM_HOTKEYSCHANGED,
+                               0, 0);
+                        // cross-process post, synchronously:
+                        // this returns only after the hook has been re-initialized
+
+#ifndef __NOPAGER__
+                    // refresh the pager, this might have changed
+                    // after the user logs off
+                    // V0.9.19 (2002-04-02) [umoeller]
+                    fPager = cmnQuerySetting(sfEnableXPager);
+                    WinSendMsg(G_pXwpGlobalShared->hwndDaemonObject,
+                               XDM_STARTSTOPPAGER,
+                               (MPARAM)fPager,
+                               0);
+                    if (fPager)
+                        WinSendMsg(G_pXwpGlobalShared->hwndDaemonObject,
+                                   XDM_PAGERCONFIG,
+                                   (MPARAM)0xFFFFFFFF,      // all flags
+                                   0);
+#endif // __NOPAGER__
+                }
+                // we leave the "reuse startup folder" flag alone,
+                // because this was already set by XShutdown before
+                // the last Desktop restart
+
+                // in either case, load the strings for daemon NLS
+                // support V1.0.0 (2002-09-17) [umoeller]
+
+                // no, don't; moved this call to T1M_DAEMONREADY
+                // V1.0.1 (2002-12-08) [umoeller]
+                // cmnLoadDaemonNLSStrings();
+            }
+
+            /*
+             *  interface XWPSHELL.EXE
+             *
+             */
+
+            arc = DosGetNamedSharedMem((PVOID*)&G_pXWPShellShared,
+                                       SHMEM_XWPSHELL,
+                                       PAG_READ | PAG_WRITE);
+            initLog("Attempted to access " SHMEM_XWPSHELL ", DosGetNamedSharedMem returned %d",
                               arc);
 
             if (!arc)
             {
-                // shared mem successfully allocated:
-                memset(pXwpGlobalShared, 0, sizeof(XWPGLOBALSHARED));
-                // store the thread-1 object window, which
-                // gets messages from the daemon
-                pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
-                pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
-                        // V0.9.9 (2001-03-23) [umoeller]
-                pXwpGlobalShared->ulWPSStartupCount = 1;
-                // at the first Desktop start, always process startup folder
-                pXwpGlobalShared->fProcessStartupFolder = TRUE;
+                // shared memory exists:
+                // this means that XWPSHELL.EXE is running...
+                // set flag that WPS termination will not provoke
+                // logon; this is in case WPS crashes or user
+                // restarts WPS. Only "Logoff" desktop menu item
+                // will clear that flag.
+                G_pXWPShellShared->fNoLogonButRestart = TRUE;
 
-                // now start the daemon;
-                krnStartDaemon();
-
-            } // end if DosAllocSharedMem
-
-        } // end if DosGetNamedSharedMem
-        else
-        {
-            // shared memory block already exists:
-            // this means the daemon is already running
-            // and we have a Desktop restart
-
-            initLog("--> XWPDAEMN already running, refreshing.");
-
-            // store new thread-1 object wnd
-            pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
-            pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
-                        // V0.9.9 (2001-03-23) [umoeller]
-
-            // increase Desktop startup count
-            pXwpGlobalShared->ulWPSStartupCount++;
-
-            if (pXwpGlobalShared->hwndDaemonObject)
-            {
-                BOOL fPager;
-                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                           XDM_HOOKCONFIG,
-                           0, 0);
-                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                           XDM_HOTKEYSCHANGED,
-                           0, 0);
-                    // cross-process post, synchronously:
-                    // this returns only after the hook has been re-initialized
-
-#ifndef __NOPAGER__
-                // refresh the pager, this might have changed
-                // after the user logs off
-                // V0.9.19 (2002-04-02) [umoeller]
-                fPager = cmnQuerySetting(sfEnableXPager);
-                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                           XDM_STARTSTOPPAGER,
-                           (MPARAM)fPager,
-                           0);
-                if (fPager)
-                    WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                               XDM_PAGERCONFIG,
-                               (MPARAM)0xFFFFFFFF,      // all flags
-                               0);
-#endif
+                initLog("--> XWPSHELL running, refreshed; enabling multi-user mode.");
             }
-            // we leave the "reuse startup folder" flag alone,
-            // because this was already set by XShutdown before
-            // the last Desktop restart
-        }
+            else
+                initLog("--> XWPSHELL not running, going into single-user mode.");
 
-        G_KernelGlobals.pXwpGlobalShared = pXwpGlobalShared;
+            // close log only after desktop has populated now
+            // V0.9.19 (2002-04-02) [umoeller]
+            /*
+            doshWriteLogEntry(G_pStartupLogFile,
+                              "Leaving " __FUNCTION__", closing log.");
+            doshClose(&G_pStartupLogFile);
+            */
 
-        // in either case, load the strings for daemon NLS
-        // support V1.0.0 (2002-09-17) [umoeller]
+            // register extra window classes
 
-        // no, don't; moved this call to T1M_DAEMONREADY
-        // V1.0.1 (2002-12-08) [umoeller]
-        // cmnLoadDaemonNLSStrings();
+            ctlRegisterToolbar(G_habThread1);       // V1.0.1 (2002-11-30) [umoeller]
+            ctlRegisterSeparatorLine(G_habThread1);
+            txvRegisterTextView(G_habThread1);
+
+            // After this, startup continues normally...
+            // XWorkplace comes in again after the desktop has been fully populated.
+            // Our XFldDesktop::wpPopulate then posts FIM_DESKTOPPOPULATED to the
+            // File thread, which will do things like the startup folder and such.
+            // This will then start the startup thread (fntStartup), which finally
+            // checks for whether XWP was just installed; if so, T1M_WELCOME is
+            // posted to the thread-1 object window.
+
+            brc = TRUE;
+
+        } // if (!fOpenFoldersFound)
     }
-
-    /*
-     *  interface XWPSHELL.EXE
-     *
-     */
-
+    CATCH(excpt1)
     {
-        PXWPSHELLSHARED pXWPShellShared = 0;
-        APIRET arc = DosGetNamedSharedMem((PVOID*)&pXWPShellShared,
-                                          SHMEM_XWPSHELL,
-                                          PAG_READ | PAG_WRITE);
-        initLog("Attempted to access " SHMEM_XWPSHELL ", DosGetNamedSharedMem returned %d",
-                          arc);
+        initLog("WARNING: Crash during XWorkplace initialization!");
+    } END_CATCH();
 
-        if (arc == NO_ERROR)
-        {
-            // shared memory exists:
-            // this means that XWPSHELL.EXE is running...
-            // store this in KERNELGLOBALS
-            G_KernelGlobals.pXWPShellShared = pXWPShellShared;
-
-            // set flag that WPS termination will not provoke
-            // logon; this is in case WPS crashes or user
-            // restarts WPS. Only "Logoff" desktop menu item
-            // will clear that flag.
-            pXWPShellShared->fNoLogonButRestart = TRUE;
-
-            initLog("--> XWPSHELL running, refreshed; enabling multi-user mode.");
-        }
-        else
-            initLog("--> XWPSHELL not running, going into single-user mode.");
-    }
-
-    // close log only after desktop has populated now
-    // V0.9.19 (2002-04-02) [umoeller]
-    /*
-    doshWriteLogEntry(G_pStartupLogFile,
-                      "Leaving " __FUNCTION__", closing log.");
-    doshClose(&G_pStartupLogFile);
-    */
-
-    // register extra window classes
-
-    ctlRegisterToolbar(G_habThread1);       // V1.0.1 (2002-11-30) [umoeller]
-    ctlRegisterSeparatorLine(G_habThread1);
-    txvRegisterTextView(G_habThread1);
-
-    // After this, startup continues normally...
-    // XWorkplace comes in again after the desktop has been fully populated.
-    // Our XFldDesktop::wpPopulate then posts FIM_DESKTOPPOPULATED to the
-    // File thread, which will do things like the startup folder and such.
-    // This will then start the startup thread (fntStartup), which finally
-    // checks for whether XWP was just installed; if so, T1M_WELCOME is
-    // posted to the thread-1 object window.
+    if (fLogLocked)
+        UnlockLog();
 
     initLog("Leaving initMain");
+
+    return brc;
 }
 
 /* ******************************************************************

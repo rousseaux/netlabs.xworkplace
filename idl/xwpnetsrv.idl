@@ -7,8 +7,11 @@
  *      --  XWPNetServer:
  *
  *      See src\classes\xwpnetsrv.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -45,63 +48,66 @@ interface XWPNetServer : WPTransient
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# releaseorder:
 
-    //# releaseorder:
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xsrv_;
+        externalstem = xsrv;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpnetsrv;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPNetServer;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xsrv_;
-    externalstem = xsrv;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpnetsrv;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPNetServer;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPNetServer:
-     *
-     */
+        passthru C_h =
+"";
 
-    PSZ     pszServerName;          // malloc'd, copied from setup string
+        /*
+         * Internal instance variables for XWPNetServer:
+         *
+         */
 
-    /*
-     * WPTransient methods overridden by XWPNetServer:
-     *
-     */
+        PSZ     pszServerName;          // malloc'd, copied from setup string
 
-    wpInitData: override;
-    wpUnInitData: override;
+        /*
+         * WPTransient methods overridden by XWPNetServer:
+         *
+         */
 
-    wpSetupOnce: override;
+        wpInitData: override;
+        wpUnInitData: override;
 
-    wpQueryDetailsData: override;
+        wpSetupOnce: override;
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
+        wpQueryDetailsData: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
+        wpMenuItemSelected: override;
+        wpMenuItemHelpSelected: override;
 
-    wpMoveObject: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-    wpOpen: override;
+        wpMoveObject: override;
 
-    wpDragOver: override;
-    wpDrop: override;
+        wpOpen: override;
 
-#ifdef __PRIVATE__
-
+        wpDragOver: override;
+        wpDrop: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -119,48 +125,44 @@ interface M_XWPNetServer : M_WPTransient
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /* releaseorder:
-            xwpclsCreateTrashObject; */
+        externalprefix = xsrvM_;
+        externalstem = xsrvM;
+        functionprefix = xsrvM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpnetsrv;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Internal instance variables for M_XWPNetServer:
+         *
+         */
 
-    externalprefix = xsrvM_;
-    externalstem = xsrvM;
-    functionprefix = xsrvM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpnetsrv;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * M_WPTransient methods overridden by M_XWPNetServer:
+         *
+         */
 
-    /*
-     * Internal instance variables for M_XWPNetServer:
-     *
-     */
+        wpclsInitData: override;
 
-    /*
-     * M_WPTransient methods overridden by M_XWPNetServer:
-     *
-     */
+        wpclsCreateDefaultTemplates: override;
 
-    wpclsInitData: override;
+        wpclsQueryDetailsInfo: override;
+        wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsCreateDefaultTemplates: override;
-
-    wpclsQueryDetailsInfo: override;
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+    };
+#endif
 };
 
 

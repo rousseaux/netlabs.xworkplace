@@ -10,8 +10,11 @@
  *                          the trash can.
  *
  *      See src\classes\xtrashobj.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -57,9 +60,9 @@ interface XWPTrashObject : WPTransient
     BOOL xwpRestoreFromTrashCan(in WPFolder pTargetFolder);
 
 #ifdef __SOMIDL__
-  implementation {
-
-    releaseorder:
+    implementation
+    {
+        releaseorder:
             xwpSetRelatedObject,
             xwpQueryRelatedObject,
             xwpQueryRelatedPath,
@@ -68,72 +71,75 @@ interface XWPTrashObject : WPTransient
             xwpValidateTrashObject,
             xwpRestoreFromTrashCan;
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    externalprefix = xtro_;
-    externalstem = xtro;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xtrashobj;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPTrashObject;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        externalprefix = xtro_;
+        externalstem = xtro;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xtrashobj;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPTrashObject;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    /*
-     * Internal instance variables for XWPTrashObject:
-     *
-     */
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    WPObject pRelatedObject;    // related object in "\Trash" directories
-                                // (xwpQueryRelatedObject)
-    PSZ      pszSourcePath;     // where the related object was deleted from
-                                // (xwpQuerySourcePath)
-    ULONG    ulTotalSize;       // total size of object;
-                                // this is 0 for non-file-system objects,
-                                // but calculated on the File thread if we
-                                // have a folder and will then include all
-                                // subfolders;
-                                // if it's a regular file, it's its size
+        passthru C_h =
+"";
 
-    CHAR     szTotalSize[30];   // string with total size; initially, this
-                                // is set to "calculating"
+        /*
+         * Internal instance variables for XWPTrashObject:
+         *
+         */
 
-    /*
-     * WPTransient methods overridden by XWPTrashObject:
-     *
-     */
+        WPObject pRelatedObject;    // related object in "\Trash" directories
+                                    // (xwpQueryRelatedObject)
+        PSZ      pszSourcePath;     // where the related object was deleted from
+                                    // (xwpQuerySourcePath)
+        ULONG    ulTotalSize;       // total size of object;
+                                    // this is 0 for non-file-system objects,
+                                    // but calculated on the File thread if we
+                                    // have a folder and will then include all
+                                    // subfolders;
+                                    // if it's a regular file, it's its size
 
-    wpInitData: override;
-    wpUnInitData: override;
+        CHAR     szTotalSize[32];   // string with total size; initially, this
+                                    // is set to "calculating"
 
-    wpSetupOnce: override;
+        /*
+         * WPTransient methods overridden by XWPTrashObject:
+         *
+         */
 
-    wpQueryIcon: override;
-    wpQueryDetailsData: override;
+        wpInitData: override;
+        wpUnInitData: override;
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
+        wpSetupOnce: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpQueryIcon: override;
+        wpQueryDetailsData: override;
 
-    wpMoveObject: override;
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
+        wpMenuItemSelected: override;
+        wpMenuItemHelpSelected: override;
 
-    wpOpen: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-    wpDragOver: override;
-    wpDrop: override;
+        wpMoveObject: override;
 
-#ifdef __PRIVATE__
+        wpOpen: override;
 
+        wpDragOver: override;
+        wpDrop: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -151,46 +157,42 @@ interface M_XWPTrashObject : M_WPTransient
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /* releaseorder:
-            xwpclsCreateTrashObject; */
+        externalprefix = xtroM_;
+        externalstem = xtroM;
+        functionprefix = xtroM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xtrashobj;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Internal instance variables for M_XWPTrashObject:
+         *
+         */
 
-    externalprefix = xtroM_;
-    externalstem = xtroM;
-    functionprefix = xtroM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xtrashobj;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * M_WPTransient methods overridden by M_XWPTrashObject:
+         *
+         */
 
-    /*
-     * Internal instance variables for M_XWPTrashObject:
-     *
-     */
+        wpclsInitData: override;
 
-    /*
-     * M_WPTransient methods overridden by M_XWPTrashObject:
-     *
-     */
+        wpclsCreateDefaultTemplates: override;
 
-    wpclsInitData: override;
-
-    wpclsCreateDefaultTemplates: override;
-
-    wpclsQueryDetailsInfo: override;
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryDetailsInfo: override;
+        wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
+    };
+#endif
 };
 
 

@@ -94,7 +94,7 @@
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
-// #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop
@@ -152,6 +152,28 @@ SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
 }
 
 /*
+ *@@ xwpSetRealNameNoOverride:
+ *      calls XWPFileSystem::wpSetRealName, which calls
+ *      WPFileSystem::wpSetRealName in turn.
+ *
+ *      This is used by XFldDataFile to be able to call
+ *      our implementation directly without calling the
+ *      buggy IBM WPDataFile::wpSetRealName implementation.
+ *
+ *@@added V1.0.1 (2003-01-27) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfs_xwpSetRealNameNoOverride(XWPFileSystem *somSelf,
+                                                     PSZ pszName)
+{
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_xwpSetRealNameNoOverride");
+
+    // note, direct function, no method call!
+    return xfs_wpSetRealName(somSelf, pszName);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -165,6 +187,11 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpInitData");
 
     XWPFileSystem_parent_WPFileSystem_wpInitData(somSelf);
+
+    // V1.0.1 (2003-01-25) [umoeller]
+    _xwpModifyFlags(somSelf,
+                    OBJFL_WPFILESYSTEM,
+                    OBJFL_WPFILESYSTEM);
 
     _ulHandle = 0;
     _pWszUpperRealName = NULL;
@@ -516,8 +543,8 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
  *
  *      This code normally only gets called by WPS-internal
  *      implementations to update the internal representation
- *      of the file. When this gets called, the file has
- *      already been renamed on disk, I think.
+ *      of the file. WPFileSystem::wpSetRealName actually
+ *      renames the file on disk.
  *
  *      In detail, I think the following code calls this:
  *
@@ -530,10 +557,6 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
  *      --  WPFileSystem::wpSetTitleAndRenameFile to set the
  *          new real name for the object on rename.
  *
- *      Be warned, WPDataFile also overrides this to reset
- *      the association icon, so we have added
- *      XFldDataFile::wpSetRealName as well.
- *
  *      If "turbo folders" are enabled, we must update the
  *      content tree of our folder which is based on real
  *      names.
@@ -545,6 +568,9 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
  *      leading to duplicate entries sometimes.
  *      WPFileSystem::wpSetTitleAndRenameFile calls this in turn,
  *      so apparently we're safe here too.
+ *
+ *      See XFldDataFile::wpSetTitleAndRenameFile for remarks
+ *      about updating our associated icons.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
@@ -660,7 +686,7 @@ VOID cmnEnableTurboFolders(VOID);
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.

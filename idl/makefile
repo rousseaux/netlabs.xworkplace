@@ -13,18 +13,8 @@
 #                       ../src/classes/*.c
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 !include ..\config.in
 !include ..\make\setup.in
-
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize in inference
-# rules.
-.SUFFIXES: .idl .h .ih .def
 
 # OUTPUTDIR specifies the directory where we will put the
 # files created by this makefile.
@@ -63,6 +53,7 @@ $(OUTPUTDIR)\wps\wpdesk.h \
 $(OUTPUTDIR)\wps\wpdisk.h \
 $(OUTPUTDIR)\wps\wpfolder.h \
 $(OUTPUTDIR)\wps\wpfsys.h \
+$(OUTPUTDIR)\wps\wpimage.h \
 $(OUTPUTDIR)\wps\wpkeybd.h \
 $(OUTPUTDIR)\wps\wpmouse.h \
 $(OUTPUTDIR)\wps\wpobject.h \
@@ -93,6 +84,7 @@ $(OUTPUTDIR)\xmmcdplay.h \
 $(OUTPUTDIR)\xmmvolume.h \
 $(OUTPUTDIR)\xwpadmin.h \
 $(OUTPUTDIR)\xwpfsys.h \
+$(OUTPUTDIR)\xwpimage.h \
 $(OUTPUTDIR)\xwpkeybd.h \
 $(OUTPUTDIR)\xwpmedia.h \
 $(OUTPUTDIR)\xwpmouse.h \
@@ -200,7 +192,11 @@ $(OUTPUTDIR)\wps\wpfsys.h:       wps\$(@B).idl $(OUTPUTDIR)\xfobj.h
 
 $(OUTPUTDIR)\xwpfsys.h:          $(@B).idl $(OUTPUTDIR)\wps\wpfsys.h
 
-$(OUTPUTDIR)\xfldr.h:            $(@B).idl wps\wpfolder.idl $(OUTPUTDIR)\xwpfsys.h
+# WPFolder and subclasses
+
+$(OUTPUTDIR)\wps\wpfolder.h:     wps\$(@B).idl $(OUTPUTDIR)\xwpfsys.h
+
+$(OUTPUTDIR)\xfldr.h:            $(@B).idl $(OUTPUTDIR)\wps\wpfolder.h
 
 $(OUTPUTDIR)\xfdesk.h:           $(@B).idl $(OUTPUTDIR)\xfldr.h
 
@@ -214,7 +210,15 @@ $(OUTPUTDIR)\xwpnetwork.h:       $(@B).idl
 
 $(OUTPUTDIR)\xwpnetsrv.h:        $(@B).idl
 
-$(OUTPUTDIR)\xfdataf.h:          $(@B).idl wps\wpdataf.idl $(OUTPUTDIR)\xwpfsys.h
+# WPDataFile and subclasses
+
+$(OUTPUTDIR)\wps\wpdataf.h:      wps\$(@B).idl $(OUTPUTDIR)\xwpfsys.h
+
+$(OUTPUTDIR)\xfdataf.h:          $(@B).idl $(OUTPUTDIR)\wps\wpdataf.h
+
+$(OUTPUTDIR)\wps\wpimage.h:      wps\$(@B).idl $(OUTPUTDIR)\xfdataf.h
+
+$(OUTPUTDIR)\xwpimage.h:         $(@B).idl $(OUTPUTDIR)\wps\wpimage.h
 
 $(OUTPUTDIR)\xfontfile.h:        $(@B).idl $(OUTPUTDIR)\xfdataf.h
 

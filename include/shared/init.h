@@ -66,7 +66,7 @@
      *
      ********************************************************************/
 
-    VOID initMain(VOID);
+    BOOL initMain(VOID);
 
     BOOL initRepairDesktopIfBroken(VOID);
 

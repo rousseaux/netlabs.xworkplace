@@ -94,6 +94,7 @@
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
@@ -124,6 +125,52 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
+
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+static HMTX G_hmtxThumbnails = NULLHANDLE;
+
+/* ******************************************************************
+ *
+ *   Helpers
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockThumbnails:
+ *      requests the global mutex for protecting instance
+ *      thumbnails. This has been added to avoid requesting the
+ *      object mutex, which can cause deadlocks.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+BOOL LockThumbnails(VOID)
+{
+    if (G_hmtxThumbnails)
+        return !DosRequestMutexSem(G_hmtxThumbnails, SEM_INDEFINITE_WAIT);
+
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxThumbnails,
+                              0,
+                              TRUE);
+}
+
+/*
+ *@@ UnlockThumbnails:
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+VOID UnlockThumbnails(VOID)
+{
+    DosReleaseMutexSem(G_hmtxThumbnails);
+}
 
 /* ******************************************************************
  *
@@ -324,6 +371,169 @@ SOM_Scope ULONG  SOMLINK xdf_xwpQueryAssociations(XFldDataFile *somSelf,
 }
 
 /*
+ *@@ xwpRequestContentMutexSem:
+ *      this new XFldDataFile method requests the object's
+ *      "content" mutex semaphore, which has been introduced
+ *      to protect the file's contents.
+ *
+ *      As far as I can tell, the WPS has no way of preventing
+ *      multiple threads from accessing a file at the same time.
+ *      This leads to race conditions with the WPImageFile
+ *      methods for loading bitmap data, for example. This is
+ *      why XWorkplace only calls these methods under the
+ *      protection of this semaphore.
+ *
+ *      If this returns NO_ERROR, the object's contents are locked.
+ *      It thus has the same semantics as WPObject::wpRequestObjectMutexSem.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope APIRET  SOMLINK xdf_xwpRequestContentMutexSem(XFldDataFile *somSelf,
+                                                        ULONG ulTimeout)
+{
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpRequestContentMutexSem");
+
+    if (_hmtxContent)
+        return DosRequestMutexSem(_hmtxContent, ulTimeout);
+
+    return DosCreateMutexSem(NULL,
+                             &_hmtxContent,
+                             0,
+                             TRUE);     // initial request
+}
+
+/*
+ *@@ xwpReleaseContentMutexSem:
+ *      this new XFldDataFile method releases the object's
+ *      "content" mutex semaphore that was previously
+ *      requested via XFldObject::xwpRequestContentMutexSem.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope APIRET  SOMLINK xdf_xwpReleaseContentMutexSem(XFldDataFile *somSelf)
+{
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpReleaseContentMutexSem");
+
+    return DosReleaseMutexSem(_hmtxContent);
+}
+
+/*
+ *@@ xwpQueryThumbnail:
+ *      this new XFldDataFile method returns the current thumbnail
+ *      bitmap of the object.
+ *
+ *      It returns NULLHANDLE if no thumbnail bitmap has yet been
+ *      created.
+ *
+ *      As a special error code, it may return -1 if creating the
+ *      thumbnail bitmap previously failed and should not be
+ *      attempted again. Check for that -1 handle and do not pass
+ *      it to PM calls!
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope HBITMAP  SOMLINK xdf_xwpQueryThumbnail(XFldDataFile *somSelf)
+{
+    HBITMAP hbm = -1;
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpQueryThumbnail");
+
+    if (LockThumbnails())
+    {
+        hbm = _hbmThumbnail;
+        UnlockThumbnails();
+    }
+
+    return hbm;
+}
+
+/*
+ *@@ xwpSetThumbnail:
+ *      this new XFldDataFile method sets a new thumbnail bitmap
+ *      for the object and repaints the object in all open views.
+ *
+ *      If you set NULLHANDLE for the thumbnail handle, the object's
+ *      thumbnail is deleted.
+ *
+ *      As a special error code, you may set a -1 handle to signal
+ *      that an error occured creating the thumbnail (for example,
+ *      because reading the object's data failed) and the system
+ *      should not attempt to create a thumbnail again.
+ *
+ *      Returns TRUE if the thumbnail changed and the object was
+ *      thus invalidated.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xdf_xwpSetThumbnail(XFldDataFile *somSelf,
+                                            HBITMAP hbmThumbnail)
+{
+    BOOL    brc = FALSE,
+            fLocked = FALSE;
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpSetThumbnail");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockThumbnails())
+        {
+            if (_hbmThumbnail != hbmThumbnail)
+            {
+                // delete old bitmap, if present
+                if (    (_hbmThumbnail)
+                     && (_hbmThumbnail != -1)       // error flag
+                   )
+                {
+                    GpiDeleteBitmap(_hbmThumbnail);
+                    _hbmThumbnail = NULLHANDLE;
+                }
+
+                // set new thumbnail
+                _hbmThumbnail = hbmThumbnail;
+
+                brc = TRUE;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockThumbnails();
+
+    if (brc)
+        _xwpForceRepaint(somSelf,
+                         REFRESH_RECORDREPAINT);
+
+    return brc;
+}
+
+/*
+ *@@ xwpLazyLoadThumbnail:
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope HBITMAP  SOMLINK xdf_xwpLazyLoadThumbnail(XFldDataFile *somSelf,
+                                                    ULONG ulWidth,
+                                                    ULONG ulHeight,
+                                                    BOOL* pbQuitEarly)
+{
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpLazyLoadThumbnail");
+
+    return NULLHANDLE;
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -335,27 +545,44 @@ SOM_Scope ULONG  SOMLINK xdf_xwpQueryAssociations(XFldDataFile *somSelf,
 
 SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
 {
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpInitData");
 
     XFldDataFile_parent_WPDataFile_wpInitData(somSelf);
 
-    _fHasIconEA = FALSE;
+    // _fHasIconEA = FALSE;
 
     // cache this V0.9.19 (2002-06-15) [umoeller]
-    _fIsIconOrPointer =    (ctsIsIcon(somSelf))
-                        || (ctsIsPointer(somSelf));
+    if (    (ctsIsIcon(somSelf))
+         || (ctsIsPointer(somSelf))
+       )
+        _xwpModifyFlags(somSelf,
+                        OBJFL_WPDATAFILE | OBJFL_WPICONORPOINTER,
+                        OBJFL_WPDATAFILE | OBJFL_WPICONORPOINTER);
+    else
+        _xwpModifyFlags(somSelf,
+                        OBJFL_WPDATAFILE,
+                        OBJFL_WPDATAFILE);
 }
 
 /*
  *@@ wpUnInitData:
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
+ *      The parent method must always be called last.
  *
  *@@added V0.9.18 (2002-03-24) [umoeller]
  */
 
 SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
 {
-    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpUnInitData");
 
     // we have a problem with our replacement icons in that
@@ -379,6 +606,8 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
                 cmnIsStandardIcon(pmrc->hptrIcon)));
     }
     #endif
+
+    _xwpSetThumbnail(somSelf, -1);
 
     XFldDataFile_parent_WPDataFile_wpUnInitData(somSelf);
 }
@@ -503,7 +732,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
                 // found it: then it's safe to run our replacement
                 PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
                 ULONG           flNewStyle = 0;
-                XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+                // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
                 PMPF_ICONREPLACEMENTS(("obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
 
@@ -535,7 +764,9 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
                         // if this is set, the data file uses an assoc
                         // icon, which is simply not true any more
                         // V0.9.18 (2002-03-19) [umoeller]
-                        _fHasIconEA = TRUE;
+                        _xwpModifyFlags(somSelf,
+                                        OBJFL_HASICONEA,
+                                        OBJFL_HASICONEA);   // V1.0.1 (2003-01-25) [umoeller]
                     }
                 }
 
@@ -586,6 +817,11 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
 
     return brc;
 }
+
+/*
+ *@@ wpSetDefaultView:
+ *
+ */
 
 SOM_Scope BOOL  SOMLINK xdf_wpSetDefaultView(XFldDataFile *somSelf,
                                              ULONG ulView)
@@ -708,7 +944,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
                 if (!(hptrReturn = prec->hptrIcon))
                 {
                     ULONG flNewStyle = 0;
-                    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+                    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
                     // first call, and icon wasn't set in wpRestoreState:
                     // be smart now...
 
@@ -716,7 +952,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
                     //    the icon from there
                     //    @@todo this never gets called since WPIcon
                     //    overrides wpQueryIcon
-                    if (_fIsIconOrPointer)
+                    if (objQueryFlags(somSelf) & OBJFL_WPICONORPOINTER) // V1.0.1 (2003-01-25) [umoeller]
                     {
                         CHAR szFilename[CCHMAXPATH];
                         _wpQueryFilename(somSelf, szFilename, TRUE);
@@ -824,11 +1060,11 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
                 if (!fFound)
                 {
                     // .ICON EA not found, or bad data:
-                    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+                    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
                     // if we're an icon or pointer file, support
                     // ICON_DATA format for compatibility
-                    if (_fIsIconOrPointer)
+                    if (objQueryFlags(somSelf) & OBJFL_WPICONORPOINTER) // V1.0.1 (2003-01-25) [umoeller]
                     {
                         PBYTE pbData = NULL;
                         ULONG cbData;
@@ -930,7 +1166,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
     CHAR    szFilename[CCHMAXPATH];
     BOOL    fExt;
 
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetIconData");
 
 #ifdef __DEBUG__
@@ -952,7 +1188,10 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
                 {
                     // clear private flag so that
                     // _wpSetAssociatedFileIcon works
-                    _fHasIconEA = FALSE;
+                    _xwpModifyFlags(somSelf,
+                                    OBJFL_HASICONEA,
+                                    0);
+
                     // use default assoc icon
                     _wpSetAssociatedFileIcon(somSelf);
                     brc = TRUE;
@@ -973,7 +1212,9 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
                 if (    (pIconInfo)
                      && (pIconInfo->fFormat != ICON_CLEAR)
                    )
-                    _fHasIconEA = TRUE;     // V1.0.0 (2002-09-12) [umoeller]
+                    _xwpModifyFlags(somSelf,
+                                    OBJFL_HASICONEA,
+                                    OBJFL_HASICONEA);
 
                 brc = TRUE;
             }
@@ -984,6 +1225,184 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
 #endif
 
     return brc;
+}
+
+/*
+ *@@ xwpPrepareInsertRecord:
+ *      this new XFldObject instance method gets called from
+ *      our XFldObject::wpCnrInsertObject override to set up
+ *      the MINIRECORDCORE of an object just before the object
+ *      actually gets inserted into a container.
+ *
+ *      See XFldObject::xwpPrepareInsertRecord for details.
+ *
+ *      We override this to enable owner-drawing for all
+ *      data files that want to draw thumbnails.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope PUSEITEM  SOMLINK xdf_xwpPrepareInsertRecord(XFldDataFile *somSelf,
+                                                       HWND hwndCnr,
+                                                       PMINIRECORDCORE pmrc,
+                                                       ULONG flObjectStyle,
+                                                       BOOL fFirstInsert)
+{
+    PUSEITEM pui;
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpPrepareInsertRecord");
+
+    if (    (pui = XFldDataFile_parent_WPDataFile_xwpPrepareInsertRecord(somSelf,
+                                                                         hwndCnr,
+                                                                         pmrc,
+                                                                         flObjectStyle,
+                                                                         fFirstInsert))
+         && (cmnQuerySetting(sflOwnerDrawIcons) & OWDRFL_LAZYLOADTHUMBNAIL)
+         && (_xwpQueryFlags(somSelf) & OBJFL_OWNERDRAWTHUMBNAIL)
+       )
+        pmrc->flRecordAttr |= CRA_OWNERDRAW;
+
+    return pui;
+}
+
+/*
+ *@@ xwpOwnerDrawIcon:
+ *      this new XFldObject instance method gets called from the
+ *      XWorkplace container owner-draw routines if global
+ *      settings are enabled that require XWorkplace to take
+ *      over owner draw for specific objects _and_ if this object's
+ *      MINIRECORDCORE.flRecordAttr has the CRA_OWNERDRAW bit set.
+ *
+ *      See XFldObject::xwpOwnerDrawIcon for details.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xdf_xwpOwnerDrawIcon(XFldDataFile *somSelf,
+                                              PMINIRECORDCORE pmrc,
+                                              HPS hps,
+                                              ULONG flOwnerDraw,
+                                              PRECTL prcl)
+{
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpOwnerDrawIcon");
+
+    if (    (flOwnerDraw & OWDRFL_LAZYLOADTHUMBNAIL)
+         && (_xwpQueryFlags(somSelf) & OBJFL_OWNERDRAWTHUMBNAIL)
+       )
+    {
+        HBITMAP hbmThumbnail = _xwpQueryThumbnail(somSelf);
+
+        if (hbmThumbnail != -1)       // no error previously?
+        {
+            // return flags: preserve the OWDRFL_RGBMODE from input
+            ULONG       flReturn = (flOwnerDraw & OWDRFL_RGBMODE);
+
+            if (hbmThumbnail)
+            {
+                // thumbnail already loaded in xwpLazyLoadIcon:
+                WinDrawBitmap(hps,
+                              hbmThumbnail,
+                              NULL,
+                              (PPOINTL)prcl,
+                              0,
+                              0,
+                              DBM_STRETCH);
+            }
+            else
+            {
+                if (!(flOwnerDraw & OWDRFL_RGBMODE))
+                {
+                    gpihSwitchToRGB(hps);
+                    flReturn |= OWDRFL_RGBMODE;
+                }
+
+                WinFillRect(hps,
+                            prcl,
+                            RGBCOL_RED);
+
+                flReturn |= OWDRFL_LAZYLOADTHUMBNAIL;
+            }
+
+            return flReturn;
+
+        } // if (hbmThumbnail != -1)       // no error previously?
+    }
+
+    return XFldDataFile_parent_WPDataFile_xwpOwnerDrawIcon(somSelf,
+                                                           pmrc,
+                                                           hps,
+                                                           flOwnerDraw,
+                                                           prcl);
+}
+
+/*
+ *@@ xwpLazyLoadIcon:
+ *      this new XFldObject instance method gets called on
+ *      the lazy icon thread if XFldObject::xwpOwnerDrawIcon
+ *      returned the OWDRFL_LAZYLOADICON bit set. This must
+ *      then load the icon of the object and invalidate the
+ *      object in all containers where it is currently
+ *      inserted.
+ *
+ *      We override this for thumbnail support.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xdf_xwpLazyLoadIcon(XFldDataFile *somSelf,
+                                            HAB hab,
+                                            HPS* phpsMem,
+                                            ULONG flOwnerDraw,
+                                            BOOL* pbQuitEarly)
+{
+    HBITMAP hbmThumbnail = NULLHANDLE;
+
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpLazyLoadIcon");
+
+    if (    (flOwnerDraw & OWDRFL_LAZYLOADTHUMBNAIL)
+         && (_xwpQueryFlags(somSelf) & OBJFL_OWNERDRAWTHUMBNAIL)
+       )
+    {
+        // check that thumbnail is not loaded yet and no
+        // error occured (hbmThumbnail is -1 then)
+        if (!(hbmThumbnail = _xwpQueryThumbnail(somSelf)))
+        {
+            BOOL    fLocked = FALSE;
+
+            // set error flag for now
+            hbmThumbnail = -1;
+
+            TRY_LOUD(excpt1)
+            {
+                if (fLocked = !_xwpRequestContentMutexSem(somSelf, 2000))
+                    hbmThumbnail = _xwpLazyLoadThumbnail(somSelf,
+                                                         80,
+                                                         80,
+                                                         pbQuitEarly);
+            }
+            CATCH(excpt1)
+            {
+                hbmThumbnail = -1;
+            } END_CATCH();
+
+            if (fLocked)
+                _xwpReleaseContentMutexSem(somSelf);
+
+            _xwpSetThumbnail(somSelf, hbmThumbnail);
+                    // this repaints the object
+        }
+    }
+
+    if (    (!hbmThumbnail)
+         || (hbmThumbnail == -1)
+       )
+        XFldDataFile_parent_WPDataFile_xwpLazyLoadIcon(somSelf,
+                                                       hab,
+                                                       phpsMem,
+                                                       flOwnerDraw,
+                                                       pbQuitEarly);
 }
 
 /*
@@ -1231,15 +1650,16 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
         // V0.9.18 (2002-03-19) [umoeller]
         if (cmnQuerySetting(sfTurboFolders))    // V1.0.1 (2002-12-15) [umoeller]
         {
-            XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+            // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+            ULONG   flObject = _xwpQueryFlags(somSelf);
 
             fCallDefault = FALSE;
 
-            if (!_fHasIconEA)
+            if (!(flObject & OBJFL_HASICONEA))
             {
                 // for WPIcon and WPPointer, we want no association icons
                 // (_wpQueryIcon loads the icon then)
-                if (!_fIsIconOrPointer)
+                if (!(flObject & OBJFL_WPICONORPOINTER)) // V1.0.1 (2003-01-25) [umoeller]
                 {
                     HPOINTER hptr;
 
@@ -1785,48 +2205,118 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
  *
  *      This code normally only gets called by WPS-internal
  *      implementations to update the internal representation
- *      of the file. When this gets called, the file has
- *      already been renamed on disk, I think.
+ *      of the file. WPFileSystem::wpSetRealName actually
+ *      renames the file on disk.
  *
  *      See XWPFileSystem::wpSetRealName for details.
  *
- *      We might need to update the associated file icon
- *      here, which previously didn't work.
+ *      The WPDataFile parent method attempts to update
+ *      the object's associated icon in all good intentions,
+ *      but this won't work. See
+ *      XFldDataFile::wpSetTitleAndRenameFile for a lengthy
+ *      explanation. So we skip that parent implementation
+ *      here and call the XWPFileSystem implementation directly.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.1 (2003-01-27) [umoeller]: rewritten
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpSetRealName(XFldDataFile *somSelf,
                                           PSZ pszName)
 {
-    BOOL brc;
-    PMINIRECORDCORE prec;
-
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetRealName");
 
-#ifdef __DEBUG__
-    TRY_LOUD(dbgexc)
-#endif
+    if (cmnQuerySetting(sfTurboFolders))
+        // call this new XWPFileSystem method, which calls
+        // the real _wpSetRealName, skipping the WPDataFile
+        // implementation
+        return _xwpSetRealNameNoOverride(somSelf, pszName);
+
+    return XFldDataFile_parent_WPDataFile_wpSetRealName(somSelf,
+                                                        pszName);
+}
+
+/*
+ *@@ wpSetTitleAndRenameFile:
+ *      this WPFileSystem method is responsible for setting
+ *      the real name _and_ the title of a file-system object.
+ *
+ *      WPFileSystem::wpSetTitle only calls this method and
+ *      does nothing else. In other words, this method is
+ *      the implementation for WPFileSystem::wpSetTitle;
+ *      fConfirmations is then set to what _wpQueryConfirmations
+ *      returns.
+ *
+ *      Now, here is the code flow when data files get renamed
+ *      in the WPS (without XWorkplace):
+ *
+ *      1)  wpSetTitle is overridden by WPFileSystem to call
+ *          WPFileSystem::wpSetTitleAndRenameFile instead.
+ *
+ *      2)  WPFileSystem::wpSetTitleAndRenameFile goes thru
+ *          a lot of hoops to verify the title and handle
+ *          file system conflicts, but eventually calls
+ *          wpSetRealName and then its parent's wpSetTitle:
+ *
+ *          a)  wpSetRealName is overridden by WPDataFile,
+ *              which calls the parent (WPDataFile::wpSetRealName)
+ *              to actually rename the file and then update
+ *              the file's associations.
+ *
+ *          b)  The parent wpSetTitle is WPObject's, which
+ *              refreshes MINIRECORDCORE.pszIcon and updates
+ *              the object in all containers.
+ *
+ *      One permanent bug with this has been that
+ *      WPDataFile::wpSetRealname (2-a above) calls
+ *      wpSetAssociatedFileIcon to update the icon in case the
+ *      assoc has changed. Great idea, but the assoc is
+ *      determined according to the title, which is only changed
+ *      afterwards (2-b above). So this appears to be the reason
+ *      why this has never worked in the WPS.
+ *
+ *      To fix this, we do the following:
+ *
+ *      --  override XFldDataFile::wpSetRealName to _not_ call
+ *          the WPDataFile implementation, by calling our new
+ *          XWPFileSystem::wpSetRealNameNoOverride method,
+ *          which ends up in the correct XWPFileSystem::wpSetRealName
+ *          (without updating the associated file icon);
+ *
+ *      --  override XFldDataFile::wpSetTitleAndRenameFile
+ *          (this method here) to update the associated file
+ *          icon _after_ the title has successfully changed.
+ *
+ *@@added V1.0.1 (2003-01-27) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xdf_wpSetTitleAndRenameFile(XFldDataFile *somSelf,
+                                                    PSZ pszNewTitle,
+                                                    ULONG fConfirmations)
+{
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetTitleAndRenameFile");
+
+    if (XFldDataFile_parent_WPDataFile_wpSetTitleAndRenameFile(somSelf,
+                                                               pszNewTitle,
+                                                               fConfirmations))
     {
-        if (brc = XFldDataFile_parent_WPDataFile_wpSetRealName(somSelf,
-                                                               pszName))
-    #ifndef __NOTURBOFOLDERS__
-            if (    (cmnQuerySetting(sfTurboFolders))   // V1.0.1 (2002-12-15) [umoeller]
-                 && (prec = _wpQueryCoreRecord(somSelf))
-                 && (prec->hptrIcon)
-                 // avoid this if we have an .ICON EA
-                 && (!_fHasIconEA)
-               )
-                _wpSetAssociatedFileIcon(somSelf)
-    #endif
-            ;
-    }
-#ifdef __DEBUG__
-    CATCH(dbgexc) {} END_CATCH();
+#ifndef __NOTURBOFOLDERS__
+        PMINIRECORDCORE pmrc;
+        if (    (cmnQuerySetting(sfTurboFolders))   // V1.0.1 (2002-12-15) [umoeller]
+             && (pmrc = _wpQueryCoreRecord(somSelf))
+             && (pmrc->hptrIcon)
+             // avoid this if we have an .ICON EA
+             && (!(_xwpQueryFlags(somSelf) & OBJFL_HASICONEA))
+           )
+            _wpSetAssociatedFileIcon(somSelf);
 #endif
 
-    return brc;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*
@@ -2060,7 +2550,7 @@ SOM_Scope ULONG  SOMLINK xdfM_xwpclsListAssocsForType(M_XFldDataFile *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -2078,32 +2568,11 @@ SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)
     M_XFldDataFile_parent_M_WPDataFile_wpclsInitData(somSelf);
 
     krnClassInitialized(G_pcszXFldDataFile);
-
-    /*
-     *  Manually patch method tables of this class...
-     *
-     */
-
-#if 0       // V1.0.0 (2002-08-31) [umoeller]
-    // this gets called for subclasses too, so patch
-    // this only for the parent class...
-    // descendant classes will inherit this anyway
-    // if (somSelf == _XFldDataFile)
-    {
-        if (G_fIsWarp4)
-        {
-            // on Warp 4, override wpModifyMenu (Warp 4-specific method)
-            wpshOverrideStaticMethod(somSelf, // _XFldDataFile,
-                                     "wpModifyMenu",
-                                     (somMethodPtr)xdf_wpModifyMenu);
-        }
-    }
-#endif
 }
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
+ *      this M_WPObject class method is called by the
  *      Templates folder to allow a class to
  *      create its default templates.
  *
@@ -2140,7 +2609,7 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -2166,7 +2635,7 @@ SOM_Scope PSZ  SOMLINK xdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -2198,7 +2667,7 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsQueryDefaultHelp(M_XFldDataFile *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

@@ -45,8 +45,9 @@
 #include "helpers\cnrh.h"
 #include "helpers\eah.h"
 #include "helpers\dosh.h"
-#include "helpers\gpih.h"
 #include "helpers\except.h"
+#include "helpers\gpih.h"
+#include "helpers\mmpmh.h"
 #include "helpers\stringh.h"
 #include "helpers\winh.h"
 #include "helpers\threads.h"
@@ -70,20 +71,6 @@ CHAR        G_szFilename[CCHMAXPATH] = "";
  *
  ********************************************************************/
 
-#define LOADBMP_SUCCESS                 0
-// #define LOADBMP_UNKNOWN_ERROR           1
-#define LOADBMP_GOT_DOS_IOPROC          2
-#define LOADBMP_NOT_IMAGE_FILE          3
-#define LOADBMP_OPEN_FAILED             4
-#define LOADBMP_INCOMPATIBLE_HEADER     5
-#define LOADBMP_HEADER_UNAVAILABLE      6
-#define LOADBMP_GPIGREATEPS_FAILED      7
-#define LOADBMP_GPICREATEBITMAP_FAILED  8
-#define LOADBMP_GPISETBITMAPBITS_FAILED 9
-#define LOADBMP_OUT_OF_MEMORY           10
-#define LOADBMP_CRASHED                 11
-#define LOADBMP_MMIOREAD_FAILED         12
-
 /*
  *@@ QueryErrorDescription:
  *
@@ -93,348 +80,39 @@ PSZ QueryErrorDescription(ULONG ulError)
 {
     switch (ulError)
     {
-        // case LOADBMP_UNKNOWN_ERROR:
-        case LOADBMP_GOT_DOS_IOPROC:
+        // case MMHERR_UNKNOWN_ERROR:
+        case MMHERR_NO_IOPROC:
             return "Image file format not supported.";
 
-        case LOADBMP_NOT_IMAGE_FILE:
+        case MMHERR_NOT_IMAGE_FILE:
             return "File is non-image multimedia file.";
 
-        case LOADBMP_OPEN_FAILED:
+        case MMHERR_OPEN_FAILED:
             return "Open failed.";
 
-        case LOADBMP_INCOMPATIBLE_HEADER:
+        case MMHERR_INCOMPATIBLE_HEADER:
             return "Incompatible bitmap header size.";
 
-        case LOADBMP_HEADER_UNAVAILABLE:
-            return "Bitmap header unavailable.";
-
-        case LOADBMP_GPIGREATEPS_FAILED:
+        case MMHERR_GPIGREATEPS_FAILED:
             return "Error creating memory presentation space (GpiCreatePS failed).";
 
-        case LOADBMP_GPICREATEBITMAP_FAILED:
+        case MMHERR_GPICREATEBITMAP_FAILED:
             return "Error creating PM bitmap (GpiCreateBitmap failed).";
 
-        case LOADBMP_GPISETBITMAPBITS_FAILED:
+        case MMHERR_GPISETBITMAPBITS_FAILED:
             return "GpiSetBitmapBits failed.";
 
-        case LOADBMP_OUT_OF_MEMORY:
+        case ERROR_NOT_ENOUGH_MEMORY:
             return "Out of memory.";
 
-        case LOADBMP_CRASHED:
+        case ERROR_PROTECTION_VIOLATION:
             return "Crashed reading bitmap.";
 
-        case LOADBMP_MMIOREAD_FAILED:
+        case MMHERR_MMIOREAD_FAILED:
             return "Error reading bitmap data.";
     }
 
     return ("Unknown error.");
-}
-
-/*
- *@@ CreateBitmapFromFile:
- *      this actually loads the bitmap file
- *      specified by hmmio (which must be a
- *      bitmap file handle!) and creates a
- *      regular PM bitmap from it.
- *
- *      The bitmap in stored *phbmOut. It
- *      is not selected into any HPS.
- *
- *      Returns 0 (LOADBMP_SUCCESS) on success.
- *      On error, returns one of the following:
- *
- *      -- LOADBMP_HEADER_UNAVAILABLE: mmioGetHeader failed.
- *      -- LOADBMP_OUT_OF_MEMORY: DosAllocMem failed.
- *      -- LOADBMP_GPIGREATEPS_FAILED: GpiCreatePS failed.
- *      -- LOADBMP_GPICREATEBITMAP_FAILED: GpiCreateBitmap failed.
- *      -- LOADBMP_MMIOREAD_FAILED: mmioRead failed.
- *      -- LOADBMP_GPISETBITMAPBITS_FAILED: GpiSetBitmapBits failed.
- */
-
-ULONG CreateBitmapFromFile(HAB hab,             // in: anchor block
-                           HDC hdcMem,          // in: memory device context
-                           HMMIO hmmio,         // in: MMIO file handle
-                           HBITMAP *phbmOut)    // out: bitmap created
-{
-    ULONG   ulReturn = LOADBMP_SUCCESS,
-            ulrc;
-
-    MMIMAGEHEADER mmImgHdr;
-    ULONG   ulBytesRead;
-
-    ulrc = mmioGetHeader(hmmio,
-                         &mmImgHdr,
-                         sizeof(MMIMAGEHEADER),
-                         (PLONG)&ulBytesRead,
-                         0L,
-                         0L);
-
-    if (ulrc != MMIO_SUCCESS)
-        // header unavailable
-        ulReturn = LOADBMP_HEADER_UNAVAILABLE;
-    else
-    {
-        /*
-         *  Determine the number of bytes required, per row.
-         *      PLANES MUST ALWAYS BE = 1
-         */
-
-        ULONG dwHeight = mmImgHdr.mmXDIBHeader.BMPInfoHeader2.cy;
-        ULONG dwWidth = mmImgHdr.mmXDIBHeader.BMPInfoHeader2.cx;
-        SHORT wBitCount = mmImgHdr.mmXDIBHeader.BMPInfoHeader2.cBitCount;
-        ULONG dwRowBits = dwWidth * mmImgHdr.mmXDIBHeader.BMPInfoHeader2.cBitCount;
-        ULONG dwNumRowBytes = dwRowBits >> 3;
-
-        ULONG dwPadBytes;
-        SIZEL ImageSize;
-        PBYTE pRowBuffer;
-
-        /*
-         *  Account for odd bits used in 1bpp or 4bpp images that are
-         *  NOT on byte boundaries.
-         */
-
-        if (dwRowBits % 8)
-        {
-             dwNumRowBytes++;
-        }
-
-        /*
-         *  Ensure the row length in bytes accounts for byte padding.
-         *  All bitmap data rows must are aligned on LONG/4-BYTE boundaries.
-         *  The data FROM an IOProc should always appear in this form.
-         */
-
-        dwPadBytes = (dwNumRowBytes % 4);
-
-        if (dwPadBytes)
-            dwNumRowBytes += 4 - dwPadBytes;
-
-        // allocate space for ONE row of pels
-        if (DosAllocMem((PPVOID)&pRowBuffer,
-                        dwNumRowBytes,
-                        fALLOC))
-            ulReturn = LOADBMP_OUT_OF_MEMORY;
-        else
-        {
-            // create a memory presentation space with the
-            // size of the bitmap
-            HPS hpsMem;
-
-            ImageSize.cx = dwWidth;
-            ImageSize.cy = dwHeight;
-
-            hpsMem = GpiCreatePS(hab,
-                                 hdcMem,
-                                 &ImageSize,
-                                 PU_PELS | GPIF_DEFAULT | GPIT_MICRO | GPIA_ASSOC);
-
-            if (!hpsMem)
-                ulReturn = LOADBMP_GPIGREATEPS_FAILED;
-            else
-            {
-                // create an uninitialized bitmap -- this is where we
-                // will put all of the bits once we read them in
-                *phbmOut = GpiCreateBitmap(hpsMem,
-                                           &mmImgHdr.mmXDIBHeader.BMPInfoHeader2,
-                                           0L,
-                                           NULL,
-                                           NULL);
-                if (!*phbmOut)
-                    ulReturn = LOADBMP_GPICREATEBITMAP_FAILED;
-                else
-                {
-                    // bitmap created:
-
-                    if (GpiSetBitmap(hpsMem,
-                                     *phbmOut)
-                            == HBM_ERROR)
-                        ulReturn = LOADBMP_GPICREATEBITMAP_FAILED;
-                    else
-                    {
-                        ULONG dwRowCount;
-
-                        // load the bitmap from the file,
-                        // one line at a time, starting from the BOTTOM
-                        for (dwRowCount = 0;
-                             dwRowCount < dwHeight;
-                             dwRowCount++)
-                        {
-                            LONG lrc;
-                            ulBytesRead = (ULONG)mmioRead(hmmio,
-                                                          pRowBuffer,
-                                                          dwNumRowBytes);
-
-                            if (ulBytesRead == 0)
-                                // done:
-                                break;
-                            else if (ulBytesRead == MMIO_ERROR)
-                            {
-                                ulReturn = LOADBMP_MMIOREAD_FAILED;
-                                break;
-                            }
-
-                            // allow context switching while previewing.. Couldn't get
-                            // it to work. Perhaps will get to it when time is available...
-
-                            lrc = GpiSetBitmapBits(hpsMem,
-                                                   (LONG)dwRowCount,
-                                                   (LONG)1,
-                                                   (PBYTE)pRowBuffer,
-                                                   (PBITMAPINFO2)&mmImgHdr.mmXDIBHeader.BMPInfoHeader2);
-                            if (lrc == GPI_ALTERROR)
-                            {
-                                ulReturn = LOADBMP_GPISETBITMAPBITS_FAILED;
-                                break;
-                            }
-                        }
-
-                        // unset bitmap im mem PS
-                        GpiSetBitmap(hpsMem,
-                                     NULLHANDLE);
-                    } // end if (GpiSetBitmap(hpsMem
-
-                    if (ulReturn != LOADBMP_SUCCESS)
-                    {
-                        // error:
-                        GpiDeleteBitmap(*phbmOut);
-                        *phbmOut = NULLHANDLE;
-                    }
-                }
-
-                GpiDestroyPS(hpsMem);
-            } // end if GpiCreatePS
-
-            DosFreeMem(pRowBuffer);
-        } // end if (DosAllocMem((PPVOID)&pRowBuffer,
-    }
-
-    return (ulReturn);
-}
-
-/*
- *@@ LoadBitmap:
- *      one-shot function for loading an image
- *      from a file. Understands any image file
- *      format supported by MMPM/2.
- *
- *      Returns 0 (LOADBMP_SUCCESS) on success.
- *      On error, returns one of the following:
- *
- *      -- LOADBMP_GOT_DOS_IOPROC: file format not understood
- *         by MMPM/2.
- *      -- LOADBMP_NOT_IMAGE_FILE: file format understood, but
- *         is not image file or cannot be translated.
- *      -- LOADBMP_OPEN_FAILED: mmioOpen failed.
- *      -- LOADBMP_INCOMPATIBLE_HEADER: ioproc returned invalid
- *         header.
- *      -- LOADBMP_CRASHED: exception occured.
- *
- *      plus the error codes from CreateBitmapFromFile().
- */
-
-ULONG LoadBitmap(HAB hab,           // in: anchor block
-                 HDC hdcMem,        // in: memory device context
-                 HBITMAP *phbmOut,  // out: bitmap created
-                 PSZ pszFileName)   // in: filename
-{
-    ULONG           ulReturn = LOADBMP_SUCCESS;
-
-    TRY_LOUD(excpt1)
-    {
-        ULONG           ulrc = 0;
-
-        MMFORMATINFO    mmFormatInfo;
-        FOURCC          fccStorageSystem;
-
-        // find the IOProc which can understand this file
-        ulrc = mmioIdentifyFile(pszFileName,
-                                NULL,       // needed for RIFF only
-                                &mmFormatInfo, // out: format info (FOURCC)
-                                &fccStorageSystem, // out: FOURCC of storage IOProc
-                                0L,         // reserved
-                                0L);        // can be:
-                                /*  MMIO_FORCE_IDENTIFY_SS
-                                        Forces the identification of a storage
-                                        system by ignoring the file
-                                        name and actually checking the MMIO Manager's
-                                        I/O procedure list.
-                                    MMIO_FORCE_IDENTIFY_FF
-                                        Forces the identification  of a file
-                                        format by ignoring the file name
-                                        and actually checking the MMIO Manager's
-                                        I/O procedure list.
-                                */
-
-        if (ulrc == MMIO_SUCCESS)
-        {
-            // if mmioIdentifyFile did not find a custom-written IO proc which
-            // can understand the image file, then it will return the DOS IO Proc
-            // info because the image file IS a DOS file.
-
-            if (mmFormatInfo.fccIOProc == FOURCC_DOS)
-                ulReturn = LOADBMP_GOT_DOS_IOPROC;
-            else
-            {
-                // ensure this is an IMAGE IOproc, and that it can read
-                // translated data
-                if (   (mmFormatInfo.ulMediaType != MMIO_MEDIATYPE_IMAGE)
-                     || ((mmFormatInfo.ulFlags & MMIO_CANREADTRANSLATED) == 0)
-                   )
-                {
-                    ulReturn = LOADBMP_NOT_IMAGE_FILE;
-                }
-                else
-                {
-                    // remember fourcc of IOProc
-                    FOURCC      fccIOProc = mmFormatInfo.fccIOProc;
-
-                    // load file
-                    MMIOINFO      mmioinfo;
-                    HMMIO         hmmio;
-
-                    memset(&mmioinfo, 0, sizeof (MMIOINFO));
-                    mmioinfo.fccIOProc = fccIOProc;
-                    mmioinfo.ulTranslate = MMIO_TRANSLATEHEADER | MMIO_TRANSLATEDATA;
-                    hmmio = mmioOpen((PSZ)pszFileName,
-                                     &mmioinfo,
-                                     MMIO_READ | MMIO_DENYWRITE | MMIO_NOIDENTIFY);
-
-                    if (!hmmio)
-                    {
-                        ulReturn = LOADBMP_OPEN_FAILED;
-                    }
-                    else
-                    {
-                        ULONG ulImageHeaderLength;
-                        ULONG dwReturnCode = mmioQueryHeaderLength(hmmio,
-                                                                   (PLONG)&ulImageHeaderLength,
-                                                                   0L,
-                                                                   0L);
-
-                        if (ulImageHeaderLength != sizeof (MMIMAGEHEADER))
-                            ulReturn = LOADBMP_INCOMPATIBLE_HEADER;
-                        else
-                        {
-                            ulReturn = CreateBitmapFromFile(hab,
-                                                            hdcMem,
-                                                            hmmio,
-                                                            phbmOut);
-                        }
-
-                        ulrc = mmioClose(hmmio, 0L);
-                    } // end if hmmio
-                }
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-        ulReturn = LOADBMP_CRASHED;
-    } END_CATCH();
-
-    return (ulReturn);
 }
 
 /*
@@ -450,24 +128,19 @@ void _Optlink fntLoadBitmap(PTHREADINFO pti)
     // create a memory PS
     HWND        hwndClient = (HWND)(pti->ulData);
     HBITMAP     hbmNew;
+    APIRET      arc;
 
-    HDC hdcMem = DevOpenDC(pti->hab,
-                           OD_MEMORY,
-                           "*",
-                           0L,
-                           NULL,
-                           0);
+    SIZEL       szl = {100, 100};
 
-    ULONG ulrc = LoadBitmap(pti->hab,
-                            hdcMem,
-                            &hbmNew,
-                            G_szFilename);
+    arc = mmhLoadImage(G_szFilename,
+                       0,
+                       NULL, // &szl,
+                       &hbmNew);
+
     WinPostMsg(hwndClient,
                WM_DONELOADINGBMP,
-               (MPARAM)ulrc,
+               (MPARAM)arc,
                (MPARAM)hbmNew);
-
-    DevCloseDC(hdcMem);
 }
 
 /* ******************************************************************
@@ -491,9 +164,12 @@ BOOL        G_fLoadingBitmap = FALSE;
 THREADINFO  G_tiLoadBitmap = {0};
 
 // scroll bar data
-BITMAPINFOHEADER G_bmihBitmapLoaded;
-ULONG       G_ulVertScrollOfs,
-            G_ulHorzScrollOfs;
+
+SCROLLABLEWINDOW    G_scrwClient;
+
+BITMAPINFOHEADER G_bmihLoadedBitmap;
+// ULONG       G_ulVertScrollOfs,
+//             G_ulHorzScrollOfs;
 
 #define VERT_SCROLL_UNIT 10
 #define HORZ_SCROLL_UNIT 10
@@ -528,9 +204,9 @@ VOID UpdateTitle(VOID)
         sprintf(szTitle + strlen(szTitle),
                 " - %s%s (%dx%d, %d bpp)",
                 szName, szExt,
-                G_bmihBitmapLoaded.cx,
-                G_bmihBitmapLoaded.cy,
-                G_bmihBitmapLoaded.cBitCount);
+                G_bmihLoadedBitmap.cx,
+                G_bmihLoadedBitmap.cy,
+                G_bmihLoadedBitmap.cBitCount);
 
     }
 
@@ -549,8 +225,8 @@ VOID CalcViewportSize(HWND hwndClient,
     WinQueryWindowPos(hwndClient, &swpClient);
             // this already has the scroll bars subtracted;
             // apparently, these are frame controls...
-    pszl->cx = swpClient.cx; //  - WinQuerySysValue(HWND_DESKTOP, SV_CXVSCROLL);
-    pszl->cy = swpClient.cy; //  - WinQuerySysValue(HWND_DESKTOP, SV_CYHSCROLL);
+    pszl->cx = swpClient.cx;
+    pszl->cy = swpClient.cy;
 }
 
 /*
@@ -573,20 +249,18 @@ VOID UpdateScrollBars(HWND hwndClient)
         SIZEL szlViewport;
         CalcViewportSize(hwndClient, &szlViewport);
 
-        _Pmpf(("bitmap cx: %d", G_bmihBitmapLoaded.cx));
-        _Pmpf(("viewport cx: %d", szlViewport.cx));
-
         // vertical (height)
         winhUpdateScrollBar(hwndVScroll,
                             szlViewport.cy,
-                            G_bmihBitmapLoaded.cy,
-                            G_ulVertScrollOfs,
+                            G_scrwClient.szlWorkarea.cy,
+                            G_scrwClient.ptlScrollOfs.y,
                             FALSE);      // auto-hide
+
         // horizontal (width)
         winhUpdateScrollBar(hwndHScroll,
                             szlViewport.cx,
-                            G_bmihBitmapLoaded.cx,
-                            G_ulHorzScrollOfs,
+                            G_scrwClient.szlWorkarea.cx,
+                            G_scrwClient.ptlScrollOfs.x,
                             FALSE);      // auto-hide
     }
 }
@@ -639,9 +313,9 @@ VOID SetWinSize2BmpSize(VOID)
     // WinCalcFrameRect really wants screen
     // coordinates, but we don't care here
     rcl.xLeft = 0;
-    rcl.xRight = rcl.xLeft + G_bmihBitmapLoaded.cx;
+    rcl.xRight = rcl.xLeft + G_bmihLoadedBitmap.cx;
     rcl.yBottom = 0;
-    rcl.yTop = rcl.yBottom + G_bmihBitmapLoaded.cy;
+    rcl.yTop = rcl.yBottom + G_bmihLoadedBitmap.cy;
     WinCalcFrameRect(G_hwndMain,
                      &rcl,
                      FALSE);    // calc frame from client
@@ -764,10 +438,13 @@ VOID WMDoneLoadingBitmap(HWND hwndClient,
         G_hbmLoaded = hbmNew;
 
         GpiQueryBitmapParameters(G_hbmLoaded,
-                                 &G_bmihBitmapLoaded);
+                                 &G_bmihLoadedBitmap);
+
         // reset scroller
-        G_ulVertScrollOfs = 0;
-        G_ulHorzScrollOfs = 0;
+        G_scrwClient.szlWorkarea.cx = G_bmihLoadedBitmap.cx;
+        G_scrwClient.szlWorkarea.cy = G_bmihLoadedBitmap.cy;
+        G_scrwClient.ptlScrollOfs.x = 0;
+        G_scrwClient.ptlScrollOfs.y = 0;
 
         if (G_GlobalSettings.fResizeAfterLoad)
             SetWinSize2BmpSize();
@@ -812,14 +489,15 @@ VOID PaintClient(HWND hwndClient,
                  HPS hps,
                  PRECTL prclPaint)
 {
-    BOOL fFillBackground = TRUE;
+    BOOL    fFillBackground = TRUE;
+    SIZEL   szlViewport;
+
+    CalcViewportSize(hwndClient, &szlViewport);
 
     if (G_hbmLoaded)
     {
         POINTL ptlDest = {0, 0};
         RECTL rclDest;
-        SIZEL szlViewport;
-        CalcViewportSize(hwndClient, &szlViewport);
 
         if (G_GlobalSettings.fScale2WinSize)
         {
@@ -839,36 +517,36 @@ VOID PaintClient(HWND hwndClient,
         else
         {
             // original size mode:
-            if (G_bmihBitmapLoaded.cy < szlViewport.cy)
+            if (G_scrwClient.szlWorkarea.cy < szlViewport.cy)
                 // center vertically:
-                ptlDest.y = (szlViewport.cy - G_bmihBitmapLoaded.cy) / 2;
+                ptlDest.y = (szlViewport.cy - G_scrwClient.szlWorkarea.cy) / 2;
             else
             {
                 // use scroller offset:
                 // calc leftover space
-                ULONG ulClipped = G_bmihBitmapLoaded.cy - szlViewport.cy;
+                ULONG ulClipped = G_scrwClient.szlWorkarea.cy - szlViewport.cy;
                 // this is a positive value if the scroller is
                 // down from the top or 0 if its at the top.
                 // So if it's zero, we must use -ulClipped.
                 ptlDest.y -= ulClipped;
                 // if it's above zero, we must add to y.
-                ptlDest.y += G_ulVertScrollOfs;
+                ptlDest.y += G_scrwClient.ptlScrollOfs.y;
             }
 
-            if (G_bmihBitmapLoaded.cx < szlViewport.cx)
+            if (G_scrwClient.szlWorkarea.cx < szlViewport.cx)
                 // center horizontally:
-                ptlDest.x = (szlViewport.cx - G_bmihBitmapLoaded.cx) / 2;
+                ptlDest.x = (szlViewport.cx - G_scrwClient.szlWorkarea.cx) / 2;
             else
             {
                 // use scroller offset:
                 // calc leftover space
-                ULONG ulClipped = G_bmihBitmapLoaded.cx - szlViewport.cx;
+                ULONG ulClipped = G_scrwClient.szlWorkarea.cx - szlViewport.cx;
                 // this is a positive value if the scroller is
                 // right from the left or 0 if its at the left.
                 // So if it's zero, we must use -ulClipped.
                 // ptlDest.x -= ulClipped;
                 // if it's above zero, we must further subtract from x.
-                ptlDest.x -= G_ulHorzScrollOfs;
+                ptlDest.x -= G_scrwClient.ptlScrollOfs.x;
             }
 
             WinDrawBitmap(hps,
@@ -878,13 +556,76 @@ VOID PaintClient(HWND hwndClient,
                           0, 0,
                           DBM_NORMAL);
 
+            {
+                RECTL   rcl;
+                CHAR    szTemp[400],
+                        szNLS1[20],
+                        szNLS2[20],
+                        szNLS3[20],
+                        szNLS4[20],
+                        szNLS5[20],
+                        szNLS6[20],
+                        szNLS7[20],
+                        szNLS8[20];
+                FONTMETRICS fm;
+
+                SIZEL szlRange;
+                szlRange.cx = SHORT2FROMMR(WinSendMsg(G_scrwClient.hwndHScroll,
+                                                      SBM_QUERYRANGE,
+                                                      0,
+                                                      0));
+                szlRange.cy = SHORT2FROMMR(WinSendMsg(G_scrwClient.hwndVScroll,
+                                                      SBM_QUERYRANGE,
+                                                      0,
+                                                      0));
+
+                sprintf(szTemp,
+                        "Workarea: (%s/%s), viewport: (%s/%s)\nscrOfs (%s/%s), scrLimit (%s/%s)",
+                        nlsThousandsULong(szNLS1,
+                                          G_scrwClient.szlWorkarea.cx,
+                                          '.'),
+                        nlsThousandsULong(szNLS2,
+                                          G_scrwClient.szlWorkarea.cy,
+                                          '.'),
+                        nlsThousandsULong(szNLS3,
+                                          szlViewport.cx,
+                                          '.'),
+                        nlsThousandsULong(szNLS4,
+                                          szlViewport.cy,
+                                          '.'),
+                        nlsThousandsULong(szNLS5,
+                                          G_scrwClient.ptlScrollOfs.x,
+                                          '.'),
+                        nlsThousandsULong(szNLS6,
+                                          G_scrwClient.ptlScrollOfs.y,
+                                          '.'),
+                        nlsThousandsULong(szNLS7,
+                                          szlRange.cx,
+                                          '.'),
+                        nlsThousandsULong(szNLS8,
+                                          szlRange.cy,
+                                          '.'));
+
+                rcl.xLeft = 10;
+                rcl.xRight = 1000;
+                rcl.yBottom = 10;
+                rcl.yTop = 1000;
+                GpiQueryFontMetrics(hps, sizeof(fm), &fm);
+                GpiSetColor(hps, CLR_WHITE);
+                gpihDrawString(hps,
+                               szTemp,
+                               &rcl,
+                               DT_LEFT | DT_BOTTOM,
+                               &fm);
+            }
+
             // cut out the rectangle of the bitmap we just
             // painted from the clipping region so that
             // WinFillRect below cannot overwrite it
             rclDest.xLeft = ptlDest.x;
             rclDest.yBottom = ptlDest.y;
-            rclDest.xRight = ptlDest.x + G_bmihBitmapLoaded.cx;
-            rclDest.yTop = ptlDest.y + G_bmihBitmapLoaded.cy;
+            rclDest.xRight = ptlDest.x + G_scrwClient.szlWorkarea.cx;
+            rclDest.yTop = ptlDest.y + G_scrwClient.szlWorkarea.cy;
             GpiExcludeClipRectangle(hps,
                                     &rclDest);
         }
@@ -989,34 +730,19 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM m
         break; }
 
         case WM_VSCROLL:
-        {
-            RECTL rcl;
-            WinQueryWindowRect(hwndClient, &rcl);
-            winhHandleScrollMsg(hwndClient,
-                                WinWindowFromID(G_hwndMain, FID_VERTSCROLL),
-                                &G_ulVertScrollOfs,
-                                &rcl,
-                                G_bmihBitmapLoaded.cy,
-                                10,
-                                msg,
-                                mp2);
-        break; }
-
         case WM_HSCROLL:
+        case WM_CHAR:
         {
-            RECTL rcl;
-            WinQueryWindowRect(hwndClient, &rcl);
-            _Pmpf(("WM_HSCROLL"));
-            winhHandleScrollMsg(hwndClient,
-                                WinWindowFromID(G_hwndMain, FID_HORZSCROLL),
-                                &G_ulHorzScrollOfs,
-                                &rcl,
-                                G_bmihBitmapLoaded.cx,
-                                10,
-                                msg,
-                                mp2);
-            _Pmpf(("End of WM_HSCROLL"));
-        break; }
+            SIZEL szlViewport;
+            CalcViewportSize(hwndClient, &szlViewport);
+            winhHandleScrollerMsgs(hwndClient,
+                                   &G_scrwClient,
+                                   &szlViewport,
+                                   msg,
+                                   mp1,
+                                   mp2);
+        }
+        break;
 
         case WM_CLOSE:
             if (WMClose_CanClose(hwndClient))
@@ -1025,16 +751,6 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM m
                                   INIAPP,
                                   INIKEY_MAINWINPOS);
             WinPostMsg(hwndClient, WM_QUIT, 0, 0);
-        break;
-
-        case WM_CHAR:
-            mrc = (MRESULT)winhProcessScrollChars(hwndClient,
-                                                  WinWindowFromID(G_hwndMain, FID_VERTSCROLL),
-                                                  WinWindowFromID(G_hwndMain, FID_HORZSCROLL),
-                                                  mp1,
-                                                  mp2,
-                                                  G_bmihBitmapLoaded.cy,
-                                                  G_bmihBitmapLoaded.cx);
         break;
 
         default:
@@ -1097,6 +813,8 @@ int main(int argc,
 
     winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
 
+    mmhInit();              // V1.0.1 (2003-01-25) [umoeller]
+
     // initialize global settings
     memset(&G_GlobalSettings, 0, sizeof(G_GlobalSettings));
     PrfQueryProfileData(HINI_USER,
@@ -1131,6 +849,9 @@ int main(int argc,
                                      NULL,
                                      &hwndClient);
 
+    G_scrwClient.hwndVScroll = WinWindowFromID(G_hwndMain, FID_VERTSCROLL);
+    G_scrwClient.hwndHScroll = WinWindowFromID(G_hwndMain, FID_HORZSCROLL);
+
     G_pfnwpFrameOrig = WinSubclassWindow(G_hwndMain,
                                          fnwpMainFrame);
 
@@ -1150,7 +871,7 @@ int main(int argc,
                   &G_fLoadingBitmap,        // running flag
                   "LoadBitmap",
                   THRF_PMMSGQUEUE | THRF_WAIT,
-                  hwndClient);      // user param
+                  hwndClient);      // user param == client window
     }
     else
     {

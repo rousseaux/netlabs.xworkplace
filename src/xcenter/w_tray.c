@@ -256,6 +256,8 @@ typedef struct _TRAYWIDGETPRIVATE
             // in WM_CREATE
             // V0.9.19 (2002-04-25) [umoeller]
 
+    XBUTTONDATA     xbd;
+
     BOOL            fMouseButton1Down,
                     fButtonSunk,
                     fMouseCaptured,
@@ -755,14 +757,21 @@ APIRET YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
  *
  ********************************************************************/
 
+static const CCTLCOLOR G_aTraySysColors[] =
+    {
+        TRUE, PP_BACKGROUNDCOLOR, SYSCLR_DIALOGBACKGROUND,
+        TRUE, PP_FOREGROUNDCOLOR, SYSCLR_WINDOWTEXT
+    };
+
 /*
  *@@ YwgtCreate:
  *      implementation for WM_CREATE in fnwpTrayWidget.
  *
  *@@changed V0.9.16 (2001-10-28) [umoeller]: turned tray icon into bitmap and made it vertical
+ *@@changed V1.0.1 (2003-01-22) [umoeller]: added ctlDefWindowProc support
  */
 
-STATIC MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
+STATIC MRESULT YwgtCreate(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;        // continue window creation
 
@@ -780,6 +789,14 @@ STATIC MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
 
+    ctlInitDWD(hwnd,
+               mp2,
+               &pPrivate->xbd.dwd,
+               ctrDefWidgetProc,
+               CCS_NOSENDCTLPTR,
+               G_aTraySysColors,
+               ARRAYITEMCOUNT(G_aTraySysColors));
+
     // here comes the very special code for the tray widget...
     // ctrpCreateWidgetWindow has been adjusted for this
     // to set a special new field in XCENTERWIDGET which
@@ -788,7 +805,7 @@ STATIC MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
     // tray widget
     pPrivateSetting
     = pPrivate->Setup.pPrivateSetting
-        = (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting;
+    = (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting;
 
     pPrivate->pXCenterData = WinQueryWindowPtr(pWidget->pGlobals->hwndFrame, QWL_USER);
             // V0.9.19 (2002-04-25) [umoeller]
@@ -881,91 +898,86 @@ STATIC MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
  *
  */
 
-STATIC BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC BOOL YwgtControl(PTRAYWIDGETPRIVATE pPrivate,
+                        MPARAM mp1,
+                        MPARAM mp2)
 {
     BOOL brc = FALSE;
 
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
 
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    USHORT  usID = SHORT1FROMMP(mp1),
+            usNotifyCode = SHORT2FROMMP(mp1);
+
+    switch (usID)
     {
-        PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
+        case ID_XCENTER_CLIENT:
+            switch (usNotifyCode)
+            {
+                /*
+                 * XN_QUERYSIZE:
+                 *      XCenter wants to know our size.
+                 */
 
-        USHORT  usID = SHORT1FROMMP(mp1),
-                usNotifyCode = SHORT2FROMMP(mp1);
-
-        switch (usID)
-        {
-            case ID_XCENTER_CLIENT:
-                switch (usNotifyCode)
+                case XN_QUERYSIZE:
                 {
-                    /*
-                     * XN_QUERYSIZE:
-                     *      XCenter wants to know our size.
-                     */
+                    PSIZEL pszl = (PSIZEL)mp2;
+                    pszl->cx = pPrivate->Setup.cx;
+                    pszl->cy = 10;
 
-                    case XN_QUERYSIZE:
-                    {
-                        PSIZEL pszl = (PSIZEL)mp2;
-                        pszl->cx = pPrivate->Setup.cx;
-                        pszl->cy = 10;
-
-                        brc = TRUE;
-                    }
-                    break;
-
-                    /*
-                     * XN_DISPLAYSTYLECHANGED:
-                     *      re-broadcast this to our subwidgets
-                     */
-
-                    case XN_DISPLAYSTYLECHANGED:
-                    {
-                        // reformat widgets; button size might
-                        // have changed
-                        ReformatTray(pPrivate);
-
-                        // and re-broadcast this to our subwidgets
-                        ctrpBroadcastWidgetNotify(pTrayWidgetView->pllSubwidgetViews,
-                                                  usNotifyCode,
-                                                  mp2);
-                    }
-                    break;
-
-                    case XN_BEGINANIMATE:
-                    case XN_ENDANIMATE:
-                        // re-broadcast this to our subwidgets
-                        // V0.9.13 (2001-06-23) [umoeller]
-                        ctrpBroadcastWidgetNotify(pTrayWidgetView->pllSubwidgetViews,
-                                                  usNotifyCode,
-                                                  mp2);
-                    break;
+                    brc = TRUE;
                 }
-            break;
+                break;
 
-            case ID_XCENTER_TOOLTIP:
-                if (usNotifyCode == TTN_NEEDTEXT)
+                /*
+                 * XN_DISPLAYSTYLECHANGED:
+                 *      re-broadcast this to our subwidgets
+                 */
+
+                case XN_DISPLAYSTYLECHANGED:
                 {
-                    PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                    PTRAYSETTING pCurrentTray;
+                    // reformat widgets; button size might
+                    // have changed
+                    ReformatTray(pPrivate);
 
-                    if (    (pPrivate->Setup.pPrivateSetting->ulCurrentTray != -1)
-                         && (pCurrentTray = FindCurrentTray(pPrivate))
-                       )
-                    {
-                        pttt->pszText = pCurrentTray->pszTrayName;
-                    }
-                    else
-                        pttt->pszText = (PSZ)cmnGetString(ID_CRSI_NOTRAYACTIVE);
-
-                    pttt->ulFormat = TTFMT_PSZ;
+                    // and re-broadcast this to our subwidgets
+                    ctrpBroadcastWidgetNotify(pTrayWidgetView->pllSubwidgetViews,
+                                              usNotifyCode,
+                                              mp2);
                 }
-            break;
-        }
-    } // end if (pWidget)
+                break;
+
+                case XN_BEGINANIMATE:
+                case XN_ENDANIMATE:
+                    // re-broadcast this to our subwidgets
+                    // V0.9.13 (2001-06-23) [umoeller]
+                    ctrpBroadcastWidgetNotify(pTrayWidgetView->pllSubwidgetViews,
+                                              usNotifyCode,
+                                              mp2);
+                break;
+            }
+        break;
+
+        case ID_XCENTER_TOOLTIP:
+            if (usNotifyCode == TTN_NEEDTEXT)
+            {
+                PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                PTRAYSETTING pCurrentTray;
+
+                if (    (pPrivate->Setup.pPrivateSetting->ulCurrentTray != -1)
+                     && (pCurrentTray = FindCurrentTray(pPrivate))
+                   )
+                {
+                    pttt->pszText = pCurrentTray->pszTrayName;
+                }
+                else
+                    pttt->pszText = (PSZ)cmnGetString(ID_CRSI_NOTRAYACTIVE);
+
+                pttt->ulFormat = TTFMT_PSZ;
+            }
+        break;
+    }
 
     return brc;
 }
@@ -975,22 +987,20 @@ STATIC BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PAINT in fnwpTrayWidget.
  */
 
-STATIC VOID YwgtPaint(HWND hwnd)
+STATIC VOID YwgtPaint(PTRAYWIDGETPRIVATE pPrivate)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
 
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    HPS             hps;
+
+    if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
     {
         RECTL           rclWin;
         const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
-        XBUTTONDATA     xbd;
         XBUTTONSTATE    xbs;
         ULONG           fl = TBBS_BITMAP;        // V0.9.16 (2001-10-28) [umoeller]
 
-        HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
         gpihSwitchToRGB(hps);
 
         WinQueryWindowRect(hwnd, &rclWin);
@@ -1002,13 +1012,13 @@ STATIC VOID YwgtPaint(HWND hwnd)
                             // V1.0.1 (2002-12-15) [umoeller]
 
         // draw icon as X-button
-        xbd.dwd.szlWin.cy = rclWin.yTop;
-        xbd.dwd.szlWin.cx =   // pGlobals->cxMiniIcon
+        pPrivate->xbd.dwd.szlWin.cy = rclWin.yTop;
+        pPrivate->xbd.dwd.szlWin.cx =   // pGlobals->cxMiniIcon
                            G_cxTrayBmp      // V0.9.16 (2001-10-28) [umoeller]
                          + 2
                          + 2;
         if (!(pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
-            xbd.dwd.szlWin.cx += 4;     // 2*2 for button borders
+            pPrivate->xbd.dwd.szlWin.cx += 4;     // 2*2 for button borders
         else
             // flat buttons:
             fl |= TBBS_FLAT;
@@ -1018,19 +1028,18 @@ STATIC VOID YwgtPaint(HWND hwnd)
                                );
         xbs.fMouseOver = FALSE;
 
-        xbd.szlIconOrBitmap.cx = G_cxTrayBmp;
-        xbd.szlIconOrBitmap.cy = G_cyTrayBmp;           // V0.9.16 (2001-10-28) [umoeller]
-        xbd.dwd.lcolBackground = pPrivate->Setup.lcolBackground;
+        pPrivate->xbd.szlIconOrBitmap.cx = G_cxTrayBmp;
+        pPrivate->xbd.szlIconOrBitmap.cy = G_cyTrayBmp;           // V0.9.16 (2001-10-28) [umoeller]
 
-        xbd.hptr = G_hbmTray;           // V0.9.16 (2001-10-28) [umoeller]
+        pPrivate->xbd.hptr = G_hbmTray;           // V0.9.16 (2001-10-28) [umoeller]
 
         ctlPaintTBButton(hps,
                          fl,         // note, XBD_BACKGROUND is never set
-                         &xbd,
+                         &pPrivate->xbd,
                          &xbs);     // V1.0.1 (2002-11-30) [umoeller]
 
         WinEndPaint(hps);
-    } // end if (pWidget && pPrivate)
+    }
 }
 
 /*
@@ -1039,39 +1048,35 @@ STATIC VOID YwgtPaint(HWND hwnd)
  *
  */
 
-STATIC VOID YwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID YwgtWindowPosChanged(PTRAYWIDGETPRIVATE pPrivate,
+                                 MPARAM mp1,
+                                 MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    PSWP pswpNew = (PSWP)mp1,
+         pswpOld = pswpNew + 1;
+    if (pswpNew->fl & SWP_SIZE)
     {
-        PSWP pswpNew = (PSWP)mp1,
-             pswpOld = pswpNew + 1;
-        if (pswpNew->fl & SWP_SIZE)
+        // window was resized:
+        if (pswpNew->cx != pswpOld->cx)
         {
-            // window was resized:
-            if (pswpNew->cx != pswpOld->cx)
-            {
-                // width changed:
-                pPrivate->Setup.cx = pswpNew->cx;
-                pPrivate->szlCurrent.cx = pswpNew->cx;
-                // recompose setup string
-                YwgtSaveSetupAndSend(pPrivate);
-            }
+            // width changed:
+            pPrivate->Setup.cx = pswpNew->cx;
+            pPrivate->szlCurrent.cx = pswpNew->cx;
+            // recompose setup string
+            YwgtSaveSetupAndSend(pPrivate);
+        }
 
-            if (pswpNew->cy != pswpOld->cy)
-            {
-                // height changed (probably by XCenter):
-                // reformat subwidgets
-                pPrivate->szlCurrent.cy = pswpNew->cy;
-                        // this will then be used for resizing the subwidgets too
-                ReformatTray(pPrivate);
-            }
-        } // end if (pswpNew->fl & SWP_SIZE)
-    } // end if (pWidget && pPrivate)
+        if (pswpNew->cy != pswpOld->cy)
+        {
+            // height changed (probably by XCenter):
+            // reformat subwidgets
+            pPrivate->szlCurrent.cy = pswpNew->cy;
+                    // this will then be used for resizing the subwidgets too
+            ReformatTray(pPrivate);
+        }
+    } // end if (pswpNew->fl & SWP_SIZE)
+
+    ctlDefWindowProc(&pPrivate->xbd.dwd, WM_WINDOWPOSCHANGED, mp1, mp2);
 }
 
 /*
@@ -1098,87 +1103,85 @@ STATIC BOOL IsClickOnTrayButton(const XCENTERGLOBALS *pGlobals,
  *@@changed V0.9.14 (2001-08-05) [lafaix]: added MB1 click tray switch
  */
 
-STATIC VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
+STATIC VOID YwgtButton1Down(PTRAYWIDGETPRIVATE pPrivate,
+                            MPARAM mp1)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
+
+    const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
+    SHORT           sx = SHORT1FROMMP(mp1);
+
+    if (IsClickOnTrayButton(pGlobals, mp1))
     {
-        const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
-        SHORT sx = SHORT1FROMMP(mp1);
-        if (IsClickOnTrayButton(pGlobals, mp1))
+        // click on tray button:
+        if (WinIsWindowEnabled(hwnd))
         {
-            // click on tray button:
-            if (WinIsWindowEnabled(hwnd))
+            pPrivate->fMouseButton1Down = TRUE;
+            WinInvalidateRect(hwnd, NULL, FALSE);
+
+            // since we're not passing the message
+            // to WinDefWndProc, we need to give
+            // ourselves the focus; this will also
+            // dismiss the button's menu, if open
+            WinSetFocus(HWND_DESKTOP, hwnd);
+
+            if (!pPrivate->fMouseCaptured)
             {
-                pPrivate->fMouseButton1Down = TRUE;
-                WinInvalidateRect(hwnd, NULL, FALSE);
+                // capture mouse events while the
+                // mouse button is down
+                WinSetCapture(HWND_DESKTOP, hwnd);
+                pPrivate->fMouseCaptured = TRUE;
+            }
 
-                // since we're not passing the message
-                // to WinDefWndProc, we need to give
-                // ourselves the focus; this will also
-                // dismiss the button's menu, if open
-                WinSetFocus(HWND_DESKTOP, hwnd);
+            if (!pPrivate->fButtonSunk)
+            {
+                // toggle state is still UP (i.e. button pressed
+                // for the first time): show menu
 
-                if (!pPrivate->fMouseCaptured)
+                if (!pPrivate->hwndTraysMenu)
                 {
-                    // capture mouse events while the
-                    // mouse button is down
-                    WinSetCapture(HWND_DESKTOP, hwnd);
-                    pPrivate->fMouseCaptured = TRUE;
+                    // first call, or menu was invalidated:
+                    // built it
+                    SHORT sIndex = 100;
+                    PLISTNODE pNode;
+                    PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
+                    ULONG ulIndex = 0;
+
+                    pPrivate->hwndTraysMenu = WinCreateMenu(HWND_DESKTOP, NULL);
+                    for (pNode = lstQueryFirstNode(ppws->pllTraySettings);
+                         pNode;
+                         pNode = pNode->pNext, ulIndex++)
+                    {
+                        PTRAYSETTING pTray = (PTRAYSETTING)pNode->pItemData;
+                        winhInsertMenuItem(pPrivate->hwndTraysMenu,
+                                           MIT_END,
+                                           sIndex++,
+                                           pTray->pszTrayName,
+                                           MIS_TEXT,
+                                           (pPrivate->Setup.pPrivateSetting->ulCurrentTray == ulIndex)
+                                                ? MIA_CHECKED
+                                                : 0);
+                    }
                 }
 
-                if (!pPrivate->fButtonSunk)
+                if (pPrivate->hwndTraysMenu)
                 {
-                    // toggle state is still UP (i.e. button pressed
-                    // for the first time): show menu
+                    // draw source emphasis around widget
+                    ctrpDrawEmphasis(pPrivate->pXCenterData,
+                                     FALSE,     // draw, not remove emphasis
+                                     NULL,
+                                     hwnd,
+                                     NULLHANDLE);   // standard PS
 
-                    if (!pPrivate->hwndTraysMenu)
-                    {
-                        // first call, or menu was invalidated:
-                        // built it
-                        SHORT sIndex = 100;
-                        PLISTNODE pNode;
-                        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-                        ULONG ulIndex = 0;
-
-                        pPrivate->hwndTraysMenu = WinCreateMenu(HWND_DESKTOP, NULL);
-                        for (pNode = lstQueryFirstNode(ppws->pllTraySettings);
-                             pNode;
-                             pNode = pNode->pNext, ulIndex++)
-                        {
-                            PTRAYSETTING pTray = (PTRAYSETTING)pNode->pItemData;
-                            winhInsertMenuItem(pPrivate->hwndTraysMenu,
-                                               MIT_END,
-                                               sIndex++,
-                                               pTray->pszTrayName,
-                                               MIS_TEXT,
-                                               (pPrivate->Setup.pPrivateSetting->ulCurrentTray == ulIndex)
-                                                    ? MIA_CHECKED
-                                                    : 0);
-                        }
-                    }
-
-                    if (pPrivate->hwndTraysMenu)
-                    {
-                        // draw source emphasis around widget
-                        ctrpDrawEmphasis(pPrivate->pXCenterData,
-                                         FALSE,     // draw, not remove emphasis
-                                         NULL,
-                                         hwnd,
-                                         NULLHANDLE);   // standard PS
-
-                        // V0.9.14 (2001-07-31) [lafaix]
-                        ctrPlaceAndPopupMenu(hwnd,
-                                             pPrivate->hwndTraysMenu,
-                                             pWidget->pGlobals->ulPosition == XCENTER_BOTTOM);
-                    }
-                } // end if (!pPrivate->fButtonSunk)
-            }
+                    // V0.9.14 (2001-07-31) [lafaix]
+                    ctrPlaceAndPopupMenu(hwnd,
+                                         pPrivate->hwndTraysMenu,
+                                         pWidget->pGlobals->ulPosition == XCENTER_BOTTOM);
+                }
+            } // end if (!pPrivate->fButtonSunk)
         }
-    } // end if (pWidget)
+    }
 }
 
 /*
@@ -1188,29 +1191,24 @@ STATIC VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.19 (2002-04-25) [umoeller]: now allowing single-click for switching trays
  */
 
-STATIC VOID YwgtButton1Click(HWND hwnd,
+STATIC VOID YwgtButton1Click(PTRAYWIDGETPRIVATE pPrivate,
                              ULONG msg,
                              MPARAM mp1)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+
+    BOOL fButton = IsClickOnTrayButton(pWidget->pGlobals, mp1);
+
+    if (    ((fButton) && (msg == WM_BUTTON1DBLCLK))
+         || ((!fButton) && (msg == WM_BUTTON1CLICK))
        )
     {
-        BOOL fButton = IsClickOnTrayButton(pWidget->pGlobals, mp1);
-
-        if (    ((fButton) && (msg == WM_BUTTON1DBLCLK))
-             || ((!fButton) && (msg == WM_BUTTON1CLICK))
-           )
-        {
-            // circle through the trays
-            PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-            ULONG cTrays = lstCountItems(ppws->pllTraySettings);
-            if (cTrays > 1)
-                SwitchToTray(pPrivate,
-                             ((pPrivate->Setup.pPrivateSetting->ulCurrentTray) + 1) % cTrays);
-        }
+        // circle through the trays
+        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
+        ULONG cTrays = lstCountItems(ppws->pllTraySettings);
+        if (cTrays > 1)
+            SwitchToTray(pPrivate,
+                         ((pPrivate->Setup.pPrivateSetting->ulCurrentTray) + 1) % cTrays);
     }
 }
 
@@ -1219,32 +1217,28 @@ STATIC VOID YwgtButton1Click(HWND hwnd,
  *      implementation for WM_BUTTON1UP in fnwpTrayWidget.
  */
 
-STATIC VOID YwgtButton1Up(HWND hwnd)
+STATIC VOID YwgtButton1Up(PTRAYWIDGETPRIVATE pPrivate)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
+
+    if (pPrivate->fMouseButton1Down)
     {
-        if (pPrivate->fMouseButton1Down)
+        // un-capture the mouse first
+        if (pPrivate->fMouseCaptured)
         {
-            // un-capture the mouse first
-            if (pPrivate->fMouseCaptured)
-            {
-                WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-                pPrivate->fMouseCaptured = FALSE;
-            }
-
-            pPrivate->fMouseButton1Down = FALSE;
-
-            // toggle state with each WM_BUTTON1UP
-            pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
-
-            // repaint sunk button state
-            WinInvalidateRect(hwnd, NULL, FALSE);
+            WinSetCapture(HWND_DESKTOP, NULLHANDLE);
+            pPrivate->fMouseCaptured = FALSE;
         }
-    } // end if (pWidget)
+
+        pPrivate->fMouseButton1Down = FALSE;
+
+        // toggle state with each WM_BUTTON1UP
+        pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
+
+        // repaint sunk button state
+        WinInvalidateRect(hwnd, NULL, FALSE);
+    }
 }
 
 /*
@@ -1252,33 +1246,31 @@ STATIC VOID YwgtButton1Up(HWND hwnd)
  *      implementation for WM_MENUEND in fnwpTrayWidget.
  */
 
-STATIC MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT YwgtMenuEnd(PTRAYWIDGETPRIVATE pPrivate,
+                           MPARAM mp1,
+                           MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    if ((HWND)mp2 == pPrivate->hwndTraysMenu)
     {
-        if ((HWND)mp2 == pPrivate->hwndTraysMenu)
+        // main menu is ending:
+        if (!pPrivate->fMouseButton1Down)
         {
-            // main menu is ending:
-            if (!pPrivate->fMouseButton1Down)
-            {
-                // mouse button not currently down
-                // --> menu dismissed for some other reason:
-                pPrivate->fButtonSunk = FALSE;
-                WinInvalidateRect(hwnd, NULL, FALSE);
+            PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+            HWND            hwnd = pWidget->hwndWidget;
 
-                // and remove emphasis again
-                WinInvalidateRect(WinQueryWindow(hwnd, QW_PARENT),
-                                  NULL,
-                                  FALSE);
-            }
+            // mouse button not currently down
+            // --> menu dismissed for some other reason:
+            pPrivate->fButtonSunk = FALSE;
+            WinInvalidateRect(hwnd, NULL, FALSE);
+
+            // and remove emphasis again
+            WinInvalidateRect(WinQueryWindow(hwnd, QW_PARENT),
+                              NULL,
+                              FALSE);
         }
-    } // end if (pWidget)
+    }
 
-    return ctrDefWidgetProc(hwnd, WM_MENUEND, mp1, mp2);
+    return ctlDefWindowProc(&pPrivate->xbd.dwd, WM_MENUEND, mp1, mp2);
 }
 
 /*
@@ -1288,84 +1280,75 @@ STATIC MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.16 (2001-12-08) [umoeller]: "delete" wasn't disabled if there was only one tray
  */
 
-STATIC MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT YwgtContextMenu(PTRAYWIDGETPRIVATE pPrivate,
+                               MPARAM mp1,
+                               MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
+    PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting;
+    HWND            hwndContextMenu = pWidget->hwndContextMenu;
+    BOOL            fTrayValid;
 
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    if (!pPrivate->fContextMenuHacked)
     {
-        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-        HWND hwndContextMenu = pWidget->hwndContextMenu;
-        BOOL fTrayValid;
+        // first call:
+        SHORT sPosition = 1;
 
-        if (!pPrivate->fContextMenuHacked)
-        {
-            // first call:
-            SHORT sPosition = 1;
+        // hack the context menu so we have "add widgets"
+        // with all the widget classes we can handle
 
-            // hack the context menu so we have "add widgets"
-            // with all the widget classes we can handle
+        winhInsertMenuSeparator(hwndContextMenu,
+                                sPosition++,  // position
+                                ID_CRMI_SEP1);
 
-            winhInsertMenuSeparator(hwndContextMenu,
-                                    sPosition++,  // position
-                                    ID_CRMI_SEP1);
+        winhInsertMenuItem(hwndContextMenu,
+                           sPosition++,
+                           ID_CRMI_ADDTRAY,
+                           cmnGetString(ID_CRSI_ADDTRAY),
+                           MIS_TEXT,
+                           0);
+        winhInsertMenuItem(hwndContextMenu,
+                           sPosition++,
+                           ID_CRMI_RENAMETRAY,
+                           cmnGetString(ID_CRSI_RENAMETRAY),
+                           MIS_TEXT,
+                           0);
+        winhInsertMenuItem(hwndContextMenu,
+                           sPosition++,
+                           ID_CRMI_REMOVETRAY,
+                           cmnGetString(ID_CRSI_REMOVETRAY),
+                           MIS_TEXT,
+                           0);
 
-            winhInsertMenuItem(hwndContextMenu,
-                               sPosition++,
-                               ID_CRMI_ADDTRAY,
-                               cmnGetString(ID_CRSI_ADDTRAY),
-                               MIS_TEXT,
-                               0);
-            winhInsertMenuItem(hwndContextMenu,
-                               sPosition++,
-                               ID_CRMI_RENAMETRAY,
-                               cmnGetString(ID_CRSI_RENAMETRAY),
-                               MIS_TEXT,
-                               0);
-            winhInsertMenuItem(hwndContextMenu,
-                               sPosition++,
-                               ID_CRMI_REMOVETRAY,
-                               cmnGetString(ID_CRSI_REMOVETRAY),
-                               MIS_TEXT,
-                               0);
+        winhInsertMenuSeparator(hwndContextMenu,
+                                sPosition++,  // position
+                                ID_CRMI_SEP1);
 
-            winhInsertMenuSeparator(hwndContextMenu,
-                                    sPosition++,  // position
-                                    ID_CRMI_SEP1);
+        ctrpAddWidgetsMenu(pWidget->pGlobals->pvSomSelf,
+                           hwndContextMenu,
+                           sPosition++,       // position
+                           cmnGetString(ID_XSSI_ADDWIDGETTOTRAY),
+                                    // V0.9.20 (2002-08-10) [umoeller]
+                           TRUE);   // trayable only
 
-            ctrpAddWidgetsMenu(pWidget->pGlobals->pvSomSelf,
-                               hwndContextMenu,
-                               sPosition++,       // position
-                               cmnGetString(ID_XSSI_ADDWIDGETTOTRAY),
-                                        // V0.9.20 (2002-08-10) [umoeller]
-                               TRUE);   // trayable only
-
-            pPrivate->fContextMenuHacked = TRUE;
-        }
-
-        fTrayValid = (pPrivate->Setup.pPrivateSetting->ulCurrentTray != -1);
-
-        // allow "delete tray" only if we have more than one
-        WinEnableMenuItem(hwndContextMenu,
-                          ID_CRMI_REMOVETRAY,
-                          (    (fTrayValid)
-                            && (lstCountItems(ppws->pllTraySettings) > 1)
-                          ));
-        WinEnableMenuItem(hwndContextMenu,
-                          ID_CRMI_RENAMETRAY,
-                          (fTrayValid));
-        /* WinEnableMenuItem(hwndContextMenu,
-                          ID_CRMI_REMOVETRAY,
-                          (fTrayValid));
-            */      // wow, what was this doing in here?
-                    // V0.9.16 (2001-12-08) [umoeller]
+        pPrivate->fContextMenuHacked = TRUE;
     }
 
+    fTrayValid = (pPrivate->Setup.pPrivateSetting->ulCurrentTray != -1);
+
+    // allow "delete tray" only if we have more than one
+    WinEnableMenuItem(hwndContextMenu,
+                      ID_CRMI_REMOVETRAY,
+                      (    (fTrayValid)
+                        && (lstCountItems(ppws->pllTraySettings) > 1)
+                      ));
+    WinEnableMenuItem(hwndContextMenu,
+                      ID_CRMI_RENAMETRAY,
+                      (fTrayValid));
+
     // let default widget proc display context menu
-    return ctrDefWidgetProc(hwnd,
+    return ctlDefWindowProc(&pPrivate->xbd.dwd,
                             WM_CONTEXTMENU,
                             mp1,
                             mp2);
@@ -1382,148 +1365,144 @@ STATIC MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      --  >= sulVarMenuItems: "add widget" menu.
  */
 
-STATIC MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT YwgtCommand(PTRAYWIDGETPRIVATE pPrivate,
+                           MPARAM mp1,
+                           MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
+    const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
+    USHORT          usCommand = SHORT1FROMMP(mp1);
+    PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting;
+    PXCENTERWIDGETCLASS pClass;
+    PTRAYSETTING    pCurrentTray;
 
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    XCenter *somSelf = pPrivate->pXCenterData->somSelf;
+    WIDGETPOSITION pos;
+
+    ctrpQueryWidgetIndexFromHWND(somSelf,
+                                 hwnd,
+                                 &pos);
+
+    switch (usCommand)
     {
-        const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
-        USHORT usCommand = SHORT1FROMMP(mp1);
-        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-        PXCENTERWIDGETCLASS pClass;
-        PTRAYSETTING pCurrentTray;
-
-        XCenter *somSelf = pPrivate->pXCenterData->somSelf;
-        WIDGETPOSITION pos;
-
-        ctrpQueryWidgetIndexFromHWND(somSelf,
-                                     hwnd,
-                                     &pos);
-
-        switch (usCommand)
+        case ID_CRMI_ADDTRAY:
         {
-            case ID_CRMI_ADDTRAY:
+            CHAR szTemp[30];
+            PSZ pszNewTrayName;
+            sprintf(szTemp,
+                    cmnGetString(ID_CRSI_TRAY),     // tray %d
+                    lstCountItems(ppws->pllTraySettings) + 1);
+            if (pszNewTrayName = cmnTextEntryBox(pGlobals->hwndClient,
+                                                 cmnGetString(ID_CRSI_ADDTRAY),
+                                                 cmnGetString(ID_CRSI_ENTERNEWTRAY),
+                                                 szTemp,
+                                                 50,
+                                                 TEBF_REMOVETILDE
+                                                    | TEBF_REMOVEELLIPSE
+                                                    | TEBF_SELECTALL))
             {
-                CHAR szTemp[30];
+                // create a tray with that name
+                ULONG ulIndex = 0;
+                PTRAYSETTING pTray = ctrpCreateTraySetting((PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
+                                                           pszNewTrayName,
+                                                           &ulIndex);
+                InvalidateMenu(pPrivate);
+                SwitchToTray(pPrivate,
+                             ulIndex);
+                free(pszNewTrayName);
+
+                // recompose setup string with new trays
+                YwgtSaveSetupAndSend(pPrivate);
+            }
+        }
+        break;
+
+        case ID_CRMI_RENAMETRAY:
+            if (pCurrentTray = FindCurrentTray(pPrivate))
+            {
                 PSZ pszNewTrayName;
-                sprintf(szTemp,
-                        cmnGetString(ID_CRSI_TRAY),     // tray %d
-                        lstCountItems(ppws->pllTraySettings) + 1);
                 if (pszNewTrayName = cmnTextEntryBox(pGlobals->hwndClient,
-                                                     cmnGetString(ID_CRSI_ADDTRAY),
-                                                     cmnGetString(ID_CRSI_ENTERNEWTRAY),
-                                                     szTemp,
+                                                     cmnGetString(ID_CRSI_RENAMETRAY),
+                                                     cmnGetString(ID_CRSI_ENTERRENAMETRAY),
+                                                     pCurrentTray->pszTrayName,
                                                      50,
                                                      TEBF_REMOVETILDE
                                                         | TEBF_REMOVEELLIPSE
                                                         | TEBF_SELECTALL))
                 {
-                    // create a tray with that name
-                    ULONG ulIndex = 0;
-                    PTRAYSETTING pTray = ctrpCreateTraySetting((PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
-                                                               pszNewTrayName,
-                                                               &ulIndex);
-                    InvalidateMenu(pPrivate);
-                    SwitchToTray(pPrivate,
-                                 ulIndex);
+                    _xwpRenameTray(somSelf,
+                                   pos.ulWidgetIndex,
+                                   ppws->ulCurrentTray,
+                                   pszNewTrayName);
                     free(pszNewTrayName);
+                }
+            }
+        break;
+
+        case ID_CRMI_REMOVETRAY:
+            if (pCurrentTray = FindCurrentTray(pPrivate))
+            {
+                PCSZ apsz = pCurrentTray->pszTrayName;
+                if (cmnMessageBoxExt(pGlobals->hwndClient,
+                                     220,        // delete tray
+                                     &apsz,
+                                     1,
+                                     221,        // delete tray %1?
+                                     MB_YESNO)
+                        == MBID_YES)
+                {
+                    // alright, nuke it
+                    // PLISTNODE pNode;
+                    ULONG ulIndex = pPrivate->Setup.pPrivateSetting->ulCurrentTray;
+                    // switch to "no tray" first
+                    // (this destroys the subwidget windows)
+                    SwitchToTray(pPrivate,
+                                 -1);         // new tray: none
+                    ctrpDeleteTraySetting(somSelf,
+                                          (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
+                                          ulIndex);
+                    // try to switch to first tray on list
+                    SwitchToTray(pPrivate,
+                                 0);
 
                     // recompose setup string with new trays
                     YwgtSaveSetupAndSend(pPrivate);
                 }
             }
-            break;
+        break;
 
-            case ID_CRMI_RENAMETRAY:
-                if (pCurrentTray = FindCurrentTray(pPrivate))
-                {
-                    PSZ pszNewTrayName;
-                    if (pszNewTrayName = cmnTextEntryBox(pGlobals->hwndClient,
-                                                         cmnGetString(ID_CRSI_RENAMETRAY),
-                                                         cmnGetString(ID_CRSI_ENTERRENAMETRAY),
-                                                         pCurrentTray->pszTrayName,
-                                                         50,
-                                                         TEBF_REMOVETILDE
-                                                            | TEBF_REMOVEELLIPSE
-                                                            | TEBF_SELECTALL))
-                    {
-                        _xwpRenameTray(somSelf,
-                                       pos.ulWidgetIndex,
-                                       ppws->ulCurrentTray,
-                                       pszNewTrayName);
-                        free(pszNewTrayName);
-                    }
-                }
-            break;
+        default:
+            // is it one of the items in the "trays" menu?
+            if (    (usCommand >= 100)
+                 && (usCommand < lstCountItems(ppws->pllTraySettings) + 100)
+               )
+            {
+                // yes: switch to tray
+                SwitchToTray(pPrivate,
+                             usCommand - 100);
 
-            case ID_CRMI_REMOVETRAY:
-                if (pCurrentTray = FindCurrentTray(pPrivate))
-                {
-                    PCSZ apsz = pCurrentTray->pszTrayName;
-                    if (cmnMessageBoxExt(pGlobals->hwndClient,
-                                         220,        // delete tray
-                                         &apsz,
-                                         1,
-                                         221,        // delete tray %1?
-                                         MB_YESNO)
-                            == MBID_YES)
-                    {
-                        // alright, nuke it
-                        // PLISTNODE pNode;
-                        ULONG ulIndex = pPrivate->Setup.pPrivateSetting->ulCurrentTray;
-                        // switch to "no tray" first
-                        // (this destroys the subwidget windows)
-                        SwitchToTray(pPrivate,
-                                     -1);         // new tray: none
-                        ctrpDeleteTraySetting(somSelf,
-                                              (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting,
-                                              ulIndex);
-                        // try to switch to first tray on list
-                        SwitchToTray(pPrivate,
-                                     0);
+                // recompose setup string with new trays
+                YwgtSaveSetupAndSend(pPrivate);
 
-                        // recompose setup string with new trays
-                        YwgtSaveSetupAndSend(pPrivate);
-                    }
-                }
-            break;
+                return (MRESULT)TRUE;
+            }
+            // is it one of the items in the "add widget" submenu?
+            else if (pClass = ctrpFindClassFromMenuCommand(usCommand))
+            {
+                YwgtCreateSubwidget(pPrivate,
+                                    pClass->pcszWidgetClass,
+                                    NULL,       // setup string
+                                    -1);        // add rightmost
 
-            default:
-                // is it one of the items in the "trays" menu?
-                if (    (usCommand >= 100)
-                     && (usCommand < lstCountItems(ppws->pllTraySettings) + 100)
-                   )
-                {
-                    // yes: switch to tray
-                    SwitchToTray(pPrivate,
-                                 usCommand - 100);
+                // say "processed", do not call def. widget proc
+                return (MRESULT)TRUE;
+            }
 
-                    // recompose setup string with new trays
-                    YwgtSaveSetupAndSend(pPrivate);
-
-                    return (MRESULT)TRUE;
-                }
-                // is it one of the items in the "add widget" submenu?
-                else if (pClass = ctrpFindClassFromMenuCommand(usCommand))
-                {
-                    YwgtCreateSubwidget(pPrivate,
-                                        pClass->pcszWidgetClass,
-                                        NULL,       // setup string
-                                        -1);        // add rightmost
-
-                    // say "processed", do not call def. widget proc
-                    return (MRESULT)TRUE;
-                }
-                else
-                    return ctrDefWidgetProc(hwnd,
-                                            WM_COMMAND,
-                                            mp1,
-                                            mp2);
-        }
+            return ctlDefWindowProc(&pPrivate->xbd.dwd,
+                                    WM_COMMAND,
+                                    mp1,
+                                    mp2);
     }
 
     return FALSE;
@@ -1536,17 +1515,15 @@ STATIC MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V1.0.1 (2002-12-15) [umoeller]
  */
 
-STATIC VOID YwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
+STATIC VOID YwgtPresParamChanged(PTRAYWIDGETPRIVATE pPrivate,
+                                 ULONG ulAttrChanged)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-         && (!pPrivate->fSettingPresParam)      // V1.0.1 (2002-12-15) [umoeller]
-       )
+    if (!pPrivate->fSettingPresParam)      // V1.0.1 (2002-12-15) [umoeller]
     {
-        BOOL fInvalidate = TRUE;
+        PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+        HWND            hwnd = pWidget->hwndWidget;
+        BOOL            fInvalidate = TRUE;
+
         switch (ulAttrChanged)
         {
             case 0:     // layout palette thing dropped
@@ -1579,17 +1556,15 @@ STATIC VOID YwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
  *
  */
 
-STATIC MRESULT YwgtDragOver(HWND hwnd, MPARAM mp1)
+STATIC MRESULT YwgtDragOver(PTRAYWIDGETPRIVATE pPrivate,
+                            MPARAM mp1)
 {
-    PXCENTERWIDGET pWidget;
-    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-    {
-        return ctrpDragOver(pWidget->pGlobals->hwndClient,
-                            hwnd,        // tray window
-                            (PDRAGINFO)mp1);
-    }
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
 
-    return 0;
+    return ctrpDragOver(pWidget->pGlobals->hwndClient,
+                        hwnd,        // tray window
+                        (PDRAGINFO)mp1);
 }
 
 /*
@@ -1598,13 +1573,11 @@ STATIC MRESULT YwgtDragOver(HWND hwnd, MPARAM mp1)
  *
  */
 
-STATIC VOID YwgtDragLeave(HWND hwnd)
+STATIC VOID YwgtDragLeave(PTRAYWIDGETPRIVATE pPrivate,)
 {
-    PXCENTERWIDGET pWidget;
-    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-    {
-        ctrpRemoveDragoverEmphasis(pWidget->pGlobals->hwndClient);
-    }
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+
+    ctrpRemoveDragoverEmphasis(pWidget->pGlobals->hwndClient);
 }
 
 /*
@@ -1613,15 +1586,15 @@ STATIC VOID YwgtDragLeave(HWND hwnd)
  *
  */
 
-STATIC VOID YwgtDrop(HWND hwnd, MPARAM mp1)
+STATIC VOID YwgtDrop(PTRAYWIDGETPRIVATE pPrivate,
+                     MPARAM mp1)
 {
-    PXCENTERWIDGET pWidget;
-    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-    {
-        ctrpDrop(pWidget->pGlobals->hwndClient,
-                 hwnd,        // tray window
-                 (PDRAGINFO)mp1);
-    }
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
+
+    ctrpDrop(pWidget->pGlobals->hwndClient,
+             hwnd,        // tray window
+             (PDRAGINFO)mp1);
 }
 
 
@@ -1635,61 +1608,55 @@ STATIC VOID YwgtDrop(HWND hwnd, MPARAM mp1)
  *      to save the entire XCenter setup.
  */
 
-STATIC BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
+STATIC BOOL YwgtSaveSubwidgetSetup(PTRAYWIDGETPRIVATE pPrivate,
                                    HWND hwndSubwidget,
                                    PCSZ pcszSetupString)     // can be NULL
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    HWND            hwnd = pWidget->hwndWidget;
+    PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
 
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
+    // 1) find the subwidget in the subwidgets list
+    PLISTNODE pNode;
+    ULONG ulSubwidgetIndex = 0;
+    // PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
+
+    for (pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
+         pNode;
+         pNode = pNode->pNext, ulSubwidgetIndex++)
     {
-        PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
-
-        // 1) find the subwidget in the subwidgets list
-        PLISTNODE pNode;
-        ULONG ulSubwidgetIndex = 0;
-        // PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-
-        for (pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
-             pNode;
-             pNode = pNode->pNext, ulSubwidgetIndex++)
+        PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
+        if (pView->Widget.hwndWidget == hwndSubwidget)
         {
-            PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
-            if (pView->Widget.hwndWidget == hwndSubwidget)
+            // that's ours:
+            // find the corresponding setting entry
+            PTRAYSETTING pCurrentTray;
+            PPRIVATEWIDGETSETTING pSubwidget;
+
+            if (    (pCurrentTray = FindCurrentTray(pPrivate))
+                 && (pSubwidget = lstItemFromIndex(&pCurrentTray->llSubwidgetSettings,
+                                                   ulSubwidgetIndex))
+               )
             {
-                // that's ours:
-                // find the corresponding setting entry
-                PTRAYSETTING pCurrentTray;
-                PPRIVATEWIDGETSETTING pSubwidget;
+                // got it:
+                // update the setup string
+                if (pSubwidget->Public.pszSetupString)
+                    free(pSubwidget->Public.pszSetupString);
+                pSubwidget->Public.pszSetupString = strhdup(pcszSetupString, NULL);
 
-                if (    (pCurrentTray = FindCurrentTray(pPrivate))
-                     && (pSubwidget = lstItemFromIndex(&pCurrentTray->llSubwidgetSettings,
-                                                       ulSubwidgetIndex))
-                   )
-                {
-                    // got it:
-                    // update the setup string
-                    if (pSubwidget->Public.pszSetupString)
-                        free(pSubwidget->Public.pszSetupString);
-                    pSubwidget->Public.pszSetupString = strhdup(pcszSetupString, NULL);
+                // now recompose our own setup string, which
+                // will include the subwidget's new setup string,
+                // and save it with the XCenter... duh
+                YwgtSaveSetupAndSend(pPrivate);
 
-                    // now recompose our own setup string, which
-                    // will include the subwidget's new setup string,
-                    // and save it with the XCenter... duh
-                    YwgtSaveSetupAndSend(pPrivate);
-
-                    return TRUE;
-                }
-                else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "Found subwidget 0x%lX in views list, but not in settings.",
-                           hwndSubwidget);
-
-                break;
+                return TRUE;
             }
+            else
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Found subwidget 0x%lX in views list, but not in settings.",
+                       hwndSubwidget);
+
+            break;
         }
     }
 
@@ -1784,21 +1751,13 @@ STATIC MRESULT YwgtRemoveSubwidget(HWND hwnd,
  *
  */
 
-STATIC VOID YwgtSwitchToTray(HWND hwnd,
+STATIC VOID YwgtSwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
                              ULONG ulSwitchTo)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
-
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
-    {
-        SwitchToTray(pPrivate,
-                     ulSwitchTo);
-        // recompose setup string with new trays
-        YwgtSaveSetupAndSend(pPrivate);
-    }
+    SwitchToTray(pPrivate,
+                 ulSwitchTo);
+    // recompose setup string with new trays
+    YwgtSaveSetupAndSend(pPrivate);
 }
 
 /*
@@ -1808,37 +1767,30 @@ STATIC VOID YwgtSwitchToTray(HWND hwnd,
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-STATIC VOID YwgtDestroy(HWND hwnd)
+STATIC VOID YwgtDestroy(PTRAYWIDGETPRIVATE pPrivate)
 {
-    PXCENTERWIDGET pWidget;
-    PTRAYWIDGETPRIVATE pPrivate;
+    PXCENTERWIDGET  pWidget = pPrivate->pWidget;
+    PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
 
-    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-       )
-    {
-        PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
+    // PTRAYSETUP pSetup = &pPrivate->Setup;
+    // PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
 
-        // PTRAYSETUP pSetup = &pPrivate->Setup;
-        // PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
+    // destroy all current subwidgets
+    SwitchToTray(pPrivate,
+                 -1);
 
-        // destroy all current subwidgets
-        SwitchToTray(pPrivate,
-                     -1);
+    // WinDestroyPointer(pPrivate->hptrTray);
+    // WinDestroyPointer(pPrivate->hptrHand);
 
-        // WinDestroyPointer(pPrivate->hptrTray);
-        // WinDestroyPointer(pPrivate->hptrHand);
+    // if we had built a tray menu before,
+    // invalidate that
+    InvalidateMenu(pPrivate);
 
-        // if we had built a tray menu before,
-        // invalidate that
-        InvalidateMenu(pPrivate);
+    lstFree(&pTrayWidgetView->pllSubwidgetViews);    // V0.9.14 (2001-08-01) [umoeller]
 
-        lstFree(&pTrayWidgetView->pllSubwidgetViews);    // V0.9.14 (2001-08-01) [umoeller]
+    YwgtClearSetup(&pPrivate->Setup);
 
-        YwgtClearSetup(&pPrivate->Setup);
-
-        free(pPrivate);
-    } // end if (pWidget && pPrivate);
+    free(pPrivate);
 }
 
 /*
@@ -1846,77 +1798,60 @@ STATIC VOID YwgtDestroy(HWND hwnd)
  *      window procedure for the "Tray" widget class.
  *
  *@@changed V0.9.19 (2002-05-04) [umoeller]: removed all the ugly hack msgs since xwpCreateWidget can now handle everything correctly
+ *@@changed V1.0.1 (2003-01-17) [umoeller]: reorganized to cooperate with ctlDefWindowProc
  */
 
 MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
-    switch (msg)
+    PXCENTERWIDGET pWidget;
+    PTRAYWIDGETPRIVATE pPrivate;
+
+    if (msg == WM_CREATE)
     {
-        /*
-         * WM_CREATE:
-         *      as with all widgets, we receive a pointer to the
-         *      XCENTERWIDGET in mp1, which was created for us.
-         *
-         *      The first thing the widget MUST do on WM_CREATE
-         *      is to store the XCENTERWIDGET pointer (from mp1)
-         *      in the QWL_USER window word by calling:
-         *
-         *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
-         *
-         *      We use XCENTERWIDGET.pUser for allocating
-         *      TRAYWIDGETPRIVATE for our own stuff.
-         *
-         *      Each widget must write its desired width into
-         *      XCENTERWIDGET.cx and cy.
-         */
-
-        case WM_CREATE:
-            WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            mrc = YwgtCreate(hwnd, mp1);
-        break;
-
-        /*
-         * WM_CONTROL:
-         *      process notifications/queries from the XCenter.
-         */
-
-        case WM_CONTROL:
-            mrc = (MPARAM)YwgtControl(hwnd, mp1, mp2);
-        break;
-
-        /*
-         * WM_PAINT:
-         *
-         */
-
-        case WM_PAINT:
-            YwgtPaint(hwnd);
-        break;
-
-        /*
-         * WM_WINDOWPOSCHANGED:
-         *
-         */
-
-        case WM_WINDOWPOSCHANGED:
-            YwgtWindowPosChanged(hwnd, mp1, mp2);
-        break;
-
-        /*
-         * WM_MOUSEMOVE:
-         *
-         */
-
-        case WM_MOUSEMOVE:
+        WinSetWindowPtr(hwnd, QWL_USER, mp1);
+        mrc = YwgtCreate(hwnd, mp1, mp2);
+    }
+    else if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+              && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
+            )
+    {
+        switch (msg)
         {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
+            /*
+             * WM_CONTROL:
+             *      process notifications/queries from the XCenter.
+             */
 
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-               )
+            case WM_CONTROL:
+                mrc = (MPARAM)YwgtControl(pPrivate, mp1, mp2);
+            break;
+
+            /*
+             * WM_PAINT:
+             *
+             */
+
+            case WM_PAINT:
+                YwgtPaint(pPrivate);
+            break;
+
+            /*
+             * WM_WINDOWPOSCHANGED:
+             *
+             */
+
+            case WM_WINDOWPOSCHANGED:
+                YwgtWindowPosChanged(pPrivate, mp1, mp2);
+            break;
+
+            /*
+             * WM_MOUSEMOVE:
+             *
+             */
+
+            case WM_MOUSEMOVE:
             {
                 SHORT sx = SHORT1FROMMP(mp1);
                 if ((sx > 0) && (sx < pWidget->pGlobals->cxMiniIcon))
@@ -1924,256 +1859,230 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     WinSetPointer(HWND_DESKTOP, G_hptrHand);
                     break;
                 }
+
+                mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
             }
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-        }
-        break;
+            break;
 
-        /*
-         * WM_BUTTON1DOWN:
-         * WM_BUTTON1UP:
-         *      these show/hide the menu.
-         *
-         *      Showing the menu follows these steps:
-         *          a)  first WM_BUTTON1DOWN hilites the button;
-         *          b)  first WM_BUTTON1UP shows the menu.
-         *
-         *      When the button is pressed again, the open
-         *      menu loses focus, which results in WM_MENUEND
-         *      and destroys the window automatically.
-         */
+            /*
+             * WM_BUTTON1DOWN:
+             * WM_BUTTON1UP:
+             *      these show/hide the menu.
+             *
+             *      Showing the menu follows these steps:
+             *          a)  first WM_BUTTON1DOWN hilites the button;
+             *          b)  first WM_BUTTON1UP shows the menu.
+             *
+             *      When the button is pressed again, the open
+             *      menu loses focus, which results in WM_MENUEND
+             *      and destroys the window automatically.
+             */
 
-        case WM_BUTTON1DOWN:
-        // case WM_BUTTON1DBLCLK:
-            YwgtButton1Down(hwnd, mp1);
-            mrc = (MPARAM)TRUE;     // message processed
-        break;
+            case WM_BUTTON1DOWN:
+            // case WM_BUTTON1DBLCLK:
+                YwgtButton1Down(pPrivate, mp1);
+                mrc = (MPARAM)TRUE;     // message processed
+            break;
 
-        case WM_BUTTON1CLICK:       // V0.9.19 (2002-04-25) [umoeller]
-        case WM_BUTTON1DBLCLK:
-            YwgtButton1Click(hwnd, msg, mp1);
-            mrc = (MPARAM)TRUE;     // message processed
-        break;
+            case WM_BUTTON1CLICK:       // V0.9.19 (2002-04-25) [umoeller]
+            case WM_BUTTON1DBLCLK:
+                YwgtButton1Click(pPrivate, msg, mp1);
+                mrc = (MPARAM)TRUE;     // message processed
+            break;
 
-        /*
-         * WM_BUTTON1UP:
-         *
-         */
+            /*
+             * WM_BUTTON1UP:
+             *
+             */
 
-        case WM_BUTTON1UP:
-            YwgtButton1Up(hwnd);
-            mrc = (MPARAM)TRUE;     // message processed
-        break;
+            case WM_BUTTON1UP:
+                YwgtButton1Up(pPrivate);
+                mrc = (MPARAM)TRUE;     // message processed
+            break;
 
-        /*
-         * WM_MENUEND:
-         *
-         */
+            /*
+             * WM_MENUEND:
+             *
+             */
 
-        case WM_MENUEND:
-            mrc = YwgtMenuEnd(hwnd, mp1, mp2);
-        break;
+            case WM_MENUEND:
+                mrc = YwgtMenuEnd(pPrivate, mp1, mp2);
+            break;
 
-        /*
-         * WM_CONTEXTMENU:
-         *
-         */
+            /*
+             * WM_CONTEXTMENU:
+             *
+             */
 
-        case WM_CONTEXTMENU:
-            mrc = YwgtContextMenu(hwnd, mp1, mp2);
-        break;
+            case WM_CONTEXTMENU:
+                mrc = YwgtContextMenu(pPrivate, mp1, mp2);
+            break;
 
-        /*
-         * WM_COMMAND:
-         *
-         */
+            /*
+             * WM_COMMAND:
+             *
+             */
 
-        case WM_COMMAND:
-            mrc = YwgtCommand(hwnd, mp1, mp2);
-        break;
+            case WM_COMMAND:
+                mrc = YwgtCommand(pPrivate, mp1, mp2);
+            break;
 
-        /*
-         * WM_PRESPARAMCHANGED:
-         *
-         */
+            /*
+             * WM_PRESPARAMCHANGED:
+             *
+             */
 
-        case WM_PRESPARAMCHANGED:
-            // this gets sent before this is set!
-            YwgtPresParamChanged(hwnd, (ULONG)mp1);
-        break;
+            case WM_PRESPARAMCHANGED:
+                // this gets sent before this is set!
+                YwgtPresParamChanged(pPrivate, (ULONG)mp1);
+            break;
 
-        /*
-         * DM_DRAGOVER:
-         *
-         */
+            /*
+             * DM_DRAGOVER:
+             *
+             */
 
-        case DM_DRAGOVER:
-            mrc = YwgtDragOver(hwnd, mp1);
-        break;
+            case DM_DRAGOVER:
+                mrc = YwgtDragOver(pPrivate, mp1);
+            break;
 
-        /*
-         * DM_DRAGLEAVE:
-         *
-         */
+            /*
+             * DM_DRAGLEAVE:
+             *
+             */
 
-        case DM_DRAGLEAVE:
-            // remove emphasis
-            YwgtDragLeave(hwnd);
-        break;
+            case DM_DRAGLEAVE:
+                // remove emphasis
+                YwgtDragLeave(pPrivate);
+            break;
 
-        /*
-         * DM_DROP:
-         *
-         */
+            /*
+             * DM_DROP:
+             *
+             */
 
-        case DM_DROP:
-            YwgtDrop(hwnd, mp1);
-        break;
+            case DM_DROP:
+                YwgtDrop(pPrivate, mp1);
+            break;
 
-        // the following messages are normally handled by
-        // the XCenter client, but since the subwidget will
-        // now post them to the tray widget window, we must
-        // handle them as well:
+            // the following messages are normally handled by
+            // the XCenter client, but since the subwidget will
+            // now post them to the tray widget window, we must
+            // handle them as well:
 
-        /*
-         * XCM_SETWIDGETSIZE:
-         *
-         */
+            /*
+             * XCM_SETWIDGETSIZE:
+             *
+             */
 
-        case XCM_SETWIDGETSIZE:
-            SetSubwidgetSize(hwnd, (HWND)mp1, (ULONG)mp2);
-        break;
+            case XCM_SETWIDGETSIZE:
+                SetSubwidgetSize(hwnd, (HWND)mp1, (ULONG)mp2);
+            break;
 
-        /*
-         * XCM_CREATEWIDGETWINDOW:
-         *      mirror of the implementation of this msg
-         *      in fnwpXCenterMainClient.
-         *
-         *      mp1 has new PPRIVATEWIDGETSETTING,
-         *      mp2 has widget index.
-         */
+            /*
+             * XCM_CREATEWIDGETWINDOW:
+             *      mirror of the implementation of this msg
+             *      in fnwpXCenterMainClient.
+             *
+             *      mp1 has new PPRIVATEWIDGETSETTING,
+             *      mp2 has widget index.
+             */
 
-        case XCM_CREATEWIDGETWINDOW:  // V0.9.19 (2002-04-25) [umoeller]
-        {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-               )
+            case XCM_CREATEWIDGETWINDOW:  // V0.9.19 (2002-04-25) [umoeller]
                 // this msg is only used for creating the window on the
                 // GUI thread because method calls may run on any thread...
                 ctrpCreateWidgetWindow(pPrivate->pXCenterData,
                                        pWidget,        // owning tray widget
                                        (PPRIVATEWIDGETSETTING)mp1,
                                        (ULONG)mp2);        // ulWidgetIndex
-        }
-        break;
+            break;
 
-        /*
-         * XCM_DESTROYWIDGETWINDOW:
-         *      mirror of the implementation of this msg
-         *      in fnwpXCenterMainClient.
-         *
-         *      While the main client will simply call
-         *      WinDestroyWindow and ctrDefWidgetProc
-         *      will do the cleanup of the widgets list,
-         *      we have to do the cleanup manually here
-         *      because otherwise we run into trouble
-         *      with tray switching... at least I can't
-         *      get this to work otherwise.
-         *
-         *      Still, we now have the same msg for both
-         *      the client and trays, finally.
-         *
-         *      (HWND)mp1 is the subwidget window.
-         *
-         *added here V0.9.19 (2002-05-04) [umoeller]
-         */
+            /*
+             * XCM_DESTROYWIDGETWINDOW:
+             *      mirror of the implementation of this msg
+             *      in fnwpXCenterMainClient.
+             *
+             *      While the main client will simply call
+             *      WinDestroyWindow and ctrDefWidgetProc
+             *      will do the cleanup of the widgets list,
+             *      we have to do the cleanup manually here
+             *      because otherwise we run into trouble
+             *      with tray switching... at least I can't
+             *      get this to work otherwise.
+             *
+             *      Still, we now have the same msg for both
+             *      the client and trays, finally.
+             *
+             *      (HWND)mp1 is the subwidget window.
+             *
+             *added here V0.9.19 (2002-05-04) [umoeller]
+             */
 
-        case XCM_DESTROYWIDGETWINDOW:
-        {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
-            HWND hwndSubwidget;
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-                 && (hwndSubwidget = (HWND)mp1)
-               )
+            case XCM_DESTROYWIDGETWINDOW:
             {
-                // look up the subwidget window in our list
-                // if we can't find it, we shouldn't destroy
-                // anything!
-                PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
-                PLISTNODE pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
-                while (pNode)
+                HWND hwndSubwidget;
+                if (hwndSubwidget = (HWND)mp1)
                 {
-                    PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
-                    if (pView->Widget.hwndWidget == hwndSubwidget)
+                    // look up the subwidget window in our list
+                    // if we can't find it, we shouldn't destroy
+                    // anything!
+                    PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pWidget;
+                    PLISTNODE pNode = lstQueryFirstNode(pTrayWidgetView->pllSubwidgetViews);
+                    while (pNode)
                     {
-                        winhDestroyWindow(&hwndSubwidget);
-                        lstRemoveNode(pTrayWidgetView->pllSubwidgetViews, pNode);
-                        break;
+                        PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
+                        if (pView->Widget.hwndWidget == hwndSubwidget)
+                        {
+                            winhDestroyWindow(&hwndSubwidget);
+                            lstRemoveNode(pTrayWidgetView->pllSubwidgetViews, pNode);
+                            break;
+                        }
+
+                        pNode = pNode->pNext;
                     }
 
-                    pNode = pNode->pNext;
+                    if (!pNode)
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "XCM_DESTROYWIDGETWINDOW: cannot find subwidget HWND 0x%lX",
+                               hwndSubwidget);
                 }
-
-                if (!pNode)
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "XCM_DESTROYWIDGETWINDOW: cannot find subwidget HWND 0x%lX",
-                           hwndSubwidget);
             }
-        }
-        break;
+            break;
 
-        /*
-         * XCM_REFORMAT:
-         */
+            /*
+             * XCM_REFORMAT:
+             */
 
-        case XCM_REFORMAT: // V0.9.19 (2002-04-25) [umoeller]
-        {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-               )
+            case XCM_REFORMAT: // V0.9.19 (2002-04-25) [umoeller]
                 // reformat widgets in tray then
                 ReformatTray(pPrivate);
-        }
-        break;
+            break;
 
-        /*
-         * XCM_SAVESETUP:
-         */
+            /*
+             * XCM_SAVESETUP:
+             */
 
-        case XCM_SAVESETUP:
-            mrc = (MRESULT)YwgtSaveSubwidgetSetup(hwnd,
-                                                  (HWND)mp1,        // subwidget
-                                                  (PSZ)mp2);        // new setup string
-        break;
+            case XCM_SAVESETUP:
+                mrc = (MRESULT)YwgtSaveSubwidgetSetup(pPrivate,
+                                                      (HWND)mp1,        // subwidget
+                                                      (PSZ)mp2);        // new setup string
+            break;
 
-        /*
-         * XCM_REMOVESUBWIDGET:
-         */
+            /*
+             * XCM_REMOVESUBWIDGET:
+             */
 
-        /* case XCM_REMOVESUBWIDGET:
-            mrc = YwgtRemoveSubwidget(hwnd, (PPRIVATEWIDGETVIEW)mp1);
-        break; */      // removed V0.9.19 (2002-05-04) [umoeller]
+            /* case XCM_REMOVESUBWIDGET:
+                mrc = YwgtRemoveSubwidget(hwnd, (PPRIVATEWIDGETVIEW)mp1);
+            break; */      // removed V0.9.19 (2002-05-04) [umoeller]
 
-        /*
-         * XCM_TRAYSCHANGED:
-         *
-         *added V0.9.19 (2002-04-25) [umoeller]
-         */
+            /*
+             * XCM_TRAYSCHANGED:
+             *
+             *added V0.9.19 (2002-04-25) [umoeller]
+             */
 
-        case XCM_TRAYSCHANGED:
-        {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-               )
-            {
+            case XCM_TRAYSCHANGED:
                 InvalidateMenu(pPrivate);
 
                 if (pPrivate->Setup.pPrivateSetting->ulCurrentTray == -1)
@@ -2181,81 +2090,26 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 // recompose setup string with new trays
                 YwgtSaveSetupAndSend(pPrivate);
-            }
-        }
-        break;
+            break;
 
-        case XCM_SWITCHTOTRAY:
-            YwgtSwitchToTray(hwnd, (ULONG)mp1);
-        break;
+            case XCM_SWITCHTOTRAY:
+                YwgtSwitchToTray(pPrivate, (ULONG)mp1);
+            break;
 
-        /* case XCM_CREATEOBJECTBUTTON: // removed V0.9.19 (2002-05-04) [umoeller]
-        {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-               )
-            {
-                YwgtCreateSubwidget(pPrivate,
-                                    "ObjButton",  // widget class
-                                    (PCSZ)mp1,
-                                    (ULONG)mp2);
-            }
-        }
-        break; */
+            /*
+             * WM_DESTROY:
+             *
+             */
 
-        /*
-        case XCM_CREATESUBWIDGET: // removed V0.9.19 (2002-05-04) [umoeller]
-            // process later, as we may still be answering
-            // a dnd sequence
-            #define UM_CREATESUBWIDGET (WM_USER + 600)
+            case WM_DESTROY:
+                YwgtDestroy(pPrivate);
+                mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
+            break;
 
-            WinPostMsg(hwnd,
-                       UM_CREATESUBWIDGET,
-                       (MPARAM)strdup((PSZ)mp1),
-                       mp2);
-        break;
-
-        case UM_CREATESUBWIDGET: // removed V0.9.19 (2002-05-04) [umoeller]
-        {
-            PXCENTERWIDGET pWidget;
-            PTRAYWIDGETPRIVATE pPrivate;
-
-            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
-                 && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
-               )
-            {
-                PSZ pszBuff = (PSZ)mp1;
-                PSZ pszSettings = strstr(pszBuff, "\r\n");
-
-                pszSettings[0] = 0;
-                pszSettings += 2;
-
-                YwgtCreateSubwidget(pPrivate,
-                                    pszBuff,  // widget class
-                                    pszSettings,
-                                    (ULONG)mp2);
-            }
-
-            free((PSZ)mp1);
-        }
-        break;
-        */
-
-        /*
-         * WM_DESTROY:
-         *
-         */
-
-        case WM_DESTROY:
-            YwgtDestroy(hwnd);
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-        break;
-
-        default:
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-    } // end switch(msg)
+            default:
+                mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
+        } // end switch(msg)
+    }
 
     return mrc;
 }

@@ -19,8 +19,11 @@
  *      After the next Desktop restart, you'll see an additional
  *      "Debug" menu item in all object context menus, where
  *      you can enable debugging.
- *
+ */
+
+/*
  *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -50,302 +53,296 @@ interface DbgObject : WPObject
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# Class Modifiers
+        externalprefix = do_;
+        externalstem = do;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xdebug;           //# specifies the filestem for sc-generated files
+        metaclass = M_DbgObject;
+        dllname = "xdebug.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    //# Class Modifiers
-    externalprefix = do_;
-    externalstem = do;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xdebug;           //# specifies the filestem for sc-generated files
-    metaclass = M_DbgObject;
-    dllname = "xdebug.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    passthru C_h =
+        passthru C_h =
 "";
 
-    /*
-     * Internal instance variables for DbgObject:
-     *
-     */
-
-    BOOL    fDebugThis;
-    ULONG   ulIndent;
-
-    /*
-     * The following is forced into the .H file:
-     *
-     */
-
-    /*
-     * WPObject methods overridden by DbgObject:
-     *
-     */
-
-    wpSaveState: override;
-        /* wpSaveState:
-          */
-
-    wpSaveLong: override;
-        /* wpSaveLong:
-          */
-
-    wpSaveString: override;
-        /* wpSaveString:
-          */
-
-    wpSaveData: override;
-        /* wpSaveData:
-          */
-
-    wpRestoreState: override;
-        /* wpRestoreState:
-          */
-
-    wpRestoreLong: override;
-        /* wpRestoreLong:
-          */
-
-    wpRestoreString: override;
-        /* wpRestoreString:
-          */
-
-    wpRestoreData: override;
-        /* wpRestoreData:
-          */
-
-    wpAllocMem: override;
-        /* wpAllocMem:
-          */
-
-    wpFreeMem: override;
-        /* wpFreeMem:
-          */
-
-    wpFormatDragItem: override;
-        /* wpFormatDragItem:
-          */
-
-    wpDrop: override;
-        /* wpDrop:
-          */
-
-    wpDragOver: override;
-        /* wpDragOver:
-          */
-
-    wpRender: override;
-        /* wpRender:
-          */
-
-    wpEndConversation: override;
-        /* wpEndConversation:
-          */
-
-    wpAddSettingsPages: override;
-        /* wpAddSettingsPages:
-          */
-
-    wpAddObjectGeneralPage: override;
-        /* wpAddObjectGeneralPage:
-          */
-
-    wpDisplayHelp: override;
-        /* wpDisplayHelp:
-          */
-
-    wpInsertSettingsPage: override;
-        /* wpInsertSettingsPage:
-          */
-
-    wpCnrInsertObject: override;
-        /* wpCnrInsertObject:
-          */
-
-    wpCnrRemoveObject: override;
-        /* wpCnrRemoveObject:
-          */
-
-    wpScanSetupString: override;
-        /* wpScanSetupString:
-          */
-
-    wpSaveImmediate: override;
-        /* wpSaveImmediate:
-          */
-
-    wpSetDefaultHelp: override;
-        /* wpSetDefaultHelp:
-          */
-
-    wpQueryDefaultHelp: override;
-        /* wpQueryDefaultHelp:
-          */
-
-    wpDoesObjectMatch: override;
-        /* wpDoesObjectMatch:
-          */
-
-    wpCnrRefreshDetails: override;
-        /* wpCnrRefreshDetails:
-          */
-
-    wpSetError: override;
-        /* wpSetError:
-          */
-
-    wpQueryError: override;
-        /* wpQueryError:
-          */
-
-    wpDraggedOverObject: override;
-        /* wpDraggedOverObject:
-          */
-
-    wpDroppedOnObject: override;
-        /* wpDroppedOnObject:
-          */
-
-    wpSetObjectID: override;
-        /* wpSetObjectID:
-          */
-
-    wpQueryObjectID: override;
-        /* wpQueryObjectID:
-          */
-
-    wpQueryHandle: override;
-        /* wpQueryHandle:
-          */
-
-    wpSaveDeferred: override;
-        /* wpSaveDeferred:
-          */
-
-    wpAddObjectWindowPage: override;
-        /* wpAddObjectWindowPage:
-          */
-
-    wpQueryConcurrentView: override;
-        /* wpQueryConcurrentView:
-          */
-
-    wpSetConcurrentView: override;
-        /* wpSetConcurrentView:
-          */
-
-    wpQueryMinWindow: override;
-        /* wpQueryMinWindow:
-          */
-
-    wpSetMinWindow: override;
-        /* wpSetMinWindow:
-          */
+        /*
+         * Internal instance variables for DbgObject:
+         *
+         */
+
+        BOOL    fDebugThis;
+        ULONG   ulIndent;
+
+        /*
+         * WPObject methods overridden by DbgObject:
+         *
+         */
+
+        wpSaveState: override;
+            /* wpSaveState:
+              */
+
+        wpSaveLong: override;
+            /* wpSaveLong:
+              */
+
+        wpSaveString: override;
+            /* wpSaveString:
+              */
+
+        wpSaveData: override;
+            /* wpSaveData:
+              */
+
+        wpRestoreState: override;
+            /* wpRestoreState:
+              */
+
+        wpRestoreLong: override;
+            /* wpRestoreLong:
+              */
+
+        wpRestoreString: override;
+            /* wpRestoreString:
+              */
+
+        wpRestoreData: override;
+            /* wpRestoreData:
+              */
+
+        wpAllocMem: override;
+            /* wpAllocMem:
+              */
+
+        wpFreeMem: override;
+            /* wpFreeMem:
+              */
+
+        wpFormatDragItem: override;
+            /* wpFormatDragItem:
+              */
+
+        wpDrop: override;
+            /* wpDrop:
+              */
+
+        wpDragOver: override;
+            /* wpDragOver:
+              */
+
+        wpRender: override;
+            /* wpRender:
+              */
+
+        wpEndConversation: override;
+            /* wpEndConversation:
+              */
+
+        wpAddSettingsPages: override;
+            /* wpAddSettingsPages:
+              */
+
+        wpAddObjectGeneralPage: override;
+            /* wpAddObjectGeneralPage:
+              */
+
+        wpDisplayHelp: override;
+            /* wpDisplayHelp:
+              */
+
+        wpInsertSettingsPage: override;
+            /* wpInsertSettingsPage:
+              */
+
+        wpCnrInsertObject: override;
+            /* wpCnrInsertObject:
+              */
+
+        wpCnrRemoveObject: override;
+            /* wpCnrRemoveObject:
+              */
+
+        wpScanSetupString: override;
+            /* wpScanSetupString:
+              */
+
+        wpSaveImmediate: override;
+            /* wpSaveImmediate:
+              */
 
-    wpQueryButtonAppearance: override;
-        /* wpQueryButtonAppearance:
-          */
+        wpSetDefaultHelp: override;
+            /* wpSetDefaultHelp:
+              */
 
-    wpSetButtonAppearance: override;
-        /* wpSetButtonAppearance:
-          */
+        wpQueryDefaultHelp: override;
+            /* wpQueryDefaultHelp:
+              */
 
-    wpQueryConfirmations: override;
-        /* wpQueryConfirmations:
-          */
+        wpDoesObjectMatch: override;
+            /* wpDoesObjectMatch:
+              */
 
-    wpCnrSetEmphasis: override;
-        /* wpCnrSetEmphasis:
-          */
+        wpCnrRefreshDetails: override;
+            /* wpCnrRefreshDetails:
+              */
 
-    wpQueryCoreRecord: override;
-        /* wpQueryCoreRecord:
-          */
+        wpSetError: override;
+            /* wpSetError:
+              */
 
-    wpQueryTrueStyle: override;
-        /* wpQueryTrueStyle:
-          */
+        wpQueryError: override;
+            /* wpQueryError:
+              */
 
-    wpAssertObjectMutexSem: override;
-        /* wpAssertObjectMutexSem:
-          */
+        wpDraggedOverObject: override;
+            /* wpDraggedOverObject:
+              */
 
-    wpReleaseObjectMutexSem: override;
-        /* wpReleaseObjectMutexSem:
-          */
+        wpDroppedOnObject: override;
+            /* wpDroppedOnObject:
+              */
 
-    wpRequestObjectMutexSem: override;
-        /* wpRequestObjectMutexSem:
-          */
+        wpSetObjectID: override;
+            /* wpSetObjectID:
+              */
 
-    wpIsLocked: override;
-        /* wpIsLocked:
-          */
+        wpQueryObjectID: override;
+            /* wpQueryObjectID:
+              */
 
-    wpRenderComplete: override;
-        /* wpRenderComplete:
-          */
+        wpQueryHandle: override;
+            /* wpQueryHandle:
+              */
 
-    wpQueryDetailsData: override;
-        /* wpQueryDetailsData:
-          */
+        wpSaveDeferred: override;
+            /* wpSaveDeferred:
+              */
 
-    wpPrintObject: override;
-        /* wpPrintObject:
-          */
+        wpAddObjectWindowPage: override;
+            /* wpAddObjectWindowPage:
+              */
 
-    wpSetTaskRec: override;
-        /* wpSetTaskRec:
-          */
+        wpQueryConcurrentView: override;
+            /* wpQueryConcurrentView:
+              */
 
-    wpModifyStyle: override;
-        /* wpModifyStyle:
-          */
+        wpSetConcurrentView: override;
+            /* wpSetConcurrentView:
+              */
 
-    wpFindTaskRec: override;
-        /* wpFindTaskRec:
-          */
+        wpQueryMinWindow: override;
+            /* wpQueryMinWindow:
+              */
 
-    wpAppendObject: override;
-        /* wpAppendObject:
-          */
-
-    wpReplaceObject: override;
-        /* wpReplaceObject:
-          */
-
-    wpQueryNameClashOptions: override;
-        /* wpQueryNameClashOptions:
-          */
-
-    wpConfirmObjectTitle: override;
-        /* wpConfirmObjectTitle:
-          */
-
-    wpQueryContainerFlagPtr: override;
-        /* wpQueryContainerFlagPtr:
-          */
-
-    wpWaitForClose: override;
-        /* wpWaitForClose:
-          */
-
-    wpQueryScreenGroupID: override;
-        /* wpQueryScreenGroupID:
-          */
-
-    wpAddObjectGeneralPage2: override;
-        /* wpAddObjectGeneralPage2:
-          */
-
-
-#ifdef __PRIVATE__
-
+        wpSetMinWindow: override;
+            /* wpSetMinWindow:
+              */
+
+        wpQueryButtonAppearance: override;
+            /* wpQueryButtonAppearance:
+              */
+
+        wpSetButtonAppearance: override;
+            /* wpSetButtonAppearance:
+              */
+
+        wpQueryConfirmations: override;
+            /* wpQueryConfirmations:
+              */
+
+        wpCnrSetEmphasis: override;
+            /* wpCnrSetEmphasis:
+              */
+
+        wpQueryCoreRecord: override;
+            /* wpQueryCoreRecord:
+              */
+
+        wpQueryTrueStyle: override;
+            /* wpQueryTrueStyle:
+              */
+
+        wpAssertObjectMutexSem: override;
+            /* wpAssertObjectMutexSem:
+              */
+
+        wpReleaseObjectMutexSem: override;
+            /* wpReleaseObjectMutexSem:
+              */
+
+        wpRequestObjectMutexSem: override;
+            /* wpRequestObjectMutexSem:
+              */
+
+        wpIsLocked: override;
+            /* wpIsLocked:
+              */
+
+        wpRenderComplete: override;
+            /* wpRenderComplete:
+              */
+
+        wpQueryDetailsData: override;
+            /* wpQueryDetailsData:
+              */
+
+        wpPrintObject: override;
+            /* wpPrintObject:
+              */
+
+        wpSetTaskRec: override;
+            /* wpSetTaskRec:
+              */
+
+        wpModifyStyle: override;
+            /* wpModifyStyle:
+              */
+
+        wpFindTaskRec: override;
+            /* wpFindTaskRec:
+              */
+
+        wpAppendObject: override;
+            /* wpAppendObject:
+              */
+
+        wpReplaceObject: override;
+            /* wpReplaceObject:
+              */
+
+        wpQueryNameClashOptions: override;
+            /* wpQueryNameClashOptions:
+              */
+
+        wpConfirmObjectTitle: override;
+            /* wpConfirmObjectTitle:
+              */
+
+        wpQueryContainerFlagPtr: override;
+            /* wpQueryContainerFlagPtr:
+              */
+
+        wpWaitForClose: override;
+            /* wpWaitForClose:
+              */
+
+        wpQueryScreenGroupID: override;
+            /* wpQueryScreenGroupID:
+              */
+
+        wpAddObjectGeneralPage2: override;
+            /* wpAddObjectGeneralPage2:
+              */
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -363,162 +360,161 @@ interface M_DbgObject : M_WPObject
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        //# Class Modifiers
+        externalprefix = doM_;
+        externalstem = doM;
+        functionprefix = doM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xdebug;           //# specifies the filestem for sc-generated files
+        dllname = "xdebug.dll";
+        callstyle = oidl;
 
-    //# Class Modifiers
-    externalprefix = doM_;
-    externalstem = doM;
-    functionprefix = doM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xdebug;           //# specifies the filestem for sc-generated files
-    dllname = "xdebug.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_DbgObject:
+         *
+         */
 
-    /*
-     * Internal class variables for M_DbgObject:
-     *
-     */
+        /*
+         * M_WPObject methods overridden by M_DbgObject:
+         *
+         */
 
-    /*
-     * M_WPObject methods overridden by M_DbgObject:
-     *
-     */
+        wpclsInitData: override;
+            /* wpclsInitData:
+              */
 
-    wpclsInitData: override;
-        /* wpclsInitData:
-          */
+        wpclsUnInitData: override;
+            /* wpclsUnInitData:
+              */
 
-    wpclsUnInitData: override;
-        /* wpclsUnInitData:
-          */
+        wpclsMakeAwake: override;
+            /* wpclsMakeAwake:
+              */
 
-    wpclsMakeAwake: override;
-        /* wpclsMakeAwake:
-          */
+        wpclsIncUsage: override;
+            /* wpclsIncUsage:
+              */
 
-    wpclsIncUsage: override;
-        /* wpclsIncUsage:
-          */
+        wpclsDecUsage: override;
+            /* wpclsDecUsage:
+              */
 
-    wpclsDecUsage: override;
-        /* wpclsDecUsage:
-          */
+        wpclsQueryTitle: override;
+            /* wpclsQueryTitle:
+              */
 
-    wpclsQueryTitle: override;
-        /* wpclsQueryTitle:
-          */
+        wpclsQueryIcon: override;
+            /* wpclsQueryIcon:
+              */
 
-    wpclsQueryIcon: override;
-        /* wpclsQueryIcon:
-          */
+        wpclsQueryDefaultHelp: override;
+            /* wpclsQueryDefaultHelp:
+              */
 
-    wpclsQueryDefaultHelp: override;
-        /* wpclsQueryDefaultHelp:
-          */
+        wpclsQueryStyle: override;
+            /* wpclsQueryStyle:
+              */
 
-    wpclsQueryStyle: override;
-        /* wpclsQueryStyle:
-          */
+        wpclsQueryDetailsInfo: override;
+            /* wpclsQueryDetailsInfo:
+              */
 
-    wpclsQueryDetailsInfo: override;
-        /* wpclsQueryDetailsInfo:
-          */
+        wpclsQueryDefaultView: override;
+            /* wpclsQueryDefaultView:
+              */
 
-    wpclsQueryDefaultView: override;
-        /* wpclsQueryDefaultView:
-          */
+        wpclsQueryDetails: override;
+            /* wpclsQueryDetails:
+              */
 
-    wpclsQueryDetails: override;
-        /* wpclsQueryDetails:
-          */
+        wpclsQuerySearchInfo: override;
+            /* wpclsQuerySearchInfo:
+              */
 
-    wpclsQuerySearchInfo: override;
-        /* wpclsQuerySearchInfo:
-          */
+        wpclsQueryExtendedCriteria: override;
+            /* wpclsQueryExtendedCriteria:
+              */
 
-    wpclsQueryExtendedCriteria: override;
-        /* wpclsQueryExtendedCriteria:
-          */
+        wpclsCreateDefaultTemplates: override;
+            /* wpclsCreateDefaultTemplates:
+              */
 
-    wpclsCreateDefaultTemplates: override;
-        /* wpclsCreateDefaultTemplates:
-          */
+        wpclsFindObjectFirst: override;
+            /* wpclsFindObjectFirst:
+              */
 
-    wpclsFindObjectFirst: override;
-        /* wpclsFindObjectFirst:
-          */
+        wpclsFindObjectNext: override;
+            /* wpclsFindObjectNext:
+              */
 
-    wpclsFindObjectNext: override;
-        /* wpclsFindObjectNext:
-          */
+        wpclsFindObjectEnd: override;
+            /* wpclsFindObjectEnd:
+              */
 
-    wpclsFindObjectEnd: override;
-        /* wpclsFindObjectEnd:
-          */
+        wpclsSetError: override;
+            /* wpclsSetError:
+              */
 
-    wpclsSetError: override;
-        /* wpclsSetError:
-          */
+        wpclsQueryError: override;
+            /* wpclsQueryError:
+              */
 
-    wpclsQueryError: override;
-        /* wpclsQueryError:
-          */
+        wpclsQuerySettingsPageSize: override;
+            /* wpclsQuerySettingsPageSize:
+              */
 
-    wpclsQuerySettingsPageSize: override;
-        /* wpclsQuerySettingsPageSize:
-          */
+        wpclsSetSettingsPageSize: override;
+            /* wpclsSetSettingsPageSize:
+              */
 
-    wpclsSetSettingsPageSize: override;
-        /* wpclsSetSettingsPageSize:
-          */
+        wpclsQueryIconData: override;
+            /* wpclsQueryIconData:
+              */
 
-    wpclsQueryIconData: override;
-        /* wpclsQueryIconData:
-          */
+        wpclsSetIcon: override;
+            /* wpclsSetIcon:
+              */
 
-    wpclsSetIcon: override;
-        /* wpclsSetIcon:
-          */
+        wpclsSetIconData: override;
+            /* wpclsSetIconData:
+              */
 
-    wpclsSetIconData: override;
-        /* wpclsSetIconData:
-          */
+        wpclsQueryObject: override;
+            /* wpclsQueryObject:
+              */
 
-    wpclsQueryObject: override;
-        /* wpclsQueryObject:
-          */
+        wpclsObjectFromHandle: override;
+            /* wpclsObjectFromHandle:
+              */
 
-    wpclsObjectFromHandle: override;
-        /* wpclsObjectFromHandle:
-          */
+        wpclsQueryButtonAppearance: override;
+            /* wpclsQueryButtonAppearance:
+              */
 
-    wpclsQueryButtonAppearance: override;
-        /* wpclsQueryButtonAppearance:
-          */
+        wpclsNew: override;
+            /* wpclsNew:
+              */
 
-    wpclsNew: override;
-        /* wpclsNew:
-          */
+        wpclsQueryFolder: override;
+            /* wpclsQueryFolder:
+              */
 
-    wpclsQueryFolder: override;
-        /* wpclsQueryFolder:
-          */
+        wpclsRemoveObjects: override;
+            /* wpclsRemoveObjects:
+              */
 
-    wpclsRemoveObjects: override;
-        /* wpclsRemoveObjects:
-          */
+        wpclsInsertMultipleObjects: override;
+            /* wpclsInsertMultipleObjects:
+              */
 
-    wpclsInsertMultipleObjects: override;
-        /* wpclsInsertMultipleObjects:
-          */
-
-    wpclsFindOneObject: override;
-        /* wpclsFindOneObject:
-          */
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsFindOneObject: override;
+            /* wpclsFindOneObject:
+              */
+    };
+#endif
 };
 
 

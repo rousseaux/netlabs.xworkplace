@@ -698,6 +698,7 @@ static CONTROLDEF
                             LOAD_STRING,
                             ID_XSSI_XSD_CONFIRMLOGOFFMSG,
                             SZL_REMAINDER),         // changed V1.0.1 (2003-01-05) [umoeller]
+    RunShutdownFdr = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_RUNSHUTDOWNFDR),
     CloseAllSessionsCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_CLOSEWINDOWS),
 #ifndef __NOXWPSTARTUP__
     StartupFoldersCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_STARTUPFOLDER),
@@ -714,6 +715,10 @@ static const DLGHITEM dlgConfirmRestartDesktopHead[] =
 static const DLGHITEM dlgConfirmRestartDesktopOnly[] =
     {
                 CONTROL_DEF(&ConfirmWPSText),
+#ifndef __NOXWPSTARTUP__
+            START_ROW(0),
+                CONTROL_DEF(&RunShutdownFdr),
+#endif
             START_ROW(0),
                 CONTROL_DEF(&CloseAllSessionsCB),
 #ifndef __NOXWPSTARTUP__
@@ -727,6 +732,10 @@ static const DLGHITEM dlgConfirmRestartDesktopOnly[] =
 static const DLGHITEM dlgConfirmLogoffOnly[] =
     {
                 CONTROL_DEF(&ConfirmLogoffText),
+#ifndef __NOXWPSTARTUP__
+            START_ROW(0),
+                CONTROL_DEF(&RunShutdownFdr),
+#endif
             START_ROW(0),
                 CONTROL_DEF(&CloseAllSessionsCB),
     };
@@ -746,7 +755,7 @@ static const DLGHITEM dlgConfirmRestartDesktopTail[] =
 
 /*
  *@@ xsdConfirmRestartWPS:
- *      this displays the "Restart Desktop"
+ *      this displays the "Restart Desktop" or "Logoff"
  *      confirmation box. Returns MBID_OK/CANCEL.
  *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
@@ -754,6 +763,7 @@ static const DLGHITEM dlgConfirmRestartDesktopTail[] =
  *@@changed V0.9.19 (2002-04-18) [umoeller]: added "archive once" feature
  *@@changed V0.9.19 (2002-04-18) [umoeller]: added a decent help panel, finally
  *@@changed V1.0.1 (2003-01-05) [umoeller]: some prettypretty for logoff
+ *@@changed V1.0.1 (2003-01-29) [umoeller]: added "run shutdown folder" setting
  */
 
 ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
@@ -819,17 +829,28 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
             if (psdParms->ulCloseMode == SHUT_LOGOFF)
             {
                 // logoff:
+                psdParms->optWPSProcessShutdown = TRUE;
                 psdParms->optWPSCloseWindows = TRUE;
                 psdParms->optWPSReuseStartupFolder = TRUE;
-                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, TRUE);
             }
             else
             {
-                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
-#ifndef __NOXWPSTARTUP__
-                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
-#endif
+                psdParms->optWPSProcessShutdown = psdParms->optWPSCloseWindows;
             }
+
+            if (!_wpclsQueryFolder(_WPFolder,
+                                   (PSZ)XFOLDER_SHUTDOWNID,
+                                   FALSE))
+            {
+                psdParms->optWPSProcessShutdown = FALSE;
+                WinEnableControl(hwndConfirm, ID_SDDI_WPS_RUNSHUTDOWNFDR, FALSE);
+            }
+
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
+#ifndef __NOXWPSTARTUP__
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_RUNSHUTDOWNFDR, psdParms->optWPSProcessShutdown);
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
+#endif
 
 #ifndef __EASYSHUTDOWN__
             winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
@@ -857,6 +878,9 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 #ifndef __NOXSHUTDOWN__
                 ULONG fl = cmnQuerySetting(sflXShutdown);
 #endif
+                psdParms->optWPSProcessShutdown = winhIsDlgItemChecked(hwndConfirm,
+                                                                       ID_SDDI_WPS_RUNSHUTDOWNFDR);
+
                 psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                                     ID_SDDI_WPS_CLOSEWINDOWS);
 

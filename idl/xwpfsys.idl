@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xwpfsys.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -53,85 +56,87 @@ interface XWPFileSystem : WPFileSystem
 
     PSZ xwpQueryUpperRealName();
 
+    BOOL xwpSetRealNameNoOverride(in PSZ pszName);
+
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpQueryUpperRealName,
+            xwpSetRealNameNoOverride;
 
-    releaseorder: xwpQueryUpperRealName;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xfs_;
+        externalstem = xfs;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpfsys;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPFileSystem;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xfs_;
-    externalstem = xfs;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpfsys;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPFileSystem;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPFileSystem:
-     *
-     */
+        passthru C_h =
+"";
 
-    ULONG       ulHandle;
+        /*
+         * Internal instance variables for XWPFileSystem:
+         *
+         */
 
-    PSZ         pWszUpperRealName;      // upper-case short real name for
-                                        // folder content tree;
-                                        // WARNING: allocated using wpAllocMem
+        ULONG       ulHandle;
 
-    //# ULONG       ulCnrRefresh;        removed V1.0.1 (2003-01-05) [umoeller]
+        PSZ         pWszUpperRealName;      // upper-case short real name for
+                                            // folder content tree;
+                                            // WARNING: allocated using wpAllocMem
 
-    /*
-     * The following is forced into the .H file:
-     *
-     */
+        //# ULONG       ulCnrRefresh;        removed V1.0.1 (2003-01-05) [umoeller]
 
-    /*
-     * WPFileSystem methods overridden by XWPFileSystem:
-     *
-     */
+        /*
+         * WPFileSystem methods overridden by XWPFileSystem:
+         *
+         */
 
-    //# 1)  init/uninit methods
+        //# 1)  init/uninit methods
 
-    wpInitData: override;
-    wpUnInitData: override;
+        wpInitData: override;
+        wpUnInitData: override;
 
-    //# 2)  WPObject query/set methods
+        //# 2)  WPObject query/set methods
 
-    wpQueryHandle: override;
+        wpQueryHandle: override;
 
-    //# 3)  icon methods
+        //# 3)  icon methods
 
-    wpQueryIcon: override;
+        wpQueryIcon: override;
 
-    wpSetIconData: override;
+        wpSetIconData: override;
 
-    //# 4)  class-specific query/set methods
+        //# 4)  class-specific query/set methods
 
-    //# 5)  menu methods
+        //# 5)  menu methods
 
-    //# 6)  open view methods
+        //# 6)  open view methods
 
-    wpOpen: override;
+        wpOpen: override;
 
-    //# 7)  file operation methods
+        //# 7)  file operation methods
 
-    wpSetTitleAndRenameFile: override;
+        wpSetTitleAndRenameFile: override;
 
-    wpSetRealName: override;
+        wpSetRealName: override;
 
-    wpRefreshFSInfo: override;
-
-#ifdef __PRIVATE__
-
+        wpRefreshFSInfo: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -144,40 +149,39 @@ interface M_XWPFileSystem : M_WPFileSystem
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xfsM_;
+        externalstem = xfM;
+        functionprefix = xfM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpfsys;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xfsM_;
-    externalstem = xfM;
-    functionprefix = xfM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpfsys;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables for M_XWPFileSystem:
+         *
+         */
 
-    /*
-     * Internal class variables for M_XWPFileSystem:
-     *
-     */
+        /*
+         * M_WPFileSystem methods overridden by M_XWPFileSystem:
+         *
+         */
 
-    /*
-     * M_WPFileSystem methods overridden by M_XWPFileSystem:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
-
-    wpclsQueryAwakeObject: override;
-    wpclsFileSysExists: override;
-    wpclsObjectFromHandle: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryAwakeObject: override;
+        wpclsFileSysExists: override;
+        wpclsObjectFromHandle: override;
+    };
+#endif
 };
 
 

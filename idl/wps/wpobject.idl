@@ -1,21 +1,48 @@
-//  Module Header
-//
-//  Module Name: WPOBJECT
-//
-//  OS/2 Presentation Manager Workplace class definitions
-//
-//  Copyright (c) International Business Machines Corporation 1991, 1992
-//
+
+/*
+ * wpobject.idl:
+ *      beefed up SOM interface description file for the
+ *      following classes built into the WPS:
+ *
+ *      --  WPObject
+ *
+ *      XWorkplace uses this file instead of the respective
+ *      file from whatever Toolkit you have installed to
+ *      a) make SOM aware of our class replacements and
+ *      b) allow us to override undocumented WPS methods.
+ *      See idl\wps\readme.txt for details.
+ */
+
+/*
+ *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 #ifndef wpobject_idl
 #define wpobject_idl
+
 #include <somobj.idl>
 #include <somcls.idl>
+
 interface WPFolder;
+
 interface M_WPObject;
-interface M_WPObject;
+//#interface M_WPObject;
+
 #include "wptypes.idl"
+
 interface WPObject : SOMObject
 {
+
 //# methods originally published with Warp 3 Toolkit IDL file
 
     ULONG wpAddObjectGeneralPage(in HWND hwndNotebook);
@@ -374,181 +401,184 @@ interface WPObject : SOMObject
     readonly attribute WPObject*    pobjNext;
 
 #ifdef __SOMIDL__
-  implementation {
-    releaseorder: wpSetTitle,
-                  wpQueryTitle,
-                  wpSetStyle,
-                  wpQueryStyle,
-                  wpSetIcon,
-                  wpQueryIcon,
-                  wpSetFolder,
-                  wpQueryFolder,
-                  wpSetNextObj,
-                  wpQueryNextObj,
-                  wpSetDefaultView,
-                  wpQueryDefaultView,
-                  wpMakeDormant,
-                  wpSaveState,
-                  wpBeginSave,
-                  wpEndSave,
-                  wpSaveLong,
-                  wpSaveString,
-                  wpSaveData,
-                  wpAppendSaveData,
-                  wpRestoreState,
-                  wpBeginRestore,
-                  wpEndRestore,
-                  wpRestoreLong,
-                  wpRestoreString,
-                  wpRestoreData,
-                  wpExtractRestoreData,
-                  wpAllocMem,
-                  wpFreeMem,
-                  wpAddToObjUseList,
-                  wpDeleteFromObjUseList,
-                  wpFindUseItem,
-                  wpSwitchTo,
-                  withdrawn1,
-                  wpFilterPopupMenu,
-                  wpModifyPopupMenu,
-                  wpMenuItemSelected,
-                  wpFormatDragItem,
-                  wpDrop,
-                  wpDragOver,
-                  wpRender,
-                  wpEndConversation,
-                  withdrawn10,
-                  wpMakeObject,
-                  wpDestroyObject,
-                  wpFree,
-                  wpCopiedFromTemplate,
-                  wpAddSettingsPages,
-                  wpAddObjectGeneralPage,
-                  wpDisplayHelp,
-                  wpMenuItemHelpSelected,
-                  wpInsertSettingsPage,
-                  wpInsertPopupMenuItems,
-                  withdrawn5,
-                  withdrawn6,
-                  withdrawn4,
-                  withdrawn3,
-                  wpCnrInsertObject,
-                  wpCnrRemoveObject,
-                  wpInitData,
-                  wpUnInitData,
-                  wpSetup,
-                  wpScanSetupString,
-                  wpSaveImmediate,
-                  wpOpen,
-                  wpClose,
-                  wpHide,
-                  wpRestore,
-                  wpSetIconData,
-                  wpQueryIconData,
-                  wpQueryIconSaved,
-                  wpDelete,
-                  wpConfirmDelete,
-                  withdrawn2,
-                  withdrawn11,
-                  withdrawn7,
-                  wpRegisterView,
-                  wpIdentify,
-                  wpSetDefaultHelp,
-                  wpQueryDefaultHelp,
-                  wpDoesObjectMatch,
-                  wpCnrRefreshDetails,
-                  wpSetError,
-                  wpQueryError,
-                  wpDraggedOverObject,
-                  wpDroppedOnObject,
-                  wpSetDefaultIconPos,
-                  wpQueryDefaultIconPos,
-                  wpSetState,
-                  wpQueryState,
-                  wpSetObjectID,
-                  wpQueryObjectID,
-                  wpIsDeleteable,
-                  wpQueryHandle,
-                  wpSaveDeferred,
-                  wpAddObjectWindowPage,
-                  wpQueryConcurrentView,
-                  wpSetConcurrentView,
-                  wpQueryMinWindow,
-                  wpSetMinWindow,
-                  wpViewObject,
-                  wpQueryButtonAppearance,
-                  wpSetButtonAppearance,
-                  wpQueryConfirmations,
-                  wpCnrSetEmphasis,
-                  wpQueryCoreRecord,
-                  wpFindViewItem,
-                  wpCreateFromTemplate,
-                  wpQueryTrueStyle,
-                  wpAssertObjectMutexSem,
-                  wpReleaseObjectMutexSem,
-                  wpRequestObjectMutexSem,
-                  wpCreateAnother,
-                  wpCreateShadowObject,
-                  wpCopyObject,
-                  wpMoveObject,
-                  wpLockObject,
-                  wpUnlockObject,
-                  wpIsLocked,
-                  wpRenderComplete,
-                  wpQueryDetailsData,
-                  wpPrintObject,
-                  wpQueryTaskRec,
-                  wpSetTaskRec,
-                  wpSnoozeNotify,
-                  wpModifyStyle,
-                  wpSetInsertState,
-                  wpFindTaskRec,
-                  wpAppendObject,
-                  wpReplaceObject,
-                  wpQueryNameClashOptions,
-                  wpConfirmObjectTitle,
-                  _get_pobjNext,
-                  wpQueryContainerFlagPtr,
-                  wpAddWindowPosKey,
-                  wpDeleteWindowPosKeys,
-                  wpObjectInsertPreparation,
-                  wpCnrDeleteUseItem,
-                  wpObjectReady,
-                  wpIsObjectInitialized,
-                  wpCreateShadowObjectExt,
-                  wpSetIconHandle,
-                  wpQueryContainer,
-                  wpSetContainer,
-                  wpDisplayMenu,
-                  wpWaitForClose,
-                  wpQueryScreenGroupID,
-                  wpSetupOnce,
-                  wpAddObjectGeneralPage2,
-                  wpFindTaskRec2,
-                  wpModifyState
+    implementation
+    {
+        releaseorder:
+            wpSetTitle,
+            wpQueryTitle,
+            wpSetStyle,
+            wpQueryStyle,
+            wpSetIcon,
+            wpQueryIcon,
+            wpSetFolder,
+            wpQueryFolder,
+            wpSetNextObj,
+            wpQueryNextObj,
+            wpSetDefaultView,
+            wpQueryDefaultView,
+            wpMakeDormant,
+            wpSaveState,
+            wpBeginSave,
+            wpEndSave,
+            wpSaveLong,
+            wpSaveString,
+            wpSaveData,
+            wpAppendSaveData,
+            wpRestoreState,
+            wpBeginRestore,
+            wpEndRestore,
+            wpRestoreLong,
+            wpRestoreString,
+            wpRestoreData,
+            wpExtractRestoreData,
+            wpAllocMem,
+            wpFreeMem,
+            wpAddToObjUseList,
+            wpDeleteFromObjUseList,
+            wpFindUseItem,
+            wpSwitchTo,
+            withdrawn1,
+            wpFilterPopupMenu,
+            wpModifyPopupMenu,
+            wpMenuItemSelected,
+            wpFormatDragItem,
+            wpDrop,
+            wpDragOver,
+            wpRender,
+            wpEndConversation,
+            withdrawn10,
+            wpMakeObject,
+            wpDestroyObject,
+            wpFree,
+            wpCopiedFromTemplate,
+            wpAddSettingsPages,
+            wpAddObjectGeneralPage,
+            wpDisplayHelp,
+            wpMenuItemHelpSelected,
+            wpInsertSettingsPage,
+            wpInsertPopupMenuItems,
+            withdrawn5,
+            withdrawn6,
+            withdrawn4,
+            withdrawn3,
+            wpCnrInsertObject,
+            wpCnrRemoveObject,
+            wpInitData,
+            wpUnInitData,
+            wpSetup,
+            wpScanSetupString,
+            wpSaveImmediate,
+            wpOpen,
+            wpClose,
+            wpHide,
+            wpRestore,
+            wpSetIconData,
+            wpQueryIconData,
+            wpQueryIconSaved,
+            wpDelete,
+            wpConfirmDelete,
+            withdrawn2,
+            withdrawn11,
+            withdrawn7,
+            wpRegisterView,
+            wpIdentify,
+            wpSetDefaultHelp,
+            wpQueryDefaultHelp,
+            wpDoesObjectMatch,
+            wpCnrRefreshDetails,
+            wpSetError,
+            wpQueryError,
+            wpDraggedOverObject,
+            wpDroppedOnObject,
+            wpSetDefaultIconPos,
+            wpQueryDefaultIconPos,
+            wpSetState,
+            wpQueryState,
+            wpSetObjectID,
+            wpQueryObjectID,
+            wpIsDeleteable,
+            wpQueryHandle,
+            wpSaveDeferred,
+            wpAddObjectWindowPage,
+            wpQueryConcurrentView,
+            wpSetConcurrentView,
+            wpQueryMinWindow,
+            wpSetMinWindow,
+            wpViewObject,
+            wpQueryButtonAppearance,
+            wpSetButtonAppearance,
+            wpQueryConfirmations,
+            wpCnrSetEmphasis,
+            wpQueryCoreRecord,
+            wpFindViewItem,
+            wpCreateFromTemplate,
+            wpQueryTrueStyle,
+            wpAssertObjectMutexSem,
+            wpReleaseObjectMutexSem,
+            wpRequestObjectMutexSem,
+            wpCreateAnother,
+            wpCreateShadowObject,
+            wpCopyObject,
+            wpMoveObject,
+            wpLockObject,
+            wpUnlockObject,
+            wpIsLocked,
+            wpRenderComplete,
+            wpQueryDetailsData,
+            wpPrintObject,
+            wpQueryTaskRec,
+            wpSetTaskRec,
+            wpSnoozeNotify,
+            wpModifyStyle,
+            wpSetInsertState,
+            wpFindTaskRec,
+            wpAppendObject,
+            wpReplaceObject,
+            wpQueryNameClashOptions,
+            wpConfirmObjectTitle,
+            _get_pobjNext,
+            wpQueryContainerFlagPtr,
+            wpAddWindowPosKey,
+            wpDeleteWindowPosKeys,
+            wpObjectInsertPreparation,
+            wpCnrDeleteUseItem,
+            wpObjectReady,
+            wpIsObjectInitialized,
+            wpCreateShadowObjectExt,
+            wpSetIconHandle,
+            wpQueryContainer,
+            wpSetContainer,
+            wpDisplayMenu,
+            wpWaitForClose,
+            wpQueryScreenGroupID,
+            wpSetupOnce,
+            wpAddObjectGeneralPage2,
+            wpFindTaskRec2,
+            wpModifyState
 #ifndef __NOWARP4METHODS__
-                  ,
-                  wpModifyMenu,
-                  wpFilterMenu,
-                  wpInsertMenuItems,
-                  wpSetMenuStyle,
-                  wpQueryMenuStyle,
-                  wpObjectPrivate27,
-                  wpObjectPrivate28,
-                  wpObjectPrivate29,
-                  wpObjectPrivate30
+            ,
+            wpModifyMenu,
+            wpFilterMenu,
+            wpInsertMenuItems,
+            wpSetMenuStyle,
+            wpQueryMenuStyle,
+            wpObjectPrivate27,
+            wpObjectPrivate28,
+            wpObjectPrivate29,
+            wpObjectPrivate30
 #endif
-                  ;
-    externalstem = wpobj;
-    local;
-    externalprefix = obj_;
-    majorversion = 1;
-    minorversion = 2;
-    filestem = wpobject;
-    metaclass = M_WPObject;
-    callstyle = oidl;
-    dllname = "pmwp.dll";
-    passthru C_h =      ""
+            ;
+
+        externalstem = wpobj;
+        local;
+        externalprefix = obj_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpobject;
+        metaclass = M_WPObject;
+        callstyle = oidl;
+        dllname = "pmwp.dll";
+        passthru C_h =      ""
 "   #define INCL_WINSTDCNR"
 "   #include <pmstddlg.h>"
 ""
@@ -760,83 +790,83 @@ interface WPObject : SOMObject
 "      #define WPMENUID_PRINT              3"
 "      #define WPMENUID_SELECT             4"
 "      #define WPMENUID_SORT               5"
-"      #define WPMENUID_TREE               123                                 /*DD 86092F*/  "
-"      #define WPMENUID_FIND               8                                   /*DD 86092F*/  "
-"      #define WPMENUID_CREATEANOTHER      101                                 /*DD 86092F*/  "
-"      #define WPMENUID_MOVE               107                                 /*DD 86092F*/  "
-"      #define WPMENUID_COPY               108                                 /*DD 86092F*/  "
-"      #define WPMENUID_DELETE             109                                 /*DD 86092F*/  "
-"      #define WPMENUID_PROPERTIES         112                                 /*DD 86092F*/  "
-"      #define WPMENUID_SELALL             114                                 /*DD 86092F*/  "
-"      #define WPMENUID_DESELALL           115                                 /*DD 86092F*/  "
-"      #define WPMENUID_RESERVED1          118                                 /*DD 86092F*/  "
-"      #define WPMENUID_CLOSE              120                                 /*DD 86092F*/  "
-"      #define WPMENUID_FORMAT             124                                 /*DD 86092F*/  "
-"      #define WPMENUID_CHKDSK             128                                 /*DD 86092F*/  "
-"      #define WPMENUID_FIXDSK             129                                 /*DD 86092F*/  "
-"      #define WPMENUID_PROGRAM            132                                 /*DD 86092F*/  "
-"      #define WPMENUID_COPYDSK            182                                 /*DD 86092F*/  "
-"      #define WPMENUID_LOCKDISK           184                                 /*DD 86092F*/  "
-"      #define WPMENUID_EJECTDISK          185                                 /*DD 86092F*/  "
-"      #define WPMENUID_UNLOCKDISK         186                                 /*DD 86092F*/  "
-"      #define WPMENUID_PICKUP             188                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN            189                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN_COPY       190                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN_MOVE       191                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN_LINK       192                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN_CANCEL     193                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN_CREATE     194                                 /* rme77131*/  "
-"      #define WPMENUID_PUTDOWN_CREATEPROGRAMOBJECT     195                    /*rme146942*/  "
-"      #define WPMENUID_ICON               303                                 /*DD 86092F*/  "
-"      #define WPMENUID_DETAILS            304                                 /*DD 86092F*/  "
-"      #define WPMENUID_ARRANGE            309                                 /*DD 86092F*/  "
-"      #define WPMENUID_RESERVED2          315                                 /*DD 86092F*/  "
-"      #define WPMENUID_CREATESHADOW       316                                 /*DD 86092F*/  "
-"      #define WPMENUID_PALETTE            317                                 /*DD 86092F*/  "
-"      #define WPMENUID_REFRESH            503                                 /*DD 86092F*/  "
-"      #define WPMENUID_HELP_FOR_HELP      601                                 /*DD 86092F*/  "
-"      #define WPMENUID_HOWTOGETHELP       601                                 /*DD 86092F*/  "
-"      #define WPMENUID_EXTENDEDHELP       602                                 /*DD 86092F*/  "
-"      #define WPMENUID_HELPKEYS           603                                 /*DD 86092F*/  "
-"      #define WPMENUID_HELPINDEX          604                                 /*DD 86092F*/  "
-"      #define WPMENUID_SHUTDOWN           704                                 /*DD 86092F*/  "
-"      #define WPMENUID_LOCKUP             705                                 /*DD 86092F*/  "
-"      #define WPMENUID_LOGIN              708                                 /*DD 86092F*/  "
-"      #define WPMENUID_LOGOUT             709                                 /*DD 86092F*/  "
-"      #define WPMENUID_ASSIGN             710                                 /*DD 86092F*/  "
-"      #define WPMENUID_UNASSIGN           711                                 /*DD 86092F*/  "
-"      #define WPMENUID_ACCESSNEW          712                                 /*DD 86092F*/  "
-"      #define WPMENUID_SYSTEMSETUP        713                                 /*DD 86092F*/  "
-"      #define WPMENUID_OPENPARENT         714                                 /*DD 86092F*/  "
+"      #define WPMENUID_TREE               123"
+"      #define WPMENUID_FIND               8"
+"      #define WPMENUID_CREATEANOTHER      101"
+"      #define WPMENUID_MOVE               107"
+"      #define WPMENUID_COPY               108"
+"      #define WPMENUID_DELETE             109"
+"      #define WPMENUID_PROPERTIES         112"
+"      #define WPMENUID_SELALL             114"
+"      #define WPMENUID_DESELALL           115"
+"      #define WPMENUID_RESERVED1          118"
+"      #define WPMENUID_CLOSE              120"
+"      #define WPMENUID_FORMAT             124"
+"      #define WPMENUID_CHKDSK             128"
+"      #define WPMENUID_FIXDSK             129"
+"      #define WPMENUID_PROGRAM            132"
+"      #define WPMENUID_COPYDSK            182"
+"      #define WPMENUID_LOCKDISK           184"
+"      #define WPMENUID_EJECTDISK          185"
+"      #define WPMENUID_UNLOCKDISK         186"
+"      #define WPMENUID_PICKUP             188"
+"      #define WPMENUID_PUTDOWN            189"
+"      #define WPMENUID_PUTDOWN_COPY       190"
+"      #define WPMENUID_PUTDOWN_MOVE       191"
+"      #define WPMENUID_PUTDOWN_LINK       192"
+"      #define WPMENUID_PUTDOWN_CANCEL     193"
+"      #define WPMENUID_PUTDOWN_CREATE     194"
+"      #define WPMENUID_PUTDOWN_CREATEPROGRAMOBJECT     195"
+"      #define WPMENUID_ICON               303"
+"      #define WPMENUID_DETAILS            304"
+"      #define WPMENUID_ARRANGE            309"
+"      #define WPMENUID_RESERVED2          315"
+"      #define WPMENUID_CREATESHADOW       316"
+"      #define WPMENUID_PALETTE            317"
+"      #define WPMENUID_REFRESH            503"
+"      #define WPMENUID_HELP_FOR_HELP      601"
+"      #define WPMENUID_HOWTOGETHELP       601"
+"      #define WPMENUID_EXTENDEDHELP       602"
+"      #define WPMENUID_HELPKEYS           603"
+"      #define WPMENUID_HELPINDEX          604"
+"      #define WPMENUID_SHUTDOWN           704"
+"      #define WPMENUID_LOCKUP             705"
+"      #define WPMENUID_LOGIN              708"
+"      #define WPMENUID_LOGOUT             709"
+"      #define WPMENUID_ASSIGN             710"
+"      #define WPMENUID_UNASSIGN           711"
+"      #define WPMENUID_ACCESSNEW          712"
+"      #define WPMENUID_SYSTEMSETUP        713"
+"      #define WPMENUID_OPENPARENT         714"
 ""
 "      /* menu ids for folder menu bar */"
-"      #define WPMENUID_PASTE              715                                 /*pwbopend */  "
-"      #define WPMENUID_CHANGETOICON       716                                 /*pwbopend */  "
-"      #define WPMENUID_CHANGETOTREE       717                                 /*pwbopend */  "
-"      #define WPMENUID_CHANGETODETAILS    718                                 /*pwbopend */  "
-"      #define WPMENUID_FOLDERPULLDOWN     719                                 /*pwbopend */  "
-"      #define WPMENUID_EDITPULLDOWN       720                                 /*pwbopend */  "
-"      #define WPMENUID_VIEWPULLDOWN       721                                 /*pwbopend */  "
-"      #define WPMENUID_SELECTEDPULLDOWN   722                                 /*pwbopend */  "
-"      #define WPMENUID_HELPPULLDOWN       723                                 /*pwbopend */  "
-"      #define WPMENUID_VIEW               104                                 /*pwbopend */  "
-"      #define WPMENUID_UNDOARRANGE        724                                 /*pwbopend */  "
-"      #define WPMENUID_MAXIMIZE           725                                 /*pwbopend */  "
-"      #define WPMENUID_RESTORE            726                                 /*pwbopend */  "
-"      #define WPMENUID_WINDOWLIST         728                                 /*pwbopend */  "
-"      #define WPMENUID_DOCSHELL           729                                 /*aba142270*/  "
-"      #define WPMENUID_LOCKEDINPLACE      730                                 /*lwb146937*/  "
-"      #define WPMENUID_LOCKEDINPLACEYES   731                                 /*lwb146937*/  "
-"      #define WPMENUID_LOCKEDINPLACENO    732                                 /*lwb146937*/  "
-"      #define WPMENUID_STANDARD           733                                 /*lwb146937*/  "
-"      #define WPMENUID_ARRANGETOP         734                                 /*lwb149411*/  "
-"      #define WPMENUID_ARRANGELEFT        735                                 /*lwb149411*/  "
-"      #define WPMENUID_ARRANGERIGHT       736                                 /*lwb149411*/  "
-"      #define WPMENUID_ARRANGEBOTTOM      737                                 /*lwb149411*/  "
-"      #define WPMENUID_LOGOFF             738                                 /*pgm 141223*/ "
-"      #define WPMENUID_PERIMETER          739                                 /*lwb149411*/  "
-"      #define WPMENUID_SELECTEDHORZ       740                                 /*lwb149411*/  "
-"      #define WPMENUID_SELECTEDVERT       741                                 /*lwb149411*/  "
+"      #define WPMENUID_PASTE              715"
+"      #define WPMENUID_CHANGETOICON       716"
+"      #define WPMENUID_CHANGETOTREE       717"
+"      #define WPMENUID_CHANGETODETAILS    718"
+"      #define WPMENUID_FOLDERPULLDOWN     719"
+"      #define WPMENUID_EDITPULLDOWN       720"
+"      #define WPMENUID_VIEWPULLDOWN       721"
+"      #define WPMENUID_SELECTEDPULLDOWN   722"
+"      #define WPMENUID_HELPPULLDOWN       723"
+"      #define WPMENUID_VIEW               104"
+"      #define WPMENUID_UNDOARRANGE        724"
+"      #define WPMENUID_MAXIMIZE           725"
+"      #define WPMENUID_RESTORE            726"
+"      #define WPMENUID_WINDOWLIST         728"
+"      #define WPMENUID_DOCSHELL           729"
+"      #define WPMENUID_LOCKEDINPLACE      730"
+"      #define WPMENUID_LOCKEDINPLACEYES   731"
+"      #define WPMENUID_LOCKEDINPLACENO    732"
+"      #define WPMENUID_STANDARD           733"
+"      #define WPMENUID_ARRANGETOP         734"
+"      #define WPMENUID_ARRANGELEFT        735"
+"      #define WPMENUID_ARRANGERIGHT       736"
+"      #define WPMENUID_ARRANGEBOTTOM      737"
+"      #define WPMENUID_LOGOFF             738"
+"      #define WPMENUID_PERIMETER          739"
+"      #define WPMENUID_SELECTEDHORZ       740"
+"      #define WPMENUID_SELECTEDVERT       741"
 ""
 ""
 "      /*  Views for the wpOpen(), wpFilterMenu and wpModifyMenu methods */"
@@ -1333,15 +1363,16 @@ interface WPObject : SOMObject
 " */"
 "";
 
-    wpQueryTrueStyle: procedure;
+        wpQueryTrueStyle: procedure;
 
-    somInit: override;
-    somUninit: override;
-    somDefaultInit: override;
-    somDestruct: override;
-  };
-#endif /* __SOMIDL__ */
+        somInit: override;
+        somUninit: override;
+        somDefaultInit: override;
+        somDestruct: override;
+    };
+#endif
 };
+
 interface M_WPObject : SOMClass
 {
 
@@ -1451,66 +1482,69 @@ interface M_WPObject : SOMClass
 //# no new class methods for Warp 4
 
 #ifdef __SOMIDL__
-  implementation {
-    releaseorder: wpclsInitData,
-                  wpclsUnInitData,
-                  withdrawn8,
-                  wpclsMakeAwake,
-                  wpclsIncUsage,
-                  wpclsDecUsage,
-                  wpclsQueryTitle,
-                  wpclsQueryIcon,
-                  wpclsQueryDefaultHelp,
-                  wpclsQueryStyle,
-                  wpclsQueryDetailsInfo,
-                  wpclsQueryDefaultView,
-                  wpclsQueryDetails,
-                  wpclsQuerySearchInfo,
-                  wpclsQueryExtendedCriteria,
-                  wpclsCreateDefaultTemplates,
-                  withdrawn9,
-                  wpclsFindObjectFirst,
-                  wpclsFindObjectNext,
-                  wpclsFindObjectEnd,
-                  wpclsFindObjects,
-                  wpclsSetError,
-                  wpclsQueryError,
-                  wpclsQuerySettingsPageSize,
-                  wpclsSetSettingsPageSize,
-                  wpclsQueryIconData,
-                  wpclsSetIcon,
-                  wpclsSetIconData,
-                  wpclsQueryObject,
-                  wpclsObjectFromHandle,
-                  wpclsSaveDirtyObjects,
-                  wpclsLockDirtyList,
-                  wpclsUnlockDirtyList,
-                  wpclsLockRestartList,
-                  wpclsUnlockRestartList,
-                  wpclsQueryButtonAppearance,
-                  wpclsNew,
-                  wpclsQueryFolder,
-                  wpclsLockSleepyList,
-                  wpclsUnlockSleepyList,
-                  wpclsRemoveObjects,
-                  wpclsInsertMultipleObjects,
-                  wpclsINew,
-                  wpclsFindOneObject,
-                  wpclsQueryMaxAnimationIcons;
+    implementation
+    {
+        releaseorder:
+            wpclsInitData,
+            wpclsUnInitData,
+            withdrawn8,
+            wpclsMakeAwake,
+            wpclsIncUsage,
+            wpclsDecUsage,
+            wpclsQueryTitle,
+            wpclsQueryIcon,
+            wpclsQueryDefaultHelp,
+            wpclsQueryStyle,
+            wpclsQueryDetailsInfo,
+            wpclsQueryDefaultView,
+            wpclsQueryDetails,
+            wpclsQuerySearchInfo,
+            wpclsQueryExtendedCriteria,
+            wpclsCreateDefaultTemplates,
+            withdrawn9,
+            wpclsFindObjectFirst,
+            wpclsFindObjectNext,
+            wpclsFindObjectEnd,
+            wpclsFindObjects,
+            wpclsSetError,
+            wpclsQueryError,
+            wpclsQuerySettingsPageSize,
+            wpclsSetSettingsPageSize,
+            wpclsQueryIconData,
+            wpclsSetIcon,
+            wpclsSetIconData,
+            wpclsQueryObject,
+            wpclsObjectFromHandle,
+            wpclsSaveDirtyObjects,
+            wpclsLockDirtyList,
+            wpclsUnlockDirtyList,
+            wpclsLockRestartList,
+            wpclsUnlockRestartList,
+            wpclsQueryButtonAppearance,
+            wpclsNew,
+            wpclsQueryFolder,
+            wpclsLockSleepyList,
+            wpclsUnlockSleepyList,
+            wpclsRemoveObjects,
+            wpclsInsertMultipleObjects,
+            wpclsINew,
+            wpclsFindOneObject,
+            wpclsQueryMaxAnimationIcons;
 
-    externalstem = wpobj;
-    local;
-    externalprefix = objM_;
-    majorversion = 1;
-    minorversion = 2;
-    filestem = wpobject;
-    callstyle = oidl;
-    dllname = "pmwp.dll";             /* sahsom2 */
-    somUninit: override;
-    somClassReady: override;
-    somNew: override;
-    somRenew: override;
-  };
-#endif /* __SOMIDL__ */
+        externalstem = wpobj;
+        local;
+        externalprefix = objM_;
+        majorversion = 1;
+        minorversion = 2;
+        filestem = wpobject;
+        callstyle = oidl;
+        dllname = "pmwp.dll";             /* sahsom2 */
+
+        somUninit: override;
+        somClassReady: override;
+        somNew: override;
+        somRenew: override;
+    };
+#endif
 };
-#endif  /* wpobject_idl */
+#endif

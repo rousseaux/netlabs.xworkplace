@@ -21,10 +21,6 @@
 # Required changes for translating the NLS DLL: three lines below.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -50,17 +46,10 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
 
 OBJS = $(OUTPUTDIR)\xfldr$(LANGUAGE).obj
 
 XFLDHELP = $(XWPRUNNING)\help
-
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .txt .c .obj .dll .rc .res .html .ipf .hlp .inf
 
 all: $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll
     @echo ----- Leaving $(MAKEDIR)

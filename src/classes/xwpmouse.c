@@ -271,7 +271,7 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseMappingsPage(XWPMouse *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.

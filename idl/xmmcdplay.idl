@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xmmcdplay.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2000 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -63,75 +66,83 @@ interface XMMCDPlayer : WPAbstract
     BOOL xwpAddXMMCDPlayerPages(in HWND hwndNotebook);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpCDQueryStatus,
+            xwpCDPlay,
+            xwpCDTogglePlay,
+            xwpCDPause,
+            xwpCDStop,
+            xwpCDQueryCurrentTrack,
+            xwpCDNextTrack,
+            xwpCDPrevTrack,
+            xwpCDEject,
+            xwpAddXMMCDPlayerPages;
 
-    releaseorder:   xwpCDQueryStatus,
-                    xwpCDPlay,
-                    xwpCDTogglePlay,
-                    xwpCDPause,
-                    xwpCDStop,
-                    xwpCDQueryCurrentTrack,
-                    xwpCDNextTrack,
-                    xwpCDPrevTrack,
-                    xwpCDEject,
-                    xwpAddXMMCDPlayerPages;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = cdp_;
+        externalstem = cdp;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
+        metaclass = M_XMMCDPlayer;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = cdp_;
-    externalstem = cdp;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
-    metaclass = M_XMMCDPlayer;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XMMCDPlayer:
-     *
-     */
+        passthru C_h =
+"";
 
-    HWND    hwndOpenView;           // client if frame is open; NULLHANDLE otherwise
+        /*
+         * Internal instance variables for XMMCDPlayer:
+         *
+         */
 
-    PVOID   pvPlayer;               // pointer to XMMCDPLAYER structure, if running
+        HWND    hwndOpenView;           // client if frame is open; NULLHANDLE otherwise
 
-    LONG    lcolBackground;
-    LONG    lcolForeground;
-    PSZ     pszFont;
+        PVOID   pvPlayer;               // pointer to XMMCDPLAYER structure, if running
 
-    BOOL    fShowingOpenViewMenu;
+        LONG    lcolBackground;
+        LONG    lcolForeground;
+        PSZ     pszFont;
 
-    /*
-     * WPAbstract methods overridden by XMMCDPlayer:
-     *
-     */
+        BOOL    fShowingOpenViewMenu;
 
-    wpInitData: override;
-    wpUnInitData: override;
-    wpObjectReady: override;
+        /*
+         * WPAbstract methods overridden by XMMCDPlayer:
+         *
+         */
 
-    wpSetup: override;
+        wpInitData: override;
+        wpUnInitData: override;
+        wpObjectReady: override;
 
-    wpSaveState: override;
-    wpRestoreState: override;
+        wpSetup: override;
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
+        wpSaveState: override;
+        wpRestoreState: override;
 
-//#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
-    wpQueryDefaultView: override;
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
 
-    wpOpen: override;
+    //#    wpQueryDefaultHelp: override;    replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        wpQueryDefaultView: override;
 
-    wpAddObjectWindowPage: override;
-    wpAddSettingsPages: override;
+        wpOpen: override;
 
-  }; // implementation
-#endif /* __SOMIDL__ */
+        wpAddObjectWindowPage: override;
+        wpAddSettingsPages: override;
+    };
+#endif
 };
 
 //#
@@ -144,42 +155,41 @@ interface M_XMMCDPlayer : M_WPAbstract
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = cdpM_;
+        externalstem = cdpM;
+        functionprefix = cdpM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = cdpM_;
-    externalstem = cdpM;
-    functionprefix = cdpM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal class variables:
+         *
+         */
 
-    /*
-     * Internal class variables:
-     *
-     */
+        /*
+         * M_WPAbstract methods overridden by M_XMMCDPlayer:
+         *
+         */
 
-    /*
-     * M_WPAbstract methods overridden by M_XMMCDPlayer:
-     *
-     */
+        wpclsInitData: override;
 
-    wpclsInitData: override;
+        wpclsQueryStyle: override;
+        wpclsQueryTitle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsQueryStyle: override;
-    wpclsQueryTitle: override;
-    wpclsQueryDefaultHelp: override;
-
-    wpclsQueryIconData: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+    };
+#endif
 };
 
 

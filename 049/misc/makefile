@@ -12,10 +12,6 @@
 #       This copies the files in the current directory to
 #       XWPRUNNING subdirectories, if necessary.
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -28,11 +24,6 @@ LANGUAGE = 049
 #
 # DO NOT CHANGE THE FOLLOWING
 #
-
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .tmf
 
 FILES_TO_COPY = \
     $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf \

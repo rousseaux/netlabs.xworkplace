@@ -93,15 +93,15 @@ $(XFLDR_OBJS_XCENTER)
 HLPOBJS = $(XWP_OUTPUT_ROOT)\helpers.lib
 
 # The following macros contains the .OBJ files for the XCenter plugins.
-DISKFREEOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_diskfree.obj $(PMPRINTF_LIB)
-WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
-IPMONOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_ipmon.obj $(PMPRINTF_LIB) libs\tcp32dll.lib libs\so32dll.lib
-MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
-SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_sentinel.obj $(PMPRINTF_LIB) libs\win32k.lib
-HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
-SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
+DISKFREEOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\w_diskfree.obj $(PMPRINTF_LIB)
+WINLISTOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\w_winlist.obj $(PMPRINTF_LIB)
+IPMONOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\w_ipmon.obj $(PMPRINTF_LIB) libs\tcp32dll.lib libs\so32dll.lib
+MONITOROBJS = $(XWP_OUTPUT_ROOT)\dll_subs\w_monitors.obj $(PMPRINTF_LIB)
+SENTINELOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\w_sentinel.obj $(PMPRINTF_LIB) libs\win32k.lib
+HEALTHOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\xwHealth.obj $(PMPRINTF_LIB)
+SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\____sample.obj $(PMPRINTF_LIB)
 
-D_CDFSOBJS = $(XWP_OUTPUT_ROOT)\widgets\d_cdfs.obj $(PMPRINTF_LIB)
+D_CDFSOBJS = $(XWP_OUTPUT_ROOT)\dll_subs\d_cdfs.obj $(PMPRINTF_LIB)
 
 # objects for XDEBUG.DLL (debugging only)
 DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
@@ -146,13 +146,17 @@ full: really_all
 
 # "dep": create dependencies.
 dep:
+    @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
+    @cd $(HELPERS_BASE_DIR)\src\helpers
+    @nmake -nologo dep "NOINCLUDEDEPEND=1" $(SUBMAKE_PASS_STRING)
+    @cd $(CURRENT_DIR)
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src (dep)
     @cd src
     $(MAKE) -nologo dep "SUBTARGET=dep" "RUNDEPONLY=1" "REALLYALL=1"
     @cd $(CURRENT_DIR)
-    @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
-    @cd $(HELPERS_BASE)\src\helpers
-    @nmake -nologo dep "NOINCLUDEDEPEND=1" $(SUBMAKE_PASS_STRING)
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir tools (dep)
+    @cd tools
+    $(MAKE) -nologo dep "SUBTARGET=dep" "RUNDEPONLY=1" "REALLYALL=1"
     @cd $(CURRENT_DIR)
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
@@ -178,7 +182,7 @@ helpers:
 # which is prepared for this. The helpers.lib file
 # is created in $(XWP_OUTPUT_ROOT) then.
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
-    @cd $(HELPERS_BASE)\src\helpers
+    @cd $(HELPERS_BASE_DIR)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)" "CC_HELPERS=$(CC_HELPERS_DLL)"
 # according to VAC++ user guide, we need to use /ge+ for libs
@@ -190,7 +194,7 @@ helpers_exe_mt:
 # same as the above, but this builds a multithread lib for EXEs
 # in $(XWP_OUTPUT_ROOT)\exe_mt\ instead.
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (EXE MT version)
-    @cd $(HELPERS_BASE)\src\helpers
+    @cd $(HELPERS_BASE_DIR)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(CURRENT_DIR)
@@ -237,18 +241,10 @@ $(XWP_LANG_CODE):
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
 
-046:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir 046_
-    @cd 046_
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..
-
-nls: $(XWP_LANG_CODE) \
 !ifdef BUILD_049_TOO
-049 \
-!endif
-!ifdef BUILD_046_TOO
-046
+nls: $(XWP_LANG_CODE) 049
+!else
+nls: $(XWP_LANG_CODE)
 !endif
 
 # LINKER PSEUDOTARGETS
@@ -266,6 +262,10 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\plugins\drvdlgs\d_cdfs.dll \
 !endif
+#      $(XWPRUNNING)\bin\xwphook.dll \
+#      $(XWPRUNNING)\bin\xwpdaemn.exe
+#      $(XWPRUNNING)\bin\xwpfonts.fon
+#      $(XWPRUNNING)\bin\xdebug.dll
 
 #
 # generic inference rules for copying and stuff
@@ -374,12 +374,12 @@ $(MODULESDIR)\xwpres.dll: src\shared\xwpres.def $(XWP_OUTPUT_ROOT)\xwpres.res $(
 #
 
 # update DEF file if buildlevel has changed
-src\widgets\winlist.def: include\bldlevel.h makefile
+src\widgets\w_winlist.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) window-list plugin DLL"
 
-$(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
+$(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def $(WINLISTOBJS)
+        $(LINK) /OUT:$@ $(WINLISTOBJS) src\widgets\w_$(@B).def
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -406,9 +406,7 @@ src\widgets\w_diskfree.def: include\bldlevel.h makefile
 
 $(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) /OUT:$@ src\widgets\w_diskfree.def @<<
-$(DISKFREEOBJS)
-<<
+        $(LINK) /OUT:$@ $(DISKFREEOBJS) src\widgets\w_diskfree.def
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -430,12 +428,12 @@ $(XWPRUNNING)\plugins\xcenter\ipmon.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\ipmon.def: include\bldlevel.h makefile
+src\widgets\w_ipmon.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) IP monitor plugin DLL"
 
-$(MODULESDIR)\ipmon.dll: $(IPMONOBJS) src\widgets\$(@B).def
+$(MODULESDIR)\ipmon.dll: $(IPMONOBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def $(IPMONOBJS)
+        $(LINK) /OUT:$@ $(IPMONOBJS) src\widgets\w_$(@B).def
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -457,14 +455,12 @@ $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\monitors.def: include\bldlevel.h makefile
+src\widgets\w_monitors.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) monitors plugin DLL"
 
-$(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
+$(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
-$(MONITOROBJS)
-<<
+        $(LINK) /OUT:$@ $(MONITOROBJS) src\widgets\w_$(@B).def
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -486,12 +482,12 @@ $(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
-src\widgets\sentinel.def: include\bldlevel.h makefile
+src\widgets\w_sentinel.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) memory sentinel plugin DLL"
 
-$(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\$(@B).def
+$(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def $(SENTINELOBJS)
+        $(LINK) /OUT:$@ $(SENTINELOBJS) src\widgets\w_$(@B).def
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -572,9 +568,7 @@ src\widgets\d_cdfs.def: include\bldlevel.h makefile
 
 $(MODULESDIR)\d_cdfs.dll: $(D_CDFSOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
-$(D_CDFSOBJS)
-<<
+        $(LINK) /OUT:$@ $(D_CDFSOBJS) src\widgets\$(@B).def
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif

@@ -851,7 +851,15 @@ SOM_Scope void  SOMLINK xvc_wpInitData(XWPVCard *somSelf)
 
 /*
  *@@ wpUnInitData:
+ *      this WPObject instance method is called when the object
+ *      is destroyed as a SOM object, either because it's being
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
  *
+ *      The parent method must always be called last.
  */
 
 SOM_Scope void  SOMLINK xvc_wpUnInitData(XWPVCard *somSelf)
@@ -896,7 +904,11 @@ SOM_Scope ULONG  SOMLINK xvc_wpFilterPopupMenu(XWPVCard *somSelf,
 
 /*
  *@@ wpAddSettingsPages:
- *
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  */
 
 SOM_Scope BOOL  SOMLINK xvc_wpAddSettingsPages(XWPVCard *somSelf,
@@ -1004,7 +1016,7 @@ SOM_Scope WPObject*  SOMLINK xvc_wpCreateFromTemplate(XWPVCard *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -1051,7 +1063,7 @@ SOM_Scope PSZ  SOMLINK xvcM_wpclsQueryTitle(M_XWPVCard *somSelf)
 
 /*
  *@@ wpclsQueryDefaultView:
- *      this WPObject class method returns the default view for
+ *      this M_WPObject class method returns the default view for
  *      objects of a class.
  *      The way this works is that WPObject::wpQueryDefaultView
  *      apparently checks for whether an instance default view
@@ -1077,7 +1089,7 @@ SOM_Scope ULONG  SOMLINK xvcM_wpclsQueryDefaultView(M_XWPVCard *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -1107,7 +1119,7 @@ SOM_Scope BOOL  SOMLINK xvcM_wpclsQueryDefaultHelp(M_XWPVCard *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;
@@ -1154,7 +1166,7 @@ SOM_Scope ULONG  SOMLINK xvcM_wpclsQueryIconData(M_XWPVCard *somSelf,
 
 /*
  *@@ wpclsQueryInstanceFilter:
- *      this WPDataFile class method determines which file-system
+ *      this M_WPFileSystem class method determines which file-system
  *      objects will be instances of a certain class according
  *      to a file filter.
  *
@@ -1171,7 +1183,7 @@ SOM_Scope PSZ  SOMLINK xvcM_wpclsQueryInstanceFilter(M_XWPVCard *somSelf)
 
 /*
  *@@ wpclsQueryInstanceType:
- *      this WPDataFile class method determines which file-system
+ *      this M_WPDataFile class method determines which file-system
  *      objects will be instances of a certain class according
  *      to a file type.
  *

@@ -453,8 +453,12 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
  *      The parent method must always be called last.
  *
  *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
@@ -925,7 +929,7 @@ LONG EXPENTRY CompareTrashSize(PULONG pul1,     // ptr to ul1
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -1063,7 +1067,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
 
 /*
  *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
+ *      this M_WPObject class method is called by the
  *      Templates folder to allow a class to
  *      create its default templates.
  *
@@ -1165,7 +1169,7 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryDetailsInfo(M_XWPTrashObject *somSelf,
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -1205,7 +1209,7 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryStyle(M_XWPTrashObject *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been

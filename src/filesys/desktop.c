@@ -423,7 +423,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                         HWND hwndMenu)
 {
     HWND            hwndMenuInsert = hwndMenu;
-    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+    // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
     // position of original "Shutdown" menu item in context menu
     SHORT   sOrigShutdownPos = (SHORT)WinSendMsg(hwndMenu,
@@ -525,7 +525,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 #endif
     }
 
-    if (pKernelGlobals->pXWPShellShared)
+    if (krnMultiUser())
     {
         // XWPShell running:
         // insert "logoff"

@@ -759,9 +759,9 @@ STATIC MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
                             if (wpshQueryDraggedObject(&drgItem,
                                                        &pData->pobjDragged))
                             {
-                                HPS hps = DrgGetPS(hwndStatic);
-                                RECTL rclStatic;
-                                POINTL ptl;
+                                HPS     hps = DrgGetPS(hwndStatic);
+                                RECTL   rclStatic;
+                                POINTL  ptl;
                                 WinQueryWindowRect(hwndStatic, &rclStatic);
                                 // draw target emphasis (is stricly rectangular
                                 // with OS/2)
@@ -811,6 +811,7 @@ STATIC MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
                            XM_DISPLAYERROR,
                            (MPARAM)arc,
                            0);
+
             // and repaint
             RemoveTargetEmphasis(pData, hwndStatic);
             // re-enable controls

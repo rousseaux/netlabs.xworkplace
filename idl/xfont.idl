@@ -8,8 +8,11 @@
  *                       the XWorkplace Font Folder.
  *
  *      See src\classes\xfont.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -67,9 +70,9 @@ interface XWPFontFolder : XFolder       //# WPFolder is replaced with XFolder
             // with fonts on the first open
 
 #ifdef __SOMIDL__
-  implementation {
-
-    releaseorder:
+    implementation
+    {
+        releaseorder:
             xwpAddFontsPage,
             //# xwpUpdateStatusBar,
             _get_fFilledWithFonts,
@@ -77,60 +80,63 @@ interface XWPFontFolder : XFolder       //# WPFolder is replaced with XFolder
             //# xwpProcessViewCommand,
             xwpChangeFontsCount;
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    externalprefix = fon_;
-    externalstem = fon;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfont;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPFontFolder;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        externalprefix = fon_;
+        externalstem = fon;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfont;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPFontFolder;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    /*
-     * Internal instance variables for XWPFontFolder:
-     *
-     */
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    ULONG   ulFontsCurrent;         // no. of font objects in the font folder;
-                                    // initialized to 0, updated by wpPopulate
-    ULONG   ulFontsMax;             // max. no. of fonts to be created
-                                    // (for status bar)
+        passthru C_h =
+"";
 
-    /*
-     * WPFolder methods overridden by XWPFontFolder:
-     *
-     */
+        /*
+         * Internal instance variables for XWPFontFolder:
+         *
+         */
 
-    wpInitData: override;
-    //# wpUnInitData: override;         V1.0.1 (2002-12-08) [umoeller]
+        ULONG   ulFontsCurrent;         // no. of font objects in the font folder;
+                                        // initialized to 0, updated by wpPopulate
+        ULONG   ulFontsMax;             // max. no. of fonts to be created
+                                        // (for status bar)
 
-    xwpProcessViewCommand: override;    //# V1.0.1 (2002-12-08) [umoeller]
+        /*
+         * WPFolder methods overridden by XWPFontFolder:
+         *
+         */
 
-    xwpUpdateStatusBar: override;       //# V1.0.1 (2002-12-08) [umoeller]
+        wpInitData: override;
+        //# wpUnInitData: override;         V1.0.1 (2002-12-08) [umoeller]
 
-//#    wpQueryDefaultHelp: override;   replaced with class method V0.9.20 (2002-07-12) [umoeller]
+        xwpProcessViewCommand: override;    //# V1.0.1 (2002-12-08) [umoeller]
 
-//#    wpOpen: override;
-    wpPopulate: override;
+        xwpUpdateStatusBar: override;       //# V1.0.1 (2002-12-08) [umoeller]
 
-    wpDeleteContents: override;
+    //#    wpQueryDefaultHelp: override;   replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
-    wpDragOver: override;
-    wpDrop: override;
+    //#    wpOpen: override;
+        wpPopulate: override;
 
-    wpAddSettingsPages: override;
+        wpDeleteContents: override;
 
-#ifdef __PRIVATE__
+        wpDragOver: override;
+        wpDrop: override;
 
+        wpAddSettingsPages: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -151,47 +157,47 @@ interface M_XWPFontFolder : M_XFolder       //# WPFolder is replaced with XFolde
     XWPFontFolder xwpclsQueryDefaultFontFolder();
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpclsQueryDefaultFontFolder;
 
-    releaseorder: xwpclsQueryDefaultFontFolder;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = fonM_;
+        externalstem = fonM;
+        functionprefix = fonM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfont;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = fonM_;
-    externalstem = fonM;
-    functionprefix = fonM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfont;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal instance variables for M_XWPFontFolder:
+         *
+         */
 
-    /*
-     * Internal instance variables for M_XWPFontFolder:
-     *
-     */
+        /*
+         * M_WPFolder methods overridden by M_XWPFontFolder:
+         *
+         */
 
-    /*
-     * M_WPFolder methods overridden by M_XWPFontFolder:
-     *
-     */
+        wpclsInitData: override;
+        wpclsUnInitData: override;
+        wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+        wpclsQueryDefaultHelp: override;
 
-    wpclsInitData: override;
-    wpclsUnInitData: override;
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
-    wpclsQueryDefaultHelp: override;
+        wpclsCreateDefaultTemplates: override;
 
-    wpclsCreateDefaultTemplates: override;
-
-    wpclsQueryIconData: override;
-    wpclsQueryIconDataN: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+        wpclsQueryIconDataN: override;
+    };
+#endif
 };
 
 

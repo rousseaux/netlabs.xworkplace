@@ -15,10 +15,6 @@
 #       Edit "setup.in" to set up the make process.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -28,13 +24,6 @@
 #
 # You probably need not change the following.
 #
-
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .c .obj .dll .h .ih .rc .res
-
-HLPINC = $(HELPERS_BASE)\include\helpers
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in. $(XWP_OUTPUT_ROOT) is set by

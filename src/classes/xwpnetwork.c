@@ -287,7 +287,7 @@ SOM_Scope XWPNetwork*  SOMLINK xnwM_xwpclsQueryNetworkFolder(M_XWPNetwork *somSe
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -383,7 +383,7 @@ SOM_Scope ULONG  SOMLINK xnwM_wpclsQueryStyle(M_XWPNetwork *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -410,7 +410,7 @@ SOM_Scope BOOL  SOMLINK xnwM_wpclsQueryDefaultHelp(M_XWPNetwork *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

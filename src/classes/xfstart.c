@@ -438,7 +438,9 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemHelpSelected(XFldStartup *somSelf,
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  *
  *      Starting with V0.9.0, we override this method too to add
  *      the XWorkplace Startup folder's settings
@@ -502,7 +504,7 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -567,7 +569,7 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -609,7 +611,7 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -639,7 +641,7 @@ SOM_Scope BOOL  SOMLINK xfstupM_wpclsQueryDefaultHelp(M_XFldStartup *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;
@@ -725,7 +727,7 @@ SOM_Scope BOOL  SOMLINK xfstupM_wpclsCreateDefaultTemplates(M_XFldStartup *somSe
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -745,7 +747,7 @@ SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
 
 /*
  *@@ wpclsQueryTitle:
- *      this WPObject class method tells the WPS the clear
+ *      this M_WPObject class method tells the WPS the clear
  *      name of a class, which is shown in the third column
  *      of a Details view and also used as the default title
  *      for new objects of a class.
@@ -783,7 +785,7 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryStyle(M_XFldShutdown *somSelf)
 
 /*
  *@@ wpclsQueryDefaultHelp:
- *      this WPObject class method returns the default help
+ *      this M_WPObject class method returns the default help
  *      panel for objects of this class. This gets called
  *      from WPObject::wpQueryDefaultHelp if no instance
  *      help settings (HELPLIBRARY, HELPPANEL) have been
@@ -814,7 +816,7 @@ SOM_Scope BOOL  SOMLINK xfshutM_wpclsQueryDefaultHelp(M_XFldShutdown *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

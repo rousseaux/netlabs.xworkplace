@@ -258,7 +258,7 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // V0.9.20 (2002-08-04) [umoeller]
         flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_LAZYICONS,
-                              !!(flOwnerDraw & OWDRFL_LAZYICONS));
+                              !!(flOwnerDraw & OWDRFL_LAZYLOADICON));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_SHADOWOVERLAY,
                               !!(flOwnerDraw & OWDRFL_SHADOWOVERLAY));
 
@@ -347,7 +347,7 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
 
         // V0.9.20 (2002-08-04) [umoeller]
         case ID_XSDI_FDRVIEW_LAZYICONS:
-            flOwnerDrawChanged = OWDRFL_LAZYICONS;
+            flOwnerDrawChanged = OWDRFL_LAZYLOADICON;
         break;
 
         // V0.9.20 (2002-08-04) [umoeller]

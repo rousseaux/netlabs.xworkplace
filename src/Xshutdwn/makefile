@@ -17,10 +17,6 @@
 #       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -38,7 +34,6 @@ BASE_OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_st
 !if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
 !endif
-MODULESDIR = $(BASE_OUTPUTDIR)\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
@@ -47,10 +42,7 @@ MODULESDIR = $(BASE_OUTPUTDIR)\modules
 # FIXED MACROS
 # ------------
 
-.SUFFIXES: .c .obj .dll .h .ih .rc .res
-
 INC = ..\..\include
-HLPINC = $(HELPERS_BASE)\include\helpers
 
 ALL_OBJ1 = $(OUTPUTDIR)\xshutdwn.obj
 
@@ -88,7 +80,7 @@ $(OUTPUTDIR)\xshutdwn.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(MODULESDIR)\xshutdwn.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
+          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE_DIR)\src\helpers\pmprintf.lib $(@B).def
           $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target

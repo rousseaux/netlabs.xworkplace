@@ -1,9 +1,8 @@
 #
 # Makefile for XIMGVIEW.EXE.
 #
-# For use with IBM NMAKE, which is part of IBM C-Set/2 and VisualAge C++.
-# This file will probably not work with other MAKE utilities, such as
-# GNU make or DMAKE.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
 #       Copyright (C) 1998-2003 Ulrich M”ller.
 #       This file is part of the XWorkplace source package.
@@ -17,65 +16,63 @@
 #       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
-MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# create output directory
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
+!include $(MAKE_INCLUDE_DIR)\compile_exe_mt.in
+#       this defines the proper OUTPUTDIR
 
-# FIXED MACROS
-# ------------
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-.SUFFIXES: .c .obj .dll .h .ih .rc .res
+MODULESTEM = ximgview
 
-HLPINC = $(HELPERS_BASE)\include\helpers
+OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 
-HEADERS = ximgview.h $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\memdebug.h $(HLPINC)\winh.h $(HLPINC)\xstring.h
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-ALL_OBJ1 = $(OUTPUTDIR)\ximgview.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
+BLDLEVELNAME = "$(XWPNAME) image viewer"
 
-MYDIR = $(MAKEDIR)
+COPYTODIR = $(XWPRUNNING)\bin
 
-# TARGETS
-# -------
+LINKMODULE = $(MODULESTEM).exe
 
-all: helpers $(XWPRUNNING)\bin\ximgview.exe
-    @echo ----- Leaving $(MAKEDIR)
+RESOURCE_SOURCES = $(MODULESTEM).h $(MODULESTEM).rc $(MODULESTEM).ico
 
-helpers:
-    @cd ..\..
-    @nmake -nologo helpers
-    cd $(MYDIR)
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
 
-$(OUTPUTDIR)\ximgview.obj: $(@B).c $(HEADERS) ..\..\include\bldlevel.h
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+!include $(MAKE_INCLUDE_DIR)\link_exe.in
+#   this defines ALLTARGET for the next include
 
-# build targets
-ximgview.def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) image viewer"
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
 
-$(OUTPUTDIR)\ximgview.res: $(@B).rc *.ico
-          $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
-
-$(MODULESDIR)\ximgview.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) mmpm2.lib $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
-
-# main target
-$(XWPRUNNING)\bin\ximgview.exe: $(MODULESDIR)\ximgview.exe
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+!include $(MAKE_INCLUDE_DIR)\targets.in
 
 

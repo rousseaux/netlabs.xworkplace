@@ -422,6 +422,47 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpQueryDefaultHelp(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpQueryDefaultView:
+ *      this WPObject method returns the default view of an object,
+ *      that is, which view is opened if the program file is
+ *      double-clicked upon. This is also used to mark
+ *      the default view in the "Open" context submenu.
+ *
+ *      We override this now to make sure that we _never_ pass
+ *      out the split view as the default for the desktop, which
+ *      causes WPS startup to hang.
+ *
+ *@@added V1.0.1 (2003-01-25) [umoeller]
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: this could return the split view for the desktop, fixed @@fixes XXX
+ */
+
+SOM_Scope ULONG  SOMLINK xfdesk_wpQueryDefaultView(XFldDesktop *somSelf)
+{
+    ULONG   ulDefaultView;
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpQueryDefaultView");
+
+    ulDefaultView = XFldDesktop_parent_WPDesktop_wpQueryDefaultView(somSelf);
+
+    // now, even though we disallow setting the split view as the default
+    // for the desktop explicitly, we can still end up with the split view
+    // as the default if "inherit from parent" is on and the parent has
+    // it as the default, which causes WPS startup to fail miserably, so CHECK:
+    // V1.0.1 (2003-01-25) [umoeller] @@fixes XXX
+    if (    (ulDefaultView != OPEN_CONTENTS)
+         && (ulDefaultView != OPEN_DETAILS)
+         && (ulDefaultView != OPEN_TREE)
+       )
+    {
+        _wpSetDefaultView(somSelf, OPEN_CONTENTS);
+        return OPEN_CONTENTS;
+    }
+
+    return ulDefaultView;
+
+}
+
+/*
  *@@ wpSetDefaultView:
  *      this WPObject method changes the default view of
  *      the object.
@@ -680,7 +721,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
                                                   pszPath,
                                                   fFoldersOnly);
 
-    initLog("  parent WPDesktop::wpPopulate returned %d", brc);
+    initLog("  parent WPDesktop::wpPopulate returned BOOL %d", brc);
 
     PMPF_STARTUP(("checking whether Worker thread needs notify"));
 
@@ -742,7 +783,9 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  *
  *      As opposed to the "XFolder" page, which deals with instance
  *      data, we save the Desktop settings with the global
@@ -793,7 +836,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -817,7 +860,7 @@ SOM_Scope void  SOMLINK xfdeskM_wpclsInitData(M_XFldDesktop *somSelf)
 
 /*
  *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
+ *      this M_WPObject class method should return the
  *      size of the largest settings page in dialog
  *      units; if a settings notebook is initially
  *      opened, i.e. no window pos has been stored
@@ -855,7 +898,7 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

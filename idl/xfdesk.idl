@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xfdesk.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -55,85 +58,87 @@ interface XFldDesktop : WPDesktop
     //# BOOL xwpQuerySetup2(in PVOID pstrSetup);    V1.0.1 (2002-12-08) [umoeller]
 
 #ifdef __SOMIDL__
-  implementation {
-
-    releaseorder:
+    implementation
+    {
+        releaseorder:
             xwpInsertXFldDesktopStartupPage,
             xwpInsertXFldDesktopArchivesPage,
             xwpInsertXFldDesktopShutdownPage;
             //# xwpQuerySetup2;     V1.0.1 (2002-12-08) [umoeller]
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    externalprefix = xfdesk_;
-    externalstem = xfdesk;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfdesk;           //# specifies the filestem for sc-generated files
-    metaclass = M_XFldDesktop;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        externalprefix = xfdesk_;
+        externalstem = xfdesk;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfdesk;           //# specifies the filestem for sc-generated files
+        metaclass = M_XFldDesktop;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    /*
-     * Internal instance variables for XFldDesktop:
-     *
-     */
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    BOOL        fOpened;            // for pre-populate support
-                                    // V0.9.19 (2002-04-02) [umoeller]
+        passthru C_h =
+"";
 
-    /*
-     * WPDesktop methods overridden by XFldDesktop:
-     *
-     */
+        /*
+         * Internal instance variables for XFldDesktop:
+         *
+         */
 
-    //# 1)  init/uninit methods
+        BOOL        fOpened;            // for pre-populate support
+                                        // V0.9.19 (2002-04-02) [umoeller]
 
-    wpInitData: override;
+        /*
+         * WPDesktop methods overridden by XFldDesktop:
+         *
+         */
 
-    wpSetup: override;
-    wpSetupOnce: override;
+        //# 1)  init/uninit methods
 
-    //# 2)  WPObject query/set methods
+        wpInitData: override;
 
-    wpQueryDefaultHelp: override;
+        wpSetup: override;
+        wpSetupOnce: override;
 
-    wpSetDefaultView: override;
+        //# 2)  WPObject query/set methods
 
-    xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
+        wpQueryDefaultHelp: override;
 
-    //# 3)  icon methods
+        wpQueryDefaultView: override;
+        wpSetDefaultView: override;
 
-    //# 4)  class-specific query/set methods
+        xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
 
-    //# 5)  menu methods
+        //# 3)  icon methods
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
+        //# 4)  class-specific query/set methods
 
-    wpMenuItemSelected: override;
+        //# 5)  menu methods
 
-    //# 6)  open view methods
+        wpFilterPopupMenu: override;
+        wpModifyPopupMenu: override;
 
-    wpOpen: override;
-    wpPopulate: override;
+        wpMenuItemSelected: override;
 
-    wpAddDesktopArcRest1Page: override;
-    wpAddSettingsPages: override;
+        //# 6)  open view methods
 
-    //# 7)  file operation methods
+        wpOpen: override;
+        wpPopulate: override;
 
-#ifdef __PRIVATE__
+        wpAddDesktopArcRest1Page: override;
+        wpAddSettingsPages: override;
 
-    //# Data Modifiers
-
+        //# 7)  file operation methods
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -151,41 +156,41 @@ interface M_XFldDesktop : M_WPDesktop
      */
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    externalprefix = xfdeskM_;
-    externalstem = xfdeskM;
-    functionprefix = xfdeskM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xfdesk;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        externalprefix = xfdeskM_;
+        externalstem = xfdeskM;
+        functionprefix = xfdeskM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xfdesk;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    /*
-     * Internal class variables for M_XFldDesktop:
-     *
-     */
+        /*
+         * Internal class variables for M_XFldDesktop:
+         *
+         */
 
-    /*
-     * M_WPDesktop methods overridden by M_XFldDesktop:
-     *
-     */
+        /*
+         * M_WPDesktop methods overridden by M_XFldDesktop:
+         *
+         */
 
-    wpclsInitData: override;
+        wpclsInitData: override;
 
-    wpclsQuerySettingsPageSize: override;
+        wpclsQuerySettingsPageSize: override;
 
-    wpclsQueryIconData: override;
-    wpclsQueryIconDataN: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsQueryIconData: override;
+        wpclsQueryIconDataN: override;
+    };
+#endif
 };
 
 

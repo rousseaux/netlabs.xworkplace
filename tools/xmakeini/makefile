@@ -1,146 +1,77 @@
 #
-# makefile:
-#       makefile for TOOLS\xlvm directory.
-#       For use with IBM NMAKE, which comes with the IBM compilers,
-#       the Developer's Toolkit, and the DDK.
+# Makefile for XMAKEINI.EXE.
 #
-#       All the makefiles have been restructured with V0.9.0.
+# See make\readme.txt about an introduction to the make system introduced
+# in the CVS trunk on 2003-01-28.
 #
-#       Called from:    main makefile
-#
-#       Input:          files in this directory
-#
-#       Output:         xlvm.exe, copied to parent directory (TOOLS\).
-#
-#       Edit "setup.in" to set up the make process.
+#       Copyright (C) 1998-2003 Ulrich M”ller.
+#       This file is part of the XWorkplace source package.
+#       XWorkplace is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published
+#       by the Free Software Foundation, in version 2 as it comes in the
+#       "COPYING" file of the XWorkplace main distribution.
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
+# ***************************************************************************
+# *
+# *     1) include generic setup definitions (compiler options etc.)
+# *
+# ***************************************************************************
 
-# include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
 
-# FIXED MACROS
-# ------------
-#
-# You probably need not change the following.
-#
+# ***************************************************************************
+# *
+# *     2) include mode-specific compiler inference rules
+# *
+# ***************************************************************************
 
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .cpp .obj .h
+!include $(MAKE_INCLUDE_DIR)\compile_exe_mt.in
+#       this defines the proper OUTPUTDIR
 
-# OUTPUTDIR specifies the directory where all the output .OBJ
-# files will be created in.
-OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
-MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+# ***************************************************************************
+# *
+# *     3) list objects to be built
+# *
+# ***************************************************************************
 
-COPYTODIR = P:\ecsdemo\iso-src-current\ecs\bin
+MODULESTEM = xmakeini
 
-!if [@md $(XWP_OUTPUT_ROOT) 2> NUL]
-!endif
-!if [@md $(OUTPUTDIR) 2> NUL]
-!endif
-!if [@md $(MODULESDIR) 2> NUL]
-!endif
+OBJS = $(OUTPUTDIR)\$(MODULESTEM).obj $(OUTPUTDIR)\helpers.lib
 
-APPNAME = xmakeini
+# ***************************************************************************
+# *
+# *     4) define specific stuff for linker include
+# *
+# ***************************************************************************
 
-# The OBJS macro contains all the .OBJ files which need to be
-# created from the files in this directory.
-# These will be put into BIN\.
-OBJS = $(OUTPUTDIR)\$(APPNAME).obj $(OUTPUTDIR)\helpers.lib
+BLDLEVELNAME = "$(XWPNAME) profile generator"
 
-# The main target:
-# If we're called from the main makefile, MAINMAKERUNNING is defined,
-# and we'll set $(OBJS) as our targets (which will go on).
-# Otherwise, we call the main makefile, which will again call ourselves later.
-all: helpers \
-    $(MODULESDIR)\$(APPNAME).exe
-    @echo ----- Leaving $(MAKEDIR)
+COPYTODIR = $(XWPRUNNING)\bin
 
-SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"
+LINKMODULE = $(MODULESTEM).exe
 
-helpers:
-    @cd $(HELPERS_BASE)\src\helpers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
-    @cd $(MAKEDIR)
+!undef RESOURCE_SOURCES
 
-# Now define inference rules for what to do with certain file
-# types, based on their file extension.
-# The syntax we need here is ".fromext.toext".
-# So whenever NMAKE encounters a .toext file, it
-# executes what we specify here.
-# The ugly {} brackets are some awkward syntax for specifying
-# files in other directories.
+# ***************************************************************************
+# *
+# *     5) link executable
+# *
+# ***************************************************************************
 
-# Special macros used here: $(@B) is the current target w/out ext.
+!include $(MAKE_INCLUDE_DIR)\link_exe.in
+#   this defines ALLTARGET for the next include
 
-# -- compile C files to .OBJ files, using the CC macro above.
-#    The output will be placed in the directory specified by
-#    the OUTPUTDIR variable (set above).
+# ***************************************************************************
+# *
+# *     6) define main target
+# *
+# ***************************************************************************
 
-.cpp.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile: Compiling $(@B).cpp
-!ifndef PRECH
-# precompiled headers disabled:
-        $(CC_EXE_MT) /w1 /Fo$(OUTPUTDIR)\$(@B).obj $(@B).cpp
-!else
-        $(CC_EXE_MT) /w1 /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).cpp
-!endif
-
-# main include path
-INC = ..\..\include
-# base include path
-BSINC = $(INC)\base
-# helpers include path
-HLPINC = $(HELPERS_BASE)\include\helpers
-
-# Now define dependencies for all our .OBJ files by telling NMAKE
-# which .OBJ file depends on what. For each .OBJ we define what files
-# will enforce a recompilation when they've been changed.
-# This uses the inference rules defined above.
-
-# Note that include\setup.h is specified with _all_ files, so
-# you can enforce a complete recompile of XWorkplace if you update
-# that file (just save it once).
-
-$(OUTPUTDIR)\$(APPNAME).obj: \
-    $(INC)\setup.h $(INC)\bldlevel.h \
-    $(APPNAME).h
-
-# build targets
-$(APPNAME).def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "xmakeini profile generator"
-
-$(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def makefile
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(OBJS) $(@B).def
-!ifndef XWP_DEBUG
-!ifdef LXLITEPATH
-    $(LXLITEPATH)\lxlite $(MODULESDIR)\$(APPNAME).exe
-!endif
-!endif
-!ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
-!endif
-          cd $(MODULESDIR)
-          mapsym /n $(@B).map > NUL
-!ifdef COPYTODIR
-          cmd.exe /c copy $(@B).sym $(COPYTODIR)
-          cmd.exe /c copy $(@B).exe $(COPYTODIR)
-!endif
-!ifdef COMMONBINDIR
-          cmd.exe /c copy $(@B).sym $(COMMONBINDIR)
-          cmd.exe /c copy $(@B).exe $(COMMONBINDIR)
-!endif
-!ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
-!endif
-          cd $(MAKEDIR)
-
+!include $(MAKE_INCLUDE_DIR)\targets.in
 

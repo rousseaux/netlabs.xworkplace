@@ -228,7 +228,7 @@ SOM_Scope ULONG  SOMLINK xkb_wpAddKeyboardSpecialNeedsPage(XWPKeyboard *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.

@@ -73,7 +73,6 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
-// #include "xwppgmf.ih"
 #include "xfobj.ih"
 
 // XWorkplace implementation headers
@@ -466,27 +465,35 @@ STATIC VOID UnlockLazyIcons(VOID)
  *@@ fntLazyIcons:
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
+ *@@changed V1.0.1 (2003-01-27) [umoeller]: now calling new _xwpLazyLoadIcon method
  */
 
 STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 {
     BOOL    fLocked = FALSE;
     BOOL    fDummy = 1;
+    HPS     hpsMem = NULLHANDLE;
 
     TRY_LOUD(excpt1)
     {
-        while (fDummy)      // always true, avoid compiler warning
+        while (!ptiMyself->fExit)
         {
             PLISTNODE   pNode;
+            ULONG       flOwnerDraw;
 
             DosWaitEventSem(G_hevLazyIcons, SEM_INDEFINITE_WAIT);
+
+            // refresh owner draw setting
+            flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
 
             if (fLocked = LockLazyIcons())
             {
                 ULONG       ulPosted;
                 DosResetEventSem(G_hevLazyIcons, &ulPosted);
 
-                while (fLocked)
+                while (    (fLocked)
+                        && (!ptiMyself->fExit)
+                      )
                 {
                     WPObject    *pDataFile = NULL;
 
@@ -506,46 +513,12 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                     if (!pDataFile)
                         break;
                     else
-                    {
-                        HPOINTER hptr;
-
-                        PMPF_ICONREPLACEMENTS(("[%s] calling _wpQueryIcon, hptrIcon 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
-                                    _wpQueryTitle(pDataFile),
-                                    _wpQueryCoreRecord(pDataFile)->hptrIcon,
-                                    _wpQueryStyle(pDataFile) & OBJSTYLE_NOTDEFAULTICON
-                                  ));
-
-                        if (hptr = _wpQueryIcon(pDataFile))
-                        {
-                            // _wpSetIconHandle(pDataFile, hptr);
-                            _wpSetIcon(pDataFile, hptr);
-                        }
-
-                        PMPF_ICONREPLACEMENTS(("    loaded hptr 0x%lX", hptr));
-
-                        /*
-
-                        // for program files, call wpSetProgIcon
-                        // for other data files, call wpQueryAssociatedFileIcon
-                        if (_somIsA(pDataFile, _WPProgramFile))
-                            _wpSetProgIcon(pDataFile, NULL);
-                        else
-                        {
-                            // not program file:
-                            HPOINTER hptr;
-                            if (!(hptr = _wpQueryAssociatedFileIcon(pDataFile)))
-                            {
-                                // can't find icon:
-                                // use class default
-                                hptr = _wpclsQueryIcon(_somGetClass(pDataFile));
-                            }
-
-                            if (hptr)
-                                _wpSetIcon(pDataFile, hptr);
-                        }
-
-                        */
-                    }
+                        _xwpLazyLoadIcon(pDataFile,
+                                         ptiMyself->hab,
+                                         &hpsMem,
+                                         flOwnerDraw,
+                                         &ptiMyself->fExit);
+                                // replaced V1.0.1 (2003-01-25) [umoeller]
 
                     // grab the next item on the list; only if
                     // there's nothing left, sleep on the event
@@ -553,8 +526,8 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 
                     fLocked = LockLazyIcons();
                 } // while (fLocked)
-            }
-        }
+            } // if (fLocked = LockLazyIcons())
+        } // while (!ptiMyself->fExit)
     }
     CATCH(excpt1)
     {
@@ -562,6 +535,13 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 
     if (fLocked)
         UnlockLazyIcons();
+
+    if (hpsMem)
+    {
+        HDC hdcMem = GpiQueryDevice(hpsMem);
+        GpiDestroyPS(hpsMem);
+        DevCloseDC(hdcMem);
+    }
 }
 
 /*

@@ -38,7 +38,46 @@
 
     /* ******************************************************************
      *
-     *   Prototypes
+     *   Virtual Device Driver Helper (VDH) prototypes
+     *
+     ********************************************************************/
+
+    typedef ULONG   VDHSEM;                         // It should be VOID
+    typedef VDHSEM  *HVDHSEM;                       // but vddvdh.inc has
+    typedef HVDHSEM *PHVDHSEM;                      // problems with it
+
+    #define VDHENTRY _Pascal            // to declare exported VDH services
+
+    #define VDH_EVENTSEM                    0x0000
+    #define VDH_MUTEXSEM                    0x0001
+    BOOL        VDHENTRY VDHCreateSem(PHVDHSEM, ULONG);
+
+    VOID        VDHENTRY VDHDestroySem(HVDHSEM);
+
+    typedef struct  VDHSemState_s {
+            UCHAR   vss_SemType;         // VDH_EVENTSEM/VDH_MUTEXSEM
+            UCHAR   vss_fOwned;          // 0 -> Not Owned; 1 -> Owned
+            USHORT  vss_fWaiter;         // 0 -> No one waiting; 1 -> Waiting
+            USHORT  vss_cRequest;        // request count in mutex case
+            TID     vss_tid;             // tid of the owner if owned
+    }VDHSEMSTATE;
+    typedef VDHSEMSTATE    *PVDHSEMSTATE;
+
+    VOID        VDHENTRY VDHQuerySem(HVDHSEM,PVDHSEMSTATE);
+
+    VOID        VDHENTRY VDHResetEventSem(HVDHSEM);
+
+    VOID        VDHENTRY VDHPostEventSem(HVDHSEM);
+
+    BOOL        VDHENTRY VDHWaitEventSem(HVDHSEM,ULONG);
+
+    BOOL        VDHENTRY VDHRequestMutexSem(HVDHSEM,ULONG);
+
+    VOID        VDHENTRY VDHReleaseMutexSem(HVDHSEM);
+
+    /* ******************************************************************
+     *
+     *   DevHlp32 prototypes
      *
      ********************************************************************/
 

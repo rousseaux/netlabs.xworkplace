@@ -172,7 +172,9 @@ SOM_Scope ULONG  SOMLINK xsnd_wpFilterPopupMenu(XWPSound *somSelf,
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *      settings page inserted into hwndNotebook. Override
+ *      this method to add new settings pages to either the
+ *      top or the bottom of notebooks of a given class.
  *
  *      Since the MMPM/2 replacement of this class, MMSound,
  *      is not documented, we call the settings pages which
@@ -222,7 +224,7 @@ SOM_Scope BOOL  SOMLINK xsnd_wpAddSettingsPages(XWPSound *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -241,7 +243,7 @@ SOM_Scope void  SOMLINK xsndM_wpclsInitData(M_XWPSound *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

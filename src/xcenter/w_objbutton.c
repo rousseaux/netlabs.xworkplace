@@ -176,7 +176,8 @@ typedef struct _OBJBUTTONPRIVATE
 
     ULONG       ulType;                 // either BTF_OBJBUTTON or BTF_XBUTTON
 
-    XBUTTONSTATE bs;                    // V1.0.1 (2002-11-30) [umoeller]
+    XBUTTONDATA     xbd;                // V1.0.1 (2003-01-17) [umoeller]
+    XBUTTONSTATE    xbs;                // V1.0.1 (2002-11-30) [umoeller]
 
     BOOL        fHasDragoverEmphasis;   // TRUE only while something is dragged over obj button
 
@@ -250,7 +251,9 @@ STATIC VOID OwgtScanSetup(const char *pcszSetupString,
                           POBJBUTTONSETUP pSetup)
 {
     PSZ p;
+
     pSetup->hobj = 0;
+
     if (p = ctrScanSetupString(pcszSetupString,
                                "OBJECTHANDLE"))
     {
@@ -778,23 +781,41 @@ STATIC WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
     return pobj;
 }
 
+static const CCTLCOLOR G_aObjButtonSysColors[] =
+    {
+        TRUE, PP_BACKGROUNDCOLOR, SYSCLR_DIALOGBACKGROUND,
+        TRUE, PP_FOREGROUNDCOLOR, SYSCLR_WINDOWTEXT
+    };
+
 /*
  *@@ OwgtCreate:
  *      implementation for WM_CREATE.
  *
  *@@changed V0.9.19 (2002-04-14) [umoeller]: now using bitmap for x-button
  *@@changed V0.9.19 (2002-04-14) [umoeller]: now allowing for user-defined bitmaps
+ *@@changed V1.0.1 (2003-01-22) [umoeller]: added ctlDefWindowProc support
  */
 
-STATIC MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
+STATIC MRESULT OwgtCreate(HWND hwnd,
+                          MPARAM mp1,
+                          MPARAM mp2)
 {
     MRESULT mrc = 0;
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
     POBJBUTTONPRIVATE pPrivate = NEW(OBJBUTTONPRIVATE);
+
     ZERO(pPrivate);
     // link the two together
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
+
+    ctlInitDWD(hwnd,
+               mp2,
+               &pPrivate->xbd.dwd,
+               ctrDefWidgetProc,
+               CCS_NOSENDCTLPTR,
+               G_aObjButtonSysColors,
+               ARRAYITEMCOUNT(G_aObjButtonSysColors));
 
     OwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
@@ -837,6 +858,7 @@ STATIC BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -985,39 +1007,24 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
         {
             const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
             ULONG           fl = TBBS_MINIICON | TBBS_BACKGROUND;        // paint background
-            XBUTTONDATA     xbd;
             RECTL           rcl;
 
             if (pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS)
                 fl |= TBBS_FLAT;
 
-            // refresh button data
-            WinQueryWindowRect(hwnd, &rcl);      // exclusive
-            xbd.dwd.szlWin.cx = rcl.xRight;
-            xbd.dwd.szlWin.cy = rcl.yTop;
-
-            // inherit presparam from parent, if we're in a tray
-            // V1.0.1 (2002-12-15) [umoeller]
-            xbd.dwd.lcolBackground = // pGlobals->lcolClientBackground;
-                            winhQueryPresColor(hwnd,
-                                               PP_BACKGROUNDCOLOR,
-                                               TRUE,
-                                               SYSCLR_DIALOGBACKGROUND);
-
-
             if (pPrivate->ulType == BTF_XBUTTON)
             {
                 // V0.9.19 (2002-04-14) [umoeller]
                 fl |= TBBS_BITMAP;
-                xbd.hptr = pPrivate->hbmXMini;
+                pPrivate->xbd.hptr = pPrivate->hbmXMini;
 
-                xbd.szlIconOrBitmap.cx = pPrivate->cxMiniBmp;
-                xbd.szlIconOrBitmap.cy = pPrivate->cyMiniBmp;
+                pPrivate->xbd.szlIconOrBitmap.cx = pPrivate->cxMiniBmp;
+                pPrivate->xbd.szlIconOrBitmap.cy = pPrivate->cyMiniBmp;
             }
             else
             {
-                xbd.szlIconOrBitmap.cx
-                = xbd.szlIconOrBitmap.cy
+                pPrivate->xbd.szlIconOrBitmap.cx
+                = pPrivate->xbd.szlIconOrBitmap.cy
                 = pGlobals->cxMiniIcon;
 
                 if (!pPrivate->pobjButton)
@@ -1025,13 +1032,14 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
                     pPrivate->pobjButton = FindObject(pPrivate);
 
                 if (!pPrivate->pobjButton)
-                    xbd.hptr = NULLHANDLE;      // otherwise we trap in WinDrawPointer later!
+                    pPrivate->xbd.hptr = NULLHANDLE;
+                                                // otherwise we trap in WinDrawPointer later!
                                                 // V1.0.1 (2003-01-13) [umoeller]
                 else
                 {
                     PMINIRECORDCORE pmrc;
 
-                    xbd.hptr = _wpQueryIcon(pPrivate->pobjButton);
+                    pPrivate->xbd.hptr = _wpQueryIcon(pPrivate->pobjButton);
 
                     if (    (!(pGlobals->flDisplayStyle & XCS_NOHATCHINUSE))
                          && (pmrc = _wpQueryCoreRecord(pPrivate->pobjButton))
@@ -1046,8 +1054,8 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
 
             ctlPaintTBButton(hps,
                              fl,
-                             &xbd,
-                             &pPrivate->bs);        // button state
+                             &pPrivate->xbd,
+                             &pPrivate->xbs);       // button state
 
         } // end if (pWidget)
 
@@ -1121,7 +1129,7 @@ STATIC VOID BuildXButtonMenu(HWND hwnd,
                           !fShutdownRunning);
 
 
-    if (    (!pKernelGlobals->pXWPShellShared)
+    if (    (!krnMultiUser())
          || (pPrivate->Setup.flMenuItems & MENUFL_NOLOGOFF)
        )
     {
@@ -1197,13 +1205,14 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
          && (WinIsWindowEnabled(hwnd))
        )
     {
         if (!fIsFromXCenterHotkey)      // V0.9.19 (2002-04-17) [umoeller]
-            pPrivate->bs.fMB1Pressed = TRUE;
+            pPrivate->xbs.fMB1Pressed = TRUE;
 
         // since we're not passing the message
         // to WinDefWndProc, we need to give
@@ -1211,27 +1220,27 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
         // dismiss the button's menu, if open
         WinSetFocus(HWND_DESKTOP, hwnd);
 
-        if (    (!pPrivate->bs.fMouseCaptured)
+        if (    (!pPrivate->xbs.fMouseCaptured)
              && (!fIsFromXCenterHotkey)     // V0.9.19 (2002-04-17) [umoeller]
            )
         {
             // capture mouse events while the
             // mouse button is down
             WinSetCapture(HWND_DESKTOP, hwnd);
-            pPrivate->bs.fMouseCaptured = TRUE;
+            pPrivate->xbs.fMouseCaptured = TRUE;
         }
 
-        if (!pPrivate->bs.fPaintButtonSunk)
+        if (!pPrivate->xbs.fPaintButtonSunk)
         {
             // toggle state is still UP (i.e. button pressed
             // for the first time): create menu
 
-            pPrivate->bs.fPaintButtonSunk = TRUE;
+            pPrivate->xbs.fPaintButtonSunk = TRUE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             // ignore the next button 1 up
             // V0.9.19 (2002-04-17) [umoeller]
-            pPrivate->bs.fIgnoreMB1Up = TRUE;
+            pPrivate->xbs.fIgnoreMB1Up = TRUE;
 
             // prepare globals in fdrmenus.c
             cmnuInitItemCache();
@@ -1316,20 +1325,21 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
     {
         // un-capture the mouse first
-        if (pPrivate->bs.fMouseCaptured)
+        if (pPrivate->xbs.fMouseCaptured)
         {
             WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-            pPrivate->bs.fMouseCaptured = FALSE;
+            pPrivate->xbs.fMouseCaptured = FALSE;
         }
 
         if (WinIsWindowEnabled(hwnd))
         {
-            pPrivate->bs.fMB1Pressed = FALSE;
+            pPrivate->xbs.fMB1Pressed = FALSE;
 
             // toggle state with each WM_BUTTON1UP
             // pPrivate->fPaintButtonSunk = !pPrivate->fPaintButtonSunk;
@@ -1356,16 +1366,16 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
                                   NULLHANDLE);
                     // unset button sunk state
                     // (no toggle)
-                    pPrivate->bs.fPaintButtonSunk = FALSE;
+                    pPrivate->xbs.fPaintButtonSunk = FALSE;
                 }
                 // else folder: we do nothing, the work for the menu
                 // has been set up in button-down and init-menu
             }
 
-            if (pPrivate->bs.fIgnoreMB1Up)
-                pPrivate->bs.fIgnoreMB1Up = FALSE;
+            if (pPrivate->xbs.fIgnoreMB1Up)
+                pPrivate->xbs.fIgnoreMB1Up = FALSE;
             else
-                pPrivate->bs.fPaintButtonSunk = FALSE;
+                pPrivate->xbs.fPaintButtonSunk = FALSE;
 
             // repaint sunk button state
             WinInvalidateRect(hwnd, NULL, FALSE);
@@ -1389,6 +1399,7 @@ STATIC VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -1479,6 +1490,7 @@ STATIC VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -1486,7 +1498,7 @@ STATIC VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
         if ((HWND)mp2 == pPrivate->hwndMenuMain)
         {
             // main menu is ending:
-            pPrivate->bs.fPaintButtonSunk = FALSE;
+            pPrivate->xbs.fPaintButtonSunk = FALSE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             winhDestroyWindow(&pPrivate->hwndMenuMain);
@@ -1523,6 +1535,7 @@ STATIC BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -1690,6 +1703,7 @@ STATIC MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -1817,7 +1831,7 @@ STATIC MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
         if (!pPrivate->fOpenedWPSContextMenu) // V0.9.11 (2001-04-25) [umoeller]
             // x-button, or cannot build WPS popup (Warp 3),
             // or object broken: show default widget menu
-            mrc = ctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
+            mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, WM_CONTEXTMENU, mp1, mp2);
     }
 
     return mrc;
@@ -1848,6 +1862,7 @@ STATIC MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -1917,6 +1932,7 @@ STATIC VOID OwgtDragLeave(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -1956,6 +1972,7 @@ STATIC VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -2022,6 +2039,7 @@ STATIC VOID OwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
@@ -2053,209 +2071,200 @@ STATIC VOID OwgtDestroy(HWND hwnd)
  *      therefore handles control of the folder content menus.
  *
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added d'n'd support
+ *@@changed V1.0.1 (2003-01-17) [umoeller]: reorganized to cooperate with ctlDefWindowProc
  */
 
 MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
-    switch (msg)
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
+
+    if (msg == WM_CREATE)
     {
-        /*
-         * WM_CREATE:
-         *      as with all widgets, we receive a pointer to the
-         *      XCENTERWIDGET in mp1, which was created for us.
-         *
-         *      The first thing the widget MUST do on WM_CREATE
-         *      is to store the XCENTERWIDGET pointer (from mp1)
-         *      in the QWL_USER window word by calling:
-         *
-         *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
-         *
-         *      We use XCENTERWIDGET.pUser for allocating
-         *      OBJBUTTONPRIVATE for our own stuff.
-         *
-         *      Each widget must write its desired width into
-         *      XCENTERWIDGET.cx and cy.
-         */
+        WinSetWindowPtr(hwnd, QWL_USER, mp1);
+        mrc = OwgtCreate(hwnd, mp1, mp2);
+    }
+    else if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+              && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+            )
+    {
+        switch (msg)
+        {
+            /*
+             * WM_CONTROL:
+             *      process notifications/queries from the XCenter.
+             */
 
-        case WM_CREATE:
-            WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            mrc = OwgtCreate(hwnd, mp1);
-        break;
+            case WM_CONTROL:
+                mrc = (MPARAM)OwgtControl(hwnd, mp1, mp2);
+            break;
 
-        /*
-         * WM_CONTROL:
-         *      process notifications/queries from the XCenter.
-         */
+            /*
+             * WM_PAINT:
+             *
+             */
 
-        case WM_CONTROL:
-            mrc = (MPARAM)OwgtControl(hwnd, mp1, mp2);
-        break;
+            case WM_PAINT:
+                OwgtPaintButton(hwnd);
+            break;
 
-        /*
-         * WM_PAINT:
-         *
-         */
+            /*
+             * WM_BUTTON1DOWN:
+             * WM_BUTTON1UP:
+             *      these show/hide the menu.
+             *
+             *      Showing the menu follows these steps:
+             *          a)  first WM_BUTTON1DOWN hilites the button;
+             *          b)  first WM_BUTTON1UP shows the menu.
+             *
+             *      When the button is pressed again, the open
+             *      menu loses focus, which results in WM_MENUEND
+             *      and destroys the window automatically.
+             */
 
-        case WM_PAINT:
-            OwgtPaintButton(hwnd);
-        break;
+            case WM_BUTTON1DOWN:
+            case WM_BUTTON1DBLCLK:
+                OwgtButton1Down(hwnd,
+                                FALSE);     // real mouse event V0.9.19 (2002-04-17) [umoeller]
+                mrc = (MPARAM)TRUE;     // message processed
+            break;
 
-        /*
-         * WM_BUTTON1DOWN:
-         * WM_BUTTON1UP:
-         *      these show/hide the menu.
-         *
-         *      Showing the menu follows these steps:
-         *          a)  first WM_BUTTON1DOWN hilites the button;
-         *          b)  first WM_BUTTON1UP shows the menu.
-         *
-         *      When the button is pressed again, the open
-         *      menu loses focus, which results in WM_MENUEND
-         *      and destroys the window automatically.
-         */
+            /*
+             * WM_BUTTON1UP:
+             *
+             */
 
-        case WM_BUTTON1DOWN:
-        case WM_BUTTON1DBLCLK:
-            OwgtButton1Down(hwnd,
-                            FALSE);     // real mouse event V0.9.19 (2002-04-17) [umoeller]
-            mrc = (MPARAM)TRUE;     // message processed
-        break;
+            case WM_BUTTON1UP:
+                OwgtButton1Up(hwnd);
+                mrc = (MPARAM)TRUE;     // message processed
+            break;
 
-        /*
-         * WM_BUTTON1UP:
-         *
-         */
+            /*
+             * WM_BUTTON1CLICK:
+             *      swallow this
+             */
 
-        case WM_BUTTON1UP:
-            OwgtButton1Up(hwnd);
-            mrc = (MPARAM)TRUE;     // message processed
-        break;
+            case WM_BUTTON1CLICK:
+                mrc = (MPARAM)TRUE;
+            break;
 
-        /*
-         * WM_BUTTON1CLICK:
-         *      swallow this
-         */
+            /*
+             * WM_INITMENU:
+             *
+             */
 
-        case WM_BUTTON1CLICK:
-            mrc = (MPARAM)TRUE;
-        break;
+            case WM_INITMENU:
+                OwgtInitMenu(hwnd, mp1, mp2);
+            break;
 
-        /*
-         * WM_INITMENU:
-         *
-         */
+            /*
+             * WM_MEASUREITEM:
+             *      this msg is sent only once per owner-draw item when
+             *      PM needs to know its size. This gets sent to us for
+             *      items in folder content menus (if icons are on); the
+             *      height of our items will be the same as with
+             *      non-owner-draw ones, but we need to calculate the width
+             *      according to the item text.
+             *
+             *      (SHORT)mp1 is supposed to contain a "menu identifier",
+             *      but from my testing this contains some random value.
+             *
+             *      Return value: check mnuMeasureItem.
+             */
 
-        case WM_INITMENU:
-            OwgtInitMenu(hwnd, mp1, mp2);
-        break;
+            case WM_MEASUREITEM:
+                mrc = cmnuMeasureItem((POWNERITEM)mp2);
+            break;
 
-        /*
-         * WM_MEASUREITEM:
-         *      this msg is sent only once per owner-draw item when
-         *      PM needs to know its size. This gets sent to us for
-         *      items in folder content menus (if icons are on); the
-         *      height of our items will be the same as with
-         *      non-owner-draw ones, but we need to calculate the width
-         *      according to the item text.
-         *
-         *      (SHORT)mp1 is supposed to contain a "menu identifier",
-         *      but from my testing this contains some random value.
-         *
-         *      Return value: check mnuMeasureItem.
-         */
+            /*
+             * WM_DRAWITEM:
+             *      this msg is sent for each item every time it
+             *      needs to be redrawn. This gets sent to us for
+             *      items in folder content menus (if icons are on).
+             *
+             *      (SHORT)mp1 is supposed to contain a "menu identifier",
+             *      but from my testing this contains some random value.
+             */
 
-        case WM_MEASUREITEM:
-            mrc = cmnuMeasureItem((POWNERITEM)mp2);
-        break;
+            case WM_DRAWITEM:
+                if (cmnuDrawItem(mp1,
+                                 mp2))
+                    mrc = (MRESULT)TRUE;
+            break;
 
-        /*
-         * WM_DRAWITEM:
-         *      this msg is sent for each item every time it
-         *      needs to be redrawn. This gets sent to us for
-         *      items in folder content menus (if icons are on).
-         *
-         *      (SHORT)mp1 is supposed to contain a "menu identifier",
-         *      but from my testing this contains some random value.
-         */
+            /*
+             * WM_MENUEND:
+             *
+             */
 
-        case WM_DRAWITEM:
-            if (cmnuDrawItem(mp1,
-                             mp2))
-                mrc = (MRESULT)TRUE;
-        break;
+            case WM_MENUEND:
+                OwgtMenuEnd(hwnd, mp2);
+                mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
+            break;
 
-        /*
-         * WM_MENUEND:
-         *
-         */
+            /*
+             * WM_COMMAND:
+             *      handle command from menus.
+             */
 
-        case WM_MENUEND:
-            OwgtMenuEnd(hwnd, mp2);
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-        break;
+            case WM_COMMAND:
+                if (!OwgtCommand(hwnd, mp1))
+                    // not processed:
+                    mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
+            break;
 
-        /*
-         * WM_COMMAND:
-         *      handle command from menus.
-         */
+            /*
+             * WM_CONTEXTMENU:
+             *
+             */
 
-        case WM_COMMAND:
-            if (!OwgtCommand(hwnd, mp1))
-                // not processed:
-                mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-        break;
+            case WM_CONTEXTMENU:
+                mrc = OwgtContextMenu(hwnd, mp1, mp2);
+            break;
 
-        /*
-         * WM_CONTEXTMENU:
-         *
-         */
+            /*
+             * DM_DRAGOVER:
+             */
 
-        case WM_CONTEXTMENU:
-            mrc = OwgtContextMenu(hwnd, mp1, mp2);
-        break;
+            case DM_DRAGOVER:
+                mrc = OwgtDragover(hwnd, mp1, mp2);
+            break;
 
-        /*
-         * DM_DRAGOVER:
-         */
+            /*
+             * DM_DRAGLEAVE:
+             *
+             */
 
-        case DM_DRAGOVER:
-            mrc = OwgtDragover(hwnd, mp1, mp2);
-        break;
+            case DM_DRAGLEAVE:
+                OwgtDragLeave(hwnd);
+            break;
 
-        /*
-         * DM_DRAGLEAVE:
-         *
-         */
+            /*
+             * DM_DROP:
+             *
+             */
 
-        case DM_DRAGLEAVE:
-            OwgtDragLeave(hwnd);
-        break;
+            case DM_DROP:
+                OwgtDrop(hwnd, mp1, mp2);
+            break;
 
-        /*
-         * DM_DROP:
-         *
-         */
+            /*
+             * WM_DESTROY:
+             *      clean up. This _must_ be passed on to
+             *      ctrDefWidgetProc.
+             */
 
-        case DM_DROP:
-            OwgtDrop(hwnd, mp1, mp2);
-        break;
+            case WM_DESTROY:
+                OwgtDestroy(hwnd);
+                mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
+            break;
 
-        /*
-         * WM_DESTROY:
-         *      clean up. This _must_ be passed on to
-         *      ctrDefWidgetProc.
-         */
-
-        case WM_DESTROY:
-            OwgtDestroy(hwnd);
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-        break;
-
-        default:
-            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-    } // end switch(msg)
+            default:
+                mrc = ctlDefWindowProc(&pPrivate->xbd.dwd, msg, mp1, mp2);
+        } // end switch(msg)
+    }
 
     return mrc;
 }

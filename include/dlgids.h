@@ -1528,6 +1528,9 @@
 #define ID_SDDI_CONFIRM_TITLE           4326
 #define ID_SDDI_CONFIRM_TEXT            4327    // V0.9.5 (2000-08-10) [umoeller]
 #define ID_SDDI_REBOOTOPT_GROUP         4328
+#ifndef __NOXWPSTARTUP__
+#define ID_SDDI_WPS_RUNSHUTDOWNFDR      4329    // V1.0.1 (2003-01-29) [umoeller]
+#endif
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400

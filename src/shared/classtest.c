@@ -109,7 +109,7 @@ static SOMClass    *G_WPUrl = (SOMClass*)-1;
 VOID ctsSetClassFlags(WPObject *somSelf,
                       PULONG pfl)
 {
-    if (_somIsA(somSelf, _WPFileSystem))
+    /* if (_somIsA(somSelf, _WPFileSystem))     removed V1.0.1 (2003-01-25) [umoeller]
     {
         *pfl = OBJFL_WPFILESYSTEM;
         if (_somIsA(somSelf, _WPFolder))
@@ -117,7 +117,7 @@ VOID ctsSetClassFlags(WPObject *somSelf,
         else if (_somIsA(somSelf, _WPDataFile))
             *pfl |= OBJFL_WPDATAFILE;
     }
-    else if (_somIsA(somSelf, _WPAbstract))
+    else */ if (_somIsA(somSelf, _WPAbstract))
     {
         *pfl = OBJFL_WPABSTRACT;
         if (ctsIsShadow(somSelf))

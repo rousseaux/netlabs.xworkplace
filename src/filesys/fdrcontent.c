@@ -937,7 +937,7 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
  *      properly without hacking into undocumented methods.
  *      Thanks a bunch, IBM.
  *
- *      Here we return FALSE only if
+ *      Here we return TRUE only if
  *
  *      --  we can properly resolve all the methods;
  *
@@ -948,14 +948,12 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized to use wpQueryFldrFilter directly
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: fixed confusing default return value
  */
 
 BOOL fdrIsObjectFiltered(WPFolder *pFolder,
                          WPObject *pObject)
 {
-    BOOL    brc = TRUE;     // if we can't find the filter, make
-                            // the object visible!
-
     WPObject *pFilter;
 
     static xfTD_wpMatchesFilter pwpMatchesFilter = NULL;
@@ -976,11 +974,10 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
             )
        )
     {
-        if (pwpMatchesFilter(pFilter, pObject))
-            brc = FALSE;
+        return !pwpMatchesFilter(pFilter, pObject);
     }
 
-    return brc;
+    return FALSE;    // if we can't find the filter, make the object visible!
 }
 
 /*

@@ -17,10 +17,6 @@
 # Required changes for translating the NLS DLL: three lines below.
 #
 
-# Say hello to yourself.
-!if [@echo +++++ Entering $(MAKEDIR)]
-!endif
-
 # include setup (compiler options etc.)
 !include ..\..\config.in
 !include ..\..\make\setup.in
@@ -62,11 +58,6 @@ HTML2IPF = $(RUN_H2I) -s -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h -i..\
 COPYTO = $(XWPRUNNING)
 
 # DO NOT CHANGE THE FOLLOWING
-
-# Define the suffixes for files which NMAKE will work on.
-# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
-# defining file extensions that NMAKE will recognize.
-.SUFFIXES: .html .ipf .hlp .inf .gif
 
 #
 # Now define inference rules for what to do with certain file

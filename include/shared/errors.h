@@ -29,15 +29,28 @@
 
     /* ******************************************************************
      *
-     *   WPS error codes
+     *   MMPM/2 and WPS error codes
      *
      ********************************************************************/
 
     /*
-        The WPS defines a bunch of WPERR_* values as PM errors (see
-        pmerr.h in the toolkit). Those are values starting with
-        0x1700 (5888) so they apparently do not conflict with the
-        Control Program codes.
+        MMPM/2 defines a bunch of MCIERR_* and more ERROR_* codes,
+        which, according to meerror.h, are all above 5000, with the
+        following ranges:
+
+        --  5000 < rc:  MCIERR_*
+
+        --  5500 < rc:  ERROR_* codes for sync/stream handlers (MEBASE)
+
+        --  6500 < rc:  MMIOERR_BASE
+
+        --  7000 < rc:  MIDIERR_BASE
+
+        In addition, the WPS defines a bunch of WPERR_* values as
+        PM errors (see pmerr.h in the toolkit). Those are values starting
+        with 0x1700 (5888) so they apparently do not conflict with the
+        Control Program codes either, but I'm not sure about the MMPM
+        codes above.
     */
 
     /* ******************************************************************
@@ -57,6 +70,7 @@
     // --   include\helpers\prfh.h defines ERROR_PRF_FIRST as           42000
     // --   include\helpers\dialog.h defines ERROR_DLG_FIRST as         43000
     // --   include\helpers\regexp.h defines ERROR_REGEXP_FIRST as      44000
+    // --   include\helpers\mmpmh defines ERROR_MMH_FIRST as            45000
 
     #define ERROR_FOPS_FIRST                  (ERROR_XWP_FIRST + 1)
     #define FOPSERR_NOT_HANDLED_ABORT         (ERROR_XWP_FIRST + 1)

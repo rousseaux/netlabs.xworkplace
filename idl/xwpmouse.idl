@@ -7,8 +7,11 @@
  *      and the respective metaclasses.
  *
  *      See src\classes\xwpmouse.c for details.
- *
+ */
+
+/*
  *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -48,46 +51,50 @@ interface XWPMouse : WPMouse
     ULONG xwpAddMouseMappings2Page(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        releaseorder:
+            xwpAddMouseMovementPage,
+            xwpAddMouseMappings2Page;
 
-    releaseorder: xwpAddMouseMovementPage,
-                  xwpAddMouseMappings2Page;
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xms_;
+        externalstem = xms;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpmouse;           //# specifies the filestem for sc-generated files
+        metaclass = M_XWPMouse;
+        dllname = "xfldr.dll";
+        callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
-    externalprefix = xms_;
-    externalstem = xms;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpmouse;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPMouse;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+        /*
+         * The following is forced into the .H file:
+         *
+         */
 
-    /*
-     * Internal instance variables for XWPMouse:
-     *
-     */
+        passthru C_h =
+"";
 
-    /*
-     * WPMouse methods overridden by XWPMouse:
-     *
-     */
+        /*
+         * Internal instance variables for XWPMouse:
+         *
+         */
 
-    wpFilterPopupMenu: override;
+        /*
+         * WPMouse methods overridden by XWPMouse:
+         *
+         */
 
-    wpAddMouseCometPage: override;
-    wpAddMouseMappingsPage: override;
+        wpFilterPopupMenu: override;
 
-#ifdef __PRIVATE__
-
+        wpAddMouseCometPage: override;
+        wpAddMouseMappingsPage: override;
+    };
 #endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
 };
 
 //#
@@ -100,36 +107,35 @@ interface M_XWPMouse : M_WPMouse
 {
 
 #ifdef __SOMIDL__
-  implementation {
+    implementation
+    {
+        /*
+         * Class Modifiers:
+         *
+         */
 
-    /*
-     * Class Modifiers:
-     *
-     */
+        externalprefix = xmsM_;
+        externalstem = xmsM;
+        functionprefix = xmsM_;
+        majorversion = 1;
+        minorversion = 1;
+        filestem = xwpmouse;           //# specifies the filestem for sc-generated files
+        dllname = "xfldr.dll";
+        callstyle = oidl;
 
-    externalprefix = xmsM_;
-    externalstem = xmsM;
-    functionprefix = xmsM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xwpmouse;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
+        /*
+         * Internal instance variables:
+         *
+         */
 
-    /*
-     * Internal instance variables:
-     *
-     */
+        /*
+         * M_WPMouse methods overridden by M_XWPMouse:
+         *
+         */
 
-    /*
-     * M_WPMouse methods overridden by M_XWPMouse:
-     *
-     */
-
-    wpclsInitData: override;
-
-  };
-#endif /* __SOMIDL__ */
+        wpclsInitData: override;
+    };
+#endif
 };
 
 

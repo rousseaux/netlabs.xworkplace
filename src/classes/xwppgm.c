@@ -377,8 +377,12 @@ SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
+ *      made dormant (via wpMakeDormant) or being deleted for
+ *      good (via wpFree). All allocated in-memory resources
+ *      should be freed here, but to destroy the physical
+ *      representation of the object, override wpDestroyObject
+ *      instead.
+ *
  *      The parent method must always be called last.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
@@ -1667,7 +1671,7 @@ SOM_Scope WPObject*  SOMLINK xpg_wpCopyObject(XWPProgram *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
+ *      this M_WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
@@ -1695,7 +1699,7 @@ SOM_Scope void  SOMLINK xpgM_wpclsInitData(M_XWPProgram *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method must return information
+ *      this M_WPObject class method must return information
  *      about how to build the default icon for objects
  *      of a class. This gets called from various other
  *      methods whenever a class default icon is needed;

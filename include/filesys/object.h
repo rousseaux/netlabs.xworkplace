@@ -106,13 +106,15 @@
                                 // object's folder
         WPObject            *apObjectsUnknown[4];
         ULONG               ulUnknown2a;
-        PUSEITEM            pUseItemFirst;
+        PUSEITEM            puiFirst;
                                 // first item of object's useitem linklist
         ULONG               aulUnknown1[7];
         ULONG               cLocks;
                                 // current object lock count (wpLockObject,
                                 // wpUnlockObject); 0 if not locked
-        ULONG               aulUnknown2[3];
+        ULONG               ulUnknown3a,
+                            fAutoInsert,
+                            ulUnknown3c;
         HEV                 hevViewItems;
                                 // event semaphore created in wpAddToObjUseList,
                                 // I have no idea what this is for
@@ -124,7 +126,11 @@
                                 // object's help panel ID, as returned by
                                 // wpQueryDefaultHelp; if 0, wpclsQueryDefaultHelp
                                 // is used instead, apparently
-        ULONG               ulUnknown3;
+        ULONG               flState;
+                                // a bunch of undocumented WPS flags which are
+                                // returned by wpQueryState and set by wpSetState
+                                // and wpModifyState (all undocumented)
+                                #define STATEFL_FILTERED        0x0040
         ULONG               flStyle;
                                 // object's style, as returned by wpQueryStyle,
                                 // if not overridden by subclasses; see wpobject.h
@@ -146,8 +152,7 @@
         PSZ                 pszHelpLibrary;
                                 // help library, as returned by wpQueryDefaultHelp
         PSZ                 pszObjectID;
-                                // object ID, if any, as returned by
-                                // wpQueryObjectID
+                                // object ID, if any, as returned by wpQueryObjectID
         ULONG               ulUnknown4;
         ULONG               ulUnknown5;
         ULONG               ulUnknown6;
@@ -155,31 +160,36 @@
 
     #pragma pack()
 
+    // flags for quick class testing done on object initialization
+    // to avoid having to keep calling _somIsA
     #define OBJFL_WPFILESYSTEM              0x00000001
     #define OBJFL_WPFOLDER                  0x00000002
     #define OBJFL_WPDATAFILE                0x00000004  // V0.9.20 (2002-07-31) [umoeller]
+    #define OBJFL_WPICONORPOINTER           0x00000008  // V1.0.1 (2003-01-25) [umoeller]
     #define OBJFL_WPABSTRACT                0x00000010  // V0.9.19 (2002-04-24) [umoeller]
     #define OBJFL_WPSHADOW                  0x00000020
     #define OBJFL_WPPROGRAM                 0x00000040
 
     #define OBJFL_INITIALIZED               0x00000100
+        // set after wpObjectReady has been called
 
     #define OBJFL_GLOBALICON                0x00000200  // V0.9.20 (2002-07-25) [umoeller]
+        // object is using global cross-process PM icon
     #define OBJFL_LAZYLOADINGICON           0x00000400  // V0.9.20 (2002-07-25) [umoeller]
+        // object is currently in the lazy-loading queue
+    #define OBJFL_HASICONEA                 0x00000800  // V1.0.1 (2003-01-25) [umoeller]
+        // data file object has .ICON EA
 
-    #define OBJFL_FOLDERVIEW1PAGING         0x00000800  // V1.0.0 (2002-08-31) [umoeller]
+    #define OBJFL_FOLDERVIEW1PAGING         0x00001000  // V1.0.0 (2002-08-31) [umoeller]
+
+    #define OBJFL_FILTERSTESTED             0x00002000  // V1.0.1 (2003-01-25) [umoeller]
+        // object has already been tested against its folder's filter
+
+    #define OBJFL_OWNERDRAWTHUMBNAIL        0x00004000  // V1.0.1 (2003-01-29) [umoeller]
+        // object wants to create its own thumbnail
 
     #define OBJLIST_RUNNINGSTORED           0x00010000
     #define OBJLIST_CONFIGFOLDER            0x00020000
-
-#if 0       // these flags removed V1.0.1 (2002-12-11) [umoeller]
-    #ifndef __NOFOLDERCONTENTS__
-        #define OBJLIST_FAVORITEFOLDER          0x00040000
-    #endif
-    #ifndef __NOQUICKOPEN__
-        #define OBJLIST_QUICKOPENFOLDER         0x00080000
-    #endif
-#endif
 
     #define OBJLIST_HANDLESCACHE            0x00100000 // V0.9.9 (2001-04-02) [umoeller]
     #define OBJLIST_DIRTYLIST               0x00200000 // V0.9.11 (2001-04-18) [umoeller]
@@ -252,55 +262,6 @@
     VOID objReady(WPObject *somSelf,
                   ULONG ulCode,
                   WPObject* refObject);
-
-    VOID objRefreshUseItems(WPObject *somSelf,
-                            PSZ pszNewTitleCopy,
-                            HPOINTER hptrNewIcon);
-
-    /* ******************************************************************
-     *
-     *   Object linked lists
-     *
-     ********************************************************************/
-
-    #if 0 // LINKLIST_HEADER_INCLUDED        V1.0.1 (2002-12-08) [umoeller]
-
-        /*
-         *@@ OBJECTLIST:
-         *      encapsulation for object lists, for
-         *      use with the obj* list APIs.
-         *
-         *      See objAddToList for details.
-         *
-         *@@added V0.9.9 (2001-03-27) [umoeller]
-         */
-
-        typedef struct _OBJECTLIST
-        {
-            LINKLIST    ll;
-            BOOL        fLoaded;
-        } OBJECTLIST, *POBJECTLIST;
-
-        extern OBJECTLIST   G_llFavoriteFolders,            // xfldr.c
-                            G_llQuickOpenFolders;           // xfldr.c
-            // moved declarations here from folder.h
-            // V0.9.16 (2001-10-19) [umoeller]
-
-        BOOL objAddToList(WPObject *somSelf,
-                          POBJECTLIST pllFolders,
-                          BOOL fInsert,
-                          PCSZ pcszIniKey,
-                          ULONG ulListFlag);
-
-        BOOL objIsOnList(WPObject *somSelf,
-                         POBJECTLIST pllFolders);
-
-        WPObject* objEnumList(POBJECTLIST pllFolders,
-                              WPObject *pFolder,
-                              PCSZ pcszIniKey,
-                              ULONG ulListFlag);
-
-    #endif
 
     /* ******************************************************************
      *
