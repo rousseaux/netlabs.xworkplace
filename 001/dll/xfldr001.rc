@@ -709,7 +709,8 @@ BEGIN
 
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
-    ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries"
+/*     this item removed with V0.9.16
+    ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries" */
 /* the following item added with V0.9.5 (2000-08-14) [umoeller] */
     ID_XCSI_REPLHANDLES                 "Replace WPS handles management"
     ID_XCSI_REPLFILEEXISTS              "Replace ""File exists"" dialog"
@@ -861,6 +862,16 @@ BEGIN
 
     /* the following have been added with V0.9.16 */
     ID_XSSI_WPSFDRVIEWPAGE              "Folder ~views"
+
+    ID_XFSI_FDLG_DRIVES                 "~Drives:"
+    ID_XFSI_FDLG_FILESLIST              "Files ~list:"
+    ID_XFSI_FDLG_TYPES                  "Types:"
+    ID_XFSI_FDLG_DIRECTORY              "Directory:"
+    ID_XFSI_FDLG_WORKING                "Working..."
+    ID_XFSI_FDLG_FILE                   "~File:"
+    ID_XFSI_FDLG_SAVEFILEAS             "Save File As..."
+    ID_XFSI_FDLG_OPENFILE               "Open File..."
+    ID_XFSI_FDLG_ALLTYPES               "<All types>"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -971,6 +982,7 @@ BEGIN
     ID_SDDI_APMSYS_TXT                  "APM.SYS driver:"
     ID_SDDI_APMSYS                      "unknown"
     ID_SDDI_SAVEINIS_TXT                "Save INI files:"
+    ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 on Desktop starts shutdown"
 
     /* strings formerly in ID_XSD_DTP_STARTUP */
     ID_XSDI_DTP_LOGOGROUP               "Workplace Shell boot logo"

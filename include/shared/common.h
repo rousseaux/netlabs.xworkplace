@@ -719,6 +719,7 @@
     #define XSD_ANIMATE_REBOOT      0x080000     // added V0.9.3 (2000-05-22) [umoeller]
     #define XSD_EMPTY_TRASH         0x100000     // added V0.9.4 (2000-08-03) [umoeller]
     #define XSD_WARPCENTERFIRST     0x200000     // added V0.9.7 (2000-12-08) [umoeller]
+    #define XSD_CANDESKTOPALTF4     0x400000     // added V0.9.16 (2002-01-04) [umoeller]
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
@@ -775,7 +776,7 @@
 #ifndef __ALWAYSREPLACEICONPAGE__
         ReplaceIconPage,
 #endif
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
         ReplaceFileExists,
 #endif
 #ifndef __ALWAYSFIXCLASSTITLES__
@@ -786,6 +787,26 @@
 #endif
 #ifndef __NEVERNEWFILEDLG__
         NewFileDlg,
+#endif
+#ifndef __NOXSHUTDOWN__
+        XShutdown,
+        RestartDesktop,
+#endif
+#ifndef __ALWAYSEXTSORT__
+        ExtendedSorting,
+#endif
+#ifndef __ALWAYSHOOK__
+        XWPHook,
+#endif
+#ifndef __NEVEREXTASSOCS__
+        ExtAssocs,
+#endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+        ReplaceDriveNotReady,
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        TrashDelete,
+        ReplaceTrueDelete,
 #endif
         TurboFolders,            // warning: this will return the setting
                                  // that was once determined on WPS startup
@@ -901,9 +922,9 @@
                     AddCopyFilenameItem;
                         // default setting for "Copy filename" (XFldDataFile)
                         // can be overridden in XFolder instance settings
-        ULONG       ulXShutdownFlags;
+        ULONG       __flXShutdown;
                         // XSD_* shutdown settings
-        ULONG       NoWorkerThread,
+        ULONG       __ulRemoved3, // was: NoWorkerThread,
                         // "Paranoia" page
                     __fNoSubclassing,
                         // "Paranoia" page
@@ -936,11 +957,11 @@
                         // status bar colors; can be changed via drag'n'drop
         ULONG       TemplatesReposition;
                         // reposition new objects after creating from template
-        USHORT      usLastRebootExt;
+        USHORT      __usLastRebootExt;
                         // XShutdown: last extended reboot item
         ULONG       AddSelectSomeItem,
                         // XFolder: enable "Select by name"
-                    ExtFolderSort,
+                    __fExtFolderSort,
                         // V0.9.0, was: ReplaceSort;
                         // enable XFolder extended sorting (XWPSetup)
                     AlwaysSort,
@@ -982,7 +1003,7 @@
                     __fReplaceFilePage,
                         // XFolder/XFldDataFile: replace three "File" pages
                         // into one
-                    fExtAssocs,
+                    __fExtAssocs,
                         // XFldDataFile/XFldWPS: extended associations
 
                     // Desktop menu items
@@ -996,9 +1017,9 @@
                     _ulRemoved4, // fIgnoreFilters,
                         // XFldDataFile/XFldWPS: extended associations
                     fMonitorCDRoms,
-                    fRestartWPS,
+                    __fRestartWPS,
                         // XWPSetup: enable "Restart Desktop"
-                    fXShutdown,
+                    __fXShutdown,
                         // XWPSetup: enable XShutdown
 
                     __fEnableStatusBars,
@@ -1036,13 +1057,13 @@
                         // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
 
         // trashcan settings
-                    fTrashDelete,
+                    __fTrashDelete,
                     __fRemoved1, // fTrashEmptyStartup,
                     __fRemoved2; // fTrashEmptyShutdown;
         ULONG       ulTrashConfirmEmpty;
                         // TRSHEMPTY_* flags
 
-        BYTE        fReplDriveNotReady;
+        BYTE        __fReplDriveNotReady;
                         // XWPSetup: replace "Drive not ready" dialog
 
         ULONG       ulIntroHelpShown;
@@ -1050,7 +1071,7 @@
                         // an introductory help page has been shown
                         // the first time it's been opened
 
-        BYTE        fEnableXWPHook;
+        BYTE        __fEnableXWPHook;
                         // XWPSetup: enable hook (enables object hotkeys,
                         // mouse movement etc.)
 
@@ -1075,7 +1096,7 @@
         BYTE        fNoFreakyMenus;
                         // on XWPSetup "Paranoia" page
 
-        BYTE        fReplaceTrueDelete;
+        BYTE        __fReplaceTrueDelete;
                         // replace "true delete" also?
                         // on XWPSetup "Features" page
 
@@ -1346,6 +1367,8 @@
      *
      ********************************************************************/
 
+    BOOL cmnIsStandardIcon(HPOINTER hptrIcon);
+
     #define STDICON_PM                  1
     #define STDICON_WIN16               2
     #define STDICON_WIN32               3
@@ -1357,8 +1380,12 @@
     #define STDICON_DRIVER              9
     #define STDICON_PROG_UNKNOWN        10
     #define STDICON_DATAFILE            11
+    #define STDICON_TRASH_EMPTY         12
+    #define STDICON_TRASH_FULL          13
 
-    HPOINTER cmnGetStandardIcon(ULONG ulStdIcon);
+    APIRET cmnGetStandardIcon(ULONG ulStdIcon,
+                              HPOINTER *phptr,
+                              PICONINFO pIconInfo);
 
     /********************************************************************
      *
@@ -1691,7 +1718,7 @@
                                        ULONG flStyle);
 
     ULONG XWPENTRY cmnDosErrorMsgBox(HWND hwndOwner,
-                                     CHAR cDrive,
+                                     PSZ pszReplString,
                                      PCSZ pcszTitle,
                                      PCSZ pcszPrefix,
                                      APIRET arc,
@@ -1702,6 +1729,7 @@
     #ifdef SOM_WPObject_h
         ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
                                     WPObject *pProgram,
+                                    PSZ pszFailingName,
                                     APIRET arc);
     #endif
 

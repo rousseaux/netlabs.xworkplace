@@ -40,6 +40,29 @@
 
     #ifdef INCL_WINPROGRAMLIST
         PPROGDETAILS progQueryDetails(WPObject *pProgObject);
+
+        BOOL progFillProgDetails(PPROGDETAILS pProgDetails,
+                                 ULONG ulProgType,
+                                 ULONG fbVisible,
+                                 PSWP pswpInitial,
+                                 PCSZ pcszTitle,
+                                 PCSZ pcszExecutable,
+                                 USHORT usStartupDirHandle,
+                                 PCSZ pcszParameters,
+                                 PCSZ pcszEnvironment,
+                                 PULONG pulSize);
+    #endif
+
+    #ifdef DOSH_HEADER_INCLUDED
+
+        ULONG progQueryProgType(PCSZ pszFullFile,
+                                PVOID pvExec);
+
+        APIRET progFindIcon(PEXECUTABLE pExec,
+                            ULONG ulAppType,
+                            HPOINTER *phptr,
+                            PICONINFO pIconInfo,
+                            PBOOL pfNotDefaultIcon);
     #endif
 
     /* ******************************************************************
@@ -71,7 +94,9 @@
     APIRET progOpenProgram(WPObject *pProgObject,
                            WPFileSystem *pArgDataFile,
                            ULONG ulMenuID,
-                           HAPP *phapp);
+                           HAPP *phapp,
+                           ULONG cbFailingName,
+                           PSZ pszFailingName);
     #endif
 
     /* ******************************************************************

@@ -570,6 +570,9 @@
                      BOOL fFoldersOnly,
                      PBOOL pfExit);
 
+    BOOL fdrCheckIfPopulated(WPFolder *somSelf,
+                             BOOL fFoldersOnly);
+
     /* ******************************************************************
      *
      *   Awake-objects test

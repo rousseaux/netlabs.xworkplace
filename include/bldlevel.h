@@ -22,4 +22,5 @@
 #define BLDLEVEL_VERSION        "0.9.16"
 #define BLDLEVEL_INFO           "to be overridden"
 
+#define CONTACT_ADDRESS        "xworkplace-user@yahoogroups.com"
 

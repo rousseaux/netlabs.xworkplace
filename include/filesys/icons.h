@@ -37,14 +37,20 @@
                              HPOINTER *phptr);
 
     APIRET icoLoadICOFile(PCSZ pcszFilename,
-                          HPOINTER *phptr);
+                          HPOINTER *phptr,
+                          PULONG pcbIconData,
+                          PBYTE pbIconData);
 
     APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,
-                                   HPOINTER *phptr);
+                                   HPOINTER *phptr,
+                                   PULONG pcbIconData,
+                                   PBYTE pbIconData);
 
     #ifdef DOSH_HEADER_INCLUDED
         APIRET icoLoadExeIcon(PEXECUTABLE pExec,
-                              HPOINTER *phptr);
+                              HPOINTER *phptr,
+                              PULONG pcbIconData,
+                              PBYTE pbIconData);
     #endif
 
     /* ******************************************************************

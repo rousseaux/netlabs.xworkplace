@@ -806,7 +806,7 @@ BEGIN
         AUTOCHECKBOX    "Disable undocumented menu functions",
                         ID_XCDI_NOFREAKYMENUS, 10, 84, 190, 8, BS_AUTOSIZE
         AUTOCHECKBOX    "Disable background ~Worker thread",
-                        ID_XCDI_NOWORKERTHREAD, 10, 76, 190, 8
+                        -1, 10, 76, 190, 8
         AUTOCHECKBOX    "Use ~8.Helv font", ID_XCDI_USE8HELVFONT, 10, 68,
                         190, 8, BS_AUTOSIZE
         AUTOCHECKBOX    "Disable ex~ception beeps", ID_XCDI_NOEXCPTBEEPS, 10,

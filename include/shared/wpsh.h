@@ -98,11 +98,6 @@
     #endif
 
     #ifdef SOM_WPFolder_h
-        BOOL wpshPopulateTree(WPFolder *somSelf);
-
-        BOOL wpshCheckIfPopulated(WPFolder *somSelf,
-                                  BOOL fFoldersOnly);
-
         double wpshQueryDiskFreeFromFolder(WPFolder *somSelf);
 
         double wpshQueryDiskSizeFromFolder(WPFolder *somSelf);

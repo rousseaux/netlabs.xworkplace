@@ -32,9 +32,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Expanded object lists                                          *
-     *                                                                  *
+     *
+     *   Expanded object lists
+     *
      ********************************************************************/
 
     #ifdef LINKLIST_HEADER_INCLUDED
@@ -77,10 +77,49 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   "File exists" (title clash) dialog                             *
-     *                                                                  *
+     *
+     *   "File exists" (title clash) dialog
+     *
      ********************************************************************/
+
+    /*
+     * Return codes for wpConfirmObjectTitle:
+     *      only def'd in the Warp 4 Toolkit
+     *      (and partly in wpsystem.h).
+     */
+
+    #ifndef NAMECLASH_CANCEL
+        #define NAMECLASH_CANCEL    0
+    #endif
+    #ifndef NAMECLASH_NONE
+        #define NAMECLASH_NONE      1
+    #endif
+    #ifndef NAMECLASH_RENAME
+        #define NAMECLASH_RENAME    2
+    #endif
+    #ifndef NAMECLASH_APPEND
+        #define NAMECLASH_APPEND    4
+    #endif
+    #ifndef NAMECLASH_REPLACE
+        #define NAMECLASH_REPLACE   8
+    #endif
+
+    #ifndef NO_NAMECLASH_RENAME
+        #define NO_NAMECLASH_RENAME         0x10
+    #endif
+    #ifndef NO_NAMECLASH_APPEND
+        #define NO_NAMECLASH_APPEND         0x20
+    #endif
+    #ifndef NO_NAMECLASH_REPLACE
+        #define NO_NAMECLASH_REPLACE        0x40
+    #endif
+    #ifndef NO_NAMECLASH_DIALOG
+        #define NO_NAMECLASH_DIALOG         0x80
+    #endif
+
+    #define NAMECLASH_RENAMING            0x100
+
+    #define NO_NAMECLASH_RENAMEOLD          0x100000
 
     ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                                  WPFolder* Folder,
@@ -93,9 +132,9 @@
                                  WPFolder *pTargetFolder);
 
     /********************************************************************
-     *                                                                  *
-     *   Generic file tasks framework                                   *
-     *                                                                  *
+     *
+     *   Generic file tasks framework
+     *
      ********************************************************************/
 
     // file operation identifiers
@@ -298,9 +337,9 @@
     BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl);
 
     /********************************************************************
-     *                                                                  *
-     *   Generic file operations implementation                         *
-     *                                                                  *
+     *
+     *   Generic file operations implementation
+     *
      ********************************************************************/
 
     /*
@@ -336,9 +375,9 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   Trash can file operations implementation                       *
-     *                                                                  *
+     *
+     *   Trash can file operations implementation
+     *
      ********************************************************************/
 
     FOPSRET fopsStartDeleteFromCnr(HAB hab,

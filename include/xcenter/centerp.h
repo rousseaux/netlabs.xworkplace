@@ -182,6 +182,31 @@
      *
      ********************************************************************/
 
+    /*
+     *@@ WIDGETPOSITION:
+     *      specifies a widget position in an XCenter.
+     *
+     *      If the widget is a "root" widget (i.e. not
+     *      in a tray, the first two fields are -1,
+     *      and ulWidgetIndex specifies the index of
+     *      the widget in the XCenter (with 0 being the
+     *      leftmost widget).
+     *
+     *      Otherwise (if the widget is in a tray),
+     *      the first two fields specify the index of
+     *      the tray widget and the tray, and ulWidgetIndex
+     *      specifies the index of the widget in that tray.
+     *
+     *@@added V0.9.16 (2001-12-31) [umoeller]
+     */
+
+    typedef struct _WIDGETPOSITION
+    {
+        ULONG   ulTrayWidgetIndex,      // tray widget index or -1
+                ulTrayIndex,            // tray index or -1
+                ulWidgetIndex;          // index of widget in tray or in XCenter
+    } WIDGETPOSITION, *PWIDGETPOSITION;
+
     #ifdef LINKLIST_HEADER_INCLUDED
 
         XCRET XWPENTRY ctrpCreateWidgetSetting(XCenter *somSelf,
@@ -194,9 +219,7 @@
                                                PULONG pulNewWidgetIndex);
 
         XCRET ctrpFindWidgetSetting(XCenter *somSelf,
-                                    ULONG ulTrayWidgetIndex,
-                                    ULONG ulTrayIndex,
-                                    ULONG ulWidgetIndex,
+                                    PWIDGETPOSITION pPosition,
                                     PPRIVATEWIDGETSETTING *ppSetting,
                                     PXCENTERWIDGET *ppViewData);
 
@@ -477,9 +500,7 @@
 
         VOID ctrpShowSettingsDlg(XCenter *somSelf,
                                  HWND hwndOwner,
-                                 ULONG ulTrayWidgetIndex,
-                                 ULONG ulTrayIndex,
-                                 ULONG ulWidgetIndex);
+                                 PWIDGETPOSITION pPosition);
 
     /* ******************************************************************
      *
@@ -539,9 +560,7 @@
 
     ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                                        HWND hwndWidget,
-                                       PULONG pulTrayWidgetIndex,
-                                       PULONG pulTrayIndex,
-                                       PULONG pulWidgetIndex);
+                                       PWIDGETPOSITION pPosition);
 
     BOOL ctrpInsertWidget(XCenter *somSelf,
                           ULONG ulBeforeIndex,

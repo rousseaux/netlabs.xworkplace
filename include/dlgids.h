@@ -663,7 +663,8 @@
 #ifndef __ALWAYSSUBCLASS__
 #define ID_XCDI_NOSUBCLASSING           1163
 #endif
-#define ID_XCDI_NOWORKERTHREAD          1164
+// #define ID_XCDI_NOWORKERTHREAD          1164
+        // removed this setting V0.9.16 (2001-01-04) [umoeller]
 #define ID_XCDI_USE8HELVFONT            1165
 #define ID_XCDI_NOEXCPTBEEPS            1166
 #define ID_XCDI_WORKERPRTY_SLIDER       1167
@@ -1010,45 +1011,6 @@
 #define ID_XSDI_DTP_NUMLOCKON           2122  // added V0.9.1 (2000-02-09) [umoeller]
 #define ID_XSDI_DTP_WRITEXWPSTARTLOG    2123  // added V0.9.14 (2001-08-21) [umoeller]
 
-// XFldDesktop "Shutdown" page (V0.9.0)
-// #define ID_XSD_DTP_SHUTDOWN             2125     // removed V0.9.16 (2001-10-08) [umoeller]
-#define ID_SDDI_REBOOT                  2126
-#define ID_SDDI_ANIMATE_SHUTDOWN        2127
-#define ID_SDDI_ANIMATE_REBOOT          2128
-#define ID_SDDI_APMPOWEROFF             2129
-#define ID_SDDI_DELAY                   2130
-#define ID_SDDI_CONFIRM                 2131
-#define ID_SDDI_WARPCENTERFIRST         2132
-#define ID_SDDI_AUTOCLOSEVIO            2133
-#define ID_SDDI_LOG                     2134
-
-#define ID_SDDI_CREATESHUTDOWNFLDR      2135
-#define ID_SDDI_SHOWSTARTUPPROGRESS     2136
-
-#define ID_SDDI_STARTUP_INITDELAY_TXT1  2137
-#define ID_SDDI_STARTUP_INITDELAY_SLID  2138
-#define ID_SDDI_STARTUP_INITDELAY_TXT2  2139
-#define ID_SDDI_STARTUP_OBJDELAY_TXT1   2140
-#define ID_SDDI_STARTUP_OBJDELAY_SLID   2141
-#define ID_SDDI_STARTUP_OBJDELAY_TXT2   2142
-#define ID_SDDI_STARTUP_REBOOTSONLY     2143
-#define ID_SDDI_STARTUP_EVERYWPSRESTART 2144
-
-#define ID_SDDI_REBOOTEXT               2145
-#define ID_SDDI_AUTOCLOSEDETAILS        2146
-#define ID_SDDI_APMVERSION              2147
-#define ID_SDDI_APMVERSION_TXT          2148
-#define ID_SDDI_APMSYS                  2149
-#define ID_SDDI_APMSYS_TXT              2150
-
-#ifndef __EASYSHUTDOWN__
-#define ID_SDDI_SAVEINIS_TXT            2151
-#define ID_SDDI_SAVEINIS_LIST           2152
-#endif
-
-#define ID_SDDI_SHUTDOWNGROUP           2153        // V0.9.16 (2001-10-08) [umoeller]
-#define ID_SDDI_SHAREDGROUP             2154
-
 // XFldDesktop "Archives" replacement page (V0.9.0)
 // #define ID_XSD_DTP_ARCHIVES             2155     // removed V0.9.16 (2001-11-22) [umoeller]
 #define ID_XSDI_ARC_CRITERIA_GROUP      2155        // V0.9.16 (2001-11-22) [umoeller]
@@ -1087,6 +1049,47 @@
 #define ID_XSDI_ACL_STORE               2185    // added V0.9.1 (99-12-10)
 
 #define ID_XSDI_PARTITIONSFIRST         2190    // menu item of first submenu on "Partitions" button (V0.9.0)
+
+// XFldDesktop "Shutdown" page (V0.9.0)
+// all IDs raised V0.9.16 (2002-01-04) [umoeller]
+#define ID_SDDI_REBOOT                  2200
+#define ID_SDDI_ANIMATE_SHUTDOWN        2201
+#define ID_SDDI_ANIMATE_REBOOT          2202
+#define ID_SDDI_APMPOWEROFF             2203
+#define ID_SDDI_DELAY                   2204
+#define ID_SDDI_CONFIRM                 2205
+#define ID_SDDI_WARPCENTERFIRST         2206
+#define ID_SDDI_AUTOCLOSEVIO            2207
+#define ID_SDDI_LOG                     2208
+
+#define ID_SDDI_CREATESHUTDOWNFLDR      2209
+#define ID_SDDI_SHOWSTARTUPPROGRESS     2210
+
+#define ID_SDDI_STARTUP_INITDELAY_TXT1  2211
+#define ID_SDDI_STARTUP_INITDELAY_SLID  2212
+#define ID_SDDI_STARTUP_INITDELAY_TXT2  2213
+#define ID_SDDI_STARTUP_OBJDELAY_TXT1   2214
+#define ID_SDDI_STARTUP_OBJDELAY_SLID   2215
+#define ID_SDDI_STARTUP_OBJDELAY_TXT2   2216
+#define ID_SDDI_STARTUP_REBOOTSONLY     2217
+#define ID_SDDI_STARTUP_EVERYWPSRESTART 2218
+
+#define ID_SDDI_REBOOTEXT               2219
+#define ID_SDDI_AUTOCLOSEDETAILS        2220
+#define ID_SDDI_APMVERSION              2221
+#define ID_SDDI_APMVERSION_TXT          2222
+#define ID_SDDI_APMSYS                  2223
+#define ID_SDDI_APMSYS_TXT              2224
+
+#ifndef __EASYSHUTDOWN__
+#define ID_SDDI_SAVEINIS_TXT            2225
+#define ID_SDDI_SAVEINIS_LIST           2226
+#endif
+
+#define ID_SDDI_SHUTDOWNGROUP           2227        // V0.9.16 (2001-10-08) [umoeller]
+#define ID_SDDI_SHAREDGROUP             2228
+
+#define ID_SDDI_CANDESKTOPALTF4         2229        // V0.9.16 (2002-01-04) [umoeller]
 
 /******************************************
  * XWPTrashCan (V0.9.0)                   *
@@ -1972,25 +1975,36 @@
 #ifndef __ALWAYSFDRHOTKEYS__
 #define ID_XCSI_ENABLEFOLDERHOTKEYS     6013
 #endif
+#ifndef __ALWAYSEXTSORT__
 #define ID_XCSI_EXTFOLDERSORT           6014
+#endif
 #define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #ifndef __ALWAYSREPLACEARCHIVING__
 #define ID_XCSI_ARCHIVING               6021
 #endif
+#ifndef __NOXSHUTDOWN__
 #define ID_XCSI_RESTARTWPS              6022
 #define ID_XCSI_XSHUTDOWN               6023
+#endif
 
 #define ID_XCSI_FILEOPERATIONS          6040
+#ifndef __NEVEREXTASSOCS__
 #define ID_XCSI_EXTASSOCS               6041
-#define ID_XCSI_CLEANUPINIS             6042
-#ifndef __NOREPLACEFILEEXISTS__
+#endif
+// #define ID_XCSI_CLEANUPINIS             6042
+            // disabled for now
+#ifndef __ALWAYSREPLACEFILEEXISTS__
 #define ID_XCSI_REPLFILEEXISTS          6043
 #endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
 #define ID_XCSI_REPLDRIVENOTREADY       6044
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
 #define ID_XCSI_XWPTRASHCAN             6045
 #define ID_XCSI_REPLACEDELETE           6046
+#endif
 #define ID_XCSI_REPLHANDLES             6047
 #define ID_XCSI_REPLACEREFRESH          6048
 #ifndef __NEVERNEWFILEDLG__
@@ -1998,7 +2012,9 @@
 #endif
 
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
+#ifndef __ALWAYSHOOK__
 #define ID_XCSI_XWPHOOK                 6051
+#endif
 #define ID_XCSI_ANIMOUSE                6052
 #ifndef __ALWAYSOBJHOTKEYS__
 #define ID_XCSI_GLOBALHOTKEYS           6053
@@ -2127,6 +2143,17 @@
 #define ID_CRSI_ENTERRENAMETRAY         6192           // "Please enter a new name for this tray:"
 
 #define ID_XSSI_WPSFDRVIEWPAGE          6193           // "Folder views"
+
+// the following added with V0.9.16 (2002-01-01) [umoeller]
+#define ID_XFSI_FDLG_DRIVES             6194
+#define ID_XFSI_FDLG_FILESLIST          6195
+#define ID_XFSI_FDLG_TYPES              6196
+#define ID_XFSI_FDLG_DIRECTORY          6197
+#define ID_XFSI_FDLG_WORKING            6198
+#define ID_XFSI_FDLG_FILE               6199
+#define ID_XFSI_FDLG_SAVEFILEAS         6200
+#define ID_XFSI_FDLG_OPENFILE           6201
+#define ID_XFSI_FDLG_ALLTYPES           6202
 
 /******************************************
  *  string IDs for status bar mnemonics

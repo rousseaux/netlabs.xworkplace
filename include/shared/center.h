@@ -146,10 +146,13 @@
                     //      draw one border (the one towards the screen).
                     // -- XCS_SPACINGLINES: XCenter should draw small 3D lines
                     //      between the widgets too (V0.9.13 (2001-06-19) [umoeller]).
+                    // -- XCS_NOHATCHINUSE: XCenter should not add hatching to
+                    //      object widgets which represent open objects
+                    //      (V0.9.16 (2001-10-24) [umoeller])
 
         ULONG               ulPosition;
                     // XCenter position on screen, if a widget cares...
-                    // Can be changed by the user while the XCenter is open.
+                    // can be changed by the user while the XCenter is open.
                     // This is _one_ of the following:
                     // -- XCENTER_BOTTOM
                     // -- XCENTER_TOP

@@ -44,10 +44,13 @@
      *
      ********************************************************************/
 
+#ifndef __NEVEREXTASSOCS__
     VOID ftypInvalidateCaches(VOID);
+#endif
 
     ULONG ftypAssocObjectDeleted(HOBJECT hobj);
 
+#ifndef __NEVEREXTASSOCS__
     #if defined (SOM_XFldDataFile_h) && defined (LINKLIST_HEADER_INCLUDED)
         PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                                       BOOL fUsePlainTextAsDefault);
@@ -130,6 +133,8 @@
                            ULONG cbErrorBuf);
 
     APIRET ftypExportTypes(const char *pcszFileName);
+
+#endif
 
 #endif
 

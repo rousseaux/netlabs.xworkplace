@@ -23,6 +23,7 @@
 #define __NOQUICKOPEN__                         1
 #define __NOFDRDEFAULTDOCS__                    1
 #define __ALWAYSFDRHOTKEYS__                    1
+#define __ALWAYSEXTSORT__                       1
 
 // modules features
 #define __NOMODULEPAGES__                       1
@@ -32,13 +33,18 @@
 #define __NOBOOTLOGO__                          1
 #define __NOBOOTUPSTATUS__                      1
 
-#define __EASYSHUTDOWN__                        1
+#define __NOXSHUTDOWN__                         1
+// #define __EASYSHUTDOWN__                        1
 
 // file operations
-#define __NOREPLACEFILEEXISTS__                 1
+#define __ALWAYSREPLACEFILEEXISTS__             1
 #define __NEVERNEWFILEDLG__                     1
+#define __NEVEREXTASSOCS__                      1
+#define __NEVERREPLACEDRIVENOTREADY__           1
+#define __ALWAYSTRASHANDTRUEDELETE__            1
 
 // hook features
+#define __ALWAYSHOOK__                          1
 #define __NOPAGEMAGE__                          1
 #define __ALWAYSOBJHOTKEYS__                    1
 #define __NOSLIDINGFOCUS__                      1

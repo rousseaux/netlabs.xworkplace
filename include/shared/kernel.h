@@ -81,6 +81,9 @@
     // anchor block of WPS thread 1 (queried in initMain)
     extern HAB          G_habThread1;
 
+    extern USHORT       G_usHiwordAbstract;
+    extern USHORT       G_usHiwordFileSystem;
+
     #ifdef SOM_WPObject_h
 
         // startup flags for KERNELGLOBALS.ulStartupFlags

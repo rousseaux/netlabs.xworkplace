@@ -26,6 +26,17 @@ Try the "Browse" button on the new "Icon" page.
 rewrite of the folder populate code. For folders with many objects, this can
 be several times as fast as the old code.
 
+<P>In addition to replacing populate, this will also replace the "read icon"
+code for executables. Essentially I am no longer allowing the WPS to read
+executable icons at all, but will only use my own code for now. This works
+for LX and Win16 and OS/2 NE executables. Win32 PE resources are presently
+not understood; PE files will receive a dull default icon, but at least the
+WPS will no longer hang forever with them.
+
+<P>As one side effect, this will change the behavior for Win16 icons if the
+system icon size is 40x40; instead of scaling, &xwp; will now center the
+32x32 icon. Looks a bit better, IMV.
+
 <P><LI>Folders: Finally documented that setup string objects can be put
 into the &xwp; Configuration Folder as well to have the setup string invoked
 on the folder whose context menu was selected. This feature has been active
@@ -34,7 +45,12 @@ for a while, but I forgot to document it.
 <P><LI>File types: Added icon display to "File types" page in "Workplace Shell".
 Also added "Properties" and "Open folder" items to association context menu.
 
-<P><LI>Trash can: Added EMPTRYTRASH=IMMEDIATE setup string.
+<P><LI>Programs: If extended associations are enabled, all program files will
+now be started by &xwp;, circumventing any WPS code around WinStartApp. As a
+side effect, this will give you more detailed error messages if the program
+could not be started.
+
+<P><LI>Trash can: Added EMPTYTRASH=IMMEDIATE setup string.
 
 <P><LI>&xcenter;: Pulse widget now opens "OS/2 Kernel" object on double-click.
 
@@ -43,6 +59,12 @@ widget setup now. The empty bar confused many people initially.
 
 <P><LI>&xcenter;: Added setting for whether object button widgets should show
 in-use emphasis (hatching).
+
+<P><LI>&xshutdown;: Screen is now dimmed as with Win95 while confirmation dialog
+is displayed.
+
+<P><LI>&xshutdown;: Pressing Alt+F4 while the Desktop has the focus can now
+start shutdown.
 
 <P><LI>Netscape DDE: Added more command line options for specifying the
 DDE server name and the startup directory, which can make NetscDDE work with
@@ -100,6 +122,11 @@ regardless of the filters that were set.
 
 <P><LI>&xcenter;: Tray icon is now displayed vertically to use up less space.
 
+<P><LI>&xcenter;: Added error logging around DosFreeModule for widget DLLs; this might
+result in log entries for some older widget DLLs which fail to unload themselves.
+The most probable cause for this is that the DLL registered an exit list entry which
+causes DosFreeModule to fail always.
+
 
 </UL>Bugfixes:
 
@@ -135,7 +162,16 @@ formatter, which, among other things, affected the &xwp; message boxes.
 <P><LI>Common: Paul Ratcliffe fixed bad AM/PM display for 12:00 noon in a library
 routine which, among other things, affected the "Time" widget.
 
+<P><LI>Common: Added additional checks to an internal populate routine which should
+now handle removeable drives correctly. This should fix the problems with folder
+content menus that removeable media changes weren't picked up.
+
 <P><LI>Startup: Fixed endlessly looping startup folders.
+
+<P><LI>Icon replacemements: While working on the program icons replacement, I
+pretty much had to rewrite most of the icon handling code in the WPS altogether.
+As a side effect, I believe the problems with disappearing icons and icons changing
+during refresh are now fixed for good.
 
 <P><LI>Object Details dialog: Fixed crash if "No" was selected in the confirmation
 dialog after changing the object ID.
@@ -171,9 +207,10 @@ update themselves.
 
 <P><LI>Status bars: Fixed a bad exception handler cleanup.
 
-<P><LI>&xcenter;: Removed all the special window actication handling for now
-as a temporary fix for the Mozilla problems. Note that the XCenter will now
-become the active window sometimes as a result of this.
+<P><LI>&xcenter;: Removed all the special window actication handling for now.
+Besides, the XCenter frame is no longer a PM WC_FRAME instance. Hopefully
+this doesn't break anything else but fixes the stupid Mozilla problems many
+people were having.
 
 <P><LI>&xcenter;: Fixed the 100% CPU load problem when mouse was over &xcenter; while
 a settings dialog was showing.
@@ -182,6 +219,14 @@ a settings dialog was showing.
 the power icon was changed. Fixed.
 
 <P><LI>&xcenter;: Fixed some bad clipping with object buttons.
+
+<P><LI>&xcenter;: Fixed crashes with objects from other processes being dragged over
+&xcenter;.
+
+<P><LI>File operations: Mostly rewrote the "Replace File Exists" dialog to finally handle
+the "Create another" and "Create from template" conditions correctly. Besides,
+all the special case checks for FAT drives were removed because the WPS handles
+all this correctly already.
 
 <P><LI>File operations: Replacement delete never respected the "Confirm folder deletion"
 setting from the "Confirmations" page. Fixed; if this is enabled, you now get an
@@ -198,6 +243,10 @@ can instead. Fixed; they are now properly nuked.
 
 <P><LI>Trash can / true delete: Paul Ratcliffe fixed a bunch of potential traps
 with NULL object titles.
+
+<P><LI>Trash can: Disabled the stupid "File exists" dialog that popped up if some
+other object with the same title already existed in the same hidden trash directory.
+Note that this will only work if you have "Replace file exists" enabled, unfortunately.
 
 <P><LI>Object hotkeys: It was impossible to set a hotkey into the "Hotkey" entry field
 that was already occupied. Even worse, if the object had been lost, this kept the
@@ -224,7 +273,7 @@ item twice.
 and the "Desktop not found" problem if XWorkplace is installed on multiple OS/2
 partitions. The problem was quite deep in the WPS internals and actually a WPS bug
 that was exposed by the &xwp; "save objects" function. For some reason, the WPS kept
-deleting the &lt;WP_OBJECT&gt; object ID (and other object IDs) if they didn't match
+deleting the &lt;WP_DESKTOP&gt; object ID (and other object IDs) if they didn't match
 the data in the current INI file, which of course they don't if the object ID is from
 another WPS. Fixed that; the object's instance data is now hacked to keep the old
 object ID.

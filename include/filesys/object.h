@@ -35,6 +35,9 @@
 
     BOOL objFree(WPObject *somSelf);
 
+    VOID objRefreshUseItems(WPObject *somSelf,
+                            PSZ pszNewTitleCopy);
+
     /* ******************************************************************
      *
      *   Object linked lists
