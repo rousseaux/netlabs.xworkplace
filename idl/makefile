@@ -28,15 +28,12 @@ SOMTEMP = $(TEMP)
     [set SMTMP=$(SOMTEMP)] || \
     [set SMEMIT=ih;h;c] || \
     [set SMADDSTAR=1] || \
-    [set SMNOTC=1]
+    [set SMNOTC=1] || \
 #     [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 #   hacked up SMINCLUDE to make sure idl\wps is before toolkit idl\
 #   V0.9.20 (2002-07-25) [umoeller]
-#    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
+    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
 !endif
-
-SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(PROJECT_BASE_DIR)\idl;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include
-#       V1.0.2 (2003-02-07) [umoeller] leave $(SMINCLUDE) in here or Paul will complain :-)
 
 !if [@echo    TKBASE    is $(TKBASE)]
 !endif

@@ -116,7 +116,7 @@ DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
 #   somtk       is the SOM toolkit lib
 #   pmprintf    is for debugging
 # The other OS/2 libraries are used by default.
-LIBS = $(TKBASE)\som\lib\somtk.lib $(PMPRINTF_LIB)
+LIBS = somtk.lib $(PMPRINTF_LIB)
 
 # some variable strings to pass to sub-nmakes
 SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"
@@ -725,9 +725,10 @@ dlgedit049:
 
 release: really_all
 # 1) main dir
-!ifndef XWPRELEASE
-!error XWPRELEASE must be set before calling "make release". Terminating.
-!endif
+# This doesn't work
+#!ifndef XWPRELEASE
+#!error XWPRELEASE must be set before calling "make release". Terminating.
+#!endif
 # nuke old directories
 # create directories
 !if [@md $(XWPRELEASE) 2> NUL]
@@ -1004,17 +1005,3 @@ $(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll
 warpin: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
     makewpi.cmd $(XWPRELEASE)
-
-#
-# Will work only on my private system.
-#
-
-daily: release
-    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
-    K:
-    cd $(XWPRELEASE)
-    cd ..
-    cmd.exe /c create_xwp_exe_daily.cmd
-    cd $(CURRENT_DIR)
-
-

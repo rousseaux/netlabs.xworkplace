@@ -71,6 +71,9 @@ TKBASE = e:\Toolkit
 VACBASE = e:\ibmcpp
 !endif
 
+# SOMTK_LIB: the path and filename of the somtk.lib file
+SOMTK_LIB = $(TKBASE)\som\lib\somtk.lib
+
 # DDKBASE: your DDK "base" directory.
 # Not used by the regular makefiles, unless you
 # want to build XWorkplace Security.
@@ -87,6 +90,14 @@ VACBASE = e:\ibmcpp
 # This must exist.
 !ifndef XWPRUNNING
 XWPRUNNING = h:\Desktopextender\XWorkplace
+!endif
+
+# XWPRELEASE must specify the path of where to create an
+# XWorkplace release tree, which can easily be turned into
+# a WarpIN archive (.WPI file). This is only used with
+# an explicit "nmake release".
+!ifndef XWPRELEASE
+XWPRELEASE = K:\projects\distrib\XWorkplace\current
 !endif
 
 # MMPMDIR: directory where MMPM/2 is installed.

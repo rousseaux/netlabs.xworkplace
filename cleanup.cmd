@@ -56,6 +56,8 @@ if yn = 'Y' then do
   call deletefiles 'idl\*.def'
   call deletefiles 'include\classes\*.h'
   call deletefiles 'include\classes\*.ih'
+  call deletefiles 'include\classes\wps\*.h'
+  call deletefiles 'include\classes\wps\*.ih'
 end
 return
 

@@ -112,19 +112,6 @@ MAPDIR=$(MODULESDIR)
 XWP_LANG_CODE = 001
 !endif
 
-
-# XWORKPLACE RELEASE
-# ------------------
-
-# XWPRELEASE must specify the path of where to create an
-# XWorkplace release tree, which can easily be turned into
-# a WarpIN archive (.WPI file). This is only used with
-# an explicit "nmake release".
-
-!ifndef XWPRELEASE
-XWPRELEASE = K:\projects\distrib\XWorkplace\current
-!endif
-
 # produce subdirectories
 
 XWPRELEASE_MAIN = $(XWPRELEASE)\kernel
