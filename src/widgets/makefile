@@ -60,7 +60,7 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\widgets
 OBJS = \
     $(OUTPUTDIR)\miniwdgt.obj \
     $(OUTPUTDIR)\w_monitors.obj \
-    $(OUTPUTDIR)\w_theseus.obj \
+    $(OUTPUTDIR)\w_sentinel.obj \
     $(OUTPUTDIR)\w_winlist.obj \
     $(OUTPUTDIR)\xwHealth.obj \
     $(OUTPUTDIR)\____sample.obj
@@ -140,7 +140,7 @@ $(OUTPUTDIR)\w_monitors.obj: \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 
-$(OUTPUTDIR)\w_theseus.obj: \
+$(OUTPUTDIR)\w_sentinel.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
         $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \

@@ -161,7 +161,7 @@ PMPRINTF_LIB =
 # The following macros contains the .OBJ files for the XCenter plugins.
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
 MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
-SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_theseus.obj $(PMPRINTF_LIB)
+SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_sentinel.obj $(PMPRINTF_LIB)
 HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
