@@ -442,6 +442,9 @@ BEGIN
     ID_XSSI_SV_ALWAYSSORT           "Always maintain sort order"
 
     /* XWorkplace standard dialog box (cmnMessageBox in common.c) */
+    ID_XSSI_DLG_UNDO                    "~Undo"       /* added V0.9.13 (2001-06-27) [umoeller] */
+    ID_XSSI_DLG_DEFAULT                 "~Default"    /* added V0.9.13 (2001-06-27) [umoeller] */
+    ID_XSSI_DLG_HELP                    "~Help"       /* added V0.9.13 (2001-06-27) [umoeller] */
     ID_XSSI_DLG_YES                     "~Yes"
     ID_XSSI_DLG_YES2ALL                 "Yes to ~all" /* added V0.9.4 (2000-07-27) [umoeller] */
     ID_XSSI_DLG_NO                      "~No"

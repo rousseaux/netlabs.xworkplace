@@ -17,18 +17,9 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
-winlist widget behavior: make buttons wider (configurable)
-
-There's a INI file entry for the font size for VIO windows It's possible to change that
-entry; start a new VIO window, and change it back to the original value. I wrote a REXX
-script that does this - it's part of my INF file REXX Tips & Tricks. The only strange thing
-is, that the name of the key is language dependent.
-
-> >When i try to copy an existing object in an folder e.g. 123.bmp and
-> >give it a new name e.g. 456.bmp and press the "copy" button next
-then,
-> >the file exists dialog appears telling me that file 123.bmp already
-exists.
+When i try to copy an existing object in an folder e.g. 123.bmp and
+give it a new name e.g. 456.bmp and press the "copy" button next
+then, the file exists dialog appears telling me that file 123.bmp already exists.
 
 undo wpDelete into trashcan (breaks shredder)
 
@@ -44,7 +35,6 @@ extended file types:
     --  import/export only works once?
 
 XShutdown:
-    --  stop XShutdown while exception handlers are running
     --  xshutdown folder progress window misnamed ("startup")
     --  2001-06-06 15:11:50 objForAllDirtyObjects (object.c, line 1388):
            Tree node count mismatch.
@@ -53,13 +43,13 @@ prog start:
     --  cmd files not started minimized?
 
 XCenter:
+    --  winlist widget behavior: make buttons wider (configurable)
+
     --  add "rightmost" setting
 
     --  allow icon resize
 
     --  3D border size not respected with "resize desktop"
-
-    --  sliding menus doesn't work with "Add widget"
 
     --  rework stay on top
 
