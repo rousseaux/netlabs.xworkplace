@@ -726,8 +726,8 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
             // use eight extra pixels, so we can get rid of the borders of
             // maximized windows.
 
-            G_pHookData->szlEachDesktopFaked.cx = G_pHookData->lCXScreen + 8;
-            G_pHookData->szlEachDesktopFaked.cy = G_pHookData->lCYScreen + 8;
+            G_pHookData->szlEachDesktopFaked.cx = G_pHookData->cxScreen + 8;
+            G_pHookData->szlEachDesktopFaked.cy = G_pHookData->cyScreen + 8;
 
             pPagerCfg->cDesktopsX = 3;
             pPagerCfg->cDesktopsY = 2;
@@ -1304,18 +1304,18 @@ static VOID ProcessHotCorner(MPARAM mp1)
                 switch(lIndex)
                 {
                     case SCREENCORNER_BOTTOMLEFT:
-                        ptlCurrent.x = G_pHookData->lCXScreen - 2;
-                        ptlCurrent.y = G_pHookData->lCYScreen - 2;
+                        ptlCurrent.x = G_pHookData->cxScreen - 2;
+                        ptlCurrent.y = G_pHookData->cyScreen - 2;
                     break;
 
                     case SCREENCORNER_TOPLEFT:
-                        ptlCurrent.x = G_pHookData->lCXScreen - 2;
+                        ptlCurrent.x = G_pHookData->cxScreen - 2;
                         ptlCurrent.y = 1;
                     break;
 
                     case SCREENCORNER_BOTTOMRIGHT:
                         ptlCurrent.x = 1;
-                        ptlCurrent.y = G_pHookData->lCYScreen - 2;
+                        ptlCurrent.y = G_pHookData->cyScreen - 2;
                     break;
 
                     case SCREENCORNER_TOPRIGHT:
@@ -1328,7 +1328,7 @@ static VOID ProcessHotCorner(MPARAM mp1)
                     break;
 
                     case SCREENCORNER_LEFT:
-                        ptlCurrent.x = G_pHookData->lCXScreen - 2;
+                        ptlCurrent.x = G_pHookData->cxScreen - 2;
                     break;
 
                     case SCREENCORNER_RIGHT:
@@ -1336,7 +1336,7 @@ static VOID ProcessHotCorner(MPARAM mp1)
                     break;
 
                     case SCREENCORNER_BOTTOM:
-                        ptlCurrent.y = G_pHookData->lCYScreen - 2;
+                        ptlCurrent.y = G_pHookData->cyScreen - 2;
                     break;
                 }
 
@@ -1388,8 +1388,8 @@ static VOID ProcessHotCorner(MPARAM mp1)
                            (MPARAM)ucScanCode,
                            0);
                 WinSetPointerPos(HWND_DESKTOP,
-                                 G_pHookData->lCXScreen / 2,
-                                 G_pHookData->lCYScreen / 2);
+                                 G_pHookData->cxScreen / 2,
+                                 G_pHookData->cyScreen / 2);
             }
         }
 #endif
@@ -1420,10 +1420,10 @@ static VOID ProcessChordWinList(VOID)
     WinListY = ptlMouse.y - (WinListPos.cy / 2);
     if (WinListY < 0)
         WinListY = 0;
-    if (WinListX + WinListPos.cx > G_pHookData->lCXScreen)
-        WinListX = G_pHookData->lCXScreen - WinListPos.cx;
-    if (WinListY + WinListPos.cy > G_pHookData->lCYScreen)
-        WinListY = G_pHookData->lCYScreen - WinListPos.cy;
+    if (WinListX + WinListPos.cx > G_pHookData->cxScreen)
+        WinListX = G_pHookData->cxScreen - WinListPos.cx;
+    if (WinListY + WinListPos.cy > G_pHookData->cyScreen)
+        WinListY = G_pHookData->cyScreen - WinListPos.cy;
     // set window list window to calculated position
     WinSetWindowPos(G_pHookData->hwndSwitchList,
                     HWND_TOP,

@@ -243,9 +243,9 @@ LONG pgrCalcClientCY(LONG cx)
 {
     return (   cx
              * G_pHookData->PagerConfig.cDesktopsY
-             * G_pHookData->lCYScreen
+             * G_pHookData->cyScreen
              / G_pHookData->PagerConfig.cDesktopsX
-             / G_pHookData->lCXScreen
+             / G_pHookData->cxScreen
           );
 }
 
@@ -530,6 +530,121 @@ typedef struct _MINIWINDOW
 } MINIWINDOW, *PMINIWINDOW;
 
 /*
+ *@@ DrawPointer:
+ *
+ *@@added V0.9.19 (2002-06-13) [umoeller]
+ */
+
+VOID DrawPointer(HPS hpsMem,
+                 PMINIWINDOW pMiniThis,
+                 LONG lcolCenter)
+{
+    POINTERINFO pi;
+    HPOINTER hptr;
+
+    if (    (hptr = pMiniThis->pWinInfo->hptr)
+         && (WinQueryPointerInfo(hptr, &pi))
+       )
+    {
+        POINTL  aptl[4];
+        LONG    cxTarget = G_pHookData->cxIcon / 2,
+                cyTarget = G_pHookData->cyIcon / 2,
+                cxSource,
+                cySource,
+                cySourceReal,
+                lDelta;
+        HBITMAP hbmAnd,
+                hbmCol;
+        ULONG   flOpt;
+
+        if (    (hbmAnd = pi.hbmMiniPointer)
+             && (hbmCol = pi.hbmMiniColor)
+           )
+        {
+            // if we have a mini icon, use that
+            cxSource = G_pHookData->cxIcon / 2;
+            cySource = G_pHookData->cyIcon / 2;
+        }
+        else
+        {
+            // scale down the normal icon
+            hbmAnd = pi.hbmPointer;
+            hbmCol = pi.hbmColor;
+            cxSource = G_pHookData->cxIcon;
+            cySource = G_pHookData->cyIcon;
+        }
+
+        cySourceReal = cySource;
+
+        // we need to clip the icon if it would be
+        // larger than the inner part of the mini
+        // window
+        lDelta = cxTarget - (pMiniThis->ptlTopRight.x - pMiniThis->ptlLowerLeft.x - 1);
+        if (lDelta > 0)
+        {
+            cxTarget -= lDelta;
+            cxSource -= lDelta;
+        }
+
+        lDelta = cyTarget - (pMiniThis->ptlTopRight.y - pMiniThis->ptlLowerLeft.y - 1);
+        if (lDelta > 0)
+        {
+            cyTarget -= lDelta;
+            cySource -= lDelta;
+        }
+
+        // aptl[0]: target bottom-left
+        aptl[0].x = pMiniThis->ptlLowerLeft.x + 1;
+        aptl[0].y = pMiniThis->ptlLowerLeft.y + 1;
+
+        // aptl[1]: target top-right (inclusive!)
+        aptl[1].x = aptl[0].x + cxTarget - 1;
+        aptl[1].y = aptl[0].y + cyTarget - 1;
+
+        // aptl[2]: source bottom-left
+        aptl[2].x = 0;
+        aptl[2].y = 0;
+
+        // aptl[3]: source top-right (exclusive!)
+        aptl[3].x = cxSource;
+        aptl[3].y = cySource;
+
+        // work on the AND image
+        // (lower part of the monochrome image)
+        GpiSetColor(hpsMem, RGBCOL_WHITE);
+        GpiSetBackColor(hpsMem, RGBCOL_BLACK);
+        GpiWCBitBlt(hpsMem,     // target
+                    hbmAnd,     // src bmp
+                    4L,         // must always be 4
+                    aptl,       // point array
+                    ROP_SRCAND,   // source AND target
+                    BBO_IGNORE);
+
+        // paint the real image; the parts that
+        // are to be transparent are black
+        if (hbmCol)
+            GpiWCBitBlt(hpsMem,
+                        hbmCol,
+                        4L,         // must always be 4
+                        aptl,       // point array
+                        ROP_SRCPAINT,
+                        BBO_IGNORE);
+
+        GpiSetColor(hpsMem, lcolCenter);
+
+        // work on the XOR image
+        aptl[2].y += cySourceReal;           // exclusive
+        aptl[3].y += cySourceReal; // exclusive
+        GpiWCBitBlt(hpsMem,
+                    hbmAnd,
+                    4L,         // must always be 4
+                    aptl,       // point array
+                    ROP_SRCINVERT,
+                    BBO_IGNORE);
+    }
+}
+
+/*
  *@@ RefreshPagerBitmap:
  *
  *      Calls CreateTemplateBitmap if necessary.
@@ -733,8 +848,6 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                     // (bottom to top)
 
                     HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
-                    LONG    cxIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON),
-                            cyIcon = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
 
                     // start with the last one
                     LONG l;
@@ -747,7 +860,6 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                                 lcolText;
                         PCSZ    pcszSwtitle;
                         ULONG   ulSwtitleLen;
-                        POINTERINFO pi;
 
                         // draw center
                         if (pMiniThis->hwnd == hwndActive)
@@ -782,10 +894,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
 
                         // draw window icon too?
                         // V0.9.19 (2002-06-13) [umoeller]
-                        if (    (flPager & PGRFL_MINIWIN_ICONS)
-                             && (pMiniThis->pWinInfo->hptr)
-                             && (WinQueryPointerInfo(pMiniThis->pWinInfo->hptr, &pi))
-                           )
+                        if (flPager & PGRFL_MINIWIN_ICONS)
                         {
                             // we can't use WinDrawPointer for many reasons,
                             // one of them being that it won't get the
@@ -793,98 +902,9 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                             // and messing with the clip rectangle, so
                             // paint the icon manually (see gpihIcon2Bitmap
                             // on whose code this is based)
-                            POINTL  aptl[4];
-                            LONG    cxTarget = cxIcon / 2,
-                                    cyTarget = cyIcon / 2,
-                                    cxSource,
-                                    cySource,
-                                    cySourceReal,
-                                    lDelta;
-                            HBITMAP hbmAnd,
-                                    hbmCol;
-
-                            if (    (hbmAnd = pi.hbmMiniPointer)
-                                 && (hbmCol = pi.hbmMiniColor)
-                               )
-                            {
-                                // if we have a mini icon, use that
-                                cxSource = cxIcon / 2;
-                                cySource = cyIcon / 2;
-                            }
-                            else
-                            {
-                                // scale down the normal icon
-                                hbmAnd = pi.hbmPointer;
-                                hbmCol = pi.hbmColor;
-                                cxSource = cxIcon;
-                                cySource = cyIcon;
-                            }
-
-                            cySourceReal = cySource;
-
-                            // we need to clip the icon if it would be
-                            // larger than the inner part of the mini
-                            // window
-                            lDelta = cxTarget - (pMiniThis->ptlTopRight.x - pMiniThis->ptlLowerLeft.x - 2);
-                            if (lDelta > 0)
-                            {
-                                cxTarget -= lDelta;
-                                cxSource -= lDelta;
-                            }
-
-                            lDelta = cyTarget - (pMiniThis->ptlTopRight.y - pMiniThis->ptlLowerLeft.y - 2);
-                            if (lDelta > 0)
-                            {
-                                cyTarget -= lDelta;
-                                cySource -= lDelta;
-                            }
-
-                            // aptl[0]: target bottom-left
-                            aptl[0].x = pMiniThis->ptlLowerLeft.x + 1;
-                            aptl[0].y = pMiniThis->ptlLowerLeft.y + 1;
-
-                            // aptl[1]: target top-right (inclusive!)
-                            aptl[1].x = aptl[0].x + cxTarget;
-                            aptl[1].y = aptl[0].y + cyTarget;
-
-                            // aptl[2]: source bottom-left
-                            aptl[2].x = 0;
-                            aptl[2].y = 0;
-
-                            // aptl[3]: source top-right (exclusive!)
-                            aptl[3].x = cxSource;
-                            aptl[3].y = cySource;
-
-                            GpiSetColor(hpsMem, RGBCOL_WHITE);
-                            GpiSetBackColor(hpsMem, RGBCOL_BLACK);
-
-                            // work on the AND image
-                            GpiWCBitBlt(hpsMem,     // target
-                                        hbmAnd,  // src bmp
-                                        4L,         // must always be 4
-                                        &aptl[0],   // point array
-                                        ROP_SRCAND,   // source AND target
-                                        BBO_OR);
-
-                            // paint the real image
-                            if (hbmCol)
-                                GpiWCBitBlt(hpsMem,
-                                            hbmCol,
-                                            4L,         // must always be 4
-                                            &aptl[0],   // point array
-                                            ROP_SRCPAINT,    // source OR target
-                                            BBO_OR);
-
-                            GpiSetColor(hpsMem, lcolCenter);
-                            // work on the XOR image
-                            aptl[2].y = cySourceReal;           // exclusive
-                            aptl[3].y = aptl[2].y + cySourceReal; // exclusive
-                            GpiWCBitBlt(hpsMem,
-                                        hbmAnd,
-                                        4L,         // must always be 4
-                                        &aptl[0],   // point array
-                                        ROP_SRCINVERT,
-                                        BBO_OR);
+                            DrawPointer(hpsMem,
+                                        pMiniThis,
+                                        lcolCenter);
                         } // end if (flPager & PGRFL_MINIWIN_ICONS)
 
                         if (    (flPager & PGRFL_MINIWIN_TITLES)
@@ -1153,7 +1173,7 @@ static VOID PagerPositionFrame(VOID)
         ULONG   cb = sizeof(swpPager);
         swpPager.x = 10;
         swpPager.y = 10;
-        swpPager.cx = G_pHookData->lCXScreen * 18 / 100;
+        swpPager.cx = G_pHookData->cxScreen * 18 / 100;
         swpPager.cy = pgrCalcClientCY(swpPager.cx);
 
         swpPager.cx += 2 * WinQuerySysValue(HWND_DESKTOP,
@@ -1760,6 +1780,14 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                PGRM_REFRESHCLIENT,
                                (MPARAM)FALSE,
                                0);
+            break;
+
+            case PGRM_ICONCHANGE:
+                // refresh the client bitmap
+                WinPostMsg(hwnd,
+                           PGRM_REFRESHCLIENT,
+                           (MPARAM)FALSE,
+                           0);
             break;
 
             /*

@@ -982,36 +982,36 @@ BOOL WMMouseMove(PQMSG pqmsg,
                         {
                             if (G_ptlMousePosDesktop.y == 0)
                                 bHotCorner = SCREENCORNER_BOTTOMLEFT;
-                            else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
+                            else if (G_ptlMousePosDesktop.y == G_HookData.cyScreen - 1)
                                 bHotCorner = SCREENCORNER_TOPLEFT;
                             // or maybe left screen border:
                             // make sure mouse y is in the middle third of the screen
-                            else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                      && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
+                            else if (    (G_ptlMousePosDesktop.y >= G_HookData.cyScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                      && (G_ptlMousePosDesktop.y <= G_HookData.cyScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                     )
                                 bHotCorner = SCREENCORNER_LEFT;
                         }
-                        else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
+                        else if (G_ptlMousePosDesktop.x == G_HookData.cxScreen - 1)
                         {
                             if (G_ptlMousePosDesktop.y == 0)
                                 bHotCorner = SCREENCORNER_BOTTOMRIGHT;
-                            else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
+                            else if (G_ptlMousePosDesktop.y == G_HookData.cyScreen - 1)
                                 bHotCorner = SCREENCORNER_TOPRIGHT;
                             // or maybe right screen border:
                             // make sure mouse y is in the middle third of the screen
-                            else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                      && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
+                            else if (    (G_ptlMousePosDesktop.y >= G_HookData.cyScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                      && (G_ptlMousePosDesktop.y <= G_HookData.cyScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                     )
                                 bHotCorner = SCREENCORNER_RIGHT;
                         }
                         else
                             // more checks for top and bottom screen border:
                             if (    (G_ptlMousePosDesktop.y == 0)   // bottom
-                                 || (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1) // top
+                                 || (G_ptlMousePosDesktop.y == G_HookData.cyScreen - 1) // top
                                )
                             {
-                                if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                     && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
+                                if (    (G_ptlMousePosDesktop.x >= G_HookData.cxScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                     && (G_ptlMousePosDesktop.x <= G_HookData.cxScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                    )
                                     if (G_ptlMousePosDesktop.y == 0)
                                         bHotCorner = SCREENCORNER_BOTTOM;

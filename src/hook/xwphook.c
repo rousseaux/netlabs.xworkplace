@@ -318,8 +318,12 @@ VOID InitializeGlobalsForHooks(VOID)
     BOOL    fFound;
 
     // screen dimensions
-    G_HookData.lCXScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
-    G_HookData.lCYScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+    G_HookData.cxScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+    G_HookData.cyScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+
+    // V0.9.19 (2002-06-13) [umoeller]
+    G_HookData.cxIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
+    G_HookData.cyIcon = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
 
     // PM desktop (the WPS desktop is handled by the daemon)
     G_HookData.hwndPMDesktop = WinQueryDesktopWindow(G_HookData.habDaemonObject,

@@ -166,10 +166,10 @@ VOID WMChord_WinList(VOID)
     WinListY = ptlMouse.y - (WinListPos.cy / 2);
     if (WinListY < 0)
         WinListY = 0;
-    if (WinListX + WinListPos.cx > G_HookData.lCXScreen)
-        WinListX = G_HookData.lCXScreen - WinListPos.cx;
-    if (WinListY + WinListPos.cy > G_HookData.lCYScreen)
-        WinListY = G_HookData.lCYScreen - WinListPos.cy;
+    if (WinListX + WinListPos.cx > G_HookData.cxScreen)
+        WinListX = G_HookData.cxScreen - WinListPos.cx;
+    if (WinListY + WinListPos.cy > G_HookData.cyScreen)
+        WinListY = G_HookData.cyScreen - WinListPos.cy;
     // set window list window to calculated position
     WinSetWindowPos(G_HookData.hwndSwitchList, HWND_TOP,
                     WinListX, WinListY, 0, 0,
