@@ -1112,7 +1112,6 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
 {
     BOOL    brc = TRUE;
 
-
     XFolderData *somThis = XFolderGetData(somSelf);
     PFDRCONTENTITEM pNode;
 

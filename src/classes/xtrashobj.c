@@ -1147,7 +1147,9 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryDetailsInfo(M_XWPTrashObject *somSelf,
             // find the last link in the chain; then add our CLASSFIELDINFO
             // structures to the chain.
             pcfi = *ppClassFieldInfo;
-            for (i=0; i < ulParentColumns; i++)
+            for (i = 0;
+                 i < ulParentColumns;
+                 i++)
             {
                 pcfi = (pcfi->pNextFieldInfo)
                             ? pcfi->pNextFieldInfo

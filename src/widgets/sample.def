@@ -17,7 +17,7 @@
 ;
 
 LIBRARY SAMPLE INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.17#@ XWorkplace sample plugin DLL'
+Description '@#Ulrich M”ller:0.9.18#@ XWorkplace sample plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED

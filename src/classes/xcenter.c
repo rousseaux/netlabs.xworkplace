@@ -760,7 +760,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
                     // frame... V0.9.16 (2001-12-31) [umoeller]
                 if (hwndClient = WinWindowFromID(pViewItem->handle, FID_CLIENT))
                 {
-                    _Pmpf((__FUNCTION__ ": posting XFMF_RESURFACE to %lX", hwndClient));
+                    // _Pmpf((__FUNCTION__ ": posting XFMF_RESURFACE to %lX", hwndClient));
                     WinPostMsg(hwndClient,
                                XCM_REFORMAT,
                                (MPARAM)XFMF_RESURFACE,

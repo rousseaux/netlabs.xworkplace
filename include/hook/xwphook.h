@@ -139,18 +139,6 @@
     #define AMF_IGNORENOBUTTON  0x00000002L
     #define AMF_ANIMATE         0x00000004L
 
-    // V0.9.18 (2002-02-12) [pr]
-    #define SCREENCORNER_MIN            0
-    #define SCREENCORNER_BOTTOMLEFT     0
-    #define SCREENCORNER_TOPLEFT        1
-    #define SCREENCORNER_BOTTOMRIGHT    2
-    #define SCREENCORNER_TOPRIGHT       3
-    #define SCREENCORNER_TOP            4
-    #define SCREENCORNER_LEFT           5
-    #define SCREENCORNER_RIGHT          6
-    #define SCREENCORNER_BOTTOM         7
-    #define SCREENCORNER_MAX            7
-
     /*
      *@@ HOOKCONFIG:
      *      configuration data for the hook and the daemon.
@@ -285,6 +273,17 @@
                             //      5 = left border,
                             //      6 = right border,
                             //      7 = bottom border.
+                  // V0.9.18 (2002-02-12) [pr]
+                  #define SCREENCORNER_MIN            0
+                  #define SCREENCORNER_BOTTOMLEFT     0
+                  #define SCREENCORNER_TOPLEFT        1
+                  #define SCREENCORNER_BOTTOMRIGHT    2
+                  #define SCREENCORNER_TOPRIGHT       3
+                  #define SCREENCORNER_TOP            4
+                  #define SCREENCORNER_LEFT           5
+                  #define SCREENCORNER_RIGHT          6
+                  #define SCREENCORNER_BOTTOM         7
+                  #define SCREENCORNER_MAX            7
                             // If any item is NULLHANDLE, it means the
                             // corner is inactive (no function defined).
                             // If the hiword of the item is 0xFFFF, this

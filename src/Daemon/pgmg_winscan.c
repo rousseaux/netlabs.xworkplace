@@ -28,7 +28,7 @@
 #define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
 
-#define INCL_GPIBITMAPS
+#define INCL_GPIBITMAPS                 // needed for helpers\shapewin.h
 #include <os2.h>
 
 #define DONT_REPLACE_MALLOC         // in case mem debug is enabled
@@ -192,7 +192,13 @@ VOID pgmwClearWinInfos(VOID)
  *      for PageMage. This function excludes a number
  *      of window classes from the window list in
  *      order not to pollute anything.
- *      In that case, no memory was allocated.
+ *      In that case, no memory was allocated, but some
+ *      fields in *pWinInfo may have been set.
+ *
+ *      [The excluded windows include all the windows that
+ *      are not children of HWND_DESKTOP, plus all those whose
+ *      class is one of "PM Icon title", "AltTabWindow",
+ *      "menu", and "shaped" windows.]
  *
  *      Preconditions:
  *
@@ -201,12 +207,12 @@ VOID pgmwClearWinInfos(VOID)
  *         before calling this.
  *
  *      -- If the pWinInfo has not been used before, the
- *         caller must zero all fields, or this func will
- *         attempt to free the strings in there.
+ *         caller must zero all fields.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-08-08) [umoeller]: removed "special" windows; now ignoring ShapeWin windows
  *@@changed V0.9.15 (2001-09-14) [umoeller]: now always checking for visibility; this fixes VX-REXX apps hanging PageMage
+ *@@changed V0.9.18 (2002-02-21) [lafaix]: minimized and maximized windows titles were not queryied and maximized windows couldn't be sticky
  */
 
 BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
@@ -230,7 +236,6 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
 
         brc = TRUE;     // can be changed again
 
-        // excludes invisible "Alt-Tab" window (Warp 4):
         if (pWinInfo->pid)
         {
             if (pWinInfo->pid == G_pidDaemon)
@@ -258,13 +263,13 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                      || (!strcmp(pcszClassName, WC_SHAPE_WINDOW))
                      || (!strcmp(pcszClassName, WC_SHAPE_REGION))
                    )
+                {
                     brc = FALSE;
+                }
                 else
                 {
                     HSWITCH hswitch;
                     ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
-
-                    pWinInfo->bWindowType = WINDOW_NORMAL;
 
                     if (    (!(hswitch = WinQuerySwitchHandle(hwnd, 0)))
                             // V0.9.15 (2001-09-14) [umoeller]:
@@ -280,10 +285,6 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                          || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
                        )
                         pWinInfo->bWindowType = WINDOW_RESCAN;
-                    else if (pWinInfo->swp.fl & SWP_MINIMIZE)
-                        pWinInfo->bWindowType = WINDOW_MINIMIZE;
-                    else if (pWinInfo->swp.fl & SWP_MAXIMIZE)
-                        pWinInfo->bWindowType = WINDOW_MAXIMIZE;
                     else
                     {
                         SWCNTRL     swctl;
@@ -296,8 +297,19 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                                     swctl.szSwtitle,
                                     sizeof(pWinInfo->szSwitchName) - 1);
 
+                        // the minimize attribute prevails the "sticky" attribute,
+                        // "sticky" prevails maximize, and maximize prevails normal
+                        // V0.9.18 (2002-02-21) [lafaix]
+                        if (pWinInfo->swp.fl & SWP_MINIMIZE)
+                            pWinInfo->bWindowType = WINDOW_MINIMIZE;
+                        else
                         if (pgmwIsSticky(hwnd, swctl.szSwtitle))
-                             pWinInfo->bWindowType = WINDOW_STICKY;
+                            pWinInfo->bWindowType = WINDOW_STICKY;
+                        else
+                        if (pWinInfo->swp.fl & SWP_MAXIMIZE)
+                            pWinInfo->bWindowType = WINDOW_MAXIMIZE;
+                        else
+                            pWinInfo->bWindowType = WINDOW_NORMAL;
                     }
                 }
             }
@@ -313,6 +325,7 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
  *      if they are about the same.
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
+ *@@changed V0.9.18 (2002-02-19) [lafaix]: fixed szSwitchName comparison
  */
 
 BOOL pgmwWinInfosEqual(PPGMGWININFO pWinInfo1,
@@ -323,7 +336,8 @@ BOOL pgmwWinInfosEqual(PPGMGWININFO pWinInfo1,
          && (!memcmp(&pWinInfo1->swp, &pWinInfo2->swp, sizeof(SWP)))
        )
     {
-        brc = (!strcmp(pWinInfo2->szSwitchName, pWinInfo2->szSwitchName));
+        brc = (!strcmp(pWinInfo1->szSwitchName, pWinInfo2->szSwitchName));
+            //                 ^ was 2!  V0.9.18 (2002-02-19) [lafaix]
     }
 
     return (brc);
@@ -508,6 +522,7 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
  *@@changed V0.9.7 (2001-01-17) [dk]: this scanned, but never updated. Fixed.
  *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
  *@@changed V0.9.12 (2001-05-31) [umoeller]: removed temp delete list
+ *@@changed V0.9.18 (2002-02-20) [lafaix]: this never returned TRUE
  */
 
 BOOL pgmwWindowListRescan(VOID)
@@ -555,6 +570,8 @@ BOOL pgmwWindowListRescan(VOID)
                         memcpy(pWinInfo, &WinInfoTemp, sizeof(WinInfoTemp));
                     }
                 }
+
+                brc = TRUE; // V0.9.18 (2002-02-20) [lafaix]
             } // end if (pWinInfo->bWindowType == WINDOW_RESCAN)
 
             pNode = pNext;
@@ -653,8 +670,12 @@ BOOL pgmwIsSticky(HWND hwnd,
  *@@ pgmwGetWindowFromClientPoint:
  *      returns the window from the list which
  *      matches the given pager client coordinates.
+ *      Returns NULLHANDLE if no window is found or
+ *      if mini windows are not shown.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.18 (2002-02-19) [lafaix]: uses G_szlPageMageClient
+ *@@changed V0.9.18 (2002-02-20) [lafaix]: reworked to correctly handle pagemage settings
  */
 
 HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the PageMage client
@@ -664,52 +685,78 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
     PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
-    POINTL  ptlCalc;
-    float   flCalcX, flCalcY;
-    HENUM   henumPoint;
-    HWND    hwndPoint;
-    SWP     swpPoint;
     HWND    hwndResult = NULLHANDLE;
 
-    flCalcX = (float) ulX / (G_szlEachDesktopInClient.cx + 1);
-    flCalcY = (float) ulY / (G_szlEachDesktopInClient.cy + 1);
-
-    flCalcX = (float) flCalcX * G_szlEachDesktopReal.cx;
-    flCalcY = (float) flCalcY * G_szlEachDesktopReal.cy;
-
-    ptlCalc.x = ((int) flCalcX) - G_ptlCurrPos.x;
-    ptlCalc.y = ((int) flCalcY)
-                - (   (pptlMaxDesktops->y - 1)
-                       * G_szlEachDesktopReal.cy
-                    - G_ptlCurrPos.y
-                  );
-
-    henumPoint = WinBeginEnumWindows(HWND_DESKTOP);
-    while (hwndPoint = WinGetNextWindow(henumPoint))
+    if (pPageMageConfig->fMirrorWindows)
     {
-        if (hwndPoint == G_pHookData->hwndPageMageFrame)
-            // ignore PageMage frame
-            continue;
+        // mini windows are shown: check if the point denotes one
+        // of them
+        // V0.9.18 (2002-02-20) [lafaix]
+        POINTL  ptlCalc;
+        float   flCalcX, flCalcY;
+        HENUM   henumPoint;
+        HWND    hwndPoint;
+        SWP     swpPoint;
 
-        WinQueryWindowPos(hwndPoint, &swpPoint);
-        if (    (ptlCalc.x >= swpPoint.x)
-             && (ptlCalc.x <= swpPoint.x + swpPoint.cx)
-             && (ptlCalc.y >= swpPoint.y)
-             && (ptlCalc.y <= swpPoint.y + swpPoint.cy)
-           )
+        flCalcX = (float) ulX / (G_szlPageMageClient.cx / pptlMaxDesktops->x);
+        flCalcY = (float) ulY / (G_szlPageMageClient.cy / pptlMaxDesktops->y);
+
+        flCalcX = (float) flCalcX * G_szlEachDesktopReal.cx;
+        flCalcY = (float) flCalcY * G_szlEachDesktopReal.cy;
+
+        ptlCalc.x = ((int) flCalcX) - G_ptlCurrPos.x;
+        ptlCalc.y = ((int) flCalcY)
+                    - (   (pptlMaxDesktops->y - 1)
+                           * G_szlEachDesktopReal.cy
+                        - G_ptlCurrPos.y
+                      );
+
+        // the WinxxxEnum part is a bit complex, but we can't just use
+        // the wininfo list, as it does not reflect the z order
+
+        henumPoint = WinBeginEnumWindows(HWND_DESKTOP);
+        while (hwndPoint = WinGetNextWindow(henumPoint))
         {
-            // this window matches the coordinates:
-            // check if it's visible
-            // V0.9.2 (2000-02-22) [umoeller]
-            if (WinIsWindowVisible(hwndPoint))
+            if (hwndPoint == G_pHookData->hwndPageMageFrame)
+                // ignore PageMage frame
+                continue;
+
+            WinQueryWindowPos(hwndPoint, &swpPoint);
+            if (    (ptlCalc.x >= swpPoint.x)
+                 && (ptlCalc.x <= swpPoint.x + swpPoint.cx)
+                 && (ptlCalc.y >= swpPoint.y)
+                 && (ptlCalc.y <= swpPoint.y + swpPoint.cy)
+               )
             {
-                hwndResult = hwndPoint;
-                break;
+                // this window matches the coordinates:
+                // check if it's visible in the pagemage client window
+                // V0.9.18 (2002-02-20) [lafaix]
+
+                if (pgmwLock())
+                {
+                    PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwndPoint, NULL);
+
+                    if (    pWinInfo
+                         && (    (pWinInfo->bWindowType == WINDOW_NORMAL)
+                              || (pWinInfo->bWindowType == WINDOW_MAXIMIZE)
+                            )
+                         && WinIsWindowVisible(hwndPoint)
+                            // check if it's visible
+                            // V0.9.2 (2000-02-22) [umoeller]
+                       )
+                    {
+                        hwndResult = hwndPoint;
+                    }
+
+                    pgmwUnlock();
+
+                    if (hwndResult)
+                        break;
+                }
             }
         }
+        WinEndEnumWindows(henumPoint);
     }
-    WinEndEnumWindows(henumPoint);
-
     return (hwndResult);
 }
 

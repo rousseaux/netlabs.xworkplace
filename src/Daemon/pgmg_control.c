@@ -81,18 +81,20 @@
  *  Desktop Arrangement (4,3):
  *
  *  ÚÄÄÄÂÄÄÄÂÄÄÄÂÄÄÄ¿
- *  ³0,2³1,2³2,2³3,2³
+ *  ³0,0³1,0³2,0³3,0³
  *  ÃÄÄÄÅÄÄÄÅÄÄÄÅÄÄÄ´
  *  ³0,1³1,1³2,1³3,1³
  *  ÃÄÄÄÅÄÄÄÅÄÄÄÅÄÄÄ´
- *  ³0,0³1,0³2,0³3,0³
+ *  ³0,2³1,2³2,2³3,2³
  *  ÀÄÄÄÁÄÄÄÁÄÄÄÁÄÄÄÙ
  *
+ *  [Note that (0,0) is the _upper_ left desktop, not the _lower_ left.]
  */
 
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -490,6 +492,8 @@ typedef struct _MINIWINDOW
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed a serialization problem
  *@@changed V0.9.7 (2001-01-21) [umoeller]: now using linked list for wininfos
  *@@changed V0.9.7 (2001-01-21) [umoeller]: largely rewritten for speed
+ *@@changed V0.9.18 (2002-02-11) [lafaix]: fixed painting glitches
+ *@@changed V0.9.18 (2002-02-20) [lafaix]: fixed missing restored windows
  */
 
 VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
@@ -508,12 +512,13 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
     PSIZEL          pszlClient = &pClientData->szlClient;
 
-    // calculate how many pixels we'll have for each desktop
-    // in the client
-    G_szlEachDesktopInClient.cx =    (pszlClient->cx - pptlMaxDesktops->x) //  + 1)
-                                   / pptlMaxDesktops->x;
-    G_szlEachDesktopInClient.cy =    (pszlClient->cy - pptlMaxDesktops->y) //  + 1)
-                                   / pptlMaxDesktops->y;
+    // current desktop (0,0) is upper left, not lower left
+    ULONG           ulCurrScreenX = (G_ptlCurrPos.x / G_szlEachDesktopReal.cx),
+                    ulCurrScreenY = (G_ptlCurrPos.y / G_szlEachDesktopReal.cy);
+
+    // expose the pagemage client size
+    G_szlPageMageClient.cx = pszlClient->cx;
+    G_szlPageMageClient.cy = pszlClient->cy;
 
     /*
      *   (1) entire-client painting
@@ -539,21 +544,12 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
     // paint "current" desktop in different color
     GpiSetColor(hpsMem,
                 pPageMageConfig->lcCurrent);
-    ptlDest.x =   ((float)G_ptlCurrPos.x / (float)G_szlEachDesktopReal.cx)
-                * ((float)G_szlEachDesktopInClient.cx + 1)
-                + 1;
-    ptlDest.y =   (  (   (float)(pptlMaxDesktops->y - 1)
-                       * G_szlEachDesktopReal.cy
-                       - G_ptlCurrPos.y
-                     )
-                    / (float)G_szlEachDesktopReal.cy
-                  )
-                * ((float)G_szlEachDesktopInClient.cy + 1)
-                + 2;
+    ptlDest.x = (pszlClient->cx * ulCurrScreenX) / pptlMaxDesktops->x;
+    ptlDest.y = pszlClient->cy - (pszlClient->cy * ulCurrScreenY) / pptlMaxDesktops->y;
     GpiMove(hpsMem,
             &ptlDest);
-    ptlDest.x += G_szlEachDesktopInClient.cx - 1;
-    ptlDest.y += G_szlEachDesktopInClient.cy - 1;
+    ptlDest.x = (pszlClient->cx * (1 + ulCurrScreenX)) / pptlMaxDesktops->x;
+    ptlDest.y = pszlClient->cy - (pszlClient->cy * (1 + ulCurrScreenY)) / pptlMaxDesktops->y;
     GpiBox(hpsMem,
            DRO_FILL,
            &ptlDest,
@@ -563,11 +559,11 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
     // draw vertical lines
     GpiSetColor(hpsMem,
                 pPageMageConfig->lcDivider);
-    lTemp = G_szlEachDesktopInClient.cx + 1;
     for (ul = 1;
          ul < pptlMaxDesktops->x;
          ul++)
     {
+        lTemp = (pszlClient->cx * ul) / pptlMaxDesktops->x;
         ptlDest.x = lTemp;
         ptlDest.y = 0;
         GpiMove(hpsMem,
@@ -576,16 +572,14 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
         ptlDest.y = pszlClient->cy;
         GpiLine(hpsMem,
                 &ptlDest);
-
-        lTemp += G_szlEachDesktopInClient.cx + 1;
     }
 
     // draw horizontal lines
-    lTemp = G_szlEachDesktopInClient.cy + 1;
     for (ul = 1;
          ul < pptlMaxDesktops->y;
          ul++)
     {
+        lTemp = (pszlClient->cy * ul) / pptlMaxDesktops->y;
         ptlDest.x = 0;
         ptlDest.y =   pszlClient->cy
                     - lTemp;
@@ -594,7 +588,6 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
         ptlDest.y =   pszlClient->cy
                     - lTemp;
         GpiLine(hpsMem, &ptlDest);
-        lTemp += G_szlEachDesktopInClient.cy + 1;
     }
 
     /*
@@ -635,12 +628,11 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
                     float           fScale_X,
                                     fScale_Y;
 
-                    memset(paMiniWindows, 0, cWinInfos * sizeof(MINIWINDOW));
+//                    memset(paMiniWindows, 0, cWinInfos * sizeof(MINIWINDOW));
 
                     // set font to use; this font has been created on startup
                     GpiSetCharSet(hpsMem, LCID_PAGEMAGE_FONT);
 
-                    ul = 0;
                     fScale_X = (float)(    pptlMaxDesktops->x
                                          * G_szlEachDesktopReal.cx
                                       ) / pszlClient->cx;
@@ -653,86 +645,96 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
                     {
                         while (hwndThis = WinGetNextWindow(henum))
                         {
-                            BOOL            fPaint = TRUE;
-
-                            // go thru local list and find the
-                            // current enumeration window
-                            PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwndThis,
-                                                                    NULL);
-
-                            if (pWinInfo)
+                            if (WinIsWindowVisible(hwndThis))
                             {
-                                // item is on list:
-                                // update window pos in window list
-                                WinQueryWindowPos(pWinInfo->hwnd,
-                                                  &pWinInfo->swp);
+                                // go thru local list and find the
+                                // current enumeration window
+                                PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwndThis,
+                                                                        NULL);
 
-                                fPaint = TRUE;
-
-                                switch (pWinInfo->bWindowType)
+                                if (pWinInfo)
                                 {
-                                    case WINDOW_RESCAN:
+                                    // item is on list:
+                                    ULONG ulOldFl = pWinInfo->swp.fl;
+
+                                    // update window pos in window list
+                                    WinQueryWindowPos(pWinInfo->hwnd,
+                                                      &pWinInfo->swp);
+
+                                    // update the bWindowType status, as restoring
+                                    // a previously minimized or hidden window may
+                                    // change it
+                                    //
+                                    // (we don't have to update "special" windows)
+                                    // V0.9.18 (2002-02-20) [lafaix]
+                                    if (    (ulOldFl != pWinInfo->swp.fl)
+                                         && (    (pWinInfo->bWindowType == WINDOW_NORMAL)
+                                              || (pWinInfo->bWindowType == WINDOW_MINIMIZE)
+                                              || (pWinInfo->bWindowType == WINDOW_MAXIMIZE)
+                                            )
+                                       )
+                                    {
+                                        pWinInfo->bWindowType = WINDOW_NORMAL;
+                                        if (pWinInfo->swp.fl & SWP_MINIMIZE)
+                                            pWinInfo->bWindowType = WINDOW_MINIMIZE;
+                                        else
+                                        if (pWinInfo->swp.fl & SWP_MAXIMIZE)
+                                            pWinInfo->bWindowType = WINDOW_MAXIMIZE;
+                                    }
+
+                                    if(pWinInfo->bWindowType == WINDOW_RESCAN)
+                                    {
                                         // window wasn't fully scanned: rescan
                                         if (!pgmwFillWinInfo(pWinInfo->hwnd,
                                                              pWinInfo))
                                             fNeedRescan = TRUE;
-                                    break;
+                                    }
 
-                                    case WINDOW_NORMAL:
-                                    case WINDOW_MAXIMIZE:
-                                        // paint these
-                                    break;
+                                    if (    (pWinInfo->bWindowType == WINDOW_NORMAL)
+                                         || (pWinInfo->bWindowType == WINDOW_MAXIMIZE)
+                                       )
+                                    {
+                                        // this window is to be painted:
+                                        // use a new item on the MINIWINDOW
+                                        // array then and calculate the
+                                        // mapping of the mini window
 
-                                    default:
-                                        // all others: do not paint
-                                        fPaint = FALSE;
-                                }
+                                        PMINIWINDOW pMiniWindowThis
+                                            = &paMiniWindows[cMiniWindowsUsed++];
 
-                                if ((fPaint) && (!WinIsWindowVisible(pWinInfo->hwnd)))
-                                    fPaint = FALSE;
+                                        PSWP pswp = &pWinInfo->swp;
 
-                                if (fPaint)
-                                {
-                                    // this window is to be painted:
-                                    // use a new item on the MINIWINDOW
-                                    // array then and calculate the
-                                    // mapping of the mini window
+                                        // store WININFO ptr; we hold the winlist
+                                        // locked all the time, so this is safe
+                                        pMiniWindowThis->pWinInfo = pWinInfo;
 
-                                    PMINIWINDOW pMiniWindowThis
-                                        = &paMiniWindows[cMiniWindowsUsed++];
+                                        pMiniWindowThis->hwnd = hwndThis;
 
-                                    PSWP pswp = &pWinInfo->swp;
+                                        pMiniWindowThis->ptlBegin.x
+                                            =   (pswp->x + G_ptlCurrPos.x)
+                                              / fScale_X;
 
-                                    // store WININFO ptr; we hold the winlist
-                                    // locked all the time, so this is safe
-                                    pMiniWindowThis->pWinInfo = pWinInfo;
+                                        pMiniWindowThis->ptlBegin.y
+                                            = (   (pptlMaxDesktops->y - 1)
+                                                * G_szlEachDesktopReal.cy
+                                                - G_ptlCurrPos.y + pswp->y
+                                              )
+                                              / fScale_Y + 1;
 
-                                    pMiniWindowThis->hwnd = hwndThis;
+                                        pMiniWindowThis->ptlEnd.x
+                                            =   (pswp->x + pswp->cx + G_ptlCurrPos.x)
+                                              / fScale_X; // - 1;
 
-                                    pMiniWindowThis->ptlBegin.x
-                                        =   (pswp->x + G_ptlCurrPos.x)
-                                          / fScale_X;
+                                        pMiniWindowThis->ptlEnd.y
+                                            = (    (pptlMaxDesktops->y - 1)
+                                                 * G_szlEachDesktopReal.cy
+                                                 - G_ptlCurrPos.y + pswp->y + pswp->cy
+                                              )
+                                              / fScale_Y + 1; // - 1;
 
-                                    pMiniWindowThis->ptlBegin.y
-                                        = (   (pptlMaxDesktops->y - 1)
-                                            * G_szlEachDesktopReal.cy
-                                            - G_ptlCurrPos.y + pswp->y
-                                          )
-                                          / fScale_Y;
-
-                                    pMiniWindowThis->ptlEnd.x
-                                        =   (pswp->x + pswp->cx + G_ptlCurrPos.x)
-                                          / fScale_X - 1;
-
-                                    pMiniWindowThis->ptlEnd.y
-                                        = (    (pptlMaxDesktops->y - 1)
-                                             * G_szlEachDesktopReal.cy
-                                             - G_ptlCurrPos.y + pswp->y + pswp->cy
-                                          )
-                                          / fScale_Y - 1;
-
-                                } // end if (fPaint)
-                            } // end if (pEntryThis)
+                                    } // end if (    (pWinInfo->bWindowType == WINDOW_NORMAL) ...
+                                } // end if (pWinInfo)
+                            } // end if (WinIsVisible)
                         } // end while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
                         WinEndEnumWindows(henum);
                     }
@@ -777,7 +779,6 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
                             // draw window text too?
                             if (    (pPageMageConfig->fShowWindowText)
-                                 && (pMiniWindowThis->pWinInfo)
                                  && (pszSwitchName = pMiniWindowThis->pWinInfo->szSwitchName)
                                  && (ulSwitchNameLen = strlen(pszSwitchName))
                                )
@@ -788,7 +789,7 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
                                 rclText.xLeft = pMiniWindowThis->ptlBegin.x + 1;
                                 rclText.yBottom = pMiniWindowThis->ptlBegin.y + 1;
                                 rclText.xRight = pMiniWindowThis->ptlEnd.x - 1;
-                                rclText.yTop = pMiniWindowThis->ptlEnd.y - 4;
+                                rclText.yTop = pMiniWindowThis->ptlEnd.y - 1; // - 4;
 
                                 if (pMiniWindowThis->hwnd == hwndLocalActive)
                                     // active:
@@ -840,6 +841,7 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
  *@@changed V0.9.6 (2000-11-06) [umoeller]: disabled dragging of WPS desktop
  *@@changed V0.9.11 (2001-04-25) [umoeller]: added tracking of entire PageMage frame
  *@@changed V0.9.13 (2001-07-06) [umoeller]: added ctrl support; if not pressed, we jump to next desktop
+ *@@changed V0.9.18 (2002-02-11) [lafaix]: changed ctrl to shift, made it work too
  */
 
 VOID TrackWithinPager(HWND hwnd,
@@ -879,56 +881,64 @@ VOID TrackWithinPager(HWND hwnd,
         TRACKINFO       ti;
         float           fScale_X,
                         fScale_Y;
+        POINTL          ptlInitial;
 
         WinQueryWindowPos(hwndTracked, &swpTracked);
         ti.cxBorder = 1;
         ti.cyBorder = 1;
 
-        ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_ALLINBOUNDARY;
+        ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_PARTINBOUNDARY; // V0.9.18 (2002-02-14) [lafaix] was TF_ALLINBOUNDARY;
 
-        if (WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)  // V0.9.13 (2001-07-06) [umoeller]
+        if (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)  // V0.9.13 (2001-07-06) [umoeller]
         {
-            // ctrl pressed: set grid to each desktop
-            ti.cxGrid =    G_szlEachDesktopInClient.cx
-                         // add an extra pixel for each desktop
-                         + pptlMaxDesktops->x * 2;
-            ti.cyGrid = G_szlEachDesktopInClient.cy;
-                         // add an extra pixel for each desktop
-                         + pptlMaxDesktops->y * 2;
+            // shift pressed: set grid to each desktop
+            ti.cxGrid = pszlClient->cx / pptlMaxDesktops->x;
+            ti.cyGrid = pszlClient->cy / pptlMaxDesktops->y;
             ti.fs |= TF_GRID;
         }
         else
         {
-            // ctrl not pressed: allow any position
+            // shift not pressed: allow any position
             ti.cxGrid = 1;
             ti.cyGrid = 1;
         }
 
         ti.cxKeyboard = 1;
         ti.cyKeyboard = 1;
+
         fScale_X = (float)(pptlMaxDesktops->x * G_szlEachDesktopReal.cx)
                            / pszlClient->cx;
         fScale_Y = (float)(pptlMaxDesktops->y * G_szlEachDesktopReal.cy)
                            / pszlClient->cy;
+
+        // for consistency, the track rect must have the size of the mini window
+        // it represents
         ti.rclTrack.xLeft = (swpTracked.x + G_ptlCurrPos.x) / fScale_X;
         ti.rclTrack.yBottom = (   (pptlMaxDesktops->y - 1)
                                 * G_szlEachDesktopReal.cy
                                 - G_ptlCurrPos.y + swpTracked.y
                               )
-                              / fScale_Y;
+                              / fScale_Y + 1;
         ti.rclTrack.xRight =   (swpTracked.x + swpTracked.cx + G_ptlCurrPos.x)
-                             / fScale_X - 1;
+                             / fScale_X + 1; // - 1;
         ti.rclTrack.yTop = (    (pptlMaxDesktops->y - 1)
                               * G_szlEachDesktopReal.cy
                               - G_ptlCurrPos.y
                               + swpTracked.y
                               + swpTracked.cy
                            )
-                           / fScale_Y - 1;
-        ti.rclBoundary.xLeft = 0;
-        ti.rclBoundary.yBottom = 0;
-        ti.rclBoundary.xRight = pszlClient->cx;
-        ti.rclBoundary.yTop = pszlClient->cy;
+                           / fScale_Y + 2; // - 1;
+
+        ptlInitial.x = ti.rclTrack.xLeft;
+        ptlInitial.y = ti.rclTrack.yBottom;
+
+        // add a 1px boundary to the client area so that the moved
+        // window remains accessible
+        ti.rclBoundary.xLeft = 1;
+        ti.rclBoundary.yBottom = 1;
+        ti.rclBoundary.xRight = pszlClient->cx -1;
+        ti.rclBoundary.yTop = pszlClient->cy -1;
+
         ti.ptlMinTrackSize.x = 2;
         ti.ptlMinTrackSize.y = 2;
         ti.ptlMaxTrackSize.x = pszlClient->cx;
@@ -938,22 +948,53 @@ VOID TrackWithinPager(HWND hwnd,
                          NULLHANDLE,        // hps
                          &ti))
         {
-            swpTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
-            swpTracked.y = (ti.rclTrack.yBottom * fScale_Y)
-                           -  (   (pptlMaxDesktops->y - 1)
-                                  * G_szlEachDesktopReal.cy
-                                  - G_ptlCurrPos.y
-                              );
-            swpTracked.x -=   swpTracked.x % 16
-                            + WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
+            POINTL ptlTracked;
+
+            if (ti.fs & TF_GRID)
+            {
+                // if in grid mode, we better keep the exact position we had
+                // before, instead of the approximation the track returned
+                // V0.9.18 (2002-02-14) [lafaix]
+                ptlTracked.x = swpTracked.x + ((ti.rclTrack.xLeft - ptlInitial.x) / ti.cxGrid) * G_szlEachDesktopReal.cx;
+                ptlTracked.y = swpTracked.y + ((ti.rclTrack.yBottom - ptlInitial.y) / ti.cyGrid) * G_szlEachDesktopReal.cy;
+            }
+            else
+            {
+                // if the x position hasn't changed, keep the exact x position
+                // we had before V0.9.18 (2002-02-14) [lafaix]
+                if (ti.rclTrack.xLeft != ptlInitial.x)
+                {
+                    ptlTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
+                }
+                else
+                    ptlTracked.x = swpTracked.x;
+
+                // if the y position hasn't changed, keep the exact y position
+                // we had before V0.9.18 (2002-02-14) [lafaix]
+                if (ti.rclTrack.yBottom != ptlInitial.y)
+                {
+                    ptlTracked.y = (ti.rclTrack.yBottom * fScale_Y)
+                                   -  (   (pptlMaxDesktops->y - 1)
+                                          * G_szlEachDesktopReal.cy
+                                          - G_ptlCurrPos.y
+                                      );
+                }
+                else
+                    ptlTracked.y = swpTracked.y;
+            }
+
+            // ?? [lafaix]
+//            swpTracked.x -=   swpTracked.x % 16
+//                            + WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
+
 
             // disable message processing in the hook
             if (pgmcDisableSwitching())
             {
                 WinSetWindowPos(hwndTracked,
                                 HWND_TOP,
-                                swpTracked.x,
-                                swpTracked.y,
+                                ptlTracked.x,
+                                ptlTracked.y,
                                 0,
                                 0,
                                 SWP_MOVE | SWP_NOADJUST);
@@ -985,9 +1026,9 @@ VOID ClientCreate(HWND hwnd,
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
     // PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
-    G_ptlCurrPos.x = (pPageMageConfig->ptlStartDesktop.x - 1)
+    G_ptlCurrPos.x =    (pPageMageConfig->ptlStartDesktop.x - 1)
                       * G_szlEachDesktopReal.cx;
-    G_ptlCurrPos.y = (pPageMageConfig->ptlStartDesktop.y - 1)
+    G_ptlCurrPos.y =    (pPageMageConfig->ptlStartDesktop.y - 1)
                       * G_szlEachDesktopReal.cy;
         // V0.9.9 (2001-03-15) [lafaix]: desktops pos start at _upper_ left
 
@@ -1111,6 +1152,7 @@ VOID ClientPresParamChanged(HWND hwnd,
  *      implementation for WM_SIZE in fnwpPageMageClient.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.18 (2002-02-19) [lafaix]: added G_szlPageMageClient handling
  */
 
 VOID ClientSize(HWND hwnd,
@@ -1137,10 +1179,9 @@ VOID ClientSize(HWND hwnd,
         pClientData->bmihMem.cx = pszlClient->cx;
         pClientData->bmihMem.cy = pszlClient->cy;
 
-        G_szlEachDesktopInClient.cx = (pszlClient->cx - pptlMaxDesktops->x + 1)
-                                       / pptlMaxDesktops->x;
-        G_szlEachDesktopInClient.cy = (pszlClient->cy - pptlMaxDesktops->y + 1)
-                                       / pptlMaxDesktops->y;
+        // V0.9.18 (2002-02-19) [lafaix]
+        G_szlPageMageClient.cx = pszlClient->cx;
+        G_szlPageMageClient.cy = pszlClient->cy;
 
         if (pClientData->hbmClient == NULLHANDLE)
         {
@@ -1420,6 +1461,19 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             #ifdef __DEBUG__
             case WM_BUTTON2DBLCLK:
                 DosBeep(1000, 50);
+//                {
+//                    USHORT i;
+//                    ULONG ulStartTime, ulEndTime;
+//
+//                    _Pmpf(("About to update client bitmap..."));
+//                    DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT, &ulStartTime, sizeof(ULONG));
+//
+//                    for (i = 0; i < 200; i++)
+//                      UpdateClientBitmap(&ClientData);
+//
+//                    DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT, &ulEndTime, sizeof(ULONG));
+//                    _Pmpf(("Done in %d ms", ulEndTime - ulStartTime));
+//                }
                 DumpAllWindows();
             break;
             #endif
@@ -1596,6 +1650,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
              */
 
             case PGMG_WNDRESCAN:
+                _Pmpf(("PGMG_WNDRESCAN"));
                 if (pgmwWindowListRescan())
                     // changed:
                     WinPostMsg(hwnd,

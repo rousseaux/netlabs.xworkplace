@@ -1,4 +1,4 @@
- 
+
 /*
  * drvrs049.txt:
  *      Driver specifications for the "Drivers" page in
@@ -63,25 +63,25 @@
  *            getting XWorkplace to compile at all. See
  *            src\config\drivdlgs.c for an introduction.
  */
- 
+
 CATEGORY "Allgemein"
     {
         DRIVER ( "DEVICE=", "RESERVE.SYS",
                  "Hardwaremanager",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "DEVICE=", "APM.SYS",
                  "Advanced Power Management",
                  DRVF_CMDREF)
         DRIVER ( "RUN=", "APMDAEMN.EXE",
                  "APM Daemon",
                  0)
- 
+
         DRIVER ( "DEVICE=", "UNICODE.SYS",
                  "Unicode-UnterstÅtzung fÅr WSeB-Kernel",
                  0,
                  TAG=KRNLUNICODE)
- 
+
         DRIVER ( "BASEDEV=", "USBD.SYS",
                  "USB Basistreiber",
                  0 ),
@@ -91,22 +91,22 @@ CATEGORY "Allgemein"
         DRIVER ( "BASEDEV=", "USBUHCD.SYS",
                  "DockStation USB Basistreiber",
                  0 ),
- 
+
         DRIVER ( "DEVICE=", "TESTCFG.SYS",
                  "Konfigurationstest-Treiber fÅr OS/2-Installation",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "BASEDEV=", "I2OXPORT.SYS",
                  "IBM I2O Transport",
                  DRVF_NOPARAMS)
         DRIVER ( "BASEDEV=", "I2OSOSM.ADD",
                  "IBM I2O Storage OSM",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "DEVICE=", "DOS.SYS",
                  "DOS-UnterstÅtzung",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "DEVICE=", "VEMM.SYS",
                  "DOS Expanded Memory-UnterstÅtzung",
                  DRVF_CMDREF)
@@ -122,25 +122,33 @@ CATEGORY "Allgemein"
         DRIVER ( "DEVICE=", "VXMS.SYS",
                  "DOS eXtended Memory Specification-UnterstÅtzung",
                  DRVF_CMDREF)
- 
+
         DRIVER ( "DEVICE=", "VW32S.SYS",
                  "Win32s-UnterstÅtzung",
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VWIN.SYS",
                  "Win-OS/2-UnterstÅtzung",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "DEVICE=", "ANSI.SYS",
                  "ANSI Bildschirm- und TastaturunterstÅtzung",
                  DRVF_CMDREF)
- 
+
         DRIVER ( "RUN=", "SMSTART.EXE",
-                 "Systemmanagement Startup-Daemon",
+                 "Systemmanagement Start-Daemon",
                  DRVF_CMDREF)
                  )
+
+        DRIVER ( "DEVICE=", "LOG.SYS",
+                 "OS/2 Systemfehler-Protokolldienst (Basistreiber)",
+                 DRVF_CMDREF)
+
+        DRIVER ( "RUN=", "LOGDAEM.EXE",
+                 "OS/2 Systemfehler-Protokolldienst (Daemon-Proze·)",
+                 DRVF_CMDREF)
     }
- 
-CATEGORY "Storage"
+
+CATEGORY "Speichermedien"
     {
         DRIVER ( "BASEDEV=", "IBM1S506.ADD",
                  "Standard IDE",
@@ -154,7 +162,7 @@ CATEGORY "Storage"
         DRIVER ( "BASEDEV=", "OS2DASD.DMD",
                  "Allgemeiner Speichermedienmanager",
                  DRVF_CMDREF)
- 
+
         DRIVER ( "BASEDEV=", "OS2LVM.DMD",
                  "Logical Volume Manager",
                  DRVF_CMDREF,
@@ -163,14 +171,14 @@ CATEGORY "Storage"
                  REQUIRES=EXTENDFS,
                  REQUIRES=KRNLUNICODE)
         DRIVER ( "RUN=", "LVMALERT.EXE",
-                 "LVM Daemon",
+                 "LVM-Daemon",
                  DRVF_CMDREF,
                  TAG=LVMALERT)
         DRIVER ( "RUN=", "EXTENDFS.EXE",
                  "LVM-Dateisystemerweiterung",
                  DRVF_CMDREF,
                  TAG=EXTENDFS)
- 
+
         DRIVER ( "BASEDEV=", "CHKDSK.SYS",
                  "CHKDSK32-Treiber fÅr UnterstÅtzung gro·er Partitionen",
                  DRVF_NOPARAMS)
@@ -180,9 +188,12 @@ CATEGORY "Storage"
         DRIVER ( "BASEDEV=", "DSKSLEEP.FLT",
                  "Filter fÅr Abschaltung von SCSI-Festplatten (Vitus Jensen)",
                  0)
- 
+
+        DRIVER ( "DEVICE=", "VFDISK.SYS",
+                 "IBM-Treiber fÅr virtuelle Floppy-Disk",
+                 0 )
     }
- 
+
 CATEGORY "CD-ROM"
     {
         DRIVER ( "BASEDEV=", "MITFX001.ADD",
@@ -191,7 +202,7 @@ CATEGORY "CD-ROM"
         DRIVER ( "BASEDEV=", "SBCD2.ADD",
                  "Sound Blaster CD-ROM",
                  DRVF_CMDREF | DRVF_NOPARAMS),
- 
+
         DRIVER ( "BASEDEV=", "IBMATAPI.FLT",
                  "ATAPI Filter",
                  DRVF_CMDREF),
@@ -201,26 +212,26 @@ CATEGORY "CD-ROM"
         DRIVER ( "BASEDEV=", "DaniATAPI.FLT",
                  "Erweiterter ATAPI-Filter (Daniela Engert)",
                  0),
- 
+
         DRIVER ( "BASEDEV=", "RSJIDECD.FLT",
                  "RSJ CD-ROM Filterersatz",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "LOCKCDR.FLT",
                  "RSJ CD-ROM-nach-WORM Konvertierungsfilter",
                  DRVF_CMDREF),
- 
+
         DRIVER ( "DEVICE=", "OS2CDROM.DMD",
                  "Allgemeiner CD-ROM-Manager",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "JJSCDROM.DMD",
                  "Erweiterter CD-ROM-Manager",
                  DRVF_CMDREF)
- 
+
         DRIVER ( "DEVICE=", "VCDROM.SYS",
                  "DOS CD-ROM-UnterstÅtzung",
                  DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "SCSI"
     {
         DRIVER ( "BASEDEV=", "AHA152X.ADD",
@@ -280,7 +291,7 @@ CATEGORY "SCSI"
         DRIVER ( "BASEDEV=", "DC2980.ADD",
                  "DawiControl DC2980 Adapter",
                  0),
- 
+
         DRIVER ( "BASEDEV=", "OS2SCSI.DMD",
                  "OS/2 SCSI-Manager",
                  DRVF_CMDREF | DRVF_NOPARAMS),
@@ -290,7 +301,7 @@ CATEGORY "SCSI"
         DRIVER ( "DEVICE=", "ASPIROUT.SYS",
                  "ASPI-Router",
                  0)
- 
+
         DRIVER ( "BASEDEV=", "SYM8xx.ADD",
                  "Symbios/LSI/NCR 8xx-basierter SCSI-Host",
                  DRVF_NOPARAMS)
@@ -304,8 +315,8 @@ CATEGORY "SCSI"
                  "DOS/Windows Advanced SCSI Programming Interface",
                  DRVF_CMDREF)
     }
- 
-CATEGORY "Installable File Systems"
+
+CATEGORY "Installierbare Dateisysteme"
     {
         DRIVER ( "IFS=", "HPFS.IFS",
                  "High Performance File System (HPFS)",
@@ -313,36 +324,36 @@ CATEGORY "Installable File Systems"
         DRIVER ( "IFS=", "HPFS386.IFS",
                  "386 High Performance File System (HPFS386)",
                  0),
- 
+
         DRIVER ( "IFS=", "JFS.IFS",
                  "Journaling File System (JFS)",
                  DRVF_CMDREF,
                  REQUIRES=LVM,
                  REQUIRES=KRNLUNICODE),
- 
+
         DRIVER ( "IFS=", "CDFS.IFS",
-                 "CD-ROM File System (CDFS)",
+                 "CD-ROM-Dateisystem (CDFS)",
                  DRVF_CMDREF)
- 
+
         DRIVER ( "IFS=", "UDF.IFS",
                  "UDF (DVD)",
                  DRVF_CMDREF)
- 
+
         DRIVER ( "IFS=", "NETWKSTA.200",
                  "LAN Requester Dateisystem",
                  0,
                  REQUIRES=NETBIOS),
- 
+
         DRIVER ( "IFS=", "RAMFS.IFS",
                  "RAM-Disk-Dateisystem (RAMFS)",
                  0),
         DRIVER ( "IFS=", "RAMFS8.IFS",
-                 "RAM-Disk-Dateisystem (RAMFS, 8 MB Version)",
+                 "RAM-Disk-Dateisystem (RAMFS, 8-MB-Version)",
                  0),
         DRIVER ( "IFS=", "RAMFS64.IFS",
-                 "RAM-Disk-Dateisystem (RAMFS 64 MB Version)",
+                 "RAM-Disk-Dateisystem (RAMFS, 64-MB-Version)",
                  0),
- 
+
         DRIVER ( "IFS=", "VFAT-OS2.IFS",
                  "Win95 VFAT-Dateisystem",
                  0,
@@ -353,7 +364,7 @@ CATEGORY "Installable File Systems"
         DRIVER ( "BASEDEV=", "EXT2FLT.FLT",
                  "Linux ext2fs Partitionsfilter",
                  0),
- 
+
         DRIVER ( "IFS=", "EXT2-OS2.IFS",
                  "Linux ext2fs Dateisystem",
                  0,
@@ -361,14 +372,14 @@ CATEGORY "Installable File Systems"
         DRIVER ( "RUN=", "EXT2_LW.EXE",
                  "Linux ext2fs Cachedaemon",
                  0)
- 
+
         DRIVER ( "IFS=", "TVFS.IFS",
                  "Toronto Virtual File System (TVFS)",
                  0)
         DRIVER ( "RUN=", "TVCTL.EXE",
                  "TVFS Kontrollprogramm",
                  0)
- 
+
         DRIVER ( "IFS=", "FAT32.IFS",
                  "FAT32-Dateisystem (Henk Kelder)",
                  0)
@@ -378,50 +389,50 @@ CATEGORY "Installable File Systems"
         DRIVER ( "BASEDEV=", "PARTFILT.FLT",
                  "Partitionstypenfilter",
                  0)
- 
+
         DRIVER ( "IFS=", "HFS.IFS",
                  "Macintosh Hierarchical File System (HFS)",
                  0)
         DRIVER ( "BASEDEV=", "HFS.FLT",
                  "HFS UnterstÅtzungsfilter",
                  0)
- 
+
         DRIVER ( "IFS=", "NFS200.IFS",
                  "Network File System (NFS)",
                  0)
- 
+
         DRIVER ( "IFS=", "CDWFS.IFS",
                  "RSJ CD-Writer Dateisystem",
                  0)
         DRIVER ( "RUN=", "CDWFSD.EXE",
                  "RSJ CD-Writer Dateisystem Daemonproze·",
                  0)
- 
+
         DRIVER ( "IFS=", "FTP.IFS",
                  "FTP Dateisystem (FTP-IFS) von Vit Timchshin",
                  0)
         DRIVER ( "RUN=", "R3COMM.EXE",
                  "FTP-IFS Kontrollprogramm von Vit Timchshin",
                  0)
- 
+
         DRIVER ( "IFS=", "NDFS.IFS",
                  "Network Drive File System (NDFS) von Blueprint Software Works",
                  0)
         DRIVER ( "RUN=", "NDCTL.EXE",
                  "NDFS Kontrollprogramm von Blueprint Software Works",
                  0)
- 
+
         DRIVER ( "IFS=", "STUBFSD.IFS",
                  "CD-ROM ISO-Image Dateisystem (ISOFS) von Chris Wohlgemuth",
                  0)
         DRIVER ( "RUN=", "ISOFSDMN.EXE",
                  "ISOFS Kontrollprogramm von Chris Wohlgemuth",
                  0)
- 
+
         DRIVER ( "IFS=", "TONIGY.IFS",
                  "Tonigy Audio-CD-Dateisystem",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "IFS=", "SUBSTFSD.IFS",
                  "SUBST Dateisystem",
                  DRVF_NOPARAMS)
@@ -429,24 +440,24 @@ CATEGORY "Installable File Systems"
                  "SUBST Dateisystem-Daemon",
                  DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "Video"
     {
         DRIVER ( "DEVICE=", "GRADD.SYS",
                  "GRADD",
                  0 )
- 
+
         DRIVER ( "DEVICE=", "KMGAX64.SYS",
                  "Matrox",
                  0 )
         DRIVER ( "DEVICE=", "VMGAX64.SYS",
                  "Matrox DOS/Windows-UnterstÅtzung",
                  0 )
- 
+
         DRIVER ( "DEVICE=", "SDDHELP.SYS",
                  "SciTech Display Doctor UnterstÅtzung",
                  0 )
- 
+
         DRIVER ( "DEVICE=", "VVGA.SYS",
                  "VGA-Treiber fÅr DOS/Windows-UnterstÅtzung",
                  DRVF_NOPARAMS )
@@ -462,7 +473,7 @@ CATEGORY "Video"
         DRIVER ( "DEVICE=", "V8514A.SYS",
                  "8514-Treiber fÅr DOS/Windows-UnterstÅtzung",
                  0 )
- 
+
         DRIVER ( "DEVICE=", "PMDD.SYS",
                  "OS/2 PM Ring 0 GerÑtetreiber",
                  DRVF_CMDREF | DRVF_NOPARAMS)
@@ -470,7 +481,7 @@ CATEGORY "Video"
                  "Textmodus-ZeigerunterstÅtzung",
                  DRVF_CMDREF | DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "Andere PeripheriegerÑte"
     {
         DRIVER ( "BASEDEV=", "IBM1FLPY.ADD",
@@ -482,7 +493,7 @@ CATEGORY "Andere PeripheriegerÑte"
         DRIVER ( "BASEDEV=", "XDFLOPPY.FLT",
                  "1.8MB Floppy UnterstÅtzungsfilter",
                  DRVF_CMDREF | DRVF_NOPARAMS),
- 
+
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
                  "Standarddrucker",
                  0),
@@ -490,13 +501,13 @@ CATEGORY "Andere PeripheriegerÑte"
                  "Microchannel-Drucker",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "PAR1284.SYS",
-                 "BIDI-Printer",
+                 "BIDI-Drucker",
                  DRVF_CMDREF),
- 
+
         DRIVER ( "BASEDEV=", "IBMKBD.SYS",
                  "Standardtastatur",
                  DRVF_CMDREF),
- 
+
         DRIVER ( "DEVICE=", "MOUSE.SYS",
                  "Standardmaus",
                  DRVF_CMDREF),
@@ -506,7 +517,10 @@ CATEGORY "Andere PeripheriegerÑte"
         DRIVER ( "DEVICE=", "USBMOUSE.SYS",
                  "USB-Maus",
                  0),
- 
+        DRIVER ( "DEVICE=", "XMOUSE.SYS",
+                 "Martin Lafaix' erweiterter Maustreiber",
+                 0)
+
         DRIVER ( "DEVICE=", "COM.SYS",
                  "StandardmÑ·iger serieller (COM) Porttreiber",
                  DRVF_CMDREF)
@@ -550,16 +564,16 @@ CATEGORY "Andere PeripheriegerÑte"
                  "ELSA Virtual DOS CAPI 1.1 Treiber",
                  0)
         DRIVER ( "DEVICE=", "VFD.OS2",
-                 "Virtual FOSSIL Treiber",
+                 "Virtueller FOSSIL-Treiber",
                  0)
- 
+
         DRIVER ( "DEVICE=", "USBCOM.SYS",
                  "USB-Modem",
                  0),
         DRIVER ( "DEVICE=", "USBCOM.SYS",
                  "USB-Modem",
                  0),
- 
+
         DRIVER ( "BASEDEV=", "USBD.SYS",
                  "USB-Treiber",
                  0 ),
@@ -569,16 +583,16 @@ CATEGORY "Andere PeripheriegerÑte"
         DRIVER ( "BASEDEV=", "USBUHCD.SYS",
                  "DockStation USB-Treiber",
                  0 ),
- 
+
         DRIVER ( "DEVICE=", "FTDVR.SYS",
                  "BackMaster Floppy Tape Treiber",
                  0 ),
         DRIVER ( "DEVICE=", "PTDVR.SYS",
                  "BackMaster Parallel Tape Treiber",
                  0 ),
- 
+
     }
- 
+
 CATEGORY "Multimedia"
     {
         DRIVER ( "DEVICE=", "SB16D2.SYS",
@@ -614,11 +628,11 @@ CATEGORY "Multimedia"
         DRIVER ( "RUN=", "ULTRALDR.EXE",
                  "Gravis UltraSound Patchloader",
                  DRVF_NOPARAMS)
- 
+
         DRIVER ( "DEVICE=", "VCSHDD.SYS",
                  "MMPM/2 UnterstÅtzungstreiber fÅr Videoaufnahme",
                  0)
- 
+
         DRIVER ( "DEVICE=", "R0STUB.SYS",
                  "MMPM/2 Ring-0 Stub-Treiber fÅr StreamingunterstÅtzung",
                  0),
@@ -628,7 +642,7 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "AUDIOVDD.SYS",
                  "MMPM/2 Soundsharing Treiber",
                  0),
- 
+
         DRIVER ( "BASEDEV=", "TIMER0.SYS",
                  "Hochauflîsender Timer",
                  0),
@@ -638,16 +652,16 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "MPU401.SYS",
                  "MPU401 MIDI-UnterstÅtzung",
                  0),
- 
+
         DRIVER ( "DEVICE=", "USBAUDIO.SYS",
                  "USB-Audio",
                  0),
- 
+
         DRIVER ( "RUN=", "MIDIDMON.EXE",
                  "OS/2 MIDI-Daemon",
                  0),
     }
- 
+
 CATEGORY "Netzwerk"
     {
         DRIVER ( "DEVICE=", "SOCKETS.SYS",
@@ -671,7 +685,7 @@ CATEGORY "Netzwerk"
         DRIVER ( "RUN=", "LANMSGEX.EXE",
                  "Allgemein: IBM LAN Protokollierungsdaemon",
                  0),
- 
+
         DRIVER ( "DEVICE=", "AFINET.SYS",
                  "Protokoll: TCP/IP Stack (16-bit Version)",
                  0),
@@ -693,7 +707,7 @@ CATEGORY "Netzwerk"
         DRIVER ( "RUN=", "VDOSCTL.EXE",
                  "Protokoll: TCP/IP DOS/Windows Stackdaemon",
                  0),
- 
+
         DRIVER ( "DEVICE=", "NETBIOS.OS2",
                  "Protokoll: NetBIOS API Treiber",
                  0),
@@ -715,18 +729,18 @@ CATEGORY "Netzwerk"
         DRIVER ( "DEVICE=", "LANVDD.OS2",
                  "Protokoll: NetBIOS DOS/Windows VDD",
                  0),
- 
+
         DRIVER ( "DEVICE=", "TCPBEUI.OS2",
                  "Protokoll: NetBIOS Åber TCP/IP",
                  0),
- 
+
         DRIVER ( "DEVICE=", "IPX.SYS",
                  "Protokoll: IPX Protokolltreiber",
                  0),
         DRIVER ( "DEVICE=", "VIPX.SYS",
                  "Protokoll: IPX DOS/Windows",
                  0),
- 
+
         DRIVER ( "DEVICE=", "NETBIOS.SYS",
                  "Protokoll: NetBIOS-Treiber fÅr Netware client",
                  0),
@@ -749,7 +763,7 @@ CATEGORY "Netzwerk"
         DRIVER ( "DEVICE=", "ROUTE.SYS",
                  "Protokoll: Router fÅr Netware Client",
                  0),
- 
+
         DRIVER ( "BASEDEV=", "DETNE2.SYS",
                  "Adapter: NE200 Karte",
                  0),
@@ -771,12 +785,12 @@ CATEGORY "Netzwerk"
         DRIVER ( "DEVICE=", "IBMTOK.OS2",
                  "Adapter: IBM TokenRing Karte",
                  0),
- 
+
         DRIVER ( "DEVICE=", "IPSPY.OS2",
                  "IPSpy Protokolltreiber",
                  0),
     }
- 
+
 CATEGORY "Systemerweiterungen"
     {
         DRIVER ( "BASEDEV=", "MWDD32.SYS",
@@ -788,7 +802,7 @@ CATEGORY "Systemerweiterungen"
         DRIVER ( "DEVICE=", "CPPOPA3.SYS",
                  "IBM VisualAge C++ 3.0 Debuggertreiber",
                  0)
- 
+
         DRIVER ( "DEVICE=", "WATCHCAT.SYS",
                  "WatchCat Basis",
                  0)
@@ -798,25 +812,37 @@ CATEGORY "Systemerweiterungen"
         DRIVER ( "DEVICE=", "VWCAT.SYS",
                  "WatchCat Proze·killer VDD",
                  0)
- 
+
         DRIVER ( "DEVICE=", "THESEUS5.SYS",
-                 "Theseus Systemanalysetreiber",
+                 "Theseus 3 Systemanalysetreiber",
                  0)
         DRIVER ( "DEVICE=", "OS20MEMU.SYS",
                  "OS20MEMU Systemanalysetreiber",
                  0)
- 
+
         DRIVER ( "BASEDEV=", "K6.SYS",
                  "UnterstÅtzungstreiber fÅr AMD K6-Prozessorfamilie",
                  0)
- 
+
         DRIVER ( "DEVICE=", "P6K7MTRR.SYS",
                  "UnterstÅtzungstreiber fÅr Intel P6/AMD K7 MTTR",
                  0)
- 
+
         DRIVER ( "BASEDEV=", "WACKER.SYS",
                  "UnterstÅtzungstreiber fÅr AMD K6-Prozessorfamilie",
                  0)
+
+        DRIVER ( "DEVICE=", "VPCAPP.SYS",
+                 "Virtual PC-UnterstÅtzungstreiber",
+                 DRVF_NOPARAMS)
+
+        DRIVER ( "DEVICE=", "KDBNET.SYS",
+                 "UnterstÅtzung fÅr UDP Åber TCP/IP mit OS/2-Debug-Kernels",
+                 0 )
+
+        DRIVER ( "DEVICE=", "WIN32K.SYS",
+                 "Kernel-UnterstÅtzung fÅr Odin",
+                 0 )
     }
- 
- 
+
+

@@ -188,7 +188,7 @@
  *      Function prefix for this file:
  *      --  ico*
  *
- *@@added V0.9.V0.9.16 (2001-10-01) [umoeller]
+ *@@added V0.9.16 (2001-10-01) [umoeller]
  *@@header "filesys\icons.h"
  */
 

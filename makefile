@@ -234,24 +234,23 @@ xwpsecurity:
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
-nls:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\dll
-    @cd $(XWP_LANG_CODE)\dll
+$(XWP_LANG_CODE):
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)
+    @cd $(XWP_LANG_CODE)
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\inf.$(XWP_LANG_CODE)
-    @cd inf.$(XWP_LANG_CODE)
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\misc
-    @cd misc
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)\xwphelp2
-    @cd xwphelp2
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
 
+049:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir 049
+    @cd 049
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..
+
+!ifdef BUILD_049_TOO
+nls: $(XWP_LANG_CODE) 049
+!else
+nls: $(XWP_LANG_CODE)
+!endif
 
 # LINKER PSEUDOTARGETS
 # --------------------

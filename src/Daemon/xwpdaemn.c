@@ -284,9 +284,14 @@ SIZEL           G_szlEachDesktopReal = {0};
             // "real" size of each desktop; this is faked by pagemage to be
             // the screen dimension plus 8 pixels so we get rid of the maximized
             // window borders on adjacent screens
-SIZEL           G_szlEachDesktopInClient = {0};
+//SIZEL           G_szlEachDesktopInClient = {0};
             // size of each desktop's representation in the pagemage client,
             // recalculated on each WM_SIZE
+            // removed V0.9.18 (2002-02-19) [lafaix]
+SIZEL           G_szlPageMageClient = {0};
+            // size of the pagemage client window; used to precisely locate
+            // mini windows in the client area
+            // V0.9.18 (2002-02-19) [lafaix]
 BOOL            G_bConfigChanged = FALSE;
 SWP             G_swpPgmgFrame = {0};
 THREADINFO      G_tiMoveThread = {0};
@@ -1140,6 +1145,8 @@ VOID ProcessHotCorner(MPARAM mp1)
        )
     {
         UCHAR ucScanCode = 0;
+
+        _Pmpf((__FUNCTION__ ": got hot corner %d", lIndex));
 
         switch (hobjIndex)
         {

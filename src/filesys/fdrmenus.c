@@ -1905,6 +1905,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
         if (somSelf)
         {
             BOOL        fDummy;
+            WPFolder    *pFolder = NULL;
 
             /*
              *  "Sort" menu items:
@@ -1943,8 +1944,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
                 case ID_XFMI_OFS_FDRDEFAULTDOC:
                 {
-                    WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
-                    if (pDefaultDoc)
+                    WPFileSystem *pDefaultDoc;
+                    if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
                         _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
                 }
                 break;
@@ -1975,7 +1976,6 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                                      cmnQueryNLSModuleHandle(FALSE),
                                                      ID_XFD_SELECTSOME,
                                                      (PVOID)hwndFrame);    // dlg params
-                    // cmnSetHelpPanel();
                     WinShowWindow(hwndSelectSome, TRUE);
                     brc = TRUE;
                 }
@@ -1998,8 +1998,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     // selected objects, so we repost the msg to
                     // the first selected object, which will handle
                     // the rest
-                    HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-                    if (hwndCnr)
+                    HWND hwndCnr;
+                    if (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
                     {
                         PMINIRECORDCORE pmrc = WinSendMsg(hwndCnr,
                                                           CM_QUERYRECORDEMPHASIS,
@@ -2008,8 +2008,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                         if ((pmrc != NULL) && ((ULONG)pmrc != -1))
                         {
                             // get object from record core
-                            WPObject *pObject2 = OBJECT_FROM_PREC(pmrc);
-                            if (pObject2)
+                            WPObject *pObject2;
+                            if (pObject2 = OBJECT_FROM_PREC(pmrc))
                                 wpshCopyObjectFileName(pObject2,
                                                        hwndFrame,
                                                        // full path:
@@ -2036,38 +2036,26 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  * ID_XFMI_OFS_OPENPARENT:
                  *      "Open parent folder":
                  *      only used by folder hotkeys also
-                 */
-
-                case ID_XFMI_OFS_OPENPARENT:
-                {
-                    WPFolder *pFolder = _wpQueryFolder(somSelf);
-                    if (pFolder)
-                        _wpViewObject(pFolder, NULLHANDLE, OPEN_DEFAULT, 0);
-                    else
-                        WinAlarm(HWND_DESKTOP, WA_WARNING);
-                    brc = TRUE;
-                }
-                break;
-
-                /*
+                 *
                  * ID_XFMI_OFS_OPENPARENTANDCLOSE:
                  *      "open parent, close current"
                  *      only used by folder hotkeys also
                  */
 
+                case ID_XFMI_OFS_OPENPARENT:
                 case ID_XFMI_OFS_OPENPARENTANDCLOSE:
-                {
-                    WPFolder *pFolder = _wpQueryFolder(somSelf);
-                    if (pFolder)
+                    if (pFolder = _wpQueryFolder(somSelf))
                         _wpViewObject(pFolder, NULLHANDLE, OPEN_DEFAULT, 0);
                     else
                         WinAlarm(HWND_DESKTOP, WA_WARNING);
-                    if (somSelf != cmnQueryActiveDesktop())
+
+                    if (    (ulMenuId2 == ID_XFMI_OFS_OPENPARENTANDCLOSE)
+                         && (somSelf != cmnQueryActiveDesktop())
+                       )
                         // fixed V0.9.0 (UM 99-11-29); before it was
                         // possible to close the Desktop...
                         _wpClose(somSelf);
                     brc = TRUE;
-                }
                 break;
 
                 /*

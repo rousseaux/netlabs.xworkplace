@@ -519,7 +519,8 @@ BOOL pgmmZMoveIt(HAB hab,
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
  *@@changed V0.9.7 (2000-12-04) [umoeller]: now preventing sticky windows from switching
- *@@changed V0.9.9 (2001-03-14) [lafaix]: now preventing heratic mouse screen switch
+ *@@changed V0.9.9 (2001-03-14) [lafaix]: now preventing erratic mouse screen switch
+ *@@changed V0.9.18 (2002-02-19) [lafaix]: now using G_szlPageMageClient
  */
 
 MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -561,9 +562,9 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 if (msg == PGOM_CLICK2ACTIVATE)
                 {
                     // set lDeltas to which desktop we want
-                    lDeltaX = ptlMouse.x / (G_szlEachDesktopInClient.cx + 1);
+                    lDeltaX = ptlMouse.x * pptlMaxDesktops->x / G_szlPageMageClient.cx;
                     lDeltaY = pptlMaxDesktops->y - 1 - ptlMouse.y
-                              / (G_szlEachDesktopInClient.cy + 1);
+                              * pptlMaxDesktops->y / G_szlPageMageClient.cy;
                     lDeltaX *= G_szlEachDesktopReal.cx;
                     lDeltaY *= G_szlEachDesktopReal.cy;
                     lDeltaX = G_ptlCurrPos.x - lDeltaX;

@@ -138,6 +138,14 @@ CATEGORY "General"
                  "Systems Management Startup Daemon",
                  DRVF_CMDREF)
                  )
+
+        DRIVER ( "DEVICE=", "LOG.SYS",
+                 "OS/2 System Error Logging Service base driver",
+                 DRVF_CMDREF)
+
+        DRIVER ( "RUN=", "LOGDAEM.EXE",
+                 "OS/2 System Error Logging Service daemon process",
+                 DRVF_CMDREF)
     }
 
 CATEGORY "Storage"
@@ -180,6 +188,10 @@ CATEGORY "Storage"
         DRIVER ( "BASEDEV=", "DSKSLEEP.FLT",
                  "SCSI Disk Sleep Filter (Vitus Jensen)",
                  0)
+
+        DRIVER ( "DEVICE=", "VFDISK.SYS",
+                 "IBM Virtual Floppy Disk driver",
+                 0 )
 
     }
 
@@ -506,6 +518,9 @@ CATEGORY "Other peripherals"
         DRIVER ( "DEVICE=", "USBMOUSE.SYS",
                  "USB mouse",
                  0),
+        DRIVER ( "DEVICE=", "XMOUSE.SYS",
+                 "Martin Lafaix' enhanced mouse driver",
+                 0)
 
         DRIVER ( "DEVICE=", "COM.SYS",
                  "Standard serial (COM) port",
@@ -800,7 +815,7 @@ CATEGORY "System extensions"
                  0)
 
         DRIVER ( "DEVICE=", "THESEUS5.SYS",
-                 "Theseus system analysis driver",
+                 "Theseus 3 system analysis driver",
                  0)
         DRIVER ( "DEVICE=", "OS20MEMU.SYS",
                  "OS20MEMU system analysis driver",
@@ -813,6 +828,19 @@ CATEGORY "System extensions"
         DRIVER ( "DEVICE=", "P6K7MTRR.SYS",
                  "Intel P6/AMD K7 MTTR support driver",
                  0)
+
+        DRIVER ( "DEVICE=", "VPCAPP.SYS",
+                 "Virtual PC support driver",
+                 DRVF_NOPARAMS)
+
+        DRIVER ( "DEVICE=", "KDBNET.SYS",
+                 "UDP over TCP/IP support for OS/2 debug kernels",
+                 0 )
+
+        DRIVER ( "DEVICE=", "WIN32K.SYS",
+                 "Odin kernel support",
+                 0 )
+
     }
 
 

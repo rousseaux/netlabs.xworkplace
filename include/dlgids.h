@@ -78,15 +78,15 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.17"
+#define XFOLDER_VERSION        "0.9.18"
 
 #define XFOLDER_MAJOR          0
 #define XFOLDER_MINOR          9
-#define XFOLDER_REVISION       17
+#define XFOLDER_REVISION       18
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.17"
+#define MINIMUM_NLS_VERSION    "0.9.18"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -1923,9 +1923,10 @@
 #define ID_XSSI_DRIVERS_VERSION         5961
 #define ID_XSSI_DRIVERS_VENDOR          5962
 
-#define ID_XSSI_FUNCKEY_DESCRIPTION     5963
-#define ID_XSSI_FUNCKEY_SCANCODE        5964
-#define ID_XSSI_FUNCKEY_MODIFIER        5965
+// removed these duplicates V0.9.18 (2002-02-13) [umoeller]
+// #define ID_XSSI_FUNCKEY_DESCRIPTION     5963
+// #define ID_XSSI_FUNCKEY_SCANCODE        5964
+// #define ID_XSSI_FUNCKEY_MODIFIER        5965
 
 // default documents V0.9.4 (2000-06-09) [umoeller]
 #define ID_XSSI_DATAFILEDEFAULTDOC      5966

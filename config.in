@@ -128,6 +128,9 @@ XWP_UNLOCK_MODULES = YES
 # XWP_LANG_CODE: language code of NLS resources
 # to compile. Presently only 001 for US English
 # exists.
-XWP_LANG_CODE = 049
+!ifndef XWP_LANG_CODE
+XWP_LANG_CODE = 001
+!endif
+
 
 

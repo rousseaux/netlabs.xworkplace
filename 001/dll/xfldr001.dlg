@@ -1638,7 +1638,7 @@ BEGIN
     DIALOG  "", ID_XTD_SETTINGS, 0, 0, 194, 134, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Trashcan options", -1, 4, 24, 176, 32
+        GROUPBOX        "Trash can options", -1, 4, 24, 176, 32
         AUTOCHECKBOX    "~Confirm empty", ID_XTDI_CONFIRMEMPTY, 10, 38, 165,
                         8
         AUTOCHECKBOX    "Confirm destro~y", ID_XTDI_CONFIRMDESTROY, 10, 30,

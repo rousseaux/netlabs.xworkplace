@@ -5,7 +5,7 @@
  *
  */
 
-#define xwp "eWorkplace"
+#define xwp "eComStation"
 #define os2 "eComStation"
 #define warp "OS/2 Warp"
 #define warp4 "OS/2 Warp 4"

@@ -923,7 +923,9 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryDetailsInfo(M_XWPFontObject *somSelf,
             // find the last link in the chain; then add our CLASSFIELDINFO
             // structures to the chain.
             pcfi = *ppClassFieldInfo;
-            for (i=0; i < ulParentColumns; i++)
+            for (i = 0;
+                 i < ulParentColumns;
+                 i++)
             {
                 pcfi = (pcfi->pNextFieldInfo)
                             ? pcfi->pNextFieldInfo

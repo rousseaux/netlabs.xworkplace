@@ -47,15 +47,13 @@
     #define LCID_PAGEMAGE_FONT  ((ULONG)1)
 
     // window types
-    // these have been moved to hook_private.h because
-    // the hook also needs them
     #define WINDOW_NORMAL       0x0000
     #define WINDOW_PAGEMAGE     0x0001      // some PageMage window, always sticky
     #define WINDOW_WPSDESKTOP   0x0002      // WPS desktop, always sticky
     #define WINDOW_STICKY       0x0003      // window is on sticky list
     #define WINDOW_MINIMIZE     0x0005      // window is minimized, treat as sticky
     #define WINDOW_MAXIMIZE     0x0006      // window is maximized; hide when moving
-    #define WINDOW_RESCAN       0x0008
+    #define WINDOW_RESCAN       0x0008      // window in indeterminate state
 
     /*
      *@@ PGMGWININFO:
@@ -183,7 +181,7 @@
 
     extern POINTL       G_ptlCurrPos;
     extern SIZEL        G_szlEachDesktopReal;
-    extern SIZEL        G_szlEachDesktopInClient;
+    extern SIZEL        G_szlPageMageClient;
     extern BOOL         G_bConfigChanged;
     extern SWP          G_swpPgmgFrame;
 #endif
