@@ -84,6 +84,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files

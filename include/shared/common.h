@@ -1499,29 +1499,6 @@
      *
      ********************************************************************/
 
-    /*
-     *@@ ARRAYITEMCOUNT:
-     *      helpful macro to count the count of items
-     *      in an array. Use this to avoid typos when
-     *      having to pass the array item count to
-     *      a function.
-     *
-     *      ULONG   aul[] = { 0, 1, 2, 3, 4 };
-     *
-     *      ARRAYITEMCOUNT(aul) then expands to:
-     *
-     +          sizeof(aul) / sizeof(aul[0])
-     *
-     *      which should return 5. Note that the compiler
-     *      should calculate this at compile-time, so that
-     *      there is no run-time overhead... and this will
-     *      never miscount the array item size.
-     *
-     *@@added V0.9.9 (2001-01-29) [umoeller]
-     */
-
-    #define ARRAYITEMCOUNT(array) sizeof(array) / sizeof(array[0])
-
     // settings types for XWPSETUPENTRY.ulType
     #define     STG_LONG        1
     #define     STG_BOOL        2

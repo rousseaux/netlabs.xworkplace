@@ -39,6 +39,7 @@
 
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
+#include "helpers\dialog.h"
 #include "helpers\dosh.h"
 #include "helpers\except.h"
 #include "helpers\linklist.h"
@@ -1182,6 +1183,122 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
  *
  ********************************************************************/
 
+#define ARRAYITEMCOUNT(array) sizeof(array) / sizeof(array[0])
+
+/* typedef struct _CONTROLDEF
+{
+    const char  *pcszClass;         // registered PM window class
+    const char  *pcszText;          // window text (class-specific);
+                                    // NULL for tables
+
+    ULONG       flStyle;
+
+    ULONG       ulID;
+
+    USHORT      usAdjustPosition;
+            // flags for winhAdjustControls; any combination of
+            // XAC_MOVEX, XAC_MOVEY, XAC_SIZEX, XAC_SIZEY
+
+    SIZEL       szlControl;         // proposed size
+    ULONG       ulSpacing;          // spacing around control
+
+} CONTROLDEF, *PCONTROLDEF; */
+
+static CONTROLDEF
+            Static1 =
+                    {
+                        WC_STATIC,
+                        "Test text row 1 column 1",
+                        WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP,
+                        0,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 300, 30 },
+                        5
+                    },
+            Static2 =
+                    {
+                        WC_STATIC,
+                        "Test text row 1 column 2",
+                        WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP,
+                        0,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 300, 30 },
+                        5
+                    },
+            Cnr =
+                    {
+                        WC_CONTAINER,
+                        NULL,
+                        WS_VISIBLE | WS_TABSTOP,
+                        0,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 100 },
+                        5
+                    },
+            CnrGroup =
+                    {
+                        WC_STATIC,
+                        "Container1",
+                        WS_VISIBLE | SS_GROUPBOX | DT_MNEMONIC,
+                        0,
+                        CTL_COMMON_FONT,
+                        0,
+                        { 100, 100 },       // ignored
+                        5
+                    },
+            OKButton =
+                    {
+                        WC_BUTTON,
+                        "~OK",
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
+                        0,
+                        CTL_COMMON_FONT,
+                        0,
+                        { SZL_AUTOSIZE, 30 },
+                        5
+                    },
+            CancelButton =
+                    {
+                        WC_BUTTON,
+                        "~Cancel",
+                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                        0,
+                        CTL_COMMON_FONT,
+                        0,
+                        { SZL_AUTOSIZE, 30 },
+                        5
+                    };
+
+static _DLGHITEM aDlgItems[] =
+                {
+                    START_TABLE,
+                        START_ROW(0),
+                            CONTROL_DEF(&Static1),
+                        START_ROW(0),
+                            START_GROUP_TABLE(&CnrGroup),
+                                START_ROW(0),
+                                    CONTROL_DEF(&Cnr),
+                            END_TABLE,
+                            START_GROUP_TABLE(&CnrGroup),
+                                START_ROW(0),
+                                    CONTROL_DEF(&Cnr),
+                                START_ROW(0),
+                                    CONTROL_DEF(&OKButton),
+                                START_ROW(0),
+                                    CONTROL_DEF(&CancelButton),
+                            END_TABLE,
+                        START_ROW(0),
+                            CONTROL_DEF(&Static2),
+
+                        START_ROW(0),
+                            CONTROL_DEF(&OKButton),
+                            CONTROL_DEF(&CancelButton),
+                    END_TABLE
+                };
+
 /*
  *@@ main:
  *
@@ -1201,6 +1318,29 @@ int main(int argc, char* argv[])
 
     DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
 
+    HWND hwndDlg = NULLHANDLE;
+    APIRET arc = dlghCreateDlg(&hwndDlg,
+                               NULLHANDLE,      // owner
+                               FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                               WinDefDlgProc,
+                               "DemoDlg",
+                               aDlgItems,
+                               ARRAYITEMCOUNT(aDlgItems),
+                               NULL,
+                               "9.WarpSans");
+    if (arc == NO_ERROR)
+    {
+        WinProcessDlg(hwndDlg);
+        WinDestroyWindow(hwndDlg);
+    }
+    else
+    {
+        CHAR szErr[100];
+        sprintf(szErr, "Error %d", arc);
+        winhDebugBox(NULLHANDLE, "Error", szErr);
+    }
+
+    /*
     // create frame and container
     G_hwndMain = winhCreateStdWindow(HWND_DESKTOP,
                                      0,
@@ -1256,7 +1396,7 @@ int main(int argc, char* argv[])
         {
             WinDispatchMsg(hab, &qmsg);
         }
-    }
+    } */
 
     // clean up on the way out
     WinDestroyMsgQueue(hmq);

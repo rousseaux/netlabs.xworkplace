@@ -130,8 +130,9 @@ MYOWNINC = $(INC)\config
 $(OUTPUTDIR)\cfgsys.obj: \
     $(INC)\setup.h \
     $(HLPINC)\configsys.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\level.h \
-            $(HLPINC)\linklist.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h $(HLPINC)\textview.h \
-            $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+            $(HLPINC)\linklist.h $(HLPINC)\procstat.h $(HLPINC)\standards.h \
+            $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\threads.h \
+            $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfsys.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\classes.h $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \

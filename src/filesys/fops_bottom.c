@@ -914,6 +914,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added ulIgnoreSubsequent to ignore further errors
  *@@changed V0.9.6 (2000-10-25) [umoeller]: largely rewritten to support sneaky delete (much faster)
  *@@changed V0.9.9 (2001-02-01) [umoeller]: added FOI_DELETEINPROGRESS
+ *@@changed V0.9.9 (2001-04-01) [umoeller]: fixed crashes with shadows
  */
 
 FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -1055,48 +1056,62 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         // -- for any folder after its contents have been deleted
                         //    (either sneakily or by a previous wpFree)
 
-                        // call callback for subobject
-                        pfu->pszSubObject = _wpQueryTitle(pSubObjThis);
-                        // calc new sub-progress: this is the value we first
-                        // had before working on the subobjects (which
-                        // is a multiple of 100) plus a sub-progress between
-                        // 0 and 100 for the subobjects
-                        pfu->ulProgressScalar = ulProgressScalarFirst
-                                                + ((ulSubObjectThis * 100 )
-                                                     / cSubObjects);
-                        frc = fopsCallProgressCallback(pftl,
-                                                       FOPSUPD_SUBOBJECT_CHANGED
-                                                        | FOPSPROG_UPDATE_PROGRESS,
-                                                       pfu);
-                        if (frc)
-                        {
-                            // error or cancelled:
-                            *ppObject = pSubObjThis;
-                            break;
-                        }
+                        // install quiet exception handler here...
+                        // the object on the list MIGHT have gotten deleted
+                        // already, either from some other place or, most
+                        // importantly, if it is a shadow to an object that
+                        // was just deleted... we don't wanna crash here.
 
-                        _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
-                        if (!_wpIsDeleteable(pSubObjThis))
-                            // not deletable: prompt user about
-                            // what to do with this
-                            frc = fopsFileThreadFixNonDeletable(pftl,
-                                                                pSubObjThis,
-                                                                pulIgnoreSubsequent);
-
-                        if (frc == NO_ERROR)
+                        TRY_QUIET(excpt2)  // V0.9.9 (2001-04-01) [umoeller]
                         {
-                            // either no problem or problem fixed:
-                            _Pmpf((__FUNCTION__ ": calling _wpFree"));
-                            if (!_wpFree(pSubObjThis))
+                            // call callback for subobject
+                            pfu->pszSubObject = _wpQueryTitle(pSubObjThis);
+                            // calc new sub-progress: this is the value we first
+                            // had before working on the subobjects (which
+                            // is a multiple of 100) plus a sub-progress between
+                            // 0 and 100 for the subobjects
+                            pfu->ulProgressScalar = ulProgressScalarFirst
+                                                    + ((ulSubObjectThis * 100 )
+                                                         / cSubObjects);
+                            frc = fopsCallProgressCallback(pftl,
+                                                           FOPSUPD_SUBOBJECT_CHANGED
+                                                            | FOPSPROG_UPDATE_PROGRESS,
+                                                           pfu);
+                            if (frc)
                             {
-                                frc = FOPSERR_WPFREE_FAILED;
+                                // error or cancelled:
                                 *ppObject = pSubObjThis;
                                 break;
                             }
+
+                            _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
+                            if (!_wpIsDeleteable(pSubObjThis))
+                                // not deletable: prompt user about
+                                // what to do with this
+                                frc = fopsFileThreadFixNonDeletable(pftl,
+                                                                    pSubObjThis,
+                                                                    pulIgnoreSubsequent);
+
+                            if (frc == NO_ERROR)
+                            {
+                                // either no problem or problem fixed:
+                                _Pmpf((__FUNCTION__ ": calling _wpFree"));
+                                if (!_wpFree(pSubObjThis))
+                                {
+                                    frc = FOPSERR_WPFREE_FAILED;
+                                    *ppObject = pSubObjThis;
+                                    break;
+                                }
+                            }
+                            else
+                                // error:
+                                *ppObject = pSubObjThis;
                         }
-                        else
-                            // error:
-                            *ppObject = pSubObjThis;
+                        CATCH(excpt2)
+                        {
+                            // if we crashed here, don't worry...
+                            // that's why we're quiet!
+                        } END_CATCH();
                     }
 
                     pNode = pNode->pNext;

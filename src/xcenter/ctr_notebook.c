@@ -61,6 +61,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers

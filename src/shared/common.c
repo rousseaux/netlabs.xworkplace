@@ -93,6 +93,7 @@
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)

@@ -87,6 +87,7 @@
 #include "helpers\level.h"              // SYSLEVEL helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\threads.h"            // thread helpers
