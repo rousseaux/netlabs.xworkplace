@@ -56,7 +56,9 @@ point in time.
 <P>&os2; is capable of controlling thread priorities in a very refined way. It
 differentiates between four <B>priority classes:</B>
 
-<OL><LI><B>"Idle time priority"</B> is the lowest priority class. This means that a
+<!-- V0.9.19: corrected all the following -->
+
+<OL><LI><B>"Idle time priority"</B> (1) is the lowest priority class. This means that a
 thread only gets processor time if no threads of higher priority classes
 are running. Such threads are helpful for offloading work that needs to be
 done, but can be delayed until the computer has time for it.
@@ -68,23 +70,31 @@ the awake Desktop objects on your system. This is fairly time-consuming,
 but not time-critical, so it's done with idle-time priority.
 </IFNDEF>
 
-<P><LI><B>"Regular priority"</B> is the priority class that most threads use. It is
+<P><LI><B>"Regular priority"</B> (2) is the priority class that most threads use. It is
 also the default &os2; priority class if a thread does not explicitly change its
 priority. Between threads of this class, &os2; dynamically varies priority levels
 (more on this below) to make sure that no thread of this class "starves", i.e. gets
 no processor time.
 
-<P><LI><B>"Time-critical priority"</B> is the second-highest priority class for
-threads that do not want to be influenced by the dynamic priority variations
-for "regular" threads. This is sometimes used for message dispatchers and
-multimedia threads which do not take a lot of time but need more attention.
+<P><LI><B>"Foreground server priority"</B> (4) is the second-highest priority class
+for threads that do not want to be influenced by the dynamic priority variations
+that are performed on "regular" class threads. Note that even though this class
+has the value 4, time-critical threads do take priority over threads of this class.
+&os2; still does some priority variations on threads of this class based on the
+activity of the thread and the system.
 
-<P><LI><B>"Foreground server priority"</B> is the highest priority class for
-threads that need to be executed immediately when there's work to do. Such a
-thread will be given processor time immediately and will not be
-interrupted until its work is done. This priority class is normally only
-used for network and other communications software, or CD writers, or MP3
-players.
+<P><LI><B>"Time-critical priority"</B> (3) is the highest priority class in &os2;.
+A thread with time-critical priority will be given processor time immediately
+and will not be interrupted until its work is done.
+Many device drivers will yield the CPU only to threads of this priority class.
+Such a thread should only use the minimum possible CPU time because it cannot be
+interrupted (except by other time-critical threads) and can easily hang the system.
+Even if it yields the CPU
+(via <CODE>DosSleep(0)</CODE>), other non-time-critical threads will not run.
+This is normally only used for network and other communications software, or
+CD writers, or MP3 players.
+
+<!-- end V0.9.19 -->
 
 </OL>Within each priority class, a thread may set a <B>priority level.</B>
 This is a value from 0 to +31 which determines the precedence of a thread

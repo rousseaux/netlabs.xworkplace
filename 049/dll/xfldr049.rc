@@ -742,7 +742,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger"
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
     ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
-    ID_XCSI_PAGER                       "XPager: Virtuelle ArbeitsoberflÑchen"
+    ID_XCSI_PAGER                       "&pgr;: Virtuelle ArbeitsoberflÑchen"
 
     ID_XCSI_STARTSHUTFEATURES           "Systemstart/abschlu·-Funktionen"
     ID_XCSI_ARCHIVING                   "Archivierung der ArbeitsoberflÑche ersetzen"
@@ -1132,7 +1132,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Alle Funktionen permanent ~deaktivieren"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Ersetzung der Symbole permanent deaktiv~ieren"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "Alle TastenkÅ~rzel entfernen"
-    ID_XFDI_PANIC_DISABLEPAGER       "~XPager deaktivieren"
+    ID_XFDI_PANIC_DISABLEPAGER       "~&pgr; deaktivieren"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "~Multimedia deaktivieren"
     ID_XFDI_PANIC_CONTINUE              "F~ortfahren"
     ID_XFDI_PANIC_CONTINUE_TXT          "Hiermit wird mit dem Start der WPS fortgefahren."
@@ -1289,8 +1289,7 @@ BEGIN
     ID_XFDI_SOME_REGEXP_CP              "~RegulÑrer Ausdruck"
 
     /* strings formerly in ID_SCD_PAGER_WINDOW */
-    ID_SCDI_PGMG1_WINDOW_GROUP          "XPager-Kontrollfenster"
-    ID_SCDI_PGMG1_TITLEBAR              "T~itelleiste"
+    ID_SCDI_PGMG1_WINDOW_GROUP          "&pgr;-Kontrollfenster"
     ID_SCDI_PGMG1_PRESERVEPROPS         "Bildschirmpr~oportionen erzwingen"
     ID_SCDI_PGMG1_STAYONTOP             "Immer im ~Vordergrund"
     ID_SCDI_PGMG1_FLASHTOTOP            "Kurz na~ch vorne holen"
@@ -1301,6 +1300,17 @@ BEGIN
     ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mausoperationen fÅr Mini-Fenster"
     ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGMG1_SHOWSTICKY            "Ha~ftfenster anzeigen"
+
+    /* strings formerly in ID_SCD_PAGER_COLORS */
+    ID_SCDI_PGMG2_COLORS_GROUP          "&pgr;-Farben"
+    ID_SCDI_PGMG2_COLORS_INFO           "Ziehen Sie eine beliebige Farbe aus einer Farbpalette auf die unteren Rechtecke. Um die Schriftart der &pgr;-Fenstertitel zu Ñndern, ziehen Sie eine Schriftart direkt auf das &pgr;-Fenster."
+    ID_SCDI_PGMG2_COLORS_INACTIVE_1     "Inaktiv 1"
+    ID_SCDI_PGMG2_COLORS_INACTIVE_2     "Inaktiv 2"
+    ID_SCDI_PGMG2_COLORS_ACTIVE         "Aktiv"
+    ID_SCDI_PGMG2_COLORS_BORDERS        "RÑnder"
+    ID_SCDI_PGMG2_COLORS_BACKGROUND     "Hintergrund:"
+    ID_SCDI_PGMG2_COLORS_MINIWINDOW     "Mini-Fenster:"
+    ID_SCDI_PGMG2_COLORS_TITLE          "Titel:"
 
     /* strings formerly in ID_XCD_PARANOIA */
     ID_XCDI_PARANOIA_GROUP              "XWorkplace-Funktionen deaktivieren"

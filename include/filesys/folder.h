@@ -42,6 +42,17 @@
      *   Additional declarations for xfldr.c
      *
      ********************************************************************/
+/*
+#define VIEW_CONTENTS      0x00000001
+#define VIEW_SETTINGS      0x00000002
+#define VIEW_HELP          0x00000004
+#define VIEW_RUNNING       0x00000008
+#define VIEW_DETAILS       0x00000010
+#define VIEW_TREE          0x00000020
+#define VIEW_ANY           0xFFFFFFFF
+*/
+
+    #define VIEW_SPLIT         0x00002000
 
     #ifdef LINKLIST_HEADER_INCLUDED
         /*

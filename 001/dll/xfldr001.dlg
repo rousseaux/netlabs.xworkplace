@@ -609,39 +609,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_SCD_PAGER_COLORS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_SCD_PAGER_COLORS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XPager colors", -1, 6, 24, 206, 98
-        LTEXT           "Drop any color from the color palettes onto the rec"
-                        "tangles below. To change the font for the XPager "
-                        "window titles, drop a font on the XPager window d"
-                        "irectly.", -1, 12, 92, 194, 22, DT_WORDBREAK
-        LTEXT           "Inactive", -1, 86, 82, 34, 8
-        LTEXT           "Active", -1, 126, 82, 32, 8, NOT WS_GROUP
-        LTEXT           "Borders", -1, 166, 82, 36, 8, NOT WS_GROUP
-        LTEXT           "Background:", -1, 12, 68, 56, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        LTEXT           "", ID_SCDI_PGMG2_DTP_INACTIVE, 86, 68, 32, 12
-        LTEXT           "", ID_SCDI_PGMG2_DTP_ACTIVE, 126, 68, 32, 12
-        LTEXT           "", ID_SCDI_PGMG2_DTP_BORDER, 164, 68, 32, 12
-        LTEXT           "Application:", -1, 12, 50, 56, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        LTEXT           "", ID_SCDI_PGMG2_WIN_INACTIVE, 86, 50, 32, 12
-        LTEXT           "", ID_SCDI_PGMG2_WIN_ACTIVE, 126, 50, 32, 12
-        LTEXT           "", ID_SCDI_PGMG2_WIN_BORDER, 164, 50, 32, 12
-        LTEXT           "Text:", -1, 12, 32, 56, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        LTEXT           "", ID_SCDI_PGMG2_TXT_INACTIVE, 86, 32, 32, 12
-        LTEXT           "", ID_SCDI_PGMG2_TXT_ACTIVE, 126, 32, 32, 12
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_SCD_PAGER_GENERAL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_SCD_PAGER_GENERAL, 0, 0, 224, 180, NOT FS_DLGBORDER |

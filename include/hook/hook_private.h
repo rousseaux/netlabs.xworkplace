@@ -36,10 +36,6 @@
 
     #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.MTX"
     #define TIMEOUT_HMTX_HOTKEYS    6000
-    // #define SEM_TIMEOUT             4000
-
-    // #define IDMUTEX_PGMG_WINLIST    "\\SEM32\\XWORKPLC\\PGMGWINS.MTX"
-    // #define TIMEOUT_PGMG_WINLIST    6000
 
     // timer IDs for fnwpDaemonObject
 #ifndef __NOSLIDINGFOCUS__
@@ -159,25 +155,39 @@
 #ifndef __NOPAGER__
         // XPager configuration data shared by daemon and the hook;
         // this gets loaded from OS2.INI also
-        PAGERCONFIG XPagerConfig;
+        PAGERCONFIG PagerConfig;
 
         PVOID       paEREs[MAX_STICKIES];
                 // compiled regular expressions for every SF_MATCHES
                 // that exists in PAGERCONFIG.aulStickyFlags
                 // V0.9.19 (2002-04-17) [umoeller]
 
-        HWND        hwndXPagerClient;
-                // XPager client window, created by pgmcCreateMainControlWnd
-        HWND        hwndXPagerFrame;
-                // XPager frame window, created by pgmcCreateMainControlWnd
-        HWND        hwndXPagerMoveThread;
+        HWND        hwndPagerClient;
+                // XPager client window, created by pgrCreatePager
+        HWND        hwndPagerFrame;
+                // XPager frame window, created by pgrCreatePager
+        HWND        hwndPagerMoveThread;
                 // XPager move thread (fnwpMoveThread)
 
-        BOOL        fDisablePgmgSwitching;
-        BOOL        fDisableMouseSwitch;
-                // TRUE if processing a mouse switch request.  Focus
-                // changes are disable during this.
-                /// V0.9.9 (2001-03-14) [lafaix]
+        ULONG       cDisablePagerSwitching;
+                // if > 0, notification msgs from hook to pager
+                // are disabled; this is set by pgrLockHook if
+                // the pager itself is doing window positioning
+                // to avoid infinite recursion
+                // V0.9.19 (2002-05-07) [umoeller]
+        BOOL        fProcessingWraparound;
+                // TRUE while processing a pager wraparound due
+                // to hitting a screen border; we do not process
+                // sliding focus then
+                // added V0.9.9 (2001-03-14) [lafaix]
+                // renamed V0.9.19 (2002-05-07) [umoeller]
+
+        POINTL      ptlCurrentDesktop;
+                // offset of current desktop in pixels
+        SIZEL       szlEachDesktopFaked;
+                // size used for each virtual desktop; this is
+                // the PM screen size plus a few extra pixels
+                // to hide maximized window borders
 #endif
 
         HWND        hwndPMDesktop,
@@ -260,21 +270,14 @@
      ********************************************************************/
 
 #ifndef __NOPAGER__
-    #define PGMG_INVALIDATECLIENT   (WM_USER + 300)
-    #define PGMG_ZAPPO              (WM_USER + 301)
-    // #define PGMG_LOCKUP             (WM_USER + 302)
-                // removed, this did nothing V0.9.7 (2001-01-18) [umoeller]
-    #define PGMG_WNDCHANGE          (WM_USER + 303)
-    #define PGMG_WNDRESCAN          (WM_USER + 304)
-    #define PGMG_CHANGEACTIVE       (WM_USER + 305)
-    #define PGMG_LOWERWINDOW        (WM_USER + 306)
-    #define PGMG_WINLISTFULL        (WM_USER + 307)
-
-    #define PGOM_CLICK2ACTIVATE     (WM_USER + 321)
-    #define PGOM_CLICK2LOWER        (WM_USER + 322)
-    #define PGOM_HOOKKEY            (WM_USER + 323)
-    #define PGOM_FOCUSCHANGE        (WM_USER + 324)
-    #define PGOM_MOUSESWITCH        (WM_USER + 325)
+    #define PGRM_POSITIONFRAME      (WM_USER + 301)
+    #define PGRM_REFRESHCLIENT      (WM_USER + 302)
+    #define PGRM_WINDOWCHANGED      (WM_USER + 303)
+    #define PGRM_ACTIVECHANGED      (WM_USER + 304)
+    #define PGRM_REFRESHDIRTIES     (WM_USER + 305)
+    #define PGRM_WRAPAROUND         (WM_USER + 306)
+    #define PGRM_PAGERHOTKEY        (WM_USER + 307)
+    #define PGRM_MOVEBYDELTA        (WM_USER + 308)
 #endif
 
     /* ******************************************************************

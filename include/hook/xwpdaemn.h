@@ -32,6 +32,22 @@
 
 #ifndef __NOPAGER__
 
+    /* ******************************************************************
+     *
+     *   Pager interface
+     *
+     ********************************************************************/
+
+    VOID dmnKillXPager(BOOL fNotifyKernel);
+
+    BOOL dmnLoadPagerSettings(ULONG flConfig);
+
+    /* ******************************************************************
+     *
+     *   Pager definitions
+     *
+     ********************************************************************/
+
     #define TIMEOUT_HMTX_WINLIST    20*1000
                 // raised V0.9.12 (2001-05-31) [umoeller]
 
@@ -46,17 +62,10 @@
     // in the daemon process
     #define LCID_PAGER_FONT  ((ULONG)1)
 
-    // window types
-    #define WINDOW_NORMAL       0x0000
-    #define WINDOW_PAGER     0x0001      // some XPager window, always sticky
-    #define WINDOW_WPSDESKTOP   0x0002      // WPS desktop, always sticky
-    #define WINDOW_STICKY       0x0003      // window is on sticky list
-    #define WINDOW_MINIMIZE     0x0005      // window is minimized, treat as sticky
-    #define WINDOW_MAXIMIZE     0x0006      // window is maximized; hide when moving
-    #define WINDOW_RESCAN       0x0008      // window in indeterminate state
+    #pragma pack(1)
 
     /*
-     *@@ PGMGWININFO:
+     *@@ PAGERWININFO:
      *      one of these exists for every window
      *      which is currently handled by XPager.
      *
@@ -70,74 +79,85 @@
      *@@added V0.9.7 (2001-01-21) [umoeller]
      */
 
-    typedef struct _PGMGWININFO
+    typedef struct _PAGERWININFO
     {
-        HWND        hwnd;           // window handle
+        HWND        hwnd;               // window handle
         BYTE        bWindowType;
-        CHAR        szSwitchName[30];
+            // one of:
+            #define WINDOW_NORMAL       1
+            #define WINDOW_PAGER        2   // some XPager window, always sticky
+            #define WINDOW_WPSDESKTOP   3   // WPS desktop, always sticky
+            #define WINDOW_STICKY       4   // window is on sticky list
+            #define WINDOW_MINIMIZE     5   // window is minimized, treat as sticky
+            #define WINDOW_MAXIMIZE     6   // window is maximized
+            #define WINDOW_DIRTY        7   // window in indeterminate state
+
+        CHAR        szSwtitle[MAXNAMEL+4];
         CHAR        szClassName[30];
-        ULONG       pid;
-        ULONG       tid;
+        USHORT      pid;
+        USHORT      tid;
         SWP         swp;
-    } PGMGWININFO, *PPGMGWININFO;
+    } PAGERWININFO, *PPAGERWININFO;
 
-    // xwpdaemn.c
-    VOID                dmnKillXPager(BOOL fNotifyKernel);
+    #pragma pack()
 
-    // pg_control.c
-    BOOL pgmcDisableSwitching(VOID);
-    VOID pgmcReenableSwitching(VOID);
+    /* ******************************************************************
+     *
+     *   Pager window list
+     *
+     ********************************************************************/
 
-    BOOL pgmcCreateMainControlWnd(VOID);
-    LONG pgmcCalcNewFrameCY(LONG cx);
-    VOID pgmcSetPgmgFramePos(HWND);
-    USHORT pgmgcStartFlashTimer(VOID);
-    MRESULT EXPENTRY fnwpXPagerClient(HWND, ULONG, MPARAM, MPARAM);
-    MRESULT EXPENTRY fnwpSubclXPagerFrame(HWND, ULONG, MPARAM, MPARAM);
+    APIRET pgrInit(VOID);
 
-    // pg_move.c
+    BOOL pgrLockWinlist(VOID);
+
+    VOID pgrUnlockWinlist(VOID);
+
+    PPAGERWININFO pgrFindWinInfo(HWND hwndThis,
+                                 PVOID *ppListNode);
+
+    BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo);
+
+    VOID pgrCreateWinInfo(HWND hwnd);
+
+    VOID pgrBuildWinlist(VOID);
+
+    VOID pgrFreeWinInfo(HWND hwnd);
+
+    VOID pgrMarkDirty(HWND hwnd);
+
+    BOOL pgrRefreshDirties(VOID);
+
+    BOOL pgrIsSticky(HWND hwnd,
+                     PCSZ pcszSwtitle);
+
+    /* ******************************************************************
+     *
+     *   Pager control window
+     *
+     ********************************************************************/
+
+    BOOL pgrLockHook(PCSZ pcszFile, ULONG ulLine, PCSZ pcszFunction);
+
+    VOID pgrUnlockHook(VOID);
+
+    LONG pgrCalcClientCY(LONG cx);
+
+    BOOL pgrIsShowing(PSWP pswp);
+
+    VOID pgrRecoverWindows(HAB hab);
+
+    BOOL pgrCreatePager(VOID);
+
+    /* ******************************************************************
+     *
+     *   Pager window movement
+     *
+     ********************************************************************/
+
     #ifdef THREADS_HEADER_INCLUDED
         VOID _Optlink fntMoveThread(PTHREADINFO pti);
     #endif
-    // BOOL pgmmMoveIt(LONG, LONG, BOOL);
-    // BOOL pgmmZMoveIt(LONG, LONG);
-    VOID pgmmRecoverAllWindows(VOID);
-
-    // pg_settings.c
-    VOID pgmsSetDefaults(VOID);
-    BOOL pgmsLoadSettings(ULONG flConfig);
-    BOOL pgmsSaveSettings(VOID);
-
-    // pg_winscan.c
-    APIRET pgmwInit(VOID);
-
-    BOOL pgmwLock(VOID);
-
-    VOID pgmwUnlock(VOID);
-
-    PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
-                                 PVOID *ppListNode);
-
-    BOOL pgmwFillWinInfo(HWND hwnd,
-                         PPGMGWININFO pWinInfo);
-
-    VOID pgmwScanAllWindows(VOID);
-
-    VOID pgmwAppendNewWinInfo(HWND hwnd);
-
-    VOID pgmwDeleteWinInfo(HWND hwnd);
-
-    VOID pgmwUpdateWinInfo(HWND hwnd);
-
-    BOOL pgmwWindowListRescan(VOID);
-
-    BOOL pgmwIsSticky(HWND hwnd,
-                      PCSZ pcszSwitchName);
-
-    BOOL pgmwSticky2Check(HWND hwndText);
-
-    HWND pgmwGetWindowFromClientPoint(ULONG ulX,
-                                      ULONG ulY);
 
 #endif
 
@@ -164,9 +184,6 @@
      *
      ********************************************************************/
 
-    ULONG               G_pidDaemon;
-    extern HAB          G_habDaemon;
-
     #ifdef HOOK_PRIVATE_HEADER_INCLUDED
         extern PHOOKDATA    G_pHookData;
     #endif
@@ -179,10 +196,5 @@
         extern LINKLIST     G_llWinInfos;
     #endif
 
-    extern POINTL       G_ptlCurrPos;
-    extern SIZEL        G_szlEachDesktopReal;
-    extern SIZEL        G_szlXPagerClient;
-    extern BOOL         G_bConfigChanged;
-    extern SWP          G_swpPgmgFrame;
 #endif
 

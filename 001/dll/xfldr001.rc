@@ -1298,7 +1298,6 @@ BEGIN
 
     /* strings formerly in ID_SCD_PAGER_WINDOW */
     ID_SCDI_PGMG1_WINDOW_GROUP          "&pgr; control window"
-    ID_SCDI_PGMG1_TITLEBAR              "T~itlebar"
     ID_SCDI_PGMG1_PRESERVEPROPS         "F~orce screen proportions"
     ID_SCDI_PGMG1_STAYONTOP             "Stay on to~p"
     ID_SCDI_PGMG1_FLASHTOTOP            "~Flash to top"
@@ -1309,6 +1308,17 @@ BEGIN
     ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mini-window mouse actions"
     ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGMG1_SHOWSTICKY            "Show stic~ky windows"
+
+    /* strings formerly in ID_SCD_PAGER_COLORS */
+    ID_SCDI_PGMG2_COLORS_GROUP          "&pgr; colors"
+    ID_SCDI_PGMG2_COLORS_INFO           "Drop any color from the color palettes onto the rectangles below. To change the font for the &pgr; window titles, drop a font on the &pgr; window."
+    ID_SCDI_PGMG2_COLORS_INACTIVE_1     "Inactive 1"
+    ID_SCDI_PGMG2_COLORS_INACTIVE_2     "Inactive 2"
+    ID_SCDI_PGMG2_COLORS_ACTIVE         "Active"
+    ID_SCDI_PGMG2_COLORS_BORDERS        "Borders"
+    ID_SCDI_PGMG2_COLORS_BACKGROUND     "Background:"
+    ID_SCDI_PGMG2_COLORS_MINIWINDOW     "Mini-window:"
+    ID_SCDI_PGMG2_COLORS_TITLE          "Title:"
 
     /* strings formerly in ID_XCD_PARANOIA */
     ID_XCDI_PARANOIA_GROUP              "Disable XWorkplace Features"

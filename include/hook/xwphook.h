@@ -30,8 +30,10 @@
     #define INIAPP_XWPHOOK              "XWorkplace:Hook"   // added V0.9.0
     #define INIKEY_HOOK_HOTKEYS         "Hotkeys"           // added V0.9.0
     #define INIKEY_HOOK_CONFIG          "Config"            // added V0.9.0
-    #define INIKEY_HOOK_PGMGCONFIG      "XPagerConfig"    // V0.9.2 (2000-02-25) [umoeller]
-    #define INIKEY_HOOK_PGMGWINPOS      "XPagerWinPos"    // V0.9.4 (2000-08-08) [umoeller]
+    #define INIKEY_HOOK_PAGERCONFIG     "PagerConfig"       // V0.9.2 (2000-02-25) [umoeller]
+                            // changed V0.9.19 (2002-05-07) [umoeller]
+    #define INIKEY_HOOK_PAGERWINPOS     "PagerWinPos"
+                            // changed V0.9.19 (2002-05-07) [umoeller]
     #define INIKEY_HOOK_FUNCTIONKEYS    "FuncKeys"          // added V0.9.3 (2000-04-19) [umoeller]
 
     /* ******************************************************************
@@ -43,14 +45,9 @@
     // do not change the following, or this will break
     // binary compatibility of the XPager OS2.INI data
     #define MAX_STICKIES        64
-    // #define MAX_WINDOWS         256
-    #define PGMG_TEXTLEN        30
+    #define STICKYLEN           50
 
 #ifndef __NOPAGER__
-
-    // flags for PAGERCONFIG.ulMiniDisplayFlags
-    #define MDF_INCLUDESECONDARY 0x00000001L
-    #define MDF_INCLUDESTICKY    0x00000002L
 
     // flags for PAGERCONFIG.aulStickyFlags
     #define SF_CONTAINS          0x00000000L // default
@@ -67,6 +64,8 @@
     #define SF_TITLE             0x00000000L // default
     #define SF_ATTRIBUTE_MASK    0xFFFE0000L
 
+    #pragma pack(1)
+
     /*
      *@@ PAGERCONFIG:
      *      XPager configuration data.
@@ -79,69 +78,74 @@
 
     typedef struct _PAGERCONFIG
     {
-        /* Desktops */
-        POINTL       ptlMaxDesktops;
+        BYTE        cDesktopsX,
+                    cDesktopsY,
                 // no. of virtual Desktops (x and y)
-        POINTL       ptlStartDesktop;
-                // initial desktop at startup (always (1, 2))
+                    bStartX,
+                    bStartY;
+                // initial desktop at startup
 
-        /* Display */
-        BOOL         fShowTitlebar;
-                // if TRUE, XPager has a titlebar
-        BOOL         _fStartMinimized;
-                // start minimized?
-        BOOL         fPreserveProportions;
-                // preserve proportions of XPager win when resizing?
+        ULONG       flPager;
+                // flags for "XPager" settings page 1
+                #define PGRFL_WRAPAROUND        0x0001
+                #define PGRFL_HOTKEYS           0x0002
 
-        BOOL         fStayOnTop;
-                // stay on top
-        BOOL         fFlash;
-        ULONG        ulFlashDelay;      // in milliseconds
-                // "flash" (temporarily show)
+                #define PGRMASK_PAGE1 (PGRFL_WRAPAROUND | PGRFL_HOTKEYS)
+                #define PGRFL_PAGE1_DEFAULTS        0
 
-        BOOL         fMirrorWindows;
-                // show windows in XPager?
+                // flags for "XPager" settings page 2
+                #define PGRFL_PRESERVEPROPS     0x0010
+                    // preserve proportions of XPager win when resizing?
+                #define PGRFL_STAYONTOP         0x0020
+                    // stay on top?
+                #define PGRFL_FLASHTOTOP        0x0040
+                #define PGRFL_MINIWINDOWS       0x0080
+                    // show mini windows in XPager?
+                #define PGRFL_MINIWIN_TITLES    0x0100
+                #define PGRFL_MINIWIN_MOUSE     0x0200
+                    // allow activate/lower by mouse clicks?
+                #define PGRFL_INCLUDESECONDARY  0x0400
+                #define PGRFL_INCLUDESTICKY     0x0800
 
-        BOOL         fShowWindowText;
-                // show window titles in XPager?
+                #define PGRMASK_PAGE2 (   PGRFL_PRESERVEPROPS       \
+                                        | PGRFL_STAYONTOP           \
+                                        | PGRFL_FLASHTOTOP          \
+                                        | PGRFL_MINIWINDOWS         \
+                                        | PGRFL_MINIWIN_TITLES      \
+                                        | PGRFL_MINIWIN_MOUSE       \
+                                        | PGRFL_INCLUDESECONDARY    \
+                                        | PGRFL_INCLUDESTICKY )
+                #define PGRFL_PAGE2_DEFAULTS (   PGRFL_PRESERVEPROPS  \
+                                               | PGRFL_MINIWINDOWS    \
+                                               | PGRFL_MINIWIN_TITLES \
+                                               | PGRFL_MINIWIN_MOUSE)
+        ULONG       ulFlashDelay;
+                // "flash" delay in milliseconds, if PGRFL_FLASHTOTOP
+        ULONG       flKeyShift;        // KC_* values
 
-        BOOL         fClick2Activate;
-                // allow activate/lower by mouse clicks?
+        // paint settings
+        ULONG       flPaintMode;        // as in BKGNDINFO (gpih.h)
+        LONG        lcolDesktop1,       // as in BKGNDINFO (gpih.h)
+                    lcolDesktop2;       // as in BKGNDINFO (gpih.h)
 
-        BOOL         fRecoverOnShutdown;
-                // if TRUE, windows are restored when XPager is exited
+        LONG        lcolActiveDesktop;  // color of hatching for active desktop
 
-        /* Sticky */
-        CHAR         aszSticky[MAX_STICKIES][PGMG_TEXTLEN];
-        SHORT        usStickyTextNum;
-        ULONG        aulStickyFlags[MAX_STICKIES]; // SF_*
-        SHORT        usUnused1;
+        LONG        lcolGrid;           // grid color (separators between desktops)
 
-        /*  Colors */
-        LONG         lcNormal;
-        LONG         lcCurrent;
-        LONG         lcDivider;
+        LONG        lcolInactiveWindow,
+                    lcolActiveWindow,
+                    lcolWindowFrame,
+                    lcolInactiveText,
+                    lcolActiveText;
 
-        LONG         lcNormalApp;
-        LONG         lcCurrentApp;
-        LONG         lcAppBorder;
+        // sticky windows
+        ULONG       cStickies;
+        ULONG       aulStickyFlags[MAX_STICKIES]; // SF_* flags per sticky
+        CHAR        aszStickies[MAX_STICKIES][STICKYLEN];
 
-        LONG         lcTxtNormalApp;
-        LONG         lcTxtCurrentApp;
-
-        /* Extra options */
-        ULONG        ulMiniDisplayFlags; // MDF_*
-        BOOL         bUnused1;
-        BOOL         bUnused2;
-        BOOL         bUnused3;
-        BOOL         bWrapAround;
-
-        /* Keyboard */
-        BOOL         fEnableArrowHotkeys;
-        ULONG        ulKeyShift;        // KC_* values
-        /* BOOL         bReturnKeystrokes;
-        BOOL         bHotkeyGrabFocus; */
     } PAGERCONFIG, *PPAGERCONFIG;
+
+    #pragma pack()
 
 #endif
 
@@ -409,7 +413,7 @@
      *      An array of these is returned by
      *      hifQueryFunctionKeys().
      *
-     *@@added V0.9.3 (2000-04-19) [umoeller]
+2     *@@added V0.9.3 (2000-04-19) [umoeller]
      */
 
     typedef struct _FUNCTIONKEY
@@ -441,10 +445,10 @@
 
     #define XDM_PAGERCONFIG      (WM_USER + 404)
         // flags for XDM_PAGERCONFIG:
-        #define PGMGCFG_REPAINT     0x0001  // causes PGMG_INVALIDATECLIENT
-        #define PGMGCFG_REFORMAT    0x0002  // causes pgmcSetPgmgFramePos
-        #define PGMGCFG_ZAPPO       0x0004  // reformats the XPager title bar
-        #define PGMGCFG_STICKIES    0x0008  // sticky windows have changed, rescan winlist
+        #define PGRCFG_REPAINT         0x0001  // invalidates mini windows
+        #define PGRCFG_REFORMAT        0x0004  // causes PGRM_POSITIONFRAME,
+                                                // repaints background too
+        #define PGRCFG_STICKIES        0x0008  // sticky windows have changed
 #endif
 
     #define XDM_HOTKEYPRESSED       (WM_USER + 405)
@@ -462,8 +466,6 @@
     #define XDM_HOTCORNER           (WM_USER + 410)
 
     #define XDM_WMCHORDWINLIST      (WM_USER + 411)
-
-    // #define XDM_PGMGWINLISTFULL     (WM_USER + 412)
 
     // added V0.9.9 (2001-03-18) [lafaix]
     #define XDM_BEGINSCROLL         (WM_USER + 413)
@@ -496,17 +498,6 @@
     #define XDM_ADDCLICKWATCH       (WM_USER + 420)
 
     #define XDM_MOUSECLICKED        (WM_USER + 421)
-
-/*
-   #define WM_BUTTON1UP               0x0072
-   #define WM_BUTTON1DBLCLK           0x0073
-   #define WM_BUTTON2DOWN             0x0074
-   #define WM_BUTTON2UP               0x0075
-   #define WM_BUTTON2DBLCLK           0x0076
-      #define WM_BUTTON3DOWN          0x0077
-      #define WM_BUTTON3UP            0x0078
-      #define WM_BUTTON3DBLCLK        0x0079
-*/
 
 #ifndef __NOMOVEMENT2FEATURES__
     #define XDM_MOVEPTRTOBUTTON     (WM_USER + 422)

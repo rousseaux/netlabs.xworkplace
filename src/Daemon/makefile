@@ -53,22 +53,21 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
-# The PGMGDMNOBJS macro contains all the XPager .OBJ files,
+# The PGRDAEMNOBJS macro contains all the XPager .OBJ files,
 # which go into XWPDAEMN.EXE.
-PGMGDMNOBJS = \
+PGRDAEMNOBJS = \
 !ifndef XWPLITE
 $(OUTPUTDIR)\pg_control.obj \
 $(OUTPUTDIR)\pg_move.obj \
-$(OUTPUTDIR)\pg_settings.obj \
 $(OUTPUTDIR)\pg_winscan.obj
 !endif
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;
-# this includes PGMGDMNOBJS.
+# this includes PGRDAEMNOBJS.
 OBJS = \
 $(OUTPUTDIR)\xwpdaemn.obj \
 $(OUTPUTDIR)\drivemonitor.obj \
-$(PGMGDMNOBJS)
+$(PGRDAEMNOBJS)
 
 HLPOBJS = \
 $(OUTPUTDIR)\debug.obj \

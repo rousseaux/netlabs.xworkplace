@@ -1450,15 +1450,25 @@
     #define ID_SCDI_PGMG1_WRAPAROUND        4519
     #define ID_SCDI_PGMG1_VALUESET          4520
 
-    #define ID_SCD_PAGER_COLORS             4530
-    #define ID_SCDI_PGMG2_DTP_INACTIVE      4531
+    // #define ID_SCD_PAGER_COLORS             4530     // removed V0.9.19 (2002-05-07) [umoeller]
+    #define ID_SCDI_PGMG2_DTP_INACTIVE_1    4530
+    #define ID_SCDI_PGMG2_DTP_INACTIVE_2    4531
     #define ID_SCDI_PGMG2_DTP_ACTIVE        4532
-    #define ID_SCDI_PGMG2_DTP_BORDER        4533
+    #define ID_SCDI_PGMG2_DTP_GRID          4533
     #define ID_SCDI_PGMG2_WIN_INACTIVE      4534
     #define ID_SCDI_PGMG2_WIN_ACTIVE        4535
     #define ID_SCDI_PGMG2_WIN_BORDER        4536
     #define ID_SCDI_PGMG2_TXT_INACTIVE      4537
     #define ID_SCDI_PGMG2_TXT_ACTIVE        4538
+    #define ID_SCDI_PGMG2_COLORS_GROUP      4540
+    #define ID_SCDI_PGMG2_COLORS_INFO       4541
+    #define ID_SCDI_PGMG2_COLORS_INACTIVE_1 4542
+    #define ID_SCDI_PGMG2_COLORS_INACTIVE_2 4543
+    #define ID_SCDI_PGMG2_COLORS_ACTIVE     4544
+    #define ID_SCDI_PGMG2_COLORS_BORDERS    4545
+    #define ID_SCDI_PGMG2_COLORS_BACKGROUND 4546
+    #define ID_SCDI_PGMG2_COLORS_MINIWINDOW 4547
+    #define ID_SCDI_PGMG2_COLORS_TITLE      4548
 
     // added V0.9.19 (2002-04-17) [umoeller]
     #define ID_SCDI_STICKY_GROUP            4550
@@ -1496,7 +1506,7 @@
     #define ID_SCDI_PGMG1_SHOWWINDOWS       4601
     #define ID_SCDI_PGMG1_SHOWWINTITLES     4602
     #define ID_SCDI_PGMG1_CLICK2ACTIVATE    4603
-    #define ID_SCDI_PGMG1_TITLEBAR          4604
+    // #define ID_SCDI_PGMG1_TITLEBAR          4604     removed V0.9.19 (2002-05-07) [umoeller]
     #define ID_SCDI_PGMG1_PRESERVEPROPS     4605
     #define ID_SCDI_PGMG1_STAYONTOP         4606
     #define ID_SCDI_PGMG1_FLASHTOTOP        4607
@@ -2498,6 +2508,9 @@
 
 // "Run" menu item in XFolder/XFldDisk V0.9.14 (2001-08-07) [pr]
 #define ID_XFMI_OFS_RUN                 (WPMENUID_USER+54)
+
+// folder split view V0.9.19 (2002-05-07) [umoeller]
+#define ID_XFMI_OFS_SPLITVIEW           (WPMENUID_USER+55)
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
