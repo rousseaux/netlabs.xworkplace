@@ -60,12 +60,17 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WININPUT
+#define INCL_WINSYS
+#define INCL_WINTIMER
+#define INCL_WINDIALOGS
+#define INCL_WINSTATICS
+#define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
 #define INCL_WINPOINTERS
 #define INCL_WINPROGRAMLIST
 #define INCL_WINSWITCHLIST
-#define INCL_WINSYS
-#define INCL_WINTIMER
 #define INCL_WINMENUS
 #define INCL_WINWORKPLACE
 
@@ -94,22 +99,28 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\stringh.h"            // string helper routines
-#include "helpers\timer.h"              // replacement PM timers
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
+#include "helpers\timer.h"              // replacement PM timers
 #include "helpers\xstring.h"            // extended string helpers
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
-#include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
+#include "shared\center.h"              // public XCenter interfaces
 #include "config\drivdlgs.h"            // driver configuration dialogs
 
-#pragma hdrstop                     // VAC++ keeps crashing otherwise
+#pragma hdrstop                         // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
  *
@@ -130,6 +141,7 @@
 #endif
 
 typedef unsigned long   u_long;
+VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #pragma pack(1)
 struct ifmib {
@@ -247,7 +259,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
             (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_IPMONITOR),
                                        // widget class name displayed to user
             WGTF_SIZEABLE | WGTF_TOOLTIP,
-            NULL        // no settings dlg
+            PwgtShowSettingsDlg        // with settings dlg
         },
     };
 
@@ -279,6 +291,8 @@ PCMNGETSTRING pcmnGetString = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 
+PCTLMAKECOLORRECT pctlMakeColorRect = NULL;
+
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
@@ -303,6 +317,9 @@ PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 
+PDLGHCREATEDLG pdlghCreateDlg = NULL;
+PWINHCENTERWINDOW pwinhCenterWindow = NULL;
+
 PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
@@ -312,6 +329,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+        "ctlMakeColorRect", (PFN*)&pctlMakeColorRect,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -331,6 +349,10 @@ static const RESOLVEFUNCTION G_aImports[] =
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
+
+        "dlghCreateDlg", (PFN*)&pdlghCreateDlg,
+        "winhCenterWindow", (PFN*)&pwinhCenterWindow,
+
         "xstrcat", (PFN*)&pxstrcat,
         "xstrClear", (PFN*)&pxstrClear,
         "xstrInit", (PFN*)&pxstrInit
@@ -374,6 +396,8 @@ typedef struct _MONITORSETUP
             // store this
 
     ULONG       ulDevIndex;
+    ULONG       ulLastDevIndex;
+            // eo:  Added to avoid extreme values upon interface change
 
 } MONITORSETUP, *PMONITORSETUP;
 
@@ -424,6 +448,8 @@ typedef struct _WIDGETPRIVATE
     BOOL            fCreating;      // TRUE while in WM_CREATE (anti-recursion)
 
     BOOL            fContextMenuHacked;
+    HWND            fContextMenuSource;
+                                    // eo:  Store window handle of submenu for later updating
 
     ULONG           ulTimerID;      // if != NULLHANDLE, update timer is running
 
@@ -444,11 +470,6 @@ typedef struct _WIDGETPRIVATE
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
-/* ******************************************************************
- *
- *   Widget settings dialog
- *
- ********************************************************************/
 
 /*
  *      This section contains shared code to manage the
@@ -544,8 +565,26 @@ VOID TwgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
 
-    pSetup->lcolIn = RGBCOL_DARKGREEN;
-    pSetup->lcolOut = RGBCOL_RED;
+    // In-graph color
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "INGCOL"))
+    {
+        pSetup->lcolIn = pctrParseColorString(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        // default color:
+        pSetup->lcolIn = RGBCOL_DARKGREEN;
+
+    // Out-graph color:
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "OUTGCOL"))
+    {
+        pSetup->lcolOut = pctrParseColorString(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        pSetup->lcolOut = RGBCOL_RED;
 }
 
 /*
@@ -571,6 +610,14 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
     pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
+    pxstrcat(pstrSetup, szTemp, 0);
+
+    pdrv_sprintf(szTemp, "INGCOL=%06lX;",
+            pSetup->lcolIn);
+    pxstrcat(pstrSetup, szTemp, 0);
+
+    pdrv_sprintf(szTemp, "OUTGCOL=%06lX;",
+            pSetup->lcolOut);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
@@ -608,13 +655,220 @@ VOID TwgtSaveSetupAndSend(HWND hwnd,
     pxstrClear(&strSetup);
 }
 
+
 /* ******************************************************************
  *
  *   Widget settings dialog
  *
  ********************************************************************/
 
-// None currently.
+#define INDEX_BACKGROUND        1000
+#define INDEX_FOREGROUND        1001
+#define INDEX_GRAPHIN           1002
+#define INDEX_GRAPHOUT          1003
+
+/*
+ *@@ SubclassAndSetColor:
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+static VOID SubclassAndSetColor(HWND hwndDlg,
+                                ULONG ulID,
+                                PCSZ pcszTitle,
+                                LONG lColor,
+                                LONG lBackColor)
+{
+    HWND hwnd;
+    if (hwnd = WinWindowFromID(hwndDlg, ulID))
+    {
+        WinSetWindowText(hwnd,
+                         (PSZ)pcszTitle);
+        WinSetPresParam(hwnd,
+                        PP_BACKGROUNDCOLOR,
+                        sizeof(LONG),
+                        &lColor);
+        if (ulID == 1000 + INDEX_FOREGROUND)
+            WinSetPresParam(hwnd,
+                            PP_FOREGROUNDCOLOR,
+                            sizeof(LONG),
+                            &lBackColor);
+
+        pctlMakeColorRect(hwnd);
+    }
+}
+
+/*
+ *@@ GetColor:
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+static LONG GetColor(HWND hwndDlg,
+                     ULONG ulID)
+{
+    return (pwinhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
+                                PP_BACKGROUNDCOLOR,
+                                FALSE,
+                                SYSCLR_DIALOGBACKGROUND));
+}
+
+#define COLOR_WIDTH     50
+#define COLOR_HEIGHT    16
+
+static CONTROLDEF
+    OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+    CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+
+    GraphsGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
+
+    GraphInColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_GRAPHIN,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+
+    GraphOutColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_GRAPHOUT,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+
+
+    OthersGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
+
+    BackgroundColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_BACKGROUND,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+    ForegroundColor
+                = CONTROLDEF_TEXT(NULL,
+                                  1000 + INDEX_FOREGROUND,
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT);
+
+static const DLGHITEM
+    dlgIpmon[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&GraphsGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&GraphInColor),
+                    START_ROW(0),
+                        CONTROL_DEF(&GraphOutColor),
+                END_TABLE,
+                START_GROUP_TABLE(&OthersGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&BackgroundColor),
+                    START_ROW(0),
+                        CONTROL_DEF(&ForegroundColor),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&OKButton),
+                CONTROL_DEF(&CancelButton),
+        END_TABLE
+    };
+
+/*
+ *@@ PwgtShowSettingsDlg:
+ *
+ *@@added V0.9.19 (2002-06-02) [umoeller]
+ */
+
+VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+{
+    HWND hwndDlg = NULLHANDLE;
+    APIRET arc;
+
+    ULONG       ul;
+
+    GraphsGroup.pcszText = pcmnGetString(ID_CRSI_IPWGT_GRAPHCOLORS);
+    OthersGroup.pcszText = pcmnGetString(ID_CRSI_IPWGT_OTHERCOLORS);
+
+    OKButton.pcszText = pcmnGetString(DID_OK);
+    CancelButton.pcszText = pcmnGetString(DID_CANCEL);
+
+    if (!(arc = pdlghCreateDlg(&hwndDlg,
+                               pData->hwndOwner,
+                               FCF_FIXED_DLG,
+                               WinDefDlgProc,
+                               pcmnGetString(ID_CRSI_PWGT_TITLE),
+                               dlgIpmon,
+                               ARRAYITEMCOUNT(dlgIpmon),
+                               NULL,
+                               pcmnQueryDefaultFont())))
+    {
+        // go scan the setup string
+        MONITORSETUP  Setup;
+        TwgtScanSetup(pData->pcszSetupString,
+                      &Setup);
+
+        // for each color control, set the background color
+        // according to the settings
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_GRAPHIN,
+                            pcmnGetString(ID_CRSI_IPWGT_GRAPHINCOLOR),
+                            Setup.lcolIn,
+                            Setup.lcolBackground);
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_GRAPHOUT,
+                            pcmnGetString(ID_CRSI_IPWGT_GRAPHOUTCOLOR),
+                            Setup.lcolOut,
+                            Setup.lcolBackground);
+
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_BACKGROUND,
+                            pcmnGetString(ID_CRSI_PWGT_BACKGROUNDCOLOR), // "Background",
+                            Setup.lcolBackground,
+                            Setup.lcolForeground);
+        SubclassAndSetColor(hwndDlg,
+                            1000 + INDEX_FOREGROUND,
+                            pcmnGetString(ID_CRSI_PWGT_TEXTCOLOR), // "Text",
+                            Setup.lcolForeground,
+                            Setup.lcolBackground);
+
+        // go!
+        pwinhCenterWindow(hwndDlg);
+        if (DID_OK == WinProcessDlg(hwndDlg))
+        {
+            XSTRING strSetup;
+
+            // get the colors back from the controls
+            Setup.lcolIn = GetColor(hwndDlg,
+                                    1000 + INDEX_GRAPHIN);
+
+            Setup.lcolOut = GetColor(hwndDlg,
+                                     1000 + INDEX_GRAPHOUT);
+
+            Setup.lcolBackground = GetColor(hwndDlg,
+                                            1000 + INDEX_BACKGROUND);
+
+            Setup.lcolForeground = GetColor(hwndDlg,
+                                            1000 + INDEX_FOREGROUND);
+
+            TwgtSaveSetup(&strSetup,
+                          &Setup);
+
+            pData->pctrSetSetupString(pData->hSettings,
+                                      strSetup.psz);
+            pxstrClear(&strSetup);
+        }
+
+        WinDestroyWindow(hwndDlg);
+    }
+}
 
 /* ******************************************************************
  *
@@ -741,6 +995,25 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cx = pPrivate->Setup.cx;
                         pszl->cy = 10;
                         brc = TRUE;
+                    }
+                    break;
+
+                    /*
+                     * XN_SETUPCHANGED:
+                     *      XCenter has a new setup string for
+                     *      us in mp2.
+                     */
+
+                    case XN_SETUPCHANGED:
+                    {
+                        const char *pcszNewSetupString = (const char*)mp2;
+
+                        // reinitialize the setup data
+                        TwgtFreeSetup(&pPrivate->Setup);
+                        TwgtScanSetup(pcszNewSetupString,
+                                      &pPrivate->Setup);
+
+                        WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                     }
                     break;
                 }
@@ -1025,7 +1298,14 @@ VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
             if (pPrivate->Setup.ulDevIndex >= IFMIB_ENTRIES)
                 pPrivate->Setup.ulDevIndex = 0;
 
+            // eo: Check if interface has changed, in that case update Prev* values.
             i = pPrivate->Setup.ulDevIndex;
+            if (i!=pPrivate->Setup.ulLastDevIndex)
+            {
+                pPrivate->ulPrevTotalIn  = pPrivate->statif.iftable[i].ifInOctets;
+                pPrivate->ulPrevTotalOut = pPrivate->statif.iftable[i].ifOutOctets;
+                pPrivate->Setup.ulLastDevIndex=i;
+            }
 
             // now update "latest" with the data of the
             // selected device; the point is, we get the
@@ -1034,20 +1314,40 @@ VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
             // total bytes value from the new one
 
             // 1) input bytes
-            pLatest->ulIn =   (   (double)pPrivate->statif.iftable[i].ifInOctets
-                                 - pPrivate->ulPrevTotalIn
-                               ) * 1000
-                               / ulDivisor;
+            if (pPrivate->statif.iftable[i].ifInOctets < pPrivate->ulPrevTotalIn) // eo:  If octet count has wrapped around (ULONG), compensate.
+            {
+                pLatest->ulIn =   (   (double)pPrivate->statif.iftable[i].ifInOctets
+                                    + (0xffffffff - pPrivate->ulPrevTotalIn)
+                                  ) * 1000
+                                  / ulDivisor;
+            }
+            else
+            {
+                pLatest->ulIn =   (   (double)pPrivate->statif.iftable[i].ifInOctets
+                                    - pPrivate->ulPrevTotalIn
+                                  ) * 1000
+                                  / ulDivisor;
+            }
             if (pLatest->ulIn > pPrivate->ulMax)
                 pPrivate->ulMax = pLatest->ulIn;
 
             pPrivate->ulPrevTotalIn = pPrivate->statif.iftable[i].ifInOctets;
 
             // 2) output bytes
-            pLatest->ulOut =   (   (double)pPrivate->statif.iftable[i].ifOutOctets
-                                 - pPrivate->ulPrevTotalOut
-                               ) * 1000
-                               / ulDivisor;
+            if (pPrivate->statif.iftable[i].ifOutOctets < pPrivate->ulPrevTotalOut) // eo:  If octet count has wrapped around (ULONG), compensate.
+            {
+                pLatest->ulOut =   (   (double)pPrivate->statif.iftable[i].ifOutOctets
+                                     + (0xffffffff - pPrivate->ulPrevTotalOut)
+                                   ) * 1000
+                                   / ulDivisor;
+            }
+            else
+            {
+                pLatest->ulOut =   (   (double)pPrivate->statif.iftable[i].ifOutOctets
+                                     - pPrivate->ulPrevTotalOut
+                                   ) * 1000
+                                   / ulDivisor;
+            }
             if (pLatest->ulOut > pPrivate->ulMax)
                 pPrivate->ulMax = pLatest->ulOut;
 
@@ -1319,6 +1619,7 @@ VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
                             0);
 
         pPrivate->fContextMenuHacked = TRUE;
+        pPrivate->fContextMenuSource = hwndSubmenu; // eo: Store submenu handle for later updating upon interface change
     }
 }
 
@@ -1422,6 +1723,15 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                     // first call for diskfree:
                     // hack the context menu given to us
                     HackContextMenu(pPrivate);
+                } else { // eo: Update submenu to indicate selected interface without redrawing entire menu
+                    ULONG i;
+                    for (i = 0; i < IFMIB_ENTRIES; i++)
+                    {
+                        if (pPrivate->statif.iftable[i].ifDescr[0])
+                        {
+                            WinCheckMenuItem(pPrivate->fContextMenuSource, 2000 + i, (i == pPrivate->Setup.ulDevIndex) ? MIA_CHECKED : 0 );
+                        }
+                    }
                 }
 
                 mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
@@ -1634,4 +1944,5 @@ VOID EXPENTRY TwgtQueryVersion(PULONG pulMajor,
     *pulMinor = XFOLDER_MINOR;
     *pulRevision = 16; // XFOLDER_REVISION;
 }
+
 

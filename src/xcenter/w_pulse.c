@@ -487,119 +487,11 @@ static APIRET GetProcessorCount(PULONG pcProcessors)
  *
  ********************************************************************/
 
-static PFNWP G_pfnwpOrigStatic = NULL;
-
-/*
- *@@ ctl_fnwpSubclassedColorRect:
- *      window procedure for subclassed static frames representing
- *      a color.
- *
- *      The control simply paints itself as a rectangle with the
- *      color specified in its PP_BACKGROUNDCOLOR presentation
- *      parameter. If a window text is set for the control, it is
- *      painted with the PP_FOREGROUNDCOLOR color.
- *
- *      If the user drags a color onto the control, it notifies
- *      its owner with the WM_CONTROL message and the EN_CHANGE
- *      notification code, as with any entry field (since the
- *      static control knows no notifications, we use that code
- *      instead).
- *
- *@@added V0.9.16 (2002-01-05) [umoeller]
- */
-
-static MRESULT EXPENTRY ctl_fnwpSubclassedColorRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        case WM_PAINT:
-        {
-            LONG    lColor;
-            RECTL   rclPaint;
-            PSZ     pszText;
-
-            HPS hps = WinBeginPaint(hwndStatic,
-                                    NULLHANDLE, // HPS
-                                    NULL); // PRECTL
-            gpihSwitchToRGB(hps);
-            WinQueryWindowRect(hwndStatic,
-                               &rclPaint);      // exclusive
-            lColor = winhQueryPresColor(hwndStatic,
-                                        PP_BACKGROUNDCOLOR,
-                                        FALSE,      // no inherit
-                                        SYSCLR_DIALOGBACKGROUND);
-
-            // make rect inclusive
-            rclPaint.xRight--;
-            rclPaint.yTop--;
-
-            // draw interior
-            GpiSetColor(hps, lColor);
-            gpihBox(hps,
-                    DRO_FILL,
-                    &rclPaint);
-
-            // draw frame
-            GpiSetColor(hps, RGBCOL_BLACK);
-            gpihBox(hps,
-                    DRO_OUTLINE,
-                    &rclPaint);
-
-            if (pszText = winhQueryWindowText(hwndStatic))
-            {
-                GpiSetColor(hps,
-                            winhQueryPresColor(hwndStatic,
-                                               PP_FOREGROUNDCOLOR,
-                                               FALSE,
-                                               -1));
-                WinDrawText(hps,
-                            strlen(pszText),
-                            pszText,
-                            &rclPaint,
-                            0,
-                            0,
-                            DT_CENTER | DT_VCENTER | DT_TEXTATTRS);
-
-                free(pszText);
-            }
-
-            WinEndPaint(hps);
-        }
-        break;
-
-        case WM_PRESPARAMCHANGED:
-            switch ((ULONG)mp1)
-            {
-                case PP_BACKGROUNDCOLOR:
-                    WinInvalidateRect(hwndStatic,
-                                      NULL,
-                                      FALSE);
-                    // notify owner; since the static control
-                    // doesn't send any notifications, we
-                    // use EN_CHANGED
-                    WinSendMsg(WinQueryWindow(hwndStatic, QW_OWNER),
-                               WM_CONTROL,
-                               MPFROM2SHORT(WinQueryWindowUShort(hwndStatic, QWS_ID),
-                                            EN_CHANGE),
-                               (MPARAM)hwndStatic);
-                break;
-            }
-        break;
-
-        default:
-            mrc = G_pfnwpOrigStatic(hwndStatic, msg, mp1, mp2);
-        break;
-    }
-
-    return mrc;
-}
-
 /*
  *@@ SubclassAndSetColor:
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: exported color rect to comctl.c
  */
 
 static VOID SubclassAndSetColor(HWND hwndDlg,
@@ -620,8 +512,7 @@ static VOID SubclassAndSetColor(HWND hwndDlg,
             winhSetPresColor(hwnd,
                              PP_FOREGROUNDCOLOR,
                              lBackColor);
-        G_pfnwpOrigStatic = WinSubclassWindow(hwnd,
-                                              ctl_fnwpSubclassedColorRect);
+        ctlMakeColorRect(hwnd);
     }
 }
 

@@ -377,6 +377,8 @@ typedef struct _WINLISTENTRY
  *
  *      An instance of this is created on WM_CREATE
  *      fnwpWinlistWidget and stored in XCENTERWIDGET.pUser.
+ *
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: now using WINLISTENTRY structs instead of SWCNTRL's
  */
 
 typedef struct _WINLISTPRIVATE
@@ -395,7 +397,7 @@ typedef struct _WINLISTPRIVATE
             // != 0 while context menu is showing (overriding standard widget)
 
     LINKLIST    llWinList;
-            // linked list of SWLISTENTRY's with items to be displayed.
+            // linked list of WINLISTENTRY's with items to be displayed.
             // First item is displayed left, last item right.
             // This constructed from the current switch list, however:
             // -- filtered items are not on here;
@@ -404,10 +406,8 @@ typedef struct _WINLISTPRIVATE
             // This is now a linked list (V0.9.11) because apparently
             // WinQuerySwitchList reuses the existing items so that
             // sometimes new items appear randomly in the middle.
-
-            // Note that we hack the uchVisbility field to contain
-            // the button index of the entry. We set this to -1
-            // if no button is to be shown, just to make sure.
+            // V0.9.19 (2002-06-02) [umoeller]:
+            // now using WINLISTENTRY structs instead of SWCNTRL's
 
     PWINLISTENTRY   pCtrlActive,
             // ptr into pswBlock for last active window or NULL if none
@@ -1170,6 +1170,10 @@ PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
 
 /*
  *@@ FillEntry:
+ *      fills the given WINLISTENTRY. Note that
+ *      this siply copies the SWCNTRL and fills
+ *      the SWP as well, but does not modify hptr
+ *      or ulIndex, which must be set by the caller.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
@@ -1188,7 +1192,8 @@ static VOID FillEntry(PWINLISTENTRY pCtrl,
 /*
  *@@ AddEntry:
  *      adds a new window list entry for the given
- *      SWCNTRL. Checks the filters list beforehand.
+ *      SWCNTRL. Checks the filters list beforehand;
+ *      returns NULL if the window is filtered.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
@@ -1241,7 +1246,6 @@ PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
 {
     HSWITCH hsw;
     PWINLISTENTRY  pCtrl = NULL;
-
     if (hsw = WinQuerySwitchHandle(hwnd, 0))
     {
         // check if the item is in the list
@@ -1298,7 +1302,7 @@ PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
  *@@changed V0.9.12 (2001-04-28) [umoeller]: didn't pick up changes in the filters, fixed
- *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten to use XWPDAEMN
  */
 
 VOID ScanSwitchList(HWND hwndWidget,
@@ -1829,8 +1833,8 @@ VOID WwgtPaint(HWND hwnd)
          && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
        )
     {
-        HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
-        if (hps)
+        HPS hps;
+        if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
         {
             RECTL       rclWin;
 

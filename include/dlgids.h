@@ -2275,6 +2275,13 @@
 #define ID_CRSI_WINLIST_KILL1           6286
 #define ID_CRSI_WINLIST_KILL2           6287
 
+#define ID_CRSI_IPWGT_GRAPHCOLORS       6288
+#define ID_CRSI_IPWGT_OTHERCOLORS       6289
+#define ID_CRSI_IPWGT_IN                6290
+#define ID_CRSI_IPWGT_OUT               6291
+#define ID_CRSI_IPWGT_GRAPHINCOLOR      6292
+#define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6293
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000

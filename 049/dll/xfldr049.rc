@@ -978,6 +978,14 @@ BEGIN
     ID_CRSI_WIDGET_HEALTH               "Temperatur-Monitor"
     ID_CRSI_WIDGET_IPMONITOR            "IP-Monitor"
 
+    /* IP monitor */
+    ID_CRSI_IPWGT_GRAPHCOLORS           "Graphenfarben"
+    ID_CRSI_IPWGT_OTHERCOLORS           "Andere Farben"
+    ID_CRSI_IPWGT_IN                    "Ein"
+    ID_CRSI_IPWGT_OUT                   "Aus"
+    ID_CRSI_IPWGT_GRAPHINCOLOR          "Ein-Graph Farbe"
+    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Aus-Graph Farbe"
+
     /* font sample view (all new with V0.9.19) */
     ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
     ID_XSSI_FONT_MAXASCENDER            "Show maximum ascender/descender (gray rectangles on left)"

@@ -53,6 +53,7 @@ EXPORTS
     cmnQueryNLSModuleHandle
     cmnQueryMainResModuleHandle
     cmnSetControlsFont
+    ctlMakeColorRect
     ctrDisplayHelp
     ctrFreeSetupValue
     ctrIsXCenterView
@@ -62,6 +63,9 @@ EXPORTS
     ctrScanSetupString
     ctrSetSetupString
     dlghCreateDlg
+    dlghFreeArray
+    dlghCreateArray
+    dlghAppendToArray
     doshMyPID
     doshMyTID
     doshEnumDrives
@@ -352,4 +356,5 @@ EXPORTS
     M_XWPVCardCClassData
     M_XWPVCardClassData
     M_XWPVCardNewClass
+
 
