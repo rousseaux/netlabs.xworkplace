@@ -98,6 +98,8 @@ interface XFldDataFile : WPDataFile
 
     //# 2)  WPObject query/set methods
 
+    wpSetDefaultView: override;
+
     //# 3)  icon methods
 
     wpQueryIcon: override;

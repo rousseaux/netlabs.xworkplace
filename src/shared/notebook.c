@@ -248,9 +248,9 @@ STATIC VOID PageInit(PNOTEBOOKPAGE pnbp,
 
         // winhAdjustControls desired?
         if (    (pnbp->inbp.pampControlFlags)
-    #ifndef __ALWAYSRESIZESETTINGSPAGES__
-             && (cmnQuerySetting(sfResizeSettingsPages))
-    #endif
+//     #ifndef __ALWAYSRESIZESETTINGSPAGES__            // setting removed V1.0.1 (2002-12-14) [umoeller]
+//              && (cmnQuerySetting(sfResizeSettingsPages))
+//     #endif
            )
         {
             // yes: allocate and zero

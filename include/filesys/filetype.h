@@ -52,7 +52,7 @@
 
     ULONG ftypAssocObjectDeleted(WPObject *somSelf);
 
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
     #ifdef SOM_XFldDataFile_h
         WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,
                                              PULONG pulView,

@@ -409,8 +409,8 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFileTypesPage(XFldWPS *somSelf,
      * "File types" page (new with V0.9.0)
      */
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
     {
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;

@@ -3050,8 +3050,6 @@ STATIC MRESULT SplitFrameControl(HWND hwndFrame,
                 case SN_UPDATESTATUSBAR:
                     PMPF_STATUSBARS(("got SN_UPDATESTATUSBAR, mp2 is %d", mp2));
 
-                    DosBeep(4000, 100);
-
                     switch ((ULONG)mp2)
                     {
                         case 1: // show/hide status bars according to folder/Global settings;

@@ -58,7 +58,8 @@
  *      GNU General Public License for more details.
  */
 
-#include <os2.h>
+#include "pmwin.h"
+#include "pmstddlg.h"
 
 /* this is new with V0.85; this define is actually the only reason
    why wpobject.h was needed. Since that file is only in the Toolkit,
@@ -764,7 +765,9 @@ BEGIN
     ID_XCSI_REPLACEHELP                 "Standardseiten der Online-Hilfe ersetzen"
 
     /* the following item added with V0.9.4 V0.9.4 (2000-08-08) [umoeller] */
-    ID_XCSI_RESIZESETTINGSPAGES         "Einstellungsseiten bei Grî·enÑnderung des Notizbuches anpassen"
+    // ID_XCSI_RESIZESETTINGSPAGES         "Einstellungsseiten bei Grî·enÑnderung des Notizbuches anpassen"
+            // and removed V1.0.1 (2002-12-14) [umoeller]
+
     /* the following item's ID and string changed with V0.9.16 (2001-10-15) [umoeller] */
     ID_XCSI_REPLACEICONPAGE             "Einstellungsseite ""Symbol"" in allen NotizbÅchern ersetzen"
     ID_XCSI_REPLACEFILEPAGE             "Einstellungsseiten ""Datei"" und ""Details"" ersetzen"
@@ -798,7 +801,8 @@ BEGIN
     ID_XCSI_PREPOPULATEDESKTOP          "ArbeitsoberflÑche vorzeitig laden"
 
     ID_XCSI_FILEOPERATIONS              "Dateioperationen"
-    ID_XCSI_EXTASSOCS                   "Erweiterte Dateitypzuordnungen"
+    // ID_XCSI_EXTASSOCS                   "Erweiterte Dateitypzuordnungen"
+            // removed V1.0.1 (2002-12-15) [umoeller]
 
 /* this item added V0.9.20 (2002-08-08) [umoeller] */
     ID_XCSI_REPLACEPASTE                """EinfÅgen""-Dialog ersetzen"

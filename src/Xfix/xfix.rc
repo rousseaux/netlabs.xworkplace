@@ -12,7 +12,9 @@
  *      GNU General Public License for more details.
  */
 
-#include <os2.h>
+// #include <os2.h>
+
+#include "rcdefs.h"     // V1.0.1 (2002-12-14) [umoeller]
 #include "xfix.h"
 
 POINTER 1 LOADONCALL MOVEABLE DISCARDABLE xfix.ico

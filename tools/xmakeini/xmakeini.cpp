@@ -387,7 +387,7 @@ int main(int argc, char* argv[])
     {
         printf("xmakeini V" BLDLEVEL_VERSION " built " __DATE__ "\n");
         printf("(C) 2002 Ulrich Moeller\n");
-        printf("Licenced to Serenity Systems International\n");
+        printf("Licensed to Serenity Systems International\n");
         printf("Syntax: xmakeini <inifile> [-s sedfile] [-d <dir>] <rcfile> [<rcfile> ...]\n");
         printf("with <inifile>: the INI file to create or update; must not be in use!\n");
         printf("     -s <sedfile>: a file in very simply sed syntax with string replacements\n");

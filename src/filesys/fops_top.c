@@ -203,6 +203,7 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
  *@@changed V0.9.16 (2001-12-06) [umoeller]: added delete folders confirmations
+ *@@changed V1.0.1 (2002-12-15) [pr]: @@fixes 36
  */
 
 APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
@@ -317,6 +318,25 @@ APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
 
                     case FOPSERR_FONT_STILL_IN_USE:
                         ulMsg = 204;
+                        apsz[0] = pszTitle;
+                        cpsz = 1;
+                    break;
+
+                    // V1.0.1 (2002-12-15) [pr]: @@fixes 36
+                    case FOPSERR_NOT_FONT_FILE:
+                        ulMsg = 258;
+                        apsz[0] = pszTitle;
+                        cpsz = 1;
+                    break;
+
+                    case FOPSERR_NOT_FONT_OBJECT:
+                        ulMsg = 259;
+                        apsz[0] = pszTitle;
+                        cpsz = 1;
+                    break;
+
+                    case FOPSERR_FONT_ALREADY_DELETED:
+                        ulMsg = 260;
                         apsz[0] = pszTitle;
                         cpsz = 1;
                     break;
@@ -601,6 +621,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *@@changed V0.9.19 (2002-04-17) [umoeller]: no longer displaying progress if disabled in WPSystem
  *@@changed V0.9.19 (2002-06-13) [umoeller]: added excpt handling
  *@@changed V0.9.19 (2002-06-13) [umoeller]: fixed crash if pSourceFolder was NULL (font install)
+ *@@changed V1.0.1 (2002-12-15) [pr]: fixed "unknown task" message box when uninstalling fonts
  */
 
 STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
@@ -656,6 +677,11 @@ STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
 
                 case XFT_INSTALLFONTS:
                     pcszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);
+                break;
+
+                // V1.0.1 (2002-12-15) [pr]: fix "unknown task" message box
+                case XFT_DEINSTALLFONTS:
+                    pcszTitle = cmnGetString(ID_XSSI_DEINSTALLINGFONTS);
                 break;
             }
 

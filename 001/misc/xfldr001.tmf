@@ -319,7 +319,9 @@ The "&xwp; User Guide" contains all the information you will need... and if it d
 
 Have fun with &xwp;!
 
-<--XFL0200-->: Error %1 occured installing the font file "%2".
+; text change V1.0.1
+
+<--XFL0200-->: Error %1 occured processing the font file "%2".
 
 Do you wish to ignore this error and continue installing fonts?
 
@@ -546,5 +548,17 @@ Thank you.
 <--XFL0256-->: &xwp;: Search for class
 
 <--XFL0257-->: Enter the name of the class:
+
+<--XFL0258-->: The file "%1" is not a font file.
+
+Do you wish to ignore this error and continue installing fonts?
+
+<--XFL0259-->: The object "%1" is not a font object.
+
+Do you wish to ignore this error and continue uninstalling fonts?
+
+<--XFL0260-->: The font "%1" has already been uninstalled.
+
+Do you wish to ignore this error and continue uninstalling fonts?
 
 

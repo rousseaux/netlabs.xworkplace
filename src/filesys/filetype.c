@@ -664,7 +664,7 @@ ULONG ftypAssocObjectDeleted(WPObject *somSelf)
     return ulrc;
 }
 
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
 
 /* ******************************************************************
  *
@@ -2066,4 +2066,4 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
     return arc;
 }
 
-#endif // #ifndef __NEVEREXTASSOCS__
+#endif // #ifndef __NOTURBOFOLDERS__

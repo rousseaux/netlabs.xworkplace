@@ -20,7 +20,7 @@
 ;
 
 LIBRARY SENTINEL INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:1.0.0#@ XWorkplace IP monitor plugin DLL'
+Description '@#Ulrich M”ller:1.1.0#@ XWorkplace IP monitor plugin DLL'
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
 

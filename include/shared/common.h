@@ -824,9 +824,11 @@
             // can be overridden in XFolder instance settings
         sfShowHotkeysInMenus,
             // on XFldWPS "Hotkeys" page
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-        sfResizeSettingsPages,
-#endif
+
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__        removed this setting V1.0.1 (2002-12-14) [umoeller]
+//         sfResizeSettingsPages,
+// #endif
+
 #ifndef __ALWAYSREPLACEICONPAGE__
         sfReplaceIconPage,
 #endif
@@ -864,10 +866,11 @@
             // XWPSetup "XPager virtual desktops"; this will cause
             // XDM_STARTSTOPPAGER to be sent to the daemon
 #endif
-#ifndef __NEVEREXTASSOCS__
-        sfExtAssocs,
-        sfDatafileOBJHANDLE,        // added V0.9.20 (2002-08-04) [umoeller]
-#endif
+// #ifndef __NEVEREXTASSOCS__
+//         sfExtAssocs,                // removed V1.0.1 (2002-12-15) [umoeller]
+//         sfDatafileOBJHANDLE,        // added V0.9.20 (2002-08-04) [umoeller]
+//                                     // moved to turbo folders setting V1.0.1 (2002-12-15) [umoeller]
+// #endif
 
         // replacement owner-draw flags; if any are set, we
         // run our own code in the subclassed folder winproc
@@ -910,6 +913,8 @@
 #ifndef __NOTURBOFOLDERS__
         sfTurboFolders,             // warning: this will return the setting
                                     // that was once determined on WPS startup
+        sfDatafileOBJHANDLE,        // added V0.9.20 (2002-08-04) [umoeller]
+                                    // moved to turbo folders setting V1.0.1 (2002-12-15) [umoeller]#endif
 #endif
 
         sfFdrSplitViews,            // new folder split views

@@ -627,6 +627,38 @@ VOID WwgtSaveSetupAndSend(HWND hwndWidget,
  ********************************************************************/
 
 /*
+ *@@ BeautifyTitle:
+ *      replaces all line breaks (0xd, 0xa) with spaces.
+ *      Returns the new length of the string or 0 on
+ *      errors. Copied over from xwphelpers.
+ */
+
+STATIC ULONG BeautifyTitle(PSZ psz)
+{
+    ULONG   ulrc;
+    PSZ     p = psz;
+
+    while (*p)
+    {
+        if (    (*p == '\r')
+             || (*p == '\n')
+           )
+        {
+            if (    (p != psz)
+                 && (p[-1] == ' ')
+               )
+                memmove(p, p + 1, strlen(p));
+            else
+                *p++ = ' ';
+        }
+        else
+            p++;
+    }
+
+    return (p - psz);
+}
+
+/*
  *@@ IsCtrlDesktopOrXCenter:
  *      returns TRUE if the given frame is either
  *      the desktop or an open XCenter frame.
@@ -656,6 +688,8 @@ STATIC BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
 /*
  *@@ DumpSwitchList:
  *      puts the current switch list entries into the listbox.
+ *
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: fixed \r\n display
  */
 
 STATIC VOID DumpSwitchList(HWND hwnd)
@@ -678,6 +712,9 @@ STATIC VOID DumpSwitchList(HWND hwnd)
                )
             {
                 // visible item:
+                BeautifyTitle(pCtrlThis->szSwtitle);
+                        // V1.0.1 (2002-12-14) [umoeller]
+
                 WinInsertLboxItem(hwndCombo,
                                   LIT_SORTASCENDING,
                                   pCtrlThis->szSwtitle);
@@ -1226,6 +1263,7 @@ STATIC VOID FillEntry(PWINLISTENTRY pCtrl,
     memcpy(&pCtrl->swctl, pOrigEntry, sizeof(SWCNTRL));
     WinQueryWindowPos(pOrigEntry->hwnd,
                       &swp);
+    BeautifyTitle(pCtrl->swctl.szSwtitle);        // V1.0.1 (2002-12-14) [umoeller]
     pCtrl->flSWP = swp.fl;
 }
 

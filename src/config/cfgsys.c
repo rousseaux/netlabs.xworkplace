@@ -600,6 +600,7 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.13 (2001-06-23) [umoeller]: added new memory settings
  *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed memory leak
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed max ID_OSDI_CACHE_THRESHOLD to 128
+ *@@changed V1.0.1 (2002-12-08) [pr]: removed CLASSPATH again @@fixes 272
  *@@changed V1.0.1 (2002-12-11) [pr]: POPUPLOG drive was wrong @@fixes 37
  */
 

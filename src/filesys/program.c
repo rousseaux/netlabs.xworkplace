@@ -1926,7 +1926,7 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
         // 2) set WP_OBJHANDLE
 
         if (    (pFile)
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
              && (cmnQuerySetting(sfDatafileOBJHANDLE))  // V0.9.20 (2002-08-04) [umoeller]
 #endif
            )

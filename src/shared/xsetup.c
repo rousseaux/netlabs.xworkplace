@@ -171,9 +171,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSFIXCLASSTITLES__
             ID_XCSI_FIXCLASSTITLES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-            ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#endif
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__        // setting removed
+//             ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+// #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
             ID_XCSI_REPLACEICONPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -239,9 +239,10 @@ static FEATURESITEM G_FeatureItemsList[] =
 #endif
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
-#ifndef __NEVEREXTASSOCS__
-            ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#endif
+
+// #ifndef __NEVEREXTASSOCS__       removed V1.0.1 (2002-12-15) [umoeller]
+//             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+// #endif
             // ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
 #ifndef __ALWAYSREPLACEFILEEXISTS__
@@ -1675,9 +1676,9 @@ static const XWPSETTING G_FeaturesBackup[] =
 #ifndef __ALWAYSREPLACEHELP__
         sfHelpReplacements,
 #endif
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-        sfResizeSettingsPages,
-#endif
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__        setting removed V1.0.1 (2002-12-14) [umoeller]
+//         sfResizeSettingsPages,
+// #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
         sfReplaceIconPage,
 #endif
@@ -1722,9 +1723,9 @@ static const XWPSETTING G_FeaturesBackup[] =
         sfXShutdown,
 #endif
 
-#ifndef __NEVEREXTASSOCS__
-        sfExtAssocs,
-#endif
+// #ifndef __NEVEREXTASSOCS__       removed V1.0.1 (2002-12-15) [umoeller]
+//         sfExtAssocs,
+// #endif
 #ifdef __REPLHANDLES__
         sfReplaceHandles,
 #endif
@@ -1767,6 +1768,7 @@ static MPARAM G_ampFeaturesPage[] =
  *@@changed V0.9.9 (2001-04-05) [pr]: fix undo
  *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
  *@@changed V0.9.16 (2001-10-25) [umoeller]: added "turbo folders"
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: removed "resize settings pages" setting @@fixes 285, 286
  */
 
 VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1921,10 +1923,10 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEHELP,
                 cmnQuerySetting(sfHelpReplacements));
 #endif
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
-                cmnQuerySetting(sfResizeSettingsPages));
-#endif
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__        setting removed V1.0.1 (2002-12-14) [umoeller]
+//         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
+//                 cmnQuerySetting(sfResizeSettingsPages));
+// #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONPAGE,
                 cmnQuerySetting(sfReplaceIconPage));
@@ -2009,10 +2011,10 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 cmnQuerySetting(sfPrePopulateDesktop));
 #endif
 
-#ifndef __NEVEREXTASSOCS__
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
-                cmnQuerySetting(sfExtAssocs));
-#endif
+// #ifndef __NEVEREXTASSOCS__       // removed V1.0.1 (2002-12-15) [umoeller]
+//         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
+//                 cmnQuerySetting(sfExtAssocs));
+// #endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
            //      cmnQuerySetting(sCleanupINIs));
                 // removed for now V0.9.12 (2001-05-15) [umoeller]
@@ -2122,10 +2124,10 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 (fXFldDesktop));
 #endif
 
-#ifndef __NEVEREXTASSOCS__
-        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
-                (fXFldDataFile));
-#endif
+// #ifndef __NEVEREXTASSOCS__       removed V1.0.1 (2002-12-15) [umoeller]
+//         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
+//                 (fXFldDataFile));
+// #endif
         /* ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 !(cmnQuerySetting(sNoWorkerThread))); */
 
@@ -2153,6 +2155,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed very broken Undo, Default, Setup Classes
  *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
  *@@changed V0.9.14 (2001-07-31) [umoeller]: "Classes" dlg mostly rewritten
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: removed "resize settings pages" setting @@fixes 285, 286
  */
 
 MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
@@ -2196,11 +2199,11 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 #endif
 
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-            case ID_XCSI_RESIZESETTINGSPAGES:
-                cmnSetSetting(sfResizeSettingsPages, precc->usCheckState);
-            break;
-#endif
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__        setting removed V1.0.1 (2002-12-14) [umoeller]
+//             case ID_XCSI_RESIZESETTINGSPAGES:
+//                 cmnSetSetting(sfResizeSettingsPages, precc->usCheckState);
+//             break;
+// #endif
 
 #ifndef __ALWAYSREPLACEICONPAGE__
             case ID_XCSI_REPLACEICONPAGE:
@@ -2383,16 +2386,16 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 #endif
 
-#ifndef __NEVEREXTASSOCS__
-            case ID_XCSI_EXTASSOCS:
-                cmnSetSetting(sfExtAssocs, precc->usCheckState);
-                // re-enable controls on this page
-                ulUpdateFlags = CBI_ENABLE;
-
-                if (precc->usCheckState)
-                    ulNotifyMsg = 208;
-            break;
-#endif
+// #ifndef __NEVEREXTASSOCS__
+//             case ID_XCSI_EXTASSOCS:
+//                 cmnSetSetting(sfExtAssocs, precc->usCheckState);
+//                 // re-enable controls on this page
+//                 ulUpdateFlags = CBI_ENABLE;
+//
+//                 if (precc->usCheckState)
+//                     ulNotifyMsg = 208;
+//             break;
+// #endif
 
 #ifndef __ALWAYSREPLACEFILEEXISTS__
             case ID_XCSI_REPLFILEEXISTS:

@@ -3343,16 +3343,17 @@ SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
 /*
  *@@ wpSetIcon:
  *
- *@@added V0.9.20 (2002-07-31) [umoeller]
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: fixed broken lazy loading of ICO files @@fixes 293
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
 {
     BOOL            brc = FALSE;
     BOOL            fSharedLocked = FALSE,
-                    fFlagsLocked = FALSE;
-    XFldObjectData  *somThis = XFldObjectGetData(somSelf);
+                    fFlagsLocked = FALSE,
+                    fTurnBackOn = FALSE;
 
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
 
     TRY_LOUD(excpt1)
@@ -3379,9 +3380,27 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
              && (fFlagsLocked = objLockFlags())
            )
         {
+            PMPF_ICONREPLACEMENTS(("[%s] hptr 0x%lX -> 0x%lX, OBJFL_LAZYLOADINGICON: %lX",
+                _wpQueryTitle(somSelf),
+                pmrc->hptrIcon,
+                hptrNewIcon,
+                _flObject & OBJFL_LAZYLOADINGICON));
+
             if (_flObject & OBJFL_LAZYLOADINGICON)
             {
                 pmrc->hptrIcon = _wpclsQueryIcon(_somGetClass(somSelf));
+
+                // warning: this causes data file association icons
+                // for icon files if extended assocs are off!!
+                // the WPS uses OBJSTYLE_NOTDEFAULTICON as an
+                // internal marker that, if hptrIcon is NULLHANDLE,
+                // the icon still needs to be loaded from an icon
+                // file, and we leak icon handles like crazy if
+                // we turn this off... besides, this causes the
+                // real icons of ICO files to disappear when
+                // clicked on them, so turn it back on below!
+                // V1.0.1 (2002-12-14) [umoeller]
+                fTurnBackOn = (_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON);
 
                 _wpModifyStyle(somSelf,
                                OBJSTYLE_NOTDEFAULTICON,
@@ -3422,6 +3441,10 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
 
     if (fFlagsLocked)
         objUnlockFlags();       // V1.0.0 (2002-09-02) [umoeller]
+
+    if (fTurnBackOn)
+        _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, OBJSTYLE_NOTDEFAULTICON);
+                // V1.0.1 (2002-12-14) [umoeller]
 
     return brc;
 }
@@ -3468,7 +3491,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 {
     BOOL    fLocked = FALSE,
             brc = FALSE;
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpAddToObjUseList");
@@ -3485,7 +3508,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 #endif
             brc = XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
                                                                pUseItem);
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
         else
         {
             // object handles for data files disabled,
@@ -3604,7 +3627,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 {
     BOOL    fLocked = FALSE,
             brc = FALSE;
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpDeleteFromObjUseList");
@@ -3621,7 +3644,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 #endif
             brc = XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
                                                                     pUseItem);
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
         else
         {
             // object handles for data files disabled,

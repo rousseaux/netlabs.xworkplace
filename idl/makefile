@@ -146,76 +146,86 @@ RUNSC = sc -p -v -r -maddstar -mnoint -S128000 -C128000
 
 # Special macros used here: $(@B) is the current target w/out ext.
 
-$(OUTPUTDIR)\wps\wpabs.h:        wps\$(@B).idl xfobj.idl
+$(OUTPUTDIR)\wps\wpobject.h:     wps\$(@B).idl
 
-$(OUTPUTDIR)\wps\wpfsys.h:       wps\$(@B).idl xfobj.idl
+$(OUTPUTDIR)\xfobj.h:            $(@B).idl $(OUTPUTDIR)\wps\wpobject.h
 
-$(OUTPUTDIR)\xcenter.h:          $(@B).idl
+# WPAbstract and subclasses
 
-$(OUTPUTDIR)\xclslist.h:         $(@B).idl
+$(OUTPUTDIR)\wps\wpabs.h:        wps\$(@B).idl $(OUTPUTDIR)\xfobj.h
 
-$(OUTPUTDIR)\xdebug.h:           $(@B).idl
+$(OUTPUTDIR)\xcenter.h:          $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xdebug_folder.h:    $(@B).idl
+$(OUTPUTDIR)\xclslist.h:         $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfdataf.h:          $(@B).idl wps\wpdataf.idl
+$(OUTPUTDIR)\xfdisk.h:           $(@B).idl  wps\wpdisk.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfdesk.h:           $(@B).idl wps\wpdesk.idl
+$(OUTPUTDIR)\xfsys.h:            $(@B).idl  wps\wpsystem.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfdisk.h:           $(@B).idl wps\wpdisk.idl
+$(OUTPUTDIR)\xfwps.h:            $(@B).idl  wps\wpsystem.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfldr.h:            $(@B).idl wps\wpfolder.idl
+$(OUTPUTDIR)\xmmcdplay.h:        $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfobj.h:            $(@B).idl wps\wpobject.idl
+$(OUTPUTDIR)\xmmvolume.h:        $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfont.h:            $(@B).idl wps\wpfolder.idl
+$(OUTPUTDIR)\xwpadmin.h:         $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfontfile.h:        $(@B).idl wps\wpdataf.idl
+$(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl wps\wpkeybd.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfontobj.h:         $(@B).idl
+$(OUTPUTDIR)\xwpmedia.h:         $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfstart.h:          $(@B).idl xfldr.idl
+$(OUTPUTDIR)\xwpmouse.h:         $(@B).idl wps\wpmouse.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfsys.h:            $(@B).idl wps\wpsystem.idl
+$(OUTPUTDIR)\xwppgm.h:           $(@B).idl wps\wppgm.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xfwps.h:            $(@B).idl wps\wpsystem.idl
+$(OUTPUTDIR)\xwpscreen.h:        $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xtrash.h:           $(@B).idl wps\wpfolder.idl
+$(OUTPUTDIR)\xwpsetup.h:         $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xtrashobj.h:        $(@B).idl
+$(OUTPUTDIR)\xwpshadow.h:        $(@B).idl wps\wpshadow.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xmmcdplay.h:        $(@B).idl
+$(OUTPUTDIR)\xwpsound.h:         $(@B).idl wps\wpsound.idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xmmvolume.h:        $(@B).idl
+$(OUTPUTDIR)\xwpstring.h:        $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
-$(OUTPUTDIR)\xwpfsys.h:          $(@B).idl wps\wpfsys.idl
+# WPTransient and subclasses
 
-$(OUTPUTDIR)\xwpadmin.h:         $(@B).idl
+$(OUTPUTDIR)\xfontobj.h:         $(@B).idl $(OUTPUTDIR)\xfobj.h
 
-$(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl wps\wpkeybd.idl
+$(OUTPUTDIR)\xtrashobj.h:        $(@B).idl $(OUTPUTDIR)\xfobj.h
 
-$(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
+# WPFileSystem and subclasses
 
-$(OUTPUTDIR)\xwpmouse.h:         $(@B).idl wps\wpmouse.idl
+$(OUTPUTDIR)\wps\wpfsys.h:       wps\$(@B).idl $(OUTPUTDIR)\xfobj.h
+
+$(OUTPUTDIR)\xwpfsys.h:          $(@B).idl $(OUTPUTDIR)\wps\wpfsys.h
+
+$(OUTPUTDIR)\xfldr.h:            $(@B).idl wps\wpfolder.idl $(OUTPUTDIR)\xwpfsys.h
+
+$(OUTPUTDIR)\xfdesk.h:           $(@B).idl $(OUTPUTDIR)\xfldr.h
+
+$(OUTPUTDIR)\xfont.h:            $(@B).idl $(OUTPUTDIR)\xfldr.h
+
+$(OUTPUTDIR)\xfstart.h:          $(@B).idl $(OUTPUTDIR)\xfldr.h
+
+$(OUTPUTDIR)\xtrash.h:           $(@B).idl $(OUTPUTDIR)\xfldr.h
 
 $(OUTPUTDIR)\xwpnetwork.h:       $(@B).idl
 
 $(OUTPUTDIR)\xwpnetsrv.h:        $(@B).idl
 
-$(OUTPUTDIR)\xwppgm.h:           $(@B).idl wps\wppgm.idl
+$(OUTPUTDIR)\xfdataf.h:          $(@B).idl wps\wpdataf.idl $(OUTPUTDIR)\xwpfsys.h
 
-$(OUTPUTDIR)\xwppgmf.h:          $(@B).idl wps\wppgmf.idl
+$(OUTPUTDIR)\xfontfile.h:        $(@B).idl $(OUTPUTDIR)\xfdataf.h
 
-$(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
+$(OUTPUTDIR)\xwppgmf.h:          $(@B).idl $(OUTPUTDIR)\xfdataf.h
 
-$(OUTPUTDIR)\xwpsetup.h:         $(@B).idl
+$(OUTPUTDIR)\xwpvcard.h:         $(@B).idl $(OUTPUTDIR)\xfdataf.h
 
-$(OUTPUTDIR)\xwpshadow.h:        $(@B).idl wps\wpshadow.idl
 
-$(OUTPUTDIR)\xwpsound.h:         $(@B).idl wps\wpsound.idl
 
-$(OUTPUTDIR)\xwpstring.h:        $(@B).idl
+$(OUTPUTDIR)\xdebug.h:           $(@B).idl
 
-$(OUTPUTDIR)\xwpvcard.h:         $(@B).idl
+$(OUTPUTDIR)\xdebug_folder.h:    $(@B).idl
 
 

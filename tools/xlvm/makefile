@@ -119,7 +119,7 @@ $(OUTPUTDIR)\$(APPNAME).obj: \
 
 # build targets
 $(APPNAME).def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XML tester"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace LVM utility"
 
 $(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

@@ -12,8 +12,8 @@
  *      GNU General Public License for more details.
  */
 
-#include <os2.h>
-#include "treesize.h"
+// #include <os2.h>
+// #include "treesize.h"
 
 POINTER 1 LOADONCALL MOVEABLE DISCARDABLE treesize.ico
 

@@ -411,9 +411,11 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
                                      "wpOpen"))
         {
             // this allows us to replace the method, dammit
-            _wpRefresh(somSelf,
-                       NULLHANDLE,      // view
-                       NULL);           // reserved
+            // _wpRefresh(somSelf,
+            _wpRefreshFSInfo(somSelf,       // V1.0.1 (2002-12-15) [umoeller]
+                             NULLHANDLE,      // view
+                             NULL,           // reserved
+                             0);
 
             return pwpOpen(somSelf, hwndCnr, ulView, param);
         }
@@ -825,7 +827,6 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsObjectFromHandle(M_XWPFileSystem *somSelf
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsObjectFromHandle");
 
     // _PmpfF(("HOBJECT 0x%lX", hObject));
-
     return M_XWPFileSystem_parent_M_WPFileSystem_wpclsObjectFromHandle(somSelf,
                                                                        hObject);
 }

@@ -164,7 +164,7 @@ SOM_Scope ULONG  SOMLINK xpg_xwpAddAssociationsPage(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_xwpAddAssociationsPage");
 
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
     ulrc = ftypInsertAssociationsPage(somSelf,
                                       hwndNotebook);
 #endif
@@ -1528,8 +1528,8 @@ SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf,
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpOpen");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
     {
         if (ulView == OPEN_RUNNING)
         {
@@ -1558,7 +1558,7 @@ SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf,
 
             return hwnd;
         }
-    } // end if (cmnQuerySetting(sfExtAssocs))
+    } // end if (cmnQuerySetting(sfTurboFolders))
 #endif
 
     return XWPProgram_parent_WPProgram_wpOpen(somSelf,
@@ -1615,8 +1615,8 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_wpAddProgramAssociationPage");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
         return _xwpAddAssociationsPage(somSelf, hwndNotebook);
 #endif
 

@@ -508,15 +508,11 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                     {
                         HPOINTER hptr;
 
-                        #ifdef __DEBUG__
-                        {
-                            PMINIRECORDCORE pmrc = _wpQueryCoreRecord(pDataFile);
-                            PMPF_ICONREPLACEMENTS(("[%s] calling _wpQueryIcon, hptrIcon is 0x%lX",
+                        PMPF_ICONREPLACEMENTS(("[%s] calling _wpQueryIcon, hptrIcon 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
                                     _wpQueryTitle(pDataFile),
-                                    pmrc->hptrIcon
+                                    _wpQueryCoreRecord(pDataFile)->hptrIcon,
+                                    _wpQueryStyle(pDataFile) & OBJSTYLE_NOTDEFAULTICON
                                   ));
-                        }
-                        #endif
 
                         if (hptr = _wpQueryIcon(pDataFile))
                         {

@@ -12,7 +12,7 @@
  *      GNU General Public License for more details.
  */
 
-#include <os2.h>
+// #include <os2.h>
 
 POINTER 1 LOADONCALL MOVEABLE DISCARDABLE xwpdaemn.ico
 

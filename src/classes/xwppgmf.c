@@ -260,7 +260,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddAssociationsPage(XWPProgramFile *somSelf,
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_xwpAddAssociationsPage");
 
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
     ulrc = ftypInsertAssociationsPage(somSelf,
                                       hwndNotebook);
 #endif
@@ -722,82 +722,79 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultHelp");
 
-    // if (cmnQuerySetting(sfExtAssocs))
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+
+    // V0.9.20 (2002-07-12) [umoeller]
+    if (ctsIsCommandFile(somSelf))
     {
-        strcpy(HelpLibrary, cmnQueryHelpLibrary());
-
-        // V0.9.20 (2002-07-12) [umoeller]
-        if (ctsIsCommandFile(somSelf))
-        {
-            // batch file:
-            CHAR szFilename[CCHMAXPATH];
-            if (    (_wpQueryFilename(somSelf, szFilename, FALSE))
-                 && (!stricmp(szFilename, "AUTOEXEC.BAT"))
-               )
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_AUTOEXEC;
-            else
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_BATCH;
-
-            return TRUE;
-        }
-
-        switch (_xwpQueryProgType(somSelf, NULL, NULL))
-        {
-            // DLLs, drivers
-            case PROG_DLL:                  // (PROGCATEGORY)6
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_DLL;
-            break;
-
-            case PROG_PDD:                  // (PROGCATEGORY)8
-            case PROG_VDD:                  // (PROGCATEGORY)9
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_DRIVER;
-            break;
-
-            /*
-            // OS/2 text mode
-            case PROG_FULLSCREEN:           // (PROGCATEGORY)1
-            case PROG_WINDOWABLEVIO:        // (PROGCATEGORY)2
-
-            // PM
-            case PROG_PM:                   // (PROGCATEGORY)3
-
-            // DOS
-            case PROG_VDM:                  // (PROGCATEGORY)4
-            // case PROG_REAL:                // (PROGCATEGORY)4
-            case PROG_WINDOWEDVDM:          // (PROGCATEGORY)7
-
-            // windoze
-            case PROG_WINDOW_REAL:          // (PROGCATEGORY)10
-            case PROG_WINDOW_PROT:          // (PROGCATEGORY)11
-            // case PROG_30_STD:               // (PROGCATEGORY)11
-            case PROG_WINDOW_AUTO:          // (PROGCATEGORY)12
-            case PROG_SEAMLESSVDM:          // (PROGCATEGORY)13
-            // case PROG_30_STDSEAMLESSVDM:    // (PROGCATEGORY)13
-            case PROG_SEAMLESSCOMMON:       // (PROGCATEGORY)14
-            // case PROG_30_STDSEAMLESSCOMMON:  // (PROGCATEGORY)14
-            case PROG_31_STDSEAMLESSVDM:    // (PROGCATEGORY)15
-            case PROG_31_STDSEAMLESSCOMMON:  // (PROGCATEGORY)16
-            case PROG_31_ENHSEAMLESSVDM:    // (PROGCATEGORY)17
-            case PROG_31_ENHSEAMLESSCOMMON:  // (PROGCATEGORY)18
-            case PROG_31_ENH:               // (PROGCATEGORY)19
-            case PROG_31_STD:               // (PROGCATEGORY)20
-
-            case PROG_DOS_GAME:             // (PROGCATEGORY)21
-            case PROG_WIN_GAME:             // (PROGCATEGORY)22
-            case PROG_DOS_MODE:             // (PROGCATEGORY)23
-            case PROG_RESERVED:             // (PROGCATEGORY)255
-            case PROG_DEFAULT:             // (PROGCATEGORY)0
-            case PROG_GROUP:               // (PROGCATEGORY)5
-            */
-
-            default:
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_MAIN;
-            break;
-
-        }
+        // batch file:
+        CHAR szFilename[CCHMAXPATH];
+        if (    (_wpQueryFilename(somSelf, szFilename, FALSE))
+             && (!stricmp(szFilename, "AUTOEXEC.BAT"))
+           )
+            *pHelpPanelId = ID_XSH_PROGRAMFILE_AUTOEXEC;
+        else
+            *pHelpPanelId = ID_XSH_PROGRAMFILE_BATCH;
 
         return TRUE;
     }
+
+    switch (_xwpQueryProgType(somSelf, NULL, NULL))
+    {
+        // DLLs, drivers
+        case PROG_DLL:                  // (PROGCATEGORY)6
+            *pHelpPanelId = ID_XSH_PROGRAMFILE_DLL;
+        break;
+
+        case PROG_PDD:                  // (PROGCATEGORY)8
+        case PROG_VDD:                  // (PROGCATEGORY)9
+            *pHelpPanelId = ID_XSH_PROGRAMFILE_DRIVER;
+        break;
+
+        /*
+        // OS/2 text mode
+        case PROG_FULLSCREEN:           // (PROGCATEGORY)1
+        case PROG_WINDOWABLEVIO:        // (PROGCATEGORY)2
+
+        // PM
+        case PROG_PM:                   // (PROGCATEGORY)3
+
+        // DOS
+        case PROG_VDM:                  // (PROGCATEGORY)4
+        // case PROG_REAL:                // (PROGCATEGORY)4
+        case PROG_WINDOWEDVDM:          // (PROGCATEGORY)7
+
+        // windoze
+        case PROG_WINDOW_REAL:          // (PROGCATEGORY)10
+        case PROG_WINDOW_PROT:          // (PROGCATEGORY)11
+        // case PROG_30_STD:               // (PROGCATEGORY)11
+        case PROG_WINDOW_AUTO:          // (PROGCATEGORY)12
+        case PROG_SEAMLESSVDM:          // (PROGCATEGORY)13
+        // case PROG_30_STDSEAMLESSVDM:    // (PROGCATEGORY)13
+        case PROG_SEAMLESSCOMMON:       // (PROGCATEGORY)14
+        // case PROG_30_STDSEAMLESSCOMMON:  // (PROGCATEGORY)14
+        case PROG_31_STDSEAMLESSVDM:    // (PROGCATEGORY)15
+        case PROG_31_STDSEAMLESSCOMMON:  // (PROGCATEGORY)16
+        case PROG_31_ENHSEAMLESSVDM:    // (PROGCATEGORY)17
+        case PROG_31_ENHSEAMLESSCOMMON:  // (PROGCATEGORY)18
+        case PROG_31_ENH:               // (PROGCATEGORY)19
+        case PROG_31_STD:               // (PROGCATEGORY)20
+
+        case PROG_DOS_GAME:             // (PROGCATEGORY)21
+        case PROG_WIN_GAME:             // (PROGCATEGORY)22
+        case PROG_DOS_MODE:             // (PROGCATEGORY)23
+        case PROG_RESERVED:             // (PROGCATEGORY)255
+        case PROG_DEFAULT:             // (PROGCATEGORY)0
+        case PROG_GROUP:               // (PROGCATEGORY)5
+        */
+
+        default:
+            *pHelpPanelId = ID_XSH_PROGRAMFILE_MAIN;
+        break;
+
+    }
+
+    return TRUE;
 
     /* return XWPProgramFile_parent_WPProgramFile_wpQueryDefaultHelp(somSelf,
                                                                      pHelpPanelId,
@@ -1356,8 +1353,8 @@ SOM_Scope HWND  SOMLINK xpgf_wpOpen(XWPProgramFile *somSelf,
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpOpen");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
     {
         if (ulView == OPEN_RUNNING)
         {
@@ -1386,7 +1383,7 @@ SOM_Scope HWND  SOMLINK xpgf_wpOpen(XWPProgramFile *somSelf,
 
             return hwnd;
         }
-    } // end if (cmnQuerySetting(sfExtAssocs))
+    } // end if (cmnQuerySetting(sfTurboFolders))
 #endif
 
     return XWPProgramFile_parent_WPProgramFile_wpOpen(somSelf,
@@ -1429,8 +1426,8 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XWPProgramFile *somSel
             return SETTINGS_PAGE_REMOVED;
     }
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
         return _xwpAddAssociationsPage(somSelf, hwndNotebook);
 #endif
 

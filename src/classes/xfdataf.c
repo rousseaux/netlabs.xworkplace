@@ -145,6 +145,8 @@ typedef struct _BUILDSTACK
     PBOOL       pfDone;
 } BUILDSTACK, *PBUILDSTACK;
 
+#ifndef __NOTURBOFOLDERS__
+
 /*
  *@@ fncbBuildAssocsList:
  *      callback set from BuildAssocsList for ftypForEachAutoType.
@@ -167,6 +169,8 @@ BOOL _Optlink fncbBuildAssocsList(PCSZ pcszType,
     // return TRUE to keep going
     return !(*(pb->pfDone));
 }
+
+#endif
 
 /*
  *@@ xwpQueryAssociations:
@@ -222,6 +226,7 @@ SOM_Scope ULONG  SOMLINK xdf_xwpQueryAssociations(XFldDataFile *somSelf,
 {
     ULONG cAssocs = 0;
 
+#ifndef __NOTURBOFOLDERS__
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_xwpQueryAssociations");
 
@@ -312,6 +317,7 @@ SOM_Scope ULONG  SOMLINK xdf_xwpQueryAssociations(XFldDataFile *somSelf,
     CATCH(excpt1)
     {
     } END_CATCH();
+#endif
 
     return cAssocs;
 }
@@ -468,103 +474,146 @@ SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
 SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
                                            ULONG ulReserved)
 {
-    ULONG brc;
+    BOOL    brc = FALSE;
     somTD_WPObject_wpRestoreState pwpRestoreState = NULL;
 
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpRestoreState");
 
-#ifndef __NOTURBOFOLDERS__
-    if (cmnQuerySetting(sfTurboFolders))
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
-
         PMPF_ICONREPLACEMENTS(("pre: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
                 _wpQueryCoreRecord(somSelf)->hptrIcon,
                 _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
 
-        // find the WPFileSystem method by skipping the
-        // buggy WPDataFile implementation
-        if (pwpRestoreState = (somTD_WPObject_wpRestoreState)wpshResolveFor(
-                                     somSelf,
-                                     _WPFileSystem,     // class to resolve for
-                                     "wpRestoreState"))
+    #ifndef __NOTURBOFOLDERS__
+        if (cmnQuerySetting(sfTurboFolders))     // V1.0.1 (2002-12-14) [umoeller]
         {
-            // found it: then it's safe to run our replacement
-            PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
-            APIRET arc;
-            HPOINTER hptrNew;
-            ULONG flNewStyle = 0;
+            PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
 
-            PMPF_ICONREPLACEMENTS(("obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
-
-            if (    (!prec->hptrIcon)
-                 && (pFSData)
-                 && (pFSData->pFea2List)
-                 && (!(arc = icoBuildPtrFromFEA2List(pFSData->pFea2List,
-                                                     &hptrNew,
-                                                     NULL,
-                                                     NULL)))
-               )
+            // find the WPFileSystem method by skipping the
+            // buggy WPDataFile implementation
+            if (pwpRestoreState = (somTD_WPObject_wpRestoreState)wpshResolveFor(
+                                         somSelf,
+                                         _WPFileSystem,     // class to resolve for
+                                         "wpRestoreState"))
             {
-                _wpSetIcon(somSelf, hptrNew);
+                // found it: then it's safe to run our replacement
+                PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+                ULONG           flNewStyle = 0;
+                XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
-                // set icon style below
+                PMPF_ICONREPLACEMENTS(("obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
+
+                if (    (!prec->hptrIcon)
+                     && (pFSData)
+                     && (pFSData->pFea2List)
+                   )
+                {
+                    APIRET          arc;
+                    HPOINTER        hptrNew;
+
+                    if (!(arc = icoBuildPtrFromFEA2List(pFSData->pFea2List,
+                                                        &hptrNew,
+                                                        NULL,
+                                                        NULL)))
+                    {
+                        _wpSetIcon(somSelf, hptrNew);
+
+                        // set icon style below
+                        // V0.9.18 (2002-03-24) [umoeller]
+                        flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+
+                        PMPF_ICONREPLACEMENTS(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
+
+                        // set our instance data flag so that we know that
+                        // we should NEVER EVER use an association icon
+                        // here... dumb WPS keeps looking for the
+                        // OBJSTYLE_NOTDEFAULTICON and always assumes that
+                        // if this is set, the data file uses an assoc
+                        // icon, which is simply not true any more
+                        // V0.9.18 (2002-03-19) [umoeller]
+                        _fHasIconEA = TRUE;
+                    }
+                }
+
+                brc = pwpRestoreState(somSelf, ulReserved);
+
+                // moved this down here because parent restore state
+                // overwrites this sucker, and then we might have
+                // an erroneous OBJSTYLE_NOTDEFAULTICON set that
+                // causes icons to be freed during copy...
                 // V0.9.18 (2002-03-24) [umoeller]
-                flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+                // situation was this:
+                // copy command file via ctrl-drag
+                // 1) wpCopyObject first instantiates a new SOM object
+                // 2) calls wpRestoreState (this one here) to
+                //    set up the new object's instance data
+                // 3) checks if the source object has a non-default icon;
+                //    if so, it is copied again... unfortunately, if we
+                //    had the OBJSTYLE_NOTDEFAULTICON bit set here,
+                //    our standard icon was nuked!!
+                // This only happened for files with .ICON EAs, where
+                // first we set a standard icon (!) and then the parent
+                // wpRestoreState set the OBJSTYLE_NOTDEFAULTICON flag --
+                // not a good idea.
 
-                PMPF_ICONREPLACEMENTS(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
-
-                // set our instance data flag so that we know that
-                // we should NEVER EVER use an association icon
-                // here... dumb WPS keeps looking for the
-                // OBJSTYLE_NOTDEFAULTICON and always assumes that
-                // if this is set, the data file uses an assoc
-                // icon, which is simply not true any more
-                // V0.9.18 (2002-03-19) [umoeller]
-                _fHasIconEA = TRUE;
+                // Long story: set the flag only below so it will be
+                // correct when we come out of restore.
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               flNewStyle);
             }
-
-            brc = pwpRestoreState(somSelf, ulReserved);
-
-            // moved this down here because parent restore state
-            // overwrites this sucker, and then we might have
-            // an erroneous OBJSTYLE_NOTDEFAULTICON set that
-            // causes icons to be freed during copy...
-            // V0.9.18 (2002-03-24) [umoeller]
-            // situation was this:
-            // copy command file via ctrl-drag
-            // 1) wpCopyObject first instantiates a new SOM object
-            // 2) calls wpRestoreState (this one here) to
-            //    set up the new object's instance data
-            // 3) checks if the source object has a non-default icon;
-            //    if so, it is copied again... unfortunately, if we
-            //    had the OBJSTYLE_NOTDEFAULTICON bit set here,
-            //    our standard icon was nuked!!
-            // This only happened for files with .ICON EAs, where
-            // first we set a standard icon (!) and then the parent
-            // wpRestoreState set the OBJSTYLE_NOTDEFAULTICON flag --
-            // not a good idea.
-
-            // Long story: set the flag only below so it will be
-            // correct when we come out of restore.
-            _wpModifyStyle(somSelf,
-                           OBJSTYLE_NOTDEFAULTICON,
-                           flNewStyle);
+            else
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot resolve WPFileSystem::wpRestoreState.");
         }
-        else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Cannot resolve WPFileSystem::wpRestoreState.");
+
+        if (!pwpRestoreState)
+    #endif
+            brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
+                                                                ulReserved);
 
         PMPF_ICONREPLACEMENTS(("post: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
                 _wpQueryCoreRecord(somSelf)->hptrIcon,
                 _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
     }
-
-    if (!pwpRestoreState)
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
 #endif
-        brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
-                                                            ulReserved);
+
+    return brc;
+}
+
+SOM_Scope BOOL  SOMLINK xdf_wpSetDefaultView(XFldDataFile *somSelf,
+                                             ULONG ulView)
+{
+    BOOL brc;
+
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetDefaultView");
+
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
+    {
+        PMPF_ASSOCS(("[%s] entering, hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryTitle(somSelf),
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                (_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON)));
+
+        brc = XFldDataFile_parent_WPDataFile_wpSetDefaultView(somSelf,
+                                                              ulView);
+
+        PMPF_ASSOCS(("[%s] leaving, hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryTitle(somSelf),
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                (_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON)));
+    }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 
     return brc;
 }
@@ -627,73 +676,100 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 {
+    BOOL        fCallDefault = TRUE;
+    HPOINTER    hptrReturn = NULLHANDLE;
+
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIcon");
 
-#ifndef __NOTURBOFOLDERS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        HPOINTER hptrReturn = NULLHANDLE;
-        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+        PMPF_ICONREPLACEMENTS(("[%s] entering, hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryTitle(somSelf),
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                (_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON)));
 
-        PMPF_ICONREPLACEMENTS(("obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
-
-        TRY_LOUD(excpt1)
+    #ifndef __NOTURBOFOLDERS__
+        if (cmnQuerySetting(sfTurboFolders))     // V1.0.1 (2002-12-14) [umoeller]
         {
-            // do we have an icon yet?
-            // this is set if either
-            // -- the icon was already set from an .ICON EA in wpRestoreState or
-            // -- this is not the first call to wpQueryIcon
-            if (!(hptrReturn = prec->hptrIcon))
+            PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+
+            fCallDefault = FALSE;       // V1.0.1 (2002-12-14) [umoeller]
+
+            TRY_LOUD(excpt1)
             {
-                ULONG flNewStyle = 0;
-                XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-                // first call, and icon wasn't set in wpRestoreState:
-                // be smart now...
-
-                // 1) if we're an icon or pointer file, load
-                //    the icon from there
-                if (_fIsIconOrPointer)
+                // do we have an icon yet?
+                // this is set if either
+                // -- the icon was already set from an .ICON EA in wpRestoreState or
+                // -- this is not the first call to wpQueryIcon
+                if (!(hptrReturn = prec->hptrIcon))
                 {
-                    CHAR szFilename[CCHMAXPATH];
-                    _wpQueryFilename(somSelf, szFilename, TRUE);
-                    if (!icoLoadICOFile(szFilename,
-                                        &hptrReturn,
-                                        NULL,
-                                        NULL))
-                        flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+                    ULONG flNewStyle = 0;
+                    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+                    // first call, and icon wasn't set in wpRestoreState:
+                    // be smart now...
+
+                    // 1) if we're an icon or pointer file, load
+                    //    the icon from there
+                    //    @@todo this never gets called since WPIcon
+                    //    overrides wpQueryIcon
+                    if (_fIsIconOrPointer)
+                    {
+                        CHAR szFilename[CCHMAXPATH];
+                        _wpQueryFilename(somSelf, szFilename, TRUE);
+                        if (!icoLoadICOFile(szFilename,
+                                            &hptrReturn,
+                                            NULL,
+                                            NULL))
+                            flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+                    }
+
+                    // no need to do special checks for WPProgramFile
+                    // because it overrides wpQueryIcon to call wpSetProgIcon
+                    // instead
+
+                    if (    (!hptrReturn)
+                         && (!(hptrReturn = _wpQueryAssociatedFileIcon(somSelf)))
+                       )
+                    {
+                        // no association found:
+                        hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
+                        PMPF_ICONREPLACEMENTS(("    using class hptr: 0x%lX",
+                                hptrReturn));
+                    }
+
+                    _wpSetIconHandle(somSelf, hptrReturn);
+                    _wpSetIcon(somSelf, hptrReturn);
+                    _wpModifyStyle(somSelf,
+                                   OBJSTYLE_NOTDEFAULTICON,
+                                   flNewStyle);
                 }
-
-                // no need to do special checks for WPProgramFile
-                // because it overrides wpQueryIcon to call wpSetProgIcon
-                // instead
-
-                if (    (!hptrReturn)
-                     && (!(hptrReturn = _wpQueryAssociatedFileIcon(somSelf)))
-                                 // this makes the icon global,
-                                 // but does not set the icon or the
-                                 // NOTDEFAULTICON flag
-                   )
-                    // no association found:
-                    hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
-
-                _wpSetIconHandle(somSelf, hptrReturn);
-                _wpSetIcon(somSelf, hptrReturn);
-                _wpModifyStyle(somSelf,
-                               OBJSTYLE_NOTDEFAULTICON,
-                               flNewStyle);
             }
+            CATCH(excpt1)
+            {
+            } END_CATCH();
         }
-        CATCH(excpt1)
-        {
-        } END_CATCH();
 
-        return hptrReturn;
+    #endif
+
+        if (fCallDefault)
+            hptrReturn = XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
+
+        PMPF_ICONREPLACEMENTS(("[%s] leaving, hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+                _wpQueryTitle(somSelf),
+                _wpQueryCoreRecord(somSelf)->hptrIcon,
+                (_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON)));
     }
-
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
 #endif
 
-    return XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
+    PMPF_ASSOCS(("[%s] leaving",
+            _wpQueryTitle(somSelf)));
+
+    return hptrReturn;
 }
 
 /*
@@ -713,107 +789,119 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
                                              PICONINFO pIconInfo)
 {
+    BOOL        fCallDefault = TRUE;
+    ULONG       cbRequired = sizeof(ICONINFO);
+
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIconData");
 
-#ifndef __NEVEREXTASSOCS__
-    // turbo folders enabled?
-    if (cmnQuerySetting(sfExtAssocs))
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        ULONG           cbRequired = sizeof(ICONINFO);
-
-        TRY_LOUD(excpt1)
+    #ifndef __NOTURBOFOLDERS__
+        // turbo folders enabled?
+        if (cmnQuerySetting(sfTurboFolders))     // V1.0.1 (2002-12-14) [umoeller]
         {
-            BOOL            fFound = FALSE;
-            CHAR            szFilename[CCHMAXPATH];
+            fCallDefault = FALSE;       // V1.0.1 (2002-12-14) [umoeller]
 
-            // FIRST of all, check if we have a non-default icon
-            // from an .ICON EA... if so, this overrides anything else
-            if (_wpQueryFilename(somSelf, szFilename, TRUE))
-                if (!icoBuildPtrFromEAs(szFilename,
-                                        NULL,              // no HPOINTER
-                                        &cbRequired,
-                                        pIconInfo))        // can be NULL
-                        // returns NO_ERROR only if we have an .ICON EA
-                    fFound = TRUE;
-
-            if (!fFound)
+            TRY_LOUD(excpt1)
             {
-                // .ICON EA not found, or bad data:
-                XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+                BOOL            fFound = FALSE;
+                CHAR            szFilename[CCHMAXPATH];
 
-                // if we're an icon or pointer file, support
-                // ICON_DATA format for compatibility
-                if (_fIsIconOrPointer)
-                {
-                    PBYTE pbData = NULL;
-                    ULONG cbData;
-                    if (pIconInfo)
-                        pbData = (PBYTE)(pIconInfo + 1);
-
-                    if (!icoLoadICOFile(szFilename,
-                                        NULL,
-                                        &cbData,
-                                        pbData))     // can be NULL
-                    {
-                        cbRequired += cbData;
-
-                        if (pIconInfo)
-                        {
-                            ZERO(pIconInfo);
-                            pIconInfo->cb = cbRequired;
-                            pIconInfo->fFormat = ICON_DATA;
-                            pIconInfo->cbIconData = cbData;
-                            pIconInfo->pIconData = pbData;
-                        }
-
+                // FIRST of all, check if we have a non-default icon
+                // from an .ICON EA... if so, this overrides anything else
+                if (_wpQueryFilename(somSelf, szFilename, TRUE))
+                    if (!icoBuildPtrFromEAs(szFilename,
+                                            NULL,              // no HPOINTER
+                                            &cbRequired,
+                                            pIconInfo))        // can be NULL
+                            // returns NO_ERROR only if we have an .ICON EA
                         fFound = TRUE;
-                    }
-                }
 
                 if (!fFound)
                 {
-                    // not icon file, or format not supported:
-                    // check if we have an association
-                    ULONG ulView = _wpQueryDefaultView(somSelf);
-                                // should return 0x1000 unless the user
-                                // has changed the data file's default view
-                    WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
-                                                                     &ulView,
-                                                                     // do not use "plain text" as default,
-                                                                     // this affects the icon:
-                                                                     FALSE);
-                                            // locks the object
+                    // .ICON EA not found, or bad data:
+                    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
-                    if (pobjAssoc)
+                    // if we're an icon or pointer file, support
+                    // ICON_DATA format for compatibility
+                    if (_fIsIconOrPointer)
                     {
-                        // call the assoc object's wpQueryIconData
-                        cbRequired = _wpQueryIconData(pobjAssoc,
-                                                      pIconInfo);
+                        PBYTE pbData = NULL;
+                        ULONG cbData;
+                        if (pIconInfo)
+                            pbData = (PBYTE)(pIconInfo + 1);
 
-                        _wpUnlockObject(pobjAssoc);
+                        if (!icoLoadICOFile(szFilename,
+                                            NULL,
+                                            &cbData,
+                                            pbData))     // can be NULL
+                        {
+                            cbRequired += cbData;
+
+                            if (pIconInfo)
+                            {
+                                ZERO(pIconInfo);
+                                pIconInfo->cb = cbRequired;
+                                pIconInfo->fFormat = ICON_DATA;
+                                pIconInfo->cbIconData = cbData;
+                                pIconInfo->pIconData = pbData;
+                            }
+
+                            fFound = TRUE;
+                        }
                     }
-                    else
+
+                    if (!fFound)
                     {
-                        // no assoc object:
-                        // use class default
-                        cbRequired = _wpclsQueryIconData(_somGetClass(somSelf),
-                                                         pIconInfo);
+                        // not icon file, or format not supported:
+                        // check if we have an association
+                        ULONG ulView = _wpQueryDefaultView(somSelf);
+                                    // should return 0x1000 unless the user
+                                    // has changed the data file's default view
+                        WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
+                                                                         &ulView,
+                                                                         // do not use "plain text" as default,
+                                                                         // this affects the icon:
+                                                                         FALSE);
+                                                // locks the object
+
+                        if (pobjAssoc)
+                        {
+                            // call the assoc object's wpQueryIconData
+                            cbRequired = _wpQueryIconData(pobjAssoc,
+                                                          pIconInfo);
+
+                            _wpUnlockObject(pobjAssoc);
+                        }
+                        else
+                        {
+                            // no assoc object:
+                            // use class default
+                            cbRequired = _wpclsQueryIconData(_somGetClass(somSelf),
+                                                             pIconInfo);
+                        }
                     }
                 }
             }
+            CATCH(excpt1)
+            {
+                cbRequired = 0;
+            } END_CATCH();
         }
-        CATCH(excpt1)
-        {
-            cbRequired = 0;
-        } END_CATCH();
+    #endif
 
-        return cbRequired;
+        if (fCallDefault)
+            cbRequired = XFldDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
+                                                                        pIconInfo);
     }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
 #endif
 
-    return XFldDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
-                                                          pIconInfo);
+    return cbRequired;
 }
 
 /*
@@ -837,51 +925,64 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
 SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
                                           PICONINFO pIconInfo)
 {
-    CHAR        szFilename[CCHMAXPATH];
-    BOOL        fExt;
+    BOOL    brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+    BOOL    fExt;
 
     XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetIconData");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        if (    (pIconInfo)
-             && (pIconInfo->fFormat == ICON_CLEAR)
-             && (_wpQueryFilename(somSelf, szFilename, TRUE))
-           )
+    #ifndef __NOTURBOFOLDERS__
+        // turbo folders enabled?
+        if (cmnQuerySetting(sfTurboFolders))     // V1.0.1 (2002-12-14) [umoeller]
         {
-            // this case is now overridden by XFldDataFile
-            // and XWPProgramFile
-            if (WinSetFileIcon(szFilename, pIconInfo))
+            if (    (pIconInfo)
+                 && (pIconInfo->fFormat == ICON_CLEAR)
+                 && (_wpQueryFilename(somSelf, szFilename, TRUE))
+               )
             {
-                // clear private flag so that
-                // _wpSetAssociatedFileIcon works
-                _fHasIconEA = FALSE;
-                // use default assoc icon
-                _wpSetAssociatedFileIcon(somSelf);
-                return TRUE;
+                // this case is now overridden by XFldDataFile
+                // and XWPProgramFile
+                if (WinSetFileIcon(szFilename, pIconInfo))
+                {
+                    // clear private flag so that
+                    // _wpSetAssociatedFileIcon works
+                    _fHasIconEA = FALSE;
+                    // use default assoc icon
+                    _wpSetAssociatedFileIcon(somSelf);
+                    brc = TRUE;
+                }
+            }
+        }
+    #endif
+
+        if (!brc)
+        {
+            // all other cases, or icon replacements disabled:
+            // call parent, which will end up in XWPFileSystem
+            // (WPProgramFile doesn't override this)
+            if (XFldDataFile_parent_WPDataFile_wpSetIconData(somSelf,
+                                                             pIconInfo))
+            {
+                // success:
+                if (    (pIconInfo)
+                     && (pIconInfo->fFormat != ICON_CLEAR)
+                   )
+                    _fHasIconEA = TRUE;     // V1.0.0 (2002-09-12) [umoeller]
+
+                brc = TRUE;
             }
         }
     }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
 #endif
 
-    // all other cases, or icon replacements disabled:
-    // call parent, which will end up in XWPFileSystem
-    // (WPProgramFile doesn't override this)
-    if (XFldDataFile_parent_WPDataFile_wpSetIconData(somSelf,
-                                                     pIconInfo))
-    {
-        // success:
-        if (    (pIconInfo)
-             && (pIconInfo->fFormat != ICON_CLEAR)
-           )
-            _fHasIconEA = TRUE;     // V1.0.0 (2002-09-12) [umoeller]
-
-        return TRUE;
-    }
-
-    return FALSE;
+    return brc;
 }
 
 /*
@@ -947,42 +1048,50 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     // XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedProgram");
 
-    PMPF_ASSOCS(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
-               "*pulHowMatched = 0x%lX, "
-               "pszMatchString = %s, pszDefaultType = %s",
-               _wpQueryTitle(somSelf),
-               ulView,
-               (    (pulHowMatched)
-                            ? (*pulHowMatched)
-                            : 0
-               ),
-               pszMatchString, pszDefaultType
-               ));
-
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
-    {
-        // "extended associations" allowed:
-        // use our replacement mechanism...
-        // this does NOT use "plain text" as the default
-        ULONG   ulView2 = ulView;
-        pobj = ftypQueryAssociatedProgram(somSelf,
-                                          &ulView2,
-                                          // do not use "plain text" as default,
-                                          // this affects the icon:
-                                          FALSE);
-                        // locks the object
-    }
-    else
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
 #endif
-        pobj = XFldDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,
-                                                                       ulView,
-                                                                       pulHowMatched,
-                                                                       pszMatchString,
-                                                                       cbMatchString,
-                                                                       pszDefaultType);
+    {
+        PMPF_ASSOCS(("[%s] entering; ulView = %lX, "
+                   "*pulHowMatched = 0x%lX, "
+                   "pszMatchString = %s, pszDefaultType = %s",
+                   _wpQueryTitle(somSelf),
+                   ulView,
+                   (    (pulHowMatched)
+                                ? (*pulHowMatched)
+                                : 0
+                   ),
+                   pszMatchString, pszDefaultType
+                   ));
 
-    PMPF_ASSOCS(("End of wpQueryAssociatedProgram for %s", _wpQueryTitle(somSelf)));
+    #ifndef __NOTURBOFOLDERS__
+        if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
+        {
+            // "extended associations" allowed:
+            // use our replacement mechanism...
+            // this does NOT use "plain text" as the default
+            ULONG   ulView2 = ulView;
+            pobj = ftypQueryAssociatedProgram(somSelf,
+                                              &ulView2,
+                                              // do not use "plain text" as default,
+                                              // this affects the icon:
+                                              FALSE);
+                            // locks the object
+        }
+        else
+    #endif
+            pobj = XFldDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,
+                                                                           ulView,
+                                                                           pulHowMatched,
+                                                                           pszMatchString,
+                                                                           cbMatchString,
+                                                                           pszDefaultType);
+
+        PMPF_ASSOCS(("[%s] leaving", _wpQueryTitle(somSelf)));
+    }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 
     return pobj;
 }
@@ -1009,61 +1118,73 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 {
+    HPOINTER    hptrReturn = NULLHANDLE;
+    BOOL        fCallDefault = TRUE;
+
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedFileIcon");
 
-    PMPF_ASSOCS(("[%s] entering",
-            _wpQueryTitle(somSelf)));
-
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        HPOINTER hptr = NULLHANDLE;
+        PMPF_ASSOCS(("[%s] entering",
+                _wpQueryTitle(somSelf)));
 
-        TRY_LOUD(excpt1)
+    #ifndef __NOTURBOFOLDERS__
+        if (cmnQuerySetting(sfTurboFolders))        // V1.0.1 (2002-12-15) [umoeller]
         {
-            ULONG ulView = _wpQueryDefaultView(somSelf);
-                        // should return 0x1000 unless the user
-                        // has changed the data file's default view
+            fCallDefault = FALSE;
 
-            WPObject *pobjAssoc;
-
-            PMPF_ASSOCS(("   getting associated program for default view 0x%lX", ulView));
-
-            if (pobjAssoc = ftypQueryAssociatedProgram(somSelf,
-                                                       &ulView,
-                                                       // do not use "plain text" as default,
-                                                       // this affects the icon:
-                                                       FALSE))
-                    // locks the object
+            TRY_LOUD(excpt1)
             {
-                PMPF_ASSOCS(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
+                ULONG ulView = _wpQueryDefaultView(somSelf);
+                            // should return 0x1000 unless the user
+                            // has changed the data file's default view
 
-                // get the assoc icon
-                // V0.9.20 (2002-07-25) [umoeller]
-                // now using the new icon sharing mechanism!
-                hptr = icomShareIcon(pobjAssoc,
-                                     somSelf,
-                                     TRUE);         // make global
+                WPObject *pobjAssoc;
 
-                // we have locked the object twice now (once in
-                // ftypQueryAssociatedProgram, once in icomShareIcon),
-                // so unlock once now
-                _wpUnlockObject(pobjAssoc);
+                PMPF_ASSOCS(("   getting associated program for default view 0x%lX", ulView));
+
+                if (pobjAssoc = ftypQueryAssociatedProgram(somSelf,
+                                                           &ulView,
+                                                           // do not use "plain text" as default,
+                                                           // this affects the icon:
+                                                           FALSE))
+                        // locks the object
+                {
+                    PMPF_ASSOCS(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
+
+                    // get the assoc icon
+                    // V0.9.20 (2002-07-25) [umoeller]
+                    // now using the new icon sharing mechanism!
+                    hptrReturn = icomShareIcon(pobjAssoc,
+                                               somSelf,
+                                               TRUE);         // make global
+
+                    // we have locked the object twice now (once in
+                    // ftypQueryAssociatedProgram, once in icomShareIcon),
+                    // so unlock once now
+                    _wpUnlockObject(pobjAssoc);
+                }
             }
+            CATCH(excpt1)
+            {
+            } END_CATCH();
+
+            PMPF_ASSOCS(("done, returning 0x%lX",
+                         hptrReturn));
         }
-        CATCH(excpt1)
-        {
-        } END_CATCH();
+    #endif
 
-        PMPF_ASSOCS(("done, returning 0x%lX",
-                     hptr));
-
-        return hptr;      // NULLHANDLE still for "plain text"
+        if (fCallDefault)
+            hptrReturn = XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf);
     }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
 #endif
 
-    return XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf);
+    return hptrReturn;
 }
 
 /*
@@ -1095,44 +1216,56 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 
 SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
 {
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    BOOL        fCallDefault = TRUE;
+
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetAssociatedFileIcon");
 
-#ifndef __NEVEREXTASSOCS__
-    // only call the parent if we don't have an .ICON EA,
-    // otherwise do nothing
-    // V0.9.18 (2002-03-19) [umoeller]
-    if (cmnQuerySetting(sfExtAssocs))
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        if (!_fHasIconEA)
+    #ifndef __NOTURBOFOLDERS__
+        // only call the parent if we don't have an .ICON EA,
+        // otherwise do nothing
+        // V0.9.18 (2002-03-19) [umoeller]
+        if (cmnQuerySetting(sfTurboFolders))    // V1.0.1 (2002-12-15) [umoeller]
         {
-            // for WPIcon and WPPointer, we want no association icons
-            // (_wpQueryIcon loads the icon then)
-            if (!_fIsIconOrPointer)
+            XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+
+            fCallDefault = FALSE;
+
+            if (!_fHasIconEA)
             {
-                HPOINTER hptr;
-
-                if (!(hptr = _wpQueryAssociatedFileIcon(somSelf)))
-                    // use class icon then
-                    hptr = _wpclsQueryIcon(_somGetClass(somSelf));
-
-                if (hptr)
+                // for WPIcon and WPPointer, we want no association icons
+                // (_wpQueryIcon loads the icon then)
+                if (!_fIsIconOrPointer)
                 {
-                    _wpSetIcon(somSelf, hptr);
+                    HPOINTER hptr;
 
-                    // make sure this is turned off!!!
-                    _wpModifyStyle(somSelf,
-                                   OBJSTYLE_NOTDEFAULTICON,
-                                   0);
+                    if (!(hptr = _wpQueryAssociatedFileIcon(somSelf)))
+                        // use class icon then
+                        hptr = _wpclsQueryIcon(_somGetClass(somSelf));
+
+                    if (hptr)
+                    {
+                        _wpSetIcon(somSelf, hptr);
+
+                        // make sure this is turned off!!!
+                        _wpModifyStyle(somSelf,
+                                       OBJSTYLE_NOTDEFAULTICON,
+                                       0);
+                    }
                 }
             }
-
-            return;
         }
-    }
-#endif
+    #endif
 
-    XFldDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);
+        if (fCallDefault)
+            XFldDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);
+    }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 }
 
 /*
@@ -1240,90 +1373,98 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpModifyMenu");
 
-    if (brc = XFldDataFile_parent_WPDataFile_wpModifyMenu(somSelf,
-                                                          hwndMenu,
-                                                          hwndCnr,
-                                                          iPosition,
-                                                          ulMenuType,
-                                                          ulView,
-                                                          ulReserved))
-    {
-        PMPF_MENUS(("[%s]",
-                    _wpQueryTitle(somSelf)));
-        PMPF_MENUS(("   type = 0x%lX (%s), view = 0x%lX (%s)",
-                    ulMenuType,
-                    (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
-                    : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
-                    : (ulMenuType == MENU_TITLEBARPULLDOWN) ? "MENU_TITLEBARPULLDOWN"
-                    : (ulMenuType == MENU_TITLEBARPULLDOWNINT) ? "MENU_TITLEBARPULLDOWNINT"
-                    : (ulMenuType == MENU_FOLDERPULLDOWN) ? "MENU_FOLDERPULLDOWN"
-                    : (ulMenuType == MENU_VIEWPULLDOWN) ? "MENU_VIEWPULLDOWN"
-                    : (ulMenuType == MENU_HELPPULLDOWN) ? "MENU_HELPPULLDOWN"
-                    : (ulMenuType == MENU_EDITPULLDOWN) ? "MENU_EDITPULLDOWN"
-                    : (ulMenuType == MENU_SELECTEDPULLDOWN) ? "MENU_SELECTEDPULLDOWN"
-                    : (ulMenuType == MENU_FOLDERMENUBAR) ? "MENU_FOLDERMENUBAR"
-                    : (ulMenuType == MENU_USER) ? "MENU_USER"
-                    : "unknown",
-                    ulView,
-                    cmnIdentifyView(ulView)
-                    ));
-
-        // now check which type of menu we have
-        switch (ulMenuType)
-        {
-            case MENU_OPENVIEWPOPUP:
-            case MENU_TITLEBARPULLDOWN:
-            case MENU_OBJECTPOPUP:
-            case MENU_SELECTEDPULLDOWN:
-
-                mnuModifyDataFilePopupMenu(somSelf,
-                                           hwndMenu,
-                                           hwndCnr);
-
-#ifndef __NEVEREXTASSOCS__
-                if (cmnQuerySetting(sfExtAssocs))
-                {
-                    // extended assocs have been enabled:
-                    // this means we need to manually tweak some of the data file
-                    // settings, as WPDataFile would normally do it...
-                    MENUITEM        mi;
-
-                    // find "Open" submenu
-                    if (WinSendMsg(hwndMenu,
-                                   MM_QUERYITEM,
-                                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                                   (MPARAM)&mi))
-                    {
-                        // found:
-
-                        // check for program files hack
-                        LONG    lDefaultView = _wpQueryDefaultView(somSelf);
-
-                        if (    (lDefaultView == OPEN_RUNNING)
-                             && (!progIsProgramOrProgramFile(somSelf))
-                           )
-                        {
-                            // this is not a program file,
-                            // but this doesn't have its default view set yet:
-                            // set it then
-                            _wpSetDefaultView(somSelf, 0x1000);
-                            lDefaultView = 0x1000;
-                        }
-                        // but skip program files with OPEN_RUNNING
-
-                        ftypModifyDataFileOpenSubmenu(somSelf,
-                                                      mi.hwndSubMenu);
-                    }
-                }
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
 #endif
-            break;
-        }
+    {
+        if (brc = XFldDataFile_parent_WPDataFile_wpModifyMenu(somSelf,
+                                                              hwndMenu,
+                                                              hwndCnr,
+                                                              iPosition,
+                                                              ulMenuType,
+                                                              ulView,
+                                                              ulReserved))
+        {
+            PMPF_MENUS(("[%s]",
+                        _wpQueryTitle(somSelf)));
+            PMPF_MENUS(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+                        ulMenuType,
+                        (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
+                        : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
+                        : (ulMenuType == MENU_TITLEBARPULLDOWN) ? "MENU_TITLEBARPULLDOWN"
+                        : (ulMenuType == MENU_TITLEBARPULLDOWNINT) ? "MENU_TITLEBARPULLDOWNINT"
+                        : (ulMenuType == MENU_FOLDERPULLDOWN) ? "MENU_FOLDERPULLDOWN"
+                        : (ulMenuType == MENU_VIEWPULLDOWN) ? "MENU_VIEWPULLDOWN"
+                        : (ulMenuType == MENU_HELPPULLDOWN) ? "MENU_HELPPULLDOWN"
+                        : (ulMenuType == MENU_EDITPULLDOWN) ? "MENU_EDITPULLDOWN"
+                        : (ulMenuType == MENU_SELECTEDPULLDOWN) ? "MENU_SELECTEDPULLDOWN"
+                        : (ulMenuType == MENU_FOLDERMENUBAR) ? "MENU_FOLDERMENUBAR"
+                        : (ulMenuType == MENU_USER) ? "MENU_USER"
+                        : "unknown",
+                        ulView,
+                        cmnIdentifyView(ulView)
+                        ));
 
-        fdrAddHotkeysToMenu(somSelf,
-                            hwndCnr,
-                            hwndMenu,
-                            ulMenuType);
+            // now check which type of menu we have
+            switch (ulMenuType)
+            {
+                case MENU_OPENVIEWPOPUP:
+                case MENU_TITLEBARPULLDOWN:
+                case MENU_OBJECTPOPUP:
+                case MENU_SELECTEDPULLDOWN:
+
+                    mnuModifyDataFilePopupMenu(somSelf,
+                                               hwndMenu,
+                                               hwndCnr);
+
+    #ifndef __NOTURBOFOLDERS__
+                    if (cmnQuerySetting(sfTurboFolders))    // V1.0.1 (2002-12-15) [umoeller]
+                    {
+                        // extended assocs have been enabled:
+                        // this means we need to manually tweak some of the data file
+                        // settings, as WPDataFile would normally do it...
+                        MENUITEM        mi;
+
+                        // find "Open" submenu
+                        if (WinSendMsg(hwndMenu,
+                                       MM_QUERYITEM,
+                                       MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                                       (MPARAM)&mi))
+                        {
+                            // found:
+
+                            // check for program files hack
+                            LONG    lDefaultView = _wpQueryDefaultView(somSelf);
+
+                            if (    (lDefaultView == OPEN_RUNNING)
+                                 && (!progIsProgramOrProgramFile(somSelf))
+                               )
+                            {
+                                // this is not a program file,
+                                // but this doesn't have its default view set yet:
+                                // set it then
+                                _wpSetDefaultView(somSelf, 0x1000);
+                                lDefaultView = 0x1000;
+                            }
+                            // but skip program files with OPEN_RUNNING
+
+                            ftypModifyDataFileOpenSubmenu(somSelf,
+                                                          mi.hwndSubMenu);
+                        }
+                    }
+    #endif
+                break;
+            }
+
+            fdrAddHotkeysToMenu(somSelf,
+                                hwndCnr,
+                                hwndMenu,
+                                ulMenuType);
+        }
     }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 
     return brc;
 }
@@ -1407,68 +1548,93 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
-    PMPF_ASSOCS(("[%s] entering, ulView: 0x%lX", _wpQueryTitle(somSelf), ulView));
-
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
-    {
-        // "extended associations" allowed:
-        if (    ((ulView >= 0x1000) && (ulView < 0x1100))
-             || (ulView == OPEN_RUNNING)    // double-click on data file... what's this, IBM?
-             || (ulView == OPEN_DEFAULT)
-           )
-            // use our replacement mechanism
-            fCallParent = FALSE;
-    }
-
-    if (!fCallParent)
-    {
-        // replacement desired:
-        ULONG       ulView2 = ulView;
-        WPObject    *pAssocObject
-            = ftypQueryAssociatedProgram(somSelf,
-                                         &ulView2,
-                                         // use "plain text" as default:
-                                         TRUE);
-                                            // we've used "plain text" as default
-                                            // in wpModifyMenu, so we need to do
-                                            // the same again here
-                            // object is locked
-
-        if (pAssocObject)
-        {
-            CHAR szFailing[CCHMAXPATH];
-            APIRET arc;
-
-            if (arc = progOpenProgram(pAssocObject,
-                                      somSelf,
-                                      ulView2,
-                                      &hwnd,
-                                      sizeof(szFailing),
-                                      szFailing))
-            {
-                if (cmnProgramErrorMsgBox(NULLHANDLE,
-                                          pAssocObject,
-                                          szFailing,
-                                          arc)
-                            == MBID_YES)
-                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                            (MPARAM)pAssocObject,
-                                            (MPARAM)OPEN_SETTINGS);
-            }
-                    // _wpUnlockObject(pAssocObject);
-                    // do not unlock the assoc object...
-                    // this is still needed in the use list!!!
-        }
-    }
-    else
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
 #endif
-        hwnd = XFldDataFile_parent_WPDataFile_wpOpen(somSelf,
-                                                     hwndCnr,
-                                                     ulView,
-                                                     param);
+    {
+        PMPF_ASSOCS(("[%s] entering, ulView: 0x%lX", _wpQueryTitle(somSelf), ulView));
 
-    PMPF_ASSOCS(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
+        /*
+         *      Hmm, problem with WPIcon if both turbo folders
+         *      and ext assocs are off: when you double-click on
+         *      an ICO file, the icon changes to the association
+         *      icon...
+         *
+         *      Call flow seems like this:
+         *
+         *      --  parent wpOpen calls wpQueryAssociatedProgram
+         *
+         *      --  wpQueryAssociatedProgram (our replacement)
+         *          calls parent since ext assocs are disabled
+         *
+         *      --  parent wpQueryAssociatedProgram
+         */
+
+
+    #ifndef __NOTURBOFOLDERS__
+        if (cmnQuerySetting(sfTurboFolders))    // V1.0.1 (2002-12-15) [umoeller]
+        {
+            // "extended associations" allowed:
+            if (    ((ulView >= 0x1000) && (ulView < 0x1100))
+                 || (ulView == OPEN_RUNNING)    // double-click on data file... what's this, IBM?
+                 || (ulView == OPEN_DEFAULT)
+               )
+                // use our replacement mechanism
+                fCallParent = FALSE;
+        }
+
+        if (!fCallParent)
+        {
+            // replacement desired:
+            ULONG       ulView2 = ulView;
+            WPObject    *pAssocObject
+                = ftypQueryAssociatedProgram(somSelf,
+                                             &ulView2,
+                                             // use "plain text" as default:
+                                             TRUE);
+                                                // we've used "plain text" as default
+                                                // in wpModifyMenu, so we need to do
+                                                // the same again here
+                                // object is locked
+
+            if (pAssocObject)
+            {
+                CHAR szFailing[CCHMAXPATH];
+                APIRET arc;
+
+                if (arc = progOpenProgram(pAssocObject,
+                                          somSelf,
+                                          ulView2,
+                                          &hwnd,
+                                          sizeof(szFailing),
+                                          szFailing))
+                {
+                    if (cmnProgramErrorMsgBox(NULLHANDLE,
+                                              pAssocObject,
+                                              szFailing,
+                                              arc)
+                                == MBID_YES)
+                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                                (MPARAM)pAssocObject,
+                                                (MPARAM)OPEN_SETTINGS);
+                }
+                        // _wpUnlockObject(pAssocObject);
+                        // do not unlock the assoc object...
+                        // this is still needed in the use list!!!
+            }
+        }
+        else
+    #endif
+            hwnd = XFldDataFile_parent_WPDataFile_wpOpen(somSelf,
+                                                         hwndCnr,
+                                                         ulView,
+                                                         param);
+
+        PMPF_ASSOCS(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
+    }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 
     return hwnd;
 
@@ -1585,8 +1751,8 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFileTypePage");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))    // V1.0.1 (2002-12-15) [umoeller]
     {
         INSERTNOTEBOOKPAGE inbp;
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
@@ -1638,18 +1804,26 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetRealName(XFldDataFile *somSelf,
     XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetRealName");
 
-    if (brc = XFldDataFile_parent_WPDataFile_wpSetRealName(somSelf,
-                                                           pszName))
-#ifndef __NEVEREXTASSOCS__
-        if (    (cmnQuerySetting(sfExtAssocs))
-             && (prec = _wpQueryCoreRecord(somSelf))
-             && (prec->hptrIcon)
-             // avoid this if we have an .ICON EA
-             && (!_fHasIconEA)
-           )
-            _wpSetAssociatedFileIcon(somSelf)
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
 #endif
-        ;
+    {
+        if (brc = XFldDataFile_parent_WPDataFile_wpSetRealName(somSelf,
+                                                               pszName))
+    #ifndef __NOTURBOFOLDERS__
+            if (    (cmnQuerySetting(sfTurboFolders))   // V1.0.1 (2002-12-15) [umoeller]
+                 && (prec = _wpQueryCoreRecord(somSelf))
+                 && (prec->hptrIcon)
+                 // avoid this if we have an .ICON EA
+                 && (!_fHasIconEA)
+               )
+                _wpSetAssociatedFileIcon(somSelf)
+    #endif
+            ;
+    }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 
     return brc;
 }
@@ -1675,8 +1849,8 @@ SOM_Scope WPObject*  SOMLINK xdf_wpCreateFromTemplate(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpCreateFromTemplate");
 
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))    // V1.0.1 (2002-12-15) [umoeller]
     {
         WPObject *pNew = NULL;
 
@@ -1755,6 +1929,7 @@ SOM_Scope ULONG  SOMLINK xdfM_xwpclsListAssocsForType(M_XFldDataFile *somSelf,
 {
     ULONG   ulrc = 0;
 
+#ifndef __NOTURBOFOLDERS__
     CHAR    szTypeThis[100];
     PCSZ    pcszTypeThis = pcszType0;     // for now; later points to szTypeThis
 
@@ -1763,112 +1938,121 @@ SOM_Scope ULONG  SOMLINK xdfM_xwpclsListAssocsForType(M_XFldDataFile *somSelf,
     /* M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf); */
     M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_xwpclsListAssocsForType");
 
-    PMPF_ASSOCS((" entering with type %s", pcszTypeThis));
-
-    // outer loop for climbing up the file type parents
-    do // while TRUE
+#ifdef __DEBUG__
+    TRY_LOUD(dbgexc)
+#endif
     {
-        // get associations from WPS INI data
-        CHAR    szObjectHandles[200];
-        ULONG   cb = sizeof(szObjectHandles);
-        ULONG   cHandles = 0;
-        PCSZ    pAssoc;
-        if (    (PrfQueryProfileData(HINI_USER,
-                                     (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                     (PSZ)pcszTypeThis,
-                                     szObjectHandles,
-                                     &cb))
-             && (cb > 1)
-           )
+        PMPF_ASSOCS((" entering with type %s", pcszTypeThis));
+
+        // outer loop for climbing up the file type parents
+        do // while TRUE
         {
-            // null-terminate the data in any case  V0.9.20 (2002-07-25) [umoeller]
-            szObjectHandles[sizeof(szObjectHandles) - 1] = '\0';
-
-            // we got handles for this type, and it's not
-            // just a null byte (just to name the type):
-            // count the handles
-            pAssoc = szObjectHandles;
-            while (*pAssoc)
+            // get associations from WPS INI data
+            CHAR    szObjectHandles[200];
+            ULONG   cb = sizeof(szObjectHandles);
+            ULONG   cHandles = 0;
+            PCSZ    pAssoc;
+            if (    (PrfQueryProfileData(HINI_USER,
+                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                         (PSZ)pcszTypeThis,
+                                         szObjectHandles,
+                                         &cb))
+                 && (cb > 1)
+               )
             {
-                HOBJECT hobjAssoc;
-                if (!(hobjAssoc = atoi(pAssoc)))
-                    // invalid handle:
-                    break;
-                else
+                // null-terminate the data in any case  V0.9.20 (2002-07-25) [umoeller]
+                szObjectHandles[sizeof(szObjectHandles) - 1] = '\0';
+
+                // we got handles for this type, and it's not
+                // just a null byte (just to name the type):
+                // count the handles
+                pAssoc = szObjectHandles;
+                while (*pAssoc)
                 {
-                    WPObject *pobjAssoc;
-
-                    if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
+                    HOBJECT hobjAssoc;
+                    if (!(hobjAssoc = atoi(pAssoc)))
+                        // invalid handle:
+                        break;
+                    else
                     {
-                        // look if the object has already been added;
-                        // this might happen if the same object has
-                        // been defined for several types (inheritance!)
-                        // V0.9.9 (2001-03-27) [umoeller]
+                        WPObject *pobjAssoc;
 
-                        ULONG   ul;
-                        BOOL    fFound = FALSE;
-                        for (ul = 0;
-                             ul < *pcAssocs;
-                             ++ul)
+                        if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
                         {
-                            if (papObjects[ul] == pobjAssoc)
+                            // look if the object has already been added;
+                            // this might happen if the same object has
+                            // been defined for several types (inheritance!)
+                            // V0.9.9 (2001-03-27) [umoeller]
+
+                            ULONG   ul;
+                            BOOL    fFound = FALSE;
+                            for (ul = 0;
+                                 ul < *pcAssocs;
+                                 ++ul)
                             {
-                                fFound = TRUE;
-                                break;
+                                if (papObjects[ul] == pobjAssoc)
+                                {
+                                    fFound = TRUE;
+                                    break;
+                                }
                             }
-                        }
 
-                        if (!fFound)
-                        {
-                            // no:
-                            papObjects[(*pcAssocs)++] = pobjAssoc;
-                            ++ulrc;
-
-                            // V0.9.16 (2002-01-26) [umoeller]
-                            if (*pcAssocs >= ulBuildMax)
+                            if (!fFound)
                             {
-                                // we have reached the max no. the caller wants:
-                                fQuit = TRUE;
-                                if (pfDone)
-                                    *pfDone = TRUE;
+                                // no:
+                                papObjects[(*pcAssocs)++] = pobjAssoc;
+                                ++ulrc;
 
-                                break;      // while (*pAssoc)
+                                // V0.9.16 (2002-01-26) [umoeller]
+                                if (*pcAssocs >= ulBuildMax)
+                                {
+                                    // we have reached the max no. the caller wants:
+                                    fQuit = TRUE;
+                                    if (pfDone)
+                                        *pfDone = TRUE;
+
+                                    break;      // while (*pAssoc)
+                                }
                             }
                         }
                     }
-                }
 
-                // go for next object handle (after the 0 byte)
-                pAssoc += strlen(pAssoc) + 1;
-                if (pAssoc >= szObjectHandles + cb)
-                    break; // while (*pAssoc)
+                    // go for next object handle (after the 0 byte)
+                    pAssoc += strlen(pAssoc) + 1;
+                    if (pAssoc >= szObjectHandles + cb)
+                        break; // while (*pAssoc)
 
-            } // end while (*pAssoc)
-        }
-
-        if (fQuit)
-            break;
-        else
-        {
-            // get parent type
-            cb = sizeof(szTypeThis);
-            if (    (PrfQueryProfileData(HINI_USER,
-                                         (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                         (PSZ)pcszTypeThis,        // key name: current type
-                                         szTypeThis,
-                                         &cb))
-                 && (cb)
-               )
-            {
-                pcszTypeThis = szTypeThis;
-
-                PMPF_ASSOCS(("   next round for %s", pcszTypeThis));
+                } // end while (*pAssoc)
             }
-            else
-                break;
-        }
 
-    } while (TRUE);
+            if (fQuit)
+                break;
+            else
+            {
+                // get parent type
+                cb = sizeof(szTypeThis);
+                if (    (PrfQueryProfileData(HINI_USER,
+                                             (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                             (PSZ)pcszTypeThis,        // key name: current type
+                                             szTypeThis,
+                                             &cb))
+                     && (cb)
+                   )
+                {
+                    pcszTypeThis = szTypeThis;
+
+                    PMPF_ASSOCS(("   next round for %s", pcszTypeThis));
+                }
+                else
+                    break;
+            }
+
+        } while (TRUE);
+    #endif
+    }
+#ifdef __DEBUG__
+    CATCH(dbgexc) {} END_CATCH();
+#endif
 
     return ulrc;
 }

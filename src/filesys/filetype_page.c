@@ -465,7 +465,7 @@ VOID ftypClearTypesList(HWND hwndCnr,              // in: cnr, can be NULLHANDLE
  *
  ********************************************************************/
 
-#ifndef __NEVEREXTASSOCS__
+#ifndef __NOTURBOFOLDERS__
 
 /*
  * ASSOCRECORD:

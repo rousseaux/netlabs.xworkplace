@@ -2564,6 +2564,7 @@ typedef const struct _SETTINGINFO *PCSETTINGINFO;
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: removed ext assocs setting @@fixes 231
  */
 
 static const SETTINGINFO G_aSettingInfos[] =
@@ -2666,11 +2667,11 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_4ACCELERATORS, 1,
             "fShowHotkeysInMenus",
 
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-        sfResizeSettingsPages, FIELDOFFSET(OLDGLOBALSETTINGS, __fResizeSettingsPages), 1,
-            SP_SETUP_FEATURES, 0,
-            "fResizeSettingsPages",
-#endif
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__            setting removed V1.0.1 (2002-12-14) [umoeller]
+//         sfResizeSettingsPages, FIELDOFFSET(OLDGLOBALSETTINGS, __fResizeSettingsPages), 1,
+//             SP_SETUP_FEATURES, 0,
+//             "fResizeSettingsPages",
+// #endif
 
 #ifndef __ALWAYSREPLACEICONPAGE__
         sfReplaceIconPage, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceIconPage), 4,
@@ -2742,19 +2743,21 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_SETUP_FEATURES, 0,
             "fEnableXPager",
 #endif
-#ifndef __NEVEREXTASSOCS__
-        sfExtAssocs, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtAssocs), 4,
-            SP_SETUP_FEATURES, 0,
-            "fExtAssocs",
 
-        // sfDatafileOBJHANDLE added with V0.9.20 (2002-08-04) [umoeller]
-        // if this is FALSE, we do not pass data files with the
-        // WP_OBJHANDLE environment variable to avoid creating handles
-        // all the time
-        sfDatafileOBJHANDLE, -1, 0,
-            SP_FILETYPES, TRUE,
-            "fDatafileOBJHANDLE",
-#endif
+// #ifndef __NEVEREXTASSOCS__       ext assocs setting removed V1.0.1 (2002-12-15) [umoeller]
+//         sfExtAssocs, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtAssocs), 4,
+//             SP_SETUP_FEATURES, 0,
+//             "fExtAssocs",
+
+//         sfDatafileOBJHANDLE moved to turbo folders setting
+//         // sfDatafileOBJHANDLE added with V0.9.20 (2002-08-04) [umoeller]
+//         // if this is FALSE, we do not pass data files with the
+//         // WP_OBJHANDLE environment variable to avoid creating handles
+//         // all the time
+//         sfDatafileOBJHANDLE, -1, 0,
+//             SP_FILETYPES, TRUE,
+//             "fDatafileOBJHANDLE",
+// #endif
 
         // added lazy icons V0.9.20 (2002-07-25) [umoeller]
         sflOwnerDrawIcons, -1, 0,
@@ -2793,6 +2796,15 @@ static const SETTINGINFO G_aSettingInfos[] =
         sfTurboFolders, FIELDOFFSET(OLDGLOBALSETTINGS, __fTurboFolders), 1,
             SP_SETUP_FEATURES, 0,
             "fTurboFolders",
+
+        // sfDatafileOBJHANDLE added with V0.9.20 (2002-08-04) [umoeller]
+        // sfDatafileOBJHANDLE moved to turbo folders setting V1.0.1 (2002-12-15) [umoeller]
+        // if this is FALSE, we do not pass data files with the
+        // WP_OBJHANDLE environment variable to avoid creating handles
+        // all the time
+        sfDatafileOBJHANDLE, -1, 0,
+            SP_FILETYPES, TRUE,
+            "fDatafileOBJHANDLE",
 #endif
 
         sfFdrSplitViews, -1, 0,            // V1.0.0 (2002-09-09) [umoeller]

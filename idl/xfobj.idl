@@ -254,9 +254,9 @@ interface XFldObject : WPObject
                   xwpAddReplacementIconPage,
                   xwpQueryHandle,
                   xwpQueryLocks,
+                  xwpSetTitleOnly,
                   xwpOwnerDrawIcon,
                   xwpHandleSelfClose,
-                  xwpSetTitleOnly,
                   xwpAddedToList,
                   xwpRemovedFromList;
 

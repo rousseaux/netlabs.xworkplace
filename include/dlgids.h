@@ -87,15 +87,23 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "1.0.0"
+#define XFOLDER_VERSION        "1.1.0"
 
 #define XFOLDER_MAJOR          1
-#define XFOLDER_MINOR          0
+#define XFOLDER_MINOR          1
+#define XFOLDER_REVISION       0
+
+// this sets the minimum version number that
+// the current version's XCenter plugin DLLs
+// require
+// V1.0.1 (2002-12-14) [umoeller]
+#define XFOLDER_MAJOR          1
+#define XFOLDER_MINOR          1
 #define XFOLDER_REVISION       0
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "1.0.0"
+#define MINIMUM_NLS_VERSION    "1.1.0"
 
 /* ******************************************************************
  *
@@ -2061,9 +2069,9 @@
 #ifndef __NOICONREPLACEMENTS__
 #define ID_XCSI_REPLACEICONS            6000
 #endif
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-#define ID_XCSI_RESIZESETTINGSPAGES     6001
-#endif
+// #ifndef __ALWAYSRESIZESETTINGSPAGES__            // setting removed V1.0.1 (2002-12-14) [umoeller]
+// #define ID_XCSI_RESIZESETTINGSPAGES     6001
+// #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
 #define ID_XCSI_REPLACEICONPAGE         6002        // renamed V0.9.16 (2001-10-15) [umoeller]
 #endif
@@ -2114,9 +2122,9 @@
 #endif
 
 #define ID_XCSI_FILEOPERATIONS          6040
-#ifndef __NEVEREXTASSOCS__
-#define ID_XCSI_EXTASSOCS               6041
-#endif
+// #ifndef __NEVEREXTASSOCS__                       // removed V1.0.1 (2002-12-15) [umoeller]
+// #define ID_XCSI_EXTASSOCS               6041
+// #endif
 
 #define ID_XCSI_REPLACEPASTE            6042        // V0.9.20 (2002-08-08) [umoeller]
 
@@ -2395,6 +2403,8 @@
 
 #define ID_XFSI_XWPSTARTUPFDR           6300        // V1.0.0 (2002-08-31) [umoeller]
 #define ID_XFSI_XWPSHUTDOWNFDR          6301        // V1.0.0 (2002-08-31) [umoeller]
+
+#define ID_XSSI_DEINSTALLINGFONTS       6302        // V1.0.1 (2002-12-15) [pr]
 
 /* ******************************************************************
  *

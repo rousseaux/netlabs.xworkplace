@@ -327,12 +327,13 @@ This was new with XFolder 0.70.
 See the &xwp; User Guide for details.
 ;
 ; FEATURES_6015 added with V0.9.16
+; rewritten with V1.0.1 (2002-12-15) [umoeller]
 ;
-<--FEATURES_6015-->: The "Turbo folders" feature replaces the internal storage of awake objects for all folders on the system.
+<--FEATURES_6015-->: The "Turbo folders" feature replaces the internal storage of awake objects for all folders on the system. In addition, it replaces the mechanism for associating data files with programs.
 &xwp; implements high-speed algorithms to be able to find objects in folders much faster than the standard WPS.
-If you enable this setting, you will probably notice a speed increase when folders are first opened and thus need to be populated, especially with folders that contain many objects.
-Also, the background threads for the replacement auto-refresh will profit from this setting.
+With this setting enabled, you will notice that your folders populate much faster. In addition, program associations become much more flexible because they are only based on types any more.
 This requires the XWPFileSystem replacement class to be installed. Changing this setting requires a WPS restart.
+See the &xwp; User Guide for details.
 ;
 ; FEATURES_6016 added with V1.0.0 (2002-09-09) [umoeller]
 ;
@@ -383,12 +384,15 @@ You may try to disable this feature if &xwp; keeps reporting problems on startup
 <--FEATURES_6025-->: If "Pre-populate Desktop" is checked, while the WPS is starting up, &xwp; will fully populate the Desktop before it is opened.
 This might fix Desktop hangs many people are experiencing when the Desktop contains many objects and the WPS gets confused with initializing them in the right order.
 
-<--FEATURES_6041-->: "Extended file associations" will make the WPS use file types only for associating programs with data files.
-Don't be shocked, file filters still exist. The difference is that files will be given automatic file types based on file filters, instead of associating programs based on filters directly.
-Also, you can define hierarchical file types, such that all files of type "C Code" will automatically be considered "Plain text" also.
-If this is enabled, you'll get a new settings page for file types in &xwp;'s "Workplace Shell" object.
-This was added with &xwp; 0.9.0.
-See the &xwp; User Guide for details.
+;
+; FEATURES_6041 removed with V1.0.1 (2002-12-15) [umoeller]
+;
+;<--FEATURES_6041-->: "Extended file associations" will make the WPS use file types only for associating programs with data files.
+;Don't be shocked, file filters still exist. The difference is that files will be given automatic file types based on file filters, instead of associating programs based on filters directly.
+;Also, you can define hierarchical file types, such that all files of type "C Code" will automatically be considered "Plain text" also.
+;If this is enabled, you'll get a new settings page for file types in &xwp;'s "Workplace Shell" object.
+;This was added with &xwp; 0.9.0.
+;See the &xwp; User Guide for details.
 
 ;
 ; FEATURES_6042 was changed with V0.9.20

@@ -96,6 +96,7 @@
 // #include "xfobj.ih"
 #include "xfldr.ih"
 
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -1322,6 +1323,7 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed invisible new obj in tree views (workaround for WPS bug)
  *@@changed V1.0.0 (2002-08-26) [umoeller]: removed hab param which was never used; optimized
  *@@changed V1.0.0 (2002-08-26) [umoeller]: fixed tree view, finally
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: fixed tree view for disk objects @@fixes 284
  */
 
 WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
@@ -1443,14 +1445,27 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                   || (fdrHasShowAllInTreeView(pFolder))
                        )
                     {
+                        WPObject    *pobjUnder;
                         // if we're in tree view, insert the new
                         // object under the folder where we just
                         // created the thing
-                        precParent = _wpQueryCoreRecord(pFolder);
 
-                        // populate the folder (synchronously)
-                        fdrCheckIfPopulated(pFolder,
-                                            TRUE);      // folders only
+                        // but check if this is a root folder...
+                        // in that case, not the root folder's
+                        // record is inserted, but the one of the
+                        // disk V1.0.1 (2002-12-15) [umoeller]
+                        if (ctsIsRootFolder(pFolder))
+                            pobjUnder = _wpQueryDisk(pFolder);
+                        else
+                        {
+                            // populate the folder (synchronously)
+                            fdrCheckIfPopulated(pFolder,
+                                                TRUE);      // folders only
+
+                            pobjUnder = pFolder;
+                        }
+
+                        precParent = _wpQueryCoreRecord(pobjUnder);
 
                         WinSendMsg(hwndCnr,
                                    CM_EXPANDTREE,
