@@ -1,7 +1,28 @@
 
 /*
  *@@ pg_winlist.c:
- *      XPager window list.
+ *      daemon window list.
+ *
+ *      This functionality has changed completely with
+ *      V0.9.19. The window list used to be maintained
+ *      by the pager, but is now a central daemon service
+ *      which can be used by many "clients", one of which
+ *      is the pager. Another client is the XCenter
+ *      window list widget, but essentially any window
+ *      can use this service.
+ *
+ *      To become a client of the window list service,
+ *      a window (in any process) sends XDM_ADDWINLISTWATCH
+ *      to fnwpDaemonObject with a message value that it
+ *      wants to receive when the window list changes.
+ *      It then receives that message (plus that message
+ *      value + 1) for notifications. See XDM_ADDWINLISTWATCH
+ *      for details.
+ *
+ *      To get the entire current window list in one chunk
+ *      of shared memory, the window should send XDM_QUERYWINLIST
+ *      first because the notifications will only report
+ *      changes to the current list.
  *
  *      See pg_control.c for an introduction to XPager.
  */
@@ -78,6 +99,14 @@ extern USHORT   G_pidDaemon;
  *   Debug window list frame
  *
  ********************************************************************/
+
+/*
+ *  Messy code, partly copied from cnrh.c, just for
+ *  the window list debug window if DEBUG_WINDOWLIST
+ *  is #define'd in include\setup.h.
+ *
+ *  Ignore this section.
+ */
 
 #ifdef DEBUG_WINDOWLIST
 HWND            G_hwndDebugFrame = NULLHANDLE,
@@ -275,6 +304,9 @@ static VOID FillRec(PPAGERWININFO pWinInfo)
         PRINTTYPE(HIDDEN);
     }
 
+    WinQueryClassName(pWinInfo->swctl.hwnd, sizeof(pWinInfo->prec->szClass), pWinInfo->prec->szClass);
+    pWinInfo->prec->pszClass = pWinInfo->prec->szClass;
+
     WinQueryWindowProcess(pWinInfo->swctl.hwnd, &pid, &tid);
     sprintf(pWinInfo->prec->szPID, "%04lX", pid);
     pWinInfo->prec->pszPID = pWinInfo->prec->szPID;
@@ -282,34 +314,9 @@ static VOID FillRec(PPAGERWININFO pWinInfo)
     pWinInfo->prec->pWinInfo = pWinInfo;
 }
 
-#endif
-
-/* ******************************************************************
- *
- *   PAGERWININFO list maintenance
- *
- ********************************************************************/
-
-/*
- *@@ pgrInit:
- *      initializes the winlist. Called from main().
- *
- *@@added V0.9.12 (2001-05-31) [umoeller]
- */
-
-APIRET pgrInit(VOID)
+static VOID CreateDebugFrame(VOID)
 {
-    APIRET arc = DosCreateMutexSem(NULL,
-                                   &G_hmtxWinInfos,
-                                   0,
-                                   FALSE);
-    ULONG   fl;
-
-    lstInit(&G_llWinInfos, TRUE);
-            // V0.9.7 (2001-01-21) [umoeller]
-
-    #ifdef DEBUG_WINDOWLIST
-    fl = FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON | FCF_SIZEBORDER | FCF_NOBYTEALIGN | FCF_TASKLIST;
+    ULONG fl = FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON | FCF_SIZEBORDER | FCF_NOBYTEALIGN | FCF_TASKLIST;
     if (!(G_hwndDebugFrame = WinCreateStdWindow(HWND_DESKTOP,
                                                 0,
                                                 &fl,
@@ -324,13 +331,14 @@ APIRET pgrInit(VOID)
     {
         G_pfnwpFrameOrig = WinSubclassWindow(G_hwndDebugFrame, fnwpSubclDebugFrame);
 
+        #define DEBUGSPACING    30
         #define DEBUGWIDTH      500
-        #define DEBUGHEIGHT     700
+        #define DEBUGHEIGHT     (WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN) - 2 * DEBUGSPACING)
         _PmpfF(("got debug frame 0x%lX", G_hwndDebugFrame));
         WinSetWindowPos(G_hwndDebugFrame,
                         HWND_TOP,
-                        WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN) - DEBUGWIDTH - 30,
-                        30,
+                        WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN) - DEBUGWIDTH - DEBUGSPACING,
+                        DEBUGSPACING,
                         DEBUGWIDTH,
                         DEBUGHEIGHT,
                         SWP_SHOW | SWP_ZORDER | SWP_MOVE | SWP_SIZE);
@@ -363,7 +371,12 @@ APIRET pgrInit(VOID)
             xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszPID);
-            xfi[i].pszColumnTitle = "PID";
+            xfi[i].pszColumnTitle = "pid";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszClass);
+            xfi[i].pszColumnTitle = "cls";
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
@@ -381,6 +394,35 @@ APIRET pgrInit(VOID)
             } END_CNRINFO(G_hwndDebugCnr);
         }
     }
+}
+
+#endif
+
+/* ******************************************************************
+ *
+ *   PAGERWININFO list maintenance
+ *
+ ********************************************************************/
+
+/*
+ *@@ pgrInit:
+ *      initializes the winlist. Called from main().
+ *
+ *@@added V0.9.12 (2001-05-31) [umoeller]
+ */
+
+APIRET pgrInit(VOID)
+{
+    APIRET arc = DosCreateMutexSem(NULL,
+                                   &G_hmtxWinInfos,
+                                   0,
+                                   FALSE);
+
+    lstInit(&G_llWinInfos, TRUE);
+            // V0.9.7 (2001-01-21) [umoeller]
+
+    #ifdef DEBUG_WINDOWLIST
+        CreateDebugFrame();
     #endif
 
     return arc;
@@ -641,7 +683,9 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
     HWND    hwnd = pWinInfo->swctl.hwnd;
     ULONG   pid, tid;
 
+    #ifdef DEBUG_WINDOWLIST
     PWINLISTRECORD prec = pWinInfo->prec;
+    #endif
 
     memset(pWinInfo, 0, sizeof(PAGERWININFO));
 
@@ -760,7 +804,9 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
         }
     }
 
+    #ifdef DEBUG_WINDOWLIST
     pWinInfo->prec = prec;
+    #endif
 
     return brc;
 }
@@ -804,10 +850,14 @@ BOOL pgrCreateWinInfo(HWND hwnd)
             else
             {
                 // already present: refresh that one then
-                PWINLISTRECORD pOld = pWinInfo->prec;
-                memcpy(pWinInfo, &WinInfoTemp, sizeof(PAGERWININFO));
-                pWinInfo->prec = pOld;
                 #ifdef DEBUG_WINDOWLIST
+                    PWINLISTRECORD pOld = pWinInfo->prec;
+                #endif
+
+                memcpy(pWinInfo, &WinInfoTemp, sizeof(PAGERWININFO));
+
+                #ifdef DEBUG_WINDOWLIST
+                    pWinInfo->prec = pOld;
                     FillRec(pWinInfo);
                     WinSendMsg(G_hwndDebugCnr,
                                CM_INVALIDATERECORD,
@@ -907,8 +957,6 @@ VOID pgrFreeWinInfo(HWND hwnd)
             // we have an item for this window:
             // remove from list, which will also free pWinInfo
             RemoveInfo(pNodeFound);
-        else
-            DosBeep(100, 100);
 
         pgrUnlockWinlist();
     }

@@ -943,8 +943,18 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 
 /*
  *@@ ProcessMsgsForWinlist:
- *      message processing which is needed for both
- *      hookInputHook and hookSendMsgHook.
+ *      message processing for the daemon window list
+ *      to intercept messages in both hookInputHook
+ *      and hookSendMsgHook.
+ *
+ *      This intercepts all messages that the window
+ *      list needs to record changes. We then post
+ *      either XDM_WINDOWCHANGE or XDM_ICONCHANGE
+ *      to the daemon, which will notify all its
+ *      clients -- most importantly the pager and
+ *      the XCenter window list widget.
+ *
+ *      See pg_winlist.c for details.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
@@ -969,6 +979,7 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
          || (   (msg == WM_SETWINDOWPARAMS)
              && (((PWNDPARAMS)mp1)->fsStatus & WPM_TEXT) // 0x0001
             )
+         // record icon changes
          || (msg == WM_SETICON)     // V0.9.19 (2002-05-28) [umoeller]
        )
     {

@@ -71,6 +71,9 @@
 
             PSZ             pszWindowType;
 
+            PSZ             pszClass;
+            CHAR            szClass[50];
+
             PSZ             pszPID;
             CHAR            szPID[20];
 

@@ -2085,6 +2085,10 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
                 switch (ERRORIDERROR(pei->idError))
                 {
                     case PMERR_DOS_ERROR: //  (0x1200)
+                        // this is totally meaningless... as far as I
+                        // can see, there is no meaningful error info
+                        // for this, I tried looking at the error info,
+                        // but it's full of garbage...
                         arc = ERROR_FILE_NOT_FOUND;
                     break;
 
@@ -2134,6 +2138,9 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
     return (MRESULT)arc;
 }
 
+#define PN_WINDOWCHANGE 0
+#define PN_ICONCHANGE   1
+
 /*
  *@@ ProcessNotifies:
  *      called from ProcessWindowChange and
@@ -2146,9 +2153,6 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
  *@@added V0.9.19 (2002-05-28) [umoeller]
  *@@changed V0.9.19 (2002-06-15) [lafaix]: no longer removing inexistant list entries
  */
-
-#define PN_WINDOWCHANGE 0
-#define PN_ICONCHANGE   1
 
 static VOID ProcessNotifies(ULONG ulMsgOffset,
                             MPARAM mp1,
@@ -2183,8 +2187,12 @@ static VOID ProcessNotifies(ULONG ulMsgOffset,
 
 /*
  *@@ ProcessWindowChange:
+ *      implementation for XDM_WINDOWCHANGE in fnwpDaemonObject.
+ *
+ *      See pg_winlist.c for details.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed missing WM_WINDOWPOSCHANGED
  */
 
 static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
@@ -2206,6 +2214,7 @@ static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
         break;
 
         case WM_SETWINDOWPARAMS:
+        case WM_WINDOWPOSCHANGED:       // V0.9.19 (2002-06-18) [umoeller]
             fPost = pgrRefresh((HWND)mp1);
         break;
     }
@@ -2221,6 +2230,9 @@ static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ ProcessIconChange:
+ *      implementation for XDM_ICONCHANGE in fnwpDaemonObject.
+ *
+ *      See pg_winlist.c for details.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
@@ -3130,11 +3142,16 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      caller, who must specify his pid in
              *      mp1.
              *
-             *      This must be sent, not posted.
+             *      This must be sent, not posted. Also
+             *      this must not be sent from within
+             *      the daemon because then giving the
+             *      shared memory probably won't work.
              *
              *      Parameters:
              *
-             *      --  PID mp1: pid of sender.
+             *      --  PID mp1: pid of sender. This is
+             *          required because we use
+             *          DosGiveSharedMem here.
              *
              *      --  mp2: unused.
              *
