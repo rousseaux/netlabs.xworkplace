@@ -55,13 +55,13 @@ sie erheblich zu beschleunigen:
 <UL><LI>Jeder Ordner erh„lt nun einen bin„ren, ausbalancierten Baum, der alle Objekte
 enth„lt, die bisher zur internen Inhaltsliste des Ordners hinzugefgt wurden. Bei
 Dateisystemobjekten wird dieser Baum nach den echten Kurznamen der Objekte sortiert.
-Dies macht es wesentlich effizienter herauszufinden, ob ein Objekt sich bereits im Baum
+Dies macht es wesentlich effizienter herauszufinden, ob sich ein Objekt bereits im Baum
 befindet oder noch hinzugefgt werden muá. Ich nehme an, daá der originale šberprfungscode
 der WPS fr die enormen Verz”gerungen bei einer groáen Anzahl von Dateien verantwortlich
 ist.
  
-<P><LI>Statt nur eines Extrathreads startet "Turbo-Ordner" zum Bev”lkern der Ordner
-zwei Extrathreads. Einer ist fr das Einsammeln der Dateidaten von Festplatte (ber
+<P><LI>Statt nur eines Extra-Threads startet "Turbo-Ordner" zum Bev”lkern der Ordner
+zwei Extra-Threads. Einer ist fr das Einsammeln der Dateidaten von Festplatte (ber
 die System-APIs <CODE>DosFindFirst</CODE> und
 <CODE>DosFindNext</CODE>) verantwortlich, der andere fr die šberprfung,
 ob ein Objekt bereits wach ist, und die Erzeugung neuer Objekte, wenn es notwendig wird.
@@ -86,14 +86,14 @@ es jemand schafft, diese System-APIs effizienter zu machen).
 <P><LI>"Turbo-Ordner" ersetzt auch die Laderoutinen fr Symbole ausfhrbarer
 Dateien komplett. Wie Sie sicher wissen, versucht die WPS, wenn ein Ordner mit
 .EXE-Dateien ge”ffnet wird, in einer ausfhrbaren Datei ein Symbol zu finden,
-und verwendet dies -- sofern gefunden -- fr das Objekt. Programm- und Datendateiobjekte
+und verwendet dies - sofern gefunden - fr das Objekt. Programm- und Datendateiobjekte
 laden ebenfalls Symbole aus ausfhrbaren Dateien.
  
 <P>Der WPS-Code zum Laden der Symbole leidet unter mehreren Einschr„nkungen. Vor allem
-scheint er langsam zu sein. Dieser Code wurde ebenfalls in &xwp; komplett ersetzt.
+scheint er langsam zu sein. Dieser Code wurde in &xwp; ebenfalls komplett ersetzt.
  
 <P>Zus„tzlich scheint die WPS Symbole intern nicht groáartig wiederzuverwenden.
-&xwp; versucht auch, Symbole so weit wie m”glich wiederzuverwenden um zu vermeiden, daá
+&xwp; versucht auch, Symbole soweit wie m”glich wiederzuverwenden um zu vermeiden, daá
 sie st„ndig neu aus den ausfhrbaren Dateien geladen werden mssen.
  
 <P>Eigentlich erlaube ich der WPS nicht l„nger, berhaupt Symbole ausfhrbarer Dateien
