@@ -1610,6 +1610,11 @@ BEGIN
     /* new items for main product info V0.9.20 (2002-08-10) [umoeller] */
     ID_XSDI_INFO_MAINMEM_TXT            "Arbeitsspeicher:"
     ID_XSDI_INFO_FREEMEM_TXT            "Freier Speicher:"
+    ID_XSDI_INFO_BUGREPORT              "Report bug..."
+            /* ID_XSDI_INFO_BUGREPORT is new with V0.9.21 V0.9.21 (2002-08-28) [umoeller] */
+
+    /* new items for folder split views V0.9.21 (2002-08-21) [umoeller] */
+    ID_XFSI_FDR_SPLITVIEW               "~Split view"
 END
 
 

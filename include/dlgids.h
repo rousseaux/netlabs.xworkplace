@@ -263,6 +263,7 @@
 #define ID_XSDI_INFO_MAINMEM_VALUE      205     // added V0.9.20 (2002-08-10) [umoeller]
 #define ID_XSDI_INFO_FREEMEM_TXT        206     // added V0.9.20 (2002-08-10) [umoeller]
 #define ID_XSDI_INFO_FREEMEM_VALUE      207     // added V0.9.20 (2002-08-10) [umoeller]
+#define ID_XSDI_INFO_BUGREPORT          208     // added V0.9.21 (2002-08-28) [umoeller]
 
 // "Select by name" dlg items
 #define ID_XFDI_SELECTSOME_TITLE        210      // V0.9.19 (2002-04-17) [umoeller]

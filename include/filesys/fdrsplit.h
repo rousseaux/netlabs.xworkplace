@@ -34,32 +34,33 @@
      *
      ********************************************************************/
 
+    #define ID_TREEFRAME            1001
+    #define ID_FILESFRAME           1002
+
+    #define FM_FILLFOLDER           (WM_USER + 1)
+        #define FFL_FOLDERSONLY         0x0001
+        #define FFL_SCROLLTO            0x0002
+        #define FFL_EXPAND              0x0004
+        #define FFL_SETBACKGROUND       0x0008
+
+    #define FM_POPULATED_FILLTREE   (WM_USER + 2)
+    #define FM_POPULATED_SCROLLTO   (WM_USER + 3)
+    #define FM_POPULATED_FILLFILES  (WM_USER + 4)
+    #define FM_UPDATEPOINTER        (WM_USER + 5)
+    #define FM_DELETINGFDR          (WM_USER + 6)
+
+    #define FM2_POPULATE            (WM_USER + 10)
+    #define FM2_ADDFIRSTCHILD_BEGIN (WM_USER + 11)
+    #define FM2_ADDFIRSTCHILD_NEXT  (WM_USER + 12)
+    #define FM2_ADDFIRSTCHILD_DONE  (WM_USER + 13)
+
+    #define SPLIT_ANIMATE           0x0001
+    #define SPLIT_FDRSTYLES         0x0002
+    #define SPLIT_MULTIPLESEL       0x0004
+    #define SPLIT_STATUSBAR         0x0008
+
     #ifdef LINKLIST_HEADER_INCLUDED
     #ifdef THREADS_HEADER_INCLUDED
-
-        #define ID_TREEFRAME            1001
-        #define ID_FILESFRAME           1002
-
-        #define FM_FILLFOLDER           (WM_USER + 1)
-            #define FFL_FOLDERSONLY         0x0001
-            #define FFL_SCROLLTO            0x0002
-            #define FFL_EXPAND              0x0004
-            #define FFL_SETBACKGROUND       0x0008
-
-        #define FM_POPULATED_FILLTREE   (WM_USER + 2)
-        #define FM_POPULATED_SCROLLTO   (WM_USER + 3)
-        #define FM_POPULATED_FILLFILES  (WM_USER + 4)
-        #define FM_UPDATEPOINTER        (WM_USER + 5)
-
-        #define FM2_POPULATE            (WM_USER + 6)
-        #define FM2_ADDFIRSTCHILD_BEGIN (WM_USER + 7)
-        #define FM2_ADDFIRSTCHILD_NEXT  (WM_USER + 8)
-        #define FM2_ADDFIRSTCHILD_DONE  (WM_USER + 9)
-
-        #define SPLIT_ANIMATE           0x0001
-        #define SPLIT_FDRSTYLES         0x0002
-        #define SPLIT_MULTIPLESEL       0x0004
-        #define SPLIT_STATUSBAR         0x0008
 
         /*
          *@@ FDRSPLITVIEW:

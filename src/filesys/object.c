@@ -2724,37 +2724,13 @@ BOOL objCopyObjectFileName(WPObject *somSelf, // in: the object which was passed
     if (strFilenames.ulLength)
     {
         // something was copied:
-        HAB     hab = WinQueryAnchorBlock(hwndCnr);
-
         // remove last space
         strFilenames.psz[--(strFilenames.ulLength)] = '\0';
 
         // copy to clipboard
-        if (WinOpenClipbrd(hab))
-        {
-            PSZ pszDest;
-            if (!DosAllocSharedMem((PVOID*)&pszDest,
-                                   NULL,
-                                   strFilenames.ulLength + 1,
-                                   PAG_WRITE | PAG_COMMIT | OBJ_GIVEABLE))
-            {
-                memcpy(pszDest,
-                       strFilenames.psz,
-                       strFilenames.ulLength + 1);
-
-                WinEmptyClipbrd(hab);
-
-                fSuccess = WinSetClipbrdData(hab,       // anchor-block handle
-                                             (ULONG)pszDest, // pointer to text data
-                                             CF_TEXT,        // data is in text format
-                                             CFI_POINTER);   // passing a pointer
-
-                // PMREF says (implicitly) it is not necessary to call
-                // DosFreeMem. I hope that is correct.
-                // V0.9.19 (2002-06-02) [umoeller]
-            }
-            WinCloseClipbrd(hab);
-        }
+        fSuccess = winhSetClipboardText(WinQueryAnchorBlock(hwndCnr),
+                                        strFilenames.psz,
+                                        strFilenames.ulLength + 1);
     }
 
     xstrClear(&strFilenames);

@@ -1517,6 +1517,8 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
 
 SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
 {
+    PUSEITEM pui;
+
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpUnInitData");
 
@@ -1530,7 +1532,6 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         // V0.9.16 (2001-11-25) [umoeller]
         G_pConfigFolder = NULL;
 
-    // wpshStore(somSelf, &_pWszFolderBkgndImageFile, NULL, NULL);
     wpshStore(somSelf, &_pWszDefaultDocDeferred, NULL, NULL);
 
     // lock out the folder auto-refresh
@@ -1545,6 +1546,33 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         }
 
         fdrReleaseNotifySem();
+    }
+
+    // request the object mutex; we can LEAVE it requested since
+    // XFldObject::wpUnInitData will request it anyway, and
+    // WPObject::wpUnInitData will delete the mutex
+    _wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+
+    // check if this folder is currently showing on the right
+    // side of the folder split view; if so, then we MUST
+    // notify the split view because it has internal pointers
+    // to somSelf that must be removed
+    // V0.9.21 (2002-08-28) [umoeller]
+    for (pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+         pui;
+         pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pui))
+    {
+        PVIEWITEM pvi = (PVIEWITEM)(pui + 1);
+
+        if (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING)
+        {
+            // the view item "handle" is the view handle
+            // of the split view's hwndFilesFrame
+            WinSendMsg(pvi->handle,
+                       FM_DELETINGFDR,
+                       NULL,
+                       NULL);
+        }
     }
 
     XFolder_parent_WPFolder_wpUnInitData(somSelf);
@@ -2531,7 +2559,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
 {
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
-    ULONG       ulVarMenuOfs = *G_pulVarMenuOfs;
+
     // XFolderMethodDebug("XFolder","xf_wpOpen");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
@@ -2553,13 +2581,13 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
             fOpenDefaultDoc = TRUE;
         }
     }
-    else if (ulView == ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC)
+    else if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC)
         fOpenDefaultDoc = TRUE;
 
     if (fOpenDefaultDoc)
     {
-        WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
-        if (pDefaultDoc)
+        WPFileSystem *pDefaultDoc;
+        if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
             _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
     }
     else
@@ -2567,7 +2595,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     {
         // added split view
         // V0.9.21 (2002-08-21) [umoeller]
-        if (ulView == ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+        if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
         {
             hwndNewFrame = fdrCreateSplitView(somSelf,
                                               ulView);

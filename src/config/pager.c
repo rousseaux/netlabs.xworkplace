@@ -1830,14 +1830,17 @@ static MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
 
                 /*
                  * CN_ENTER:
-                 *
+                 *      ulExtra has the record that was clicked on.
                  */
 
                 case CN_ENTER:
-                    EditStickyRecord((PSTICKYRECORD)ulExtra,
-                                     pnbp,
-                                     hwndCnr,
-                                     FALSE); // do not create a new record
+                    // this crashed if the user double-clicked on
+                    // cnr whitespace since the record was then NULL
+                    if (ulExtra)        // V0.9.21 (2002-08-28) [umoeller]
+                        EditStickyRecord((PSTICKYRECORD)ulExtra,
+                                         pnbp,
+                                         hwndCnr,
+                                         FALSE); // do not create a new record
                 break;
             }
         break;

@@ -799,17 +799,25 @@ static VOID CallResolvedUpdateStatusBar(WPFolder *pFolder,
 
 VOID stbUpdate(WPFolder *pFolder)
 {
-    if (_wpFindUseItem(pFolder, USAGE_OPENVIEW, NULL))
+    // if (_wpFindUseItem(pFolder, USAGE_OPENVIEW, NULL))
     {
         // folder has an open view;
         // now we go search the open views of the folder and get the
         // frame handle of the desired view (ulView)
+        /*      replaced V0.9.21 (2002-08-28) [umoeller]
         PVIEWITEM   pViewItem;
         for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
              pViewItem;
-             pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+             pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem)) */
+
+        PUSEITEM pui;
+        for (pui = _wpFindUseItem(pFolder, USAGE_OPENVIEW, NULL);
+             pui;
+             pui = _wpFindUseItem(pFolder, USAGE_OPENVIEW, pui))
         {
-            switch (pViewItem->view)
+            PVIEWITEM pvi = (PVIEWITEM)(pui + 1);
+
+            switch (pvi->view)
             {
                 case OPEN_CONTENTS:
                 case OPEN_DETAILS:
@@ -817,8 +825,8 @@ VOID stbUpdate(WPFolder *pFolder)
                 {
                     HWND hwndStatusBar;
                     HWND hwndCnr;
-                    if (    (hwndStatusBar = WinWindowFromID(pViewItem->handle, ID_STATUSBAR))
-                         && (hwndCnr = WinWindowFromID(pViewItem->handle, FID_CLIENT))
+                    if (    (hwndStatusBar = WinWindowFromID(pvi->handle, ID_STATUSBAR))
+                         && (hwndCnr = WinWindowFromID(pvi->handle, FID_CLIENT))
                        )
                         CallResolvedUpdateStatusBar(pFolder,
                                                     hwndStatusBar,

@@ -514,7 +514,11 @@ The format of the replacements list for the %1 class is invalid.
 
 Do you wish to have &xwp; fix this problem now?
 
+<--XFL0251-->: &xwp; has copied a bug report template with system information to your system clipboard.
 
+Fire up your favorite email client and paste the clipboard into a new mail to &contact-user; to report the bug to the development team.
+
+Thank you.
 
 
 

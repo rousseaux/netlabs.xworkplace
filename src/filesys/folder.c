@@ -986,6 +986,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be XFolder::xwpForEachOpenView
  *@@changed V0.9.19 (2002-06-13) [umoeller]: this broke for root folders, fixed
+ *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted for new callback prototype; optimized
  */
 
 BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
@@ -1019,18 +1020,24 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
             // folder has an open view;
             // now we go search the open views of the folder and get the
             // frame handle of the desired view (ulView)
-            PVIEWITEM   pViewItem;
+            /* PVIEWITEM   pViewItem;   replaced V0.9.21 (2002-08-28) [umoeller]
             for (pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, NULL);
                  pViewItem;
-                 pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem))
+                 pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem)) */
+
+            PUSEITEM pui;
+            for (pui = _wpFindUseItem(somSelf2, USAGE_OPENVIEW, NULL);
+                 pui;
+                 pui = _wpFindUseItem(somSelf2, USAGE_OPENVIEW, pui))
             {
+                PVIEWITEM pvi = (PVIEWITEM)(pui + 1);
                 // even if we have found a disk object
                 // above, we need to pass it the root folder
                 // pointer, because otherwise the callback
                 // might get into trouble
                 if (pfnCallback(somSelf,
-                                pViewItem->handle,
-                                pViewItem->view,
+                                pvi->handle,
+                                pvi->view,
                                 ulMsg))
                     brc = TRUE;
             } // end for
@@ -1057,6 +1064,7 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
  *      will take long.
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be M_XFolder::xwpclsForEachOpenView
+ *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted for new callback prototype
  */
 
 BOOL fdrForEachOpenGlobalView(PFNFOREACHVIEWCALLBACK pfnCallback,

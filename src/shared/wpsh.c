@@ -1644,28 +1644,50 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
  *
  *       Returns NULLHANDLE if the specified view is not
  *       currently open.
+ *
+ *@@changed V0.9.21 (2002-08-28) [umoeller]: optimized
  */
 
 HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
                             ULONG ulView)       // in: OPEN_CONTENTS etc.
 {
-    PVIEWITEM           pViewItem;
-    // PUSEITEM            pUseFile;
-    HWND                hwndFrame = 0;
+    BOOL    fLocked = FALSE;
+    HWND    hwndFrame = 0;
 
-    if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
+    TRY_LOUD(excpt1)
     {
-        // folder has an open view:
-        // now we go search the open views of the folder and get the
+        // go search the open views of the folder and get the
         // frame handle of the desired view (ulView)
+
+        /*  replaced V0.9.21 (2002-08-28) [umoeller]
         for (pViewItem = _wpFindViewItem(somSelf, VIEW_ANY, NULL);
              pViewItem;
-             pViewItem = _wpFindViewItem(somSelf, VIEW_ANY, pViewItem))
+             pViewItem = _wpFindViewItem(somSelf, VIEW_ANY, pViewItem)) */
+
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
-            if (pViewItem->view == ulView)
-                 hwndFrame = pViewItem->handle;
-        } // end for
-    } // end if
+            PUSEITEM pui;
+            for (pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                 pui;
+                 pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pui))
+            {
+                PVIEWITEM pvi = (PVIEWITEM)(pui + 1);
+
+                if (pvi->view == ulView)
+                {
+                     hwndFrame = pvi->handle;
+                     break;     // V0.9.21 (2002-08-28) [umoeller]
+                }
+            } // end for
+        }
+    }
+    CATCH(excpt1)
+    {
+        hwndFrame = NULLHANDLE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 
     return hwndFrame;
 }

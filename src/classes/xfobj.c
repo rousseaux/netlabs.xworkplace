@@ -2841,6 +2841,7 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
                 ulMenuFilter, ((ulMenuFilter) & CTXT_CRANOTHER)));
     #endif
 
+#if 0
     // check if hwndCnr is part of a standard WPS view frame,
     // that is, it belongs to a frame that is registered
     // as OPEN_CONTENTS and the like; if it is NOT, then
@@ -2881,6 +2882,7 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
 
     if (fRemoveFileOps)
         ulMenuFilter &= ~ (CTXT_COPY | CTXT_LINK | CTXT_MOVE | CTXT_NEW);
+#endif
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete... not that I can see how we can get a context

@@ -98,10 +98,12 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\procstat.h"
 #include "helpers\regexp.h"             // extended regular expressions
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -4592,6 +4594,269 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
 
 /* ******************************************************************
  *
+ *   Bug reports
+ *
+ ********************************************************************/
+
+/*
+ *@@ cmnBugReport:
+ *      produces a bug report.
+ *
+ *      pstr is assumed to be initialized and is not
+ *      erased. That is, we'll always append to that
+ *      string.
+ *
+ *      Line format is \n only (not \r\n).
+ *
+ *@@added V0.9.21 (2002-08-28) [umoeller]
+ */
+
+VOID cmnBugReport(PXSTRING pstr)
+{
+    ULONG           aulBuf[3];
+    PCSZ            pcszVersion = "unknown";
+    APIRET          arc;
+    PQPROCSTAT16    pqp;
+    DATETIME        DT;
+    POBJCLASS       pClassList;
+    CHAR            szKernelFile[] = "?:\\OS2KRNL";
+    PEXECUTABLE     pexeKernel;
+    ULONG           ul;
+
+    /*
+     * Header:
+     *
+     */
+
+    xstrcat(pstr, "XWorkplace bug report\n", 0);
+    xstrcat(pstr, "---------------------\n", 0);
+
+    DosGetDateTime(&DT);
+    xstrCatf(pstr,
+             "\nDate: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
+             DT.year, DT.month, DT.day,
+             DT.hours, DT.minutes, DT.seconds);
+    xstrcat(pstr,
+            "--------------------------------\n",
+            0);
+
+    xstrcat(pstr,
+            "\nPlease take a look at the root directory of your boot drive \n"
+            "if you find any *.log files there. Send this report and those \n"
+            "files to " CONTACT_ADDRESS_USER ". Thank you.\n",
+            0);
+
+    xstrcat(pstr, "\nRunning XWorkplace version: " BLDLEVEL_VERSION " built " __DATE__ "\n", 0);
+
+    /*
+     * OS/2 Kernel:
+     *
+     */
+
+    DosQuerySysInfo(QSV_VERSION_MAJOR,      // 11
+                    QSV_VERSION_REVISION,   // 13
+                    aulBuf, sizeof(aulBuf));
+    // Warp 3 is reported as 20.30
+    // Warp 4 is reported as 20.40
+    // Aurora is reported as 20.45
+    if (aulBuf[0] == 20)
+    {
+        switch (aulBuf[1])
+        {
+            case 30: pcszVersion = "Warp 3"; break;
+            case 40: pcszVersion = "Warp 4"; break;
+            case 45: pcszVersion = "WSeB kernel"; break;
+        }
+    }
+    xstrCatf(pstr,
+             "Running OS/2 version: %u.%u.%u (%s)\n",
+             aulBuf[0],
+             aulBuf[1],
+             aulBuf[2],
+             pcszVersion);
+
+    szKernelFile[0] = doshQueryBootDrive();
+    if (arc = exehOpen(szKernelFile,
+                       &pexeKernel))
+        xstrCatf(pstr,
+                 "exehOpen returned %d for %s\n",
+                 arc,
+                 szKernelFile);
+    else
+    {
+        if (arc = exehQueryBldLevel(pexeKernel))
+            xstrCatf(pstr,
+                     "exehQueryBldLevel returned %d for %s\n",
+                     arc,
+                     szKernelFile);
+        else
+        {
+            xstrCatf(pstr,
+                     "%s build level: %s\n",
+                     szKernelFile,
+                     pexeKernel->pszDescription);
+        }
+
+        exehClose(&pexeKernel);
+    }
+
+    DosQuerySysInfo(QSV_TOTPHYSMEM,
+                    QSV_TOTPHYSMEM,
+                    aulBuf,
+                    sizeof(aulBuf));
+    xstrCatf(pstr,
+             "Installed physical memory: %d MB\n",
+             aulBuf[0] / 1024 / 1024);
+
+    #ifndef QSV_NUMPROCESSORS
+        #define QSV_NUMPROCESSORS       26
+    #endif
+
+    if (arc = DosQuerySysInfo(QSV_NUMPROCESSORS,
+                              QSV_NUMPROCESSORS,
+                              aulBuf,
+                              sizeof(aulBuf)))
+        xstrCatf(pstr,
+                 "Error %d getting QSV_NUMPROCESSORS\n",
+                 arc);
+    else
+        xstrCatf(pstr,
+                 "Number of processors: %d\n",
+                 aulBuf[0]);
+
+    #ifndef QSV_VIRTUALADDRESSLIMIT
+        #define QSV_VIRTUALADDRESSLIMIT 30
+    #endif
+
+    if (arc = DosQuerySysInfo(QSV_VIRTUALADDRESSLIMIT,
+                              QSV_VIRTUALADDRESSLIMIT,
+                              aulBuf,
+                              sizeof(aulBuf)))
+        xstrCatf(pstr,
+                 "Error %d getting QSV_VIRTUALADDRESSLIMIT\n",
+                 arc);
+    else
+        xstrCatf(pstr,
+                 "Virtual address limit: 0x%lX (%d)\n",
+                 aulBuf[0],
+                 aulBuf[0]);
+
+    /*
+     * dump running processes:
+     *
+     */
+
+    xstrcat(pstr,
+            "\nRunning processes:\n",
+            0);
+
+    if (arc = prc16GetInfo(&pqp))
+        xstrCatf(pstr,
+                 "Error %d occurred getting process list\n",
+                 arc);
+    else
+    {
+        PQPROCESS16 pProcess;
+        ULONG       cProcesses = 0;
+
+        xstrcat(pstr,
+                "    PID    PPID   Module\n",
+                0);
+
+        for ( pProcess = (PQPROCESS16)PTR(pqp->ulProcesses, 0);
+              pProcess->ulType != 3;
+              pProcess = (PQPROCESS16)PTR(pProcess->ulThreadList,
+                                          pProcess->usThreads * sizeof(QTHREAD16))
+            )
+        {
+            CHAR    szModule[CCHMAXPATH];
+            if (arc = DosQueryModuleName(pProcess->usHModule,
+                                         sizeof(szModule),
+                                         szModule))
+                sprintf(szModule,
+                        "[DosQueryModuleName returned %d for HMODULE 0x%lX]",
+                        arc,
+                        pProcess->usHModule);
+            xstrCatf(pstr,
+                     "    0x%04lX 0x%04lX %s\n",
+                     pProcess->usPID,
+                     pProcess->usParentPID,
+                     szModule);
+
+            ++cProcesses;
+        }
+
+        prc16FreeInfo(pqp);
+    }
+
+    /*
+     * dump WPS classes:
+     *
+     */
+
+    xstrcat(pstr, "\nInstalled WPS classes:\n", 0);
+
+    if (!(pClassList = (POBJCLASS)winhQueryWPSClassList()))
+        xstrcat(pstr, "Cannot get class list\n", 0);
+    else
+    {
+        POBJCLASS pThis = pClassList;
+
+        while (pThis)
+        {
+            CHAR    szTemp[500];
+            PCSZ    pcszTemp;
+            HMODULE hmod;
+            if (!DosQueryModuleHandle(pThis->pszModName, &hmod))
+            {
+                ul = sprintf(szTemp,
+                             "HMODULE 0x%04lX loaded from ",
+                             hmod);
+                DosQueryModuleName(hmod,
+                                   sizeof(szTemp) - ul,
+                                   szTemp + ul);
+                pcszTemp = szTemp;
+            }
+            else
+                pcszTemp = "not loaded";
+
+
+            xstrCatf(pstr,
+                     "    %s -- %s\n"
+                     "        %s\n",
+                     pThis->pszClassName,
+                     pThis->pszModName,
+                     pcszTemp);
+
+            pThis = pThis->pNext;
+        }
+
+        free(pClassList);
+    }
+
+    /*
+     * dump XWP settings:
+     *
+     */
+
+    xstrcat(pstr, "\nGlobal XWorkplace settings:\n", 0);
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(G_aSettingInfos);
+         ++ul)
+    {
+        ULONG   ulValue = cmnQuerySetting(G_aSettingInfos[ul].s);
+        xstrCatf(pstr,
+                 "    %s is 0x%lX (%d)\n",
+                 G_aSettingInfos[ul].pcszIniKey,
+                 ulValue,
+                 ulValue);
+    }
+
+}
+
+/* ******************************************************************
+ *
  *   Product info
  *
  ********************************************************************/
@@ -4715,7 +4980,13 @@ static CONTROLDEF
                             NULL,
                             -1,
                             SZL_AUTOSIZE,
-                            SZL_AUTOSIZE);
+                            SZL_AUTOSIZE),
+    BugReportButton = CONTROLDEF_PUSHBUTTON(
+                            LOAD_STRING,
+                            ID_XSDI_INFO_BUGREPORT,
+                            SZL_AUTOSIZE,
+                            STD_BUTTON_HEIGHT);
+
 
 static const DLGHITEM dlgProductInfo[] =
     {
@@ -4748,7 +5019,11 @@ static const DLGHITEM dlgProductInfo[] =
                     CONTROL_DEF(&ProductInfoSepVert),
             START_ROW(ROW_VALIGN_CENTER),
                 CONTROL_DEF(&ProductInfoSepVert),
-                CONTROL_DEF(&G_OKButton),
+                START_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&G_OKButton),
+                        CONTROL_DEF(&BugReportButton),
+                END_TABLE,
         END_TABLE
     };
 
@@ -4756,6 +5031,7 @@ static const DLGHITEM dlgProductInfo[] =
  *@@ fnwpProductInfo:
  *
  *@@added V0.9.20 (2002-08-10) [umoeller]
+ *@@changed V0.9.21 (2002-08-28) [umoeller]: added bug report
  */
 
 static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -4830,6 +5106,32 @@ static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                     }
                 }
             }
+        break;
+
+        case WM_COMMAND:
+            if ((ULONG)mp1 == ID_XSDI_INFO_BUGREPORT)
+            {
+                XSTRING str;
+                xstrInit(&str, 0);
+
+                // compose the bug report
+                cmnBugReport(&str);
+
+                winhSetClipboardText(WinQueryAnchorBlock(hwnd),
+                                     str.psz,
+                                     str.ulLength + 1);
+
+                cmnMessageBoxExt(hwnd,
+                                 121, // &xwp;
+                                 NULL,
+                                 0,
+                                 251,
+                                 DID_OK);
+
+                xstrClear(&str);
+            }
+            else
+                mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
         break;
 
         default:

@@ -33,6 +33,48 @@ CURRENT PROBLEMS
 
 --  shift+view click does not keep the menu open
 
+--  After setting the icon of a data file object, changing the title of
+    the object will cause the icon to be replaced with the icon of the
+    default program object associated with the data file. Opening the
+    data file (or its settings notebook) will cause the correct icon to
+    reappear (until the title is changed again, of course).
+
+--  When I right click on an icon file the image will change
+    to the icon assigned to the iconeditor. To get the image to change
+    back to the actual icon-file's image I either have to refresh the folder
+    or I have to open the icon-file's properties notebook (this is not always
+    reproducable and does not always affect all the icons in a folder).
+    In addition, the icons will not display if I have the turbo option
+    enabled, however, I think that this may be how "turbo folder" is supposed
+    to work.
+
+    If I install a windoze program under Odin and it creates an icon on
+    the desktop (AIM for instance) it has the proper icon but if I open
+    the properties or drag the icon it goes to a white sheet icon.
+    Interestingly enough I have found that if I open the properties of
+    another object and drag the icon to it the original turns to the white
+    icon but the one I drug it to takes the icon and I can then drag it
+    back and it holds.
+
+--  After installation of v0.9.20 on one test system, (Pentium II 400, 384
+    Mb, eCS 1.02, XWp 0.9.20, RSJ 4.05, I ran the RSJ CD-Writer program,
+    to transfer data files to a CD-R. I mounted the CD and copied a few
+    files. After copy completed, the desktop shutdown and restarted (RSJ
+    still ran normally). After copying a few more files from another
+    location, the desktop again shutdown and restarted.
+
+--  Unchecking associated file types in a program object does nothing. The
+    same types are checked the next time the object settings are shown, and the
+    files are still associated.
+
+--  items in a LightTables Folder (MMFolder class) will
+    not display as thumbnails, no matter if I choose
+    "Lazy-load data file icons" in the "Folder views"
+    or not (as opposed to some other post that claimed
+    that unckecking this will cure the problem).
+
+--  enabling turbo folders WITHOUT extended assocs makes system unstable
+
 --  delete: intercept _wpMenuItemSelected too because "delete" from
     sysbutton menu won't work, and from context menu item neither
 

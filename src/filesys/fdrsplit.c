@@ -1189,6 +1189,8 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                             psv->viDisplaying.view =
                                     *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING;
                             psv->viDisplaying.handle = psv->hwndFilesFrame;
+                                    // do not change this! XFolder::wpUnInitData
+                                    // relies on this!
                             // set this flag so that we can disable
                             // _wpAddToContent for this view while we're
                             // populating; the flag is cleared once we're done
@@ -2061,6 +2063,31 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
                      && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                    )
                     mrc = (MPARAM)fdrSplitQueryPointer(psv);
+            break;
+
+            /*
+             *@@ FM_DELETINGFDR:
+             *      this message is sent from XFolder::wpUnInitData
+             *      if it finds the ID_XFMI_OFS_SPLITVIEW_SHOWING
+             *      useitem in the folder. In other words, the
+             *      folder whose contents are currently showing
+             *      in the files cnr is about to go dormant.
+             *      We must null the pointers in the splitviewdata
+             *      that point to ourselves, or we'll have endless
+             *      problems.
+             *
+             *@@added V0.9.21 (2002-08-28) [umoeller]
+             */
+
+            case FM_DELETINGFDR:
+                _PmpfF(("FM_DELETINGFDR"));
+                if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                     && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                   )
+                {
+                    psv->pobjUseList = NULL;
+                    psv->precFilesShowing = NULL;
+                }
             break;
 
             default:
