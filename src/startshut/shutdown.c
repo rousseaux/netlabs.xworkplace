@@ -1095,6 +1095,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
  *@@changed V0.9.4 (2000-07-11) [umoeller]: fixed bug in window class detection
  *@@changed V0.9.6 (2000-10-27) [umoeller]: fixed WarpCenter detection
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: now closing workareas first @@fixes 273
  */
 
 PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
@@ -1103,12 +1104,12 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
                                     WPObject *pObject,  // in: !=NULL: Desktop object
                                     LONG lSpecial)
 {
-    PSHUTLISTITEM  pNewItem = NULL;
+    PSHUTLISTITEM   pNewItem;
 
-    pNewItem = malloc(sizeof(SHUTLISTITEM));
-
-    if (pNewItem)
+    if (pNewItem = malloc(sizeof(SHUTLISTITEM)))
     {
+        BOOL    fToFront = FALSE;
+
         pNewItem->pObject = pObject;
         memcpy(&pNewItem->swctl, pswctl, sizeof(SWCNTRL));
 
@@ -1121,6 +1122,8 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
             // for Desktop objects, store additional data
             if (wpshCheckObject(pObject))
             {
+                PUSEITEM    pui;
+
                 strncpy(pNewItem->szClass,
                         (PSZ)_somGetClassName(pObject),
                         sizeof(pNewItem->szClass)-1);
@@ -1139,10 +1142,18 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
                 // set HWND to object-in-use-list data,
                 // because the tasklist also returns garbage
                 // for that
-                if (_wpFindUseItem(pObject, USAGE_OPENVIEW, NULL))
-                    pNewItem->swctl.hwnd = (_wpFindViewItem(pObject,
-                                                            VIEW_ANY,
-                                                            NULL))->handle;
+                if (pui = _wpFindUseItem(pObject, USAGE_OPENVIEW, NULL))
+                {
+                    PVIEWITEM   pvi = (PVIEWITEM)(pui + 1);
+                    pNewItem->swctl.hwnd = pvi->handle;
+                }
+
+                // close workareas first
+                // V1.0.1 (2002-12-15) [umoeller]
+                if (    (objIsAFolder(pObject))
+                     && (_wpQueryFldrFlags(pObject) & FOI_WORKAREA)
+                   )
+                    fToFront = TRUE;
             }
             else
             {
@@ -1157,22 +1168,17 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
             WinQueryClassName(pswctl->hwnd,               // old V0.9.3 code
                               sizeof(pNewItem->szClass)-1,
                               pNewItem->szClass);
-            /* PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-            // strcpy(pNewItem->szClass, "pObj is NULL");
-
-            if (pObject == pKernelGlobals->pAwakeWarpCenter)
-            {
-                strcpy(pNewItem->szClass, "!!WarpCenter");
-            }
-            else
-                // no Desktop object: get window class name
-                WinQueryClassName(pswctl->hwnd,
-                                  sizeof(pNewItem->szClass)-1,
-                                  pNewItem->szClass); */
         }
 
         // append to list
-        lstAppendItem(pList, pNewItem);
+        if (fToFront)
+            // to front     V1.0.1 (2002-12-15) [umoeller]
+            lstInsertItemBefore(pList,
+                                pNewItem,
+                                0);
+        else
+            // to tail
+            lstAppendItem(pList, pNewItem);
     }
 
     return pNewItem;

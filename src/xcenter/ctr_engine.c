@@ -350,6 +350,7 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
  *@@changed V0.9.12 (2001-05-06) [umoeller]: fixed potential endless loop
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: fixed frame sizing border @@fixes 246
  */
 
 STATIC BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
@@ -443,7 +444,10 @@ STATIC BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                                 rclNew;
 
                     ULONG   ulCutBottom = 0,
-                            ulCutTop = 0;
+                            ulCutTop = 0,
+                            // take frame sizing border into account V1.0.1 (2002-12-15) [umoeller]
+                            cyFrame = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
+                                    // V1.0.1 (2002-12-15) [umoeller]
 
                     // get current first
                     G_WinQueryDesktopWorkArea(HWND_DESKTOP, &rclCurrent);
@@ -473,13 +477,13 @@ STATIC BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                             if (somThat->ulPosition == XCENTER_BOTTOM)
                             {
                                 // XCenter on bottom:
-                                if (pDataThat->cyFrame > ulCutBottom)
-                                    ulCutBottom = pDataThat->cyFrame;
+                                if (pDataThat->cyFrame + cyFrame > ulCutBottom)
+                                    ulCutBottom = pDataThat->cyFrame + cyFrame;
                             }
                             else
                                 // XCenter on top:
-                                if (pDataThat->cyFrame > ulCutTop)
-                                    ulCutTop = pDataThat->cyFrame;
+                                if (pDataThat->cyFrame + cyFrame > ulCutTop)
+                                    ulCutTop = pDataThat->cyFrame + cyFrame;
 
                             // pNode = pNode->pNext;
                         }

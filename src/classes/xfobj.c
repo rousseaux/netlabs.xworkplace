@@ -402,11 +402,11 @@ SOM_Scope BOOL  SOMLINK xl_Write(XWPObjList *somSelf)
     XWPObjListData *somThis = XWPObjListGetData(somSelf);
     XWPObjListMethodDebug("XWPObjList","xl_Write");
 
-    TRY_LOUD(excpt1)
+    if (    (_fLoaded)
+         && (_pszIniKey)
+       )
     {
-        if (    (_fLoaded)
-             && (_pszIniKey)
-           )
+        TRY_LOUD(excpt1)
         {
             PLISTNODE pNode;
             if (pNode = lstQueryFirstNode(_pvList))
@@ -445,11 +445,11 @@ SOM_Scope BOOL  SOMLINK xl_Write(XWPObjList *somSelf)
                                           0);
             }
         }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
     }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
 
     return brc;
 }
@@ -486,7 +486,9 @@ SOM_Scope BOOL  SOMLINK xl_Append(XWPObjList *somSelf, WPObject* pobj)
         {
             PLISTNODE pNode;
 
-            if (!_fLoaded)
+            if (    (!_fLoaded)
+                 && (_pszIniKey)
+               )
                 _Load(somSelf);
 
             if (    (!(pNode = lstNodeFromItem(_pvList, pobj)))
@@ -497,7 +499,10 @@ SOM_Scope BOOL  SOMLINK xl_Append(XWPObjList *somSelf, WPObject* pobj)
                 _xwpAddedToList(pobj, somSelf);
 
                 // list changed:
-                _Write(somSelf);
+                if (    (_fLoaded)
+                     && (_pszIniKey)
+                   )
+                    _Write(somSelf);
             }
         }
     }
@@ -567,7 +572,9 @@ SOM_Scope BOOL  SOMLINK xl_IsIn(XWPObjList *somSelf, WPObject* pobj)
     {
         if (fLocked = LockObjectLists())
         {
-            if (!_fLoaded)
+            if (    (!_fLoaded)
+                 && (_pszIniKey)
+               )
                 _Load(somSelf);
 
             brc = !!lstNodeFromItem(_pvList, pobj);
@@ -602,7 +609,9 @@ SOM_Scope BOOL  SOMLINK xl_Remove(XWPObjList *somSelf, WPObject* pobj)
         {
             PLISTNODE pNode;
 
-            if (!_fLoaded)
+            if (    (!_fLoaded)
+                 && (_pszIniKey)
+               )
                 _Load(somSelf);
 
             if (    (pNode = lstNodeFromItem(_pvList, pobj))
@@ -613,7 +622,10 @@ SOM_Scope BOOL  SOMLINK xl_Remove(XWPObjList *somSelf, WPObject* pobj)
                 _xwpRemovedFromList(pobj, somSelf);
 
                 // list changed:
-                _Write(somSelf);
+                if (    (_fLoaded)
+                     && (_pszIniKey)
+                   )
+                    _Write(somSelf);
             }
         }
     }
@@ -654,7 +666,9 @@ SOM_Scope WPObject*  SOMLINK xl_Enum(XWPObjList *somSelf, WPObject* pobj)
         {
             PLISTNODE pNode;
 
-            if (!_fLoaded)
+            if (    (!_fLoaded)
+                 && (_pszIniKey)
+               )
                 _Load(somSelf);
 
             if (!pobj)
@@ -734,7 +748,7 @@ SOM_Scope void SOMLINK xl_somDefaultInit(XWPObjList *somSelf,
  *      overridden SOM destructor to de-initialize an
  *      instance of XWPObjList.
  *
- *      You can call SOM_Free(pList) to destroy a list.
+ *      You can call somFree(pList) to destroy a list.
  *
  *@@added V1.0.1 (2002-12-11) [umoeller]
  */
@@ -3343,6 +3357,7 @@ SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
 /*
  *@@ wpSetIcon:
  *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
  *@@changed V1.0.1 (2002-12-14) [umoeller]: fixed broken lazy loading of ICO files @@fixes 293
  */
 
@@ -3353,7 +3368,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
                     fFlagsLocked = FALSE,
                     fTurnBackOn = FALSE;
 
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectData  *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
 
     TRY_LOUD(excpt1)
@@ -4923,6 +4938,8 @@ SOM_Scope BOOL  SOMLINK xoM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
  *
  *      The key strings must be static; this function does not make
  *      copies of them.
+ *
+ *      Use _somFree to free the list again.
  *
  *      Returns NULL if the list could not be created.
  *

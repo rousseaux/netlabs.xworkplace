@@ -994,7 +994,14 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
             xbd.dwd.szlWin.cx = rcl.xRight;
             xbd.dwd.szlWin.cy = rcl.yTop;
 
-            xbd.dwd.lcolBackground = pGlobals->lcolClientBackground;
+            // inherit presparam from parent, if we're in a tray
+            // V1.0.1 (2002-12-15) [umoeller]
+            xbd.dwd.lcolBackground = // pGlobals->lcolClientBackground;
+                            winhQueryPresColor(hwnd,
+                                               PP_BACKGROUNDCOLOR,
+                                               TRUE,
+                                               SYSCLR_DIALOGBACKGROUND);
+
 
             if (pPrivate->ulType == BTF_XBUTTON)
             {

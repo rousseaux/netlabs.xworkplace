@@ -1323,6 +1323,7 @@ VOID CheckClassOrder(VOID)
  *@@changed V0.9.19 (2002-05-01) [umoeller]: changed name of startup log file
  *@@changed V1.0.0 (2002-08-26) [umoeller]: added checks for proper class replacements ordering
  *@@changed V1.0.0 (2002-09-17) [umoeller]: added daemon NLS init
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: fixed stupid hwndDaemonObject log message @@fixes 64
  */
 
 VOID initMain(VOID)

@@ -777,6 +777,7 @@ PSZ cmnQueryBootLogoFile(VOID)
  *@@changed V0.9.19 (2002-04-24) [umoeller]: version checks never worked, fixed
  *@@changed V0.9.19 (2002-04-24) [umoeller]: reverting to 001 on errors now
  *@@changed V1.0.0 (2002-09-15) [lafaix]: notify the daemon if fEnforceReload == TRUE
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: fixed stupid hwndDaemonObject log message @@fixes 64
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)

@@ -987,6 +987,7 @@ VOID krnCreateObjectWindows(VOID)
  *      implementation for T1M_DAEMONREADY.
  *
  *@@added V0.9.3 (2000-04-24) [umoeller]
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: added daemon NLS init here @@fixes bug 64
  */
 
 STATIC VOID T1M_DaemonReady(VOID)
@@ -1033,6 +1034,7 @@ STATIC VOID T1M_DaemonReady(VOID)
         }
 
         // added this call here V1.0.1 (2002-12-08) [umoeller]
+        // (bug 64)
         cmnLoadDaemonNLSStrings();
     }
 }

@@ -224,6 +224,8 @@ typedef struct _TRAYSETUP
                         // which has the ulCurrentTray member
                         // V0.9.14 (2001-08-01) [umoeller]
 
+    LONG            lcolBackground;     // V1.0.1 (2002-12-15) [umoeller]
+
     // ULONG       ulCurrentTray;
                         // current tray index (from 0)
                         // or -1 if none
@@ -255,7 +257,8 @@ typedef struct _TRAYWIDGETPRIVATE
 
     BOOL            fMouseButton1Down,
                     fButtonSunk,
-                    fMouseCaptured;
+                    fMouseCaptured,
+                    fSettingPresParam;
 
     HWND            hwndTraysMenu;
 
@@ -564,12 +567,24 @@ STATIC VOID YwgtClearSetup(PTRAYSETUP pSetup)
  *      out. We do not clean up previous data here.
  *
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed a bad default setting
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: added background color @@fixes 58
  */
 
 STATIC VOID YwgtScanSetup(PCSZ pcszSetupString,
                           PTRAYSETUP pSetup)
 {
     PSZ p;
+
+    // background color V1.0.1 (2002-12-15) [umoeller]
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "BGNDCOL"))
+    {
+        pSetup->lcolBackground = ctrParseColorString(p);
+        ctrFreeSetupValue(p);
+    }
+    else
+        // default color:
+        pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // width
     if (p = ctrScanSetupString(pcszSetupString,
@@ -598,6 +613,8 @@ STATIC VOID YwgtScanSetup(PCSZ pcszSetupString,
  *      composes a new setup string.
  *      The caller must invoke xstrClear on the
  *      string after use.
+ *
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: added background color @@fixes 58
  */
 
 STATIC VOID YwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
@@ -605,6 +622,11 @@ STATIC VOID YwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cle
 {
     CHAR    szTemp[100];
     xstrInit(pstrSetup, 100);
+
+    // background color V1.0.1 (2002-12-15) [umoeller]
+    sprintf(szTemp, "BGNDCOL=%06lX;",
+            pSetup->lcolBackground);
+    xstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "WIDTH=%d;",
             pSetup->cx);
@@ -776,6 +798,14 @@ STATIC MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
 
     YwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
+
+    // set background presparam so child widgets can inherit
+    // V1.0.1 (2002-12-15) [umoeller]
+    pPrivate->fSettingPresParam = TRUE;
+    winhSetPresColor(hwnd,
+                     PP_BACKGROUNDCOLOR,
+                     pPrivate->Setup.lcolBackground);
+    pPrivate->fSettingPresParam = FALSE;
 
     // save current tray, can be -1
     ulSwitchTo = pPrivateSetting->ulCurrentTray;
@@ -967,7 +997,8 @@ STATIC VOID YwgtPaint(HWND hwnd)
         // fill entire widget background (more than just button
         WinFillRect(hps,
                     &rclWin,
-                    pWidget->pGlobals->lcolClientBackground);
+                    pPrivate->Setup.lcolBackground); // pWidget->pGlobals->lcolClientBackground);
+                            // V1.0.1 (2002-12-15) [umoeller]
 
         // draw icon as X-button
         xbd.dwd.szlWin.cy = rclWin.yTop;
@@ -988,7 +1019,7 @@ STATIC VOID YwgtPaint(HWND hwnd)
 
         xbd.szlIconOrBitmap.cx = G_cxTrayBmp;
         xbd.szlIconOrBitmap.cy = G_cyTrayBmp;           // V0.9.16 (2001-10-28) [umoeller]
-        xbd.dwd.lcolBackground = pGlobals->lcolClientBackground;
+        xbd.dwd.lcolBackground = pPrivate->Setup.lcolBackground;
 
         xbd.hptr = G_hbmTray;           // V0.9.16 (2001-10-28) [umoeller]
 
@@ -1498,6 +1529,50 @@ STATIC MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
+ *@@ WwgtPresParamChanged:
+ *      implementation for WM_PRESPARAMCHANGED.
+ *
+ *@@added V1.0.1 (2002-12-15) [umoeller]
+ */
+
+STATIC VOID YwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
+{
+    PXCENTERWIDGET pWidget;
+    PTRAYWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
+         && (!pPrivate->fSettingPresParam)      // V1.0.1 (2002-12-15) [umoeller]
+       )
+    {
+        BOOL fInvalidate = TRUE;
+        switch (ulAttrChanged)
+        {
+            case 0:     // layout palette thing dropped
+            case PP_BACKGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = winhQueryPresColor(hwnd,
+                                         PP_BACKGROUNDCOLOR,
+                                         FALSE,
+                                         SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            default:
+                fInvalidate = FALSE;
+        }
+
+        if (fInvalidate)
+        {
+            WinInvalidateRect(hwnd,
+                              NULL,
+                              TRUE);        // include children
+
+            YwgtSaveSetupAndSend(pPrivate);
+        }
+    } // end if (pPrivate)
+}
+
+/*
  *@@ YwgtDragOver:
  *      implementation for DM_DRAGOVER in fnwpTrayWidget.
  *
@@ -1914,6 +1989,16 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_COMMAND:
             mrc = YwgtCommand(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_PRESPARAMCHANGED:
+         *
+         */
+
+        case WM_PRESPARAMCHANGED:
+            // this gets sent before this is set!
+            YwgtPresParamChanged(hwnd, (ULONG)mp1);
         break;
 
         /*

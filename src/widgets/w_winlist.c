@@ -555,11 +555,11 @@ STATIC VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cle
     pxstrInit(pstrSetup, 100);
 
     pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
-            pSetup->lcolBackground);
+                 pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
-            pSetup->lcolForeground);
+                 pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)

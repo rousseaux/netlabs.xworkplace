@@ -2060,7 +2060,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     psfv->fRemoveSourceEmphasis = FALSE;
                 }
 
-                mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                // mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                fCallDefault = TRUE;        // V1.0.1 (2002-12-15) [umoeller]
             break;
 
             /*

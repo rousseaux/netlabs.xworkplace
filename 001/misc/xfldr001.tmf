@@ -347,11 +347,12 @@ Do you wish to ignore this error and continue removing fonts?
 ; the following items are new with V0.9.9
 ;
 
-<--XFL0208-->: &xwp;'s extended file associations are now enabled.
-
-Note: If you have not configured the &xwp; file types yet, all your present WPS associations are currently disabled. Go to the "Workplace Shell" object, where you will find a new "File types" page, to set up file types for your existing associations.
-
-You can always disable the extended file associations again to get the old WPS mechanism back.
+; 208 removed with V1.0.1 (2002-12-15) [umoeller]
+;<--XFL0208-->: &xwp;'s extended file associations are now enabled.
+;
+;Note: If you have not configured the &xwp; file types yet, all your present WPS associations are currently disabled. Go to the "Workplace Shell" object, where you will find a new "File types" page, to set up file types for your existing associations.
+;
+;You can always disable the extended file associations again to get the old WPS mechanism back.
 
 <--XFL0209-->: The file type %1 was not found in the OS2.INI file.
 
@@ -417,8 +418,15 @@ Do you wish to remove this widget from the &xcenter;'s widget list?
 ;
 ; the following items are new with V0.9.16
 ;
-
+;
+; 223 changed with V1.0.1 (2002-12-15) [umoeller]
+;
 <--XFL0223-->: The "Turbo folders" feature has been enabled. For safety reasons, this setting will not take effect until you restart the Desktop.
+
+Note: If you have not configured the &xwp; file types yet, all your present WPS associations are currently disabled. Go to the "Workplace Shell" object, where you will find a new "File types" page, to set up file types for your existing associations.
+
+You can always disable turbo folders again to get the old WPS mechanism back.
+
 <--XFL0224-->: The "Turbo folders" feature has been disabled. For safety reasons, this setting will not take effect until you restart the Desktop.
 <--XFL0225-->: The selected objects cannot be deleted because the &xwp; trash can does not exist. Do you wish to recreate the trash can object on the Desktop?
 

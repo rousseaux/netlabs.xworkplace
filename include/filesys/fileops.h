@@ -70,11 +70,12 @@
 
         VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI);
 
-        APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,
+        APIRET fopsExpandObjectFlat(XWPObjList *pllObjects,
                                     WPObject *pObject,
                                     BOOL fFoldersOnly,
                                     PULONG pulObjectCount,
                                     PULONG pulDormantFilesCount);
+
     #endif
 
     /********************************************************************

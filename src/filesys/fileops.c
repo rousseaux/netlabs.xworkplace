@@ -510,15 +510,16 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
  *@@added V0.9.3 (2000-04-27) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
+ *@@changed V1.0.1 (2002-12-15) [umoeller]: now using XWPObjList, changed prototype
  */
 
-APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (plain WPObject* pointers)
-                            WPObject *pObject,     // in: object to start with
+APIRET fopsExpandObjectFlat(XWPObjList *pllObjects, // in: object list to append to
+                            WPObject *pObject,      // in: object to start with
                             BOOL fFoldersOnly,
-                            PULONG pulObjectCount, // out: objects count on list;
-                                                   // the ULONG must be set to 0 before calling this!
+                            PULONG pulObjectCount,  // out: objects count on list;
+                                                    // the ULONG must be set to 0 before calling this!
                             PULONG pulDormantFilesCount) // out: count of dormant files;
-                                                   // the ULONG must be set to 0 before calling this!
+                                                    // the ULONG must be set to 0 before calling this!
 {
     APIRET frc = NO_ERROR;
 
@@ -593,7 +594,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
     if (frc == NO_ERROR)
     {
         // _PmpfF(("appending %s", _wpQueryTitle(pObject) ));
-        lstAppendItem(pllObjects, pObject);
+        _Append(pllObjects, pObject);       // V1.0.1 (2002-12-15) [umoeller]
         if (pulObjectCount)
             (*pulObjectCount)++;
     }

@@ -767,28 +767,32 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
  *      by clsWpsClasses2Cnr.
  *
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
+ *@@changed V1.0.1 (2002-12-15) [pr]: prevent null pointer trap @@fixes 243
  */
 
 VOID clsCleanupWpsClasses(PWPSCLASSESINFO pwpsci) // in: struct returned by clsWpsClasses2Cnr
 {
-    PLISTNODE pNode = lstQueryFirstNode(pwpsci->pllClassList);
-    PWPSLISTITEM pItem;
-
-    while (pNode)
+    if (pwpsci)
     {
-        pItem = pNode->pItemData;
-        if (pItem->pszReplacedWithClasses)
-            free(pItem->pszReplacedWithClasses);
-        if (pItem->pszReplacesClass)
-            free(pItem->pszReplacesClass);
+        PLISTNODE pNode = lstQueryFirstNode(pwpsci->pllClassList);
+        PWPSLISTITEM pItem;
 
-        pNode = pNode->pNext;
+        while (pNode)
+        {
+            pItem = pNode->pItemData;
+            if (pItem->pszReplacedWithClasses)
+                free(pItem->pszReplacedWithClasses);
+            if (pItem->pszReplacesClass)
+                free(pItem->pszReplacesClass);
+
+            pNode = pNode->pNext;
+        }
+
+        lstFree(&pwpsci->pllClassList);
+
+        free(pwpsci->pObjClass);
+        free(pwpsci);
     }
-
-    lstFree(&pwpsci->pllClassList);
-
-    free(pwpsci->pObjClass);
-    free(pwpsci);
 }
 
 /* ******************************************************************
