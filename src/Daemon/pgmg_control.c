@@ -195,12 +195,12 @@ BOOL pgmcCreateMainControlWnd(VOID)
             G_ptlPgmgClientSize.x = swpPager.cx;
             G_ptlPgmgClientSize.y = swpPager.cy;
 
-            G_ptlEachDesktop.x = (    G_ptlPgmgClientSize.x
+            G_szlEachDesktopInClient.x = (    G_ptlPgmgClientSize.x
                                     - pptlMaxDesktops->x + 1
                                  )
                                  / pptlMaxDesktops->x;
 
-            G_ptlEachDesktop.y = (    G_ptlPgmgClientSize.y
+            G_szlEachDesktopInClient.y = (    G_ptlPgmgClientSize.y
                                     - pptlMaxDesktops->y + 1
                                  )
                                  / pptlMaxDesktops->y;
@@ -371,10 +371,10 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
     PSIZEL          pszlClient = &pClientData->szlClient;
 
-    G_ptlEachDesktop.x = (pszlClient->cx - pptlMaxDesktops->x + 1)
-                         / pptlMaxDesktops->x;
-    G_ptlEachDesktop.y = (pszlClient->cy - pptlMaxDesktops->y + 1)
-                         / pptlMaxDesktops->y;
+    G_szlEachDesktopInClient.cx = (pszlClient->cx - pptlMaxDesktops->x + 1)
+                                   / pptlMaxDesktops->x;
+    G_szlEachDesktopInClient.cy = (pszlClient->cy - pptlMaxDesktops->y + 1)
+                                   / pptlMaxDesktops->y;
 
     // draw main box - all Desktops
     GpiSetColor(hpsMem, pPageMageConfig->lcNormal);
@@ -387,19 +387,19 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
     // paint "Current" Desktop
     GpiSetColor(hpsMem, pPageMageConfig->lcCurrent);
-    ptlDest.x = ( (float) G_ptlCurrPos.x / (float) G_pHookData->lCXScreen)
-                * ((float) G_ptlEachDesktop.x + 1)
+    ptlDest.x = ( (float) G_ptlCurrPos.x / (float) G_szlEachDesktopReal.cx)
+                * ((float) G_szlEachDesktopInClient.cx + 1)
                 + 1;
     ptlDest.y = (  (   (float) (pptlMaxDesktops->y - 1)
-                       * G_pHookData->lCYScreen
+                       * G_szlEachDesktopReal.cy
                        - G_ptlCurrPos.y
                    )
-                  / (float) G_pHookData->lCYScreen)
-                  * ((float) G_ptlEachDesktop.y + 1)
+                  / (float) G_szlEachDesktopReal.cy)
+                  * ((float) G_szlEachDesktopInClient.cy + 1)
                   + 2;
     GpiMove(hpsMem, &ptlDest);
-    ptlDest.x += G_ptlEachDesktop.x - 1;
-    ptlDest.y += G_ptlEachDesktop.y - 1;
+    ptlDest.x += G_szlEachDesktopInClient.cx - 1;
+    ptlDest.y += G_szlEachDesktopInClient.cy - 1;
     GpiBox(hpsMem, DRO_FILL, &ptlDest, (LONG) 0, (LONG) 0);
 
     // draw vertical lines
@@ -408,10 +408,10 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
          usIdx < pptlMaxDesktops->x - 1;
          usIdx++)
     {
-        ptlDest.x = (G_ptlEachDesktop.x + 1) * (usIdx + 1);
+        ptlDest.x = (G_szlEachDesktopInClient.cx + 1) * (usIdx + 1);
         ptlDest.y = 0;
         GpiMove(hpsMem, &ptlDest);
-        ptlDest.x = (G_ptlEachDesktop.x + 1) * (usIdx + 1);
+        ptlDest.x = (G_szlEachDesktopInClient.cx + 1) * (usIdx + 1);
         ptlDest.y = pszlClient->cy;
         GpiLine(hpsMem, &ptlDest);
     }
@@ -424,12 +424,12 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
         ptlDest.x = 0;
         ptlDest.y = pszlClient->cy
                     - (usIdx + 1)
-                    * (G_ptlEachDesktop.y + 1);
+                    * (G_szlEachDesktopInClient.cy + 1);
         GpiMove(hpsMem, &ptlDest);
         ptlDest.x = pszlClient->cx;
         ptlDest.y = pszlClient->cy
                     - (usIdx + 1)
-                    * (G_ptlEachDesktop.y + 1);
+                    * (G_szlEachDesktopInClient.cy + 1);
         GpiLine(hpsMem, &ptlDest);
     }
 
@@ -452,10 +452,10 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
         usIdx = 0;
         fScale_X = (float) ( pptlMaxDesktops->x
-                             * G_pHookData->lCXScreen
+                             * G_szlEachDesktopReal.cx
                            ) / pszlClient->cx;
         fScale_Y = (float) ( pptlMaxDesktops->y
-                             * G_pHookData->lCYScreen
+                             * G_szlEachDesktopReal.cy
                            ) / pszlClient->cy;
 
         hwndLocalActive = WinQueryActiveWindow(HWND_DESKTOP);
@@ -520,14 +520,14 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
                             ptlBegin[usPaintCount].x = (swpBox.x + G_ptlCurrPos.x)
                                                        / fScale_X;
                             ptlBegin[usPaintCount].y = (  (pptlMaxDesktops->y - 1)
-                                                         * G_pHookData->lCYScreen
+                                                         * G_szlEachDesktopReal.cy
                                                          - G_ptlCurrPos.y + swpBox.y
                                                         )
                                                         / fScale_Y;
                             ptlFin[usPaintCount].x = (swpBox.x + swpBox.cx + G_ptlCurrPos.x)
                                                       / fScale_X - 1;
                             ptlFin[usPaintCount].y = (    (pptlMaxDesktops->y - 1)
-                                                          * G_pHookData->lCYScreen
+                                                          * G_szlEachDesktopReal.cy
                                                           - G_ptlCurrPos.y + swpBox.y + swpBox.cy
                                                        )
                                                        / fScale_Y - 1;
@@ -665,20 +665,20 @@ VOID TrackWithinPager(HWND hwnd,
         ti.cyGrid = 1;
         ti.cxKeyboard = 1;
         ti.cyKeyboard = 1;
-        fScale_X = (float) (pptlMaxDesktops->x * G_pHookData->lCXScreen)
+        fScale_X = (float) (pptlMaxDesktops->x * G_szlEachDesktopReal.cx)
                            / pszlClient->cx;
-        fScale_Y = (float) (pptlMaxDesktops->y * G_pHookData->lCYScreen)
+        fScale_Y = (float) (pptlMaxDesktops->y * G_szlEachDesktopReal.cy)
                            / pszlClient->cy;
         ti.rclTrack.xLeft = (swpTracked.x + G_ptlCurrPos.x) / fScale_X;
         ti.rclTrack.yBottom = ( (pptlMaxDesktops->y - 1)
-                              * G_pHookData->lCYScreen
+                              * G_szlEachDesktopReal.cy
                               - G_ptlCurrPos.y + swpTracked.y
                               )
                               / fScale_Y;
         ti.rclTrack.xRight = (swpTracked.x + swpTracked.cx + G_ptlCurrPos.x)
                              / fScale_X - 1;
         ti.rclTrack.yTop = (    (pptlMaxDesktops->y - 1)
-                                * G_pHookData->lCYScreen
+                                * G_szlEachDesktopReal.cy
                                 - G_ptlCurrPos.y
                                 + swpTracked.y
                                 + swpTracked.cy
@@ -700,7 +700,7 @@ VOID TrackWithinPager(HWND hwnd,
             swpTracked.x = (ti.rclTrack.xLeft * fScale_X) - G_ptlCurrPos.x;
             swpTracked.y = (ti.rclTrack.yBottom * fScale_Y)
                            -  (   (pptlMaxDesktops->y - 1)
-                                  * G_pHookData->lCYScreen
+                                  * G_szlEachDesktopReal.cy
                                   - G_ptlCurrPos.y
                               );
             swpTracked.x -= swpTracked.x % 16 +
@@ -736,10 +736,10 @@ VOID ClientCreate(HWND hwnd,
     PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
     G_ptlCurrPos.x = (pPageMageConfig->ptlStartDesktop.x - 1)
-                      * G_pHookData->lCXScreen;
+                      * G_szlEachDesktopReal.cx;
     G_ptlCurrPos.y = (pptlMaxDesktops->y
                       - pPageMageConfig->ptlStartDesktop.y
-                     ) * G_pHookData->lCYScreen;
+                     ) * G_szlEachDesktopReal.cy;
 
     WinPostMsg(hwnd,
                PGMG_ZAPPO,
@@ -880,10 +880,11 @@ VOID ClientSize(HWND hwnd,
 
         pClientData->bmihMem.cx = pszlClient->cx;
         pClientData->bmihMem.cy = pszlClient->cy;
-        G_ptlEachDesktop.x = (pszlClient->cx - pptlMaxDesktops->x + 1)
-                             / pptlMaxDesktops->x;
-        G_ptlEachDesktop.y = (pszlClient->cy - pptlMaxDesktops->y + 1)
-                             / pptlMaxDesktops->y;
+
+        G_szlEachDesktopInClient.cx = (pszlClient->cx - pptlMaxDesktops->x + 1)
+                                       / pptlMaxDesktops->x;
+        G_szlEachDesktopInClient.cy = (pszlClient->cy - pptlMaxDesktops->y + 1)
+                                       / pptlMaxDesktops->y;
 
         if (pClientData->hbmClient == NULLHANDLE)
         {

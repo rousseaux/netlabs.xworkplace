@@ -106,11 +106,6 @@ NetscDDE:
 PageMage:
     -- I'm using xworkplace 0.95 and find that the os/2 enhanced
        editor, EPM, acts as a sticky app in PageMage
-    -- Odin windows
-    1)  Full Screen Apps are not recognized properly.
-        Open a full screen app (or make one full screen) and try to
-        drag it across (won't work!) or switch screen and go back (won't show
-        the FS app!)
 
 OS/2 Kernel:
     Set Path -> Browse will not work (Standard file dialog doesn't react when

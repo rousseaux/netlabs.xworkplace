@@ -186,9 +186,9 @@ BOOL pgmmMoveIt(LONG lXDelta,
 
                         // V0.9.7 (2001-01-18) [dk]: check if visible
                         /* BOOL bVisible
-                            = !(    ((pswpNewThis->x + bx) >= G_pHookData->lCXScreen)
+                            = !(    ((pswpNewThis->x + bx) >= G_szlEachDesktopReal.cx)
                                  || ((pswpNewThis->x + pswpNewThis->cx - bx) <= 0)
-                                 || ((pswpNewThis->y + by) >= G_pHookData->lCYScreen)
+                                 || ((pswpNewThis->y + by) >= G_szlEachDesktopReal.cy)
                                  || ((pswpNewThis->y + pswpNewThis->cy - by) <= 0)
                                );
 
@@ -227,10 +227,10 @@ BOOL pgmmMoveIt(LONG lXDelta,
 
                             // if (    // is desktop left in window?
                                     (pswpNewThis->x < 0)
-                                 && (pswpNewThis->x + pswpNewThis->cx > G_pHookData->lCXScreen)
+                                 && (pswpNewThis->x + pswpNewThis->cx > G_szlEachDesktopReal.cx)
                                     // and desktop bottom in window?
                                  && (pswpNewThis->y < 0)
-                                 && (pswpNewThis->y + pswpNewThis->cy > G_pHookData->lCYScreen)
+                                 && (pswpNewThis->y + pswpNewThis->cy > G_szlEachDesktopReal.cy)
                                )
 
                             // check if the new center is on the current desktop
@@ -239,9 +239,9 @@ BOOL pgmmMoveIt(LONG lXDelta,
                             LONG lCenterY = (pswpNewThis->y + pswpNewThis->cy) / 2L;
 
                             if (    (lCenterX > 0L)
-                                 && (lCenterX < G_pHookData->lCXScreen)
+                                 && (lCenterX < G_szlEachDesktopReal.cx)
                                  && (lCenterY > 0L)
-                                 && (lCenterY < G_pHookData->lCYScreen)
+                                 && (lCenterY < G_szlEachDesktopReal.cy)
                                )
                             {
                                 // yes:
@@ -330,15 +330,15 @@ BOOL pgmmZMoveIt(LONG lXDelta,
                 LONG lYDelta)
 {
     BOOL        bReturn = FALSE;
-    LONG        lRightEdge;
-    LONG        lBottomEdge;
-    LONG        lNewPosX;
-    LONG        lNewPosY;
 
-    lRightEdge = G_pHookData->PageMageConfig.ptlMaxDesktops.x * G_pHookData->lCXScreen;
-    lBottomEdge = G_pHookData->PageMageConfig.ptlMaxDesktops.y * G_pHookData->lCYScreen;
-    lNewPosX = G_ptlCurrPos.x - lXDelta;
-    lNewPosY = G_ptlCurrPos.y + lYDelta;
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+    PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
+    LONG        lRightEdge = pptlMaxDesktops->x * G_szlEachDesktopReal.cx;
+    LONG        lBottomEdge = pptlMaxDesktops->y * G_szlEachDesktopReal.cy;
+    LONG        lNewPosX = G_ptlCurrPos.x - lXDelta;
+    LONG        lNewPosY = G_ptlCurrPos.y + lYDelta;
 
     // determine if deltas need adjusting due to wraparound or hitting edges
     if (lXDelta != 0)
@@ -347,8 +347,8 @@ BOOL pgmmZMoveIt(LONG lXDelta,
         {
             if (G_ptlCurrPos.x == 0)
             {
-                if (G_pHookData->PageMageConfig.bWrapAround)
-                    lXDelta = - (LONG)((G_pHookData->PageMageConfig.ptlMaxDesktops.x - 1) * G_pHookData->lCXScreen);
+                if (pPageMageConfig->bWrapAround)
+                    lXDelta = - (LONG)((pptlMaxDesktops->x - 1) * G_szlEachDesktopReal.cx);
                 else
                     lXDelta = 0;
             }
@@ -357,17 +357,17 @@ BOOL pgmmZMoveIt(LONG lXDelta,
         }
         else
         {
-            if ((lNewPosX + G_pHookData->lCXScreen) >= lRightEdge)
+            if ((lNewPosX + G_szlEachDesktopReal.cx) >= lRightEdge)
             {
-                if ((G_ptlCurrPos.x + G_pHookData->lCXScreen) == lRightEdge)
+                if ((G_ptlCurrPos.x + G_szlEachDesktopReal.cx) == lRightEdge)
                 {
-                    if (G_pHookData->PageMageConfig.bWrapAround)
-                        lXDelta = (G_pHookData->PageMageConfig.ptlMaxDesktops.x - 1) * G_pHookData->lCXScreen;
+                    if (pPageMageConfig->bWrapAround)
+                        lXDelta = (pptlMaxDesktops->x - 1) * G_szlEachDesktopReal.cx;
                     else
                         lXDelta = 0;
                 }
                 else
-                    lXDelta = G_ptlCurrPos.x - lRightEdge + G_pHookData->lCXScreen;
+                    lXDelta = G_ptlCurrPos.x - lRightEdge + G_szlEachDesktopReal.cx;
             }
         }
     }
@@ -378,8 +378,8 @@ BOOL pgmmZMoveIt(LONG lXDelta,
         {
             if (G_ptlCurrPos.y == 0)
             {
-                if (G_pHookData->PageMageConfig.bWrapAround)
-                    lYDelta = (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1) * G_pHookData->lCYScreen;
+                if (pPageMageConfig->bWrapAround)
+                    lYDelta = (pptlMaxDesktops->y - 1) * G_szlEachDesktopReal.cy;
                 else
                     lYDelta = 0;
             } else
@@ -387,16 +387,16 @@ BOOL pgmmZMoveIt(LONG lXDelta,
         }
         else
         {
-            if ((lNewPosY + G_pHookData->lCYScreen) >= lBottomEdge)
+            if ((lNewPosY + G_szlEachDesktopReal.cy) >= lBottomEdge)
             {
-                if ((G_ptlCurrPos.y + G_pHookData->lCYScreen) == lBottomEdge)
+                if ((G_ptlCurrPos.y + G_szlEachDesktopReal.cy) == lBottomEdge)
                 {
-                    if (G_pHookData->PageMageConfig.bWrapAround)
-                        lYDelta = - (LONG)((G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1) * G_pHookData->lCYScreen);
+                    if (pPageMageConfig->bWrapAround)
+                        lYDelta = - (LONG)((pptlMaxDesktops->y - 1) * G_szlEachDesktopReal.cy);
                     else
                         lYDelta = 0;
                 } else
-                    lYDelta = lBottomEdge - G_pHookData->lCYScreen - G_ptlCurrPos.y;
+                    lYDelta = lBottomEdge - G_szlEachDesktopReal.cy - G_ptlCurrPos.y;
             }
         }
     }
@@ -444,6 +444,10 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
     TRY_LOUD(excpt1)
     {
+        // shortcuts to global pagemage config
+        PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+        PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
         switch (msg)
         {
             /*
@@ -467,16 +471,16 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 if (msg == PGOM_CLICK2ACTIVATE)
                 {
                     // set lDeltas to which desktop we want
-                    lDeltaX = lX / (G_ptlEachDesktop.x + 1);
-                    lDeltaY = G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1 - lY
-                              / (G_ptlEachDesktop.y + 1);
-                    lDeltaX *= G_pHookData->lCXScreen;
-                    lDeltaY *= G_pHookData->lCYScreen;
+                    lDeltaX = lX / (G_szlEachDesktopInClient.cx + 1);
+                    lDeltaY = pptlMaxDesktops->y - 1 - lY
+                              / (G_szlEachDesktopInClient.cy + 1);
+                    lDeltaX *= G_szlEachDesktopReal.cx;
+                    lDeltaY *= G_szlEachDesktopReal.cy;
                     lDeltaX = G_ptlCurrPos.x - lDeltaX;
                     lDeltaY -= G_ptlCurrPos.y;
                 }
 
-                if (G_pHookData->PageMageConfig.fClick2Activate)
+                if (pPageMageConfig->fClick2Activate)
                 {
                     HWND hwndActive = pgmwGetWindowFromClientPoint(lX, lY);
 
@@ -512,16 +516,16 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 switch ((ULONG)mp1)
                 {
                     case 0x63:                              // left
-                        lDeltaX = G_pHookData->lCXScreen;
+                        lDeltaX = G_szlEachDesktopReal.cx;
                         break;
                     case 0x64:                              // right
-                        lDeltaX = -G_pHookData->lCXScreen;
+                        lDeltaX = -G_szlEachDesktopReal.cx;
                         break;
                     case 0x61:                              // up
-                        lDeltaY = -G_pHookData->lCYScreen;
+                        lDeltaY = -G_szlEachDesktopReal.cy;
                         break;
                     case 0x66:                              // down
-                        lDeltaY = G_pHookData->lCYScreen;
+                        lDeltaY = G_szlEachDesktopReal.cy;
                         break;
                 }
                 break;
@@ -563,22 +567,22 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     LONG lAbsX = swpActive.x + (swpActive.cx / 2);
                     LONG lAbsY = swpActive.y + (swpActive.cy / 2);
                     lAbsX += G_ptlCurrPos.x;
-                    lAbsY = G_ptlCurrPos.y + G_pHookData->lCYScreen - lAbsY;
+                    lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
 
                     // if we intend to move into a valid window
                     if (    (lAbsX >= 0)
-                         && (lAbsX <= (G_pHookData->PageMageConfig.ptlMaxDesktops.x
-                                       * G_pHookData->lCXScreen))
+                         && (lAbsX <= (pptlMaxDesktops->x
+                                       * G_szlEachDesktopReal.cx))
                          && (lAbsY >= 0)
-                         && (lAbsY <= (G_pHookData->PageMageConfig.ptlMaxDesktops.y
-                                       * G_pHookData->lCYScreen))
+                         && (lAbsY <= (pptlMaxDesktops->y
+                                       * G_szlEachDesktopReal.cy))
                        )
                     {
                         // put abs coord of desktop in lAbs
-                        lAbsX /= G_pHookData->lCXScreen;
-                        lAbsY /= G_pHookData->lCYScreen;
-                        lAbsX *= G_pHookData->lCXScreen;
-                        lAbsY *= G_pHookData->lCYScreen;
+                        lAbsX /= G_szlEachDesktopReal.cx;
+                        lAbsY /= G_szlEachDesktopReal.cy;
+                        lAbsX *= G_szlEachDesktopReal.cx;
+                        lAbsY *= G_szlEachDesktopReal.cy;
                         lDeltaX = G_ptlCurrPos.x - lAbsX;
                         lDeltaY = lAbsY - G_ptlCurrPos.y;
                     }
@@ -599,7 +603,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             if (bReturn)
             {
                 // success: flashing enabled?
-                if (G_pHookData->PageMageConfig.fFlash)
+                if (pPageMageConfig->fFlash)
                 {
                     WinSetWindowPos(G_pHookData->hwndPageMageFrame,
                                     HWND_TOP,
@@ -678,6 +682,10 @@ VOID _Optlink fntMoveQueueThread(PTHREADINFO pti)
 
 VOID pgmmRecoverAllWindows(VOID)
 {
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+    PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
     HENUM       henum;
     HWND        hwndTemp[MAX_WINDOWS];
     SWP         swpTemp[MAX_WINDOWS];
@@ -723,20 +731,20 @@ VOID pgmmRecoverAllWindows(VOID)
                 swpTemp[usIdx2].fl |= SWP_HIDE;
 
             swpTemp[usIdx2].x = (   (swpTemp[usIdx2].x)
-                                  + (   G_pHookData->PageMageConfig.ptlMaxDesktops.x
-                                        * G_pHookData->lCXScreen
+                                  + (   pptlMaxDesktops->x
+                                        * G_szlEachDesktopReal.cx
                                     )
-                                ) % G_pHookData->lCXScreen;
+                                ) % G_szlEachDesktopReal.cx;
             swpTemp[usIdx2].y = (   (swpTemp[usIdx2].y)
-                                  + (   G_pHookData->PageMageConfig.ptlMaxDesktops.y
-                                        * G_pHookData->lCYScreen
+                                  + (   pptlMaxDesktops->y
+                                        * G_szlEachDesktopReal.cy
                                     )
-                                ) % G_pHookData->lCYScreen;
+                                ) % G_szlEachDesktopReal.cy;
 
-            if (swpTemp[usIdx2].x > G_pHookData->lCXScreen - 5)
-                swpTemp[usIdx2].x = swpTemp[usIdx2].x - G_pHookData->lCXScreen;
-            if (swpTemp[usIdx2].y > G_pHookData->lCYScreen - 5)
-                swpTemp[usIdx2].y = swpTemp[usIdx2].y - G_pHookData->lCYScreen;
+            if (swpTemp[usIdx2].x > G_szlEachDesktopReal.cx - 5)
+                swpTemp[usIdx2].x = swpTemp[usIdx2].x - G_szlEachDesktopReal.cx;
+            if (swpTemp[usIdx2].y > G_szlEachDesktopReal.cy - 5)
+                swpTemp[usIdx2].y = swpTemp[usIdx2].y - G_szlEachDesktopReal.cy;
         }
 
         swpTemp[usIdx2].hwnd = hwndTemp[usIdx2];

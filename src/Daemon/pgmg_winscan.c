@@ -231,6 +231,10 @@ VOID pgmwWindowListAdd(HWND hwnd)
             }
 
             pgmwGetWinInfo(hwnd, &G_MainWindowList[usIdx]);
+            _Pmpf((__FUNCTION__ ": got new window %s",
+                        G_MainWindowList[usIdx].szClassName));
+            if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
+            _Pmpf(("----> warning: has RESCAN set."));
         } while (FALSE);
 
         /* if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
@@ -389,15 +393,18 @@ BOOL pgmwWindowListRescan(VOID)
 BOOL pgmwStickyCheck(// CHAR *pszWindowName,
                      CHAR *pszSwitchName)
 {
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+
     USHORT  usIdx;
     BOOL    bFound = FALSE;
 
     for (usIdx = 0;
-         usIdx < G_pHookData->PageMageConfig.usStickyTextNum;
+         usIdx < pPageMageConfig->usStickyTextNum;
          usIdx++)
     {
         if (strstr(pszSwitchName,
-                   G_pHookData->PageMageConfig.aszSticky[usIdx]))
+                   pPageMageConfig->aszSticky[usIdx]))
         {
             bFound = TRUE;
             break;
@@ -415,15 +422,18 @@ BOOL pgmwStickyCheck(// CHAR *pszWindowName,
 
 BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
 {
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+
     USHORT  usIdx;
     BOOL    bFound;
 
     bFound = FALSE;
     for (usIdx = 0;
-         usIdx < G_pHookData->PageMageConfig.usSticky2Num;
+         usIdx < pPageMageConfig->usSticky2Num;
          usIdx++)
     {
-        if (G_pHookData->PageMageConfig.hwndSticky2[usIdx] == hwndTest)
+        if (pPageMageConfig->hwndSticky2[usIdx] == hwndTest)
         {
             bFound = TRUE;
             break;
@@ -444,6 +454,10 @@ BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
 HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the PageMage client
                                   ULONG ulY)  // in: y coordinate within the PageMage client
 {
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+    PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
     POINTL  ptlCalc;
     float   flCalcX, flCalcY;
     HENUM   henumPoint;
@@ -451,16 +465,16 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
     SWP     swpPoint;
     HWND    hwndResult = NULLHANDLE;
 
-    flCalcX = (float) ulX / (G_ptlEachDesktop.x + 1);
-    flCalcY = (float) ulY / (G_ptlEachDesktop.y + 1);
+    flCalcX = (float) ulX / (G_szlEachDesktopInClient.cx + 1);
+    flCalcY = (float) ulY / (G_szlEachDesktopInClient.cy + 1);
 
-    flCalcX = (float) flCalcX * G_pHookData->lCXScreen;
-    flCalcY = (float) flCalcY * G_pHookData->lCYScreen;
+    flCalcX = (float) flCalcX * G_szlEachDesktopReal.cx;
+    flCalcY = (float) flCalcY * G_szlEachDesktopReal.cy;
 
     ptlCalc.x = ((int) flCalcX) - G_ptlCurrPos.x;
     ptlCalc.y = ((int) flCalcY)
-                - (   (G_pHookData->PageMageConfig.ptlMaxDesktops.y - 1)
-                       * G_pHookData->lCYScreen
+                - (   (pptlMaxDesktops->y - 1)
+                       * G_szlEachDesktopReal.cy
                     - G_ptlCurrPos.y
                   );
 

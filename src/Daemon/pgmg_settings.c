@@ -48,65 +48,77 @@
 
 VOID pgmsSetDefaults(VOID)
 {
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+    PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
+    // first, set the fake desktop size... we no longer move windows
+    // by the size of the PM screen (e.g. 1024x768), but instead we
+    // use eight extra pixels, so we can get rid of the borders of
+    // maximized windows.
+
+    G_szlEachDesktopReal.cx = G_pHookData->lCXScreen + 8;
+    G_szlEachDesktopReal.cy = G_pHookData->lCYScreen + 8;
+
     _Pmpf(("pgmsSetDefaults"));
     // Misc 1
-    G_pHookData->PageMageConfig.ptlMaxDesktops.x = 3;
-    G_pHookData->PageMageConfig.ptlMaxDesktops.y = 2;
-    G_pHookData->PageMageConfig.ptlStartDesktop.x = 1;
-    G_pHookData->PageMageConfig.ptlStartDesktop.y = 2;
-    // G_pHookData->PageMageConfig.iEdgeBoundary = 5;
-    // G_pHookData->PageMageConfig.ulSleepTime = 100;
-    // G_pHookData->PageMageConfig.bRepositionMouse = TRUE;
-    G_pHookData->PageMageConfig.fClick2Activate = TRUE;
+    pptlMaxDesktops->x = 3;
+    pptlMaxDesktops->y = 2;
+    pPageMageConfig->ptlStartDesktop.x = 1;
+    pPageMageConfig->ptlStartDesktop.y = 2;
+    // pPageMageConfig->iEdgeBoundary = 5;
+    // pPageMageConfig->ulSleepTime = 100;
+    // pPageMageConfig->bRepositionMouse = TRUE;
+    pPageMageConfig->fClick2Activate = TRUE;
 
     // Misc 2
-    // G_pHookData->PageMageConfig._bHoldWPS = TRUE;
-    // G_pHookData->PageMageConfig.lPriority = 0;
-    G_pHookData->PageMageConfig.fRecoverOnShutdown = TRUE;
-    // G_pHookData->PageMageConfig.bSwitchToFocus = FALSE;
+    // pPageMageConfig->_bHoldWPS = TRUE;
+    // pPageMageConfig->lPriority = 0;
+    pPageMageConfig->fRecoverOnShutdown = TRUE;
+    // pPageMageConfig->bSwitchToFocus = FALSE;
 
     // Display
-    G_pHookData->PageMageConfig.fShowTitlebar = TRUE;
-    // G_pHookData->PageMageConfig.fStartMinimized = FALSE; // ###
-    G_pHookData->PageMageConfig.fFlash = FALSE;
-    G_pHookData->PageMageConfig.ulFlashDelay = 2000;
-    // G_pHookData->PageMageConfig.bFloatToTop = FALSE;
-    G_pHookData->PageMageConfig.fMirrorWindows = TRUE;
-    G_pHookData->PageMageConfig.fShowWindowText = TRUE;
-    G_pHookData->PageMageConfig.fPreserveProportions = TRUE;
+    pPageMageConfig->fShowTitlebar = TRUE;
+    // pPageMageConfig->fStartMinimized = FALSE; // ###
+    pPageMageConfig->fFlash = FALSE;
+    pPageMageConfig->ulFlashDelay = 2000;
+    // pPageMageConfig->bFloatToTop = FALSE;
+    pPageMageConfig->fMirrorWindows = TRUE;
+    pPageMageConfig->fShowWindowText = TRUE;
+    pPageMageConfig->fPreserveProportions = TRUE;
 
     // Sticky
-    memset(G_pHookData->PageMageConfig.aszSticky,
+    memset(pPageMageConfig->aszSticky,
            0,
-           sizeof(G_pHookData->PageMageConfig.aszSticky));
-    G_pHookData->PageMageConfig.usStickyTextNum = 0;
-    memset(G_pHookData->PageMageConfig.hwndSticky2,
+           sizeof(pPageMageConfig->aszSticky));
+    pPageMageConfig->usStickyTextNum = 0;
+    memset(pPageMageConfig->hwndSticky2,
            0,
-           sizeof(G_pHookData->PageMageConfig.hwndSticky2));
-    G_pHookData->PageMageConfig.usSticky2Num = 0;
+           sizeof(pPageMageConfig->hwndSticky2));
+    pPageMageConfig->usSticky2Num = 0;
 
     // Colors 1
-    G_pHookData->PageMageConfig.lcNormal = RGBCOL_DARKBLUE;
-    G_pHookData->PageMageConfig.lcCurrent = RGBCOL_BLUE;
-    G_pHookData->PageMageConfig.lcDivider = RGBCOL_GRAY;
+    pPageMageConfig->lcNormal = RGBCOL_DARKBLUE;
+    pPageMageConfig->lcCurrent = RGBCOL_BLUE;
+    pPageMageConfig->lcDivider = RGBCOL_GRAY;
 
-    G_pHookData->PageMageConfig.lcNormalApp = RGBCOL_WHITE;
-    G_pHookData->PageMageConfig.lcCurrentApp = RGBCOL_GREEN;
-    G_pHookData->PageMageConfig.lcAppBorder = RGBCOL_BLACK;
+    pPageMageConfig->lcNormalApp = RGBCOL_WHITE;
+    pPageMageConfig->lcCurrentApp = RGBCOL_GREEN;
+    pPageMageConfig->lcAppBorder = RGBCOL_BLACK;
 
-    G_pHookData->PageMageConfig.lcTxtNormalApp = RGBCOL_BLACK;
-    G_pHookData->PageMageConfig.lcTxtCurrentApp = RGBCOL_BLACK;
+    pPageMageConfig->lcTxtNormalApp = RGBCOL_BLACK;
+    pPageMageConfig->lcTxtCurrentApp = RGBCOL_BLACK;
 
     // Panning
-    G_pHookData->PageMageConfig.bPanAtTop
-      = G_pHookData->PageMageConfig.bPanAtBottom
-      = G_pHookData->PageMageConfig.bPanAtLeft
-      = G_pHookData->PageMageConfig.bPanAtRight = TRUE;
-    G_pHookData->PageMageConfig.bWrapAround = FALSE;
+    pPageMageConfig->bPanAtTop
+      = pPageMageConfig->bPanAtBottom
+      = pPageMageConfig->bPanAtLeft
+      = pPageMageConfig->bPanAtRight = TRUE;
+    pPageMageConfig->bWrapAround = FALSE;
 
     // Keyboard
-    G_pHookData->PageMageConfig.fEnableArrowHotkeys = FALSE;
-    G_pHookData->PageMageConfig.ulKeyShift = KC_CTRL | KC_ALT;
+    pPageMageConfig->fEnableArrowHotkeys = FALSE;
+    pPageMageConfig->ulKeyShift = KC_CTRL | KC_ALT;
 
     // PageMage window position
     G_swpPgmgFrame.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
@@ -135,6 +147,10 @@ VOID pgmsSetDefaults(VOID)
 
 BOOL pgmsLoadSettings(ULONG flConfig)
 {
+    // shortcuts to global pagemage config
+    PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+    PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
     ULONG   cb;
     _Pmpf(("pgmsLoadSettings"));
 
@@ -142,15 +158,14 @@ BOOL pgmsLoadSettings(ULONG flConfig)
     if (PrfQueryProfileData(HINI_USER,
                             INIAPP_XWPHOOK,
                             INIKEY_HOOK_PGMGCONFIG,
-                            &G_pHookData->PageMageConfig,
+                            pPageMageConfig,
                             &cb))
     {
         // success:
 
-        // set start desktop to upper left V0.9.6 (2000-11-06) [umoeller]
-        G_pHookData->PageMageConfig.ptlStartDesktop.x = 1;
-        G_pHookData->PageMageConfig.ptlStartDesktop.y
-            = G_pHookData->PageMageConfig.ptlMaxDesktops.y;
+        // always set start desktop to upper left V0.9.6 (2000-11-06) [umoeller]
+        pPageMageConfig->ptlStartDesktop.x = 1;
+        pPageMageConfig->ptlStartDesktop.y = pptlMaxDesktops->y;
 
         if (    (G_pHookData->hwndPageMageClient)
              && (G_pHookData->hwndPageMageFrame)

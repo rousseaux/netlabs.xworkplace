@@ -880,6 +880,8 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
             {
                 if (    (strcmp(szClass, "#1") == 0)
                      || (strcmp(szClass, "wpFolder window") == 0)
+                     || (strcmp(szClass, "Win32FrameClass") == 0)
+                                // that's for Odin V0.9.7 (2001-01-18) [umoeller]
                    )
                 {
                     // window creation/destruction:

@@ -131,8 +131,8 @@
 
     extern HMTX         G_hmtxWindowList;
     extern POINTL       G_ptlCurrPos;
-    // extern POINTL       G_ptlPgmgClientSize;
-    extern POINTL       G_ptlEachDesktop;
+    extern SIZEL        G_szlEachDesktopReal;
+    extern SIZEL        G_szlEachDesktopInClient;
     extern BOOL         G_bConfigChanged;
     extern SWP          G_swpPgmgFrame;
     extern CHAR         G_szFacename[PGMG_TEXTLEN];
