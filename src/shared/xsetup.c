@@ -1621,6 +1621,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.2 (2000-03-19) [umoeller]: "Undo" and "Default" created duplicate records; fixed
  *@@changed V0.9.6 (2000-11-11) [umoeller]: removed extassocs warning
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed pagemage warning
+ *@@changed V0.9.7 (2001-01-22) [umoeller]: now enabling "object" page with hotkeys automatically
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1730,6 +1731,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_GLOBALHOTKEYS:
             hifEnableObjectHotkeys(ulExtra);
+            pGlobalSettings->AddObjectPage = ulExtra;
+                            // V0.9.7 (2001-01-22) [umoeller]
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
         break;
 

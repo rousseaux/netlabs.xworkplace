@@ -1,6 +1,6 @@
 Netlabs CVS README
 (W) Ulrich M”ller, November 12, 1999
-Last updated December 12, 2000, Ulrich M”ller
+Last updated January 22, 2001 by Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -20,34 +20,48 @@ Last updated December 12, 2000, Ulrich M”ller
     which allows several developers to work on the same source code
     at the same time.
 
-    Netlabs has set up a CVS server on which all the Netlabs projects
-    reside. The concept of a client/server CVS setup is that the
-    server maintains a "repository" with the entire source code,
-    including all changes that were ever made. Each developer then
-    creates a local copy of the sources on his hard disk. So each
-    developer can safely work on the local sources until he thinks
-    that everyone else should get the changes (once they're halfway
+    For those of you that have never dealt with anything like this...
+    just imagine a word processor document on a shared network
+    directory that several people work on at the same time. There
+    has to be some coordination of all the changes going on and
+    checks whether the changes conflict with each other.
+
+    CVS does exactly that, except that it can handle large directories
+    with many files of any type.
+
+    The concept of a client/server CVS setup is that the server
+    maintains a "repository" with the entire source code, including
+    all changes that were ever made. Each developer then creates a
+    local copy of the sources on his hard disk. So each developer
+    can safely work on the local sources until he thinks that
+    everyone else should get the changes (once they're halfway
     stable), and can then put the changes on the server, and all
     other developers can then update their local copy.
 
     While your local copy will always be at a certain code/revision
-    level, the server maintains all changes that were ever made.
-    You can, for example, even retrieve the sources as they were in
+    level (and only updated from the server if you request this),
+    the server maintains all changes that were ever made. You can,
+    for example, even retrieve the sources in the state were in in
     the middle of 1999, if you want.
 
-    Maybe the nicest thing about CVS is that it will merge code changes.
-    CVS has GNU "diff" built in so even if two people work on the
-    same source file, CVS in most cases can automatically keep the
-    changes in sync. See "Terminology" below.
+    Maybe the nicest thing about CVS is that with text files, it can
+    merge code changes. CVS has GNU "diff" built in so even if two
+    people work on the same source file, CVS in most cases can
+    automatically keep the changes in sync. See "Terminology" below.
+
+    Netlabs has set up a CVS server on which all the Netlabs projects
+    reside. This document should give you all the information about
+    how to access that repository.
 
 
 2. WHICH CVS VERSION TO USE
 ===========================
 
-    CVS is a Unix program that was ported to OS/2. There are several
-    CVS versions on Hobbes. I strongly recommend to use 1.10.6,
-    which is the most bug-free of them all. While 1.10 might still
-    work OK, 1.10.7 causes tons of problems. Do not use it.
+    CVS is a Unix program that was ported to OS/2. At the time of
+    writing, there are three CVS versions on Hobbes. I strongly
+    recommend to use 1.10.6, which is the most bug-free of them all.
+    While 1.10 might still work OK, 1.10.7 causes tons of problems.
+    Do not use it.
 
 
 3. SETUP
@@ -70,16 +84,21 @@ Last updated December 12, 2000, Ulrich M”ller
 
     in there to enable maximum compression during transfers. This
     greatly speeds up things if you have a slow internet connection.
+    Otherwise CVS will do all network transfers with uncompressed
+    data, which can be terribly slow.
 
     Secondly, the most practical way to use CVS is to have a common
     parent directory for all code repositories (i.e. projects). So
     create one (for example, "F:\cvs"), which will become the parent
     directory for all CVS projects (e.g. "F:\cvs\xworkplace",
-    "F:\cvs\warpin", "F:\cvs\xwphelpers").
+    "F:\cvs\warpin", "F:\cvs\xwphelpers"). If you later check out
+    repositories from sources other than Netlabs (e.g. from
+    SourceForge), they can go into this root as well.
 
     Finally, CVS needs you to have a user name and a password. If you
     don't have one yet, use "guest" and "readonly", which will give
-    you read-only access to all Netlabs projects.
+    you read-only access to all Netlabs projects. (Other servers will
+    have different conventions here.)
 
     Set the current project environment. This is done via another
     environment variable, so for XWorkplace, set:
@@ -98,16 +117,6 @@ Last updated December 12, 2000, Ulrich M”ller
     and so on. Currently, Netlabs holds over a dozen projects which
     can all be retrieved that way.
 
-    --> NOTE: The IP address of Netlabs has changed in December of 2000.
-        If CVS refuses to connect, in the above, replace "www.netlabs.org"
-        with "213.68.43.15", or add the following line to your HOSTS file
-        in \MPTN\ETC:
-
-            213.68.43.15          www.netlabs.org
-
-        The new IP address should be updated in the domain name servers
-        shortly.
-
     Create a local subdirectory in your CVS root directory with the
     same name (e.g. ("F:\cvs\xworkplace"). Change to that directory.
 
@@ -119,6 +128,23 @@ Last updated December 12, 2000, Ulrich M”ller
 
     You are now ready to download ("check out") a project. See section
     5 below.
+
+    --> NOTE: The IP address of Netlabs has changed twice in 12/2000
+        and 01/2001.
+
+        If CVS refuses to connect, in the above, replace "www.netlabs.org"
+        with "62.67.42.10", or add the following line to your HOSTS file
+        in \MPTN\ETC:
+
+            62.67.42.10          www.netlabs.org
+
+        I finally found out that a reboot is not necessary after changes
+        to the HOSTS file. ;-) Using the HOSTS file has the advantage
+        that the local CVS maintenance files will still contain the
+        correct URL and you don't have to re-checkout everything later.
+
+        The new IP address should be updated in the domain name servers
+        shortly.
 
 
 4. CVS TERMINOLOGY
@@ -133,8 +159,15 @@ Last updated December 12, 2000, Ulrich M”ller
        are mirrored locally in a subdirectory of your CVS root
        directory, if you followed the above setup.
 
-    -- "Checkout": You create a local copy of a repository when you
-       check out the code.
+       Repositories are usually equivalent to projects. However,
+       repositories are just a directory on the server and can be
+       created in any way. For example, we created the "xwphelpers"
+       repository for code that is shared between XWorkplace and
+       WarpIN.
+
+    -- "Checkout": "Checking out" code means that you retrieve (or
+       update) a local copy of files in a repository. You can check
+       out an entire repository or single files from it.
 
        To check out code, use the "cvs checkout" command. Details
        follow in the next section.
@@ -148,16 +181,25 @@ Last updated December 12, 2000, Ulrich M”ller
 
        To commit code to the server, use the "cvs commit" command.
        See the CVS reference for details. Again, this requires that
-       you have been granted write access.
+       you have been granted write access by the server administrator.
 
-    -- "Merge": This can happen if you already have checked out your
-       local copy of a repository already and do another "checkout"
-       later. If CVS then finds that a file has been changed on the
-       server and your local copy needs to be updated, it "merges" all
+       Usually, with most projects, only a limited number of people
+       have write access to the server, for obvious reasons. But
+       this is a "project policy" issue and not a CVS restriction.
+
+    -- "Merge": This can happen if you have checked out your local
+       copy of a repository already and do another "checkout" later.
+
+       If CVS then finds that a file has been changed on the server
+       and your local copy needs to be updated, it "merges" all
        changes into the local copy. That is, it does not simply
        overwrite the local copy with the new version on the server,
        but will compare (diff) the two files and patch the local
-       copy! CVS has GNU "diff" built in, so this is pretty powerful.
+       copy! As a result, you will not lose changes you made to
+       your local copy when you check out updates.
+
+       CVS has GNU "diff" built in for this, so this is pretty
+       powerful.
 
        This happens automatically if you do "cvs checkout" after
        your initial checkout. Note that you can also use
@@ -176,6 +218,7 @@ Last updated December 12, 2000, Ulrich M”ller
 
        See the CVS reference for details.
 
+
 5. CHECKING OUT THE CODE
 ========================
 
@@ -185,8 +228,9 @@ Last updated December 12, 2000, Ulrich M”ller
 
     The command for getting source from the server is "cvs checkout".
     With checkout, you need to specify the module to check out. For
-    now, we will consider a module a directory name. Note that CVS
-    normally operates on directories recursively! So if you use
+    the purpose of this explanation, we will consider a "module" a
+    directory name. Note that CVS normally operates on directories
+    recursively! So if you use
 
         cvs checkout .
 
@@ -194,6 +238,13 @@ Last updated December 12, 2000, Ulrich M”ller
     retrieve the entire code tree and create new local files if
     they don't exist yet. This can take a while for bigger projects.
     Again, use maximum compression (see section 3).
+
+    "cvs checkout" allows you to specify file masks as well. For
+    example, if you type
+
+        cvs checkout src/shared/*.c
+
+    only those files are checked out. Mind the forward slashes.
 
     By contrast, "cvs update" only updates local files which have
     been changed on the server. It does not create new files.
@@ -220,10 +271,13 @@ Last updated December 12, 2000, Ulrich M”ller
     I strongly recommend redirecting standard output when using
     "cvs update" or "checkout" so you know what CVS has done,
     since these lines scroll of the screen very quickly. You
-    can simply use "cvs checkout . > checkout.log" or something
-    like that.
+    can simply use "cvs checkout . > checkout.log". An even
+    better choice is "tee", another GNU program, which prints
+    the output to the screen and logs it in a file at the same
+    time.
 
-    The first letter tells you what CVS has done to the file:
+    In each such line, the first letter tells you what CVS has
+    done to the file:
 
         ?: CVS does not know the file. It is in your local tree,
            but not in the repository.
@@ -248,6 +302,7 @@ Last updated December 12, 2000, Ulrich M”ller
            no longer compile.
 
         R: A local file has been removed because it is no longer
-           in the repository.
+           in the repository (i.e. has been removed by someone
+           with write access).
 
 

@@ -173,20 +173,26 @@ Are you sure you want to do this?
 ;
 ; the following items have been added with V0.9.1
 ;
+; changed XFL0159 with V0.9.7
+;
 
-<--XFL0159-->: Welcome to XWorkplace. The Workplace Shell is now starting up with XWorkplace installed for the first time.
+<--XFL0159-->: Welcome to XWorkplace. The Workplace Shell is now starting up with XWorkplace installed.
 
-Initially, all XWorkplace settings are disabled, so WPS startup should cause no problems at this point.
+If you have just installed XWorkplace for the very first time, all XWorkplace settings are disabled to avoid problems.
 
-If you run into any trouble with XWorkplace, e.g. should the system hang upon startup, press Ctrl+Alt+Del to restart the system.
+If you had XFolder installed previously, XWorkplace will import most of your old XFolder settings.
 
-When the WPS is starting up the next time, hold down the "Shift" key. This will cause XWorkplace to display a "Panic" dialog where you can disable certain XWorkplace features.
+If you had XWorkplace installed previously, your settings are not changed.
+
+Now, if you run into any trouble with XWorkplace, e.g. should the system hang upon startup, first press Ctrl+Alt+Del to restart the system.
+
+While the WPS is starting up after the reboot, hold down the "Shift" key. This will cause XWorkplace to display a "Panic" dialog where you can disable certain XWorkplace features.
 
 Press "OK" to continue WPS startup now. This message will not be shown again.
 
 <--XFL0160-->: No settings for XWorkplace exist in your OS2.INI file. However, settings for an older XFolder version were found.
 
-XWorkplace can now convert your old XFolder settings so that you don't have to reconfigure everything. In that case, XWorkplace will initially behave just like your existing XFolder version. Your old XFolder settings will not be changed, so you can re-install XFolder instead of XWorkplace later.
+XWorkplace can now import your old XFolder settings so that you don't have to reconfigure everything. In that case, XWorkplace will initially mostly behave like your existing XFolder version. Your old XFolder settings will not be changed, so you can re-install XFolder instead of XWorkplace later.
 
 If you don't want this, all XWorkplace features will initially be disabled.
 

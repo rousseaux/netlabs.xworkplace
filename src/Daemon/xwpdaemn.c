@@ -1648,22 +1648,13 @@ int main(int argc, char *argv[])
                                            0);      // current thread
                               */
 
-                            arc = DosCreateMutexSem(IDMUTEX_PGMG_WINLIST,
+                            arc = DosCreateMutexSem(NULL, // IDMUTEX_PGMG_WINLIST,
                                                     &G_hmtxWindowList,
-                                                    DC_SEM_SHARED, // unnamed, but shared
+                                                    0, // DC_SEM_SHARED, // unnamed, but shared
                                                     FALSE);
 
                             lstInit(&G_llWinInfos, TRUE);
                                     // V0.9.7 (2001-01-21) [umoeller]
-
-                            /* arc = DosCreateEventSem(PAGEMAGE_WNDLSTEV,
-                                                    &G_hevWindowList,
-                                                    0,
-                                                    FALSE); */
-
-                            /* arc = DosCreateQueue(&G_hqPageMage,
-                                                 QUE_FIFO | QUE_NOCONVERT_ADDRESS,
-                                                 PAGEMAGE_WNDQUEUE); */
 
                             G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
                                                           NULLHANDLE,

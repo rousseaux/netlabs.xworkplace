@@ -324,6 +324,8 @@
     #define ID_XSH_FONTSAMPLEVIEW           112
     #define ID_XSH_FONTSAMPLEHINTS          113
 
+    #define ID_XSH_XFIX_INTRO               114
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations

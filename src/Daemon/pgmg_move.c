@@ -26,6 +26,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
 #define INCL_WINSYS
 #include <os2.h>
@@ -46,6 +47,31 @@
 #pragma hdrstop
 
 #define WC_MOVETHREAD      "XWPPgmgMoveObj"
+
+/*
+ *@@ pgmmIsPartlyOnCurrentDesktop:
+ *      returns TRUE if the specified window is at least
+ *      partly visible on the current desktp.
+ *
+ *      Based on a code snipped by Dmitry Kubov.
+ *
+ *@@added V0.9.7 (2001-01-21) [umoeller]
+ */
+
+BOOL pgmmIsPartlyOnCurrentDesktop(PSWP pswp)
+{
+    // this was rewritten V0.9.7 (2001-01-18) [umoeller]
+    LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
+    LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
+
+    return (     !(    // is right edge too wide to the left?
+                       ((pswp->x + bx) >= G_szlEachDesktopReal.cx)
+                    || ((pswp->x + pswp->cx - bx) <= 0)
+                    || ((pswp->y + by) >= G_szlEachDesktopReal.cy)
+                    || ((pswp->y + pswp->cy - by) <= 0)
+                  )
+            );
+}
 
 /*
  *@@ pgmmMoveIt:
@@ -75,11 +101,13 @@ BOOL pgmmMoveIt(LONG lXDelta,
                 BOOL bAllowUpdate)
 {
     BOOL    fAnythingMoved = FALSE;
+    PSWP    paswpNew = NULL;
+    ULONG   cSwpNewUsed = 0;
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, FALSE);
 
-    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
         // HWND        ahwndMoveList[MAX_WINDOWS];
@@ -99,9 +127,9 @@ BOOL pgmmMoveIt(LONG lXDelta,
         // on the wininfo list, but we'll probably not use them
         // all. cSwpNewUsed will be incremented for each item that's
         // actually used
-        ULONG       cSwpNewUsed = 0;
         ULONG       cbSwpNew = lstCountItems(&G_llWinInfos) * sizeof(SWP);
-        PSWP        paswpNew = (PSWP)malloc(cbSwpNew);
+
+        paswpNew = (PSWP)malloc(cbSwpNew);
         if (paswpNew)
         {
             memset(paswpNew, 0, cbSwpNew);
@@ -292,40 +320,44 @@ BOOL pgmmMoveIt(LONG lXDelta,
 
                 pNode = pNode->pNext;
             } // end while (pNode)
-
-            if (cSwpNewUsed)
-            {
-                // if window animations are enabled, turn them off for now.
-                        // V0.9.7 (2001-01-18) [umoeller]
-                BOOL fAnimation = FALSE;
-                if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
-                {
-                    fAnimation = TRUE;
-                    WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
-                }
-
-                G_pHookData->fDisableSwitching = TRUE;
-
-                // now set all windows at once, this saves a lot of
-                // repainting...
-                fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
-                                                     (PSWP)paswpNew,
-                                                     cSwpNewUsed);
-
-                G_pHookData->fDisableSwitching = FALSE;
-
-                if (fAnimation)
-                    // turn animation back on
-                    WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE);
-            }
-
-            // clean up SWP array
-            free(paswpNew);
-
         } // end if (paswpNew)
 
         DosReleaseMutexSem(G_hmtxWindowList);
-    } // end if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST) ...
+    } // end if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
+
+    if (paswpNew)
+    {
+        if (cSwpNewUsed)
+        {
+            // if window animations are enabled, turn them off for now.
+                    // V0.9.7 (2001-01-18) [umoeller]
+            /* BOOL fAnimation = FALSE;
+            if (WinQuerySysValue(HWND_DESKTOP, SV_ANIMATION))
+            {
+                fAnimation = TRUE;
+                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, FALSE);
+            } */
+
+            // disable message processing in the hook
+            BOOL    fOld = G_pHookData->fDisableSwitching;
+            G_pHookData->fDisableSwitching = TRUE;
+
+            // now set all windows at once, this saves a lot of
+            // repainting...
+            fAnythingMoved = WinSetMultWindowPos(NULLHANDLE,
+                                                 (PSWP)paswpNew,
+                                                 cSwpNewUsed);
+
+            G_pHookData->fDisableSwitching = fOld;
+
+            /* if (fAnimation)
+                // turn animation back on
+                WinSetSysValue(HWND_DESKTOP, SV_ANIMATION, TRUE); */
+        }
+
+        // clean up SWP array
+        free(paswpNew);
+    }
 
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, TRUE);
@@ -628,20 +660,8 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     // do not switch to hidden or minimized windows
                     if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
                     {
-                        // this was rewritten V0.9.7 (2001-01-18) [umoeller]
-
-                        LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
-                        LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
-
-                        BOOL bVisible
-                                = !(    // is right edge too wide to the left?
-                                        ((swpActive.x + bx) >= G_szlEachDesktopReal.cx)
-                                     || ((swpActive.x + swpActive.cx - bx) <= 0)
-                                     || ((swpActive.y + by) >= G_szlEachDesktopReal.cy)
-                                     || ((swpActive.y + swpActive.cy - by) <= 0)
-                                   );
-
-                        if (!bVisible)
+                        // only move if window is not visible
+                        if (!pgmmIsPartlyOnCurrentDesktop(&swpActive))
                         {
                             // calculate the absolute coordinate (top left is (0,0))
                             // of the active window relative to all desktops:
@@ -787,7 +807,6 @@ VOID pgmmRecoverAllWindows(VOID)
     HENUM       henum;
     HWND        hwndTemp[MAX_WINDOWS];
     SWP         swpTemp[MAX_WINDOWS];
-    SWP         swpHold;
     ULONG       usIdx,
                 usIdx2;
     CHAR        szClassName[PGMG_TEXTLEN];
@@ -797,18 +816,19 @@ VOID pgmmRecoverAllWindows(VOID)
     henum = WinBeginEnumWindows(HWND_DESKTOP);
     while ((hwndTemp[usIdx] = WinGetNextWindow(henum)) != NULLHANDLE)
     {
-        WinQueryWindowPos(hwndTemp[usIdx], &swpHold);
+        PSWP         pswpThis = &swpTemp[usIdx];
+        WinQueryWindowPos(hwndTemp[usIdx], pswpThis);
 
         WinQueryClassName(hwndTemp[usIdx], PGMG_TEXTLEN, szClassName);
-        if (    (
-                    ((swpHold.fl & (SWP_HIDE | SWP_MAXIMIZE)) == (SWP_HIDE | SWP_MAXIMIZE))
-                 || ((swpHold.fl & SWP_HIDE) == 0)
-                )
-             && (!(swpHold.fl & SWP_MINIMIZE))
+
+        if (    ((pswpThis->fl & SWP_HIDE) == 0)
+             && (!(pswpThis->fl & SWP_MINIMIZE))
              && (WinIsChild(hwndTemp[usIdx], HWND_DESKTOP))
              && (strcmp(szClassName, "#32765"))
                 // not WPS window:
              && (hwndTemp[usIdx] != G_pHookData->hwndWPSDesktop)
+             && (!pgmmIsPartlyOnCurrentDesktop(pswpThis))
+                                    // V0.9.7 (2001-01-22) [umoeller]
              && (!WinIsChild(hwndTemp[usIdx], G_pHookData->hwndPageMageFrame))
            )
             usIdx++;
@@ -817,39 +837,35 @@ VOID pgmmRecoverAllWindows(VOID)
 
     for (usIdx2 = 0; usIdx2 < usIdx; usIdx2++)
     {
+        PSWP         pswpThis = &swpTemp[usIdx2];
         WinQueryWindowPos(hwndTemp[usIdx2],
-                          &swpTemp[usIdx2]);
-        if ((swpHold.fl & (SWP_HIDE | SWP_MAXIMIZE)) == (SWP_HIDE | SWP_MAXIMIZE))
-            // hidden and maximized by us:
-            swpTemp[usIdx2].fl = SWP_RESTORE;
-        else
-        {
-            swpTemp[usIdx2].fl = SWP_MOVE;
-            if (!WinIsWindowVisible(hwndTemp[usIdx2]))
-                swpTemp[usIdx2].fl |= SWP_HIDE;
+                          pswpThis);
 
-            swpTemp[usIdx2].x = (   (swpTemp[usIdx2].x)
-                                  + (   pptlMaxDesktops->x
-                                        * G_szlEachDesktopReal.cx
-                                    )
-                                ) % G_szlEachDesktopReal.cx;
-            swpTemp[usIdx2].y = (   (swpTemp[usIdx2].y)
-                                  + (   pptlMaxDesktops->y
-                                        * G_szlEachDesktopReal.cy
-                                    )
-                                ) % G_szlEachDesktopReal.cy;
+        pswpThis->fl = SWP_MOVE;
+        if (!WinIsWindowVisible(hwndTemp[usIdx2]))
+            pswpThis->fl |= SWP_HIDE;
 
-            if (swpTemp[usIdx2].x > G_szlEachDesktopReal.cx - 5)
-                swpTemp[usIdx2].x = swpTemp[usIdx2].x - G_szlEachDesktopReal.cx;
-            if (swpTemp[usIdx2].y > G_szlEachDesktopReal.cy - 5)
-                swpTemp[usIdx2].y = swpTemp[usIdx2].y - G_szlEachDesktopReal.cy;
-        }
+        pswpThis->x =    (   (swpTemp[usIdx2].x)
+                              + (   pptlMaxDesktops->x
+                                    * G_szlEachDesktopReal.cx
+                                )
+                            ) % G_szlEachDesktopReal.cx;
+        pswpThis->y = (   (swpTemp[usIdx2].y)
+                              + (   pptlMaxDesktops->y
+                                    * G_szlEachDesktopReal.cy
+                                )
+                            ) % G_szlEachDesktopReal.cy;
 
-        swpTemp[usIdx2].hwnd = hwndTemp[usIdx2];
-        swpTemp[usIdx2].hwndInsertBehind = HWND_TOP;
+        if (pswpThis->x > G_szlEachDesktopReal.cx - 5)
+            pswpThis->x = pswpThis->x - G_szlEachDesktopReal.cx;
+        if (pswpThis->y > G_szlEachDesktopReal.cy - 5)
+            pswpThis->y = pswpThis->y - G_szlEachDesktopReal.cy;
+
+        pswpThis->hwnd = hwndTemp[usIdx2];
+        pswpThis->hwndInsertBehind = HWND_TOP;
     }
 
-    bResult = WinSetMultWindowPos(NULLHANDLE, (PSWP) &swpTemp, usIdx);
+    bResult = WinSetMultWindowPos(NULLHANDLE, swpTemp, usIdx);
 
 }
 

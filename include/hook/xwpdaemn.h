@@ -30,11 +30,13 @@
 #ifndef PAGEMAGE_HEADER_INCLUDED
     #define PAGEMAGE_HEADER_INCLUDED
 
-    #define DLL_VERSION         6
+    /* #define DLL_VERSION         6
 
     #define INI_OK              100
     #define INI_CREATED         101
-    #define INI_FILEPROBS       102
+    #define INI_FILEPROBS       102 */
+
+    #define TIMEOUT_HMTX_WINLIST    6000
 
     /* Which move hotkey was used */
     #define MOVE_LEFT           1

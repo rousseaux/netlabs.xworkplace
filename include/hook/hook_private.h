@@ -35,10 +35,11 @@
                 // added V0.9.3 (2000-04-20) [umoeller]
 
     #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.MTX"
-    #define SEM_TIMEOUT             4000
+    #define TIMEOUT_HMTX_HOTKEYS    6000
+    // #define SEM_TIMEOUT             4000
 
-    #define IDMUTEX_PGMG_WINLIST    "\\SEM32\\XWORKPLC\\PGMGWINS.MTX"
-    #define TIMEOUT_PGMG_WINLIST    6000
+    // #define IDMUTEX_PGMG_WINLIST    "\\SEM32\\XWORKPLC\\PGMGWINS.MTX"
+    // #define TIMEOUT_PGMG_WINLIST    6000
 
     // timer IDs for fnwpDaemonObject
     #define TIMERID_SLIDINGFOCUS        1

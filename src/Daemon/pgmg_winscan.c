@@ -24,6 +24,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
 
 #define INCL_GPIBITMAPS
@@ -266,7 +267,7 @@ VOID pgmwScanAllWindows(VOID)
 
     _Pmpf(("Entering pgmwScanAllWindows..."));
 
-    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
         pgmwClearWinInfos();
@@ -330,7 +331,7 @@ VOID pgmwAppendNewWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
-    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
         PPGMGWININFO pWinInfo = NULL;
@@ -370,9 +371,7 @@ VOID pgmwAppendNewWinInfo(HWND hwnd)
 
 VOID pgmwDeleteWinInfo(HWND hwnd)
 {
-    USHORT usIdx;
-
-    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
         PLISTNODE       pNodeFound = NULL;
@@ -386,24 +385,6 @@ VOID pgmwDeleteWinInfo(HWND hwnd)
             lstRemoveNode(&G_llWinInfos, pNodeFound);
         }
 
-        /* for (usIdx = 0;
-             usIdx < G_usWindowCount;
-             usIdx++)
-        {
-            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
-            if (pEntryThis->hwnd == hwnd)
-            {
-                G_usWindowCount--;
-                if (usIdx != G_usWindowCount)
-                    memcpy(pEntryThis,
-                           &G_MainWindowList[G_usWindowCount],
-                           sizeof(PGMGLISTENTRY));
-                        // ### is this really correct?!?
-                        // V0.9.7 (2001-01-18) [umoeller]
-                break;
-            }
-        } */
-
         DosReleaseMutexSem(G_hmtxWindowList);
     }
 }
@@ -415,13 +396,14 @@ VOID pgmwDeleteWinInfo(HWND hwnd)
  *      Called upon PGMG_WNDCHANGE in fnwpPageMageClient.
  *
  *@@added V0.9.7 (2001-01-15) [dk]
+ *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
  */
 
 VOID pgmwUpdateWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
-    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
         // check if we have an entry for this window already
@@ -435,17 +417,6 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
 
         // rescan all dirties
         pgmwWindowListRescan();
-
-        /* for (usIdx = 0;
-             usIdx < G_usWindowCount;
-             usIdx++)
-        {
-            PPGMGLISTENTRY pEntryThis = &G_MainWindowList[usIdx];
-
-            if (    (pEntryThis->hwnd == hwnd)
-               )
-                pEntryThis->bWindowType = WINDOW_RESCAN;
-        } */
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }
@@ -468,7 +439,7 @@ BOOL pgmwWindowListRescan(VOID)
     BOOL    brc = FALSE;
     USHORT  usIdx = 0;
 
-    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
             == NO_ERROR)
     {
         LINKLIST    llDeferredDelete;
@@ -521,6 +492,7 @@ BOOL pgmwWindowListRescan(VOID)
             lstRemoveItem(&G_llWinInfos, pWinInfo);
             pNode = pNode->pNext;
         }
+        lstClear(&llDeferredDelete);
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }

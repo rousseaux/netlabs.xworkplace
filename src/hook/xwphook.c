@@ -766,7 +766,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
     {
         fSemOpened = TRUE;
         arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
-                                 SEM_TIMEOUT);
+                                 TIMEOUT_HMTX_HOTKEYS);
     }
 
     _Pmpf(("hookSetGlobalHotkeys: WinRequestMutexSem arc: %d", arc));
@@ -864,8 +864,6 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                             MPARAM mp1,
                             MPARAM mp2)
 {
-    ULONG       ulRequest;
-
     // first check, just for speed
     if (    (msg == WM_CREATE)
          || (msg == WM_DESTROY)
@@ -877,7 +875,10 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
             )
        )
     {
-        if (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
+        if (    (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
+             && (hwnd != G_HookData.hwndPageMageFrame)
+                    // V0.9.7 (2001-01-23) [umoeller]
+           )
         {
             CHAR    szClass[200];
 
@@ -893,49 +894,45 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                 {
                     // window creation/destruction:
 
-                    if (    (msg == WM_CREATE)
-                         || (msg == WM_DESTROY)
-                         || (msg == WM_SETWINDOWPARAMS)
-                       )
+                    switch (msg)
                     {
-                        WinPostMsg(G_HookData.hwndPageMageClient,
-                                   PGMG_WNDCHANGE,
-                                   MPFROMHWND(hwnd),
-                                   MPFROMLONG(msg));
-                    }
-                    // window move/focus:
-                    else if (    (msg == WM_WINDOWPOSCHANGED)
-                              || (   (msg == WM_ACTIVATE)    // WM_SETFOCUS) //
-                                  && (mp1)             // mp2) // (psmh->
-                                 )
-                            )
-                    {
-                        // it's a top-level window:
-                        WinPostMsg(G_HookData.hwndPageMageClient,
-                                   PGMG_INVALIDATECLIENT,
-                                   (MPARAM)FALSE,   // delayed
-                                   0);
-                    }
+                        case WM_CREATE:
+                        case WM_DESTROY:
+                        case WM_SETWINDOWPARAMS:
+                            WinPostMsg(G_HookData.hwndPageMageClient,
+                                       PGMG_WNDCHANGE,
+                                       MPFROMHWND(hwnd),
+                                       MPFROMLONG(msg));
+                        break;
 
-                    // someone becomes active, but only call once (via mp1)
-                    if (    /* (!G_HookData.fDisableSwitching)
-                         && */ (msg == WM_ACTIVATE)
-                         && (mp1)
-                       )
-                    {
-                        if (hwnd != G_HookData.hwndPageMageFrame)
-                        {
-                            WinPostMsg(G_HookData.hwndPageMageMoveThread,
-                                       PGOM_FOCUSCHANGE,
-                                       0, 0);
-                        }
+                        case WM_ACTIVATE:
+                            if (mp1)        // window being activated:
+                            {
+                                // it's a top-level window:
+                                WinPostMsg(G_HookData.hwndPageMageClient,
+                                           PGMG_INVALIDATECLIENT,
+                                           (MPARAM)FALSE,   // delayed
+                                           0);
+                                WinPostMsg(G_HookData.hwndPageMageMoveThread,
+                                           PGOM_FOCUSCHANGE,
+                                           0,
+                                           0);
+                            }
+                        break;
+
+                        case WM_WINDOWPOSCHANGED:
+                            WinPostMsg(G_HookData.hwndPageMageClient,
+                                       PGMG_INVALIDATECLIENT,
+                                       (MPARAM)FALSE,   // delayed
+                                       0);
+                        break;
                     }
                 } // end if (    (strcmp(szClass, ...
             } // end if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
         } // end if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
     }
 
-    if (G_HookData.PageMageConfig.fStayOnTop)
+    /* if (G_HookData.PageMageConfig.fStayOnTop)
     {
         // implement "float on top" for PageMage frame
         BOOL        fFixFloatOnTop = FALSE;
@@ -950,13 +947,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
             }
         }
 
-        if (    /* (G_HookData.PageMageConfig.fStayOnTop)
-             && (   (msg == WM_SIZE)
-                 || (msg == WM_MINMAXFRAME)
-                 || (msg == WM_SETFOCUS)
-                 || (msg == WM_TRACKFRAME)
-                ) */
-                (fFixFloatOnTop)
+        if (    (fFixFloatOnTop)
              && (hwnd != G_HookData.hwndPageMageFrame)
            )
         {
@@ -968,9 +959,11 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_ZORDER | SWP_SHOW);
+                    // ### no.... we're in the send-msg hook here!
+                    // ### hack WM_ADJUSTWINDOWPOS instead
             }
         }
-    }
+    } */
 
     if (    (msg == WM_DESTROY)
          && (hwnd == G_HookData.hwndLockupFrame)
@@ -1027,28 +1020,35 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                 // messages then, or we'll recurse forever
        )
     {
-        /* HMTX hmtx = G_HookData.hmtxPageMage;
-        if (NO_ERROR == DosOpenMutexSem(NULL, &hmtx))
+        // OK, go ahead:
+        ProcessMsgsForPageMage(psmh->hwnd,
+                               psmh->msg,
+                               psmh->mp1,
+                               psmh->mp2);
+
+        // V0.9.7 (2001-01-23) [umoeller]
+        if (    (G_HookData.PageMageConfig.fStayOnTop)
+             // && (psmh->msg == WM_ADJUSTWINDOWPOS)    doesn't work
+             && (psmh->msg == WM_WINDOWPOSCHANGED)
+             && (WinIsWindowVisible(G_HookData.hwndPageMageFrame))
+           )
         {
-            PID pid;
-            TID tid;
-            ULONG ulCount = 0;
-            if (NO_ERROR == DosQueryMutexSem(G_HookData.hmtxPageMage,
-                                             &pid,
-                                             &tid,
-                                             &ulCount))
+            PSWP pswp = (PSWP)psmh->mp1;
+            if (    (pswp)
+                 // && (pswp->fl & SWP_ZORDER)
+                 && (pswp->hwndInsertBehind == HWND_TOP)
+                 && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
+               )
             {
-                if (ulCount == 0)
-                { */
-                    // OK, go ahead:
-                    ProcessMsgsForPageMage(psmh->hwnd,
-                                           psmh->msg,
-                                           psmh->mp1,
-                                           psmh->mp2);
-                /* }
+                // hack this to move behind PageMage frame
+                G_HookData.fDisableSwitching = TRUE;
+                WinSetWindowPos(G_HookData.hwndPageMageFrame,
+                                HWND_TOP,
+                                0, 0, 0, 0,
+                                SWP_ZORDER | SWP_SHOW);
+                G_HookData.fDisableSwitching = FALSE;
             }
-            DosCloseMutexSem(G_HookData.hmtxPageMage);
-        } */
+        }
     }
 }
 
@@ -2612,25 +2612,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 // messages then, or we'll recurse forever
        )
     {
-        /* HMTX hmtx = G_HookData.hmtxPageMage;
-        if (NO_ERROR == DosOpenMutexSem(NULL, &hmtx))
-        {
-            PID pid;
-            TID tid;
-            ULONG ulCount = 0;
-            if (NO_ERROR == DosQueryMutexSem(G_HookData.hmtxPageMage,
-                                             &pid,
-                                             &tid,
-                                             &ulCount))
-            {
-                if (ulCount == 0)
-                { */
-                    // OK, go ahead:
-                    ProcessMsgsForPageMage(hwnd, msg, mp1, mp2);
-                /* }
-            }
-            DosCloseMutexSem(G_HookData.hmtxPageMage);
-        } */
+        // OK, go ahead:
+        ProcessMsgsForPageMage(hwnd, msg, mp1, mp2);
     }
 
     switch(msg)
@@ -3140,7 +3123,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
     {
         // OK, semaphore opened: request access
         arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
-                                 SEM_TIMEOUT);
+                                 TIMEOUT_HMTX_HOTKEYS);
 
         // _Pmpf(("WM_CHAR WinRequestMutexSem arc: %d", arc));
 
