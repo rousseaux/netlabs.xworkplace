@@ -19,18 +19,9 @@ CURRENT PROBLEMS
 
 --  pagemage: vx-rexx patch breaks visual slick edit
 
---  pe icons all broken, module page missing
-
---  program objects:
-
-    --  still hangs with many VIO programs if not started on thread 1
-
 --  object not refreshed after alt-click rename
 
 --  replacement icons:
-
-    --  VIO executable icons keep disappearing when templates folder
-        was opened
 
     --  pronews.exe shows default icon in program object
 
