@@ -356,7 +356,7 @@ MRESULT EXPENTRY fnwpOpenFilter(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
-    PREGISTERCLASSDATA prcd = (PREGISTERCLASSDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PREGISTERCLASSDATA prcd = (PREGISTERCLASSDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
     switch(msg)
     {
@@ -1611,7 +1611,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
 {
     MRESULT mrc = MPNULL;
 
-    PCLASSLISTTREECNRDATA pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PCLASSLISTTREECNRDATA pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
     TRY_LOUD(excpt1)
     {
@@ -2318,7 +2318,7 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
     MRESULT mrc = 0;
 
     PCLASSLISTINFODATA pClassInfoData
-            = (PCLASSLISTINFODATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+            = (PCLASSLISTINFODATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
     switch (msg)
     {
@@ -2445,7 +2445,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 {
     MRESULT mrc = MPNULL;
 
-    PCLASSLISTMETHODDATA pMethodInfoData = (PCLASSLISTMETHODDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PCLASSLISTMETHODDATA pMethodInfoData = (PCLASSLISTMETHODDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
     switch(msg)
     {
@@ -3045,7 +3045,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
         HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
         HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
         PCLASSLISTTREECNRDATA pClassTreeCnrData
-            = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+            = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
         if (pClassTreeCnrData)
         {
             rcd.pszHelpLibrary = cmnQueryHelpLibrary();
@@ -3115,7 +3115,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
         HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
         HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
         PCLASSLISTTREECNRDATA pClassTreeCnrData
-            = (PCLASSLISTTREECNRDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+            = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
         if (pClassTreeCnrData)
         {
             HPOINTER hptrOld = winhSetWaitPointer();

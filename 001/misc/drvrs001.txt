@@ -774,7 +774,8 @@ CATEGORY "Network"
                  0),
     }
 
-CATEGORY "System extensions"    {
+CATEGORY "System extensions"
+    {
         DRIVER ( "BASEDEV=", "MWDD32.SYS",
                  "Matthieu Wilm's 32-bit device driver support",
                  0),
@@ -804,6 +805,10 @@ CATEGORY "System extensions"    {
 
         DRIVER ( "BASEDEV=", "K6.SYS",
                  "AMD K6 processor family support driver",
+                 0)
+
+        DRIVER ( "DEVICE=", "P6K7MTRR.SYS",
+                 "Intel P6/AMD K7 MTTR support driver",
                  0)
     }
 

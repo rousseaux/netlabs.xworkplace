@@ -1331,7 +1331,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // when sorting, or the cnr will allow to drag'n'drop icons freely
                 // within the same cnr, which is not useful when auto-sort is on
 
-                ULONG       ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
+                ULONG       ulStyle = winhQueryWindowStyle(hwndCnr);
 
                 if (AlwaysSort)
                 {

@@ -2707,6 +2707,7 @@ VOID AddSyslevelsForDir(HWND hwndCnr,
  *
  *@@added V0.9.2 (2000-03-08) [umoeller]
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
+ *@@changed V0.9.14 (2001-07-07) [umoeller]: this never found TCPIP syslevels, fixed
  */
 
 VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -2782,7 +2783,8 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
         AddSyslevelsForDir(hwndCnr,
                            "?:\\MPTN\\");
         AddSyslevelsForDir(hwndCnr,
-                           "?:\\TCPIP\\");
+                           // "?:\\TCPIP\\");
+                           "?:\\TCPIP\\BIN\\");     // fixed V0.9.14 (2001-07-07) [umoeller]
         AddSyslevelsForDir(hwndCnr,
                            "?:\\IBMINST\\");    // networking installation
         AddSyslevelsForDir(hwndCnr,

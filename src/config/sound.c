@@ -631,7 +631,7 @@ MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                                          MPARAM mp1,
                                          MPARAM mp2)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(WinQueryWindowULong(hwndEntryField, QWL_USER));
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(WinQueryWindowPtr(hwndEntryField, QWL_USER));
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
     MRESULT mrc = 0;
 

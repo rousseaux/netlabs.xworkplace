@@ -1122,9 +1122,9 @@ MRESULT EXPENTRY hif_fnwpSubclassedFuncKeyEF(HWND hwndEdit,
                 if  ((usFlags & KC_KEYUP) == 0)
                 {
                     PEDITFUNCTIONKEYDATA pefkd
-                        = (PEDITFUNCTIONKEYDATA)WinQueryWindowULong(WinQueryWindow(hwndEdit,
-                                                                                   QW_PARENT),
-                                                                    QWL_USER);
+                        = (PEDITFUNCTIONKEYDATA)WinQueryWindowPtr(WinQueryWindow(hwndEdit,
+                                                                                 QW_PARENT),
+                                                                  QWL_USER);
 
                     CHAR    szDescription[100];
                     sprintf(szDescription, "0x%lX (%d)", ucScanCode, ucScanCode);
@@ -1165,8 +1165,8 @@ MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
     MRESULT mrc = 0;
 
     PEDITFUNCTIONKEYDATA pefkd
-        = (PEDITFUNCTIONKEYDATA)WinQueryWindowULong(hwndDlg,
-                                                    QWL_USER);
+        = (PEDITFUNCTIONKEYDATA)WinQueryWindowPtr(hwndDlg,
+                                                  QWL_USER);
 
     switch (msg)
     {

@@ -1821,7 +1821,10 @@ MRESULT EXPENTRY EditDialogProc
 
                 // make certain submenus cascaded
                 if (WinSendMsg(hwndMenu0, MM_QUERYITEM, MPFROM2SHORT(IDMEN_AE_OPTION_UNIT, TRUE), &mi))
-                    WinSetWindowBits(mi.hwndSubMenu, QWL_STYLE, MS_CONDITIONALCASCADE, MS_CONDITIONALCASCADE);
+                    WinSetWindowBits(mi.hwndSubMenu,
+                                     QWL_STYLE,
+                                     MS_CONDITIONALCASCADE,
+                                     MS_CONDITIONALCASCADE);
 
                 // Load strings
                 InitResources(pparm->hmodResource);

@@ -407,7 +407,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                 {
                     // for some reason, icon views need to have "auto arrange" on,
                     // or nothing will happen
-                    ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
+                    ulStyle = winhQueryWindowStyle(hwndCnr);
                     WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
                 }
 

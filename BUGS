@@ -17,32 +17,35 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
-When i try to copy an existing object in an folder e.g. 123.bmp and
-give it a new name e.g. 456.bmp and press the "copy" button next
-then, the file exists dialog appears telling me that file 123.bmp already exists.
+documentation:
+    -- some subsections in the TOC of the user guide are currently
+       sorted wrong. This will be fixed in the next release, didn't
+       have time now.
 
-undo wpDelete into trashcan (breaks shredder)
+file assocs:
+    -- My XML engine is currently broken. Do not expect import/export
+       to work. Will be fixed soon.
 
-object hotkeys: assign doesn't work if hotkey is invalid
+trash can:
+    -- shredder deletes into trash can (undo wpDelete change)
 
-XCenter:
-    -- make object buttons droppable!
+    -- When you delete an object, it probably retains its object ID, because
+       if a program tries to UPDATE the object that has been deleted, it
+       effectively updates the object in the TrashCan, while it should
+       create a new one.
 
-sounds:
-    --  close sound device again
+       --> not easy to fix at this point, but will be fixed once the file
+           handles engine has been reworked.
 
-extended file types:
-    --  import/export only works once?
-
-XShutdown:
-    --  xshutdown folder progress window misnamed ("startup")
-    --  2001-06-06 15:11:50 objForAllDirtyObjects (object.c, line 1388):
-           Tree node count mismatch.
+object hotkeys:
+    --  assign doesn't work if hotkey is invalid
 
 prog start:
     --  cmd files not started minimized?
 
 XCenter:
+    --  tray widgets drag'n'drop doesn't work yet
+
     --  winlist widget behavior: make buttons wider (configurable)
 
     --  add "rightmost" setting
@@ -119,12 +122,9 @@ file exists dlg:
         >the one where the file was selected
         >and voila pop-up appears telling user that there is a name conflict, but the
         >new name is not in that folder!
-
-trash can:
-    -- When you delete an object, it probably retains its object ID, because
-       if a program tries to UPDATE the object that has been deleted, it
-       effectively updates the object in the TrashCan, while it should
-       create a new one.
+    --  When i try to copy an existing object in an folder e.g. 123.bmp and
+        give it a new name e.g. 456.bmp and press the "copy" button next
+        then, the file exists dialog appears telling me that file 123.bmp already exists.
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of

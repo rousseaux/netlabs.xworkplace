@@ -767,7 +767,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     if (SHORT2FROMMP(mp1) == EN_KILLFOCUS)
                     {
                         PAUTOCLOSEWINDATA pData =
-                                (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                                (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                         if (pData)
                         {
                             if (pData->pliSelected)
@@ -793,7 +793,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     if (SHORT2FROMMP(mp1) == BN_CLICKED)
                     {
                         PAUTOCLOSEWINDATA pData =
-                                (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                                (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                         if (pData)
                         {
                             if (pData->pliSelected)
@@ -821,7 +821,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             // posted from various locations to wholly update
             // the dlg items
             PAUTOCLOSEWINDATA pData =
-                    (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                    (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
             //printf("WM_CONTROL ID_XSDI_XRB_LISTBOX LN_SELECT\n");
             if (pData)
             {
@@ -898,7 +898,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 case ID_XSDI_XRB_NEW:
                 {
                     PAUTOCLOSEWINDATA pData =
-                            (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                            (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                     PAUTOCLOSELISTITEM pliNew = malloc(sizeof(AUTOCLOSELISTITEM));
                     strcpy(pliNew->szItemName, "???");
                     pliNew->usAction = ACL_SKIP;
@@ -930,7 +930,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 case ID_XSDI_XRB_DELETE:
                 {
                     PAUTOCLOSEWINDATA pData =
-                            (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                            (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                     //printf("WM_COMMAND ID_XSDI_XRB_DELETE BN_CLICKED\n");
                     if (pData)
                     {
@@ -956,7 +956,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                 case DID_OK:
                 {
                     PAUTOCLOSEWINDATA pData =
-                        (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                        (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
                     USHORT usInvalid = xsdWriteAutoCloseItems(pData->pllAutoClose);
                     if (usInvalid)
@@ -990,7 +990,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
         case WM_DESTROY:
         {
-            PAUTOCLOSEWINDATA pData = (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+            PAUTOCLOSEWINDATA pData = (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
             ctlStopAnimation(WinWindowFromID(hwndDlg, ID_SDDI_ICON));
             xsdFreeAnimation(&G_sdAnim);
             lstFree(&pData->pllAutoClose);
@@ -1136,7 +1136,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     if (SHORT2FROMMP(mp1) == EN_KILLFOCUS)
                     {
                         PREBOOTWINDATA pData =
-                                (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                                (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                         // _Pmpf(( "WM_CONTROL ID_XSDI_XRB_ITEMNAME EN_KILLFOCUS" ));
                         if (pData)
                         {
@@ -1164,7 +1164,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     if (SHORT2FROMMP(mp1) == EN_KILLFOCUS)
                     {
                         PREBOOTWINDATA pData =
-                                (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                                (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                         // _Pmpf(( "WM_CONTROL ID_XSDI_XRB_COMMAND EN_KILLFOCUS" ));
                         if (pData)
                             if (pData->pliSelected)
@@ -1188,7 +1188,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
         case XM_UPDATE:
         {
             PREBOOTWINDATA pData =
-                    (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                    (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
             if (pData)
             {
                 pData->pliSelected = NULL;
@@ -1249,7 +1249,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
         case WM_COMMAND:
         {
             PREBOOTWINDATA pData =
-                    (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+                    (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
             USHORT usItemID = SHORT1FROMMP(mp1);
             switch (usItemID)
             {
@@ -1610,7 +1610,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
         case WM_DESTROY:
         {
-            PREBOOTWINDATA pData = (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+            PREBOOTWINDATA pData = (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
             ctlStopAnimation(WinWindowFromID(hwndDlg, ID_SDDI_ICON));
             xsdFreeAnimation(&G_sdAnim);
             lstFree(&pData->pllReboot);

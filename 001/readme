@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.12 README
+XWorkplace 0.9.13 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated June 3, 2001
+Last updated July 6, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -29,7 +29,7 @@ Last updated June 3, 2001
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.12.
+    Welcome to XWorkplace V0.9.13.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -50,10 +50,9 @@ Last updated June 3, 2001
     XWorkplace. Some major bugs have been fixed, and PageMage,
     XCenter, and the hook functions were enhanced further.
 
-    V0.9.12 fixes quite a number of bugs and adds new features
-    as well, such as a new "Battery" widget, file types import
-    and export, default folder views, and a mostly rewritten
-    extended folder sorting.
+    V0.9.13 fixes more bugs, mostly. One of the new features
+    that was requested most frequently is a tray widget for
+    the XCenter.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

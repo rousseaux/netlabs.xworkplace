@@ -1934,7 +1934,7 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
 {
     MPARAM mrc = NULL;
     PSUBCLASSEDFOLDERVIEW psfv = (PSUBCLASSEDFOLDERVIEW)
-                WinQueryWindowULong(hwndObject, QWL_USER);
+                WinQueryWindowPtr(hwndObject, QWL_USER);
 
     switch (msg)
     {

@@ -924,11 +924,11 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAIN)\plugins\xcenter 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_MAIN)\plugins\drvdlgs 2> NUL]
+!endif
 !if [@md $(XWPRELEASE_HEALTH)\plugins 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_HEALTH)\plugins\xcenter 2> NUL]
-!endif
-!if [@md $(XWPRELEASE_HEALTH)\plugins\drvdlgs 2> NUL]
 !endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
@@ -989,6 +989,6 @@ transfer: warpin
     @echo $(MAKEDIR)\makefile: Transferring WPI from $(XWPRELEASE).
     cd $(XWPRELEASE)
     cd ..
-    sendfile p75 xwp-temp.wpi C:\_wpi\xwp-transferred.wpi
+    sendfile laptop xwp-temp.wpi D:\install\xwp-transferred.wpi
     cd $(CURRENT_DIR)
 

@@ -1867,7 +1867,7 @@ VOID fdrUpdateStatusBars(WPFolder *pFolder)
 
 MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    PSTATUSBARDATA psbd = (PSTATUSBARDATA)WinQueryWindowULong(hwndBar, QWL_USER);
+    PSTATUSBARDATA psbd = (PSTATUSBARDATA)WinQueryWindowPtr(hwndBar, QWL_USER);
     MRESULT        mrc = 0;
 
     if (psbd)
@@ -3355,7 +3355,7 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 case DID_CANCEL:
                 {
-                    PPROCESSFOLDER ppf = (PPROCESSFOLDER)WinQueryWindowULong(hwnd, QWL_USER);
+                    PPROCESSFOLDER ppf = (PPROCESSFOLDER)WinQueryWindowPtr(hwnd, QWL_USER);
                     if (ppf)
                         ppf->fCancelled = TRUE;
                 break; }

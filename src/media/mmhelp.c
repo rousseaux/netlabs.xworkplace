@@ -1402,29 +1402,6 @@ ULONG xmmSetMasterVolume(ULONG ulVolume)
             MCI_DEVTYPE_TTS, "Text-to-speech"
         }; */
 
-ULONG aulDeviceTypes[] =
-        {
-            MCI_DEVTYPE_VIDEOTAPE,
-            MCI_DEVTYPE_VIDEODISC,
-            MCI_DEVTYPE_CD_AUDIO,
-            MCI_DEVTYPE_DAT,
-            MCI_DEVTYPE_AUDIO_TAPE,
-            MCI_DEVTYPE_OTHER,
-            MCI_DEVTYPE_WAVEFORM_AUDIO,
-            MCI_DEVTYPE_SEQUENCER,
-            MCI_DEVTYPE_AUDIO_AMPMIX,
-            MCI_DEVTYPE_OVERLAY,
-            MCI_DEVTYPE_ANIMATION,
-            MCI_DEVTYPE_DIGITAL_VIDEO,
-            MCI_DEVTYPE_SPEAKER,
-            MCI_DEVTYPE_HEADPHONE,
-            MCI_DEVTYPE_MICROPHONE,
-            MCI_DEVTYPE_MONITOR,
-            MCI_DEVTYPE_CDXA,
-            MCI_DEVTYPE_FILTER, // Warp 4 only
-            MCI_DEVTYPE_TTS
-        };
-
 /*
  *@@ GetDeviceTypeName:
  *      returns an NLS string describing the

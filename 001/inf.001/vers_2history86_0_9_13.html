@@ -9,11 +9,12 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<P><B>&xwp; 0.9.13 (June 3, 2001)</B>
+<P><B>&xwp; 0.9.13 (July 6, 2001)</B>
 
 <P>New features:
 
-<UL><LI>XCenter: Added tray widgets, per popular request.
+<UL><LI>XCenter: Added tray widgets, per popular request. Drag'n'drop doesn't
+quite work yet though.
 <P><LI>XCenter: Added "Spacing lines" setting to XCenter view styles.
 <P><LI>XCenter: Added drop support and in-use emphasis to object button widgets.
 <P><LI>XCenter: Added detailed system information to tooltips for pulse and sentinel
@@ -50,6 +51,9 @@ the whole screen.
 finally prevent the stupid white error boxes on WPS startup, with the status bars
 in the "Drives" folder, and on disk double-clicks if an audio CD was inserted in a
 CD-ROM drive.
+<P><LI>General: Replaced internal binary tree implementation with a new one. The old
+one proved to balance wrongly if a certain tree size was reached. This should fix the
+"Object count mismatch" messages in xwplog.log on shutdown, among other things.
 <P><LI>"Sort" menu: Fixed confusion with check marks in certain situations.
 <P><LI>XCenter: "Add widget" menu never worked with sliding menus enabled. Fixed.
 <P><LI>XCenter: Paul Ratcliffe fixed the context menu font.
@@ -69,6 +73,8 @@ went back to pre-0.9.12 code there.
 <P><LI>XShutdown: Shutdown thread kept marching even if an exception was currently
 being processed on another thread, which prevented the trap logs from being written.
 Fixed, shutdown thread is now waiting if an exception handler is running somewhere.
+<P><LI>XShutdown: Shutdown folder carried "Startup folder" in its progress window
+title. Fixed.
 
 </UL>
 </BODY>

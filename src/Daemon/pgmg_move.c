@@ -170,7 +170,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
 
                         if (     (!strcmp(pEntryThis->szClassName, "#1")
                               && (!(WinQueryWindowULong(pEntryThis->hwnd, QWL_STYLE)
-                                    & FS_NOMOVEWITHOWNER))
+                                            & FS_NOMOVEWITHOWNER))
                                  )
                            )
                         {

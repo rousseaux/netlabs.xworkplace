@@ -371,8 +371,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                )
                             {
                                 // code for WC_BUTTON...
-                                ULONG ulStyle = WinQueryWindowULong(pcnbp->hwndControl,
-                                                                    QWL_STYLE);
+                                ULONG ulStyle = winhQueryWindowStyle(pcnbp->hwndControl);
+
                                 if (ulStyle & BS_PRIMARYSTYLES)
                                         // == 0x000F; BS_PUSHBUTTON has 0x0,
                                         // so we exclude pushbuttons here
@@ -817,7 +817,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         {
             // get the notebook creation struct, which was passed
             // to ntbInsertPage, from the window words
-            pcnbp = (PCREATENOTEBOOKPAGE)WinQueryWindowULong(hwndDlg, QWL_USER);
+            pcnbp = (PCREATENOTEBOOKPAGE)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
             if (pcnbp)
             {

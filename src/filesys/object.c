@@ -2192,7 +2192,7 @@ VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
 
 MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    PXFOBJWINDATA   pWinData = (PXFOBJWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PXFOBJWINDATA   pWinData = (PXFOBJWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
     MRESULT         mrc = FALSE;
 
     switch(msg)

@@ -620,7 +620,7 @@ VOID clsCleanupWpsClasses(PWPSCLASSESINFO pwpsci) // in: struct returned by clsW
 MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
-    PSELECTCLASSDATA pscd = (PSELECTCLASSDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
+    PSELECTCLASSDATA pscd = (PSELECTCLASSDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
 
     switch(msg)
     {

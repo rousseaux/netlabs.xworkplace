@@ -448,9 +448,11 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
     PSIZEL          pszlClient = &pClientData->szlClient;
 
-    G_szlEachDesktopInClient.cx =    (pszlClient->cx - pptlMaxDesktops->x + 1)
+    // calculate how many pixels we'll have for each desktop
+    // in the client
+    G_szlEachDesktopInClient.cx =    (pszlClient->cx - pptlMaxDesktops->x) //  + 1)
                                    / pptlMaxDesktops->x;
-    G_szlEachDesktopInClient.cy =    (pszlClient->cy - pptlMaxDesktops->y + 1)
+    G_szlEachDesktopInClient.cy =    (pszlClient->cy - pptlMaxDesktops->y) //  + 1)
                                    / pptlMaxDesktops->y;
 
     /*
@@ -775,6 +777,7 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
  *@@added V0.9.2 (2000-02-23) [umoeller]
  *@@changed V0.9.6 (2000-11-06) [umoeller]: disabled dragging of WPS desktop
  *@@changed V0.9.11 (2001-04-25) [umoeller]: added tracking of entire PageMage frame
+ *@@changed V0.9.13 (2001-07-06) [umoeller]: added ctrl support; if not pressed, we jump to next desktop
  */
 
 VOID TrackWithinPager(HWND hwnd,
@@ -818,8 +821,27 @@ VOID TrackWithinPager(HWND hwnd,
         WinQueryWindowPos(hwndTracked, &swpTracked);
         ti.cxBorder = 1;
         ti.cyBorder = 1;
-        ti.cxGrid = 1;
-        ti.cyGrid = 1;
+
+        ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_ALLINBOUNDARY;
+
+        if (WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)  // V0.9.13 (2001-07-06) [umoeller]
+        {
+            // ctrl pressed: set grid to each desktop
+            ti.cxGrid =    G_szlEachDesktopInClient.cx
+                         // add an extra pixel for each desktop
+                         + pptlMaxDesktops->x * 2;
+            ti.cyGrid = G_szlEachDesktopInClient.cy;
+                         // add an extra pixel for each desktop
+                         + pptlMaxDesktops->y * 2;
+            ti.fs |= TF_GRID;
+        }
+        else
+        {
+            // ctrl not pressed: allow any position
+            ti.cxGrid = 1;
+            ti.cyGrid = 1;
+        }
+
         ti.cxKeyboard = 1;
         ti.cyKeyboard = 1;
         fScale_X = (float)(pptlMaxDesktops->x * G_szlEachDesktopReal.cx)
@@ -849,7 +871,6 @@ VOID TrackWithinPager(HWND hwnd,
         ti.ptlMinTrackSize.y = 2;
         ti.ptlMaxTrackSize.x = pszlClient->cx;
         ti.ptlMaxTrackSize.y = pszlClient->cy;
-        ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_ALLINBOUNDARY;
 
         if (WinTrackRect(hwnd,
                          NULLHANDLE,        // hps
