@@ -2333,6 +2333,9 @@
 
 #define ID_XFSI_FDR_SPLITVIEW           6299        // V0.9.21 (2002-08-21) [umoeller]
 
+#define ID_XFSI_XWPSTARTUPFDR           6300        // V0.9.21 (2002-08-31) [umoeller]
+#define ID_XFSI_XWPSHUTDOWNFDR          6301        // V0.9.21 (2002-08-31) [umoeller]
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000

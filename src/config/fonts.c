@@ -71,6 +71,7 @@
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
@@ -180,27 +181,31 @@ static BOOL         G_fInitialized = FALSE;
  *      the file format is initially understood, but GPI
  *      still failed to return the info, ERROR_INVALID_DATA
  *      is returned (shouldn't happen).
+ *
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: added cbBufs parameter
  */
 
 APIRET fonGetFontDescription(HAB hab,
-                             PCSZ pcszFilename,  // in: font file (fully q'fied)
-                             PSZ pszFamily,             // out: font's family
-                             PSZ pszFace)               // out: font's face name
+                             PCSZ pcszFilename,     // in: font file (fully q'fied)
+                             PSZ pszFamily,         // out: font's family
+                             PSZ pszFace,           // out: font's face name
+                             ULONG cbBufs)          // in: sizeof the family and face buffers
 {
     LONG    cFonts = 0;
             // lBufLen = 0;
     PFFDESCS pffd = NULL;
 
-    APIRET arc = doshQueryPathAttr(pcszFilename, NULL);
-    if (arc == NO_ERROR)
+    APIRET arc;
+    if (!(arc = doshQueryPathAttr(pcszFilename, NULL)))
     {
-        // no error:
+        // file exists:
         // get size of mem block we need
-        cFonts = GpiQueryFontFileDescriptions(hab,
-                                              (PSZ)pcszFilename,
-                                              &cFonts,
-                                              NULL);
-        if ((cFonts) && (cFonts != GPI_ALTERROR) )
+        if (    (cFonts = GpiQueryFontFileDescriptions(hab,
+                                                       (PSZ)pcszFilename,
+                                                       &cFonts,
+                                                       NULL))
+             && (cFonts != GPI_ALTERROR)
+           )
         {
             ULONG cb = cFonts * sizeof(FFDESCS)
                             + 100; // for some reason, this crashes otherwise
@@ -247,9 +252,9 @@ APIRET fonGetFontDescription(HAB hab,
                     We better just ignore that.
                     */
 
-                    strcpy(pszFamily, (PSZ)pffd);
+                    strhncpy0(pszFamily, (PSZ)pffd, cbBufs);
 
-                    strcpy(pszFace, (PSZ)pffd + 0x20);
+                    strhncpy0(pszFace, (PSZ)pffd + 0x20, cbBufs);
 
                 }
                 else
@@ -363,13 +368,14 @@ APIRET fonInstallFont(HAB hab,
                 arc = FOPSERR_FONT_ALREADY_INSTALLED;
             else
             {
-                CHAR    szFamily[100],
-                        szFace[100];
+                CHAR    szFamily[33],
+                        szFace[33];
                 // OK, get font information.
                 if (!(arc = fonGetFontDescription(hab,
                                                   szFilename,
                                                   szFamily,
-                                                  szFace)))
+                                                  szFace,
+                                                  sizeof(szFamily))))
                 {
                     // LOAD THE FONT INTO THE SYSTEM
                     if (!GpiLoadPublicFonts(hab,
@@ -584,14 +590,15 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
                                                            NULL))
                     {
                         // always retrieve first font only...
-                        CHAR    szFamily[100] = "unknown";
-                        CHAR    szTitle[200] = "unknown";
+                        CHAR    szFamily[33] = "unknown";
+                        CHAR    szTitle[33] = "unknown";
                         CHAR    szStatus[100] = "";       // font is OK
 
                         if (arc = fonGetFontDescription(hab,
                                                         pszFilename,
                                                         szFamily,
-                                                        szTitle))    // face
+                                                        szTitle,
+                                                        sizeof(szFamily)))    // face
                             // file doesn't exist:
                             // pass APIRET to object creation
                             sprintf(szStatus, "FONTFILEERROR=%d;", arc);

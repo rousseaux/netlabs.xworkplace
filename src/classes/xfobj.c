@@ -154,6 +154,9 @@ extern WPFolder     *G_pConfigFolder;
 // awake objects list V0.9.20 (2002-07-25) [umoeller]
 static HMTX         G_hmtxAwakeObjects = NULLHANDLE;
 
+// object flags mutex V0.9.21 (2002-08-31) [umoeller]
+static HMTX         G_hmtxObjFlags = NULLHANDLE;
+
 static XFldObject   *G_pFirstAwakeObject = NULL,
                     *G_pLastAwakeObject = NULL;
 
@@ -202,6 +205,41 @@ static BOOL LockAwakeObjectsList(VOID)
 static VOID UnlockAwakeObjectsList(VOID)
 {
     DosReleaseMutexSem(G_hmtxAwakeObjects);
+}
+
+/* ******************************************************************
+ *
+ *   Flags mutex
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockObjFlags:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static BOOL LockObjFlags(VOID)
+{
+    if (G_hmtxObjFlags)
+        return !DosRequestMutexSem(G_hmtxObjFlags, SEM_INDEFINITE_WAIT);
+
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxObjFlags,
+                              0,
+                              TRUE);
+}
+
+/*
+ *@@ UnlockObjFlags:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static VOID UnlockObjFlags(VOID)
+{
+    DosReleaseMutexSem(G_hmtxObjFlags);
 }
 
 /* ******************************************************************
@@ -643,12 +681,13 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
  *      object. See XFldObject::xwpModifyFlags for details.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
 {
     ULONG   ulrc = 0;
-    WPObject *pobjLock = NULL;
+    BOOL    fFlagsLocked = FALSE;
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryFlags");
 
     // we need the lock here because xwpModifyFlags
@@ -657,15 +696,15 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        if (pobjLock = cmnLockObject(somSelf))
+        if (fFlagsLocked = LockObjFlags())
         {
             ulrc = _flObject;
         }
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (pobjLock)
-        _wpReleaseObjectMutexSem(pobjLock);
+    if (fFlagsLocked)
+        UnlockObjFlags();
 
     return ulrc;
 }
@@ -737,21 +776,48 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
  +                          FLAG1);            // flags to set (i.e. clear FLAG2)
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
                                           ULONG flFlags,
                                           ULONG flMask)
 {
-    BOOL    brc = FALSE;
-    WPObject *pobjLock = NULL;
+    BOOL    brc = FALSE,
+            fFlagsLocked = FALSE;
+
     XFldObjectMethodDebug("XFldObject","xo_xwpModifyFlags");
 
     TRY_LOUD(excpt1)
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        if (pobjLock = cmnLockObject(somSelf))
+        // V0.9.21 (2002-08-31) [umoeller]
+        // I have introduced a new mutex for the object flags
+        // here. The mutex is global and thus protects the
+        // object flags of all objects. We used to request
+        // the object mutex here, but according to Knut's
+        // research, this appeared to cause deadlocks in
+        // certain situations.
+        // The scenario for the instl001.cmd hangs was that
+        // two threads worked on the same object, but
+        // requested mutexes in reverse order:
+        // -- Thread 7 was working on wpSaveImmediate. It was holding
+        //    the object's mutex and called XFldObject::wpSaveImmediate,
+        //    which called objRemoveFromDirtyList. It blocks on
+        //    requesting the "dirty objects" mutex, which is held
+        //    by thread 13.
+        // -- Thread 13 was deleting the object at the same time.
+        //    wpFree called wpSaveImmediate too, which called
+        //    objRemoveFromDirtyList as well. It stops in this method
+        //    on the _wpRequestObjectMutex, which is held by thread 7.
+
+        // So get rid of the object mutex in this method, which
+        // gets called from all over the place. I suspect this
+        // will also fix the deadlocks with the lazy icons, which
+        // set flags too.
+
+        if (fFlagsLocked = LockObjFlags())
         {
             _flObject     = (
                                 // copy all unaffected
@@ -764,8 +830,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (pobjLock)
-        _wpReleaseObjectMutexSem(pobjLock);
+    if (fFlagsLocked)
+        UnlockObjFlags();
 
     return brc;
 }
@@ -802,18 +868,20 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from xwpAddDestroyNotify
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
                                               HWND hwnd)
 {
-    BOOL    brc = FALSE;
-    WPObject *pobjLock = NULL;
+    BOOL    brc = FALSE,
+            fFlagsLocked = FALSE;
+
     XFldObjectMethodDebug("XFldObject","xo_xwpAddWidgetNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (pobjLock = cmnLockObject(somSelf))
+        if (fFlagsLocked = LockObjFlags())
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             if (_pvllWidgetNotifies == NULL)
@@ -840,8 +908,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (pobjLock)
-        _wpReleaseObjectMutexSem(pobjLock);
+    if (fFlagsLocked)
+        UnlockObjFlags();
 
     return brc;
 }
@@ -851,18 +919,19 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
  *      the reverse to XFldObject::AddWidgetNotify.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
                                                   HWND hwnd)
 {
-    BOOL    brc = FALSE;
-    WPObject *pobjLock = NULL;
+    BOOL    brc = FALSE,
+            fFlagsLocked = FALSE;
     XFldObjectMethodDebug("XFldObject","xo_xwpRemoveDestroyNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (pobjLock = cmnLockObject(somSelf))
+        if (fFlagsLocked = LockObjFlags())
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             if (_pvllWidgetNotifies)
@@ -876,8 +945,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (pobjLock)
-        _wpReleaseObjectMutexSem(pobjLock);
+    if (fFlagsLocked)
+        UnlockObjFlags();
 
     return brc;
 }

@@ -288,60 +288,13 @@ interface XFolder : WPFolder
     BOOL            fCachedFoldersFirst;
                                   // for sort funcs
 
-    //# BOOL            fXFolderSortSettingRestored;
-            // this is TRUE after wpRestoreState has detected
-            // an XFolder sort setting...
-            // removed V0.9.12 (2001-05-18) [umoeller]
-
-    // LONG            MenuMousePosX,       // removed V0.9.16 (2001-10-23) [umoeller]
-       //              MenuMousePosY;       // removed V0.9.16 (2001-10-23) [umoeller]
-
     BOOL            fUnInitCalled;
                             // flag for wpUnInitData, which seems
                             // to get called more than once sometimes
 
-    //# HWND            hwndCnrSaved;
-                            //# workaround for wpModifyPopupMenu bug,
-                            //# which often gets hwndCnr as NULLHANDLE
-                            //# removed V0.9.21 (2002-08-31) [umoeller]
-
     PVOID           pfnResolvedUpdateStatusBar;
                             // resolved function pointer to
                             // xwpUpdateStatusbar (name-lookup resolution)
-
-    // the following pointers are all initialized in wpRestoreData
-    // when the original WPFolder restores its instance data
-    // and point to WPS-internal memory (WPFolder instance variables).
-    // This is an ugly hack to access some folder settings for which
-    // no methods are defined...
-
-    // all fields removed since we can now use pvWPFolderData
-    // V0.9.21 (2002-08-24) [umoeller]
-
-    // pointer to WPFolder's sort data struct;
-    // this is intercepted in wpRestoreData (IDKEY_FDRSORTINFO)
-    // PVOID           pFolderSortInfo;
-
-    // pointer to WPFolder's "long array";
-    // this is intercepted in wpRestoreData (IDKEY_FDRLONGARRAY)
-    // PFDRLONGARRAY   pFolderLongArray;
-    // ULONG           cbFolderLongArray;
-    // pointer to WPFolder's "string array";
-    // this is intercepted in wpRestoreData (IDKEY_FDRSTRARRAY)
-    // PSZ             pszFolderStrArray;
-    // ULONG           cbFolderStrArray;
-    // pointer to WPFolder's folder background info
-    // PFDRBACKGROUND  pFolderBackground;
-    // ULONG           cbFolderBackground;        // normally 14, see above
-    // pointer to WPFolder's "SHOWALLINTREEVIEW" flag
-    // (Warp 4 only); this is intercepted in wpRestoreLong (IDKEY_FDRTREEVIEWCONTENTS)
-    // PULONG          pulFolderShowAllInTreeView;
-    // copy of IDKEY_CNRBACKGROUND data;
-    // we cannot store a pointer to instance
-    // data because the pointer used in wpRestoreString (IDKEY_FDRBKGNDIMAGEFILE)
-    // apparently only points to a temporary buffer
-    // PSZ             pWszFolderBkgndImageFile;
-                        // WARNING: allocated using wpAllocMem
 
     // default document V0.9.4 (2000-06-09) [umoeller]
     WPFileSystem    pDefaultDocument;
@@ -354,10 +307,6 @@ interface XFolder : WPFolder
     ULONG           cObjects;                   // folder's objects count, always valid
     BOOL            fDisableAutoCnrAdd;
 
-    //# pointers to original WPFolder object pointers
-    //# WPObject        *ppFirstObj;        removed V0.9.20 (2002-07-25) [umoeller]
-    //# WPObject        *ppLastObj;         removed V0.9.20 (2002-07-25) [umoeller]
-
     // tree of WPFileSystem objects
     // V0.9.16 (2002-01-26) [umoeller]
     PVOID           FileSystemsTreeRoot;        // a TREE* really
@@ -367,20 +316,6 @@ interface XFolder : WPFolder
     // V0.9.16 (2002-01-26) [umoeller]
     PVOID           AbstractsTreeRoot;          // a TREE* really
     LONG            cAbstracts;
-
-    // file-system notifications for replacement auto-refresh
-    // V0.9.9 (2001-02-01) [umoeller]
-    // PVOID           pvllNotifications;
-                // WARNINGS: This is a PLINKLIST to XWPNOTIFY structures
-                // really. This list is maintained by the functions in
-                // src\refresh.c directly. There are NO XFolder method
-                // interfaces for this. This list must only be modified
-                // with proper serialization... since it would be very
-                // dangerous to request BOTH the WPS notify mutex AND
-                // the folder's object mutex, per definition, we only
-                // use the notify mutex for this (fdrGetNotifySem).
-
-                // removed this V0.9.12 (2001-05-22) [umoeller]
 
     ULONG       cNotificationsPending;
                 // count of notifications of this folder; 0 if none.
@@ -394,21 +329,9 @@ interface XFolder : WPFolder
                 // functions can detect whether this is an "open view",
                 // or regular context menu, or one of the pulldowns.
 
-    BOOL        fInwpAddFolderView1Page;
-                // TRUE while in wpAddFolderView1Page; allows us
-                // to do an evil hack in wpInsertSettingsPage
-                // V0.9.16 (2001-10-23) [umoeller]
-
     SOMObject   pMonitor;
                 // ptr to read-write monitor (see fdrRequestFolderWriteMutexSem)
                 // V0.9.16 (2001-10-25) [umoeller]
-
-    //# PVOID       pfn_wpRequestFolderMutexSem;
-    //# PVOID       pfn_wpReleaseFolderMutexSem;
-                //# cached method pointers (see fdrRequestFolderMutexSem and
-                //# fdrReleaseFolderMutexSem)
-                //# V0.9.16 (2001-10-25) [umoeller]
-                //# removed V0.9.20 (2002-07-25) [umoeller]
 
     /*
      * WPFolder methods overridden by XFolder:

@@ -1297,7 +1297,8 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                     "OBJECTID=%s;",
                     XFOLDER_STARTUPID);
                 if (hObj = WinCreateObject((PSZ)G_pcszXFldStartup,
-                                           "XWorkplace Startup",
+                                           cmnGetString(ID_XFSI_XWPSTARTUPFDR), // "XWorkplace Startup",
+                                                // finally localized V0.9.21 (2002-08-31) [umoeller]
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))

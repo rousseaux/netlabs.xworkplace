@@ -821,18 +821,6 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
             // selections to the folder
             psfv->pSourceObject = psfv->somSelf;
                     // V0.9.12 (2001-05-29) [umoeller]
-
-#ifndef __XWPLITE__
-            winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
-                                   (*G_pulVarMenuOfs
-                                           + ID_XFMI_OFS_SEPARATOR));
-            winhInsertMenuItem(hwndMenuMsg, MIT_END,
-                               (*G_pulVarMenuOfs
-                                       + ID_XFMI_OFS_PRODINFO),
-                               cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
-                               MIS_TEXT, 0);
-#endif
-
         break;
     }
 }

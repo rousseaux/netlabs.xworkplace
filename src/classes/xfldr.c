@@ -1367,8 +1367,6 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _cNotificationsPending = 0;
 
-    _fInwpAddFolderView1Page = FALSE;
-
     treeInit((TREE**)&_FileSystemsTreeRoot,
              &_cFileSystems);
     treeInit((TREE**)&_AbstractsTreeRoot,
@@ -2835,11 +2833,12 @@ SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
 {
     USHORT  fsOld;
     ULONG   ul;
+    BOOL    fInAddFolderView1Page;
 
-    XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpInsertSettingsPage");
 
-    if (_fInwpAddFolderView1Page)
+    if (fInAddFolderView1Page = (_xwpQueryFlags(somSelf) & OBJFL_FOLDERVIEW1PAGING))
     {
         // we are in the context of XFolder::wpAddFolderView1Page:
         // hack BKA_MAJOR to be BKA_MINOR instead
@@ -2852,8 +2851,13 @@ SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
                                                       ppageinfo);
 
     // restore the old setting to be on the safe side
-    if (_fInwpAddFolderView1Page)
+    if (fInAddFolderView1Page)
+    {
         ppageinfo->usPageStyleFlags = fsOld;
+        _xwpModifyFlags(somSelf,
+                        OBJFL_FOLDERVIEW1PAGING,
+                        0);
+    }
 
     return ul;
 }
@@ -3097,19 +3101,26 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
                                                  HWND hwndNotebook)
 {
-    ULONG ul;
-    BOOL fIsRootFdr = ctsIsRootFolder(somSelf);
+    ULONG       ul;
+    BOOL        fIsRootFdr;
     XFolderData *somThis = XFolderGetData(somSelf);
+
     XFolderMethodDebug("XFolder","xf_wpAddFolderView1Page");
 
     // evil hack for wpInsertSettingsPage
-    if (!fIsRootFdr)
-        _fInwpAddFolderView1Page = TRUE;
+    if (!(fIsRootFdr = ctsIsRootFolder(somSelf)))
+        _xwpModifyFlags(somSelf,
+                        OBJFL_FOLDERVIEW1PAGING,
+                        OBJFL_FOLDERVIEW1PAGING);
+
     ul = XFolder_parent_WPFolder_wpAddFolderView1Page(somSelf,
                                                       hwndNotebook);
+
     if (!fIsRootFdr)
     {
-        _fInwpAddFolderView1Page = FALSE;
+        _xwpModifyFlags(somSelf,
+                        OBJFL_FOLDERVIEW1PAGING,
+                        0);
 
         if (ul)
             _xwpAddXFolderPages(somSelf, hwndNotebook);

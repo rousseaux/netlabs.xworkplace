@@ -91,7 +91,7 @@ interface XFldDisk : WPDisk
     //# 5)  menu methods
 
     wpFilterMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
-    wpFilterPopupMenu: override;
+    //# wpFilterPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
     wpModifyPopupMenu: override;
     wpModifyMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
     wpDisplayMenu: override;                //# added V0.9.21 (2002-08-31) [umoeller]

@@ -2006,7 +2006,7 @@ BOOL fdrCheckIfPopulated(WPFolder *somSelf,
                                     : FOI_POPULATEDWITHALL;
     ULONG       ulFlags = _wpQueryFldrFlags(somSelf);
 
-    PWPSDRIVEDATA pDriveData;
+    PIBMDRIVEDATA pDriveData;
 
     if (    // (re)populate if the POPULATED_* flag is not set
             ((ulFlags & ulPopulateFlag) != ulPopulateFlag)

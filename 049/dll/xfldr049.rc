@@ -1615,6 +1615,10 @@ BEGIN
 
     /* new items for folder split views V0.9.21 (2002-08-21) [umoeller] */
     ID_XFSI_FDR_SPLITVIEW               "~Split view"
+
+    /* startup and shutdown folder were missing so far V0.9.21 (2002-08-31) [umoeller] */
+    ID_XFSI_XWPSTARTUPFDR               "&xwp; Startup Folder"
+    ID_XFSI_XWPSHUTDOWNFDR              "&xwp; Shutdown Folder"
 END
 
 

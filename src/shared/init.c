@@ -2,10 +2,24 @@
 /*
  *@@sourcefile init.c:
  *      this file contains the XWorkplace initialization code
- *      which runs at Desktop startup.
+ *      which runs at WPS startup.
  *
  *      This code used to be in kernel.c and has been moved
  *      to this file with V0.9.16.
+ *
+ *      There are two entry points into all this:
+ *
+ *      --  initMain gets called when XFldObject gets initialized,
+ *          i.e. right when the WPS starts up. This allows us
+ *          to do lots of things even before the WPS is fully
+ *          initialized and the Desktop folder opens.
+ *
+ *      --  initRepairDesktopIfBroken gets called later after
+ *          the file-system classes are initialized.
+ *
+ *      --  initDesktopPopulated gets called after the desktop
+ *          has populated to perform startup folder processing
+ *          and other things.
  *
  *@@header "shared\init.h"
  */
@@ -89,7 +103,6 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-// #include "xfldr.ih"
 #include "xfstart.ih"
 
 // XWorkplace implementation headers
@@ -141,6 +154,8 @@ BOOL cmnTurboFoldersEnabled(VOID);
  ********************************************************************/
 
 extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
+
+extern PIBMDRIVEDATA    G_paDriveData = NULL;
 
 static THREADINFO       G_tiSentinel = {0};
 
@@ -1783,8 +1798,46 @@ BOOL initRepairDesktopIfBroken(VOID)
 {
     BOOL        brc = FALSE;
 
-    CHAR        szMsg[1000] = "";
+    CHAR        szBootRoot[] = "?:\\",
+                szMsg[1000] = "";
 
+    WPFolder    *pBootRootFolder;
+
+    // get the global pointer to the WPS's drive data
+    // array; we KNOW that the boot drive is valid,
+    // so we call _wpQueryRootFolder to get the root
+    // folder for the boot drive and can call
+    // _wpQueryDriveData on that
+    szBootRoot[0] = doshQueryBootDrive();
+    if (pBootRootFolder = _wpclsQueryObjectFromPath(_WPFileSystem, szBootRoot))
+    {
+        PIBMDRIVEDATA   pDriveDataBoot;
+
+        _PmpfF(("pBootRootFolder is 0x%lX", pBootRootFolder));
+
+        if (pDriveDataBoot = _wpQueryDriveData(pBootRootFolder))
+        {
+            _PmpfF(("pDriveDataBoot is 0x%lX", pDriveDataBoot));
+
+            // this is the pointer to the n'th item in the
+            // global drive data array; the first index in
+            // the global array is for drive A:, so we
+            // can simply go back to have the first index
+            G_paDriveData =   pDriveDataBoot
+                            - (szBootRoot[0] - 'A');        // 0 for A:, 1 for B:, ...
+        }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_wpQueryDriveData returned NULL for boot root folder 0x%lX",
+                   pBootRootFolder);
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "_wpclsQueryObjectFromPath(\"%s\") returned NULL",
+               szBootRoot);
+
+    // now check if the desktop was considered valid
+    // during initMain()
     switch (G_ulDesktopValid)
     {
         case DESKTOP_VALID:

@@ -2084,11 +2084,39 @@ static const DLGHITEM G_dlgSelectSome[] =
     };
 
 /*
+ *@@ IsNotTreeView:
+ *      returns TRUE if the FID_CLIENT of hwndFrame
+ *      is not currently in tree view. Necessary for
+ *      both "select some" and "batch rename" in
+ *      order to prevent opening them via folder hotkeys.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+static BOOL IsNotTreeView(HWND hwndFrame)
+{
+    HWND    hwndCnr;
+    BOOL    brc = FALSE;
+
+    if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
+    {
+        CNRINFO ci;
+        cnrhQueryCnrInfo(hwndCnr, &ci);
+        if (!(ci.flWindowAttr & CV_TREE))
+            brc = TRUE;
+    }
+
+    return brc;
+}
+
+/*
  *@@ fdrShowSelectSome:
  *      shows the "Select some" window.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed leak
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: added folder title to window title
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed open in tree view via fdr hotkey
  */
 
 VOID fdrShowSelectSome(HWND hwndFrame)
@@ -2096,27 +2124,44 @@ VOID fdrShowSelectSome(HWND hwndFrame)
     HWND hwndSelectSome;
     PDLGHITEM paNew;
 
-    if (!cmnLoadDialogStrings(G_dlgSelectSome,
-                              ARRAYITEMCOUNT(G_dlgSelectSome),
-                              &paNew))
+    // get the folder from the frame to produce the title V0.9.21 (2002-08-31) [umoeller]
+    WPFolder *pFolder;
+    if (    IsNotTreeView(hwndFrame)
+         && (pFolder = (WPFolder*)WinSendMsg(hwndFrame,
+                                             WM_QUERYOBJECTPTR,
+                                             0,
+                                             0))
+       )
     {
-        if (!dlghCreateDlg(&hwndSelectSome,
-                           hwndFrame,         // owner
-                           FCF_FIXED_DLG,
-                           fnwpSelectSome,
-                           cmnGetString(ID_XFDI_SELECTSOME_TITLE),
-                           paNew,
-                           ARRAYITEMCOUNT(G_dlgSelectSome),
-                           (PVOID)hwndFrame,    // dlg params
-                           cmnQueryDefaultFont()))
+        XSTRING strTitle;
+        xstrInitCopy(&strTitle, _wpQueryTitle(pFolder), 0);
+        xstrcat(&strTitle, " - ", 0);
+        xstrcat(&strTitle, cmnGetString(ID_XFDI_SELECTSOME_TITLE), 0);
+
+        if (!cmnLoadDialogStrings(G_dlgSelectSome,
+                                  ARRAYITEMCOUNT(G_dlgSelectSome),
+                                  &paNew))
         {
-            winhPlaceBesides(hwndSelectSome,
-                             WinWindowFromID(hwndFrame, FID_CLIENT),
-                             PLF_SMART);
-            WinShowWindow(hwndSelectSome, TRUE);
+            if (!dlghCreateDlg(&hwndSelectSome,
+                               hwndFrame,         // owner
+                               FCF_FIXED_DLG,
+                               fnwpSelectSome,
+                               strTitle.psz,
+                               paNew,
+                               ARRAYITEMCOUNT(G_dlgSelectSome),
+                               (PVOID)hwndFrame,    // dlg params
+                               cmnQueryDefaultFont()))
+            {
+                winhPlaceBesides(hwndSelectSome,
+                                 WinWindowFromID(hwndFrame, FID_CLIENT),
+                                 PLF_SMART);
+                WinShowWindow(hwndSelectSome, TRUE);
+            }
+
+            free(paNew);        // was missing V0.9.19 (2002-06-18) [umoeller]
         }
 
-        free(paNew);        // was missing V0.9.19 (2002-06-18) [umoeller]
+        xstrClear(&strTitle);
     }
 }
 
@@ -2706,6 +2751,8 @@ static MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
  *      shows the "Batch rename" window.
  *
  *@@added V0.9.19 (2002-06-18) [umoeller]
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: added folder title to window title
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed open in tree view via fdr hotkey
  */
 
 VOID fdrShowBatchRename(HWND hwndFrame)
@@ -2713,27 +2760,44 @@ VOID fdrShowBatchRename(HWND hwndFrame)
     HWND hwndSelectSome;
     PDLGHITEM paNew;
 
-    if (!cmnLoadDialogStrings(G_dlgBatchRename,
-                              ARRAYITEMCOUNT(G_dlgBatchRename),
-                              &paNew))
+    // get the folder from the frame to produce the title V0.9.21 (2002-08-31) [umoeller]
+    WPFolder *pFolder;
+    if (    IsNotTreeView(hwndFrame)
+         && (pFolder = (WPFolder*)WinSendMsg(hwndFrame,
+                                             WM_QUERYOBJECTPTR,
+                                             0,
+                                             0))
+       )
     {
-        if (!dlghCreateDlg(&hwndSelectSome,
-                           hwndFrame,         // owner
-                           FCF_FIXED_DLG,
-                           fnwpBatchRename,
-                           cmnGetString(ID_XFDI_BATCHRENAME_TITLE),
-                           paNew,
-                           ARRAYITEMCOUNT(G_dlgBatchRename),
-                           (PVOID)hwndFrame,    // dlg params
-                           cmnQueryDefaultFont()))
+        XSTRING strTitle;
+        xstrInitCopy(&strTitle, _wpQueryTitle(pFolder), 0);
+        xstrcat(&strTitle, " - ", 0);
+        xstrcat(&strTitle, cmnGetString(ID_XFDI_BATCHRENAME_TITLE), 0);
+
+        if (!cmnLoadDialogStrings(G_dlgBatchRename,
+                                  ARRAYITEMCOUNT(G_dlgBatchRename),
+                                  &paNew))
         {
-            winhPlaceBesides(hwndSelectSome,
-                             WinWindowFromID(hwndFrame, FID_CLIENT),
-                             PLF_SMART);
-            WinShowWindow(hwndSelectSome, TRUE);
+            if (!dlghCreateDlg(&hwndSelectSome,
+                               hwndFrame,         // owner
+                               FCF_FIXED_DLG,
+                               fnwpBatchRename,
+                               strTitle.psz,
+                               paNew,
+                               ARRAYITEMCOUNT(G_dlgBatchRename),
+                               (PVOID)hwndFrame,    // dlg params
+                               cmnQueryDefaultFont()))
+            {
+                winhPlaceBesides(hwndSelectSome,
+                                 WinWindowFromID(hwndFrame, FID_CLIENT),
+                                 PLF_SMART);
+                WinShowWindow(hwndSelectSome, TRUE);
+            }
+
+            free(paNew);
         }
 
-        free(paNew);
+        xstrClear(&strTitle);
     }
 }
 

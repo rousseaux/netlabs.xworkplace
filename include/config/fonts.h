@@ -48,7 +48,8 @@
     APIRET fonGetFontDescription(HAB hab,
                                  PCSZ pcszFilename,
                                  PSZ pszFamily,
-                                 PSZ pszFace);
+                                 PSZ pszFace,
+                                 ULONG cbBufs);
 
     #if defined (SOM_XWPFontFile_h) && defined (SOM_XWPFontFolder_h)
         APIRET fonInstallFont(HAB hab,

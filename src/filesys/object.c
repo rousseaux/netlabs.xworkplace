@@ -1756,8 +1756,8 @@ static ULONG CheckShrinkCache(VOID)
                            (TREE*)pOldest); // fixed pNode); V0.9.20 (2002-07-25) [umoeller]
                 // unset list notify flag
                 _xwpModifyFlags(pOldest->pObject,      // V0.9.20 (2002-07-25) [umoeller]
-                                     OBJLIST_HANDLESCACHE,
-                                     0);
+                                OBJLIST_HANDLESCACHE,
+                                0);
                 free(pOldest);
             }
         }
@@ -2104,8 +2104,8 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
 
                 // unset object's "dirty" list flag
                 _xwpModifyFlags(pobj,
-                                     OBJLIST_DIRTYLIST,
-                                     0);
+                                OBJLIST_DIRTYLIST,
+                                0);
 
                 brc = TRUE;
             }

@@ -2773,7 +2773,9 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
                 "OBJECTID=%s;",
                 XFOLDER_SHUTDOWNID);
             if (hObj = WinCreateObject((PSZ)G_pcszXFldShutdown,
-                                       "XFolder Shutdown",
+                                       // "XFolder Shutdown",
+                                       cmnGetString(ID_XFSI_XWPSHUTDOWNFDR),
+                                            // finally localized V0.9.21 (2002-08-31) [umoeller]
                                        szSetup,
                                        (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))

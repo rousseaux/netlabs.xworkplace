@@ -62,6 +62,7 @@
 
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+#define INCL_DOSDEVIOCTL                // to get the disk constants in dosh.h
 
 #define INCL_WINFRAMEMGR
 #define INCL_WINMENUS
@@ -216,87 +217,121 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
                                             ULONG ulView,
                                             ULONG ulReserved)
 {
-    BOOL    brc;
+    BOOL    brc,
+            fReplaceDNR,
+            fCDROM = FALSE;
 
-    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
+    static const struct
+    {
+        ULONG   flXWP,
+                flWPS1;
+    } aSuppressFlags[] =
+        {
+            XWPCTXT_CHKDSK, CTXT_CHECKDISK,
+            XWPCTXT_FORMAT, CTXT_FORMATDISK,
+            XWPCTXT_COPYDSK, CTXT_COPYDISK,
+            XWPCTXT_LOCKDISK, CTXT_LOCKDISK,
+            XWPCTXT_EJECTDISK, CTXT_EJECTDISK,
+            XWPCTXT_UNLOCKDISK, CTXT_UNLOCKDISK,
+        };
+
+    ULONG   ul,
+            flWPS = cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)),
+            flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
+
+    ULONG   ulLogicalDrive = _wpQueryLogicalDrive(somSelf),
+            i = ulLogicalDrive - 1;
+
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterMenu");
 
     #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+        _PmpfF(( "[%s] entering", _wpQueryTitle(somSelf) ));
     #endif
 
-    if (brc = XFldDisk_parent_WPDisk_wpFilterMenu(somSelf,
-                                                  pFlags,
-                                                  hwndCnr,
-                                                  fMultiSelect,
-                                                  ulMenuType,
-                                                  ulView,
-                                                  ulReserved))
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+    if (fReplaceDNR = cmnQuerySetting(sfReplaceDriveNotReady))
     {
-        static const struct
+        _PmpfF(("getting drive data for drive %d", ulLogicalDrive));
+        if (G_paDriveData[i].pDisk != somSelf)
         {
-            ULONG   flXWP,
-                    flWPS1;
-        } aSuppressFlags[] =
-            {
-                XWPCTXT_CHKDSK, CTXT_CHECKDISK,
-                XWPCTXT_FORMAT, CTXT_FORMATDISK,
-                XWPCTXT_COPYDSK, CTXT_COPYDISK,
-                XWPCTXT_LOCKDISK, CTXT_LOCKDISK,
-                XWPCTXT_EJECTDISK, CTXT_EJECTDISK,
-                XWPCTXT_UNLOCKDISK, CTXT_UNLOCKDISK,
-            };
-
-        ULONG   ul,
-                flWPS = cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)),
-                flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
-
-        pFlags->Flags[0] &= ~(   flWPS
-                               | CTXT_NEW);
-
-        // the disk-specific items from the array above are
-        // all in array index 1
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(aSuppressFlags);
-             ++ul)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Drive data mismatch: somSelf == 0x%lX, drive data pDisk == 0x%lX",
+                   somSelf,
+                   G_paDriveData[i].pDisk);
+        }
+        else
         {
-            // if flag is currently set in settings, remove menu item
-            if (flXWP & aSuppressFlags[ul].flXWP)
-                pFlags->Flags[1] &= ~aSuppressFlags[ul].flWPS1;
+            _Pmpf(("bFileSystem: 0x%lX (%d)",
+                   G_paDriveData[i].bFileSystem,
+                   G_paDriveData[i].bFileSystem));
+            _Pmpf(("fNotLocal: %d",
+                   G_paDriveData[i].fNotLocal));
+            _Pmpf(("fFixedDisk: %d",
+                   G_paDriveData[i].fFixedDisk));
+            _Pmpf(("fZIP: %d",
+                   G_paDriveData[i].fZIP));
+            _Pmpf(("bDiskType: %d",
+                   G_paDriveData[i].bDiskType));
+            _Pmpf(("ulSerial: 0x%lX",
+                   G_paDriveData[i].ulSerial));
+            _Pmpf(("szVolLabel: %s",
+                   G_paDriveData[i].szVolLabel));
+
+            if (G_paDriveData[i].bDiskType == DRVTYPE_CDROM)
+                fCDROM = TRUE;
         }
     }
+#endif
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
-    #endif
+    brc = XFldDisk_parent_WPDisk_wpFilterMenu(somSelf,
+                                              pFlags,
+                                              hwndCnr,
+                                              fMultiSelect,
+                                              ulMenuType,
+                                              ulView,
+                                              ulReserved);
 
-    return brc;
-}
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+    // for CD-ROM drives, the parent method may return
+    // total garbage, so fix some... note, fCDROM
+    // can only be TRUE if sfReplaceDriveNotReady is
+    // enabled (see above)
+    if (fCDROM)
+    {
+        // if no media is present, the parent method removes
+        // "eject disk", even though that item is useful
+        // to insert some now. Instead, we should focus on
+        // whether the door is open.
 
-/*
- *@@ wpFilterPopupMenu:
- *
- *@@added V0.9.21 (2002-08-31) [umoeller]
- */
+        pFlags->Flags[1] |= CTXT_EJECTDISK;
 
-SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
-                                                  ULONG ulFlags,
-                                                  HWND hwndCnr,
-                                                  BOOL fMultiSelect)
-{
-    BOOL    brc;
+        // yeah, actually we should, but there's no way to
+        // find out with OS/2. Wonderful job, IBM. See
+        // the remarks with doshQueryCDStatus in dosh.c.
 
-    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
-    XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterPopupMenu");
+        // Anyway, if we have no media, we should remove
+        // "lock".
+        if (!_pMenuRootFolder)
+            pFlags->Flags[1] &= ~ XWPCTXT_LOCKDISK;
+    }
+#endif
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-    #endif
+    // finally, go enforce the menu settings from "Workplace Shell"
 
-    brc = XFldDisk_parent_WPDisk_wpFilterPopupMenu(somSelf,
-                                                   ulFlags,
-                                                   hwndCnr,
-                                                   fMultiSelect);
+    pFlags->Flags[0] &= ~(   flWPS
+                           | CTXT_NEW);
+
+    // the disk-specific items from the array above are
+    // all in array index 1
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(aSuppressFlags);
+         ++ul)
+    {
+        // if flag is currently set in settings, remove menu item
+        if (flXWP & aSuppressFlags[ul].flXWP)
+            pFlags->Flags[1] &= ~aSuppressFlags[ul].flWPS1;
+    }
 
     #ifdef DEBUG_MENUS
         _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
@@ -329,7 +364,8 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
  *      ready" is enabled, we store a temp root folder pointer
  *      in the instance data. If that pointer is -1, the
  *      setting is disabled. If it's NULL, the disk is not
- *      ready. Otherwise we have a valid root folder.
+ *      ready and we DO NOT call the parent method. Otherwise
+ *      we have a valid root folder.
  *
  *@@added V0.9.21 (2002-08-31) [umoeller]
  */
@@ -511,20 +547,20 @@ SOM_Scope HWND  SOMLINK xfdisk_wpDisplayMenu(XFldDisk *somSelf,
 
     _pMenuRootFolder = (WPObject*)-1;
 
+#ifndef __NEVERREPLACEDRIVENOTREADY__
     switch (ulMenuType)
     {
         case MENU_OBJECTPOPUP:
         case MENU_SELECTEDPULLDOWN:
-#ifndef __NEVERREPLACEDRIVENOTREADY__
             if (cmnQuerySetting(sfReplaceDriveNotReady))
             {
                 _PmpfF(("safe-checking root folder"));
                 // yes: use the safe way of opening the drive
                 _pMenuRootFolder = _xwpSafeQueryRootFolder(somSelf, FALSE, NULL);
             }
-#endif
         break;
     }
+#endif
 
     hwndMenu = XFldDisk_parent_WPDisk_wpDisplayMenu(somSelf,
                                                     hwndOwner,
@@ -939,7 +975,7 @@ SOM_Scope PSZ  SOMLINK xfdiskM_wpclsQueryTitle(M_XFldDisk *somSelf)
         return (M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf));
 #endif
 
-    return (cmnGetString(ID_XSSI_CLASSTITLE_DISK));
+    return cmnGetString(ID_XSSI_CLASSTITLE_DISK);
 }
 
 

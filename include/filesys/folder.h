@@ -35,7 +35,7 @@
      *
      ********************************************************************/
 
-    #ifdef SOM_XFolder_h
+    #ifdef SOM_XFolder_h            // we access structs from xfldr.idl here
 
         #pragma pack(1)                 // SOM packs structures, apparently
 
@@ -226,6 +226,74 @@
         #pragma pack()
 
     #endif // SOM_XFolder_h
+
+    /* ******************************************************************
+     *
+     *   Drive data
+     *
+     ********************************************************************/
+
+    #pragma pack(1)
+
+    /*
+     *@@ IBMDRIVEDATA:
+     *
+     *      Here's a table of values from the testing on my system
+     *      (V0.9.21 (2002-08-31) [umoeller]):
+     *
+     +      зддддддддддддддддбдддддддддддддддддддбдддддддбдддддддбдддддддбдддддддддддддддддддддд©
+     +      Ё fs             Ё bFileSystem       ЁfRemoteЁfFixed Ё fZIP  Ё bDiskType            Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё H: unformatted Ё 0xF (?!?!?)       Ё FALSE Ё TRUE  Ё FALSE Ё DRVTYPE_HARDDISK (0) Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё D: FAT16 part. Ё FSYS_FAT (1)      Ё FALSE Ё TRUE  Ё FALSE Ё DRVTYPE_HARDDISK (0) Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё C: FAT32 part. Ё FSYS_REMOTE (10)  Ё FALSE Ё TRUE  Ё FALSE Ё DRVTYPE_HARDDISK (0) Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё I: HPFS part.  Ё FSYS_HPFS_JFS (2) Ё FALSE Ё TRUE  Ё FALSE Ё DRVTYPE_HARDDISK (0) Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё N: JFS part.   Ё FSYS_HPFS_JFS (2) Ё FALSE Ё TRUE  Ё FALSE Ё DRVTYPE_HARDDISK (0) Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё R: NetBIOS     Ё 0x19 (?!?!?)      Ё TRUE  Ё TRUE  Ё FALSE Ё DRVTYPE_UNKNOWN (255)Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё X: CD w/media  Ё FSYS_CDFS (3)     Ё FALSE Ё FALSE Ё FALSE Ё DRVTYPE_CDROM (4)    Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё Y: CD w/o med. Ё FSYS_CDFS (3)     Ё FALSE Ё FALSE Ё FALSE Ё DRVTYPE_CDROM (4)    Ё
+     +      цддддддддддддддддедддддддддддддддддддедддддддедддддддедддддддедддддддддддддддддддддд╢
+     +      Ё Z: RAMFS virt. Ё 0x21 (?!?!?)      Ё TRUE  Ё FALSE Ё FALSE Ё DRVTYPE_LAN (5)      Ё
+     +      юддддддддддддддддадддддддддддддддддддадддддддадддддддадддддддадддддддддддддддддддддды
+     +
+     *      From all I've seen, ulSerial IS ALWAYS NULL.
+     *
+     *      szSerial NEVER seems to be set either.
+     *
+     *@@added V0.9.16 (2002-01-01) [umoeller]
+     */
+
+    typedef struct _IBMDRIVEDATA
+    {
+        BYTE        bFileSystem;    // one of the FSYS_* values (dosh.h)
+        BOOL        fNotLocal;      // TRUE if drive is not local
+        BOOL        fFixedDisk;     // FALSE if drive is floppy or CD-ROM
+        BOOL        fZIP;           // TRUE if drive is ZIP or something
+        BOOL        fUnknown;
+        BYTE        bUnknown;
+        BYTE        bDiskType;      // one of the DRVTYPE_* values (dosh.h)
+        WPObject    *pDisk;         // WPDisk object
+        WPFolder    *pRootFolder;   // WPRootFolder or NULL
+        ULONG       ulFreeKB;
+        ULONG       ulTotalKB;
+        BOOL        fCanLongname;
+        BOOL        fCanEAs;
+        ULONG       ulSerial;       // volume serial number
+        BYTE        cbVolLabel;     // volume label length
+        CHAR        szVolLabel[12]; // volume label
+    } IBMDRIVEDATA, *PIBMDRIVEDATA;
+
+    #pragma pack()
+
+    // global variable to WPS-internal drive data array, set in init.c
+    extern PIBMDRIVEDATA    G_paDriveData;
 
     /* ******************************************************************
      *

@@ -1934,10 +1934,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
  */
 
 BOOL mnuModifyFolderMenu(WPFolder *somSelf,
-                         HWND hwndMenu,
-                         HWND hwndCnr,
-                         ULONG ulMenuType,
-                         ULONG ulView)
+                         HWND hwndMenu,         // in: from wpModifyMenu
+                         HWND hwndCnr,          // in: from wpModifyMenu
+                         ULONG ulMenuType,      // in: from wpModifyMenu
+                         ULONG ulView)          // in: from wpModifyMenu
 {
     const ULONG *paulIDs = NULL;
     ULONG       cIDs = 0;
@@ -2080,6 +2080,34 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                                     hwndCnr,
                                     hwndMenu,
                                     ulMenuType);
+        break;
+
+        case MENU_HELPPULLDOWN:
+#ifndef __XWPLITE__
+            winhInsertMenuSeparator(hwndMenu,
+                                    MIT_END,
+                                    *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+            winhInsertMenuItem(hwndMenu,
+                               MIT_END,
+                               *G_pulVarMenuOfs + ID_XFMI_OFS_PRODINFO,
+                               cmnGetString(ID_XSSI_PRODUCTINFO),
+                               MIS_TEXT,
+                               0);
+#endif
+            if (fHotkeysInMenus)
+            {
+                CHAR szDescription[100];
+
+                // default help
+                cmnDescribeKey(szDescription,
+                               KC_VIRTUALKEY,
+                               VK_F1);
+                winhAppend2MenuItemText(hwndMenu,
+                                        WPMENUID_EXTENDEDHELP,
+                                        szDescription,
+                                        TRUE);
+            }
+
         break;
     }
 

@@ -53,44 +53,6 @@
             #define FOUNDBIT    0x40000000
         #endif
 
-    /* ******************************************************************
-     *
-     *   Drive data
-     *
-     ********************************************************************/
-
-        #pragma pack(1)
-
-        /*
-         *@@ WPSDRIVEDATA:
-         *
-         *      --  LAN drives: fNotLocal == TRUE, fFixed == TRUE
-         *
-         *@@added V0.9.16 (2002-01-01) [umoeller]
-         */
-
-        typedef struct _WPSDRIVEDATA
-        {
-            BYTE    bFileSystem;    // one of the FSYS_* values
-            BOOL    fNotLocal;      // TRUE if drive is not local
-            BOOL    fFixedDisk;     // FALSE if drive is floppy or CD-ROM
-            BOOL    fZIP;           // TRUE if drive is ZIP or something
-            BOOL    fUnknown;
-            BYTE    bUnknown;
-            BYTE    bDiskType;      // one of the DISKTYPE_* values
-            PVOID   pDisk;          // WPDisk object
-            PVOID   pRootFolder;    // WPRootFolder or NULL
-            ULONG   ulFreeKB;
-            ULONG   ulTotalKB;
-            BOOL    fCanLongname;
-            BOOL    fCanEAs;
-            ULONG   ulSerial;       // volume serial number
-            BYTE    cbVolLabel;     // volume label length
-            CHAR    szVolLabel[12]; // volume label
-        } WPSDRIVEDATA, *PWPSDRIVEDATA;
-
-        #pragma pack()
-
     #endif
 
     /* ******************************************************************
