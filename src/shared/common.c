@@ -2242,7 +2242,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
         case SP_FLDRSORT_GLOBAL:
             // G_pGlobalSettings->ReplaceSort = 0;        removed V0.9.0
-            G_pGlobalSettings->lDefaultSort = -2;        // sort by name
+            G_pGlobalSettings->lDefSortCrit = -2;        // sort by name
             G_pGlobalSettings->AlwaysSort = FALSE;
             G_pGlobalSettings->fFoldersFirst = FALSE;   // V0.9.12 (2001-05-18) [umoeller]
         break;

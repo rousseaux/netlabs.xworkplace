@@ -1,19 +1,28 @@
 
 XWorkplace 0.9.12 README
+
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated May 15, 2001
+
+Last updated June 3, 2001
 
 
 0. CONTENTS OF THIS FILE
 ========================
 
     1. INTRODUCTION
+
     2. INSTALLATION
+
     3. UPGRADING
+
     4. NATIONAL LANGUAGE SUPPORT
+
     5. GETTING STARTED
+
     6. KNOWN LIMITATIONS
+
     7. LICENSE, COPYRIGHT, DISCLAIMER
+
     8. CONTACT
 
 
@@ -41,7 +50,10 @@ Last updated May 15, 2001
     XWorkplace. Some major bugs have been fixed, and PageMage,
     XCenter, and the hook functions were enhanced further.
 
-    V0.9.12 fixes some more relatively minor bugs.
+    V0.9.12 fixes quite a number of bugs and adds new features
+    as well, such as a new "Battery" widget, file types import
+    and export, default folder views, and a mostly rewritten
+    extended folder sorting.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

@@ -319,6 +319,7 @@
 
 #include "setup.h"
 
+#include "helpers\apps.h"
 #include "helpers\cnrh.h"
 #include "helpers\dosh.h"
 #include "helpers\eah.h"
@@ -466,7 +467,7 @@ PSZ SetNewUserProfile(HAB hab,
 {
     PSZ pEnv2 = NULL;
     DOSENVIRONMENT Env;
-    if (doshGetEnvironment(&Env)
+    if (appGetEnvironment(&Env)
             == NO_ERROR)
     {
         ULONG cbEnv2 = 0;
@@ -503,46 +504,46 @@ PSZ SetNewUserProfile(HAB hab,
                 CHAR    szNewVar[1000];
                 PSZ     p;
                 sprintf(szNewVar, "USER_INI=%s", szNewProfile);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set HOME var to home directory,
                 // with Unix slashes
                 sprintf(szNewVar, "HOME=%s/%s", pszHomeBase, pNewUser->szUserName);
                 while (p = strchr(szNewVar, '\\'))
                     *p = '/';
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set USER var to user name
                 sprintf(szNewVar, "USER=%s", pNewUser->szUserName);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set USERID var to user name
                 sprintf(szNewVar, "USERID=%d", pNewUser->uid);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set USERSUBJECT var to user subject handle
                 sprintf(szNewVar, "USERSUBJECT=%d", pNewUser->hsubjUser);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set GROUP var to group name
                 sprintf(szNewVar, "GROUP=%s", pNewUser->szGroupName);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set GROUPID var to user name
                 sprintf(szNewVar, "GROUPID=%d", pNewUser->gid);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
                 // set GROUPSUBJECT var to group subject handle
                 sprintf(szNewVar, "GROUPSUBJECT=%d", pNewUser->hsubjGroup);
-                doshSetEnvironmentVar(&Env, szNewVar, FALSE);
+                appSetEnvironmentVar(&Env, szNewVar, FALSE);
 
-                doshConvertEnvironment(&Env, &pEnv2, &cbEnv2);
+                appConvertEnvironment(&Env, &pEnv2, &cbEnv2);
                     // pEnv != NULL now, which is returned
                     // == NO_ERROR!
             }
         } // end if (access(szNewProfile, 0) == 0)
 
-        doshFreeEnvironment(&Env);
+        appFreeEnvironment(&Env);
 
     } // end if (doshGetEnvironment(&Env)
 

@@ -429,9 +429,9 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     xstrcat(&strTemp, "SORTFOLDERSFIRST=NO;", 0);
             }
 
-            if (_lDefaultSort != SET_DEFAULT)
+            if (_lDefSortCrit != SET_DEFAULT)
             {
-                sprintf(szTemp, "DEFAULTSORT=%d;", _lDefaultSort);
+                sprintf(szTemp, "DEFAULTSORT=%d;", _lDefSortCrit);
                 xstrcat(&strTemp, szTemp, 0);
             }
         } // end V0.9.12 (2001-05-20) [umoeller]

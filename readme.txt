@@ -1,7 +1,7 @@
 
 XWorkplace Source README
 (W) Ulrich M”ller, July 2, 1999
-Last updated May 22, 2001, Ulrich M”ller
+Last updated June 3, 2001, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -52,6 +52,7 @@ Last updated May 22, 2001, Ulrich M”ller
 
     NOTE: The build process has been changed with V0.9.12.
     PROGREF.INF has been updated to reflect these changes.
+
     Essentially, if you managed to build XWP before, you
     need to
 
@@ -59,7 +60,8 @@ Last updated May 22, 2001, Ulrich M”ller
         match your system (this replaces the environment
         variables which were necessary previously);
 
-    2)  run "nmake dep" once;
+    2)  run "nmake dep" once to create .depend files in the
+        subdirectories;
 
     3)  run the regular "nmake" or "nmake really_all".
 

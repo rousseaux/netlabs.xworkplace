@@ -288,7 +288,7 @@ interface XFolder : WPFolder
     // settings; these have a transparent default value also
     LONG            lAlwaysSort,
                     lFoldersFirst,
-                    lDefaultSort;
+                    lDefSortCrit;
 
     BOOL            fCachedFoldersFirst;
                                   // for sort funcs

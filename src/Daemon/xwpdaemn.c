@@ -246,15 +246,6 @@ MPARAM          G_SlidingMenuMp1Saved = 0;
 // drive monitor
 ULONG           G_ulMonitorTimer = 0;
 
-// PageMage
-LINKLIST        G_llWinInfos;
-            // linked list of PGMGWININFO structs; this is auto-free,
-            // but you must use pgmwFreeWinInfo to free each item
-// ULONG           G_ulWindowCount = 0;
-            // count of array items currently in use
-HMTX            G_hmtxWindowList = 0;
-            // mutex sem protecting that array
-
 HWND            G_hwndPageMageClient = NULLHANDLE;
 
 POINTL          G_ptlCurrPos = {0};
@@ -2019,13 +2010,7 @@ int main(int argc, char *argv[])
                 G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
                         // V0.9.11 (2001-04-25) [umoeller]
 
-                arc = DosCreateMutexSem(NULL, // IDMUTEX_PGMG_WINLIST,
-                                        &G_hmtxWindowList,
-                                        0, // DC_SEM_SHARED, // unnamed, but shared
-                                        FALSE);
-
-                lstInit(&G_llWinInfos, TRUE);
-                        // V0.9.7 (2001-01-21) [umoeller]
+                pgmwInit();
 
                 G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
                                               NULLHANDLE,

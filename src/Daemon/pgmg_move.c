@@ -118,8 +118,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
     if (!bAllowUpdate)
         WinEnableWindowUpdate(G_pHookData->hwndPageMageClient, FALSE);
 
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-             == NO_ERROR)
+    if (pgmwLock())
     {
         // LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
         // LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
@@ -388,7 +387,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
                              0,
                              FS_NOMOVEWITHOWNER);
 
-        DosReleaseMutexSem(G_hmtxWindowList);
+        pgmwUnlock();
     } // end if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
 
     if (paMoveP)
@@ -399,7 +398,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
 
     return (fAnythingMoved);
 
-} // pgmmMoveIt
+}
 
 /*
  *@@ pgmmZMoveIt:

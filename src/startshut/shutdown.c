@@ -3768,6 +3768,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // first empty the trash can, process the
             // shutdown folder, and finally start closing
             // windows
+            xsdLog(LogFile, __FUNCTION__ ": Posting ID_SDDI_BEGINSHUTDOWN\n");
             WinPostMsg(pShutdownData->SDConsts.hwndMain,
                        WM_COMMAND,
                        MPFROM2SHORT(ID_SDDI_BEGINSHUTDOWN, 0),
@@ -3781,11 +3782,14 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         if (    (0 == pShutdownData->sdParams.ulRestartWPS) // restart WPS (1) or logoff (2)
              || (pShutdownData->sdParams.optWPSCloseWindows)
            )
+        {
+            xsdLog(LogFile, __FUNCTION__ ": Broadcasting WM_SAVEAPPLICATION\n");
             WinBroadcastMsg(HWND_DESKTOP,
                             WM_SAVEAPPLICATION,
                             NULL,
                             NULL,
                             BMSG_SEND | BMSG_FRAMEONLY);
+        }
 
         // pShutdownData->ulStatus is still XSD_IDLE at this point
 
@@ -4754,7 +4758,8 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 {
                     PSHUTLISTITEM pItem;
 
-                    xsdLog(pShutdownData->ShutdownLogFile, "  ID_SDMI_CLOSEITEM, hwnd: 0x%lX\n", hwndFrame);
+                    xsdLog(pShutdownData->ShutdownLogFile,
+                           "  ID_SDMI_CLOSEITEM\n");
 
                     // get task list item to close from linked list
                     pItem = xsdQueryCurrentItem(pShutdownData);

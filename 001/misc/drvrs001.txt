@@ -105,7 +105,7 @@ CATEGORY "General"
 
         DRIVER ( "DEVICE=", "DOS.SYS",
                  "DOS support",
-                 0)
+                 DRVF_NOPARAMS)
 
         DRIVER ( "DEVICE=", "VEMM.SYS",
                  "DOS Expanded Memory support",
@@ -113,12 +113,31 @@ CATEGORY "General"
         DRIVER ( "DEVICE=", "VDPMI.SYS",
                  "DOS DPMI memory support",
                  DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "VDPX.SYS",
+                 "DOS DPMI support",
+                 DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VAPM.SYS",
                  "DOS Advanced Power Management support",
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VXMS.SYS",
                  "DOS eXtended Memory Specification support",
                  DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "VW32S.SYS",
+                 "Win32s support",
+                 DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "VWIN.SYS",
+                 "Win-OS/2 support",
+                 DRVF_NOPARAMS)
+
+        DRIVER ( "DEVICE=", "ANSI.SYS",
+                 "ANSI display and keyboard support",
+                 DRVF_CMDREF)
+
+        DRIVER ( "RUN=", "SMSTART.EXE",
+                 "Systems Management Startup Daemon",
+                 DRVF_CMDREF)
+                 )
     }
 
 CATEGORY "Storage"
@@ -254,8 +273,11 @@ CATEGORY "SCSI"
         DRIVER ( "DEVICE=", "CDMGRDRV.SYS",
                  "Plextor CD-ROM Manager/2 support driver",
                  DRVF_NOPARAMS)
+        DRIVER ( "DEVICE=", "RSJSCSI.SYS",
+                 "RSJ CD-Writer support driver",
+                 DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VASPI.SYS",
-                 "DOS Advanced SCSI Programming Interface",
+                 "DOS/Windows Advanced SCSI Programming Interface",
                  DRVF_CMDREF)
     }
 
@@ -281,6 +303,11 @@ CATEGORY "Installable File Systems"
         DRIVER ( "IFS=", "UDF.IFS",
                  "UDF (DVD)",
                  DRVF_CMDREF)
+
+        DRIVER ( "IFS=", "NETWKSTA.200",
+                 "LAN requester file system",
+                 0,
+                 REQUIRES=NETBIOS),
 
         DRIVER ( "IFS=", "RAMFS.IFS",
                  "RAM disk file system (RAMFS)",
@@ -367,9 +394,16 @@ CATEGORY "Installable File Systems"
                  "ISOFS control program by Chris Wohlgemuth",
                  0)
 
-         DRIVER ( "IFS=", "TONIGY.IFS",
-                  "Tonigy Audio CD file system",
-                  DRVF_NOPARAMS)
+        DRIVER ( "IFS=", "TONIGY.IFS",
+                 "Tonigy Audio CD file system",
+                 DRVF_NOPARAMS)
+
+        DRIVER ( "IFS=", "SUBSTFSD.IFS",
+                 "SUBST file system",
+                 DRVF_NOPARAMS)
+        DRIVER ( "RUN=", "SUBSTHST.EXE",
+                 "SUBST file system daemon",
+                 DRVF_NOPARAMS)
     }
 
 CATEGORY "Video"
@@ -381,11 +415,26 @@ CATEGORY "Video"
         DRIVER ( "DEVICE=", "KMGAX64.SYS",
                  "Matrox",
                  0 )
+        DRIVER ( "DEVICE=", "VMGAX64.SYS",
+                 "Matrox DOS/Windows support",
+                 0 )
 
         DRIVER ( "DEVICE=", "SDDHELP.SYS",
                  "SciTech Display Doctor support",
                  0 )
 
+        DRIVER ( "DEVICE=", "VVGA.SYS",
+                 "VGA driver for DOS/Windows support",
+                 DRVF_NOPARAMS )
+        DRIVER ( "DEVICE=", "VSVGA.SYS",
+                 "SVGA driver for DOS/Windows support",
+                 0 )
+        DRIVER ( "DEVICE=", "VXGA.SYS",
+                 "XGA driver for DOS/Windows support",
+                 DRVF_NOPARAMS )
+        DRIVER ( "DEVICE=", "VMONO.SYS",
+                 "MGA driver for DOS/Windows support",
+                 0 )
         DRIVER ( "DEVICE=", "V8514A.SYS",
                  "8514 driver for DOS/Windows support",
                  0 )
@@ -534,7 +583,14 @@ CATEGORY "Multimedia"
                  0)
         DRIVER ( "DEVICE=", "ULTRAVDD.SYS",
                  "Gravis UltraSound virtual driver",
+                 DRVF_NOPARAMS)
+        DRIVER ( "RUN=", "ULTRADMN.EXE",
+                 "Gravis UltraSound daemon",
                  0)
+        DRIVER ( "RUN=", "ULTRALDR.EXE",
+                 "Gravis UltraSound patch loader",
+                 DRVF_NOPARAMS)
+
         DRIVER ( "DEVICE=", "VCSHDD.SYS",
                  "MMPM/2 video support driver",
                  0)
@@ -588,10 +644,6 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "LANMSGDD.OS2",
                  "General: IBM LAN logger driver",
                  0),
-        DRIVER ( "DEVICE=", "NETWKSTA.200",
-                 "General: OS/2 LAN redirector",
-                 0),
-            /* requires NETBIOS.OS2 before */
 
         DRIVER ( "DEVICE=", "AFINET.SYS",
                  "Protocol: TCP/IP stack (16-bit version)",
@@ -605,6 +657,15 @@ CATEGORY "Network"
         DRIVER ( "RUN=", "CNTRL.EXE",
                  "Protocol: TCP/IP stack daemon process",
                  0),
+        DRIVER ( "DEVICE=", "VDOSTCP.SYS",
+                 "Protocol: TCP/IP DOS/Windows SYS",
+                 0),
+        DRIVER ( "DEVICE=", "VDOSTCP.VDD",
+                 "Protocol: TCP/IP DOS/Windows VDD",
+                 0),
+        DRIVER ( "RUN=", "VDOSCTL.EXE",
+                 "Protocol: TCP/IP DOS/Windows stack daemon",
+                 0),
 
         DRIVER ( "DEVICE=", "NETBIOS.OS2",
                  "Protocol: NetBIOS API driver",
@@ -612,8 +673,17 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "AFNB.SYS",
                  "Protocol: NetBIOS sockets-to-API driver",
                  0),
+        DRIVER ( "RUN=", "AFNBINI.EXE",
+                 "Protocol: Netbios sockets daemon",
+                 0),
         DRIVER ( "DEVICE=", "NETBEUI.OS2",
                  "Protocol: Native OS/2 NetBIOS",
+                 0),
+        DRIVER ( "DEVICE=", "LANPDD.OS2",
+                 "Protocol: Netbios DOS/Windows PDD",
+                 0),
+        DRIVER ( "DEVICE=", "LANVDD.OS2",
+                 "Protocol: Netbios DOS/Windows VDD",
                  0),
 
         DRIVER ( "DEVICE=", "TCPBEUI.OS2",
@@ -625,6 +695,9 @@ CATEGORY "Network"
 
         DRIVER ( "DEVICE=", "IPX.SYS",
                  "Protocol: IPX protocol driver",
+                 0),
+        DRIVER ( "DEVICE=", "VIPX.SYS",
+                 "Protocol: IPX DOS/Windows",
                  0),
 
         DRIVER ( "DEVICE=", "NETBIOS.SYS",
@@ -653,6 +726,9 @@ CATEGORY "Network"
         DRIVER ( "BASEDEV=", "DETNE2.SYS",
                  "Adapter: NE200 card",
                  0),
+        DRIVER ( "DEVICE=", "ELNK3.OS2",
+                 "Adapter: 3Com EtherLink III Family card",
+                 0),
         DRIVER ( "DEVICE=", "EL90X.OS2",
                  "Adapter: 3Com Fast EtherLink/EtherLink XL Family card",
                  0),
@@ -669,22 +745,12 @@ CATEGORY "Network"
                  "Adapter: IBM TokenRing card",
                  0),
 
-        DRIVER ( "DEVICE=", "VDOSTCP.SYS",
-                 "TCP/IP support for DOS/Windows SYS",
-                 0),
-        DRIVER ( "DEVICE=", "VDOSTCP.VDD",
-                 "TCP/IP support for DOS/Windows VDD",
-                 0),
-        DRIVER ( "RUN=", "VDOSCTL.EXE",
-                 "TCP/IP stack daemon for DOS/Windows VDD",
-                 0),
-        DRIVER ( "DEVICE=", "VIPX.SYS",
-                 "IPX protocol support for DOS/Windows",
+        DRIVER ( "DEVICE=", "IPSPY.OS2",
+                 "IPSpy protocol driver",
                  0),
     }
 
-CATEGORY "System extensions"
-    {
+CATEGORY "System extensions"    {
         DRIVER ( "BASEDEV=", "MWDD32.SYS",
                  "Matthieu Wilm's 32-bit device driver support",
                  0),
@@ -718,4 +784,3 @@ CATEGORY "System extensions"
     }
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

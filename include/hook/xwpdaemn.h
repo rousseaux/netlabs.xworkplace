@@ -30,15 +30,10 @@
 #ifndef PAGEMAGE_HEADER_INCLUDED
     #define PAGEMAGE_HEADER_INCLUDED
 
-    /* #define DLL_VERSION         6
+    #define TIMEOUT_HMTX_WINLIST    20*1000
+                // raised V0.9.12 (2001-05-31) [umoeller]
 
-    #define INI_OK              100
-    #define INI_CREATED         101
-    #define INI_FILEPROBS       102 */
-
-    #define TIMEOUT_HMTX_WINLIST    6000
-
-    /* Which move hotkey was used */
+    // move hotkey flags
     #define MOVE_LEFT           1
     #define MOVE_RIGHT          2
     #define MOVE_UP             4
@@ -47,9 +42,9 @@
     // font ID to use for the PageMage window titles;
     // we always use the same one, because there's only one
     // in the daemon process
-    #define LCID_PAGEMAGE_FONT  ((ULONG) 1)
+    #define LCID_PAGEMAGE_FONT  ((ULONG)1)
 
-    /* Window types */
+    // window types
     // these have been moved to hook_private.h because
     // the hook also needs them
     #define WINDOW_NORMAL       0x0000
@@ -58,7 +53,6 @@
     #define WINDOW_STICKY       0x0003      // window is on sticky list
     #define WINDOW_MINIMIZE     0x0005      // window is minimized, treat as sticky
     #define WINDOW_MAXIMIZE     0x0006      // window is maximized; hide when moving
-    // #define WINDOW_MAX_OFF      0x0007      // window was maximized and has been hidden by us
     #define WINDOW_RESCAN       0x0008
 
     /*
@@ -112,6 +106,11 @@
     BOOL pgmsSaveSettings(VOID);
 
     // pgmg_winscan.c
+    APIRET pgmwInit(VOID);
+
+    BOOL pgmwLock(VOID);
+
+    VOID pgmwUnlock(VOID);
 
     PPGMGWININFO pgmwFindWinInfo(HWND hwndThis,
                                  PVOID *ppListNode);
@@ -149,18 +148,14 @@
 
     extern HPOINTER     G_hptrDaemon;
 
-    // extern PGMGLISTENTRY G_MainWindowList[MAX_WINDOWS];
     #ifdef LINKLIST_HEADER_INCLUDED
         extern LINKLIST     G_llWinInfos;
     #endif
-    // extern ULONG        G_ulWindowCount;
 
-    extern HMTX         G_hmtxWindowList;
     extern POINTL       G_ptlCurrPos;
     extern SIZEL        G_szlEachDesktopReal;
     extern SIZEL        G_szlEachDesktopInClient;
     extern BOOL         G_bConfigChanged;
     extern SWP          G_swpPgmgFrame;
-    // extern CHAR         G_szFacename[PGMG_TEXTLEN];
 #endif
 

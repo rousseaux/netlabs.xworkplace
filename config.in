@@ -78,6 +78,9 @@ VACBASE = K:\libs\IBMVAC
 XWPRUNNING = J:\Tools\WPS\XWorkplace
 !endif
 
+# DEBUG CODE
+# ----------
+
 # XWP_DEBUG: set to YES if you want debug code;
 # set to nothing if not.
 # WARNING: Enabling debug code has side effects.

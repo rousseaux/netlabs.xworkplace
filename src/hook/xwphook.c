@@ -731,13 +731,13 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                             if (mp1)        // window being activated:
                             {
                                 // it's a top-level window:
-                                WinPostMsg(G_HookData.hwndPageMageClient,
-                                           PGMG_INVALIDATECLIENT,
-                                           (MPARAM)FALSE,   // delayed
-                                           0);
                                 WinPostMsg(G_HookData.hwndPageMageMoveThread,
                                            PGOM_FOCUSCHANGE,
                                            0,
+                                           0);
+                                WinPostMsg(G_HookData.hwndPageMageClient,
+                                           PGMG_INVALIDATECLIENT,
+                                           (MPARAM)FALSE,   // delayed
                                            0);
                             }
                         break;
@@ -831,12 +831,15 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                )
             {
                 // hack this to move behind PageMage frame
-                // G_HookData.fDisableSwitching = TRUE;
+
+                // but disable switching V0.9.12 (2001-05-31) [umoeller]
+                BOOL fOld = G_HookData.fDisableSwitching;
+                G_HookData.fDisableSwitching = TRUE;
                 WinSetWindowPos(G_HookData.hwndPageMageFrame,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_ZORDER | SWP_SHOW);
-                // G_HookData.fDisableSwitching = FALSE;
+                G_HookData.fDisableSwitching = fOld;
             }
         }
     }

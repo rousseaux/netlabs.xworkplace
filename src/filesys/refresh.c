@@ -306,11 +306,28 @@ VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *
  ********************************************************************/
 
+#define REMOVE_NOTHING  0
+#define REMOVE_NODE     1
+#define REMOVE_FOLDER   2
+
 /*
  *@@ PumpAgedNotification:
  *      called from PumpNotifications for each notification
  *      which has aged enough to be added to the folder
  *      specified in the XWPNOTIFY struct.
+ *
+ *      This function must return one of:
+ *
+ *      -- REMOVE_NOTHING: leave the notification on the
+ *         list.
+ *
+ *      -- REMOVE_NODE: caller should remove this one node.
+ *
+ *      -- REMOVE_FOLDER: _this_ function has removed all
+ *         notifications for the folder specified in pNotify.
+ *         This is to notify the caller that the notifications
+ *         list might have changed totally and internal
+ *         pointers are no longer valid.
  *
  *      Preconditions:
  *
@@ -323,11 +340,14 @@ VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *@@added V0.9.9 (2001-02-04) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
+ *@@changed V0.9.12 (2001-05-31) [umoeller]: added REMOVE_* return value for caller
  */
 
-VOID PumpAgedNotification(PXWPNOTIFY pNotify,
-                          PLISTNODE pGlobalNode)
+ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
 {
+    // per default, remove the node V0.9.12 (2001-05-29) [umoeller]
+    ULONG ulrc = REMOVE_NODE;
+
     switch (pNotify->CNInfo.bAction)
     {
         case RCNF_FILE_ADDED:
@@ -337,10 +357,8 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
                                       pNotify->CNInfo.szName);
                     // this will wake the object up
                     // if it hasn't been awakened yet
-
-            refrRemoveNotification(pNotify,
-                                   pGlobalNode);
-        break; }
+        }
+        break;
 
         case RCNF_FILE_DELETED:
         case RCNF_DIR_DELETED:
@@ -384,7 +402,8 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
                                            0);
                         _wpFree(pobj);
                         _wpSetFldrFlags(pNotify->pFolder, flFolder);
-                    break; }
+                    }
+                    break;
 
                     // case NO_ERROR: the file has reappeared.
                     // DO NOT FREE IT, or we would delete a
@@ -393,10 +412,8 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
                 }
             }
             // else object not in folder: no problem there
-
-            refrRemoveNotification(pNotify,
-                                   pGlobalNode);
-        break; }
+        }
+        break;
 
         /*
          * RCNF_XWP_FULLREFRESH:
@@ -415,6 +432,9 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
             // kick out all pending notifications
             // for this folder
             refrClearFolderNotifications(pFolder);
+
+            // tell caller that we nuked the list
+            ulrc = REMOVE_FOLDER;
 
             // we need a full refresh on the folder...
             // set the folder flag which causes the folder
@@ -440,14 +460,11 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
                           THRF_PMMSGQUEUE | THRF_TRANSIENT,
                           (ULONG)pFolder);
             }
-        break; }
-
-        default:
-            // we don't know this code (just to avoid
-            // memory leaks here)
-            refrRemoveNotification(pNotify,
-                                   pGlobalNode);
+        }
+        break;
     }
+
+    return (ulrc);
 }
 
 /*
@@ -468,6 +485,7 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
  *
  *@@added V0.9.9 (2001-02-01) [umoeller]
  *@@changed V0.9.9 (2001-04-07) [umoeller]: disabled overflow handling for now, which kept crashing
+ *@@changed V0.9.12 (2001-05-31) [umoeller]: fixed more list crashes on overflow
  */
 
 BOOL PumpNotifications(VOID)
@@ -494,8 +512,7 @@ BOOL PumpNotifications(VOID)
 
             // advance to next node before processing...
             // the node might get deleted
-            PLISTNODE   pGlobalNodeSaved = pGlobalNodeThis;
-            pGlobalNodeThis = pGlobalNodeThis->pNext;
+            PLISTNODE   pNext = pGlobalNodeThis->pNext;
 
             // pNotify->ulMS holds the milliseconds offset
             // at the time the notification was added.
@@ -505,8 +522,29 @@ BOOL PumpNotifications(VOID)
             if (pNotify->ulMS + PUMP_AGER_MILLISECONDS <= ulMSNow)
             {
                 // aged enough:
-                PumpAgedNotification(pNotify,
-                                     pGlobalNodeSaved);
+                // have it processed, and evaluate
+                // the return value (our list might
+                // have been modified)
+                // V0.9.12 (2001-05-31) [umoeller]
+                switch (PumpAgedNotification(pNotify))
+                {
+                    case REMOVE_NODE:
+                        // ok, remove the node:
+                        lstRemoveNode(&G_llAllNotifications,
+                                      pGlobalNodeThis);
+                    break;
+
+                    case REMOVE_FOLDER:
+                        // function has nuked all
+                        // notifications for the folder itself:
+                        // start over with the list, pNext
+                        // can be invalid!
+                        pNext = lstQueryFirstNode(&G_llAllNotifications);
+                                // can be NULL if nothing left
+                        // and recount
+                        fNotificationsLeft = FALSE;
+                    break;
+                }
             }
             else
             {
@@ -516,6 +554,11 @@ BOOL PumpNotifications(VOID)
                     ulrc = ulMStoGoThis;
                 fNotificationsLeft = TRUE;
             }
+
+            pGlobalNodeThis = pNext;
+                    // pNext is the next node, unless REMOVE_FOLDER
+                    // was returned above; can be NULL in any case
+                    // V0.9.12 (2001-05-31) [umoeller]
         }
     }
 
@@ -944,7 +987,8 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                 if (fSemOwned)
                     wpshReleaseNotifySem();
             } // if (pLastBackslash)
-        break; }
+        }
+        break;
     }
 
     if (!fStored)
@@ -1020,7 +1064,8 @@ MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     // but do this only ONCE
                     pLastValidFolder = NULL;
                 }
-            break; }
+            }
+            break;
 
             default:
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);

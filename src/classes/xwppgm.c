@@ -77,7 +77,7 @@
 
 // headers in /helpers
 #include "helpers\dosh.h"
-#include "helpers\standards.h"
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"
 
 // SOM headers which don't crash with prec. header files

@@ -281,7 +281,7 @@ all:            idl helpers helpers_exe_mt compile_all link
 
 # "really_all" references "all" and compiles really everything.
 # This must be used for the release version.
-really_all:     idl helpers helpers_exe_mt compile_really_all link nls
+really_all:     idl helpers helpers_exe_mt compile_really_all tools link nls
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
 

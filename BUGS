@@ -35,7 +35,6 @@ XCenter:
     --  XCenter xbutton: suspend doesn't always work
 
     --  restoring VIO sessions:
-        I THINK (which means I am not sure) that you can
         check in the window words for this.
         For minimized and for maximized there are window
         words for the x and y position.
@@ -103,6 +102,8 @@ OS/2 Kernel:
     -- Set Path -> Browse will not work (Standard file dialog doesn't react when
        OK is pressed -> nothing happens.
 
+    -- Select invalid on classpath selects all zip files.
+
 hotkeys:
        if batchfiles should start in minimized state, from time to time
        they appear on desktop.
@@ -111,6 +112,9 @@ hotkeys:
 PageMage:
     --  causes PM lockups at times (Ctrl+Esc unlocks)
     --  stops switching at times
+    --  make window larger than desktop, set pagemage 1x4 and move big window
+        so it will be in 1 and 2 desktop - switching desktops and moving this
+        window causes PM lockup.
 
 hook:
     --  screen borders page:

@@ -136,7 +136,7 @@
  *
  *      A linked list of these exists in G_llTypesWithFilters,
  *      which is built on the first call to
- *      ftypGetCachedTypesWithFilters.
+ *      GetCachedTypesWithFilters.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
@@ -230,20 +230,21 @@ VOID ftypUnlockCaches(VOID)
 }
 
 /*
- *@@ TraverseWPSTypes:
+ * TraverseWPSTypes:
  *      traversal function for treeTraverse (tree.c)
  *      to add all tree nodes to a linked list so
  *      we can delete all tree nodes quickly.
  *
- *@@added V0.9.9 (2001-02-06) [umoeller]
+ *added V0.9.9 (2001-02-06) [umoeller]
+ *removed V0.9.12 (2001-05-31) [umoeller], no longer needed
  */
 
-void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
+/* void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
                       void *pUser)      // in: PLINKLIST to add to
 {
     lstAppendItem((PLINKLIST)pUser,
                   t);
-}
+} */
 
 /*
  *@@ ftypInvalidateCaches:
@@ -255,7 +256,7 @@ void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
  *      is changed. Otherwise XWP can't pick up the changes.
  *
  *      After the caches have been invalidated, the next
- *      call to ftypGetCachedTypesWithFilters or ftypFindWPSType
+ *      call to GetCachedTypesWithFilters or FindWPSTypeAssoc
  *      will reinitialize the caches automatically.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
@@ -335,14 +336,14 @@ VOID ftypInvalidateCaches(VOID)
 }
 
 /*
- *@@ ftypGetCachedTypesWithFilters:
+ *@@ GetCachedTypesWithFilters:
  *      returns the LINKLIST containing XWPTYPEWITHFILTERS pointers,
  *      which is built internally if this hasn't been done yet.
  *
  *      This is new with V0.9.9 to speed up getting the filters
  *      for the XWP file types so we don't have to retrieve these
  *      from OS2.INI all the time (for each single data file which
- *      is awoken during folder population).
+ *      is awakened during folder population).
  *
  *      Preconditions:
  *
@@ -351,7 +352,7 @@ VOID ftypInvalidateCaches(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PLINKLIST ftypGetCachedTypesWithFilters(VOID)
+PLINKLIST GetCachedTypesWithFilters(VOID)
 {
     if (!G_fTypesWithFiltersValid)
     {
@@ -495,7 +496,7 @@ VOID BuildWPSTypesCache(VOID)
 }
 
 /*
- *@@ ftypFindWPSType:
+ *@@ FindWPSTypeAssoc:
  *      returns the PWPSTYPEASSOCTREENODE containing the
  *      WPS association objects for the specified type.
  *
@@ -509,17 +510,15 @@ VOID BuildWPSTypesCache(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
+PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(const char *pcszType)
 {
     PWPSTYPEASSOCTREENODE pWPSType = NULL;
 
     if (!G_fWPSTypesValid)
-    {
         // create a copy of the data from OS2.INI... this
         // is much faster than using the Prf* functions all
         // the time
         BuildWPSTypesCache();
-    }
 
     if (G_fWPSTypesValid)
     {
@@ -692,13 +691,15 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
                                                // with file types (e.g. "C Code", "Plain text")
 {
     ULONG   ulrc = 0;
-    // loop thru all extended file types which have
-    // filters assigned to them to check whether the
-    // filter matches the object title
 
     if (ftypLockCaches())
     {
-        PLINKLIST pllTypesWithFilters = ftypGetCachedTypesWithFilters();
+        // loop thru all extended file types which have
+        // filters assigned to them to check whether the
+        // filter matches the object title
+        PLINKLIST pllTypesWithFilters = GetCachedTypesWithFilters();
+
+        _Pmpf((__FUNCTION__ ": getting types for objtitle %s", pcszObjectTitle));
 
         if (pllTypesWithFilters)
         {
@@ -714,6 +715,8 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
                     // check if this matches the data file name
                     if (strhMatchOS2(pFilterThis, pcszObjectTitle))
                     {
+                        _Pmpf(("  found type %s", pTypeWithFilters->pszType));
+
                         // matches:
                         // now we have:
                         // --  pszFilterThis e.g. "*.c"
@@ -779,7 +782,7 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
         do
         {
             // get associations from WPS INI data
-            PWPSTYPEASSOCTREENODE pWPSType = ftypFindWPSType(pszType2);
+            PWPSTYPEASSOCTREENODE pWPSType = FindWPSTypeAssoc(pszType2);
 
             #ifdef DEBUG_ASSOCS
                 _Pmpf((__FUNCTION__ ": got %d bytes for type %s",
@@ -871,6 +874,7 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *      -- ERROR_FILE_EXISTS: pcszNew is already occupied.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@changed V0.9.12 (2001-05-31) [umoeller]: mutex was missing, fixed
  */
 
 APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
@@ -878,90 +882,95 @@ APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
 {
     APIRET arc = FALSE;
 
-    // check WPS file types... this better exist, or we'll stop
-    // right away
-    PWPSTYPEASSOCTREENODE pWPSType = ftypFindWPSType(pcszOld);
-    if (!pWPSType)
-        arc = ERROR_FILE_NOT_FOUND;
-    else
+    if (ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
     {
-        // pcszNew must not be used yet.
-        if (ftypFindWPSType(pcszNew))
-            arc = ERROR_FILE_EXISTS;
+        // check WPS file types... this better exist, or we'll stop
+        // right away
+        PWPSTYPEASSOCTREENODE pWPSType = FindWPSTypeAssoc(pcszOld);
+        if (!pWPSType)
+            arc = ERROR_FILE_NOT_FOUND;
         else
         {
-            // OK... first of all, we must write a new entry
-            // into "PMWP_ASSOC_TYPE" with the old handles.
-            // There's no such thing as a "rename INI entry",
-            // so we can only write a new one and delete the old
-            // one.
-
-            if (!PrfWriteProfileData(HINI_USER,
-                                     (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                     (PSZ)pcszNew,
-                                     pWPSType->pszObjectHandles,
-                                     pWPSType->cbObjectHandles))
-                arc = ERROR_INVALID_DATA;
+            // pcszNew must not be used yet.
+            if (FindWPSTypeAssoc(pcszNew))
+                arc = ERROR_FILE_EXISTS;
             else
             {
-                PSZ pszXWPParentTypes;
-                // OK so far: delete the old entry
-                PrfWriteProfileData(HINI_USER,
-                                    (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                    (PSZ)pcszOld,
-                                    NULL,
-                                    0);
+                // OK... first of all, we must write a new entry
+                // into "PMWP_ASSOC_TYPE" with the old handles.
+                // There's no such thing as a "rename INI entry",
+                // so we can only write a new one and delete the old
+                // one.
 
-                // now update the the XWP entries, if any exist
-
-                // 1) associations linked to this file type:
-                prfhRenameKey(HINI_USER,
-                              INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                              pcszOld,
-                              NULL,         // same app
-                              pcszNew);
-                // 2) parent types for this:
-                prfhRenameKey(HINI_USER,
-                              INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                              pcszOld,
-                              NULL,         // same app
-                              pcszNew);
-
-                // 3) now... go thru ALL of "XWorkplace:FileTypes"
-                // and check if any of the types in there has specified
-                // pcszOld as its parent type. If so, update that entry.
-                if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                                INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                &pszXWPParentTypes)))
+                if (!PrfWriteProfileData(HINI_USER,
+                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                         (PSZ)pcszNew,
+                                         pWPSType->pszObjectHandles,
+                                         pWPSType->cbObjectHandles))
+                    arc = ERROR_INVALID_DATA;
+                else
                 {
-                    PSZ pParentThis = pszXWPParentTypes;
-                    while (*pParentThis)
+                    PSZ pszXWPParentTypes;
+                    // OK so far: delete the old entry
+                    PrfWriteProfileData(HINI_USER,
+                                        (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                        (PSZ)pcszOld,
+                                        NULL,
+                                        0);
+
+                    // now update the the XWP entries, if any exist
+
+                    // 1) associations linked to this file type:
+                    prfhRenameKey(HINI_USER,
+                                  INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                  pcszOld,
+                                  NULL,         // same app
+                                  pcszNew);
+                    // 2) parent types for this:
+                    prfhRenameKey(HINI_USER,
+                                  INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                  pcszOld,
+                                  NULL,         // same app
+                                  pcszNew);
+
+                    // 3) now... go thru ALL of "XWorkplace:FileTypes"
+                    // and check if any of the types in there has specified
+                    // pcszOld as its parent type. If so, update that entry.
+                    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                                    INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                    &pszXWPParentTypes)))
                     {
-                        PSZ pszThisParent = prfhQueryProfileData(HINI_USER,
-                                                                 INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                                 pParentThis,
-                                                                 NULL);
-                        if (pszThisParent)
+                        PSZ pParentThis = pszXWPParentTypes;
+                        while (*pParentThis)
                         {
-                            if (!strcmp(pszThisParent, pcszOld))
-                                // replace this entry
-                                PrfWriteProfileString(HINI_USER,
-                                                      (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                      pParentThis,
-                                                      (PSZ)pcszNew);
+                            PSZ pszThisParent = prfhQueryProfileData(HINI_USER,
+                                                                     INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                                     pParentThis,
+                                                                     NULL);
+                            if (pszThisParent)
+                            {
+                                if (!strcmp(pszThisParent, pcszOld))
+                                    // replace this entry
+                                    PrfWriteProfileString(HINI_USER,
+                                                          (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                          pParentThis,
+                                                          (PSZ)pcszNew);
 
-                            free(pszThisParent);
+                                free(pszThisParent);
+                            }
+                            pParentThis += strlen(pParentThis) + 1;
                         }
-                        pParentThis += strlen(pParentThis) + 1;
-                    }
 
-                    free(pszXWPParentTypes);
+                        free(pszXWPParentTypes);
+                    }
                 }
+
             }
 
+            ftypInvalidateCaches();
         }
 
-        ftypInvalidateCaches();
+        ftypUnlockCaches();
     }
 
     return (arc);
@@ -1173,69 +1182,65 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
 {
     PLINKLIST   pllAssocs = NULL;
 
+    PSZ pszTypes;
+
     // create list of type strings (to be freed)
-    PLINKLIST   pllTypes = lstCreate(TRUE);       // free items
-    if (pllTypes)
+    LINKLIST   llTypes;
+    ULONG       cTypes = 0;
+    lstInit(&llTypes, TRUE);
+
+    // check if the data file has a file type
+    // assigned explicitly
+    if (pszTypes = _wpQueryType(somSelf))
+        // yes, explicit type(s):
+        // decode those
+        cTypes = AppendTypesFromString(pszTypes,
+                                       '\n',     // separator used by wpQueryType
+                                       &llTypes);
+
+    // add automatic (extended) file types based on the
+    // object file name
+    cTypes += AppendTypesForFile(_wpQueryTitle(somSelf),
+                                 &llTypes);
+
+    if ((cTypes == 0) && (fUsePlainTextAsDefault))
     {
-        ULONG       cTypes = 0;
-
-        // check if the data file has a file type
-        // assigned explicitly
-        PSZ pszTypes = _wpQueryType(somSelf);
-
-        if (pszTypes)
-        {
-            // yes, explicit type(s):
-            // decode those
-            cTypes = AppendTypesFromString(pszTypes,
-                                           '\n',
-                                           pllTypes);
-        }
-
-        // add automatic (extended) file types based on the
-        // object file name
-        cTypes += AppendTypesForFile(_wpQueryTitle(somSelf),
-                                     pllTypes);
-
-        if ((cTypes == 0) && (fUsePlainTextAsDefault))
-        {
-            // we still have no types: this happens if
-            // 1) no explicit type was assigned and
-            // 2) none of the type filters matched
-            // --> in that case, use "Plain Text"
-            if (lstAppendItem(pllTypes, strdup("Plain Text")))
-                cTypes++;
-        }
-
-        if (cTypes)
-        {
-            // OK, file type(s) found (either explicit or automatic):
-
-            // create list of associations (WPProgram or WPProgramFile)
-            // from the types list we had above
-            PLISTNODE pNode = lstQueryFirstNode(pllTypes);
-
-            // loop thru list
-            while (pNode)
-            {
-                PSZ pszTypeThis = (PSZ)pNode->pItemData;
-
-                if (!pllAssocs)
-                    // first loop: create list of assocs to be returned
-                    pllAssocs = lstCreate(FALSE);
-
-                ftypListAssocsForType(pszTypeThis,
-                                      pllAssocs);
-                pNode = pNode->pNext;
-            }
-
-            #ifdef DEBUG_ASSOCS
-                _Pmpf(("    ftypQueryAssociatedProgram: got %d assocs", cAssocObjects));
-            #endif
-        }
-
-        lstFree(&pllTypes);
+        // we still have no types: this happens if
+        // 1) no explicit type was assigned and
+        // 2) none of the type filters matched
+        // --> in that case, use "Plain Text"
+        if (lstAppendItem(&llTypes, strdup("Plain Text")))
+            cTypes++;
     }
+
+    if (cTypes)
+    {
+        // OK, file type(s) found (either explicit or automatic):
+
+        // create list of associations (WPProgram or WPProgramFile)
+        // from the types list we had above
+        PLISTNODE pNode = lstQueryFirstNode(&llTypes);
+
+        // loop thru list
+        while (pNode)
+        {
+            PSZ pszTypeThis = (PSZ)pNode->pItemData;
+
+            if (!pllAssocs)
+                // first loop: create list of assocs to be returned
+                pllAssocs = lstCreate(FALSE);
+
+            ftypListAssocsForType(pszTypeThis,
+                                  pllAssocs);
+            pNode = pNode->pNext;
+        }
+
+        #ifdef DEBUG_ASSOCS
+            _Pmpf(("    ftypBuildAssocsList: got %d assocs", cAssocObjects));
+        #endif
+    }
+
+    lstClear(&llTypes);
 
     return (pllAssocs);
 }
@@ -3915,7 +3920,7 @@ VOID FillListboxWithWPSFilters(HWND hwndDlg)
         BOOL        fUnknownOnly = winhIsDlgItemChecked(hwndDlg,
                                                         ID_XSDI_FT_UNKNOWNONLY);
 
-        PLINKLIST   pllXWPTypesWithFilters = ftypGetCachedTypesWithFilters();
+        PLINKLIST   pllXWPTypesWithFilters = GetCachedTypesWithFilters();
 
         APIRET      arc;
 

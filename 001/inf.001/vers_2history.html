@@ -9,15 +9,7 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<H6>"A designer knows he has arrived at
-perfection not when there is no longer anything to add, but when there
-is no longer anything to take away."
-<P>Antoine de Saint-Exupery</H6>
-
-This page lists the revision history of XWorkplace (since V0.9.0 was released).
-The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
-
-<P><B>XWorkplace 0.9.12 (May 15, 2001)</B>
+<P><B>XWorkplace 0.9.12 (June 3, 2001)</B>
 
 <H6>New features:
 
@@ -35,7 +27,8 @@ of the IBM networking software. Reworked the "Module" page in XFldProgramFile fo
 displaying additional data, if available. We also support NOSTUB executables now
 (e.g. JFS.IFS).
 <P><LI>General: Added "Fix class titles" feature to "XWorkplace setup".
-
+<P><LI>"OS/2 Kernel": Reworked network drivers, Paul Ratcliffe added new driver
+descriptions.
 </UL>Miscellaneous changes:
 <UL><LI>General: Reworked trap logs a bit for more lucid output. Added seg:ofs translation of
 trapping CS:EIP for each stack frame.
@@ -69,13 +62,13 @@ Fixed, this now _really_ displays the sector size.
 <P><LI>Extended file types: Removing an association or type on program/file settings
 notebook pages caused a trap. Fixed. Also fixed a small memory leak.
 <P><LI>"Workplace Shell": "Undo" never really worked on the "Sort" page. Fixed.
-<P><LI>OS/2 Kernel: "Drivers" page frequently displayed garbage for the driver
+<P><LI>"OS/2 Kernel": "Drivers" page frequently displayed garbage for the driver
 info. Fixed.
-<P><LI>OS/2 Kernel: HPFS and HPFS386 dialogs crashed if no parameters existed
+<P><LI>"OS/2 Kernel": HPFS and HPFS386 dialogs crashed if no parameters existed
 in CONFIG.SYS. Fixed, thanks Lars Erdmann.
-<P><LI>OS/2 Kernel: HPFS386 dialog displayed nothing if HPFS386.INI wasn't explicitly
+<P><LI>"OS/2 Kernel": HPFS386 dialog displayed nothing if HPFS386.INI wasn't explicitly
 given on the IFS line in CONFIG.SYS. Fixed.
-<P><LI>OS/2 Kernel: Fixed another quirk in the CONFIG.SYS routines which caused
+<P><LI>"OS/2 Kernel": Fixed another quirk in the CONFIG.SYS routines which caused
 the wrong line to be replaced in rare cases.
 <P><LI>Trash can wasn't very good at setting meaningful drive support defaults. Fixed;
 per default drives are supported only if they are FAT, HPFS, JFS, or FAT32.
@@ -93,6 +86,8 @@ widget classes. Fixed, added mutex protection to DLL loading.
 <P><LI>XCenter: Hopefully fixed hang on XShutdown.
 <P><LI>XCenter: X-Button started shutdown/restart WPS etc. on XCenter thread. Fixed,
 now started on thread 1.
+<P><LI>PageMage: reworked internal mutex handling some. This seems to fix some of
+the strange PM hangs that occured sporadically.
 <P><LI>Hook: Martin Lafaix fixed the new sliding menus mechanism introduced with
 V0.9.11. Pulldowns are no longer delayed, and all submenu selections should be
 properly processed now (except for some Netscape submenus, but that's a minor annoyance).

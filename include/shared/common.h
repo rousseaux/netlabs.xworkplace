@@ -961,7 +961,7 @@
         BYTE        fFoldersFirst;
                         // global sort setting for "folders first"
                         // (TRUE or FALSE)
-        LONG        lDefaultSort;
+        LONG        lDefSortCrit;
                         // new global sort criterion (moved this down here
                         // because the value is incompatible with the earlier
                         // setting above, which has been disabled);

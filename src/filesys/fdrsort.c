@@ -85,7 +85,7 @@
  *          The only documented thing is the ALWAYSSORT setup
  *          string.
  *
- *      Besides, the whole concept is so complicated that doubt
+ *      Besides, the whole concept is so complicated that I doubt
  *      many users even know what "sort classes" or "details classes"
  *      are about, even though they may set these in a folder's
  *      settings notebook.
@@ -106,8 +106,8 @@
  *      and store it in XWorkplace's instance data. We can therefore
  *      manipulate the "Always sort" flag in there also.
  *
- *      We add that with the old XFolder already. So, what's
- *      new with 0.9.12?
+ *      This was already added with the old XFolder already. So,
+ *      what's new with 0.9.12?
  *
  *      The old folder sort code (back from XFolder, used
  *      before 0.9.12) simply assumed that all items in
@@ -469,9 +469,9 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
 
                 // now check the default sort item...
                 CheckDefaultSortItem(hwndSortMenu,
-                                     (_lDefaultSort == SET_DEFAULT)
-                                        ? pGlobalSettings->lDefaultSort
-                                        : _lDefaultSort);
+                                     (_lDefSortCrit == SET_DEFAULT)
+                                        ? pGlobalSettings->lDefSortCrit
+                                        : _lDefSortCrit);
 
                 // add "folders first"
                 winhInsertMenuSeparator(hwndSortMenu,
@@ -721,7 +721,7 @@ LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
             WinCompareStrings to WPS value, which
             is then translated to cnr comparison
             value AGAIN, which must be -1, 0, or
-            +1. Who came up with this bullshit?
+            +1. Who came up with this crap?
       */
 
         ULONG ul = WinCompareStrings(G_habThread1,
@@ -906,10 +906,14 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
 
         if (IsFldr1 != IsFldr2)
         {
+            // only one of the two is a folder:
+
             if (IsFldr1)
+                // 1 is folder, but 2 is not:
                 return (-1);
-            else if (IsFldr2)
-                return (1);
+
+            // well, then 2 is folder, but 1 is not:
+            return (1);
         }
 
         // else: both are folders, or both are non-folders:
@@ -924,6 +928,8 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
 
     if (     (f1IsOfSortClass)
           && (f2IsOfSortClass)
+          // && (_wpIsSortAttribAvailable(pFolder, pSortInfo->lDefaultSort))
+                // added V0.9.12 (2001-06-03) [umoeller]
        )
     {
         // OK, we can go for the data values... this is VERY
@@ -931,7 +937,7 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
         // directly after the MINIRECORDCORE of an object.
         // The field offset has been set by fdrQuerySortFunc.
         PBYTE   pb1 =   (PBYTE)pmrc1                // object 1's MINIRECORDCORE
-                      + sizeof(MINIRECORDCORE)      // plus MINIRECORDCORE: start of data
+                      + sizeof(MINIRECORDCORE)      // skip MINIRECORDCORE --> details data
                       + pSortInfo->ulFieldOffset;   // details column field offset
         PBYTE   pb2 =   (PBYTE)pmrc2
                       + sizeof(MINIRECORDCORE)
@@ -993,36 +999,61 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                             ? pGlobalSettings->fFoldersFirst
                             : _lFoldersFirst;
 
+    _Pmpf((__FUNCTION__ ": FOLDERS_FIRST = %d", fFoldersFirst));
+
     if (lSort == SET_DEFAULT)
-        lSort =  pGlobalSettings->lDefaultSort;
+        lSort =  pGlobalSettings->lDefSortCrit;
 
     switch (lSort)
     {
         // hard-coded criteria: return sort functions from shared\cnrsort.c
         case -1:
             if (fFoldersFirst)
+            {
+                _Pmpf(("  returning compareType, folders first"));
                 return ((PFN)fnCompareTypeFoldersFirst);
+            }
             else
+            {
+                _Pmpf(("  returning compareType, NO folders first"));
                 return ((PFN)fnCompareType);
+            }
 
         case -2:
             if (fFoldersFirst)
+            {
+                _Pmpf(("  returning compare name, folders first"));
                 return ((PFN)fnCompareNameFoldersFirst);
+            }
             else
+            {
+                _Pmpf(("  returning compare name, NO folders first"));
                 return ((PFN)fnCompareName);
+            }
 
         case -3:
             if (fFoldersFirst)
+            {
+                _Pmpf(("  returning compare class, folders first"));
                 return ((PFN)fnCompareClassFoldersFirst);
+            }
             else
+            {
+                _Pmpf(("  returning compare class, NO folders first"));
                 return ((PFN)fnCompareClass);
+            }
 
         case -4:
             if (fFoldersFirst)
+            {
+                _Pmpf(("  returning compare extension, folders first"));
                 return ((PFN)fnCompareExtFoldersFirst);
+            }
             else
+            {
+                _Pmpf(("  returning compare class, NO folders first"));
                 return ((PFN)fnCompareExt);
-
+            }
         default:
         {
             // looks like caller wants a details column... well then.
@@ -1085,16 +1116,25 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                             psi->pfnCompare = (PFNCOMPARE)CompareTime; */
 
                         else
+                        {
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                   "Unsupported sortby format %d",
+                                   pcfi->flData);
                             // unsupported format: sort by name then
                             // (shouldn't happen, but better be safe
                             // than sorry)
                             return (PFN)fnCompareName;
+                        }
                     }
 
                     // 3) set the cached "folders first" field so
                     //    that fnCompareDetailsColumn can quickly
                     //    read this
                     _fCachedFoldersFirst = fFoldersFirst;
+
+                    _Pmpf(("  returning compare details, column %d, folders first: %d",
+                            psi->lCurrentSort,
+                            fFoldersFirst));
 
                     // 4) return the details column _cnr_ comparison func,
                     //    which will use the WPS comparison func
@@ -1104,6 +1144,9 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
             }
         }
     }
+
+    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "Invalid sort criterion %d", lSort);
 
     // invalid lSort specified:
     return ((PFN)fnCompareName);
@@ -1212,6 +1255,7 @@ MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwn
  *@@changed V0.9.0 [umoeller]: this used to be an instance method
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.12 (2001-05-18) [umoeller]: now setting wait pointer
+ *@@changed V0.9.12 (2001-06-03) [umoeller]: cnrs didn't pick up changes, fixed
  */
 
 VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
@@ -1239,9 +1283,9 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
             // get our sort comparison func
             PFN             pfnSort =  (AlwaysSort)
                                            ? fdrQuerySortFunc(somSelf,
-                                                              (_lDefaultSort == SET_DEFAULT)
-                                                                 ? pGlobalSettings->lDefaultSort
-                                                                 : _lDefaultSort)
+                                                              (_lDefSortCrit == SET_DEFAULT)
+                                                                 ? pGlobalSettings->lDefSortCrit
+                                                                 : _lDefSortCrit)
                                            : NULL;
             CNRINFO         CnrInfo = {0};
             BOOL            Update = FALSE;
@@ -1255,7 +1299,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                         _lAlwaysSort, pGlobalSettings->AlwaysSort ));
                 _Pmpf(( "  ALWAYS_SORT returned %d", AlwaysSort ));
                 _Pmpf(( "  _Default: %d, Global->Default: %d",
-                        _lDefaultSort, pGlobalSettings->lDefaultSort ));
+                        _lDefSortCrit, pGlobalSettings->lDefSortCrit ));
                 _Pmpf(( "  pfnSort is 0x%lX", pfnSort ));
             #endif
 
@@ -1303,29 +1347,36 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
 
             // finally, set the cnr sort function: we perform these checks
             // to avoid cnr flickering
-            if (    // sort function changed?
-                    /* (CnrInfo.pSortRecord != (PVOID)pfnSort)
+            // V0.9.12 (2001-06-03) [umoeller]: no, we must do this always
+            // because otherwise changes won't get picked up by the cnr
+            /* if (    // sort function changed?
+                    (CnrInfo.pSortRecord != (PVOID)pfnSort)
                     // ^^^ disabled this check, because we can now have
                     // the same sort proc for several criteria
                     // V0.9.12 (2001-05-18) [umoeller]
-                 || */
+                 ||
                     // CCS_AUTOPOSITION flag changed above?
                     (Update)
                  || (fForce)
-               )
+               ) */
             {
                 #ifdef DEBUG_SORT
                     _Pmpf(( "  Resetting pSortRecord to %lX", pfnSort ));
                 #endif
 
+                CnrInfo.pSortRecord = NULL;;
+                WinSendMsg(hwndCnr,
+                           CM_SETCNRINFO,       // @@todo, is this necessary?
+                           (MPARAM)&CnrInfo,
+                           (MPARAM)CMA_PSORTRECORD);
+
                 // set the cnr sort function; if this is != NULL, the
                 // container will always sort the records. If auto-sort
                 // is off, pfnSort has been set to NULL above.
-                CnrInfo.pSortRecord = (PVOID)pfnSort;
-
                 // now update the CnrInfo, which will sort the
                 // contents and repaint the cnr also;
                 // this might take a long time
+                CnrInfo.pSortRecord = (PVOID)pfnSort;
                 WinSendMsg(hwndCnr,
                            CM_SETCNRINFO,
                            (MPARAM)&CnrInfo,
@@ -1540,9 +1591,9 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
         {
             // instance notebook:
             XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
-            lDefaultSort = (_lDefaultSort == SET_DEFAULT)
-                                ? pGlobalSettings->lDefaultSort
-                                : _lDefaultSort;
+            lDefaultSort = (_lDefSortCrit == SET_DEFAULT)
+                                ? pGlobalSettings->lDefSortCrit
+                                : _lDefSortCrit;
             lFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
                                   ? pGlobalSettings->fFoldersFirst
                                   : _lFoldersFirst;
@@ -1553,7 +1604,7 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
         else
         {
             // "Workplace Shell":
-            lDefaultSort = pGlobalSettings->lDefaultSort;
+            lDefaultSort = pGlobalSettings->lDefSortCrit;
             lFoldersFirst = pGlobalSettings->fFoldersFirst;
             lAlwaysSort = pGlobalSettings->AlwaysSort;
         }
@@ -1625,6 +1676,11 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 BOOL fAlways = winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                     ID_XSDI_ALWAYSSORT);
 
+                _Pmpf((__FUNCTION__ ": ulSortIndex = %d", ulSortIndex));
+                _Pmpf(("  handle of selected = %d", lDefaultSort));
+                _Pmpf(("  fFoldersFirst = %d", fFoldersFirst));
+                _Pmpf(("  fAlways = %d", fAlways));
+
                 if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
                 {
                     // change instance data
@@ -1643,13 +1699,14 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // the desktop would be sorted
                     if (fAlways)
                     {
-                        LONG lFoldersFirst,
-                             lAlwaysSort;
+                        LONG lDtpDefaultSort,
+                             lDtpFoldersFirst,
+                             lDtpAlwaysSort;
                         _xwpQueryFldrSort(cmnQueryActiveDesktop(),
-                                          &lDefaultSort,
-                                          &lFoldersFirst,
-                                          &lAlwaysSort);
-                        if (lAlwaysSort != 0)
+                                          &lDtpDefaultSort,
+                                          &lDtpFoldersFirst,
+                                          &lDtpAlwaysSort);
+                        if (lDtpAlwaysSort != 0)
                         {
                             // issue warning that this might also sort the Desktop
                             if (cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -1657,16 +1714,18 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                  MB_YESNO)
                                            == MBID_YES)
                                 _xwpSetFldrSort(cmnQueryActiveDesktop(),
-                                                lDefaultSort,
-                                                lFoldersFirst,
-                                                0);
+                                                lDtpDefaultSort,
+                                                lDtpFoldersFirst,
+                                                0);     // off
                         }
                     }
+
+                    _Pmpf(("  updating global sort settings, new defsort: %d", lDefaultSort));
 
                     // moved lock down V0.9.12 (2001-05-20) [umoeller]
                     pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                     pGlobalSettings->fFoldersFirst = fFoldersFirst;
-                    pGlobalSettings->lDefaultSort = lDefaultSort;
+                    pGlobalSettings->lDefSortCrit = lDefaultSort;
                     pGlobalSettings->AlwaysSort = fAlways;
                     cmnUnlockGlobalSettings();
 
@@ -1685,7 +1744,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         XFolderData *Backup = (pcnbp->pUser);
                         _xwpSetFldrSort(pcnbp->somSelf,
-                                        Backup->lDefaultSort,
+                                        Backup->lDefSortCrit,
                                         Backup->lFoldersFirst,
                                         Backup->lAlwaysSort);
                     }
@@ -1697,7 +1756,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // fixed undo V0.9.12 (2001-05-22) [umoeller]
                     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                     pGlobalSettings->fFoldersFirst = pBackup->fFoldersFirst;
-                    pGlobalSettings->lDefaultSort = pBackup->lDefaultSort;
+                    pGlobalSettings->lDefSortCrit = pBackup->lDefSortCrit;
                     pGlobalSettings->AlwaysSort = pBackup->AlwaysSort;
                     cmnUnlockGlobalSettings();
 
@@ -1730,7 +1789,12 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             HPOINTER hptrOld = winhSetWaitPointer();
             // global:
+
             cmnStoreGlobalSettings();
+
+            ntbUpdateVisiblePage(NULL,      // any object
+                                 SP_FLDRSORT_FLDR);
+
             // update all open folders
             fdrForEachOpenGlobalView(TRUE,  // force
                                      fdrUpdateFolderSorts);

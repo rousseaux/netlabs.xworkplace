@@ -36,6 +36,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\shapewin.h"           // shaped windows;
                                         // only needed for the window class names
+#include "helpers\standards.h"          // some standard macros
 
 #include "xwpapi.h"                     // public XWorkplace definitions
 
@@ -45,9 +46,65 @@
 
 /* ******************************************************************
  *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// PageMage
+LINKLIST        G_llWinInfos;
+            // linked list of PGMGWININFO structs; this is auto-free
+HMTX            G_hmtxWinInfos = 0;
+            // mutex sem protecting that array
+            // V0.9.12 (2001-05-31) [umoeller]: made this private
+
+/* ******************************************************************
+ *
  *   PGMGWININFO list maintenance
  *
  ********************************************************************/
+
+/*
+ *@@ pgmwInit:
+ *      initializes the winlist. Called from main().
+ *
+ *@@added V0.9.12 (2001-05-31) [umoeller]
+ */
+
+APIRET pgmwInit(VOID)
+{
+    APIRET arc = DosCreateMutexSem(NULL, // IDMUTEX_PGMG_WINLIST,
+                                   &G_hmtxWinInfos,
+                                   0, // DC_SEM_SHARED, // unnamed, but shared
+                                   FALSE);
+
+    lstInit(&G_llWinInfos, TRUE);
+            // V0.9.7 (2001-01-21) [umoeller]
+
+    return (arc);
+}
+
+/*
+ *@@ pgmwLock:
+ *      locks the window list.
+ *
+ *@@added V0.9.12 (2001-05-31) [umoeller]
+ */
+
+BOOL pgmwLock(VOID)
+{
+    return (!WinRequestMutexSem(G_hmtxWinInfos, TIMEOUT_HMTX_WINLIST));
+}
+
+/*
+ *@@ pgmwUnlock:
+ *
+ *@@added V0.9.12 (2001-05-31) [umoeller]
+ */
+
+VOID pgmwUnlock(VOID)
+{
+    DosReleaseMutexSem(G_hmtxWinInfos);
+}
 
 /*
  *@@ pgmwFindWinInfo:
@@ -181,7 +238,7 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
             {
                 const char *pcszClassName = pWinInfo->szClassName;
                 if (   // not PM Desktop child?
-                        (!WinIsChild(pWinInfo->hwnd, HWND_DESKTOP))
+                        (!WinIsChild(hwnd, HWND_DESKTOP))
                      || (strcmp(pcszClassName, "#32765") == 0)
                             // PM "Icon title" class
                      || (strcmp(pcszClassName, "AltTabWindow") == 0)
@@ -203,7 +260,7 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                     if (hswitch == NULLHANDLE)
                     {
                         // V0.9.7 (2001-01-23) [dk]
-                        ULONG ulQ = WinQueryWindowULong(pWinInfo->hwnd, QWL_STYLE);
+                        ULONG ulQ = WinQueryWindowULong(hwnd, QWL_STYLE);
                         if (
                                 (!(ulQ & WS_VISIBLE))
                              || (ulQ & FCF_SCREENALIGN)  // netscape dialog
@@ -273,18 +330,17 @@ BOOL pgmwWinInfosEqual(PPGMGWININFO pWinInfo1,
 
 VOID pgmwScanAllWindows(VOID)
 {
-    HENUM heScan;
-    HWND hwndTemp;
-
     _Pmpf(("Entering pgmwScanAllWindows..."));
 
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
+    if (pgmwLock())
     {
+        HENUM henum;
+        HWND hwndTemp;
+
         pgmwClearWinInfos();
 
-        heScan = WinBeginEnumWindows(HWND_DESKTOP);
-        while ((hwndTemp = WinGetNextWindow(heScan)) != NULLHANDLE)
+        henum = WinBeginEnumWindows(HWND_DESKTOP);
+        while (hwndTemp = WinGetNextWindow(henum))
         {
             // next window found:
             // create a temporary WININFO struct here... this will
@@ -297,7 +353,7 @@ VOID pgmwScanAllWindows(VOID)
                 // window found and strings allocated maybe:
                 // append this thing to the list
 
-                PPGMGWININFO pNew = (PPGMGWININFO)malloc(sizeof(PGMGWININFO));
+                PPGMGWININFO pNew = NEW(PGMGWININFO);
                 if (pNew)
                 {
                     memcpy(pNew, &WinInfoTemp, sizeof(PGMGWININFO));
@@ -315,9 +371,9 @@ VOID pgmwScanAllWindows(VOID)
 
             }
         }
-        WinEndEnumWindows(heScan);
+        WinEndEnumWindows(henum);
 
-        DosReleaseMutexSem(G_hmtxWindowList);
+        pgmwUnlock();
     }
 
     WinPostMsg(G_pHookData->hwndPageMageClient,
@@ -342,20 +398,18 @@ VOID pgmwAppendNewWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
+    if (pgmwLock())
     {
-        PPGMGWININFO pWinInfo = NULL;
         BOOL fAppend = FALSE;
 
         // check if we have an entry for this window already
-        pWinInfo = pgmwFindWinInfo(hwnd, NULL);
+        PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwnd, NULL);
 
         if (!pWinInfo)
         {
             // not yet in list: create a new one
-            pWinInfo = (PPGMGWININFO)malloc(sizeof(PGMGWININFO));
-            memset(pWinInfo, 0, sizeof(PGMGWININFO));
+            pWinInfo = NEW(PGMGWININFO);
+            ZERO(pWinInfo);
             fAppend = TRUE;
         }
         // else already present: refresh that one then
@@ -365,7 +419,7 @@ VOID pgmwAppendNewWinInfo(HWND hwnd)
         if (fAppend)
             lstAppendItem(&G_llWinInfos, pWinInfo);
 
-        DosReleaseMutexSem(G_hmtxWindowList);
+        pgmwUnlock();
     }
 }
 
@@ -382,8 +436,7 @@ VOID pgmwAppendNewWinInfo(HWND hwnd)
 
 VOID pgmwDeleteWinInfo(HWND hwnd)
 {
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
+    if (pgmwLock())
     {
         PLISTNODE       pNodeFound = NULL;
         PPGMGWININFO    pWinInfo = pgmwFindWinInfo(hwnd,
@@ -396,7 +449,7 @@ VOID pgmwDeleteWinInfo(HWND hwnd)
             lstRemoveNode(&G_llWinInfos, pNodeFound);
         }
 
-        DosReleaseMutexSem(G_hmtxWindowList);
+        pgmwUnlock();
     }
 }
 
@@ -414,8 +467,7 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
 {
     USHORT usIdx;
 
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
+    if (pgmwLock())
     {
         // check if we have an entry for this window already
         PPGMGWININFO    pWinInfo = pgmwFindWinInfo(hwnd,
@@ -429,7 +481,7 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
         // rescan all dirties
         pgmwWindowListRescan();
 
-        DosReleaseMutexSem(G_hmtxWindowList);
+        pgmwUnlock();
     }
 }
 
@@ -443,6 +495,7 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.7 (2001-01-17) [dk]: this scanned, but never updated. Fixed.
  *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
+ *@@changed V0.9.12 (2001-05-31) [umoeller]: removed temp delete list
  */
 
 BOOL pgmwWindowListRescan(VOID)
@@ -450,19 +503,18 @@ BOOL pgmwWindowListRescan(VOID)
     BOOL    brc = FALSE;
     USHORT  usIdx = 0;
 
-    if (WinRequestMutexSem(G_hmtxWindowList, TIMEOUT_HMTX_WINLIST)
-            == NO_ERROR)
+    if (pgmwLock())
     {
         LINKLIST    llDeferredDelete;
         PLISTNODE   pNode;
 
-        lstInit(&llDeferredDelete,
-                FALSE);        // no auto-free, this points to
-                               // existing list nodes
-
         pNode = lstQueryFirstNode(&G_llWinInfos);
         while (pNode)
         {
+            // get next node NOW because we can delete pNode here
+            // V0.9.12 (2001-05-31) [umoeller]
+            PLISTNODE pNext = pNode->pNext;
+
             PPGMGWININFO pWinInfo = (PPGMGWININFO)pNode->pItemData;
             if (pWinInfo->bWindowType == WINDOW_RESCAN)
             {
@@ -476,7 +528,8 @@ BOOL pgmwWindowListRescan(VOID)
                     // window is no longer valid:
                     // remove it from the list then
                     // (defer this, since we're iterating over the list)
-                    lstAppendItem(&llDeferredDelete, pWinInfo);
+                    lstRemoveNode(&G_llWinInfos, pNode);
+                            // V0.9.12 (2001-05-31) [umoeller]
                 else
                 {
                     // window is still valid:
@@ -492,20 +545,10 @@ BOOL pgmwWindowListRescan(VOID)
                 }
             } // end if (pWinInfo->bWindowType == WINDOW_RESCAN)
 
-            pNode = pNode->pNext;
+            pNode = pNext;
         } // end while (pNode)
 
-        // go thru "deferred delete" list
-        pNode = lstQueryFirstNode(&llDeferredDelete);
-        while (pNode)
-        {
-            PPGMGWININFO pWinInfo = (PPGMGWININFO)pNode->pItemData;
-            lstRemoveItem(&G_llWinInfos, pWinInfo);
-            pNode = pNode->pNext;
-        }
-        lstClear(&llDeferredDelete);
-
-        DosReleaseMutexSem(G_hmtxWindowList);
+        pgmwUnlock();
     }
 
     return (brc);
@@ -546,7 +589,7 @@ BOOL pgmwStickyCheck(const char *pcszSwitchName)
     }
 
     return (bFound);
-} // pgmwStickyCheck
+}
 
 /*
  *@@ pgmwSticky2Check:
@@ -575,7 +618,7 @@ BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
     }
 
     return (bFound);
-} // pgmwSticky2Check
+}
 
 /*
  *@@ pgmwGetWindowFromClientPoint:
@@ -639,6 +682,6 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
     WinEndEnumWindows(henumPoint);
 
     return (hwndResult);
-} // pgmwGetWindowFromClientPoint
+}
 
 

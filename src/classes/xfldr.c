@@ -250,7 +250,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpQueryFldrSort");
 
     if (plDefaultSort)
-        *plDefaultSort = _lDefaultSort;
+        *plDefaultSort = _lDefSortCrit;
 
     if (plFoldersFirst)
         *plFoldersFirst = _lFoldersFirst;
@@ -307,7 +307,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 
     #ifdef DEBUG_SORT
         _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf)));
-        _Pmpf(("  Old: Default %d, Always %d", _lDefaultSort, _lAlwaysSort));
+        _Pmpf(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
         _Pmpf(("  New: Default %d, Always %d", lDefaultSort, lAlwaysSort));
     #endif
 
@@ -315,7 +315,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     {
         XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
 
-        if (lDefaultSort != _lDefaultSort)
+        if (lDefaultSort != _lDefSortCrit)
         {
             if (    ((lDefaultSort >= -4) && (lDefaultSort < 0))
                  || (lDefaultSort == SET_DEFAULT)
@@ -323,7 +323,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                                               lDefaultSort))
                )
             {
-                _lDefaultSort = lDefaultSort;
+                _lDefSortCrit = lDefaultSort;
                 Update = TRUE;
             }
         }
@@ -1357,7 +1357,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _bFolderHotkeysInstance = 2;
     _bStatusBarInstance = STATUSBAR_DEFAULT;
 
-    _lDefaultSort = SET_DEFAULT;
+    _lDefSortCrit = SET_DEFAULT;
     _lFoldersFirst = SET_DEFAULT;
     _lAlwaysSort = SET_DEFAULT;
 
@@ -1667,7 +1667,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
 
     // sort keys changed again V0.9.12 (2001-05-18) [umoeller]
     // note: we must always save these, even if they have the default value
-    _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 11, (ULONG)_lDefaultSort);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 11, (ULONG)_lDefSortCrit);
     _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 12, (ULONG)_lFoldersFirst);
     _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 13, (ULONG)_lAlwaysSort);
 
@@ -1744,7 +1744,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
     // sort keys changed again V0.9.12 (2001-05-18) [umoeller]
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 11, &ul))
-        _lDefaultSort = ul;
+        _lDefSortCrit = ul;
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 12, &ul))
         _lFoldersFirst = ul;
