@@ -915,7 +915,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             xstrcatc(&strText2MLE, '\n'); // fixed V0.9.12 (2001-04-28) [umoeller]
 
                             // enable "Configure" button if dialog defined
-                            if (precc->pDriverSpec->idConfigDlg)
+                            if (precc->pDriverSpec->pfnShowDriverDlg)
                                 fEnable = TRUE;
                             // accepts parameters?
                             if ((precc->pDriverSpec->ulFlags & DRVF_NOPARAMS) == 0)
@@ -961,7 +961,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
                     if (precc)
-                        if (precc->pDriverSpec->idConfigDlg)
+                        if (precc->pDriverSpec->pfnShowDriverDlg)
                             // simulate "configure" button
                             WinPostMsg(pcnbp->hwndDlgPage,
                                        WM_COMMAND,
@@ -1026,69 +1026,48 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (pcnbp->preccLastSelected)
             {
                 PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
-                if (precc->pDriverSpec)
-                    if (    (precc->pDriverSpec->idConfigDlg)
-                         && (precc->pDriverSpec->pfnwpConfigure)
-                       )
+                if (    (precc->pDriverSpec)
+                     && (precc->pDriverSpec->pfnShowDriverDlg)
+                   )
+                {
+                    // OK, we have a valid dialog specification:
+                    DRIVERDLGDATA ddd = {0};
+                    HWND hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage,
+                                                   ID_OSDI_DRIVR_PARAMS);
+                    PSZ  pszParamsBackup = NULL;
+
+                    // set up DRIVERDLGDATA structure
+                    ddd.pvKernel = (PVOID)pcnbp->somSelf;
+                    ddd.pcszKernelTitle = _wpQueryTitle(pcnbp->somSelf);
+                    ddd.pDriverSpec = precc->pDriverSpec;
+                    WinQueryWindowText(hwndMLE,
+                                       sizeof(ddd.szParams),
+                                       ddd.szParams);
+
+                    // backup parameters
+                    pszParamsBackup = strdup(ddd.szParams);
+
+                    if (precc->pDriverSpec->pfnShowDriverDlg(pcnbp->hwndDlgPage,
+                                                             &ddd))
                     {
-                        // OK, we have a valid dialog specification:
-                        DRIVERDLGDATA ddd = {0};
-                        HWND hwndDlg,
-                             hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage,
-                                                       ID_OSDI_DRIVR_PARAMS);
-                        PSZ  pszParamsBackup = NULL;
-                        CHAR szTitle[300];
-
-                        // set up DRIVERDLGDATA structure
-                        ddd.pvKernel = (PVOID)pcnbp->somSelf;
-                        ddd.pDriverSpec = precc->pDriverSpec;
-                        WinQueryWindowText(hwndMLE,
-                                           sizeof(ddd.szParams),
-                                           ddd.szParams);
-
-                        // backup parameters
-                        pszParamsBackup = strdup(ddd.szParams);
-
-                        if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                                 pcnbp->hwndFrame, // pcnbp->hwndPage,  // owner
-                                                 precc->pDriverSpec->pfnwpConfigure,
-                                                    // dlg proc as in DRIVERSPEC
-                                                 precc->pDriverSpec->hmodConfigDlg,
-                                                    // dlg module as in DRIVERSPEC
-                                                 precc->pDriverSpec->idConfigDlg,
-                                                    // resource ID as in DRIVERSPEC
-                                                 &ddd))
-                                                    // pass DRIVERDLGDATA as create param
+                        // "OK" pressed:
+                        // the dialog func should have modified
+                        // szParams now,
+                        // transfer szParams to MLE on page
+                        if (strcmp(pszParamsBackup, ddd.szParams) != 0)
                         {
-                            // successfully loaded:
-                            // set dialog title to driver name
-                            sprintf(szTitle, "%s: %s",
-                                    _wpQueryTitle(pcnbp->somSelf),
-                                    ddd.pDriverSpec->pszFilename);
-                            WinSetWindowText(hwndDlg, szTitle);
-                            winhCenterWindow(hwndDlg);
-                            cmnSetControlsFont(hwndDlg, 0, 5000);
-                            // go!!
-                            if (WinProcessDlg(hwndDlg) == DID_OK)
-                                // "OK" pressed:
-                                // the dialog func should have modified
-                                // szParams now,
-                                // transfer szParams to MLE on page
-                                if (strcmp(pszParamsBackup, ddd.szParams) != 0)
-                                {
-                                    // something changed:
-                                    WinSetWindowText(hwndMLE,
-                                                     ddd.szParams);
-                                    // re-enable the "Apply" button also
-                                    winhEnableDlgItem(pcnbp->hwndDlgPage,
-                                                      ID_OSDI_DRIVR_APPLYTHIS,
-                                                      TRUE);
-                                }
-                            WinDestroyWindow(hwndDlg);
+                            // something changed:
+                            WinSetWindowText(hwndMLE,
+                                             ddd.szParams);
+                            // re-enable the "Apply" button also
+                            winhEnableDlgItem(pcnbp->hwndDlgPage,
+                                              ID_OSDI_DRIVR_APPLYTHIS,
+                                              TRUE);
                         }
-
-                        free(pszParamsBackup);
                     }
+
+                    free(pszParamsBackup);
+                }
             }
         break;
 

@@ -3592,6 +3592,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
  *      implementation for XFolder::xwpStartFolderContents.
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
+ *@@changed V0.9.13 (2001-06-27) [umoeller]: now setting status title to folder's
  */
 
 ULONG fdrStartFolderContents(WPFolder *pFolder,
@@ -3613,6 +3614,9 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
                                NULL);
     // store struct in window words so the dialog can cancel
     WinSetWindowPtr(pf.hwndStatus, QWL_USER, &pf);
+
+    // set title V0.9.13 (2001-06-27) [umoeller]
+    WinSetWindowText(pf.hwndStatus, _wpQueryTitle(pFolder));
 
     if (pGlobalSettings->ShowStartupProgress)
     {

@@ -1838,26 +1838,26 @@ SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
 }
 
 /*
- *@@ wpCnrSetEmphasis:
- *      this WPObject method changes the object's visual emphasis
- *      in all containers where it is inserted.
+ *@@ wpAddToObjUseList:
  *
  *      We override this method to be able to intercept the
  *      CRA_INUSE emphasis in case the object is currently
  *      used in an XCenter object button widget, which then
  *      needs to be repainted.
  *
- *@@added V0.9.13 (2001-06-21) [umoeller]
+ *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
-                                               ULONG ulEmphasisAttr,
-                                               BOOL fTurnOn)
+SOM_Scope BOOL  SOMLINK xfobj_wpAddToObjUseList(XFldObject *somSelf,
+                                                PUSEITEM pUseItem)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpCnrSetEmphasis");
+    XFldObjectMethodDebug("XFldObject","xfobj_wpAddToObjUseList");
 
-    if (    (ulEmphasisAttr & CRA_INUSE)
+    if (    (pUseItem)
+         && (    (pUseItem->type == USAGE_OPENVIEW)
+              || (pUseItem->type == USAGE_OPENFILE)
+            )
          && (_pvllWidgetNotifies)
        )
     {
@@ -1876,9 +1876,51 @@ SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
         }
     }
 
-    return (XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
-                                                        ulEmphasisAttr,
-                                                        fTurnOn));
+    return (XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
+                                                         pUseItem));
+}
+
+/*
+ *@@ wpDeleteFromObjUseList:
+ *
+ *      We override this method to be able to intercept the
+ *      CRA_INUSE emphasis in case the object is currently
+ *      used in an XCenter object button widget, which then
+ *      needs to be repainted.
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpDeleteFromObjUseList(XFldObject *somSelf,
+                                                     PUSEITEM pUseItem)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpDeleteFromObjUseList");
+
+    if (    (pUseItem)
+         && (    (pUseItem->type == USAGE_OPENVIEW)
+              || (pUseItem->type == USAGE_OPENFILE)
+            )
+         && (_pvllWidgetNotifies)
+       )
+    {
+        // we have windows that requested notifications:
+        // go thru list
+        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
+        while (pNode)
+        {
+            HWND hwnd = (HWND)pNode->pItemData;
+            WinPostMsg(hwnd,
+                       WM_CONTROL,
+                       MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                    XN_INUSECHANGED),
+                       (MPARAM)somSelf);
+            pNode = pNode->pNext;
+        }
+    }
+
+    return (XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
+                                                              pUseItem));
 }
 
 

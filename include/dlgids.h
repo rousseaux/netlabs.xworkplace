@@ -692,14 +692,15 @@
 #define ID_OSDI_CACHESIZE_AUTO          1525
 #define ID_OSDI_CACHE_THRESHOLD         1526
 #define ID_OSDI_CACHE_THRESHOLD_TXT     1527
-#define ID_OSDI_CACHE_LAZYWRITE         1528
-#define ID_OSDI_CACHE_MAXAGE            1529
-#define ID_OSDI_CACHE_BUFFERIDLE        1530
+#define ID_OSDI_CACHE_LAZYWRITE         1528        // jfs too
+#define ID_OSDI_CACHE_MAXAGE            1529        // jfs too
+#define ID_OSDI_CACHE_BUFFERIDLE        1530        // jfs too
 #define ID_OSDI_CACHE_DISKIDLE          1531
-#define ID_OSDI_AUTOCHECK               1532
+#define ID_OSDI_AUTOCHECK               1532        // jfs too
 #define ID_OSDI_AUTOCHECK_PROPOSE       1533
 #define ID_OSDI_HPFS386INI_GROUP        1534
 #define ID_OSDI_HPFS386INI_CNR          1535
+#define ID_OSDI_CACHE_SYNCHTIME         1536        // jfs, V0.9.13 (2001-06-27) [umoeller]
 
 #define ID_OSD_SETTINGS_ERRORS          1540
 #define ID_OSDI_AUTOFAIL                1541
@@ -1572,6 +1573,9 @@
 // #define ID_XSSI_DLG_CONFIRMCONFIGSYS2   4001
 
 // "Yes", "no", etc.
+#define ID_XSSI_DLG_UNDO                5797        // V0.9.13 (2001-06-27) [umoeller]
+#define ID_XSSI_DLG_DEFAULT             5798        // V0.9.13 (2001-06-27) [umoeller]
+#define ID_XSSI_DLG_HELP                5799        // V0.9.13 (2001-06-27) [umoeller]
 #define ID_XSSI_DLG_YES                 5800
 #define ID_XSSI_DLG_YES2ALL             5801
 #define ID_XSSI_DLG_NO                  5802

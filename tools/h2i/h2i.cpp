@@ -87,21 +87,22 @@
 
 /*
  *@@ DEFINENODE:
- *
+ *      represents a #define from a C header.
  */
 
 typedef struct _DEFINENODE
 {
     TREE        Tree;
-
-    PSZ         pszIdentifier,          // identifier
-                pszValue;               // value without quotes
+                        // Tree.ulKey has the (PSZ) identifier
+    PSZ         pszValue;
+                        // value without quotes
 
 } DEFINENODE, *PDEFINENODE;
 
 /*
  *@@ ARTICLETREENODE:
  *      represents one article to be worked on.
+ *
  *      This comes from one HTML file each and
  *      will turn into an IPF article.
  */
@@ -109,8 +110,9 @@ typedef struct _DEFINENODE
 typedef struct _ARTICLETREENODE
 {
     TREE        Tree;
+                        // Tree.ulKey has the (PSZ) filename
 
-    PSZ         pszFilename;        // the HTML file name, or, if URL,
+    // PSZ         pszFilename;        // the HTML file name, or, if URL,
                                     // the URL
     ULONG       ulHeaderLevel;      // IPF header level (1 if root file;
                                     // -1 if link for "Internet" section)
@@ -186,8 +188,8 @@ typedef struct _STATUS
                                     // error is considered a warning only
 } STATUS, *PSTATUS;
 
-// TREE        *G_DefinesTreeRoot;
-LINKLIST    G_llDefines;
+TREE        *G_DefinesTreeRoot;
+// LINKLIST    G_llDefines;
 ULONG       G_cDefines = 0;
 ULONG       G_ulReplacements = 0;
 TREE        *G_LinkIDsTreeRoot;
@@ -319,55 +321,140 @@ ULONG xstrprintf(PXSTRING pxstr,
  ********************************************************************/
 
 /*
- *@@ fnCompareArticleNodes:
+ *@@ fnCompareStrings:
  *      tree comparison func (src\helpers\tree.c).
  *
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-int TREEENTRY fnCompareArticleNodes(TREE *t1, TREE *t2)
+int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 {
-    return (strhicmp(((PARTICLETREENODE)t1)->pszFilename,
-                     ((PARTICLETREENODE)t2)->pszFilename));
+    return (strhicmp((const char *)ul1,
+                     (const char *)ul2));
 }
 
 /*
- *@@ fnCompareArticlesData:
- *      tree comparison func (src\helpers\tree.c).
+ *@@ AddDefinition:
  *
- *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-int TREEENTRY fnCompareArticlesData(TREE *t1, void *pData)
+BOOL AddDefinition(PDEFINENODE p)
 {
-    return (strhicmp(((PARTICLETREENODE)t1)->pszFilename,
-                     (const char*)pData));
+    // lstAppendItem(&G_llDefines, p);
+    // return (TRUE);
+    return (!treeInsert(&G_DefinesTreeRoot,
+                        (TREE*)p,
+                        fnCompareStrings));
 }
 
 /*
- *@@ fnCompareDefineNodes:
- *      tree comparison func (src\helpers\tree.c).
+ *@@ FindDefinition:
  *
- *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-int TREEENTRY fnCompareDefineNodes(TREE *t1, TREE *t2)
+PDEFINENODE FindDefinition(const char *pcszIdentifier)
 {
-    return (strhicmp(((PDEFINENODE)t1)->pszIdentifier,
-                     ((PDEFINENODE)t2)->pszIdentifier));
+    return ((PDEFINENODE)treeFind(G_DefinesTreeRoot,
+                                  (ULONG)pcszIdentifier,
+                                  fnCompareStrings));
+
+    /* PLISTNODE pNode = lstQueryFirstNode(&G_llDefines);
+    while (pNode)
+    {
+        PDEFINENODE p = (PDEFINENODE)pNode->pItemData;
+        if (!strcmp(p->pszIdentifier, pcszIdentifier))
+            return (p);
+
+        pNode = pNode->pNext;
+    }
+
+    return (0); */
 }
 
 /*
- *@@ fnCompareDefinesData:
- *      tree comparison func (src\helpers\tree.c).
+ *@@ ResolveEntities:
  *
- *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-int TREEENTRY fnCompareDefinesData(TREE *t1, void *pData)
+APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
+                       PXSTRING pstrSource)
 {
-    return (strhcmp(((PDEFINENODE)t1)->pszIdentifier,
-                    (const char*)pData));
+    if (G_cDefines)
+    {
+        // we have include files:
+        PSZ p = pstrSource->psz;
+        while (p = strchr(p, '&'))
+        {
+            PSZ p2 = strchr(p, ';');
+            if (!p2)
+                p++;
+            else
+            {
+                *p2 = '\0';
+
+                PDEFINENODE pDef = 0;
+                if (pDef = FindDefinition(p + 1))
+                {
+                    if (G_ulVerbosity > 2)
+                        printf("\n   found entity \"%s\" --> \"%s\"\n",
+                               p + 1, pDef->pszValue);
+                    *p2 = ';';
+                    ULONG ulPos = (p - pstrSource->psz),
+                          ulReplLen = strlen(pDef->pszValue);
+                    xstrrpl(pstrSource,
+                            // first ofs to replace:
+                            ulPos,
+                            // char count to replace:
+                            (p2 + 1) - p,       // include ';'
+                            // replacement string:
+                            pDef->pszValue,
+                            ulReplLen);
+                    // pointer has changed, adjust source position
+                    p = pstrSource->psz + ulPos; //  + ulReplLen;
+
+                    G_ulReplacements++;
+                }
+                else
+                {
+                    // not found:
+                    // if it's not one of the standards we'll
+                    // replace later, complain
+                    if (    (strcmp(p + 1, "gt"))
+                         && (strcmp(p + 1, "lt"))
+                         && (strcmp(p + 1, "amp"))
+                       )
+                    {
+                        Error(1,
+                              __FILE__, __LINE__, __FUNCTION__,
+                              "Unknown entity \"%s;\" at line %d in file \"%s\".",
+                              p,
+                              strhCount(pstrSource->psz, '\n') + 1,
+                              (PSZ)pFile2Process->Tree.ulKey);      // filename
+
+                        /* if (G_ulVerbosity > 3)
+                        {
+                            printf("All definitions:\n");
+                            PDEFINENODE pNode = (PDEFINENODE)treeFirst(G_DefinesTreeRoot);
+                            while (pNode)
+                            {
+                                printf("  \"%s\" = \"%s\"\n",
+                                       pNode->pszIdentifier,
+                                       pNode->pszValue);
+
+                                pNode = (PDEFINENODE)treeNext((TREE*)pNode);
+                            }
+
+                            exit(99);
+                        } */
+                    }
+
+                    *p2 = ';';
+                }
+
+                p = p2 + 1;
+            }
+        }
+    }
 }
 
 /*
@@ -400,9 +487,9 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
 {
     PARTICLETREENODE pMapping;
 
-    if (pMapping = (PARTICLETREENODE)treeFindEQData(&G_LinkIDsTreeRoot,
-                                                    (VOID*)pcszFilename,
-                                                    fnCompareArticlesData))
+    if (pMapping = (PARTICLETREENODE)treeFind(G_LinkIDsTreeRoot,
+                                              (ULONG)pcszFilename,
+                                              fnCompareStrings))
     {
         // exists:
         return (pMapping);
@@ -416,7 +503,7 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
             {
                 ZERO(pMapping);
 
-                pMapping->pszFilename = strhdup(pcszFilename);
+                pMapping->Tree.ulKey = (ULONG)strhdup(pcszFilename);
                 pMapping->ulHeaderLevel = ulCurrentLevel + 1;
                 pMapping->ulResID = -1;         // for now
                 pMapping->pFirstReferencedFrom = pParent;
@@ -424,10 +511,9 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
                 xstrInit(&pMapping->strIPF, 0);
                 xstrInit(&pMapping->strTitle, 0);
 
-                if (TREE_OK == treeInsertNode(&G_LinkIDsTreeRoot,
-                                              (TREE*)pMapping,
-                                              fnCompareArticleNodes,
-                                              FALSE))
+                if (!treeInsert(&G_LinkIDsTreeRoot,
+                                (TREE*)pMapping,
+                                fnCompareStrings))
                 {
                     // this is a new file... check if this exists
                     if (access(pcszFilename, 0))
@@ -437,9 +523,9 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
                         if (G_ulVerbosity > 1)
                             printf("  Warning: file \"%s\" was not found.\n"
                                    "  Referenced from file \"%s\".\n",
-                                   pMapping->pszFilename,
+                                   (PSZ)pMapping->Tree.ulKey, // pszFilename,
                                    (pParent)
-                                       ? pParent->pszFilename
+                                       ? (PSZ)pMapping->Tree.ulKey // pszFilename,
                                        : "none");
                         pMapping->ulHeaderLevel = -1; // special flag
                     }
@@ -631,6 +717,8 @@ PCSZ HandleTITLE(PARTICLETREENODE pFile2Process,
             xstrcpy(&pFile2Process->strTitle,
                     p3,
                     p5 - p3 + 1);
+            ResolveEntities(pFile2Process,
+                            &pFile2Process->strTitle);
             *ppSource = p4 + 8;
         }
         else
@@ -1337,7 +1425,7 @@ APIRET ParseFile(PARTICLETREENODE pFile2Process,
             Error(1,
                   __FILE__, __LINE__, __FUNCTION__,
                   "file \"%s\", line %d:\n   %s",
-                  pFile2Process->pszFilename,
+                  (PSZ)pFile2Process->Tree.ulKey,       // file name
                   strhCount(pszBuf, '\n') + 1,
                   pcszError);
             *pSaved = c;
@@ -1356,33 +1444,6 @@ APIRET ParseFile(PARTICLETREENODE pFile2Process,
     ConvertEscapes(pxstrIPF);
 
     return (0);
-}
-
-BOOL AddDefinition(PDEFINENODE p)
-{
-    lstAppendItem(&G_llDefines, p);
-    return (TRUE);
-    /* return (TREE_OK == treeInsertNode(&G_DefinesTreeRoot,
-                                      (TREE*)pMapping,
-                                      fnCompareDefineNodes,
-                                      FALSE)); */
-}
-
-PDEFINENODE FindDefinition(const char *pcszIdentifier)
-{
-    /* return ((PDEFINENODE)treeFindEQData(&G_DefinesTreeRoot,
-                                        (VOID*)pcszDefinition,
-                                        fnCompareDefinesData)); */
-
-    PLISTNODE pNode = lstQueryFirstNode(&G_llDefines);
-    while (pNode)
-    {
-        PDEFINENODE p = (PDEFINENODE)pNode->pItemData;
-        if (!strcmp(p->pszIdentifier, pcszIdentifier))
-            return (p);
-
-        pNode = pNode->pNext;
-    }
 }
 
 /* ******************************************************************
@@ -1410,7 +1471,7 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
 
     xstrprintf(pxstrIPF,
                "\n.* Source file: \"%s\"\n",
-               pFile2Process->pszFilename);
+               (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
 
     xstrcpy(pstrExtras, NULL, 0);
     if (pFile2Process->lGroup)
@@ -1477,7 +1538,7 @@ VOID DumpArticlesWithParent(PXSTRING pxstrIPF,
             {
                 if (G_ulVerbosity > 1)
                     printf("File \"%s\" has resid %d, %d bytes IPF\n",
-                           pFile2Process->pszFilename,
+                           (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                            pFile2Process->ulResID,
                            pFile2Process->strIPF.ulLength);
 
@@ -1522,7 +1583,7 @@ VOID DumpArticlesWithParent(PXSTRING pxstrIPF,
 }
 
 /*
- *@@ ProcessFile:
+ *@@ ProcessFiles:
  *      loops through all files.
  *
  *      When this is called (fro main()), G_llFiles2Process
@@ -1544,8 +1605,6 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
 {
     PLISTNODE pNode;
     APIRET arc = NO_ERROR;
-
-    ULONG ulReplacements = 0;
 
     /*
      * loop 1:
@@ -1576,7 +1635,8 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
 
             if (G_ulVerbosity > 1)
             {
-                printf("processing %s... ", pFile2Process->pszFilename);
+                printf("processing %s... ",
+                       (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
                 fflush(stdout);
             }
             else if (G_ulVerbosity)
@@ -1585,89 +1645,14 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                 fflush(stdout);
             }
 
-            if (!(arc = doshLoadTextFile(pFile2Process->pszFilename,
+            if (!(arc = doshLoadTextFile((PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                                          &pszContents)))
             {
                 xstrcpy(&strSource, pszContents, 0);
                 xstrConvertLineFormat(&strSource, CRLF2LF);
 
-                if (G_cDefines)
-                {
-                    // we have include files:
-                    PSZ p = strSource.psz;
-                    while (p = strchr(p, '&'))
-                    {
-                        PSZ p2 = strchr(p, ';');
-                        if (!p2)
-                            p++;
-                        else
-                        {
-                            *p2 = '\0';
-
-                            PDEFINENODE pDef = 0;
-                            if (pDef = FindDefinition(p + 1))
-                            {
-                                if (G_ulVerbosity > 2)
-                                    printf("\n   found entity \"%s\" --> \"%s\"\n",
-                                           p + 1, pDef->pszValue);
-                                *p2 = ';';
-                                ULONG ulPos = (p - strSource.psz),
-                                      ulReplLen = strlen(pDef->pszValue);
-                                xstrrpl(&strSource,
-                                        // first ofs to replace:
-                                        ulPos,
-                                        // char count to replace:
-                                        (p2 + 1) - p,       // include ';'
-                                        // replacement string:
-                                        pDef->pszValue,
-                                        ulReplLen);
-                                // pointer has changed, adjust source position
-                                p = strSource.psz + ulPos + ulReplLen;
-
-                                ulReplacements++;
-                                G_ulReplacements++;
-                            }
-                            else
-                            {
-                                // not found:
-                                // if it's not one of the standards we'll
-                                // replace later, complain
-                                if (    (strcmp(p + 1, "gt"))
-                                     && (strcmp(p + 1, "lt"))
-                                     && (strcmp(p + 1, "amp"))
-                                   )
-                                {
-                                    Error(1,
-                                          __FILE__, __LINE__, __FUNCTION__,
-                                          "Unknown entity \"%s;\" at line %d in file \"%s\".",
-                                          p,
-                                          strhCount(strSource.psz, '\n') + 1,
-                                          pFile2Process->pszFilename);
-
-                                    /* if (G_ulVerbosity > 3)
-                                    {
-                                        printf("All definitions:\n");
-                                        PDEFINENODE pNode = (PDEFINENODE)treeFirst(G_DefinesTreeRoot);
-                                        while (pNode)
-                                        {
-                                            printf("  \"%s\" = \"%s\"\n",
-                                                   pNode->pszIdentifier,
-                                                   pNode->pszValue);
-
-                                            pNode = (PDEFINENODE)treeNext((TREE*)pNode);
-                                        }
-
-                                        exit(99);
-                                    } */
-                                }
-
-                                *p2 = ';';
-                            }
-
-                            p = p2 + 1;
-                        }
-                    };
-                }
+                ResolveEntities(pFile2Process,
+                                &strSource);
 
                 // now go convert this buffer to IPF
                 if (!(arc = ParseFile(pFile2Process,
@@ -1686,7 +1671,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                       __FILE__, __LINE__, __FUNCTION__,
                       "Error %d occured reading file \"%s\".",
                       arc,
-                      pFile2Process->pszFilename);
+                      (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
                 arc = 1;
             }
         }
@@ -1848,7 +1833,9 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
 
                 // encode the strings again because STUPID ipf
                 // gets confused otherwise
-                xstrcpy(&strEncode, pFile2Process->pszFilename, 0);
+                xstrcpy(&strEncode,
+                        (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
+                        0);
                 ConvertEscapes(&strEncode);
                 ULONG ulOfs = 0;
                 while (xstrFindReplaceC(&strEncode,
@@ -1867,7 +1854,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                                 ":p.:link reftype=launch object='netscape.exe' data='%s'.\n"
                                 "%s\n"
                                 ":elink.:elines.\n",
-                           pFile2Process->pszFilename,
+                           (PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                            strEncode.psz);
             }
             else
@@ -1875,14 +1862,13 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                     Error(2,
                           __FILE__, __LINE__, __FUNCTION__,
                           "Strange, file \"%s\" wasn't processed.",
-                          pFile2Process->pszFilename);
+                          (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
 
             pNode = pNode->pNext;
         }
 
         if (G_ulVerbosity > 1)
-            printf("\nDone processing files, %d string replacements.\n",
-                    ulReplacements);
+            printf("\nDone processing files.\n");
         else
             printf("\n");
     }
@@ -1895,6 +1881,11 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
  *   main
  *
  ********************************************************************/
+
+/*
+ *@@ AddDefine:
+ *
+ */
 
 BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
 {
@@ -1917,8 +1908,8 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
             case '\r':
             case '\n':
                 // forget it
-                    printf("      quitting\n");
-                return;
+                    // printf("      quitting\n");
+                return (FALSE);
 
             case ' ':
             case '\t':
@@ -1928,6 +1919,10 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
             {
                 if (pszIdentifier)
                 {
+                    /* printf("testing %c%c%c%c%c%c%c%c%c%c\n",
+                            *p,     *(p+1), *(p+2), *(p+3), *(p+4),
+                            *(p+5), *(p+6), *(p+7), *(p+8), *(p+9)); */
+
                     // looks like a string constant...
                     PCSZ pEnd = p + 1;
                     while (*pEnd && !pszValue)
@@ -1937,24 +1932,25 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
                             case '\r':
                             case '\n':
                                 // forget it
-                                return;
+                                return (FALSE);
 
                             case '"':
                                 // looks goood!
                                 pszValue = strhSubstr(p + 1,    // after quote
                                                       pEnd);
+                                // printf("-->found \"%s\"\n", pszValue);
                             break;
                         }
 
-                        if ((p) && (*p))
-                            p++;
+                        if ((pEnd) && (*pEnd))
+                            pEnd++;
                         else
                             break;
                     }
                 }
                 else
                     // quote before identifier: don't think so
-                    return;
+                    return (FALSE);
             }
             break;
 
@@ -1993,7 +1989,7 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
                 }
                 else
                     // bull
-                    return;
+                    return (FALSE);
             }
             break;
         }
@@ -2001,13 +1997,13 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
         if ((p) && (*p))
             p++;
         else
-            return;
+            return (FALSE);
     }
 
     if (pszValue)
     {
         PDEFINENODE pMapping = NEW(DEFINENODE);
-        pMapping->pszIdentifier = pszIdentifier;
+        pMapping->Tree.ulKey = (ULONG)pszIdentifier;
         pMapping->pszValue = pszValue;
 
         if (AddDefinition(pMapping))
@@ -2112,8 +2108,8 @@ int main(int argc, char* argv[])
     BOOL    fShowStatistics = FALSE;
 
     treeInit(&G_LinkIDsTreeRoot);
-    // treeInit(&G_DefinesTreeRoot);
-    lstInit(&G_llDefines, FALSE);
+    treeInit(&G_DefinesTreeRoot);
+    // lstInit(&G_llDefines, FALSE);
     lstInit(&G_llFiles2Process, FALSE);
 
     LINKLIST llIncludes;
@@ -2223,7 +2219,7 @@ int main(int argc, char* argv[])
         while (pNode)
         {
             PSZ pszInclude = (PSZ)pNode->pItemData;
-            ULONG cDefines;
+            ULONG cDefines = 0;
             if (!(rc = ParseCHeader(pszInclude,
                                     &cDefines)))
             {

@@ -227,5 +227,7 @@
 
     #define ID_XSH_WIDGET_TRAY              131     // V0.9.13 (2001-06-21) [umoeller]
 
+    #define ID_XSH_DRIVER_JFS               132     // V0.9.13 (2001-06-27) [umoeller]
+
 #endif
 

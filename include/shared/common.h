@@ -958,6 +958,8 @@
     void XWPENTRY cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
 
     PSZ XWPENTRY cmnGetString(ULONG ulStringID);
+    typedef PSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
+    typedef CMNGETSTRING *PCMNGETSTRING;
 
     /********************************************************************
      *

@@ -30,6 +30,12 @@
 #define DRVF_IFS        0x00040000  // IFS=
 #define DRVF_OTHER      0x00080000  // RUN=, CALL=, ?!?
 
+typedef struct _DRIVERDLGDATA *PDRIVERDLGDATA;
+
+typedef BOOL EXPENTRY FNSHOWDRIVERDLG(HWND hwndOwner,
+                                      PDRIVERDLGDATA pDlgData);
+typedef FNSHOWDRIVERDLG *PFNSHOWDRIVERDLG;
+
 /*
  *@@ DRIVERSPEC:
  *      structure for declaring drivers known to
@@ -51,9 +57,14 @@ typedef struct _DRIVERSPEC
     PSZ        pszDescription;      // e.g. "IBM IDE driver"
     PSZ        pszVersion;          // driver version or NULL if n/a
     ULONG      ulFlags;             // DRVF_* flags
-    HMODULE    hmodConfigDlg;       // module handle with dlg template or null if no dlg exists
+
+    PFNSHOWDRIVERDLG pfnShowDriverDlg;   // function responsible for showing the dialog
+                                    // (called when "Configure" button gets pressed)
+
+    /* HMODULE    hmodConfigDlg;       // module handle with dlg template or null if no dlg exists
     ULONG      idConfigDlg;         // resource ID of config dlg or null if no dlg exists
     PFNWP      pfnwpConfigure;      // dialog proc for "Configure" dialog or null if none
+    */
 } DRIVERSPEC, *PDRIVERSPEC;
 
 /*
@@ -69,10 +80,11 @@ typedef struct _DRIVERSPEC
 typedef struct _DRIVERDLGDATA
 {
     PVOID       pvKernel;
+    const char  *pcszKernelTitle;               // in: title of OS/2 Kernel object
     const DRIVERSPEC *pDriverSpec;              // in: driver specs; do not modify
     CHAR        szParams[500];                  // in/out: as in CONFIG.SYS
     PVOID       pvUser;                         // for data needed in dialog
-} DRIVERDLGDATA, *PDRIVERDLGDATA;
+} DRIVERDLGDATA;
 
 typedef ULONG EXPENTRY FNCHECKDRIVERNAME(HMODULE hmodPlugin,
                                          HMODULE hmodXFLDR,
@@ -94,12 +106,16 @@ typedef BOOL APIENTRY DRVDISPLAYHELP(PVOID pvKernel,
                                      ULONG ulHelpPanel);
 typedef DRVDISPLAYHELP *PDRVDISPLAYHELP;
 
-char* APIENTRY drv_strtok(char *string1, const char *string2);
-typedef char* APIENTRY DRV_STRTOK(char *string1, const char *string2);
-typedef DRV_STRTOK *PDRV_STRTOK;
-
 int APIENTRY drv_memicmp(void *buf1, void *buf2, unsigned int cnt);
 typedef int APIENTRY DRV_MEMICMP(void *buf1, void *buf2, unsigned int cnt);
 typedef DRV_MEMICMP *PDRV_MEMICMP;
+
+int drv_sprintf(char *pBuf, const char *pcszFormat, ...);
+typedef int DRV_SPRINTF(char *pBuf, const char *pcszFormat, ...);
+typedef DRV_SPRINTF *PDRV_SPRINTF;
+
+char* APIENTRY drv_strtok(char *string1, const char *string2);
+typedef char* APIENTRY DRV_STRTOK(char *string1, const char *string2);
+typedef DRV_STRTOK *PDRV_STRTOK;
 
 

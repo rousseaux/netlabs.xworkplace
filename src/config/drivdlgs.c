@@ -484,9 +484,11 @@ BOOL drvConfigSupported(PDRIVERSPEC pSpec)
         HMODULE hmodXFLDR = cmnQueryMainCodeModuleHandle();
         PLISTNODE pNode;
 
-        pSpec->hmodConfigDlg = 0;
+        /* pSpec->hmodConfigDlg = 0;
         pSpec->idConfigDlg = 0;
-        pSpec->pfnwpConfigure = 0;
+        pSpec->pfnwpConfigure = 0; */
+
+        pSpec->pfnShowDriverDlg = NULL;
 
         // go thru the driver dlg defs that were loaded
         // and call each callback for whether it can handle
@@ -550,6 +552,8 @@ BOOL drvDisplayHelp(PVOID pvKernel,
                     const char *pcszHelpFile,
                     ULONG ulHelpPanel)
 {
+    if (!pcszHelpFile)
+        pcszHelpFile = cmnQueryHelpLibrary();
     return (_wpDisplayHelp((WPObject*)pvKernel,
                            ulHelpPanel,
                            (PSZ)pcszHelpFile));
@@ -583,11 +587,117 @@ int drv_memicmp(void *buf1, void *buf2, unsigned int cnt)
     return (memicmp(buf1, buf2, cnt));
 }
 
+/*
+ *@@ drv_sprintf:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+int drv_sprintf(char *pBuf, const char *pcszFormat, ...)
+{
+    va_list     args;
+    int         i;
+    va_start(args, pcszFormat);
+    i = vsprintf(pBuf, pcszFormat, args);
+    va_end(args);
+
+    return (i);
+}
+
 /* ******************************************************************
  *
  *   Built-in dialogs
  *
  ********************************************************************/
+
+/*
+ *@@ ShowDriverDlg:
+ *      shared helper to show one of the built-in dialogs.
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL ShowDriverDlg(HWND hwndOwner,
+                   ULONG ulID,
+                   PFNWP pfnwp,
+                   PDRIVERDLGDATA pDlgData)
+{
+    BOOL brc = FALSE;
+    HWND hwndDlg;
+    if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+                             hwndOwner,
+                             pfnwp,
+                                // dlg proc as in DRIVERSPEC
+                             cmnQueryNLSModuleHandle(FALSE),
+                                // dlg module as in DRIVERSPEC
+                             ulID,
+                                // resource ID as in DRIVERSPEC
+                             pDlgData))
+                                // pass DRIVERDLGDATA as create param
+    {
+        // successfully loaded:
+        // set dialog title to driver name
+        CHAR szTitle[500];
+        sprintf(szTitle, "%s: %s",
+                pDlgData->pcszKernelTitle,
+                pDlgData->pDriverSpec->pszFilename);
+        WinSetWindowText(hwndDlg, szTitle);
+        winhCenterWindow(hwndDlg);
+        cmnSetControlsFont(hwndDlg, 0, 5000);
+        // go!!
+        if (WinProcessDlg(hwndDlg) == DID_OK)
+            brc = TRUE;
+
+        WinDestroyWindow(hwndDlg);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ ShowHPFSDlg:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
+                          PDRIVERDLGDATA pDlgData)
+{
+    return (ShowDriverDlg(hwndOwner,
+                          ID_OSD_DRIVER_HPFS,
+                          drv_fnwpConfigHPFS,
+                          pDlgData));
+}
+
+/*
+ *@@ ShowHPFS386Dlg:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
+                             PDRIVERDLGDATA pDlgData)
+{
+    return (ShowDriverDlg(hwndOwner,
+                          ID_OSD_DRIVER_HPFS386,
+                          drv_fnwpConfigHPFS386,
+                          pDlgData));
+}
+
+/*
+ *@@ ShowIBM1S506Dlg:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
+                              PDRIVERDLGDATA pDlgData)
+{
+    return (ShowDriverDlg(hwndOwner,
+                          ID_OSD_DRIVER_IBM1S506,
+                          drv_fnwpConfigIBM1S506,
+                          pDlgData));
+}
 
 /*
  *@@ CheckHPFSDriverName:
@@ -599,9 +709,7 @@ BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVER
 {
     if (stricmp(pSpec->pszFilename, "HPFS.IFS") == 0)
     {
-        pSpec->hmodConfigDlg = cmnQueryNLSModuleHandle(FALSE);
-        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS;        // dialog ID
-        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS;     // window procedure
+        pSpec->pfnShowDriverDlg = ShowHPFSDlg;
         return TRUE;
     }
 
@@ -618,9 +726,7 @@ BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRI
 {
     if (stricmp(pSpec->pszFilename, "HPFS386.IFS") == 0)
     {
-        pSpec->hmodConfigDlg = cmnQueryNLSModuleHandle(FALSE);
-        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS386;     // dialog ID
-        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS386;  // window procedure
+        pSpec->pfnShowDriverDlg = ShowHPFS386Dlg;
         return TRUE;
     }
 
@@ -639,9 +745,7 @@ BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDR
          || (stricmp(pSpec->pszFilename, "DANIS506.ADD") == 0)
        )
     {
-        pSpec->hmodConfigDlg = cmnQueryNLSModuleHandle(FALSE);
-        pSpec->idConfigDlg = ID_OSD_DRIVER_IBM1S506;
-        pSpec->pfnwpConfigure = drv_fnwpConfigIBM1S506;
+        pSpec->pfnShowDriverDlg = ShowIBM1S506Dlg;
         return TRUE;
     }
 

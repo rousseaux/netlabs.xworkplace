@@ -35,6 +35,7 @@ IMPORTS
 
 EXPORTS
     cfgQuerySwapperSize
+    cmnGetString
     cmnQueryDefaultFont
     cmnQueryHelpLibrary
     cmnQueryNLSModuleHandle
@@ -45,6 +46,7 @@ EXPORTS
     ctrParseColorString
     ctrScanSetupString
     ctrSetSetupString
+    dlghCreateDlg
     doshMyPID
     doshMyTID
     doshEnumDrives
@@ -52,8 +54,9 @@ EXPORTS
     doshQueryDiskFree
     doshQueryDiskFSType
     drvDisplayHelp
-    drv_strtok
     drv_memicmp
+    drv_sprintf
+    drv_strtok
     gpihBox
     gpihCreateBitmap
     gpihCreateMemPS
@@ -79,12 +82,14 @@ EXPORTS
     tmrStopTimer
     tmrStartXTimer
     tmrStopXTimer
+    winhAdjustDlgItemSpinData
     winhCenterWindow
     winhFree
     winhMergeIntoSubMenu
     winhQueryPresColor
     winhQuerySwitchList
     winhQueryWindowFont
+    winhSetDlgItemSpinData
     winhSetSliderTicks
     winhSetWindowFont
     xstrcat

@@ -116,9 +116,9 @@ PXMLFILE     G_pLoadedFile = NULL;
  *@@added V0.9.9 (2001-02-10) [umoeller]
  */
 
-VOID winhSetWindowText(HWND hwnd,
-                       const char *pcszFormat,     // in: format string (as with printf)
-                       ...)                        // in: additional stuff (as with printf)
+VOID winhSetVarWindowText(HWND hwnd,
+                          const char *pcszFormat,     // in: format string (as with printf)
+                          ...)                        // in: additional stuff (as with printf)
 {
     va_list     args;
     CHAR        sz[2000];
@@ -521,10 +521,17 @@ VOID XWPENTRY InsertElementDecls(TREE *t,           // in: an CMELEMENTDECLNODE 
         // traverse the attributes tree as well
         INSERTSTACK Stack2 = {pElementRec, pInsertStack->pDom};
 
-        treeTraverse(pAttribDeclBase->AttribDeclsTree,
+        TREE *t = treeFirst(pAttribDeclBase->AttribDeclsTree);
+        while (t)
+        {
+            InsertAttribDecls(t,
+                              &Stack2);
+            t = treeNext(t);
+        }
+        /* treeTraverse(pAttribDeclBase->AttribDeclsTree,
                      InsertAttribDecls,
                      &Stack2,       // user param
-                     0);
+                     0); */
     }
 }
 
@@ -540,10 +547,18 @@ VOID InsertDocType(PXMLDOM pDom,
 {
     INSERTSTACK InsertStack = {pParentRecord, pDom};
 
-    treeTraverse(pDocTypeNode->ElementDeclsTree,
+    TREE *t = treeFirst(pDocTypeNode->ElementDeclsTree);
+    while (t)
+    {
+        InsertAttribDecls(t,
+                          &InsertStack);
+        t = treeNext(t);
+    }
+
+    /* treeTraverse(pDocTypeNode->ElementDeclsTree,
                  InsertElementDecls,
                  &InsertStack,         // user param
-                 0);
+                 0); */
 }
 
 VOID InsertDom(PXMLDOM pDom,
@@ -682,20 +697,20 @@ VOID LoadAndInsert(const char *pcszFile)
          || (arc == ERROR_DOM_VALIDITY)
        )
     {
-        winhSetWindowText(G_hwndStatusBar,
+        winhSetVarWindowText(G_hwndStatusBar,
                           pszError);
         free(pszError);
     }
     else if (arc != NO_ERROR)
     {
-        winhSetWindowText(G_hwndStatusBar,
+        winhSetVarWindowText(G_hwndStatusBar,
                           "Error %d loading \"%s\".",
                           arc,
                           pcszFile);
     }
     else
     {
-        winhSetWindowText(G_hwndStatusBar,
+        winhSetVarWindowText(G_hwndStatusBar,
                           "File \"%s\" loaded, %d bytes",
                           pcszFile,
                           G_pLoadedFile->strContents.ulLength);
