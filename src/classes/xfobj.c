@@ -1271,6 +1271,10 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
         /* case WPMENUID_DELETE:
             // this is never reached, because the subclassed folder
             // frame winproc already intercepts this
+
+            // ### wrong... for example, XCenter "delete" is not intercepted...
+            // or in any other container that is not a folder!!!
+
             _Pmpf(("Deleting object %s, hwndFrame: 0x%lX",
                    _wpQueryTitle(somSelf),
                    hwndFrame ));

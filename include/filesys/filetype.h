@@ -35,16 +35,14 @@
      ********************************************************************/
 
     #ifdef SOM_XFldDataFile_h
-        /* PSZ ftypQueryType(WPDataFile *somSelf,
-                          PSZ pszOriginalTypes,
-                          PCGLOBALSETTINGS pGlobalSettings); */
-
-        PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf);
+        PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
+                                      BOOL fUsePlainTextAsDefault);
 
         ULONG ftypFreeAssocsList(PLINKLIST pllAssocs);
 
         WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,
-                                             PULONG pulView);
+                                             PULONG pulView,
+                                             BOOL fUsePlainTextAsDefault);
 
         BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf,
                                            HWND hwndOpenSubmenu,

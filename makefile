@@ -657,6 +657,7 @@ release: really_all
     $(COPY) release\bin\* $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xwpres.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\netscdde.exe $(XWPRELEASE_MAIN)\bin

@@ -321,11 +321,16 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
 
                 if (cmnQueryXWPBasePath(szResModule))
                 {
+                    APIRET arc = NO_ERROR;
                     strcat(szResModule, "\\bin\\xwpres.dll");
-                    DosLoadModule(szError,
-                                  sizeof(szError),
-                                  szResModule,
-                                  &G_hmodRes);
+                    arc = DosLoadModule(szError,
+                                        sizeof(szError),
+                                        szResModule,
+                                        &G_hmodRes);
+                    if (arc != NO_ERROR)
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Error %d occured loading \"%s\".",
+                               arc, szResModule);
                 }
             }
         }

@@ -194,6 +194,8 @@ interface M_XCenter : M_WPAbstract
     wpclsQueryStyle: override;
     wpclsQueryTitle: override;
 
+    wpclsCreateDefaultTemplates: override;
+
     wpclsQueryIconData: override;
   };
 #endif /* __SOMIDL__ */

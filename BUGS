@@ -53,9 +53,6 @@ CHECK ON A CLEAN SYSTEM
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
->OS/2 Kernel object: Set Path -> Browse will not work (Standard file
->dialog doesn't react when OK is pressed -> nothing happens)
-
 I think there are some problems (not severe) probably with variables
 initialisation somewhere in XWPS. I have "Folder menu bars" as well as
 "Status bars" permanently turned on. When I try to turn them on/off
@@ -131,6 +128,10 @@ PageMage:
         the FS app!)
     3)  The title of an application windows is not updated properly (if at
         all) in the pagemage window
+
+OS/2 Kernel:
+    Set Path -> Browse will not work (Standard file dialog doesn't react when
+    OK is pressed -> nothing happens.
 
 hotkeys:
     > > >There's one more problem - my batchfiles should start in

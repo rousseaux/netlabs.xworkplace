@@ -584,8 +584,8 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     // (mask out only the ones we're interested in changing)
     WinSetWindowBits(pXCenterData->Globals.hwndFrame,
                      QWL_STYLE,
-                     _ulWindowStyle,
-                     WS_TOPMOST | WS_ANIMATE);
+                     _ulWindowStyle,            // flags
+                     WS_TOPMOST | WS_ANIMATE);  // mask
 
     if (ulFlags & XFMF_DISPLAYSTYLECHANGED)
     {
@@ -652,6 +652,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     if (ulFlags & (XFMF_REPOSITIONWIDGETS | XFMF_SHOWWIDGETS))
     {
         ReformatWidgets(pXCenterData,
+                        // show?
                         ((ulFlags & XFMF_SHOWWIDGETS) != 0));
     }
 
@@ -1306,7 +1307,12 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              * WM_SYSCOMMAND:
              *      we must intercept this; since we don't have
              *      a system menu, closing from the task list
-             *      won't work otherwise
+             *      won't work otherwise.
+             *
+             *      NOTE: Apparently, since we're running on a
+             *      separate thread, the tasklist posts WM_QUIT
+             *      directly into the queue. Anyway, this msg
+             *      does NOT come in for the tasklist close.
              */
 
             case WM_SYSCOMMAND:
@@ -1318,7 +1324,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 }
             break;
 
-            case WM_FOCUSCHANGE:
+            /* case WM_FOCUSCHANGE:
                 // do NOTHING!
             break;
 
@@ -1327,11 +1333,11 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             break;
 
             case WM_QUERYFRAMEINFO:
-                DosBeep(2000, 30);
+                // DosBeep(2000, 30);
                 // this msg never comes in... sigh
                 mrc = (MRESULT)(FI_FRAME | FI_NOMOVEWITHOWNER);
                         // but not FI_ACTIVATEOK
-            break;
+            break; */
 
             /*
              * WM_ADJUSTWINDOWPOS:
@@ -1412,6 +1418,8 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             /*
              * WM_DESTROY:
              *      stop all running timers.
+             *
+             *      The client should get this before the frame.
              */
 
             case WM_DESTROY:
@@ -1639,9 +1647,9 @@ MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
                                      idPtr,
                                      FALSE));   // no copy
 
-    ctrpReformat(pXCenterData,
+    /* ctrpReformat(pXCenterData,
                  0);        // just show
-
+                                        */
     return ((MPARAM)TRUE);      // message processed
 }
 
@@ -3777,9 +3785,32 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // loop until WM_QUIT
                         WinDispatchMsg(ptiMyself->hab, &qmsg);
 
+                    // WM_QUIT came in: checks below...
                 } // end if (pXCenterData->pfnwpFrameOrig)
             }
             CATCH(excpt1) {} END_CATCH();
+
+            // We can get here for several reasons.
+            // 1)   The user used the tasklist to kill the XCenter.
+            //      Apparently, the task list posts WM_QUIT directly...
+            //      so at this point, the XCenter might not have been
+            //      destroyed.
+            // 2)   By contrast, WM_DESTROY in fnwpFrame posts QM_QUIT
+            //      too. At that point, the XCenter is already destroyed.
+            // 3)   The XCenter crashed. At that point, the window still
+            //      exists.
+            // So check...
+            if (_pvOpenView)
+            {
+                // not zeroed yet (zeroed by ClientDestroy):
+                // this means the window still exists... clean up
+                TRY_QUIET(excpt1)
+                {
+                    WinDestroyWindow(pGlobals->hwndFrame);
+                    // ClientDestroy sets _pvOpenView to NULL
+                }
+                CATCH(excpt1) {} END_CATCH();
+            }
 
         } // end if (fCreated)
     } // if (pXCenterData)

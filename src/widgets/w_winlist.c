@@ -53,6 +53,7 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
 ew */
 
+#define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
 
@@ -65,6 +66,7 @@ ew */
 #define INCL_WINRECTANGLES
 #define INCL_WINPOINTERS
 #define INCL_WINSYS
+#define INCL_WINMENUS
 #define INCL_WINLISTBOXES
 #define INCL_WINENTRYFIELDS
 
@@ -289,6 +291,11 @@ typedef struct _WINLISTPRIVATE
     WINLISTSETUP Setup;
             // widget settings that correspond to a setup string
 
+    HWND        hwndContextMenuHacked,
+            // != 0 after context menu has been hacked for the first time
+                hwndContextMenuShowing;
+            // != 0 while context menu is showing (overriding standard widget)
+
     ULONG       ulTimerID;              // if != NULLHANDLE, update timer is running
 
     PSWBLOCK    pswBlock;
@@ -324,9 +331,13 @@ typedef struct _WINLISTPRIVATE
     ULONG       cShow;
             // count of items which have WLF_SHOWBUTTON set
 
-    PSWCNTRL    pCtrlActive;
+    PSWCNTRL    pCtrlActive,
             // ptr into pswBlock for last active window or NULL if none
-
+                pCtrlSourceEmphasis,
+            // ptr into pswBlock for button with source emphasis or NULL if none
+                pCtrlMenu;
+            // same as pCtrlSourceEmphasis; second field needed because WM_COMMAND
+            // might come in after WM_MENUEND (for source emphasis)
 } WINLISTPRIVATE, *PWINLISTPRIVATE;
 
 VOID ScanSwitchList(PWINLISTPRIVATE pPrivate);
@@ -1111,6 +1122,8 @@ VOID ScanSwitchList(PWINLISTPRIVATE pPrivate)
         // not first call: free previous
         pwinhFree(pPrivate->pswBlock);
         pPrivate->pCtrlActive = NULL;
+        pPrivate->pCtrlMenu = NULL;
+        pPrivate->pCtrlSourceEmphasis = NULL;
     }
 
     pPrivate->pswBlock = QuerySuperSwitchList(pPrivate->pWidget->habWidget,
@@ -1193,6 +1206,26 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
                          lButtonBorder,
                          lLeft,
                          lRight);
+
+        // source emphasis for this control?
+        if (    (pPrivate->pCtrlSourceEmphasis)
+             && (pCtrlThis == pPrivate->pCtrlSourceEmphasis)
+           )
+        {
+            // yes:
+            POINTL ptl;
+            GpiSetColor(hps, RGBCOL_BLACK);
+            GpiSetLineType(hps, LINETYPE_DOT);
+            ptl.x = rclButtonArea.xLeft;
+            ptl.y = rclButtonArea.yBottom;
+            GpiMove(hps, &ptl);
+            ptl.x = rclButtonArea.xRight;
+            ptl.y = rclButtonArea.yTop;
+            GpiBox(hps,
+                   DRO_OUTLINE,
+                   &ptl,
+                   0, 0);
+        }
 
         // draw button middle
         rclButtonArea.xLeft++;
@@ -1501,6 +1534,8 @@ VOID UpdateSwitchList(HWND hwnd,
             pwinhFree(pPrivate->pswBlock);
             // unset that pointer... it pointed into the old list!
             pPrivate->pCtrlActive = NULL;
+            pPrivate->pCtrlSourceEmphasis = NULL;
+            pPrivate->pCtrlMenu = NULL;
         }
 
         // replace!
@@ -1566,7 +1601,7 @@ VOID UpdateSwitchList(HWND hwnd,
 
 PSWCNTRL FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
                            PPOINTL pptl,
-                           PRECTL prclSubclient)
+                           PRECTL prclSubclient)    // in: from GetPaintableRect
 {
     PSWCNTRL pCtrl = NULL;
     // avoid division by zero
@@ -1872,6 +1907,429 @@ VOID WwgtButton1Down(HWND hwnd,
     }
 }
 
+BOOL IsEnabled(HWND hwndMenu, USHORT usItem)
+{
+    BOOL brc = FALSE;
+    if ((SHORT)WinSendMsg(hwndMenu,
+                          MM_ITEMPOSITIONFROMID,
+                          MPFROM2SHORT(usItem, TRUE),
+                          0)
+            != MIT_NONE)
+    {
+        // item exists:
+        if ((USHORT)WinSendMsg(hwndMenu,
+                               MM_QUERYITEMATTR,
+                               MPFROM2SHORT(usItem, TRUE),
+                               (MPARAM)MIA_DISABLED)
+                    == 0)
+            brc = TRUE;
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ HackContextMenu:
+ *
+ *@@added V0.9.7 (2001-01-10) [umoeller]
+ */
+
+VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
+{
+    PSZ apszMenuItems[] =
+            {
+                "~Restore",     // 1000
+                "~Move",        // 1001
+                "~Size",        // 1002
+                "Mi~nimize",    // 1003
+                "Ma~ximize",    // 1004
+                "~Hide",        // 1005
+                "",             // separator
+                "~Close",       // 1007
+                "",             // separator
+                "~Kill process ", // 1009
+                ""              // separator
+            };
+
+    pPrivate->hwndContextMenuHacked = WinCreateMenu(HWND_DESKTOP, NULL);
+    if (pPrivate->hwndContextMenuHacked)
+    {
+        // make existing menu a submenu of the new menu
+        MENUITEM mi = {0};
+        SHORT src = 0;
+        SHORT s = 0;
+        HWND hwndNewSubmenu = WinCreateMenu(pPrivate->hwndContextMenuHacked, NULL);
+        mi.iPosition = MIT_END;
+        mi.afStyle = MIS_TEXT;
+
+        for (s = 0;
+             s < sizeof(apszMenuItems) / sizeof(apszMenuItems[0]);
+             s++)
+        {
+            mi.id = 1000 + s;
+            if (apszMenuItems[s][0] == '\0')
+                // separator:
+                mi.afStyle = MIS_SEPARATOR;
+            else
+                mi.afStyle = MIS_TEXT;
+
+            src = SHORT1FROMMR(WinSendMsg(pPrivate->hwndContextMenuHacked,
+                                          MM_INSERTITEM,
+                                          (MPARAM)&mi,
+                                          (MPARAM)apszMenuItems[s]));
+        }
+
+        // now copy the old context menu as submenu;
+        // we can't just use the old item and insert it
+        // because we still display the original menu if
+        // the window list is empty, and PMMERGE crashes then
+        mi.afStyle = MIS_TEXT | MIS_SUBMENU;
+        mi.id = 2000;
+        mi.hwndSubMenu = hwndNewSubmenu;
+
+        src = SHORT1FROMMR(WinSendMsg(pPrivate->hwndContextMenuHacked,
+                                      MM_INSERTITEM,
+                                      (MPARAM)&mi,
+                                      (MPARAM)"Window list widget"));
+        if (    (src != MIT_MEMERROR)
+            &&  (src != MIT_ERROR)
+           )
+        {
+            int i;
+            SHORT cMenuItems = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
+                                                 MM_QUERYITEMCOUNT,
+                                                 0, 0);
+            WinSetWindowUShort(pPrivate->hwndContextMenuHacked,
+                               QWS_ID, 2000);
+
+            // loop through all entries in the original menu
+            for (i = 0; i < cMenuItems; i++)
+            {
+                CHAR szItemText[100];
+                SHORT id = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
+                                             MM_ITEMIDFROMPOSITION,
+                                             MPFROMSHORT(i),
+                                             0);
+                // get this menu item into mi buffer
+                WinSendMsg(pPrivate->pWidget->hwndContextMenu,
+                           MM_QUERYITEM,
+                           MPFROM2SHORT(id, FALSE),
+                           MPFROMP(&mi));
+                // query text of this menu entry into our buffer
+                WinSendMsg(pPrivate->pWidget->hwndContextMenu,
+                           MM_QUERYITEMTEXT,
+                           MPFROM2SHORT(id, sizeof(szItemText)-1),
+                           MPFROMP(szItemText));
+                // add this entry to our new menu
+                mi.iPosition = MIT_END;
+                WinSendMsg(hwndNewSubmenu,
+                           MM_INSERTITEM,
+                           MPFROMP(&mi),
+                           MPFROMP(szItemText));
+            }
+        }
+    }
+}
+
+/*
+ *@@ WwgtContextMenu:
+ *      implementation for WM_CONTEXTMENU.
+ *
+ *      We override the default behavior of the standard
+ *      widget window proc.
+ *
+ *@@added V0.9.8 (2001-01-10) [umoeller]
+ */
+
+MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            if (pWidget->hwndContextMenu)
+            {
+                POINTL  ptlScreen,
+                        ptlWidget;
+                RECTL   rclSubclient;
+                PSWCNTRL pCtlUnderMouse = NULL;
+
+                WinQueryPointerPos(HWND_DESKTOP, &ptlScreen);
+                // convert to widget coords
+                memcpy(&ptlWidget, &ptlScreen, sizeof(ptlWidget));
+                WinMapWindowPoints(HWND_DESKTOP,        // from
+                                   hwnd,                // to (widget)
+                                   &ptlWidget,
+                                   1);
+
+                if (!pPrivate->hwndContextMenuHacked)
+                {
+                    // first call:
+                    // hack the context menu given to us
+                    HackContextMenu(pPrivate);
+                } // if (!pPrivate->fContextMenuHacked)
+
+                GetPaintableRect(hwnd, &rclSubclient);
+                pCtlUnderMouse = FindCtrlFromPoint(pPrivate,
+                                                   &ptlWidget,
+                                                   &rclSubclient);
+                pPrivate->hwndContextMenuShowing = NULLHANDLE;
+                if (pCtlUnderMouse)
+                {
+                    // draw source emphasis
+                    // ULONG ulStyle;
+                    HWND hwndSysMenu;
+                    BOOL fEnableRestore = FALSE,
+                         fEnableMove = FALSE,
+                         fEnableSize = FALSE,
+                         fEnableMinimize = FALSE,
+                         fEnableMaximize = FALSE,
+                         fEnableHide = FALSE,
+                         fEnableKill = FALSE;
+                    PPIB ppib;
+                    PTIB ptib;
+                    CHAR szKillText[60] = "~Kill process";
+
+                    HPS hps = WinGetPS(hwnd);
+                    if (hps)
+                    {
+                        gpihSwitchToRGB(hps);
+                        pPrivate->pCtrlSourceEmphasis = pCtlUnderMouse;
+                        pPrivate->pCtrlMenu = pCtlUnderMouse;
+                        DrawOneCtrl(pPrivate,
+                                    hps,
+                                    &rclSubclient,
+                                    pCtlUnderMouse,
+                                    WinQueryActiveWindow(HWND_DESKTOP));
+                        WinReleasePS(hps);
+                    }
+
+                    // enable items...
+                    // we do a mixture of copying the state from the item's
+                    // system menu and from querying the window's style. This
+                    // is kinda sick, but we have the following limitations:
+                    // -- There is no easy cross-process way of getting the
+                    //    frame control flags to find out whether the frame
+                    //    actually has minimize and maximize buttons in the
+                    //    first place.
+                    // -- We can't enumerate the frame controls either because
+                    //    the minimize and maximize button(s) are a single control
+                    //    which always has the same ID (FID_MINMAX), and we don't
+                    //    know what it looks like.
+                    // -- In general, the system menu has the correct items
+                    //    enabled (SC_MINIMIZE and SC_MAXIMIZE). Howver, these
+                    //    items are only refreshed when the sysmenu is made
+                    //    visible... so we have to query QWL_STYLE as well.
+                    hwndSysMenu = WinWindowFromID(pCtlUnderMouse->hwnd, FID_SYSMENU);
+                    if (hwndSysMenu)
+                    {
+                        ULONG ulStyle = WinQueryWindowULong(pCtlUnderMouse->hwnd,
+                                                            QWL_STYLE);
+                        if (    (ulStyle & (WS_MINIMIZED | WS_MAXIMIZED))
+                             || ((ulStyle & WS_VISIBLE) == 0)
+                           )
+                            fEnableRestore = TRUE;
+
+                        fEnableMove     = IsEnabled(hwndSysMenu, SC_MOVE    );
+                        fEnableSize     = IsEnabled(hwndSysMenu, SC_SIZE    );
+
+                        if ((ulStyle & WS_MINIMIZED) == 0)
+                            fEnableMinimize = IsEnabled(hwndSysMenu, SC_MINIMIZE);
+                        if ((ulStyle & WS_MAXIMIZED) == 0)
+                            fEnableMaximize = IsEnabled(hwndSysMenu, SC_MAXIMIZE);
+
+                        if ((ulStyle & WS_VISIBLE))
+                            fEnableHide     = IsEnabled(hwndSysMenu, SC_HIDE);
+                    }
+
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1000,     // restore
+                                      fEnableRestore);
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1001,     // move
+                                      fEnableMove);
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1002,     // size
+                                      fEnableSize);
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1003,     // minimize
+                                      fEnableMinimize);
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1004,     // maximize
+                                      fEnableMaximize);
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1005,     // hide
+                                      fEnableHide);
+
+                    // enable "kill process" only if this is not the WPS
+                    DosGetInfoBlocks(&ptib, &ppib);
+                    if (pCtlUnderMouse->idProcess != ppib->pib_ulpid)
+                    {
+                        // not WPS:
+                        fEnableKill = TRUE;
+                        sprintf(szKillText,
+                                "~Kill process (PID 0x%lX)",
+                                pCtlUnderMouse->idProcess);
+                    }
+
+                    WinSetMenuItemText(pPrivate->hwndContextMenuHacked,
+                                       1009,
+                                       szKillText);
+                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                      1009,
+                                      fEnableKill);
+
+                    if (WinPopupMenu(HWND_DESKTOP,
+                                     hwnd,
+                                     pPrivate->hwndContextMenuHacked,
+                                     ptlScreen.x,
+                                     ptlScreen.y,
+                                     0,
+                                     PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
+                                        | PU_MOUSEBUTTON2 | PU_KEYBOARD))
+                        pPrivate->hwndContextMenuShowing = pPrivate->hwndContextMenuHacked;
+
+
+                    mrc = (MPARAM)TRUE;
+                }
+                else
+                    // no control under mouse:
+                    // call default
+                    mrc = pWidget->pfnwpDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
+
+            } // if (pWidget->hwndContextMenu)
+        }
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ WwgtMenuEnd:
+ *      implementation for WM_MENUEND.
+ *
+ *@@added V0.9.7 (2001-01-10) [umoeller]
+ */
+
+VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        BOOL fCallDefault = TRUE;
+        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            if (pPrivate->hwndContextMenuShowing)
+                // we're showing our private context menu:
+                if (pPrivate->hwndContextMenuShowing == (HWND)mp2)
+                {
+                    // this menu is ending:
+                    fCallDefault = FALSE;
+                    pPrivate->hwndContextMenuShowing = NULLHANDLE;
+                    pPrivate->pCtrlSourceEmphasis = NULL;
+                    // remove source emphasis... the win list might have
+                    // changed in between, so just repaint all
+                    WinInvalidateRect(hwnd, NULL, FALSE);
+                }
+        }
+
+        if (fCallDefault)
+            pWidget->pfnwpDefWidgetProc(hwnd, WM_MENUEND, mp1, mp2);
+    }
+}
+
+/*
+ *@@ WwgtCommand:
+ *
+ *@@added V0.9.7 (2001-01-10) [umoeller]
+ */
+
+VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        BOOL fCallDefault = TRUE;
+        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            USHORT usCmd = (USHORT)mp1;
+            if (    (usCmd >= 1000)
+                 && (usCmd <= 1009)
+               )
+            {
+                fCallDefault = FALSE;
+
+                if (pPrivate->pCtrlMenu)
+                {
+                    USHORT usSysCommand = 0;
+
+                    switch (usCmd)
+                    {
+                            /*
+                                "~Restore",     // 1000
+                                "~Move",        // 1001
+                                "~Size",        // 1002
+                                "Mi~nimize",    // 1003
+                                "Ma~ximize",    // 1004
+                                "Hide"          // 1005
+                                "~Close",       // 1007
+                            */
+
+                        case 1000:
+                            usSysCommand = SC_RESTORE;
+                        break;
+
+                        case 1001:
+                            usSysCommand = SC_MOVE;
+                        break;
+
+                        case 1002:
+                            usSysCommand = SC_SIZE;
+                        break;
+
+                        case 1003:
+                            usSysCommand = SC_MINIMIZE;
+                        break;
+
+                        case 1004:
+                            usSysCommand = SC_MAXIMIZE;
+                        break;
+
+                        case 1005:
+                            usSysCommand = SC_HIDE;
+                        break;
+
+                        case 1007:
+                            usSysCommand = SC_CLOSE;
+                        break;
+
+                        case 1009:
+                            DosKillProcess(DKP_PROCESS,
+                                           pPrivate->pCtrlMenu->idProcess);
+                        break;
+                    }
+
+                    if (usSysCommand)
+                        WinPostMsg(pPrivate->pCtrlMenu->hwnd,
+                                   WM_SYSCOMMAND,
+                                   (MPARAM)usSysCommand,
+                                   MPFROM2SHORT(CMDSRC_OTHER,
+                                                TRUE));      // mouse
+                }
+            }
+        }
+
+        if (fCallDefault)
+            pWidget->pfnwpDefWidgetProc(hwnd, WM_COMMAND, mp1, mp2);
+    }
+}
+
 /*
  *@@ WwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
@@ -1961,6 +2419,8 @@ MRESULT WwgtDestroy(HWND hwnd)
         {
             WwgtClearSetup(&pPrivate->Setup);
 
+            if (pPrivate->hwndContextMenuHacked)
+                WinDestroyWindow(pPrivate->hwndContextMenuHacked);
             if (pPrivate->ulTimerID)
                 ptmrStopTimer(hwnd,
                               pPrivate->ulTimerID);
@@ -1968,6 +2428,7 @@ MRESULT WwgtDestroy(HWND hwnd)
                 pwinhFree(pPrivate->pswBlock);
             free(pPrivate);
                     // pWidget is cleaned up by DestroyWidgets
+
         }
 
         mrc = pWidget->pfnwpDefWidgetProc(hwnd, WM_DESTROY, 0, 0);
@@ -2056,6 +2517,33 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_BUTTON1DOWN:
             WwgtButton1Down(hwnd, mp1);
             mrc = (MPARAM)FALSE;
+        break;
+
+        /*
+         * WM_CONTEXTMENU:
+         *      modify standard context menu behavior.
+         */
+
+        case WM_CONTEXTMENU:
+            mrc = WwgtContextMenu(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_MENUEND:
+         *
+         */
+
+        case WM_MENUEND:
+            WwgtMenuEnd(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_COMMAND:
+         *      process menu commands.
+         */
+
+        case WM_COMMAND:
+            WwgtCommand(hwnd, mp1, mp2);
         break;
 
         /*

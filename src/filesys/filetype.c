@@ -439,11 +439,21 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *
  *      This is the heart of the extended associations
  *      engine. This function gets called whenever
- *      extended associations are needed, that is:
+ *      extended associations are needed.
  *
- *      --  from ftypQueryAssociatedProgram;
+ *      --  From ftypQueryAssociatedProgram, this gets
+ *          called with (fUsePlainTextAsDefault == FALSE),
+ *          mostly (inheriting that func's param).
+ *          Since that method is called during folder
+ *          population to find the correct icon for the
+ *          data file, we do NOT want all data files to
+ *          receive the icons for plain text files.
  *
- *      --  from ftypModifyDataFileOpenSubmenu.
+ *      --  From ftypModifyDataFileOpenSubmenu, this gets
+ *          called with (fUsePlainTextAsDefault == TRUE).
+ *          We do want the items for "plain text" in the
+ *          "Open" context menu if no other type has been
+ *          assigned.
  *
  *      The list (which is of type PLINKLIST, containing
  *      plain WPObject* pointers) is returned and should
@@ -461,9 +471,11 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
+ *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
  */
 
-PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf)
+PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
+                              BOOL fUsePlainTextAsDefault)
 {
     PLINKLIST   pllAssocs = NULL;
     // ULONG       cAssocObjects = 0;
@@ -499,10 +511,10 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf)
             _Pmpf(("    ftypQueryAssociatedProgram: got %d matching types", cTypes));
         #endif
 
-        if (cTypes == 0)
+        if ((cTypes == 0) && (fUsePlainTextAsDefault))
         {
             // we still have no types: this happens if
-            // 1) no explicit type was assigned
+            // 1) no explicit type was assigned and
             // 2) none of the type filters matched
             // --> in that case, use "Plain Text"
             if (lstAppendItem(pllTypes, strdup("Plain Text")))
@@ -595,16 +607,20 @@ ULONG ftypFreeAssocsList(PLINKLIST pllAssocs)    // in: list created by ftypBuil
  */
 
 WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
-                                     PULONG pulView)            // in: default view (normally 0x1000,
+                                     PULONG pulView,            // in: default view (normally 0x1000,
                                                                 // can be > 1000 if the default view
                                                                 // has been manually changed on the
                                                                 // "Menu" page);
                                                                 // out: "real" default view if this
                                                                 // was OPEN_RUNNING or something
+                                     BOOL fUsePlainTextAsDefault)
+                                            // in: use "plain text" as standard if no other type was found?
 {
     WPObject *pObjReturn = 0;
 
-    PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf);
+    PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf,
+                                                      fUsePlainTextAsDefault);
+
     if (pllAssocObjects)
     {
         ULONG       cAssocObjects = lstCountItems(pllAssocObjects);
@@ -727,7 +743,9 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
 
         if (brc)
         {
-            PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf);
+            PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf,
+                                                              // use "plain text" as default:
+                                                              TRUE);
             if (pllAssocObjects)
             {
                 ULONG       cAssocObjects = lstCountItems(pllAssocObjects);

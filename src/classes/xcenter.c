@@ -514,6 +514,11 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
                         (PSZ)G_pcszXCenter,
                         7,
                         _lPriorityDelta);
+
+            _wpSaveLong(somSelf,
+                        (PSZ)G_pcszXCenter,
+                        8,
+                        _ulPosition);
         }
     }
     CATCH(excpt1)
@@ -635,6 +640,12 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                7,
                                &ul))
                 _lPriorityDelta = ul;
+
+            if (_wpRestoreLong(somSelf,
+                               (PSZ)G_pcszXCenter,
+                               8,
+                               &ul))
+                _ulPosition = ul;
         }
     }
     CATCH(excpt1)
@@ -945,6 +956,29 @@ SOM_Scope PSZ  SOMLINK xctrM_wpclsQueryTitle(M_XCenter *somSelf)
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryTitle");
 
     return ("XCenter");
+}
+
+/*
+ *@@ wpclsCreateDefaultTemplates:
+ *      this WPObject class method is called by the
+ *      Templates folder to allow a class to
+ *      create its default templates.
+ *
+ *      The default WPS behavior is to create new templates
+ *      if the class default title is different from the
+ *      existing templates.
+ *
+ *@@added V0.9.7 (2001-01-11) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctrM_wpclsCreateDefaultTemplates(M_XCenter *somSelf,
+                                                          WPObject* Folder)
+{
+    /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
+    M_XCenterMethodDebug("M_XCenter","xctrM_wpclsCreateDefaultTemplates");
+
+    // pretend we've created the templates
+    return (TRUE);
 }
 
 /*

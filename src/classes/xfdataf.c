@@ -275,6 +275,8 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     xfTD_wpModifyMenu _parent_wpModifyMenu = NULL;
     BOOL    fExtAssocs = FALSE;
+    somMethodTabs pParentMTab;
+    SOMClass      *pParentClass;
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyMenu");
 
@@ -287,19 +289,23 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
     // b) if extended associations are enabled, this is fun:
     //    we skip the _WPDataFile method completely and call WPFileSystem directly!
     if (fExtAssocs)
+    {
         // WPFileSystem
-        _parent_wpModifyMenu
-            = (xfTD_wpModifyMenu)wpshParentNumResolve(_WPFileSystem,
-                                                      WPFileSystemCClassData.parentMtab,
-                                                      "wpModifyMenu");
-
+        pParentClass = _WPFileSystem;
+        pParentMTab = WPFileSystemCClassData.parentMtab;
+    }
     else
+    {
         // WPDataFile
-        _parent_wpModifyMenu
-            = (xfTD_wpModifyMenu)wpshParentNumResolve(_XFldDataFile,
-                                                      XFldDataFileCClassData.parentMtab,
-                                                      "wpModifyMenu");
+        pParentClass = _XFldDataFile;
+        pParentMTab = XFldDataFileCClassData.parentMtab;
+    }
 
+    // resolve!
+    _parent_wpModifyMenu
+        = (xfTD_wpModifyMenu)wpshParentNumResolve(_WPFileSystem,
+                                                  pParentMTab,
+                                                  "wpModifyMenu");
     if (!_parent_wpModifyMenu)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "wpshParentNumResolve failed.");
@@ -504,10 +510,15 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
     {
         // replacement desired:
         ULONG       ulView2 = ulView;
-        WPObject    *pAssocObject = ftypQueryAssociatedProgram(somSelf,
-                                                               &ulView2);
-                                        // object is locked
-        // _Pmpf(("ftypQueryAssociatedProgram got 0x%lX", pAssocObject));
+        WPObject    *pAssocObject
+            = ftypQueryAssociatedProgram(somSelf,
+                                         &ulView2,
+                                         // use "plain text" as default:
+                                         TRUE);
+                                            // we've used "plain text" as default
+                                            // in wpModifyMenu, so we need to do
+                                            // the same again here
+                            // object is locked
 
         if (pAssocObject)
         {
@@ -694,10 +705,14 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
     if (pGlobalSettings->fExtAssocs)
     {
         // "extended associations" allowed:
-        // use our replacement mechanism
+        // use our replacement mechanism...
+        // this does NOT use "plain text" as the default
         ULONG   ulView2 = ulView;
         pobj = ftypQueryAssociatedProgram(somSelf,
-                                          &ulView2);
+                                          &ulView2,
+                                          // do not use "plain text" as default,
+                                          // this affects the icon:
+                                          FALSE);
                         // locks the object
     }
     else
