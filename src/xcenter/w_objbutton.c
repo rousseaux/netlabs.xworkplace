@@ -1082,6 +1082,7 @@ STATIC VOID BuildXButtonMenu(HWND hwnd,
     }
 
 #ifndef __NOXSHUTDOWN__
+#ifndef __EASYSHUTDOWN__
     if (cmnQuerySetting(sfXShutdown))
         if (cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM)
         {
@@ -1092,6 +1093,7 @@ STATIC VOID BuildXButtonMenu(HWND hwnd,
             winhMenuRemoveEllipse(hMenu,
                                   ID_CRMI_SHUTDOWN);
         }
+#endif
 #endif
 
     if (pPrivate->Setup.flMenuItems & MENUFL_NOSHUTDOWN)
@@ -1123,11 +1125,13 @@ STATIC VOID BuildXButtonMenu(HWND hwnd,
     else
     {
 #ifndef __NOXSHUTDOWN__
+#ifndef __EASYSHUTDOWN__
         if (cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM)
             // if XShutdown confirmations have been disabled,
             // remove "..." from menu entry
             winhMenuRemoveEllipse(hMenu,
                                   ID_CRMI_LOGOFF);
+#endif
 #endif
 
         WinEnableMenuItem(hMenu,

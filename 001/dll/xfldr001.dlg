@@ -648,33 +648,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_SDD_CONFIRM LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace: Extended Shutdown", ID_SDD_CONFIRM, 35, 26, 288,
-            103, , FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        ICON            ID_SDICON, ID_SDDI_ICON, 10, 82, 20, 16, WS_GROUP
-        LTEXT           "Please select how the system shall be shut down.",
-                        -1, 35, 79, 150, 19, DT_WORDBREAK
-        GROUPBOX        "Reboot options", -1, 10, 40, 175, 39, NOT WS_GROUP
-        AUTORADIOBUTTON "Shut down ~only", ID_SDDI_SHUTDOWNONLY, 15, 61, 100,
-                        10, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "St~andard reboot", ID_SDDI_STANDARDREBOOT, 15, 52,
-                        100, 10, WS_TABSTOP
-        AUTORADIOBUTTON "Reboot ~to...", ID_SDDI_REBOOTTO, 15, 43, 100, 10,
-                        WS_TABSTOP
-        LISTBOX         ID_SDDI_BOOTMGR, 195, 13, 85, 84, LS_NOADJUSTPOS |
-                        LS_HORZSCROLL | WS_GROUP
-        DEFPUSHBUTTON   "~Shutdown", DID_OK, 10, 25, 55, 12
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 70, 25, 55, 12
-        PUSHBUTTON      "~Help", ID_SDD_BOOTMGR, 130, 25, 55, 12, BS_HELP
-        AUTOCHECKBOX    "~Empty trash can", ID_SDDI_EMPTYTRASHCAN, 10, 14,
-                        175, 8, WS_GROUP
-        AUTOCHECKBOX    "Show this ~dialog next time", ID_SDDI_MESSAGEAGAIN,
-                        10, 6, 175, 8, WS_GROUP
-    END
-END
-
 DLGTEMPLATE ID_SDD_MAIN LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XShutdown Status", ID_SDD_MAIN, 15, 15, 365, 156, FS_ICON |

@@ -135,11 +135,13 @@
 
 static const CONTROLDEF
     ShutdownGroup = LOADDEF_GROUP(ID_SDDI_SHUTDOWNGROUP, SZL_AUTOSIZE),
+#ifndef __EASYSHUTDOWN__
     RebootAfterwardsCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "~Reboot afterwards"
                             ID_SDDI_REBOOT,
                             COLUMN_WIDTH,
                             -1),
+#endif
     RebootActionsButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING, // "Reboot actio~ns..."
                             ID_SDDI_REBOOTEXT,
@@ -175,8 +177,10 @@ static const CONTROLDEF
 #endif
     SharedGroup = LOADDEF_GROUP(ID_SDDI_SHAREDGROUP, SZL_AUTOSIZE),
     EmptyTrashCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_EMPTYTRASHCAN),
+#ifndef __EASYSHUTDOWN__
     ConfirmCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_CONFIRM),
     WarpCenterFirstCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WARPCENTERFIRST),
+#endif
     AutoCloseVIOCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "Auto-close non-~PM sessions"
                             ID_SDDI_AUTOCLOSEVIO,
@@ -201,10 +205,12 @@ static const DLGHITEM dlgShutdown[] =
                 START_GROUP_TABLE(&SharedGroup),
                     START_ROW(0),
                         CONTROL_DEF(&EmptyTrashCB),
+#ifndef __EASYSHUTDOWN__
                     START_ROW(0),
                         CONTROL_DEF(&ConfirmCB),
                     START_ROW(0),
                         CONTROL_DEF(&WarpCenterFirstCB),
+#endif
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&AutoCloseVIOCB),
                         CONTROL_DEF(&AutoCloseButton),
@@ -218,9 +224,11 @@ static const DLGHITEM dlgShutdown[] =
                 START_GROUP_TABLE(&ShutdownGroup),
                     START_ROW(0),
                         CONTROL_DEF(&CanDesktopAltF4),
+#ifndef __EASYSHUTDOWN__
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&RebootAfterwardsCB),
                         CONTROL_DEF(&RebootActionsButton),
+#endif
                     START_ROW(0),
                         CONTROL_DEF(&AnimationTxt),
                         CONTROL_DEF(&AnimationBeforeShutdownCB),
@@ -354,8 +362,10 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
+#ifndef __EASYSHUTDOWN__
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_REBOOT,
                               (fl & XSD_REBOOT) != 0);
+#endif
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4,
                               (fl & XSD_CANDESKTOPALTF4) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN,
@@ -371,12 +381,16 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               (fl & XSD_APM_DELAY) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                               (fl & XSD_EMPTY_TRASH) != 0);
+#ifndef __EASYSHUTDOWN__
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_CONFIRM,
                               ((fl & XSD_NOCONFIRM) == 0));
+#endif
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
                               (fl & XSD_AUTOCLOSEVIO) != 0);
+#ifndef __EASYSHUTDOWN__
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                               (fl & XSD_WARPCENTERFIRST) != 0);
+#endif
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_LOG,
                               (fl & XSD_LOG) != 0);
 
@@ -406,7 +420,9 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4, fXShutdownEnabled);
 
+#ifndef __EASYSHUTDOWN__
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
+#endif
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
 
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
@@ -423,17 +439,21 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                           ( fXShutdownEnabled && (cmnTrashCanReady()) ) );
 
+#ifndef __EASYSHUTDOWN__
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
+#endif
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
 
         // enable "warpcenter first" if shutdown or WPS have been enabled
         // AND if the WarpCenter was found
+#ifndef __EASYSHUTDOWN__
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                          (    (fXShutdownOrWPSValid)
                            && (G_pAwakeWarpCenter != NULL)
                                     // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
                          ));
+#endif
 
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
@@ -475,9 +495,11 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
 
     switch (ulItemID)
     {
+#ifndef __EASYSHUTDOWN__
         case ID_SDDI_REBOOT:
             ulFlag = XSD_REBOOT;
         break;
+#endif
 
         case ID_SDDI_CANDESKTOPALTF4:
             ulFlag = XSD_CANDESKTOPALTF4;
@@ -503,19 +525,23 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
             ulFlag = XSD_EMPTY_TRASH;
         break;
 
+#ifndef __EASYSHUTDOWN__
         case ID_SDDI_CONFIRM:
             ulFlag = XSD_NOCONFIRM;
             ulExtra = 1 - ulExtra;          // this one is reverse now
                                             // V0.9.16 (2002-01-13) [umoeller]
         break;
+#endif
 
         case ID_SDDI_AUTOCLOSEVIO:
             ulFlag = XSD_AUTOCLOSEVIO;
         break;
 
+#ifndef __EASYSHUTDOWN__
         case ID_SDDI_WARPCENTERFIRST:
             ulFlag = XSD_WARPCENTERFIRST;
         break;
+#endif
 
         case ID_SDDI_LOG:
             ulFlag = XSD_LOG;

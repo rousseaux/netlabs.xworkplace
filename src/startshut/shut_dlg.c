@@ -350,6 +350,108 @@ STATIC HWND CreateDimScreenWindow(VOID)
 }
 
 /*
+DLGTEMPLATE ID_SDD_CONFIRM LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "XWorkplace: Extended Shutdown", ID_SDD_CONFIRM, 35, 26, 288,
+            103, , FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        ICON            ID_SDICON, ID_SDDI_ICON, 10, 82, 20, 16, WS_GROUP
+        LTEXT           "Please select how the system shall be shut down.",
+                        -1, 35, 79, 150, 19, DT_WORDBREAK
+        GROUPBOX        "Reboot options", -1, 10, 40, 175, 39, NOT WS_GROUP
+        AUTORADIOBUTTON "Shut down ~only", ID_SDDI_SHUTDOWNONLY, 15, 61, 100,
+                        10, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "St~andard reboot", ID_SDDI_STANDARDREBOOT, 15, 52,
+                        100, 10, WS_TABSTOP
+        AUTORADIOBUTTON "Reboot ~to...", ID_SDDI_REBOOTTO, 15, 43, 100, 10,
+                        WS_TABSTOP
+        LISTBOX         ID_SDDI_BOOTMGR, 195, 13, 85, 84, LS_NOADJUSTPOS |
+                        LS_HORZSCROLL | WS_GROUP
+        DEFPUSHBUTTON   "~Shutdown", DID_OK, 10, 25, 55, 12
+        PUSHBUTTON      "~Cancel", DID_CANCEL, 70, 25, 55, 12
+        PUSHBUTTON      "~Help", ID_SDD_BOOTMGR, 130, 25, 55, 12, BS_HELP
+        AUTOCHECKBOX    "~Empty trash can", ID_SDDI_EMPTYTRASHCAN, 10, 14,
+                        175, 8, WS_GROUP
+        AUTOCHECKBOX    "Show this ~dialog next time", ID_SDDI_MESSAGEAGAIN,
+                        10, 6, 175, 8, WS_GROUP
+    END
+END
+*/
+
+#define DLG_WIDTH   (3 * STD_BUTTON_WIDTH + 2 * COMMON_SPACING)
+
+static CONTROLDEF
+    TrafficLightIcon = CONTROLDEF_ICON(0, ID_SDDI_ICON),
+    ConfirmShutText = CONTROLDEF_TEXT_WORDBREAK(
+                            LOAD_STRING,
+                            ID_SDDI_CONFIRM_TEXT,
+                            DLG_WIDTH - 20),
+    RebootOptGroup = LOADDEF_GROUP(
+                            ID_SDDI_REBOOTOPT_GROUP,
+                            SZL_AUTOSIZE),
+    ShutdownOnlyRadio = LOADDEF_FIRST_AUTORADIO(ID_SDDI_SHUTDOWNONLY),
+    StandardRebootRadio = LOADDEF_NEXT_AUTORADIO(ID_SDDI_STANDARDREBOOT),
+    RebootToRadio = LOADDEF_NEXT_AUTORADIO(ID_SDDI_REBOOTTO),
+    BootMgrListbox = CONTROLDEF_LISTBOX(
+                            ID_SDDI_BOOTMGR,
+                            100,
+                            50),      // full height
+#ifndef __EASYSHUTDOWN__
+    MessageAgainCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_MESSAGEAGAIN),
+#endif
+    EmptyTrashCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_EMPTYTRASHCAN),
+    OKButton = CONTROLDEF_DEFPUSHBUTTON(
+                            0,
+                            DID_OK,
+                            STD_BUTTON_WIDTH,
+                            STD_BUTTON_HEIGHT),
+    CancelButton = CONTROLDEF_PUSHBUTTON(
+                            0,
+                            DID_CANCEL,
+                            STD_BUTTON_WIDTH,
+                            STD_BUTTON_HEIGHT),
+    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+                            LOAD_STRING,
+                            DID_HELP,
+                            STD_BUTTON_WIDTH,
+                            STD_BUTTON_HEIGHT);
+
+static const DLGHITEM dlgConfirmShutdown[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(ROW_VALIGN_CENTER),
+                START_TABLE,
+                    START_ROW(0),
+                        START_TABLE,            // root table, required
+                            START_ROW(ROW_VALIGN_CENTER),       // shared settings group
+                                CONTROL_DEF(&TrafficLightIcon),
+                                CONTROL_DEF(&ConfirmShutText),
+                        END_TABLE,
+                    START_ROW(0),
+                        START_GROUP_TABLE_EXT(&RebootOptGroup, TABLE_INHERIT_SIZE),
+                            START_ROW(0),
+                                CONTROL_DEF(&ShutdownOnlyRadio),
+                            START_ROW(0),
+                                CONTROL_DEF(&StandardRebootRadio),
+                            START_ROW(0),
+                                CONTROL_DEF(&RebootToRadio),
+                        END_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&EmptyTrashCB),
+        #ifndef __EASYSHUTDOWN__
+                    START_ROW(0),
+                        CONTROL_DEF(&MessageAgainCB),
+        #endif
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&OKButton),
+                        CONTROL_DEF(&CancelButton),
+                        CONTROL_DEF(&HelpButton),
+                END_TABLE,
+                CONTROL_DEF(&BootMgrListbox),
+        END_TABLE,
+    };
+
+/*
  *@@ xsdConfirmShutdown:
  *      this displays the eXtended Shutdown (not Restart Desktop)
  *      confirmation box. Returns MBID_YES/NO.
@@ -379,184 +481,218 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
         HPOINTER    hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
                                                   ID_SDICON);
 
+        PDLGHITEM   paNew;
+
         hwndDim = CreateDimScreenWindow();
 
         G_fConfirmWindowExtended = TRUE;
         G_fConfirmDialogReady = FALSE;
         G_ulConfirmHelpPanel = ID_XSH_XSHUTDOWN_CONFIRM;
+
+/*
         hwndConfirm = cmnLoadDlg(hwndDim,
                                  fnwpConfirm,
                                  ID_SDD_CONFIRM,
                                  NULL);
+*/
 
-        WinPostMsg(hwndConfirm,
-                   WM_SETICON,
-                   (MPARAM)hptrShutdown,
-                   NULL);
-
-        // set radio buttons
-#ifndef __NOXSHUTDOWN__
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
-#endif
-
-        if (cmnTrashCanReady())
+        // now using dialog formatter V0.9.21 (2002-09-17) [umoeller]
+        if (!cmnLoadDialogStrings(dlgConfirmShutdown,
+                                  ARRAYITEMCOUNT(dlgConfirmShutdown),
+                                  &paNew))
         {
-            if (psdParms->optEmptyTrashCan)
-                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN, TRUE);
-        }
-        else
-            // trash can not ready: disable item
-            WinEnableControl(hwndConfirm, ID_SDDI_EMPTYTRASHCAN, FALSE);
+            OKButton.pcszText = cmnGetString(DID_OK);
+            CancelButton.pcszText = cmnGetString(DID_CANCEL);
 
-        if (psdParms->optReboot)
-            ulCheckRadioButtonID = ID_SDDI_STANDARDREBOOT;
-
-        // insert ext reboot items into combo box;
-        // check for reboot items in OS2.INI
-        if (PrfQueryProfileSize(HINI_USER,
-                                (PSZ)INIAPP_XWORKPLACE,
-                                (PSZ)INIKEY_BOOTMGR,
-                                &ulKeyLength))
-        {
-            // items exist: evaluate
-            if (pINI = malloc(ulKeyLength))
+            if (!dlghCreateDlg(&hwndConfirm,
+                               hwndDim,
+                               FCF_FIXED_DLG,
+                               fnwpConfirm,
+                               cmnGetString(ID_SDDI_CONFIRM_TITLE),
+                               paNew,
+                               ARRAYITEMCOUNT(dlgConfirmShutdown),
+                               NULL,
+                               cmnQueryDefaultFont()))
             {
-                PrfQueryProfileData(HINI_USER,
-                                    (PSZ)INIAPP_XWORKPLACE,
-                                    (PSZ)INIKEY_BOOTMGR,
-                                    pINI,
-                                    &ulKeyLength);
-                p = pINI;
-                while (strlen(p))
+                WinPostMsg(hwndConfirm,
+                           WM_SETICON,
+                           (MPARAM)hptrShutdown,
+                           NULL);
+
+                // set radio buttons
+        #ifndef __EASYSHUTDOWN__
+                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
+        #endif
+
+                if (cmnTrashCanReady())
                 {
-                    WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                      LM_INSERTITEM,
-                                      (MPARAM)LIT_END,
-                                      (MPARAM)p);
-                     // skip description string
-                    p += (strlen(p)+1);
-                    // skip reboot command
-                    p += (strlen(p)+1);
+                    if (psdParms->optEmptyTrashCan)
+                        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN, TRUE);
                 }
-            }
+                else
+                    // trash can not ready: disable item
+                    WinEnableControl(hwndConfirm, ID_SDDI_EMPTYTRASHCAN, FALSE);
 
-            // select reboot item from last time
-            if (cmnQuerySetting(susLastRebootExt) != 0xFFFF)
-            {
-                if (WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                      LM_SELECTITEM,
-                                      (MPARAM)cmnQuerySetting(susLastRebootExt), // item index
-                                      (MPARAM)TRUE) // select (not deselect)
-                            == (MRESULT)FALSE)
-                    // error:
-                    // check first item then
-                    WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                      LM_SELECTITEM,
-                                      (MPARAM)0,
-                                      (MPARAM)TRUE); // select (not deselect)
+                if (psdParms->optReboot)
+                    ulCheckRadioButtonID = ID_SDDI_STANDARDREBOOT;
 
-                if (ulCheckRadioButtonID == ID_SDDI_STANDARDREBOOT)
-                    ulCheckRadioButtonID = ID_SDDI_REBOOTTO;
-            }
-        }
-        else
-            // no items found: disable
-            WinEnableControl(hwndConfirm, ID_SDDI_REBOOTTO, FALSE);
-
-        // check radio button
-        winhSetDlgItemChecked(hwndConfirm, ulCheckRadioButtonID, TRUE);
-        winhSetDlgItemFocus(hwndConfirm, ulCheckRadioButtonID);
-
-        // make window smaller if we don't have "reboot to"
-        G_fConfirmDialogReady = TRUE;       // flag for ReformatConfirmWindow
-        if (ulCheckRadioButtonID != ID_SDDI_REBOOTTO)
-            ReformatConfirmWindow(hwndConfirm, FALSE);
-
-        cmnSetControlsFont(hwndConfirm, 1, 5000);
-        winhCenterWindow(hwndConfirm);      // still hidden
-
-        xsdLoadAnimation(&G_sdAnim);
-        ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
-                            XSD_ANIM_COUNT,
-                            &(G_sdAnim.ahptr[0]),
-                            150,    // delay
-                            TRUE);  // start now
-
-        // go!!
-        ulReturn = WinProcessDlg(hwndConfirm);
-
-        ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
-        xsdFreeAnimation(&G_sdAnim);
-
-        if (ulReturn == DID_OK)
-        {
-#ifndef __NOXSHUTDOWN__
-            ULONG flShutdown = cmnQuerySetting(sflXShutdown);
-
-            // check "show this msg again"
-            if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
-                flShutdown |= XSD_NOCONFIRM;
-#endif
-
-            // check empty trash
-            psdParms->optEmptyTrashCan
-                = (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN) != 0);
-
-            // check reboot options
-            psdParms->optReboot = FALSE;
-            if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
-            {
-                USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                                              LM_QUERYSELECTION,
-                                                              (MPARAM)LIT_CURSOR,
-                                                              MPNULL);
-                USHORT us;
-                psdParms->optReboot = TRUE;
-
-                p = pINI;
-                for (us = 0; us < usSelected; us++)
+                // insert ext reboot items into combo box;
+                // check for reboot items in OS2.INI
+                if (PrfQueryProfileSize(HINI_USER,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_BOOTMGR,
+                                        &ulKeyLength))
                 {
-                    // skip description string
-                    p += (strlen(p)+1);
-                    // skip reboot command
-                    p += (strlen(p)+1);
+                    BOOL fSelectFirst = TRUE;
+
+                    // items exist: evaluate
+                    if (pINI = malloc(ulKeyLength))
+                    {
+                        PrfQueryProfileData(HINI_USER,
+                                            (PSZ)INIAPP_XWORKPLACE,
+                                            (PSZ)INIKEY_BOOTMGR,
+                                            pINI,
+                                            &ulKeyLength);
+                        p = pINI;
+                        while (strlen(p))
+                        {
+                            WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                              LM_INSERTITEM,
+                                              (MPARAM)LIT_END,
+                                              (MPARAM)p);
+                             // skip description string
+                            p += (strlen(p)+1);
+                            // skip reboot command
+                            p += (strlen(p)+1);
+                        }
+                    }
+
+                    // select reboot item from last time
+                    if (cmnQuerySetting(susLastRebootExt) != 0xFFFF)
+                    {
+                        if (WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                              LM_SELECTITEM,
+                                              (MPARAM)cmnQuerySetting(susLastRebootExt), // item index
+                                              (MPARAM)TRUE) // select (not deselect)
+                                    == (MRESULT)FALSE)
+                            // error:
+                            // check first item then
+                            fSelectFirst = TRUE;
+
+                        if (ulCheckRadioButtonID == ID_SDDI_STANDARDREBOOT)
+                            ulCheckRadioButtonID = ID_SDDI_REBOOTTO;
+                    }
+
+                    // finally fix the non-selected reboot item
+                    // V0.9.21 (2002-09-17) [umoeller]
+                    if (fSelectFirst)
+                        WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                          LM_SELECTITEM,
+                                          (MPARAM)0,
+                                          (MPARAM)TRUE); // select (not deselect)
                 }
-                // skip description string to get to reboot command
-                p += (strlen(p)+1);
-                strcpy(psdParms->szRebootCommand, p);
+                else
+                    // no items found: disable
+                    WinEnableControl(hwndConfirm, ID_SDDI_REBOOTTO, FALSE);
 
-#ifndef __NOXSHUTDOWN__
-                flShutdown |= XSD_REBOOT;
-#endif
-                cmnSetSetting(susLastRebootExt, usSelected);
+                // check radio button
+                winhSetDlgItemChecked(hwndConfirm, ulCheckRadioButtonID, TRUE);
+                winhSetDlgItemFocus(hwndConfirm, ulCheckRadioButtonID);
+
+                // make window smaller if we don't have "reboot to"
+                G_fConfirmDialogReady = TRUE;       // flag for ReformatConfirmWindow
+                if (ulCheckRadioButtonID != ID_SDDI_REBOOTTO)
+                    ReformatConfirmWindow(hwndConfirm, FALSE);
+
+                cmnSetControlsFont(hwndConfirm, 1, 5000);
+                winhCenterWindow(hwndConfirm);      // still hidden
+
+                xsdLoadAnimation(&G_sdAnim);
+                ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
+                                    XSD_ANIM_COUNT,
+                                    &(G_sdAnim.ahptr[0]),
+                                    150,    // delay
+                                    TRUE);  // start now
+
+                // go!!
+                ulReturn = WinProcessDlg(hwndConfirm);
+
+                ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
+                xsdFreeAnimation(&G_sdAnim);
+
+                if (ulReturn == DID_OK)
+                {
+        #ifndef __NOXSHUTDOWN__
+                    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+
+        #ifndef __EASYSHUTDOWN__
+                    // check "show this msg again"
+                    if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
+                        flShutdown |= XSD_NOCONFIRM;
+        #endif
+        #endif
+
+                    // check empty trash
+                    psdParms->optEmptyTrashCan
+                        = (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN) != 0);
+
+                    // check reboot options
+                    psdParms->optReboot = FALSE;
+                    if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
+                    {
+                        USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                                                      LM_QUERYSELECTION,
+                                                                      (MPARAM)LIT_CURSOR,
+                                                                      MPNULL);
+                        USHORT us;
+                        psdParms->optReboot = TRUE;
+
+                        p = pINI;
+                        for (us = 0; us < usSelected; us++)
+                        {
+                            // skip description string
+                            p += (strlen(p)+1);
+                            // skip reboot command
+                            p += (strlen(p)+1);
+                        }
+                        // skip description string to get to reboot command
+                        p += (strlen(p)+1);
+                        strcpy(psdParms->szRebootCommand, p);
+
+        #ifndef __NOXSHUTDOWN__
+                        flShutdown |= XSD_REBOOT;
+        #endif
+                        cmnSetSetting(susLastRebootExt, usSelected);
+                    }
+                    else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
+                    {
+                        psdParms->optReboot = TRUE;
+                        // szRebootCommand is a zero-byte only, which will lead to
+                        // the standard reboot in the Shutdown thread
+        #ifndef __NOXSHUTDOWN__
+                        flShutdown |= XSD_REBOOT;
+        #endif
+                        cmnSetSetting(susLastRebootExt, 0xFFFF);
+                    }
+        #ifndef __NOXSHUTDOWN__
+                    else
+                        // standard shutdown:
+                        flShutdown &= ~XSD_REBOOT;
+        #endif
+
+        #ifndef __NOXSHUTDOWN__
+                    cmnSetSetting(sflXShutdown, flShutdown);
+        #endif
+                }
+
+                if (pINI)
+                    free(pINI);
             }
-            else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
+            CATCH(excpt1)
             {
-                psdParms->optReboot = TRUE;
-                // szRebootCommand is a zero-byte only, which will lead to
-                // the standard reboot in the Shutdown thread
-#ifndef __NOXSHUTDOWN__
-                flShutdown |= XSD_REBOOT;
-#endif
-                cmnSetSetting(susLastRebootExt, 0xFFFF);
-            }
-#ifndef __NOXSHUTDOWN__
-            else
-                // standard shutdown:
-                flShutdown &= ~XSD_REBOOT;
-#endif
-
-#ifndef __NOXSHUTDOWN__
-            cmnSetSetting(sflXShutdown, flShutdown);
-#endif
+            } END_CATCH();
         }
-
-        if (pINI)
-            free(pINI);
     }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
 
     if (hwndConfirm)
         WinDestroyWindow(hwndConfirm);
@@ -567,34 +703,15 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 }
 
 static CONTROLDEF
-    TrafficLightIcon = CONTROLDEF_ICON(0, ID_SDDI_ICON),
-    ConfirmText = CONTROLDEF_TEXT_WORDBREAK(
+    ConfirmWPSText = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
-                            ID_SDDI_CONFIRM_TEXT,
+                            ID_SDDI_CONFIRMWPS_TEXT,
                             100),
     CloseAllSessionsCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_CLOSEWINDOWS),
 #ifndef __NOXWPSTARTUP__
     StartupFoldersCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_STARTUPFOLDER),
 #endif
-    ArchiveOnceCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ARCHIVEONCE),
-#ifndef __NOXSHUTDOWN__
-    MessageAgainCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_MESSAGEAGAIN),
-#endif
-    OKButton = CONTROLDEF_DEFPUSHBUTTON(
-                            0,
-                            DID_OK,
-                            STD_BUTTON_WIDTH,
-                            STD_BUTTON_HEIGHT),
-    CancelButton = CONTROLDEF_PUSHBUTTON(
-                            0,
-                            DID_CANCEL,
-                            STD_BUTTON_WIDTH,
-                            STD_BUTTON_HEIGHT),
-    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
-                            LOAD_STRING,
-                            DID_HELP,
-                            STD_BUTTON_WIDTH,
-                            STD_BUTTON_HEIGHT);
+    ArchiveOnceCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ARCHIVEONCE);
 
 static const DLGHITEM dlgConfirmRestartDesktop[] =
     {
@@ -603,7 +720,7 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
                 START_TABLE,            // root table, required
                     START_ROW(ROW_VALIGN_CENTER),       // shared settings group
                         CONTROL_DEF(&TrafficLightIcon),
-                        CONTROL_DEF(&ConfirmText),
+                        CONTROL_DEF(&ConfirmWPSText),
                 END_TABLE,
             START_ROW(0),
                 CONTROL_DEF(&CloseAllSessionsCB),
@@ -613,7 +730,7 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&ArchiveOnceCB),
-#ifndef __NOXSHUTDOWN__
+#ifndef __EASYSHUTDOWN__
             START_ROW(0),
                 CONTROL_DEF(&MessageAgainCB),
 #endif
@@ -681,11 +798,11 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                 psdParms->optWPSCloseWindows = TRUE;
                 psdParms->optWPSReuseStartupFolder = TRUE;
                 WinEnableControl(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
-    #ifndef __NOXSHUTDOWN__
+    #ifndef __NOXWPSTARTUP__
                 WinEnableControl(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
     #endif
                 // replace confirmation text
-                WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
+                WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRMWPS_TEXT,
                                   cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
             }
 
@@ -693,7 +810,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
     #ifndef __NOXWPSTARTUP__
             winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
     #endif
-    #ifndef __NOXSHUTDOWN__
+    #ifndef __EASYSHUTDOWN__
             winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
     #endif
 
@@ -737,7 +854,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                                                                               ID_SDDI_WPS_STARTUPFOLDER);
     #endif
                 }
-    #ifndef __NOXSHUTDOWN__
+    #ifndef __EASYSHUTDOWN__
                 if (!(winhIsDlgItemChecked(hwndConfirm,
                                            ID_SDDI_MESSAGEAGAIN)))
                     fl |= XSD_NOCONFIRM;

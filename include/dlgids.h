@@ -1172,13 +1172,17 @@
 // XFldDesktop "Shutdown" page (V0.9.0)
 // all IDs raised V0.9.16 (2002-01-04) [umoeller]
 #define ID_SDDI_ANIMATE_TXT             2199    // V0.9.19 (2002-06-18) [umoeller]
+#ifndef __EASYSHUTDOWN__
 #define ID_SDDI_REBOOT                  2200
+#endif
 #define ID_SDDI_ANIMATE_SHUTDOWN        2201
 #define ID_SDDI_ANIMATE_REBOOT          2202
 #define ID_SDDI_APMPOWEROFF             2203
 #define ID_SDDI_DELAY                   2204
+#ifndef __EASYSHUTDOWN__
 #define ID_SDDI_CONFIRM                 2205
 #define ID_SDDI_WARPCENTERFIRST         2206
+#endif
 #define ID_SDDI_AUTOCLOSEVIO            2207
 #define ID_SDDI_LOG                     2208
 
@@ -1435,7 +1439,7 @@
 /* dlg templates */
 #define ID_SDD_MAIN                     4200
 #define ID_SDD_STATUS                   4201
-#define ID_SDD_CONFIRM                  4202
+// #define ID_SDD_CONFIRM                  4202     // removed V0.9.21 (2002-09-17) [umoeller]
 #define ID_SDD_CAD                      4203
 #define ID_SDD_CLOSEVIO                 4204
 // #define ID_SDD_CONFIRMWPS               4205     // removed V0.9.16 (2002-01-13) [umoeller]
@@ -1451,7 +1455,9 @@
 #define ID_SDDI_SKIPAPP                 4307
 #define ID_SDDI_PERCENT                 4309
 #ifndef __NOXSHUTDOWN__
+#ifndef __EASYSHUTDOWN__
 #define ID_SDDI_MESSAGEAGAIN            4310
+#endif
 #endif
 #define ID_SDDI_VDMAPPTEXT              4311
 #define ID_SDDI_WPS_CLOSEWINDOWS        4312
@@ -1464,13 +1470,17 @@
 #define ID_SDDI_STANDARDREBOOT          4317
 #define ID_SDDI_REBOOTTO                4318
 #define ID_SDDI_EMPTYTRASHCAN           4319
-#define ID_SDDI_CONFIRM_TEXT            4320  // V0.9.5 (2000-08-10) [umoeller]
-#define ID_SDDI_CONFIRMWPS_TITLE        4205        // V0.9.16 (2002-01-13) [umoeller]
-#define ID_SDDI_PROGRESS1               4321 // V0.9.17 (2002-02-05) [pr]
+#define ID_SDDI_CONFIRMWPS_TEXT         4320    // V0.9.21 (2002-09-17) [umoeller]
+#define ID_SDDI_CONFIRMWPS_TITLE        4205    // V0.9.16 (2002-01-13) [umoeller]
+#define ID_SDDI_PROGRESS1               4321    // V0.9.17 (2002-02-05) [pr]
 #define ID_SDDI_PROGRESS2               4322
 #define ID_SDDI_COMPLETE                4323
 #define ID_SDDI_SWITCHOFF               4324
 #define ID_SDDI_ARCHIVEONCE             4325    // V0.9.19 (2002-04-17) [umoeller]
+
+#define ID_SDDI_CONFIRM_TITLE           4326
+#define ID_SDDI_CONFIRM_TEXT            4327    // V0.9.5 (2000-08-10) [umoeller]
+#define ID_SDDI_REBOOTOPT_GROUP         4328
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400

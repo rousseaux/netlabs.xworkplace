@@ -330,6 +330,8 @@
 #endif
 #ifndef __NOXWPSTARTUP__
     DECLARE_CMN_STRING(G_pcszXFldStartup, "XFldStartup");
+#endif
+#ifndef __NOXSHUTDOWN__
     DECLARE_CMN_STRING(G_pcszXFldShutdown, "XFldShutdown");
 #endif
     DECLARE_CMN_STRING(G_pcszXWPClassList, "XWPClassList");
@@ -723,9 +725,13 @@
     #define XSD_APM_DELAY           0x040000     // added V0.9.2 (2000-03-04) [umoeller]
     #define XSD_ANIMATE_REBOOT      0x080000     // added V0.9.3 (2000-05-22) [umoeller]
     #define XSD_EMPTY_TRASH         0x100000     // added V0.9.4 (2000-08-03) [umoeller]
+#ifndef __EASYSHUTDOWN__
     #define XSD_WARPCENTERFIRST     0x200000     // added V0.9.7 (2000-12-08) [umoeller]
+#endif
     #define XSD_CANDESKTOPALTF4     0x400000     // added V0.9.16 (2002-01-04) [umoeller]
+#ifndef __EASYSHUTDOWN__
     #define XSD_NOCONFIRM           0x800000     // added V0.9.16 (2002-01-09) [umoeller]
+#endif
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001

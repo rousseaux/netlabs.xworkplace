@@ -514,11 +514,13 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
 
+#ifndef __EASYSHUTDOWN__
         if ((cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Restart Desktop" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
                                   ulOfs + ID_XFMI_OFS_RESTARTWPS);
+#endif
     }
 
     if (pKernelGlobals->pXWPShellShared)
@@ -533,11 +535,13 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
 
+#ifndef __EASYSHUTDOWN__
         if ((cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Logoff" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
                                   ulOfs + ID_XFMI_OFS_LOGOFF);
+#endif
     }
 #endif
 

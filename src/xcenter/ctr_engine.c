@@ -3949,6 +3949,12 @@ STATIC VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     if (pXCenterData->hsw)
         WinRemoveSwitchEntry(pXCenterData->hsw);
 
+    if (pXCenterData->Globals.hwndTooltip)
+    {
+        WinDestroyWindow(pXCenterData->Globals.hwndTooltip);
+        pXCenterData->Globals.hwndTooltip = NULLHANDLE;
+    }
+
     // last chance... update desktop workarea in case
     // this hasn't been done that. This has probably been
     // called before, but we better make sure.
@@ -3956,9 +3962,6 @@ STATIC VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                           TRUE);            // force remove
 
     DestroyAllWidgetWindows(pXCenterData);
-
-    if (pXCenterData->Globals.hwndTooltip)
-        WinDestroyWindow(pXCenterData->Globals.hwndTooltip);
 
     // destroy the client... this no longer happens
     // automatically since we are no longer a WC_FRAME

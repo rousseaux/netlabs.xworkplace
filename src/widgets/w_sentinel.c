@@ -322,7 +322,7 @@ typedef struct _MONITORSETUP
  *      more window data for the various monitor widgets.
  *
  *      An instance of this is created on WM_CREATE in
- *      fnwpMonitorWidgets and stored in XCENTERWIDGET.pUser.
+ *      fnwpSentinel and stored in XCENTERWIDGET.pUser.
  */
 
 typedef struct _WIDGETPRIVATE
@@ -364,7 +364,7 @@ typedef struct _WIDGETPRIVATE
 
     BOOL            fTooltipShowing;    // TRUE only while tooltip is currently
                                         // showing over this widget
-    CHAR            szTooltipText[100]; // tooltip text
+    CHAR            szTooltipText[300]; // tooltip text
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
@@ -621,6 +621,7 @@ STATIC VOID TwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
+
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
        )
@@ -919,7 +920,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
                 // add a new column to the right
                 PaintGraphLine(pPrivate,
-                               pLatest, // &pPrivate->paSnapshots[pPrivate->cSnapshots - 1],
+                               pLatest,
                                ulMaxMemKB,
                                pPrivate->cSnapshots - 1,
                                rclBmp.yTop,
@@ -1119,6 +1120,7 @@ VOID TwgtPaint(HWND hwnd)
 VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
     PSNAPSHOT pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+
     memset(pLatest, 0, sizeof(SNAPSHOT));
 
     if (pPrivate->arcWin32K == NO_ERROR)
@@ -1183,8 +1185,7 @@ VOID TwgtTimer(HWND hwnd)
                 // create array of loads
                 ULONG cb = sizeof(SNAPSHOT) * ulGraphCX;
                 pPrivate->cSnapshots = ulGraphCX;
-                pPrivate->paSnapshots
-                    = (PSNAPSHOT)malloc(cb);
+                pPrivate->paSnapshots = (PSNAPSHOT)malloc(cb);
                 memset(pPrivate->paSnapshots, 0, cb);
             }
 
@@ -1261,6 +1262,7 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         memset(paNewSnapshots,
                                0,
                                (ulNewClientCX - pPrivate->cSnapshots) * sizeof(SNAPSHOT));
+
                         // and copy old values after that
                         memmove(&paNewSnapshots[(ulNewClientCX - pPrivate->cSnapshots)],
                                 pPrivate->paSnapshots,
@@ -1272,7 +1274,6 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         // e.g. ulnewClientCX = 100
                         //      pPrivate->cLoads = 200
                         // drop the first items
-                        // ULONG ul = 0;
                         memmove(paNewSnapshots,
                                 &pPrivate->paSnapshots[pPrivate->cSnapshots - ulNewClientCX],
                                 ulNewClientCX * sizeof(SNAPSHOT));
@@ -1419,13 +1420,13 @@ VOID TwgtButton1DblClick(HWND hwnd)
 }
 
 /*
- *@@ fnwpMonitorWidgets:
+ *@@ fnwpSentinel:
  *      window procedure for the "Sentinel".
  *
  *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed resource leak on destroy
  */
 
-MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpSentinel(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1619,7 +1620,7 @@ ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
     {
         if (!WinRegisterClass(hab,
                               WNDCLASS_WIDGET_SENTINEL,
-                              fnwpMonitorWidgets,
+                              fnwpSentinel,
                               CS_PARENTCLIP | CS_SIZEREDRAW | CS_SYNCPAINT,
                               sizeof(PWIDGETPRIVATE))
                                     // extra memory to reserve for QWL_USER

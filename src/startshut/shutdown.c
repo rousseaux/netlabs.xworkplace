@@ -196,7 +196,11 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
 
     memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
     psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
+#ifndef __EASYSHUTDOWN__
     psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
+#else
+    psdp->optConfirm = TRUE;
+#endif
     psdp->optDebug = FALSE;
 
     // psdp->ulRestartWPS = 0;         // no, do shutdown
@@ -222,7 +226,9 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
 
     psdp->optEmptyTrashCan = ((flShutdown & XSD_EMPTY_TRASH) != 0);
 
+#ifndef __EASYSHUTDOWN__
     psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
+#endif
 
     psdp->szRebootCommand[0] = 0;
 }
@@ -341,9 +347,15 @@ BOOL xsdInitiateShutdown(VOID)
         psdp->ulCloseMode = SHUT_SHUTDOWN;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
+#ifndef __EASYSHUTDOWN__
         psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
+#else
+        psdp->optConfirm = TRUE;
+#endif
         psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
+#ifndef __EASYSHUTDOWN__
         psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
+#endif
         psdp->optLog = ((flShutdown & XSD_LOG) != 0);
         /* if (psdp->optReboot)
             // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
@@ -450,9 +462,15 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
         psdp->ulCloseMode = (fLogoff) ? SHUT_LOGOFF : SHUT_RESTARTWPS;
         psdp->optWPSCloseWindows = ((flShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
+#ifndef __EASYSHUTDOWN__
         psdp->optConfirm = (!(flShutdown & XSD_NOCONFIRM));
+#else
+        psdp->optConfirm = TRUE;
+#endif
         psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
+#ifndef __EASYSHUTDOWN__
         psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
+#endif
         psdp->optLog =  ((flShutdown & XSD_LOG) != 0);
         #ifdef __DEBUG__
             psdp->optDebug = doshQueryShiftState();

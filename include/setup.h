@@ -201,7 +201,7 @@
     // selectively. The source code reacts to those #defines.
 
     #ifdef __XWPLITE__
-        #include "features_lite.h"
+        #include "_features_lite.h"
     #endif
 
     /*************************************************************

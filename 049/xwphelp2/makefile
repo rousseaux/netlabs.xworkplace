@@ -46,7 +46,7 @@ LANGUAGE = 049
 
 FEATURES_STRING =
 !ifdef XWPLITE
-FEATURES_STRING = -i..\..\include\features_lite.h
+FEATURES_STRING = -i..\..\include\_features_lite.h
 !endif
 
 # Change this to the full path of the HTML2IPF utility.

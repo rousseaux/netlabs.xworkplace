@@ -804,34 +804,44 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
 
 BOOL LoadNLSResources(VOID)
 {
-    USHORT us, usLen;
-    PNLSDATA pNLSData = &(G_pHookData->NLSData);
-    PSZ pszSrc = G_pXwpGlobalShared->achNLSStrings;
-    PSZ pszDest = pNLSData->achBuf;
-
-    for (us = 0; us < MAX_NLS; us++)
-        pNLSData->apszNLSStrings[us] = NULL;
-
-    for (us = 0; us < MAX_NLS; us++)
+    _PmpfF(("entering, G_pXwpGlobalShared 0x%lX, G_pHookData 0x%lX"));
+    if (    (G_pXwpGlobalShared)
+         && (G_pHookData)
+       )
     {
-        usLen = strlen(pszSrc) + 1;
-        // stops processing if the storage buffer is too small
-        if ((pszDest + usLen) > (pNLSData->achBuf + sizeof(pNLSData->achBuf)))
-            break;
+        USHORT us, usLen;
+        PNLSDATA pNLSData = &G_pHookData->NLSData;
+        PSZ pszSrc = G_pXwpGlobalShared->achNLSStrings;
+        PSZ pszDest = pNLSData->achBuf;
 
-        // strcpy(pszDest, pszSrc);
-        memcpy(pszDest, pszSrc, usLen + 1); // V0.9.21 (2002-09-17) [umoeller]
+        _PmpfF(("loading strings"));
 
-        pNLSData->apszNLSStrings[us] = pszDest;
-        pszSrc += usLen;
-        pszDest += usLen;
+        for (us = 0; us < MAX_NLS; us++)
+            pNLSData->apszNLSStrings[us] = NULL;
 
-        // end of the source buffer
-        if (*pszSrc == 0)
-            break;
+        for (us = 0; us < MAX_NLS; us++)
+        {
+            usLen = strlen(pszSrc) + 1;
+            // stops processing if the storage buffer is too small
+            if ((pszDest + usLen) > (pNLSData->achBuf + sizeof(pNLSData->achBuf)))
+                break;
+
+            // strcpy(pszDest, pszSrc);
+            memcpy(pszDest, pszSrc, usLen + 1); // V0.9.21 (2002-09-17) [umoeller]
+
+            pNLSData->apszNLSStrings[us] = pszDest;
+            pszSrc += usLen;
+            pszDest += usLen;
+
+            // end of the source buffer
+            if (*pszSrc == 0)
+                break;
+        }
+
+        return TRUE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 /*
@@ -871,6 +881,11 @@ VOID InstallHook(VOID)
             // load config from OS2.INI
             LoadHookConfig(TRUE,
                            TRUE);
+
+            // copy NLS resources from shared mem to
+            // hook data
+            // V0.9.21 (2002-09-17) [umoeller]
+            LoadNLSResources();
         }
     }
 }

@@ -331,7 +331,6 @@ BEGIN
     END
 END
 
-
 /* here come lots of little strings which XWorkplace uses in all kinds
    of places. XWorkplace loads these strings on demand one at a time. */
 STRINGTABLE
@@ -420,7 +419,7 @@ BEGIN
     ID_XSSI_LB_OPENNEWTREEVIEW      "Open new Tree view"
     ID_XSSI_LB_FIND                 "Find..."
     ID_XSSI_LB_PICKUP               "Pickup"
-    ID_XSSI_LB_PICKUPCANCELDRAG     "Pickup (Cancel drag)"
+    ID_XSSI_LB_PICKUPCANCELDRAG     "Drop (Cancel drag)"
     ID_XSSI_LB_SORTBYNAME           "Sort by name"
     ID_XSSI_LB_SORTBYSIZE           "Sort by size"
     ID_XSSI_LB_SORTBYTYPE           "Sort by type"
@@ -452,9 +451,9 @@ BEGIN
     ID_XSSI_LB_COPYFILENAME_SHORT   "Copy filename (without path)"
     ID_XSSI_LB_COPYFILENAME_FULL    "Copy filename (including path)"
 /* V0.9.21: added remaining Pickup choices [lafaix] */
-    ID_XSSI_LB_PICKUPDROPCOPY       "Drop copy"
-    ID_XSSI_LB_PICKUPDROPMOVE       "Drop move"
-    ID_XSSI_LB_PICKUPDROPLINK       "Drop shadow"
+    ID_XSSI_LB_PICKUPDROPCOPY       "Drop (Copy)"
+    ID_XSSI_LB_PICKUPDROPMOVE       "Drop (Move)"
+    ID_XSSI_LB_PICKUPDROPLINK       "Drop (Create shadow)"
 
     /* XShutdown: context menu items and messages for the
        status window.
@@ -1226,7 +1225,8 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animation"
     ID_SDDI_ANIMATE_SHUTDOWN            "~before shutdown"
     ID_SDDI_ANIMATE_REBOOT              "be~fore reboot"
-    ID_SDDI_APMPOWEROFF                 "APM ~1.2 power-off"
+    /* V0.9.21: ID_SDDI_APMPOWEROFF renamed */
+    ID_SDDI_APMPOWEROFF                 "Power-off computer"
     ID_SDDI_DELAY                       "Dela~y"
     ID_SDDI_APMVERSION_TXT              "APM level:"
     ID_SDDI_APMVERSION                  "unknown"
@@ -1325,12 +1325,21 @@ BEGIN
 
     /* strings formerly in ID_SDD_CONFIRMWPS */
     ID_SDDI_CONFIRMWPS_TITLE            "&xwp;: Restart Desktop"
-    ID_SDDI_CONFIRM_TEXT                "Are you sure you wish to restart the Desktop?"
+    /* V0.9.21: ID of next item changed */
+    ID_SDDI_CONFIRMWPS_TEXT             "Are you sure you wish to restart the Desktop?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Close all sessions"
     ID_SDDI_WPS_STARTUPFOLDER           "~Process all XWorkplace Startup folders"
         /* next one is new with V0.9.19 */
     ID_SDDI_ARCHIVEONCE                 "~Archive Desktop once after restart"
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
+
+    /* strings formerly in ID_SDD_CONFIRM V0.9.21 */
+    ID_SDDI_CONFIRM_TITLE                "&xwp;: Extended Shutdown"
+    ID_SDDI_CONFIRM_TEXT                "Please select how the system shall be shut down."
+    ID_SDDI_REBOOTOPT_GROUP             "Reboot options"
+    ID_SDDI_SHUTDOWNONLY                "Shut down ~only"
+    ID_SDDI_STANDARDREBOOT              "St~andard reboot"
+    ID_SDDI_REBOOTTO                    "Reboot ~to..."
 
     /* the following two are new with V0.9.17 (2002-02-05) [umoeller] */
     ID_SDDI_COMPLETE                    "Shutdown has completed."
@@ -1445,7 +1454,7 @@ BEGIN
     ID_SCDI_PGR1_FOLLOWFOCUS           "Desktop follows active ~window"
     ID_SCDI_PGR1_SHOWWINICONS          "Show window ~icons"
     /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
-    ID_SCDI_PGR1_STICKIESTOGGLE        """Haftfenster"" zu Sys~temmenÅs hinzufÅgen"
+    ID_SCDI_PGR1_STICKIESTOGGLE        "Include sticky ~toggle in system menus"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr; colors"
