@@ -1,0 +1,49 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Step 5: Settings Dialogs
+    </TITLE>
+</HEAD>
+<!-- This is all new with V0.9.9. -->
+<BODY>
+Settings dialogs can be displayed by the XCenter to further tune the instance
+data of a certain widget. An example of a settings dialog is the "Filter" dialog
+displayed by the standard "Window List" widget that comes with XWorkplace.
+
+<P>Using settings dialogs requires a bit more setup. The most important thing
+to remember is that the XCenter does <I>not</I> invoke a settings dialog on
+an open XCenter widget, but on a <I>setup string</I> only.
+
+<P>This was done so that settings dialogs could be displayed for a widget even
+if that widget is not currently visible. With the current implementation, settings
+dialogs will only be invoked from the "Properties" menu item of an open widget,
+but this will change in the future so it has been isolated from the beginning.
+
+<P>Basically, to support settings dialogs, your widget class must do the following:
+
+<OL><LI>In the widget class definition
+(<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>), set
+the <CODE>pShowSettingsDlg</CODE> field to the function in your DLL which can
+display the settings dialog.
+
+<P>This function must have the following prototype:
+
+<P><CODE>typedef VOID EXPENTRY ShowSettingsDialog(PWIDGETSETTINGSDLGDATA pData);</CODE>
+
+<P><LI>When the XCenter needs to invoke the settings dialog (e.g. because the "Properties"
+menu item was selected), it will call exactly this function, which should do a
+standard <CODE>WinDlgBox</CODE> and not return until the dialog has been
+dismissed ("OK" or "Cancel" were pressed).
+
+<P>That function receives a pointer to a temporary
+<A HREF="plug_9widgetsettingsdlgdata.html"><CODE>WIDGETSETTINGSDLGDATA</CODE></A>
+structure, which the XCenter has composed for the settings dialog. In there, the
+settings dialog can find out whether the widget is currently visible.
+
+</OL>For details, please look at the "Window list" source code in <CODE>src\widgets</CODE>
+in the XWorkplace sources.
+<BR>
+</BODY>
+</HTML>
+
+

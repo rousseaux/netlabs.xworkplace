@@ -1,0 +1,15 @@
+;-------------
+; StHealth.def
+;-------------
+
+LIBRARY XWHEALTH INITGLOBAL TERMGLOBAL
+Description '@#Ulrich M”ller:0.9.9#@ XCenter xwHealth plugin DLL'
+PROTMODE
+
+DATA              SINGLE READWRITE LOADONCALL SHARED
+
+CODE              LOADONCALL
+
+EXPORTS
+    MwgtInitModule          @1
+    MwgtUnInitModule        @2

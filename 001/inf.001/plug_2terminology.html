@@ -1,0 +1,77 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Terminology
+    </TITLE>
+</HEAD>
+<!-- This is all new with V0.9.9. -->
+<BODY>
+The following terms are used throughout this documentation, and you
+should therefore be familiar with these.
+
+<UL><LI>An <B>"XCenter instance"</B> is an object of the <CODE>XCenter</CODE> WPS
+class. There can only be one open view per XCenter so
+that an XCenter instance is identical to an XCenter
+view when it's open, but there can be several XCenter
+instances on the system (i.e. one for each screen border).
+
+<P><LI>A <B>"widget"</B> is a PM subwindow of an open XCenter which
+displays something. An open XCenter can contain zero,
+one, or many widgets. Every XCenter keeps a list of
+widgets together with their settings in its SOM instance
+data. This is totally transparent to the widgets, but if
+you are interested, you can view that data on the "Widgets" page
+of an XCenter's settings notebook.
+
+<P><LI>A <B>"widget class"</B> defines a widget. Basically, it's a
+plain C structure
+(<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>)
+with the name of a PM window class which is used to create the PM widget windows
+(the "widget instances"). Depending on the widget
+class's attributes, there can be one or several
+instances of a widget class. If you want a different
+widget in the XCenter, you need to write a widget class.
+
+<P>A widget class basically boils down to writing a PM
+window class (see below), with some additional rules to follow. To
+make things easier, several widget classes can share
+the same PM class though.
+
+<P>Some widget classes are built into the XCenter itself
+(i.e. reside in <CODE>XFLDR.DLL</CODE>), but the XCenter can load
+external DLLs too. Several of the widget classes that
+come with XWorkplace have been created as plugins to
+show you how it's done. If you have the
+<A HREF="notices_40source.html">XWorkplace source code</A>,
+see the <CODE>src\widgets</CODE> directory.
+
+<P><LI>A <B>"PM window class"</B> is not an XCenter definition... this
+is explained in detail in the <I>Presentation Manager Programming Reference.</I>
+
+<P>Basically, PM organizes windows into classes. For example, if you create
+a PM button, you invoke <CODE>WinCreateWindow</CODE> with the name of the
+button window class (<CODE>WC_BUTTON</CODE>), which is a standard window class
+of every OS/2 system.
+
+<P>It is possible to create new window classes though. The XCenter makes use
+of this feature to implement widget classes. So again, a widget class is a
+PM window class with a bit of extra data to give the XCenter more information
+about the widgets that can be created of that class.
+
+<P>When a widget is created (either because it is added to an open XCenter
+or when an XCenter is opened in the first place and thus all widgets have to
+be created), it does call <CODE>WinCreateWindow</CODE> with the PM window class
+name that was specified with the widget class. So this is really not too spectacular.
+
+<P><LI>A <B>"widget plugin DLL"</B> is a separate DLL which resides
+in the <CODE>plugins\xcenter</CODE> directory of the XWorkplace
+installation directory. This must contain one or
+several widget classes. There are a couple of
+procedures that a widget plugin DLL is required to
+export to make the XCenter see the widget classes.
+
+</UL>
+</BODY>
+</HTML>
+
+
