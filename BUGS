@@ -42,8 +42,6 @@ NOT-SO-SERIOUS PROBLEMS
 --  xcenter:
     stays visible with lockup screen and stay-on-top.
 
---  winlist: left to right.
-
 --  when I shut down (extended
     shutdown) while a print job is in the queue (forgotten, printer turned
     off), then XWP asks if the print job shall be killed. If I click "yes",

@@ -1211,13 +1211,15 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
         while (pNode)
         {
             PSWCNTRL    pCtrlInList = (PSWCNTRL)pNode->pItemData;
-            BOOL        fRemove = TRUE;
+            BOOL        fRemove = FALSE;
             PLISTNODE   pNodeNext = pNode->pNext;
 
             // skip this check if we're redrawing all already
             if (0 == (flReturn & SCANF_REDRAWALL))
             {
                 // check if this is still in here
+                fRemove = TRUE;
+
                 for (ul = 0;
                      ul < pswBlock->cswentry;
                      ul++)
@@ -1261,14 +1263,15 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                                    pNode);           // auto-free
                     flReturn = SCANF_REDRAWALL;
                 }
-            }
+            } // end if (0 == (flReturn & SCANF_REDRAWALL))
 
             // remember currently active switch entry
             if (pCtrlInList->hwnd == hwndCurrentActive)
                 pNewActive = pCtrlInList;       // checked below
 
             // re-number all list entries
-            pCtrlInList->uchVisibility = ulIndexThis++;
+            if (!fRemove)
+                pCtrlInList->uchVisibility = ulIndexThis++;
 
             pNode = pNodeNext;
         } // end while (pNode)
