@@ -17,15 +17,7 @@ Ulrich M”ller.
 CURRENT PROBLEMS
 ----------------
 
---  file dialog is broken
-
 --  split view
-
-    --  drag and drop
-
-    --  object locking
-
-    --  double-clicking on folders in right view
 
     --  tree view doesn't refresh
 

@@ -978,56 +978,6 @@ MPARAM fdrSetupSplitView(HWND hwnd,
 }
 
 /*
- *@@ fdrCleanupSplitView:
- *
- *      Does NOT free psv because we can't know how it was
- *      allocated.
- *
- *@@added V0.9.21 (2002-08-21) [umoeller]
- */
-
-VOID fdrCleanupSplitView(PFDRSPLITVIEW psv)
-{
-    // remove use item for right view
-    if (psv->pobjUseList)
-        _wpDeleteFromObjUseList(psv->pobjUseList,
-                                &psv->uiDisplaying);
-
-    // stop threads; we crash if we exit
-    // before these are stopped
-    WinPostMsg(psv->hwndSplitPopulate,
-               WM_QUIT,
-               0,
-               0);
-
-    psv->tiSplitPopulate.fExit = TRUE;
-    DosSleep(0);
-    while (psv->tidSplitPopulate)
-        winhSleep(50);
-
-    // prevent dialog updates
-    psv->fSplitViewReady = FALSE;
-    fdrvClearContainer(psv->hwndTreeCnr,
-                       CLEARFL_TREEVIEW);
-    fdrvClearContainer(psv->hwndFilesCnr,
-                       // not tree view, but maybe unlock
-                       (psv->fUnlockOnClear)
-                            ? CLEARFL_UNLOCKOBJECTS
-                            : 0);
-
-    // clean up
-    if (psv->hwndSplitWindow)
-        WinDestroyWindow(psv->hwndSplitWindow);
-
-    if (psv->hwndTreeFrame)
-        WinDestroyWindow(psv->hwndTreeFrame);
-    if (psv->hwndFilesFrame)
-        WinDestroyWindow(psv->hwndFilesFrame);
-    if (psv->hwndMainFrame)
-        WinDestroyWindow(psv->hwndMainFrame);
-}
-
-/*
  *@@ SplitSendWMControl:
  *
  *@@added V0.9.21 (2002-09-13) [umoeller]
@@ -1046,7 +996,33 @@ STATIC MRESULT SplitSendWMControl(PFDRSPLITVIEW psv,
 
 /*
  *@@ fnwpSplitController:
+ *      window proc for the split view controller, which is
+ *      the client of the split view's main frame and has
+ *      its own window class (WC_SPLITCONTROLLER).
  *
+ *      This is really the core of the split view that
+ *      handles the cooperation of the two containers and
+ *      manages populate.
+ *
+ *      In addition, this gives the frame (its parent) a
+ *      chance to fine-tune the behavior of the split view.
+ *      As a result, the user code (the "real" folder split
+ *      view, or the file dialog) can subclass the frame
+ *      and thus influence how the split view works.
+ *
+ *      In detail:
+ *
+ *      --  We send WM_CONTROL with SN_FOLDERCHANGING,
+ *          SN_FOLDERCHANGED, SN_OBJECTSELECTED, or
+ *          SN_OBJECTENTER to the frame whenever selections
+ *          change.
+ *
+ *      --  We make sure that the frame gets a chance
+ *          to process WM_CLOSE. The problem is that
+ *          with PM, only the client gets WM_CLOSE if
+ *          a client exists. So we forward (post) that
+ *          to the frame when we get it, and the frame
+ *          can take action.
  */
 
 MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1185,6 +1161,11 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
                         PMPF_POPULATESPLITVIEW(("  calling fdrvClearContainer"));
 
+                        // disable the whitespace context menu and
+                        // CN_EMPHASIS notifications until all objects
+                        // are inserted
+                        psv->precFilesShowing = NULL;
+
                         // notify frame that we're busy
                         SplitSendWMControl(psv,
                                            SN_FOLDERCHANGING,
@@ -1202,9 +1183,6 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                         if (psv->pobjUseList)
                             _wpDeleteFromObjUseList(psv->pobjUseList,
                                                     &psv->uiDisplaying);
-
-                        // disable the whitespace context menu
-                        psv->precFilesShowing = NULL;
 
                         // register a view item for the object
                         // that was selected in the tree so that
@@ -1452,7 +1430,8 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                         // giving us new objects
                         psv->viDisplaying.ulViewState &= ~VIEWSTATE_OPENING;
 
-                        // re-enable the whitespace context menu
+                        // re-enable the whitespace context menu and
+                        // CN_EMPHASIS notifications
                         psv->precFilesShowing = (PMINIRECORDCORE)mp1;
 
                         // update the folder pointers in the SFV
@@ -1552,23 +1531,29 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
             /*
              * WM_CLOSE:
-             *      clean up
+             *      posts (!) the SN_FRAMECLOSE notification to
+             *      the frame.
+             *
+             *      See SN_FRAMECLOSE in fdrsplit.h for
+             *      details.
              */
 
             case WM_CLOSE:
-
-                PMPF_POPULATESPLITVIEW(("WM_CLOSE"));
-
                 if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
                 {
-                    // clear all containers, stop populate thread etc.
-                    fdrCleanupSplitView(psv);
+                    PMPF_POPULATESPLITVIEW(("WM_CLOSE --> sending SN_FRAMECLOSE"));
 
-                    // destroy the frame window (which destroys us too)
-                    WinDestroyWindow(psv->hwndMainFrame);
+                    // post, do not send, or the file dialog
+                    // will never see this in the WinGetMsg loop
+                    WinPostMsg(psv->hwndMainFrame,
+                               WM_CONTROL,
+                               MPFROM2SHORT(FID_CLIENT,
+                                            SN_FRAMECLOSE),
+                               NULL);
                 }
 
-                // return default NULL
+                // never pass this on, because the default
+                // window proc posts WM_QUIT
             break;
 
             default:
@@ -1988,8 +1973,11 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
                  && (psv->fSplitViewReady)
                     // and we're not currently populating?
                     // (the cnr automatically selects the first obj
-                    // that gets inserted)
-                 && (!psv->precFolderPopulating)
+                    // that gets inserted, and we'd rather not have
+                    // the file dialog react to such auto-selections);
+                    // precFilesShowing is TRUE only after all objects
+                    // have been inserted
+                 && (psv->precFilesShowing)
                )
             {
                 PMPF_POPULATESPLITVIEW(("CN_EMPHASIS [%s]",
@@ -2420,6 +2408,67 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
     return FALSE;
 }
 
+/*
+ *@@ fdrSplitDestroyFrame:
+ *      being the reverse to fdrSetupSplitView, this
+ *      cleans up all allocated resources and destroys
+ *      the windows, including the main frame.
+ *
+ *      Does NOT free psv because we can't know how it was
+ *      allocated. (As fdrSetupSplitView says, allocating
+ *      and freeing the FDRSPLITVIEW is the job of the
+ *      user code.)
+ *
+ *@@added V0.9.21 (2002-08-21) [umoeller]
+ */
+
+VOID fdrSplitDestroyFrame(PFDRSPLITVIEW psv)
+{
+    // hide the main window, the cnr cleanup can
+    // cause a lot of repaint, and for the file
+    // dlg, the user should get immediate feedback
+    // when the buttons are pressed
+    WinShowWindow(psv->hwndMainFrame, FALSE);
+
+    // remove use item for right view
+    if (psv->pobjUseList)
+        _wpDeleteFromObjUseList(psv->pobjUseList,
+                                &psv->uiDisplaying);
+
+    // stop threads; we crash if we exit
+    // before these are stopped
+    WinPostMsg(psv->hwndSplitPopulate,
+               WM_QUIT,
+               0,
+               0);
+    psv->tiSplitPopulate.fExit = TRUE;
+    DosSleep(0);
+    while (psv->tidSplitPopulate)
+        winhSleep(50);
+
+    // prevent dialog updates
+    psv->fSplitViewReady = FALSE;
+
+    fdrvClearContainer(psv->hwndTreeCnr,
+                       CLEARFL_TREEVIEW);
+    fdrvClearContainer(psv->hwndFilesCnr,
+                       // not tree view, but maybe unlock
+                       (psv->fUnlockOnClear)
+                            ? CLEARFL_UNLOCKOBJECTS
+                            : 0);
+
+    // clean up
+    if (psv->hwndSplitWindow)
+        WinDestroyWindow(psv->hwndSplitWindow);
+
+    if (psv->hwndTreeFrame)
+        WinDestroyWindow(psv->hwndTreeFrame);
+    if (psv->hwndFilesFrame)
+        WinDestroyWindow(psv->hwndFilesFrame);
+    if (psv->hwndMainFrame)
+        WinDestroyWindow(psv->hwndMainFrame);
+}
+
 /* ******************************************************************
  *
  *   Folder split view
@@ -2477,38 +2526,6 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
 
     switch (msg)
     {
-        /*
-         * WM_SYSCOMMAND:
-         *
-         */
-
-        case WM_SYSCOMMAND:
-            if (    (SHORT1FROMMP(mp1) == SC_CLOSE)
-                 && (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
-                                                              QWL_USER))
-               )
-            {
-                // save window position
-                SWP swp;
-                SPLITVIEWPOS pos;
-                WinQueryWindowPos(hwndFrame,
-                                  &swp);
-                pos.x = swp.x;
-                pos.y = swp.y;
-                pos.cx = swp.cx;
-                pos.cy = swp.cy;
-
-                pos.lSplitBarPos = ctlQuerySplitPos(psvd->sv.hwndSplitWindow);
-
-                PrfWriteProfileData(HINI_USER,
-                                    (PSZ)INIAPP_FDRSPLITVIEWPOS,
-                                    psvd->szFolderPosKey,
-                                    &pos,
-                                    sizeof(pos));
-            }
-
-            mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
-        break;
 
         /*
          * WM_QUERYFRAMECTLCOUNT:
@@ -2776,6 +2793,47 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
         break;
 
         /*
+         *@@ WM_CONTROL:
+         *      intercept SN_FRAMECLOSE.
+         *      V0.9.21 (2002-09-13) [umoeller]
+         */
+
+        case WM_CONTROL:
+            if (    (SHORT1FROMMP(mp1) == FID_CLIENT)
+                 && (SHORT2FROMMP(mp1) == SN_FRAMECLOSE)
+                 && (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                              QWL_USER))
+               )
+            {
+                SWP swp;
+                SPLITVIEWPOS pos;
+
+                PMPF_POPULATESPLITVIEW(("WM_CONTROL + SN_FRAMECLOSE"));
+
+                // save window position
+                WinQueryWindowPos(hwndFrame,
+                                  &swp);
+                pos.x = swp.x;
+                pos.y = swp.y;
+                pos.cx = swp.cx;
+                pos.cy = swp.cy;
+
+                pos.lSplitBarPos = ctlQuerySplitPos(psvd->sv.hwndSplitWindow);
+
+                PrfWriteProfileData(HINI_USER,
+                                    (PSZ)INIAPP_FDRSPLITVIEWPOS,
+                                    psvd->szFolderPosKey,
+                                    &pos,
+                                    sizeof(pos));
+
+                // clear all containers, stop populate thread etc.;
+                // this destroys the frame, which in turn destroys
+                // us and frees psv
+                fdrSplitDestroyFrame(&psvd->sv);
+            }
+        break;
+
+        /*
          * WM_DESTROY:
          *
          */
@@ -2784,8 +2842,6 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
             if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                          QWL_USER))
             {
-                PMPF_POPULATESPLITVIEW(("PSPLITVIEWDATA is 0x%lX", psvd));
-
                 _wpDeleteFromObjUseList(psvd->sv.pRootObject,
                                         &psvd->ui);
 

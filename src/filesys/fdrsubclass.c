@@ -1082,12 +1082,16 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                     {
                         ULONG ulDefaultView = _wpQueryDefaultView(pObject);
 
+                        PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
+                                    ulDefaultView,
+                                    mp2));
+
                         WinSendMsg((HWND)mp2,
                                    MM_SETITEMATTR,
                                    MPFROM2SHORT(LOUSHORT(ulDefaultView),
                                                 FALSE),
                                    MPFROM2SHORT(MIA_CHECKED,
-                                                FALSE));
+                                                0));
 
                         WinSendMsg((HWND)mp2,
                                    MM_SETITEMATTR,

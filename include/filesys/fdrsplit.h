@@ -68,36 +68,162 @@
     // WM_CONTROL notifications sent by the controller
     // to its owner; SHORT1FROMMP(mp1) is always FID_CLIENT
 
+    /*
+     *@@ SN_FOLDERCHANGING:
+     *      WM_CONTROL notification code sent from the
+     *      split view controller (fnwpSplitController)
+     *      to its parent, the main frame, which should
+     *      be subclassed to intercept this notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This one gets sent when a new folder is
+     *      populated and the files cnr is to be filled
+     *      (that is, FFL_FOLDERSONLY is _not_ set);
+     *      mp2 is the WPFolder that is now populating. If
+     *      a disk is being populated, this is the root folder.
+     *
+     *      The return code is ignored.
+     *
+     *@@added V0.9.21 (2002-09-13) [umoeller]
+     */
+
     #define SN_FOLDERCHANGING       0x1000
-                // sent when a new folder is populated and the
-                // files cnr is to be filled (that is, FFL_FOLDERSONLY
-                // is _not_ set);
-                // mp2 is WPFolder that is now populating. If a
-                // disk is being populated, this is the root folder.
-                // Return code is ignored.
+
+    /*
+     *@@ SN_FOLDERCHANGED:
+     *      WM_CONTROL notification code sent from the
+     *      split view controller (fnwpSplitController)
+     *      to its parent, the main frame, which should
+     *      be subclassed to intercept this notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This one gets sent after SN_FOLDERCHANGING,
+     *      when populate is done.
+     *      mp2 is the same folder as with the previous
+     *      SN_FOLDERCHANGING.
+     *
+     *      The return code is ignored.
+     *
+     *@@added V0.9.21 (2002-09-13) [umoeller]
+     */
 
     #define SN_FOLDERCHANGED        0x1001
-                // after SN_FOLDERCHANGING, sent when populate is done;
-                // mp2 is the same folder as with the previous
-                // SN_FOLDERCHANGING.
-                // Return code is ignored.
+
+    /*
+     *@@ SN_OBJECTSELECTED:
+     *      WM_CONTROL notification code sent from the
+     *      split view controller (fnwpSplitController)
+     *      to its parent, the main frame, which should
+     *      be subclassed to intercept this notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This one gets sent when an object was selected
+     *      in the files cnr. This only comes in if the user
+     *      explicitly clicks on an object, not if an object
+     *      gets selected by the container automatically.
+     *      mp2 is the record of the object, which might be
+     *      a shadow or disk.
+     *
+     *      The return code is ignored.
+     *
+     *@@added V0.9.21 (2002-09-13) [umoeller]
+     */
 
     #define SN_OBJECTSELECTED       0x1002
-                // object was selected in the files cnr. This only
-                // comes in if the user explicitly clicks on an
-                // object, not if an object gets selected by the
-                // container automatically.
-                // mp2 is the record of the object, which might
-                // be a shadow.
+
+    /*
+     *@@ SN_OBJECTENTER:
+     *      WM_CONTROL notification code sent from the
+     *      split view controller (fnwpSplitController)
+     *      to its parent, the main frame, which should
+     *      be subclassed to intercept this notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This one gets sent if an object was double-clicked
+     *      upon in the files cnr. This allows the frame
+     *      to set up a non-default action when the user
+     *      double-clicks on records in the files cnr.
+     *      mp2 is the record of the object, which might be
+     *      a shadow.
+     *
+     *      If this returns FALSE (as the default frame and
+     *      window procs do), the  split view performs a
+     *      default action. If a non-zero value is returned,
+     *      the split view does nothing.
+     *
+     *@@added V0.9.21 (2002-09-13) [umoeller]
+     */
 
     #define SN_OBJECTENTER          0x1003
-                // object was double-clicked upon in the files cnr.
-                // mp2 is the record of the object, which might
-                // be a shadow.
-                // If this returns FALSE (or is not handled), the
-                // split view performs a default action. If a
-                // non-zero value is returned, the split view does
-                // nothing.
+
+    /*
+     *@@ SN_FRAMECLOSE:
+     *      WM_CONTROL notification code posted (!) from the
+     *      split view controller (fnwpSplitController)
+     *      to its parent, the main frame, which should
+     *      be subclassed to intercept this notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This one gets posted (!) to the frame when the
+     *      client receives WM_CLOSE. The problem
+     *      that we have with the "close" processing
+     *      is that we want to allow the frame to
+     *      handle it, but the frame itself will never
+     *      receive WM_CLOSE.
+     *
+     *      Here's how the PM frame handles WM_SYSCOMMAND
+     *      with SC_CLOSE:
+     *
+     *      --  If the frame has a client, the frame posts
+     *          WM_CLOSE to the client (_not_ to itself).
+     *
+     *      --  If the frame does not have a client,
+     *          it posts WM_CLOSE to itself.
+     *
+     *      As a result, the frame never gets WM_CLOSE
+     *      if there's a client, as in our case.
+     *
+     *      Note that the system switch list also sends
+     *      WM_SYSCOMMAND with SC_CLOSE if the user
+     *      tells it to stop a session.
+     *
+     *      The frame processes WM_CLOSE as follows:
+     *
+     *      --  If there's a client, it is forwarded
+     *          (sent) to it.
+     *
+     *      --  If there's no client, WinDefWindowProc
+     *          is called, which, according to PMREF,
+     *          posts WM_QUIT.
+     *
+     *      As a result, we MUST intercept WM_CLOSE
+     *      in the controller to avoid a WM_QUIT for
+     *      the WPS process. However, we can't just post
+     *      WM_CLOSE back to the frame (which would lead
+     *      to infinite recursion), so this notification
+     *      was introduced.
+     *
+     *      Again, this gets posted, not sent, so that
+     *      the file dialog can intercept it in the
+     *      main message loop.
+     *
+     *      mp2 is always NULL.
+     *
+     *      This message must always be processed by
+     *      the subclassed frame, or the split view
+     *      will never close.
+     *
+     *      The return code is ignored.
+     *
+     *@@added V0.9.21 (2002-09-13) [umoeller]
+     */
+
+    #define SN_FRAMECLOSE           0x1004
 
     #ifdef THREADS_HEADER_INCLUDED
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
@@ -165,6 +291,7 @@
                                 // showing in the files cnr on the right;
                                 // this is == precTreeSelected after the
                                 // timer has elapsed and populate is done
+                                // and _all_ objects are inserted
 
             WPObject        *pobjUseList;
                                 // object whose use list the following was
@@ -242,8 +369,6 @@
         MPARAM fdrSetupSplitView(HWND hwnd,
                                  PFDRSPLITVIEW psv);
 
-        VOID fdrCleanupSplitView(PFDRSPLITVIEW psv);
-
         BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                                  WPFolder *pRootsFolder,
                                  PFDRSPLITVIEW psv,
@@ -252,6 +377,8 @@
                                  ULONG flSplit,
                                  PCSZ pcszFileMask,
                                  LONG lSplitBarPos);
+
+        VOID fdrSplitDestroyFrame(PFDRSPLITVIEW psv);
 
     #endif
     #endif

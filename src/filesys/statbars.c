@@ -507,7 +507,7 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
             } // end switch (ulView)
 
             // enforce reformatting / repaint of frame window
-            WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
+            WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, MPNULL, MPNULL);
 
             // update status bar contents
             WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);

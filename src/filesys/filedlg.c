@@ -611,37 +611,49 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
  *      enters something in the entry field.
  *
  *      If pcszFullFile contains a full file name,
- *      we post WM_CLOSE to the dialog's client
- *      to dismiss the dialog.
+ *      we post WM_SYSCOMMAND + SC_CLOSE to the
+ *      frame to dismiss the dialog.
  */
 
 STATIC VOID ParseAndUpdate(PFILEDLGDATA pWinData,
                            const char *pcszFullFile)
 {
     // parse the new file string
-    ULONG fl = ParseFileString(pWinData,
-                               pcszFullFile);
-
-    BOOL fAlreadyFull = FALSE;
+    ULONG   fl = ParseFileString(pWinData,
+                                 pcszFullFile);
 
     if (fl & FFL_FILENAME)
     {
         // no wildcard, but file specified:
         pWinData->pfd->lReturn = DID_OK;
-        WinPostMsg(pWinData->sv.hwndMainFrame, WM_CLOSE, 0, 0);
-                // main msg loop detects that
-        // get outta here
+
+        // close the damn thing
+        WinPostMsg(pWinData->sv.hwndMainFrame,
+                   WM_SYSCOMMAND,
+                   (MPARAM)SC_CLOSE,
+                   0);
+
+        // PM frame proc then posts WM_CLOSE to
+        // the client (the split controller),
+        // which sends WM_CONTROL with SN_FRAMECLOSE
+        // back to the frame; the main msg loop in
+        // fdlgFileDlg detects that and exits
+        // V0.9.21 (2002-09-13) [umoeller]
+
+        // now get outta here
         return;
     }
 
     if (fl & (FFL_DRIVE | FFL_PATH | FFL_FILEMASK))
     {
+        // drive or path specified:
+        // expand that
+
         // set this to NULL so that main control will refresh
         pWinData->sv.precTreeSelected
             = pWinData->sv.precFilesShowing = NULL;
-        // drive or path specified:
-        // expand that
-        fAlreadyFull = UpdateDlgWithFullFile(pWinData);
+
+        UpdateDlgWithFullFile(pWinData);
     }
 }
 
@@ -1198,6 +1210,8 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         mrc = (MRESULT)TRUE;
                     }
                     break;
+
+                    // SN_FRAMECLOSE gets handled by main msg loop
                 }
             }
         break;
@@ -1221,12 +1235,19 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // For some reason people have become
                         // accustomed to this.
                         PSZ pszFullFile;
+
+                        PMPF_POPULATESPLITVIEW(("DID_OK"));
+
                         if (pszFullFile = winhQueryWindowText(pWinData->hwndFileEntry))
                         {
+                            // simulate the case that the user entered
+                            // something into the entry field; if the
+                            // user double-clicked on a file, this will
+                            // dismiss the dialog, otherwise we'll expand
+                            // the tree to show the folder
                             ParseAndUpdate(pWinData,
                                            pszFullFile);
-                                    // this posts WM_CLOSE if a full file name
-                                    // was entered to close the dialog and return
+
                             free(pszFullFile);
                         }
 
@@ -1234,9 +1255,20 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     break;
 
                     case DID_CANCEL:
-                        pWinData->pfd->lReturn = DID_CANCEL;
-                        WinPostMsg(hwndFrame, WM_CLOSE, 0, 0);
-                                // main msg loop detects that
+
+                        PMPF_POPULATESPLITVIEW(("DID_CANCEL"));
+
+                        WinPostMsg(pWinData->sv.hwndMainFrame,
+                                   WM_SYSCOMMAND,
+                                   (MPARAM)SC_CLOSE,
+                                   0);
+
+                        // PM frame proc then posts WM_CLOSE to
+                        // the client (the split controller),
+                        // which sends WM_CONTROL with SN_FRAMECLOSE
+                        // back to the frame; the main msg loop in
+                        // fdlgFileDlg detects that and exits
+                        // V0.9.21 (2002-09-13) [umoeller]
                     break;
                 }
         break;
@@ -1297,13 +1329,16 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
  *
  *      The following other FILEDLG fields are ignored: ulUser,
  *      pfnDlgProc, pszIDrive, pszIDriveList, hMod, usDlgID, x, y.
+ *
+ *@@changed V0.9.21 (2002-09-13) [umoeller]: reworked greatly to work with new split view code
  */
 
 HWND fdlgFileDlg(HWND hwndOwner,
                  const char *pcszStartupDir,        // in: current directory or NULL
                  PFILEDLG pfd)
 {
-    HWND    hwndReturn = NULLHANDLE;
+    HWND        hwndReturn = NULLHANDLE;
+    HPOINTER    hptrOld = NULLHANDLE;
 
     // static windata used by all components
     FILEDLGDATA WinData;
@@ -1316,7 +1351,12 @@ HWND fdlgFileDlg(HWND hwndOwner,
 
     lstInit(&WinData.llDisks, FALSE);
 
-    pfd->lReturn = DID_CANCEL;           // for now
+    // set the default return code for closing the window
+    // this only ever gets set to DID_OK if the user
+    // entered a valid file and pressed the OK button (or
+    // double-clicked on one); we evaluate this in the
+    // main msg loop below
+    pfd->lReturn = DID_CANCEL;
 
     TRY_LOUD(excpt1)
     {
@@ -1330,7 +1370,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
         ULONG       flSplit;
 
         // set wait pointer, since this may take a second
-        winhSetWaitPointer();
+        hptrOld = winhSetWaitPointer();
 
         /*
          *  PATH/FILE MASK SETUP
@@ -1409,8 +1449,14 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                     WinData.szFileMask,
                                     30))       // split bar pos
             {
-                BOOL    fExit = FALSE;
                 QMSG    qmsg;
+
+                if (hwndOwner)
+                    if (!WinSetOwner(WinData.sv.hwndMainFrame,
+                                     hwndOwner))
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "WinSetOwner(frame, 0x%lX failed",
+                               hwndOwner);
 
                 // populate the drives tree once we're running;
                 // this is our replacement for what fdrSplitCreateFrame
@@ -1504,35 +1550,39 @@ HWND fdlgFileDlg(HWND hwndOwner,
 
                 WinData.sv.fSplitViewReady = TRUE;
 
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+
                 /*
                  *  PM MSG LOOP
                  *
                  */
 
                 // standard PM message loop... we stay in here
-                // (simulating a modal dialog) until WM_CLOSE
-                // comes in for the main frame
+                // (simulating a modal dialog) until the split
+                // controller receives WM_CLOSE and then posts (!)
+                // WM_CONTROL with SN_FRAMECLOSE to the main frame
+
                 while (WinGetMsg(WinData.sv.habGUI, &qmsg, NULLHANDLE, 0, 0))
                 {
-                    fExit = FALSE;
                     if (    (qmsg.hwnd == WinData.sv.hwndMainFrame)
-                         && (qmsg.msg == WM_CLOSE)
+                         && (qmsg.msg == WM_CONTROL)
+                         && (SHORT1FROMMP(qmsg.mp1) == FID_CLIENT)
+                         && (SHORT2FROMMP(qmsg.mp1) == SN_FRAMECLOSE)
                        )
                     {
                         // main file dlg client got WM_CLOSE:
-                        // terminate the modal loop then
-                        fExit = TRUE;
+                        // terminate the modal loop then...
+                        // pfd->lReturn is still DID_CANCEL
+                        // from above UNLESS the user selected
+                        // a valid file and pressed "OK"
+
+                        PMPF_POPULATESPLITVIEW(("WM_CONTROL + SN_FRAMECLOSE"));
 
                         winhSaveWindowPos(WinData.sv.hwndMainFrame,
                                           HINI_USER,
                                           INIAPP_XWORKPLACE,
                                           INIKEY_WNDPOSFILEDLG);
-                    }
 
-                    WinDispatchMsg(WinData.sv.habGUI, &qmsg);
-
-                    if (fExit)
-                    {
                         if (pfd->lReturn == DID_OK)
                         {
                             sprintf(pfd->szFullFile,
@@ -1544,11 +1594,14 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                 // @@todo multiple selections
                             pfd->sEAType = -1;
                                 // @@todo set this to the offset for "save as"
+
+                            hwndReturn = (HWND)TRUE;
                         }
 
-                        hwndReturn = (HWND)TRUE;
-                        break;
+                        break;  // while (WinGetMsg...
                     }
+                    else
+                        WinDispatchMsg(WinData.sv.habGUI, &qmsg);
                 }
             }
         }
@@ -1565,7 +1618,12 @@ HWND fdlgFileDlg(HWND hwndOwner,
      *
      */
 
-    fdrCleanupSplitView(&WinData.sv);
+    hptrOld = winhSetWaitPointer();
+
+    if (hwndOwner)
+        WinSetActiveWindow(HWND_DESKTOP, hwndOwner);
+
+    fdrSplitDestroyFrame(&WinData.sv);
 
     lstClear(&WinData.llDisks);
     lstClear(&WinData.llDialogControls);
@@ -1573,6 +1631,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
     PMPF_POPULATESPLITVIEW(("exiting, pfd->lReturn is %d", pfd->lReturn));
     PMPF_POPULATESPLITVIEW(("  pfd->szFullFile is %s", pfd->szFullFile));
     PMPF_POPULATESPLITVIEW(("  returning 0x%lX", hwndReturn));
+
+    WinSetPointer(HWND_DESKTOP, hptrOld);
 
     return (hwndReturn);
 }

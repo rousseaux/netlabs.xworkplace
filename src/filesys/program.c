@@ -1633,6 +1633,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed params prompt hangs (new implementation)
  *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted HandlePlaceholder
  *@@changed V0.9.18 (2002-03-27) [umoeller]: fixed trailing space that was always appended
+ *@@changed V0.9.21 (2002-09-13) [umoeller]: fixed memory leak
  */
 
 BOOL progSetupArgs(PCSZ pcszParams,
@@ -1779,6 +1780,8 @@ BOOL progSetupArgs(PCSZ pcszParams,
 
             FixSpacesInFilename(&strDataFilename); // V0.9.7 (2000-12-10) [umoeller]
             xstrcats(pstrParams, &strDataFilename);
+
+            xstrClear(&strDataFilename); // V0.9.21 (2002-09-13) [umoeller]
         }
     } // end if (brc)
     else
