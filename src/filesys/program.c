@@ -417,98 +417,92 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockRunning())
+        if (    (fSemOwned = LockRunning())
+             && (happ)
+             && ((pProgram != NULL) || (pDataFile != NULL))
+           )
         {
-            if (    (happ)
-                 && ((pProgram != NULL) || (pDataFile != NULL))
-               )
+            PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)malloc(sizeof(RUNNINGPROGRAM));
+            if (pRunning)
             {
-                PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)malloc(sizeof(RUNNINGPROGRAM));
-                if (pRunning)
+                // allocate view item
+                PUSEITEM pUseItemView = 0,
+                         pUseItemFile = 0;
+                WPObject *pObjEmph = 0;
+
+                if (pDataFile == NULL)
+                    // object to work on is program object
+                    pObjEmph = pProgram;
+                else
+                    // object to work on is datafile object
+                    pObjEmph = pDataFile;
+
+                if (pObjEmph)
                 {
-                    // allocate view item
-                    PUSEITEM pUseItemView = 0,
-                             pUseItemFile = 0;
-                    WPObject *pObjEmph = 0;
-
-                    if (pDataFile == NULL)
-                        // object to work on is program object
-                        pObjEmph = pProgram;
-                    else
-                        // object to work on is datafile object
-                        pObjEmph = pDataFile;
-
-                    if (pObjEmph)
-                    {
-                        // in any case, add "in-use" emphasis to the object
-                        pUseItemView = (PUSEITEM)_wpAllocMem(pObjEmph,
+                    // in any case, add "in-use" emphasis to the object
+                    if (pUseItemView = (PUSEITEM)_wpAllocMem(pObjEmph,
                                                              sizeof(USEITEM) + sizeof(VIEWITEM),
-                                                             NULL);
-                        if (pUseItemView)
+                                                             NULL))
+                    {
+                        // VIEWITEM is right behind use item
+                        PVIEWITEM pViewItem = (PVIEWITEM)(pUseItemView + 1);
+                        // set up data
+                        memset(pUseItemView, 0, sizeof(USEITEM) + sizeof(VIEWITEM));
+                        pUseItemView->type = USAGE_OPENVIEW;
+                        pViewItem->view = OPEN_RUNNING;
+                        pViewItem->handle = happ;
+
+                        if (brc = _wpAddToObjUseList(pObjEmph,
+                                                     pUseItemView))
                         {
-                            // VIEWITEM is right behind use item
-                            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItemView + 1);
-                            // set up data
-                            memset(pUseItemView, 0, sizeof(USEITEM) + sizeof(VIEWITEM));
-                            pUseItemView->type = USAGE_OPENVIEW;
-                            pViewItem->view = OPEN_RUNNING;
-                            pViewItem->handle = happ;
-
-                            brc = _wpAddToObjUseList(pObjEmph,
-                                                     pUseItemView);
-
-                            if (brc)
-                            {
-                                // success:
-                                // for data file associations, add VIEWFILE
-                                // structure as well
-                                pUseItemFile =  (PUSEITEM)_wpAllocMem(pObjEmph,
+                            // success:
+                            // for data file associations, add VIEWFILE
+                            // structure as well
+                            if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pObjEmph,
                                                                       sizeof(USEITEM) + sizeof(VIEWFILE),
-                                                                      NULL);
-                                if (pUseItemFile)
-                                {
-                                    // VIEWFILE item is right behind use item
-                                    PVIEWFILE pViewFile = (PVIEWFILE)(pUseItemFile + 1);
-                                    // set up data
-                                    memset(pUseItemFile, 0, sizeof(USEITEM) + sizeof(VIEWFILE));
-                                    pUseItemFile->type = USAGE_OPENFILE;
-                                    pViewFile->ulMenuId = ulMenuID;
-                                    pViewFile->handle  = happ;
+                                                                      NULL))
+                            {
+                                // VIEWFILE item is right behind use item
+                                PVIEWFILE pViewFile = (PVIEWFILE)(pUseItemFile + 1);
+                                // set up data
+                                memset(pUseItemFile, 0, sizeof(USEITEM) + sizeof(VIEWFILE));
+                                pUseItemFile->type = USAGE_OPENFILE;
+                                pViewFile->ulMenuId = ulMenuID;
+                                pViewFile->handle  = happ;
 
-                                    brc = _wpAddToObjUseList(pObjEmph,
-                                                             pUseItemFile);
-                                }
-                                else
-                                    brc = FALSE;
+                                brc = _wpAddToObjUseList(pObjEmph,
+                                                         pUseItemFile);
                             }
+                            else
+                                brc = FALSE;
                         }
+                    }
 
-                        if (brc)
-                        {
-                            // store this in our internal list
-                            // so we can find the object
-                            // in progAppTerminateNotify
-                            pRunning->pObjEmphasis = pObjEmph;
-                            pRunning->pUseItemView = pUseItemView;
-                            pRunning->pUseItemFile = pUseItemFile; // can be 0
-                            lstAppendItem(&G_llRunning,
-                                          pRunning);
+                    if (brc)
+                    {
+                        // store this in our internal list
+                        // so we can find the object
+                        // in progAppTerminateNotify
+                        pRunning->pObjEmphasis = pObjEmph;
+                        pRunning->pUseItemView = pUseItemView;
+                        pRunning->pUseItemFile = pUseItemFile; // can be 0
+                        lstAppendItem(&G_llRunning,
+                                      pRunning);
 
-                            // set list-notify flag on the object
-                            // so that XFldObject will call
-                            // progRunningAppDestroyed if
-                            // the object is destroyed
-                            _xwpModifyListNotify(pObjEmph,
-                                                 OBJLIST_RUNNINGSTORED,
-                                                 OBJLIST_RUNNINGSTORED);
-                        }
-                    } // end if (pObjEmph)
+                        // set list-notify flag on the object
+                        // so that XFldObject will call
+                        // progRunningAppDestroyed if
+                        // the object is destroyed
+                        _xwpModifyListNotify(pObjEmph,
+                                             OBJLIST_RUNNINGSTORED,
+                                             OBJLIST_RUNNINGSTORED);
+                    }
+                } // end if (pObjEmph)
 
-                    if (!brc)
-                        free(pRunning);
+                if (!brc)
+                    free(pRunning);
 
-                } // end if (pRunning)
-            }
+            } // end if (pRunning)
         }
     }
     CATCH(excpt1)
@@ -1207,9 +1201,7 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
         HOBJECT     hobjProgram = _wpQueryHandle(pProgObject);
 
         // 1) change WORKPLACE_PROCESS=YES to WORKPLACE__PROCESS=NO
-
-        pp = appFindEnvironmentVar(&Env, "WORKPLACE_PROCESS");
-        if (pp)
+        if (pp = appFindEnvironmentVar(&Env, "WORKPLACE_PROCESS"))
         {
             // _Pmpf(("  found %s", *pp));
             // variable was set (should always be the case, since
@@ -1223,31 +1215,25 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
         // 2) set WP_OBJHANDLE
 
         if (pFile)
-        {
             // file as argument: use WP_OBJHANDLE=xxx,yyy with
             // the handle of the file _and_ the program
             sprintf(szTemp,
                     "WP_OBJHANDLE=%d,%d",
                     _wpQueryHandle(pFile),
                     hobjProgram);
-        }
         else
-        {
             // no file specified: use WP_OBJHANDLE=xxx with
             // the handle of the program only
             sprintf(szTemp, "WP_OBJHANDLE=%d", hobjProgram);
-        }
 
-        arc = appSetEnvironmentVar(&Env,
-                                   szTemp,
-                                   TRUE);      // add as first entry
-
-        if (arc == NO_ERROR)
+        if (!(arc = appSetEnvironmentVar(&Env,
+                                         szTemp,
+                                         TRUE)))     // add as first entry
         {
             // rebuild environment
             arc = appConvertEnvironment(&Env,
                                         &pszNewEnv,
-                                         NULL);
+                                        NULL);
             if (arc != NO_ERROR)
                 if (pszNewEnv)
                 {

@@ -68,6 +68,7 @@
 
 // headers in /helpers
 #include "helpers\lan.h"
+#include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xwpnetsrv.ih"
@@ -111,11 +112,7 @@ SOM_Scope void  SOMLINK xsrv_wpUnInitData(XWPNetServer *somSelf)
     XWPNetServerData *somThis = XWPNetServerGetData(somSelf);
     XWPNetServerMethodDebug("XWPNetServer","xsrv_wpUnInitData");
 
-    if (_pszServerName)
-    {
-        free(_pszServerName);
-        _pszServerName = NULL;
-    }
+    strhStore(&_pszServerName, NULL, NULL);
 
     XWPNetServer_parent_WPTransient_wpUnInitData(somSelf);
 }
@@ -143,9 +140,9 @@ SOM_Scope BOOL  SOMLINK xsrv_wpSetupOnce(XWPNetServer *somSelf,
                                "SERVERNAME",
                                szServerName,
                                &cb))
-            _pszServerName = strdup(szServerName);
+            strhStore(&_pszServerName, szServerName, NULL);
         else
-            // if this string is not parent, FAIL (stop object creation)
+            // if this string is not present, FAIL (stop object creation)
             brc = FALSE;
     }
 

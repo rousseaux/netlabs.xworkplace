@@ -170,8 +170,10 @@ VOID StopMB3Scrolling(BOOL fSuccessPostMsgs)
                NULL,
                NULL);
 
+#ifndef __NOMOVEMENT2FEATURES__
     // re-enable mouse pointer hidding if applicable
-    G_HookData.HookConfig.fAutoHideMouse = G_HookData.fOldAutoHideMouse;
+    G_HookData.HookConfig.__fAutoHideMouse = G_HookData.fOldAutoHideMouse;
+#endif
 
     // release capture (set in WM_BUTTON3DOWN)
     WinSetCapture(HWND_DESKTOP, NULLHANDLE);
@@ -914,9 +916,11 @@ BOOL HandleMB3Msgs(PQMSG pqmsg,
                     // process...
                     WinSetCapture(HWND_DESKTOP, hwnd);
 
+#ifndef __NOMOVEMENT2FEATURES__
                     // disabling auto-hide mouse pointer
-                    G_HookData.fOldAutoHideMouse = G_HookData.HookConfig.fAutoHideMouse;
-                    G_HookData.HookConfig.fAutoHideMouse = FALSE;
+                    G_HookData.fOldAutoHideMouse = G_HookData.HookConfig.__fAutoHideMouse;
+                    G_HookData.HookConfig.__fAutoHideMouse = FALSE;
+#endif
 
                     // if AutoScroll, don't wait for a WM_MOUSESCROLL
                     // to update pointers and display, so that the user

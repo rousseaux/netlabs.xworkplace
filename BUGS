@@ -13,16 +13,8 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
-Editing an object's ObjectID and selecting No to the confirmation box
-causes a trap.
 
 --  TMF file ends with strange char
-
---  ICON PAGE 2 BROKEN
-
-> * 'Confirm on (folder) delete' - I have this set, but Replace True Delete
->   no longer honours it.  (I guess this isn't the trash, but the eWP delete
->   option instead.)
 
 > * Duplicate filenames.  I have auto-rename set, but whenever I delete
 >   a file whose name already occurs in Trash, it insists on asking me to
@@ -30,21 +22,16 @@ causes a trap.
 >   to delete identically-named files in considerable numbers.  (Like when
 >   I'm testing and recompiling programs or DLLs.)
 
---  progOpenProgram doesn't work if exe isn't fully qualified (but assumed
-    to be on PATH)
-
---  install: subdir plugins\drvdlgs not created?!á
+--  install: subdir plugins\drvdlgs not created?!
 
 --  folder content menus:
     if folder is already populated, drive changes aren't picked up
     (crashes with CD-ROMs and drive menus)
 
 --  XShutdown:
-    --  messes up desktops with multiple partitions
     --  reboot hangs on "releasing filesystems" on some systems
 
 --  XCenter:
-    --  DISKFREE: DRIVE CANNOT BE REMOVEDS
     --  double-click on tray empty space produces click on icon too
     --  crashes with DragText
     --  spacing lines are missing on trays
@@ -86,24 +73,13 @@ causes a trap.
 
 --  setup strings for WPShadow: SHADOWID (?) not reported
 
---  installation:
-    2) Hang on some systems. Dunno what causes this, need to debug more. I can't remember changing anything with the install between 0.9.13 and 0.9.14 (except for making the archive an EXE file), so this really beats me now.
-    I'll try to see if replacing the XCenter is causing this maybe.
-
-    3) Trash can disappears after fresh install. I have seen this too now and will
-    see how this happens. Strange too. :-/
-
-    4) After screen lockup, hook stops working. OK, that one is easy to trace.
-
-    --  fix separator program objects in config folder
-
---  if trash can doesn't exist, "drive not supported" comes up
-
 --  ext assocs:
-    >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object  associated with ZIP files, that has this string as parameter:
-    >"O:\TMP %*"
-    >to specify where to unpack and Zip file name. Using extended file type association, the script fails to open Zip files stored in folders containing spaces in their
-    >name. Maybe this problem is common to all objects that use "%*" as parameter...
+    >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object
+    associated with ZIP files, that has this string as parameter:
+    "O:\TMP %*"
+    to specify where to unpack and Zip file name. Using extended file type association,
+    the script fails to open Zip files stored in folders containing spaces in their
+    name. Maybe this problem is common to all objects that use "%*" as parameter...
 
 
 MINOR PROBLEMS
@@ -119,34 +95,18 @@ install:
     --  if lockup on start is enabled, first xwp msg box hangs the system
         after install.
 
-    --  refreshing objects on existing install causes "cannot delete" msgs
-        for XCenter, fonts folder etc.
-
-    --  config folder is always replaced.
-
 trash can:
     --  When deleting a folder wich has an other folder inside wich has the
         attribut "read only", destroying of this folder in trashcan will fail,
         some beeps are played and a message appears
         "object xxx cant be deleted - either it is use or write protected"
 
-archiving:
-   --  I have archiving enabled when ini files have changed 5%. Just now I rebooted and a
-       dialog came up saying "ini files changed 0.000000%, limit 5.000000%" upon which it
-       started the archive process. This seems to be a bug, doesn't it?
-
 documentation:
     -- some subsections in the TOC of the user guide are currently
        sorted wrong. This will be fixed in a future release, didn't
        have time now.
 
-file assocs:
-    -- My XML engine is currently broken. Do not expect import/export
-       to work. Will be fixed soon.
-
 trash can:
-    -- shredder deletes into trash can (undo wpDelete change)
-
     -- When I activate "Replace true delete" (I don't use the TrashCan), I get the
        new XWP dialog when I delete objects via popup menus, but the regular OS/2
        one if I just press the "del" key. Of course I get it all the time if
@@ -159,9 +119,6 @@ trash can:
 
        --> not easy to fix at this point, but will be fixed once the file
            handles engine has been reworked.
-
-object hotkeys:
-    --  assign doesn't work if hotkey is invalid
 
 prog start:
     --  cmd files not started minimized?
@@ -236,8 +193,6 @@ folders:
     --  dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
 
-    --  status bars keep accessing wrong drives for LAN objects
-
 file exists dlg:
     --  Right click on a file object (program object does not cause this bug)
         select copy.
@@ -267,7 +222,6 @@ hotkeys:
 PageMage:
     --  bring window to current screen before making it sticky
     --  causes PM lockups at times (Ctrl+Esc unlocks)
-    --  stops switching at times
     --  make window larger than desktop, set pagemage 1x4 and move big window
         so it will be in 1 and 2 desktop - switching desktops and moving this
         window causes PM lockup.

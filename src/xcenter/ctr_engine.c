@@ -2827,8 +2827,7 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                         pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
                                                                cmnQueryNLSModuleHandle(FALSE),
                                                                ID_CRM_WIDGET);
-                        _Pmpf((__FUNCTION__ ": pszStdMenuFont is %s",
-                                (pszStdMenuFont) ? pszStdMenuFont : "NULL"));
+                        // _Pmpf((__FUNCTION__ ": pszStdMenuFont is %s", (pszStdMenuFont) ? pszStdMenuFont : "NULL"));
 
                         if (pszStdMenuFont)
                         {

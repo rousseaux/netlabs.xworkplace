@@ -82,7 +82,6 @@
 
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
-// #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
@@ -94,7 +93,6 @@
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
-// #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -106,6 +104,7 @@
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -114,7 +113,6 @@
 
 #include "filesys\icons.h"              // various file-system object implementation code
 #include "filesys\object.h"             // XFldObject implementation
-// #include "filesys\program.h"            // program implementation
 
 #include "config\hookintf.h"            // daemon/hook interface
 
@@ -534,11 +532,22 @@ APIRET icoCopyIconFromObject(WPObject *somSelf,       // in: target
     if (pobjSource)
     {
         PICONINFO pData;
-        if (!(arc = icoLoadIconData(pobjSource, ulIndex, &pData)))
+        if (arc = icoLoadIconData(pobjSource, ulIndex, &pData))
+            // error loading that icon:
+            // if we're trying to load an animation icon
+            // (i.e. ulIndex != 0), try loading index 0 and
+            // set that on the animation icon... the user
+            // might be trying to drag a regular icon on
+            // the animation page
+            // V0.9.16 (2001-12-08) [umoeller]
+            arc = icoLoadIconData(pobjSource, 0, &pData);
+
+        if (!arc)
         {
             // now set this icon for the target object
             icoSetIconDataN(somSelf, ulIndex, pData);
             free(pData);
+
 
             // the standard WPS behavior is that
             // if a folder icon is copied onto the
@@ -613,12 +622,14 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
                                               ulAnimationIndex);
         if (    hptrClass
              && (icoQueryIconN(pobj,
-                                  ulAnimationIndex)
+                               ulAnimationIndex)
                  == hptrClass)
            )
             brc = TRUE;
 
         WinDestroyPointer(hptrClass);
+
+        return (brc);
     }
 
     // caller wants regular icon checked:
@@ -1352,7 +1363,7 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
                 HWND hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_ICON_TITLE_EF);
 
                 // backup for undo
-                pData->pszTitleBackup = strdup(_wpQueryTitle(pcnbp->somSelf));
+                pData->pszTitleBackup = strhdup(_wpQueryTitle(pcnbp->somSelf), NULL);
 
                 WinSendMsg(hwndMLE,
                            MLM_SETTEXTLIMIT,
@@ -1550,11 +1561,120 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /*
+ *@@ HandleENHotkey:
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
+                       ULONG ulExtra)
+{
+    PCREATENOTEBOOKPAGE pcnbp = pData->pcnbp;
+
+    ULONG           flReturn = 0;
+    PHOTKEYNOTIFY   phkn = (PHOTKEYNOTIFY)ulExtra;
+    BOOL            fStore = FALSE;
+    USHORT          usFlags = phkn->usFlags;
+
+    // check if maybe this is a function key
+    // V0.9.3 (2000-04-19) [umoeller]
+    PFUNCTIONKEY pFuncKey;
+    if (pFuncKey = hifFindFunctionKey(pData->paFuncKeys,
+                                      pData->cFuncKeys,
+                                      phkn->ucScanCode))
+    {
+        // key code is one of the XWorkplace user-defined
+        // function keys:
+        // add KC_INVALIDCOMP flag (used by us for
+        // user-defined function keys)
+        usFlags |= KC_INVALIDCOMP;
+        sprintf(phkn->szDescription,
+                "\"%s\"",
+                pFuncKey->szDescription);
+        flReturn = HEFL_SETTEXT;
+        fStore = TRUE;
+    }
+    else
+    {
+        // no function key:
+
+        // check if this is one of the mnemonics of
+        // the "Set" or "Clear" buttons; we better
+        // not store those, or the user won't be
+        // able to use this page with the keyboard
+
+        if (    (    (phkn->usFlags & KC_VIRTUALKEY)
+                  && (    (phkn->usvk == VK_TAB)
+                       || (phkn->usvk == VK_BACKTAB)
+                     )
+                )
+             || (    ((usFlags & (KC_CTRL | KC_SHIFT | KC_ALT)) == KC_ALT)
+                  && (   (WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                                            ID_XSDI_ICON_HOTKEY_SET,
+                                            WM_MATCHMNEMONIC,
+                                            (MPARAM)phkn->usch,
+                                            0))
+                      || (WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                                            ID_XSDI_ICON_HOTKEY_CLEAR,
+                                            WM_MATCHMNEMONIC,
+                                            (MPARAM)phkn->usch,
+                                            0))
+                     )
+                )
+           )
+            // pass those to owner
+            flReturn = HEFL_FORWARD2OWNER;
+        else
+        {
+            // have this key combo checked if this thing
+            // makes up a valid hotkey just yet:
+            // if KC_VIRTUALKEY is down,
+            // we must filter out the sole CTRL, ALT, and
+            // SHIFT keys, because these are valid only
+            // when pressed with some other key
+            if (cmnIsValidHotkey(phkn->usFlags,
+                                 phkn->usKeyCode))
+            {
+                // valid hotkey:
+                cmnDescribeKey(phkn->szDescription,
+                               phkn->usFlags,
+                               phkn->usKeyCode);
+                flReturn = HEFL_SETTEXT;
+
+                fStore = TRUE;
+            }
+        }
+    }
+
+    if (fStore)
+    {
+        // store hotkey for object,
+        // which can then be set using the "Set" button
+        // we'll now pass the scan code, which is
+        // used by the hook
+        pData->Hotkey.ucScanCode = phkn->ucScanCode;
+        pData->Hotkey.usFlags = usFlags;
+        pData->Hotkey.usKeyCode = phkn->usKeyCode;
+
+        pData->fHotkeyPending = TRUE;
+
+        WinEnableControl(pcnbp->hwndDlgPage,
+                         ID_XSDI_ICON_HOTKEY_SET,
+                         TRUE);
+
+        // and have entry field display that (comctl.c)
+    }
+
+    return ((MPARAM)flReturn);
+}
+
+/*
  *@@ icoIcon1ItemChanged:
  *      "Icon" page notebook callback function (notebook.c).
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: now disabling hotkeys while entryfield has the focus
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1673,108 +1793,37 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
              */
 
             case ID_XSDI_ICON_HOTKEY_EF:
-                if (usNotifyCode == EN_HOTKEY)
+                switch (usNotifyCode)
                 {
-                    ULONG           flReturn = 0;
-                    PHOTKEYNOTIFY   phkn = (PHOTKEYNOTIFY)ulExtra;
-                    BOOL            fStore = FALSE;
-                    USHORT          usFlags = phkn->usFlags;
+                    case EN_SETFOCUS:
+                    case EN_KILLFOCUS:
+                        // if we're getting the focus, disable
+                        // hotkeys; if we're losing the focus,
+                        // enable hotkeys again (otherwise the
+                        // user can't set any hotkeys that are
+                        // already occupied)
+                        // V0.9.16 (2001-12-06) [umoeller]
+                        krnPostDaemonMsg(XDM_DISABLEHOTKEYSTEMP,
+                                         (MPARAM)(usNotifyCode == EN_SETFOCUS),
+                                             // TRUE: disable (on set focus)
+                                             // FALSE: re-enable (on kill focus)
+                                         0);
+                    break;
 
-                    // check if maybe this is a function key
-                    // V0.9.3 (2000-04-19) [umoeller]
-                    PFUNCTIONKEY pFuncKey = hifFindFunctionKey(pData->paFuncKeys,
-                                                               pData->cFuncKeys,
-                                                               phkn->ucScanCode);
+                    /*
+                     * EN_HOTKEY:
+                     *      new hotkey has been entered:
+                     */
 
-                    if (pFuncKey)
-                    {
-                        // key code is one of the XWorkplace user-defined
-                        // function keys:
-                        // add KC_INVALIDCOMP flag (used by us for
-                        // user-defined function keys)
-                        usFlags |= KC_INVALIDCOMP;
-                        sprintf(phkn->szDescription,
-                                "\"%s\"",
-                                pFuncKey->szDescription);
-                        flReturn = HEFL_SETTEXT;
-                        fStore = TRUE;
-                    }
-                    else
-                    {
-                        // no function key:
-
-                        // check if this is one of the mnemonics of
-                        // the "Set" or "Clear" buttons; we better
-                        // not store those, or the user won't be
-                        // able to use this page with the keyboard
-
-                        if (    (    (phkn->usFlags & KC_VIRTUALKEY)
-                                  && (    (phkn->usvk == VK_TAB)
-                                       || (phkn->usvk == VK_BACKTAB)
-                                     )
-                                )
-                             || (    ((usFlags & (KC_CTRL | KC_SHIFT | KC_ALT)) == KC_ALT)
-                                  && (   (WinSendDlgItemMsg(pcnbp->hwndDlgPage,
-                                                            ID_XSDI_ICON_HOTKEY_SET,
-                                                            WM_MATCHMNEMONIC,
-                                                            (MPARAM)phkn->usch,
-                                                            0))
-                                      || (WinSendDlgItemMsg(pcnbp->hwndDlgPage,
-                                                            ID_XSDI_ICON_HOTKEY_CLEAR,
-                                                            WM_MATCHMNEMONIC,
-                                                            (MPARAM)phkn->usch,
-                                                            0))
-                                     )
-                                )
-                           )
-                            // pass those to owner
-                            flReturn = HEFL_FORWARD2OWNER;
-                        else
-                        {
-                            // have this key combo checked if this thing
-                            // makes up a valid hotkey just yet:
-                            // if KC_VIRTUALKEY is down,
-                            // we must filter out the sole CTRL, ALT, and
-                            // SHIFT keys, because these are valid only
-                            // when pressed with some other key
-                            if (cmnIsValidHotkey(phkn->usFlags,
-                                                 phkn->usKeyCode))
-                            {
-                                // valid hotkey:
-                                cmnDescribeKey(phkn->szDescription,
-                                               phkn->usFlags,
-                                               phkn->usKeyCode);
-                                flReturn = HEFL_SETTEXT;
-
-                                fStore = TRUE;
-                            }
-                        }
-                    }
-
-                    if (fStore)
-                    {
-                        // store hotkey for object,
-                        // which can then be set using the "Set" button
-                        // we'll now pass the scan code, which is
-                        // used by the hook
-                        pData->Hotkey.ucScanCode = phkn->ucScanCode;
-                        pData->Hotkey.usFlags = usFlags;
-                        pData->Hotkey.usKeyCode = phkn->usKeyCode;
-
-                        pData->fHotkeyPending = TRUE;
-
-                        WinEnableControl(pcnbp->hwndDlgPage,
-                                         ID_XSDI_ICON_HOTKEY_SET,
-                                         TRUE);
-
-                        // and have entry field display that (comctl.c)
-                    }
-
-                    mrc = (MPARAM)flReturn;
+                    case EN_HOTKEY:
+                        mrc = HandleENHotkey(pData,
+                                             ulExtra);
+                    break;
                 }
 
                 fRefresh = FALSE;
                         // or we'll hang
+
             break;
 
             /*
@@ -1783,23 +1832,12 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
              */
 
             case ID_XSDI_ICON_HOTKEY_SET:
-            {
-                // CHAR    szDescription[100];
                 // set hotkey
                 _xwpSetObjectHotkey(pcnbp->somSelf,
                                     &pData->Hotkey);
-                /* WinEnableControl(pcnbp->hwndDlgPage,
-                                 ID_XSDI_ICON_HOTKEY_SET,
-                                 FALSE); */
                 pData->fHotkeyPending = FALSE;
                 pData->fHasHotkey = TRUE;
-
-                /* cmnDescribeKey(szDescription,
-                               pData->Hotkey.usFlags,
-                               pData->Hotkey.usKeyCode);
-                WinSetWindowText(pData->hwndHotkeyEF,
-                                 szDescription); */
-            break; }
+            break;
 
             /*
              * ID_XSDI_ICON_HOTKEY_CLEAR:

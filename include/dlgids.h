@@ -1129,7 +1129,9 @@
  * XWPMouse    (V0.9.0)          >= 3400   *
  ******************************************/
 
-#define ID_XSD_MOUSE_MOVEMENT           3400
+// #define ID_XSD_MOUSE_MOVEMENT           3400     // V0.9.16 (2001-12-06) [umoeller]
+#ifndef __NOSLIDINGFOCUS__
+#define ID_XSDI_MOUSE_SLIDINGFOCUS_GRP  3400
 #define ID_XSDI_MOUSE_SLIDINGFOCUS      3401
 #define ID_XSDI_MOUSE_FOCUSDELAY_TXT1   3402
 #define ID_XSDI_MOUSE_FOCUSDELAY_SLIDER 3403
@@ -1139,8 +1141,10 @@
 #define ID_XSDI_MOUSE_IGNOREDESKTOP     3407
 #define ID_XSDI_MOUSE_IGNOREPAGEMAGE    3408
 #define ID_XSDI_MOUSE_IGNOREXCENTER     3409    // V0.9.7 (2000-12-08) [umoeller]
+#endif
 // ID_XSDI_MOUSE_AUTOHIDE_* moved to ID_XSD_MOUSE_MOVEMENT2
 // V0.9.14 (2001-08-02) [lafaix]
+#define ID_XSDI_MOUSE_SLIDINGMENU_GRP   3413
 #define ID_XSDI_MOUSE_SLIDINGMENU       3414
 #define ID_XSDI_MOUSE_MENUDELAY_TXT1    3415
 #define ID_XSDI_MOUSE_MENUDELAY_SLIDER  3416
@@ -1180,6 +1184,7 @@
 //#define ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK  3463
 #define ID_XSDI_MOUSE_MB3CLICK_DROP     3465    // added V0.9.9 (2001-03-14) [lafaix]
 
+#ifndef __NOMOVEMENT2FEATURES__
 #define ID_XSD_MOUSE_MOVEMENT2          3470    // added V0.9.14 (2001-08-02) [lafaix]
 #define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3471
 #define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3472
@@ -1192,6 +1197,7 @@
 #define ID_XSDI_MOUSE_AUTOMOVE_SLIDER   3479
 #define ID_XSDI_MOUSE_AUTOMOVE_TXT2     3480
 #define ID_XSDI_MOUSE_AUTOMOVE_ANIMATE  3481
+#endif
 
 /******************************************
  * XCenter (V0.9.7)         >= 3600       *

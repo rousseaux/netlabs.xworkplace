@@ -857,6 +857,48 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRestoreState(XWPTrashCan *somSelf,
 }
 
 /*
+ *@@ wpSetup:
+ *      this WPObject instance method is called to allow an
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
+ *
+ *      We allow the trash can to be emptied via setup string
+ *      here.
+ *
+ *@@added V0.9.16 (2001-12-06) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xtrc_wpSetup(XWPTrashCan *somSelf, PSZ pszSetupString)
+{
+    BOOL brc;
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpSetup");
+
+    if (brc = XWPTrashCan_parent_WPFolder_wpSetup(somSelf, pszSetupString))
+    {
+        CHAR    szTemp[50];
+        ULONG   cbTemp;
+
+        cbTemp = sizeof(szTemp);
+        if (_wpScanSetupString(somSelf,
+                               pszSetupString,
+                               "EMPTYTRASH",
+                               szTemp,
+                               &cbTemp))
+        {
+            if (!stricmp(szTemp, "IMMEDIATE"))
+                _xwpEmptyTrashCan(somSelf,
+                                  winhMyAnchorBlock(),  // operate synchronously
+                                  NULL,             // PULONG pulDeleted,
+                                  NULLHANDLE);      // HWND hwndConfirmOwner
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.

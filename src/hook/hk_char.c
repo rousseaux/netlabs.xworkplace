@@ -243,6 +243,7 @@ BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
  *      a global hotkey or a PageMage hotkey.
  *
  *@@added V0.9.3 (2000-04-20) [umoeller]
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: added G_HookData.fHotkeysDisabledTemp check
  */
 
 BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
@@ -259,213 +260,218 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
 
     APIRET arc;
 
-    // request access to the hotkeys mutex:
-    // first we need to open it, because this
-    // code can be running in any PM thread in
-    // any process
-    if (!(arc = DosOpenMutexSem(NULL,       // unnamed
-                                &G_hmtxGlobalHotkeys)))
+    // do nothing if hotkeys are temporarily disabled
+    // V0.9.16 (2001-12-06) [umoeller]
+    if (!G_HookData.fHotkeysDisabledTemp)
     {
-        // OK, semaphore opened: request access
-        if (!(arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
-                                       TIMEOUT_HMTX_HOTKEYS)))
-                // WinRequestMutexSem works even if the thread has no message queue
+        // request access to the hotkeys mutex:
+        // first we need to open it, because this
+        // code can be running in any PM thread in
+        // any process
+        if (!(arc = DosOpenMutexSem(NULL,       // unnamed
+                                    &G_hmtxGlobalHotkeys)))
         {
-            // OK, we got the mutex:
-            // search the list of function keys
-            BOOL    fIsFunctionKey = WMChar_FunctionKeys(usFlags, ucScanCode);
-                        // returns TRUE if ucScanCode represents one of the
-                        // function keys
-
-            // global hotkeys enabled? This also gets called if PageMage hotkeys are on!
-#ifndef __ALWAYSOBJHOTKEYS__
-            if (G_HookData.HookConfig.__fGlobalHotkeys)
-#endif
+            // OK, semaphore opened: request access
+            if (!(arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
+                                           TIMEOUT_HMTX_HOTKEYS)))
+                    // WinRequestMutexSem works even if the thread has no message queue
             {
-                if (    // process only key-down messages
-                        // ((usFlags & KC_KEYUP) == 0)
-                        // check flags:
-                        // do the list search only if the key could be
-                        // a valid hotkey, that is:
-                        (
-                            // 1) it's a function key
-                            (fIsFunctionKey)
+                // OK, we got the mutex:
+                // search the list of function keys
+                BOOL    fIsFunctionKey = WMChar_FunctionKeys(usFlags, ucScanCode);
+                            // returns TRUE if ucScanCode represents one of the
+                            // function keys
 
-                            // or 2) it's a typical virtual key or Ctrl/alt/etc combination
-                        ||  (     ((usFlags & KC_VIRTUALKEY) != 0)
-                                  // Ctrl pressed?
-                               || ((usFlags & KC_CTRL) != 0)
-                                  // Alt pressed?
-                               || ((usFlags & KC_ALT) != 0)
-                                  // or one of the Win95 keys?
-                               || (   ((usFlags & KC_VIRTUALKEY) == 0)
-                                   && (     (usch == 0xEC00)
-                                        ||  (usch == 0xED00)
-                                        ||  (usch == 0xEE00)
-                                      )
-                                  )
-                            )
-                        )
-                        // always filter out those ugly composite key (accents etc.),
-                        // but make sure the scan code is valid V0.9.3 (2000-04-10) [umoeller]
-                   &&   ((usFlags & (KC_DEADKEY
-                                     | KC_COMPOSITE
-                                     | KC_INVALIDCOMP
-                                     | KC_SCANCODE))
-                          == KC_SCANCODE)
-                   )
+                // global hotkeys enabled? This also gets called if PageMage hotkeys are on!
+#ifndef __ALWAYSOBJHOTKEYS__
+                if (G_HookData.HookConfig.__fGlobalHotkeys)
+#endif
                 {
-                      /*
-                 In PM session:
-                                              usFlags         usvk usch       ucsk
-                      Ctrl alone              VK SC CTRL       0a     0        1d
-                      Ctrl-A                     SC CTRL        0    61        1e
-                      Ctrl-Alt                VK SC CTRL ALT   0b     0        38
-                      Ctrl-Alt-A                 SC CTRL ALT    0    61        1e
+                    if (    // process only key-down messages
+                            // ((usFlags & KC_KEYUP) == 0)
+                            // check flags:
+                            // do the list search only if the key could be
+                            // a valid hotkey, that is:
+                            (
+                                // 1) it's a function key
+                                (fIsFunctionKey)
 
-                      F11 alone               VK SC toggle     2a  8500        57
-                      Ctrl alone              VK SC CTRL       0a     0        1d
-                      Ctrl-Alt                VK SC CTRL ALT   0b     0        38
-                      Ctrl-Alt-F11            VK SC CTRL ALT   2a  8b00        57
-
-                 In VIO session:
-                      Ctrl alone                 SC CTRL       07   0          1d
-                      Ctrl-A                     SC CTRL        0   1e01       1e
-                      Ctrl-Alt                   SC CTRL ALT   07   0          38
-                      Ctrl-Alt-A                 SC CTRL ALT   20   1e00       1e
-
-                      Alt-A                      SC      ALT   20   1e00
-                      Ctrl-E                     SC CTRL        0   3002
-
-                      F11 alone               ignored...
-                      Ctrl alone              VK SC CTRL       07!    0        1d
-                      Ctrl-Alt                VK SC CTRL ALT   07!    0        38
-                      Ctrl-Alt-F11            !! SC CTRL ALT   20! 8b00        57
-
-                      So apparently, for these keyboard combinations, in VIO
-                      sessions, the KC_VIRTUALKEY flag is missing. Strange.
-
-                      */
-
-                    #ifdef _PMPRINTF_
-                            CHAR    szFlags[2000] = "";
-                            if (usFlags & KC_CHAR)                      // 0x0001
-                                strcat(szFlags, "KC_CHAR ");
-                            if (usFlags & KC_VIRTUALKEY)                // 0x0002
-                                strcat(szFlags, "KC_VIRTUALKEY ");
-                            if (usFlags & KC_SCANCODE)                  // 0x0004
-                                strcat(szFlags, "KC_SCANCODE ");
-                            if (usFlags & KC_SHIFT)                     // 0x0008
-                                strcat(szFlags, "KC_SHIFT ");
-                            if (usFlags & KC_CTRL)                      // 0x0010
-                                strcat(szFlags, "KC_CTRL ");
-                            if (usFlags & KC_ALT)                       // 0x0020
-                                strcat(szFlags, "KC_ALT ");
-                            if (usFlags & KC_KEYUP)                     // 0x0040
-                                strcat(szFlags, "KC_KEYUP ");
-                            if (usFlags & KC_PREVDOWN)                  // 0x0080
-                                strcat(szFlags, "KC_PREVDOWN ");
-                            if (usFlags & KC_LONEKEY)                   // 0x0100
-                                strcat(szFlags, "KC_LONEKEY ");
-                            if (usFlags & KC_DEADKEY)                   // 0x0200
-                                strcat(szFlags, "KC_DEADKEY ");
-                            if (usFlags & KC_COMPOSITE)                 // 0x0400
-                                strcat(szFlags, "KC_COMPOSITE ");
-                            if (usFlags & KC_INVALIDCOMP)               // 0x0800
-                                strcat(szFlags, "KC_INVALIDCOMP ");
-                            if (usFlags & KC_TOGGLE)                    // 0x1000
-                                strcat(szFlags, "KC_TOGGLE ");
-                            if (usFlags & KC_INVALIDCHAR)               // 0x2000
-                                strcat(szFlags, "KC_INVALIDCHAR ");
-                            if (usFlags & KC_DBCSRSRVD1)                // 0x4000
-                                strcat(szFlags, "KC_DBCSRSRVD1 ");
-                            if (usFlags & KC_DBCSRSRVD2)                // 0x8000
-                                strcat(szFlags, "KC_DBCSRSRVD2 ");
-
-                            _Pmpf(("  usFlags: 0x%lX -->", usFlags));
-                            _Pmpf(("    %s", szFlags));
-                            _Pmpf(("  usvk: 0x%lX", usvk));
-                            _Pmpf(("  usch: 0x%lX", usch));
-                            _Pmpf(("  ucScanCode: 0x%lX", ucScanCode));
-                    #endif
-
-/* #ifdef __DEBUG__
-                    // debug code:
-                    // enable Ctrl+Alt+Delete emergency exit
-                    if (    (   (usFlags & (KC_CTRL | KC_ALT | KC_KEYUP))
-                                 == (KC_CTRL | KC_ALT)
+                                // or 2) it's a typical virtual key or Ctrl/alt/etc combination
+                            ||  (     ((usFlags & KC_VIRTUALKEY) != 0)
+                                      // Ctrl pressed?
+                                   || ((usFlags & KC_CTRL) != 0)
+                                      // Alt pressed?
+                                   || ((usFlags & KC_ALT) != 0)
+                                      // or one of the Win95 keys?
+                                   || (   ((usFlags & KC_VIRTUALKEY) == 0)
+                                       && (     (usch == 0xEC00)
+                                            ||  (usch == 0xED00)
+                                            ||  (usch == 0xEE00)
+                                          )
+                                      )
+                                )
                             )
-                          && (ucScanCode == 0x0e)    // delete
+                            // always filter out those ugly composite key (accents etc.),
+                            // but make sure the scan code is valid V0.9.3 (2000-04-10) [umoeller]
+                       &&   ((usFlags & (KC_DEADKEY
+                                         | KC_COMPOSITE
+                                         | KC_INVALIDCOMP
+                                         | KC_SCANCODE))
+                              == KC_SCANCODE)
                        )
                     {
-                        ULONG ul;
-                        for (ul = 5000;
-                             ul > 100;
-                             ul -= 200)
-                            DosBeep(ul, 20);
+                          /*
+                     In PM session:
+                                                  usFlags         usvk usch       ucsk
+                          Ctrl alone              VK SC CTRL       0a     0        1d
+                          Ctrl-A                     SC CTRL        0    61        1e
+                          Ctrl-Alt                VK SC CTRL ALT   0b     0        38
+                          Ctrl-Alt-A                 SC CTRL ALT    0    61        1e
 
-                        WinPostMsg(G_HookData.hwndDaemonObject,
-                                   WM_QUIT,
-                                   0, 0);
-                        brc = TRUE;     // swallow
+                          F11 alone               VK SC toggle     2a  8500        57
+                          Ctrl alone              VK SC CTRL       0a     0        1d
+                          Ctrl-Alt                VK SC CTRL ALT   0b     0        38
+                          Ctrl-Alt-F11            VK SC CTRL ALT   2a  8b00        57
+
+                     In VIO session:
+                          Ctrl alone                 SC CTRL       07   0          1d
+                          Ctrl-A                     SC CTRL        0   1e01       1e
+                          Ctrl-Alt                   SC CTRL ALT   07   0          38
+                          Ctrl-Alt-A                 SC CTRL ALT   20   1e00       1e
+
+                          Alt-A                      SC      ALT   20   1e00
+                          Ctrl-E                     SC CTRL        0   3002
+
+                          F11 alone               ignored...
+                          Ctrl alone              VK SC CTRL       07!    0        1d
+                          Ctrl-Alt                VK SC CTRL ALT   07!    0        38
+                          Ctrl-Alt-F11            !! SC CTRL ALT   20! 8b00        57
+
+                          So apparently, for these keyboard combinations, in VIO
+                          sessions, the KC_VIRTUALKEY flag is missing. Strange.
+
+                          */
+
+                        #ifdef _PMPRINTF_
+                                CHAR    szFlags[2000] = "";
+                                if (usFlags & KC_CHAR)                      // 0x0001
+                                    strcat(szFlags, "KC_CHAR ");
+                                if (usFlags & KC_VIRTUALKEY)                // 0x0002
+                                    strcat(szFlags, "KC_VIRTUALKEY ");
+                                if (usFlags & KC_SCANCODE)                  // 0x0004
+                                    strcat(szFlags, "KC_SCANCODE ");
+                                if (usFlags & KC_SHIFT)                     // 0x0008
+                                    strcat(szFlags, "KC_SHIFT ");
+                                if (usFlags & KC_CTRL)                      // 0x0010
+                                    strcat(szFlags, "KC_CTRL ");
+                                if (usFlags & KC_ALT)                       // 0x0020
+                                    strcat(szFlags, "KC_ALT ");
+                                if (usFlags & KC_KEYUP)                     // 0x0040
+                                    strcat(szFlags, "KC_KEYUP ");
+                                if (usFlags & KC_PREVDOWN)                  // 0x0080
+                                    strcat(szFlags, "KC_PREVDOWN ");
+                                if (usFlags & KC_LONEKEY)                   // 0x0100
+                                    strcat(szFlags, "KC_LONEKEY ");
+                                if (usFlags & KC_DEADKEY)                   // 0x0200
+                                    strcat(szFlags, "KC_DEADKEY ");
+                                if (usFlags & KC_COMPOSITE)                 // 0x0400
+                                    strcat(szFlags, "KC_COMPOSITE ");
+                                if (usFlags & KC_INVALIDCOMP)               // 0x0800
+                                    strcat(szFlags, "KC_INVALIDCOMP ");
+                                if (usFlags & KC_TOGGLE)                    // 0x1000
+                                    strcat(szFlags, "KC_TOGGLE ");
+                                if (usFlags & KC_INVALIDCHAR)               // 0x2000
+                                    strcat(szFlags, "KC_INVALIDCHAR ");
+                                if (usFlags & KC_DBCSRSRVD1)                // 0x4000
+                                    strcat(szFlags, "KC_DBCSRSRVD1 ");
+                                if (usFlags & KC_DBCSRSRVD2)                // 0x8000
+                                    strcat(szFlags, "KC_DBCSRSRVD2 ");
+
+                                _Pmpf(("  usFlags: 0x%lX -->", usFlags));
+                                _Pmpf(("    %s", szFlags));
+                                _Pmpf(("  usvk: 0x%lX", usvk));
+                                _Pmpf(("  usch: 0x%lX", usch));
+                                _Pmpf(("  ucScanCode: 0x%lX", ucScanCode));
+                        #endif
+
+    /* #ifdef __DEBUG__
+                        // debug code:
+                        // enable Ctrl+Alt+Delete emergency exit
+                        if (    (   (usFlags & (KC_CTRL | KC_ALT | KC_KEYUP))
+                                     == (KC_CTRL | KC_ALT)
+                                )
+                              && (ucScanCode == 0x0e)    // delete
+                           )
+                        {
+                            ULONG ul;
+                            for (ul = 5000;
+                                 ul > 100;
+                                 ul -= 200)
+                                DosBeep(ul, 20);
+
+                            WinPostMsg(G_HookData.hwndDaemonObject,
+                                       WM_QUIT,
+                                       0, 0);
+                            brc = TRUE;     // swallow
+                        }
+                        else
+    #endif */
+
+                        if (WMChar_Hotkeys(usFlags, ucScanCode))
+                            // returns TRUE (== swallow) if hotkey was found
+                            brc = TRUE;
                     }
-                    else
-#endif */
-
-                    if (WMChar_Hotkeys(usFlags, ucScanCode))
-                        // returns TRUE (== swallow) if hotkey was found
-                        brc = TRUE;
                 }
-            }
+                DosReleaseMutexSem(G_hmtxGlobalHotkeys);
+            } // end if WinRequestMutexSem
+
+            DosCloseMutexSem(G_hmtxGlobalHotkeys);
+        } // end if DosOpenMutexSem
+    } // end if (!G_HookData.fHotkeysDisabledTemp)
 
 #ifndef __NOPAGEMAGE__
-            // PageMage hotkeys:
-            if (!brc)       // message not swallowed yet:
+    // PageMage hotkeys:
+    // moved all the following out of the mutex block above
+    if (!brc)       // message not swallowed yet:
+    {
+        if (    (G_HookData.PageMageConfig.fEnableArrowHotkeys)
+                    // arrow hotkeys enabled?
+             && (G_HookData.hwndPageMageClient)
+                    // PageMage active?
+           )
+        {
+            // PageMage hotkeys enabled:
+            // key-up only
+            if ((usFlags & KC_KEYUP) == 0)
             {
-                if (    (G_HookData.PageMageConfig.fEnableArrowHotkeys)
-                            // arrow hotkeys enabled?
-                     && (G_HookData.hwndPageMageClient)
-                            // PageMage active?
+                // check KC_CTRL etc. flags
+                if (   (G_HookData.PageMageConfig.ulKeyShift | KC_SCANCODE)
+                            == (usFlags & (G_HookData.PageMageConfig.ulKeyShift
+                                           | KC_SCANCODE))
                    )
-                {
-                    // PageMage hotkeys enabled:
-                    // key-up only
-                    if ((usFlags & KC_KEYUP) == 0)
+                    // OK: check scan codes
+                    if (    (ucScanCode == 0x61)
+                         || (ucScanCode == 0x66)
+                         || (ucScanCode == 0x63)
+                         || (ucScanCode == 0x64)
+                       )
                     {
-                        // check KC_CTRL etc. flags
-                        if (   (G_HookData.PageMageConfig.ulKeyShift | KC_SCANCODE)
-                                    == (usFlags & (G_HookData.PageMageConfig.ulKeyShift
-                                                   | KC_SCANCODE))
-                           )
-                            // OK: check scan codes
-                            if (    (ucScanCode == 0x61)
-                                 || (ucScanCode == 0x66)
-                                 || (ucScanCode == 0x63)
-                                 || (ucScanCode == 0x64)
-                               )
-                            {
-                                // cursor keys:
-                                /* ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
-                                                              ucScanCode,
-                                                              ucScanCode); */
-                                WinPostMsg(G_HookData.hwndPageMageMoveThread,
-                                           PGOM_HOOKKEY,
-                                           (MPARAM)ucScanCode,
-                                           0);
-                                // swallow
-                                brc = TRUE;
-                            }
-
+                        // cursor keys:
+                        /* ULONG ulRequest = PGMGQENCODE(PGMGQ_HOOKKEY,
+                                                      ucScanCode,
+                                                      ucScanCode); */
+                        WinPostMsg(G_HookData.hwndPageMageMoveThread,
+                                   PGOM_HOOKKEY,
+                                   (MPARAM)ucScanCode,
+                                   0);
+                        // swallow
+                        brc = TRUE;
                     }
-                }
-            } // end if (!brc)       // message not swallowed yet
+
+            }
+        }
+    } // end if (!brc)       // message not swallowed yet
 #endif
-
-            DosReleaseMutexSem(G_hmtxGlobalHotkeys);
-        } // end if WinRequestMutexSem
-
-        DosCloseMutexSem(G_hmtxGlobalHotkeys);
-    } // end if DosOpenMutexSem
 
     return (brc);
 }

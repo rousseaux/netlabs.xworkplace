@@ -193,6 +193,9 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
  *          information about _all_ drives on the
  *          system.
  *
+ *      This requires the existance of a message
+ *      queue on the calling thread.
+ *
  *      Returns TRUE if the call succeeded.
  *
  *@@added V0.9.14 (2001-08-01) [umoeller]

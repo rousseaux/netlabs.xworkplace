@@ -53,7 +53,7 @@ interface XFldWPS : WPSystem
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddXFldWPSPages;
+    releaseorder: xwpAddXFldWPSPages, xwpAddWPSMenuPages;
 
     /*
      * Class Modifiers:

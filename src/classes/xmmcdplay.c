@@ -79,6 +79,7 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -476,16 +477,12 @@ SOM_Scope void  SOMLINK cdp_wpUnInitData(XMMCDPlayer *somSelf)
     XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf);
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpUnInitData");
 
-    XMMCDPlayer_parent_WPAbstract_wpUnInitData(somSelf);
-
     if (_pvPlayer)
         xmmCDStop((PXMMCDPLAYER*)&_pvPlayer);
 
-    if (_pszFont)
-    {
-        free(_pszFont);
-        _pszFont = NULL;
-    }
+    strhStore(&_pszFont, NULL, NULL);
+
+    XMMCDPlayer_parent_WPAbstract_wpUnInitData(somSelf);
 }
 
 /*
@@ -678,9 +675,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpRestoreState(XMMCDPlayer *somSelf,
                              szFont,
                              &cb))
         {
-            if (_pszFont)
-                free(_pszFont);
-            _pszFont = strdup(szFont);
+            strhStore(&_pszFont, szFont, NULL);
         }
 
         if (_wpRestoreLong(somSelf,

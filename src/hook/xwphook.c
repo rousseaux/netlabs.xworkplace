@@ -846,13 +846,14 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                    (MPARAM)-1,          // stop timer
                    0);
     }
+#ifndef __NOMOVEMENT2FEATURES__
     else
         // special extra check, to find out if menu mode is active
         // or not.  If G_hwndRootMenu is not NULLHANDLE, then we are
         // in menu mode (i.e., a menu is active).
         // V0.9.14 (2001-08-01) [lafaix]
-        if (    (G_HookData.HookConfig.fAutoHideMouse)
-             && (G_HookData.HookConfig.ulAutoHideFlags& AHF_IGNOREMENUS)
+        if (    (G_HookData.HookConfig.__fAutoHideMouse)
+             && (G_HookData.HookConfig.__ulAutoHideFlags& AHF_IGNOREMENUS)
            )
         {
             if (    (psmh->msg == WM_INITMENU)
@@ -875,7 +876,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
     // yet another extra check, to find out if the
     // about-to-be-shown window contains a default push button
     // V0.9.14 (2001-08-02) [lafaix]
-    if (    (G_HookData.HookConfig.fAutoMoveMouse)
+    if (    (G_HookData.HookConfig.__fAutoMoveMouse)
          && (    (    (psmh->msg == WM_SHOW)
                    && (SHORT1FROMMP(psmh->mp1))
                  )
@@ -899,6 +900,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                        0);
         }
     }
+#endif
 
     // moved this here from ProcessMsgsForPageMage;
     // otherwise this is not picked up if PageMage
@@ -1045,7 +1047,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     BOOL        brc = FALSE;
 
     BOOL        fRestartAutoHide = FALSE;
-                            // set to TRUE if auto-hide mouse should be handles
+                            // set to TRUE if auto-hide mouse should be handled
 
     if (pqmsg == NULL)
         return (FALSE);
@@ -1099,9 +1101,10 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 // swallow msg
                 brc = TRUE;
             }
+#ifndef __NOSLIDINGFOCUS__
             else
-                if (    (G_HookData.HookConfig.fSlidingFocus)
-                     && (!G_HookData.HookConfig.fSlidingBring2Top)
+                if (    (G_HookData.HookConfig.__fSlidingFocus)
+                     && (!G_HookData.HookConfig.__fSlidingBring2Top)
                    )
                 {
                     // make sure that the mouse is not currently captured
@@ -1117,6 +1120,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                             // this activates the frame, which is not really
                             // what we want in every case... this breaks XCenter too
                 }
+#endif
 
             // un-hide mouse if auto-hidden
             fRestartAutoHide = TRUE;
@@ -1239,9 +1243,11 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         break; // WM_MOUSEMOVE
     }
 
+#ifndef __NOMOVEMENT2FEATURES__
     if (fRestartAutoHide)
         // handle auto-hide V0.9.9 (2001-01-29) [umoeller]
         WMMouseMove_AutoHideMouse();
+#endif
 
     // V0.9.14 (2001-08-21) [umoeller]
     if (G_HookData.fClickWatches)

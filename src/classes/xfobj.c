@@ -250,6 +250,65 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryRealDefaultView(XFldObject *somSelf)
 }
 
 /*
+ *@@ xwpQueryOriginalObjectID:
+ *      returns the original object ID that was stored
+ *      in the object's instance data. This is not
+ *      necessarily the same value as WPObject::wpQueryObjectID.
+ *
+ *      The object ID is stored both in the instance data
+ *      of the object (and thus restored with wpRestoreState)
+ *      _and_ the list in the OS2.INI file. This leads to
+ *      problems if the same folder is made awake from two
+ *      WPS installations which use different INI files.
+ *      The pathological case is that one WPS sets the object ID
+ *      (which updates both the INI data and the instance data)
+ *      and then another WPS encounters the object. With the
+ *      second WPS, we then get the following scenario:
+ *
+ *      1) The WPS restores the object ID in wpRestoreState.
+ *         wpRestoreState makes _no_ check for whether the
+ *         object ID matches the one in the INI file (which
+ *         it doesn't, in this case, because the ID was from
+ *         another WPS).
+ *
+ *      2) For some stupid, stupid reason, WPObject::wpQueryObjectID
+ *         however then _removes_ the object ID from the instance
+ *         data if it doesn't match the INI file. This is desastrous
+ *         for "foreign" desktops because in this case, the <WP_DESKTOP>
+ *         ID is removed from the other desktop and that WPS won't
+ *         start anymore then.
+ *
+ *      Here's our hack solution:
+ *
+ *      1) In XFldObject::wpRestoreState, we make a backup copy of
+ *         the original object ID which has _not_ yet been verified
+ *         against the INI data.
+ *
+ *      2) We leave WPObject::wpQueryObjectID alone, i.e. we allow
+ *         it to nuke the object's instance data (but we still have
+ *         the backup).
+ *
+ *      3) In XFldObject::wpSaveState, we check for whether we have
+ *         a backup but the instance member is NULL. In that case,
+ *         we temporarily hack the instance data to contain the
+ *         old object ID again and restore the NULL pointer
+ *         after the save.
+ *
+ *      This method returns the backed up value. This is only used
+ *      in the object "Details" dialog.
+ *
+ *@@added V0.9.16 (2001-12-06) [umoeller]
+ */
+
+SOM_Scope PSZ  SOMLINK xfobj_xwpQueryOriginalObjectID(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryOriginalObjectID");
+
+    return _pszOriginalObjectID;
+}
+
+/*
  *@@ xwpQueryDeletion:
  *      this method may be called at any time to determine if and
  *      when an object has been deleted into the trash can.
@@ -271,7 +330,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
                                                CTIME* pctimeDeleted)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    BOOL    brc = _fDeleted;
+    BOOL    brc = (_cdateDeleted.year != 0);     // V0.9.16 (2001-12-06) [umoeller]
 
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryDeletion");
 
@@ -321,12 +380,10 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetDeletion(XFldObject *somSelf,
         DATETIME    dt;
         DosGetDateTime(&dt);
         cnrhDateTimeDos2Win(&dt, &_cdateDeleted, &_ctimeDeleted);
-        _fDeleted = TRUE;
+        // _fDeleted = TRUE;        // V0.9.16 (2001-12-06) [umoeller]
     }
     else
-    {
-        _fDeleted = FALSE;
-    }
+        _cdateDeleted.year = 0; // fDeleted = FALSE;    V0.9.16 (2001-12-06) [umoeller]
 
     return (_wpSaveDeferred(somSelf));
 }
@@ -968,10 +1025,15 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
 
     XFldObject_parent_WPObject_wpInitData(somSelf);
 
-    _fDeleted = FALSE;
+    // _fDeleted = FALSE;
+    _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
 
-    _pWPObjectData = NULL;
-    _cbWPObjectData = 0;
+    _pObjectLongs = NULL;
+    _cbObjectLongs = 0;
+
+    _pObjectStrings = NULL;
+
+    _pszOriginalObjectID = NULL;
 
     _pTrashObject = NULL;
 
@@ -1184,6 +1246,10 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
                       (MPARAM)somSelf,
                       MPNULL);
 
+    // free the object ID backup if there's one
+    // V0.9.16 (2001-12-06) [umoeller]
+    strhStore(&_pszOriginalObjectID, NULL, NULL);
+
     // destroy trash object, if there's one
     if (_pTrashObject)
         _wpFree(_pTrashObject);
@@ -1299,6 +1365,33 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetDefaultView(XFldObject *somSelf,
 }
 
 /*
+ *@@ wpSetObjectID:
+ *      this WPObject method sets a new object ID for the
+ *      object. We must then invalidate our backup object
+ *      ID, or we'll run into problems in wpSaveState.
+ *
+ *      See XFldObject::xwpQueryOriginalObjectID for details.
+ *
+ *@@added V0.9.16 (2001-12-06) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSetObjectID(XFldObject *somSelf,
+                                            PSZ pszObjectID)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSetObjectID");
+
+    // now this is a true override of the object ID,
+    // so nuke the one we backed up, but only if the
+    // object has been initialized
+    if (_wpIsObjectInitialized(somSelf))
+        strhStore(&_pszOriginalObjectID, NULL, NULL);
+
+    return (XFldObject_parent_WPObject_wpSetObjectID(somSelf,
+                                                     pszObjectID));
+}
+
+/*
  *@@ wpSaveDeferred:
  *      this WPObject method saves object instance data
  *      asynchronously on a separate thread.
@@ -1375,7 +1468,27 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveImmediate(XFldObject *somSelf)
 
     objRemoveFromDirtyList(somSelf);
 
-    return (XFldObject_parent_WPObject_wpSaveImmediate(somSelf));
+    // now make sure the object is not residing below some desktop
+    // which isn't the current desktop... we run into endless
+    // problems with object IDs if we save objects that aren't
+    // ours!
+    // if (!cmnIsObjectFromForeignDesktop(somSelf))
+        return (XFldObject_parent_WPObject_wpSaveImmediate(somSelf));
+
+    // else: we shouldn't save...
+    /* {
+        CHAR szFolderPath[CCHMAXPATH];
+        _wpQueryFilename(_wpQueryFolder(somSelf),
+                         szFolderPath,
+                         TRUE);
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "skipping save of object %s (class: %s) in folder %s",
+               _wpQueryTitle(somSelf),
+               _somGetClassName(somSelf),
+               szFolderPath);
+    }
+
+    return (TRUE);*/
 }
 
 /*
@@ -1387,17 +1500,42 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveImmediate(XFldObject *somSelf)
  *      All persistent instance variables should be stored here.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed problems with disappearing object IDs
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
 {
-    BOOL    brc = FALSE;
+    BOOL    brc = FALSE,
+            fHacked = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpSaveState");
 
+    // now, here's the bug with the object IDs disappearing if
+    // the object's ID was set from another Desktop...
+    // see XFldObject::xwpQueryOriginalObjectID for the scenario.
+
+    if (    // we have a pointer to the object strings:
+            (_pObjectStrings)
+            // and object ID in instance data is NULL:
+         && (!_pObjectStrings->pszObjectID)
+            // but there was one originally:
+         && (_pszOriginalObjectID)
+       )
+    {
+        // restore the old object ID for save!!
+        _Pmpf((__FUNCTION__ ": restoring old object ID \"%s\" for save", _pszOriginalObjectID));
+
+        _pObjectStrings->pszObjectID = _pszOriginalObjectID;
+        fHacked = TRUE;
+    }
+
     brc = XFldObject_parent_WPObject_wpSaveState(somSelf);
 
-    if (_fDeleted)
+    if (fHacked)
+        // restore old NULL pointer
+        _pObjectStrings->pszObjectID = NULL;
+
+    if (_cdateDeleted.year != 0)        // V0.9.16 (2001-12-06) [umoeller]
     {
         // save deletion data:
         _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 1,
@@ -1416,6 +1554,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
  *      which was stored with wpSaveState.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: now saving backup of object ID
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
@@ -1430,15 +1569,28 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
     brc = XFldObject_parent_WPObject_wpRestoreState(somSelf,
                                                     ulReserved);
 
+    // now check: if an object ID was remembered with
+    // this object's instance data, make a backup of
+    // this because _wpQueryObjectID sometimes resets
+    // this to NULL
+    // V0.9.16 (2001-12-06) [umoeller]
+    if (    (_pObjectStrings)
+         && (_pObjectStrings->pszObjectID)
+         && (*(_pObjectStrings->pszObjectID))
+       )
+        strhStore(&_pszOriginalObjectID, _pObjectStrings->pszObjectID, NULL);
+
+    // restore trash can deletion
     if (    (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 1,
                             (PBYTE)&_cdateDeleted, &cbcdate))
          && (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 2,
                             (PBYTE)&_ctimeDeleted, &cbctime))
        )
         // both keys successfully restored:
-        _fDeleted = TRUE;
+        ; // _fDeleted = TRUE;  V0.9.16 (2001-12-06) [umoeller]
     else
-        _fDeleted = FALSE;
+        _cdateDeleted.year = 0;         // V0.9.16 (2001-12-06) [umoeller]
+
     return (brc);
 }
 
@@ -1470,6 +1622,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
                                             PBYTE pValue, PULONG pcbValue)
 {
     BOOL    brc = FALSE;
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpRestoreData");
 
     brc = XFldObject_parent_WPObject_wpRestoreData(somSelf,
@@ -1481,16 +1634,19 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
     {
         switch (ulKey)
         {
-            case 11:        // IDKEY_OBJDATA, not defined
-            {
-                XFldObjectData *somThis = XFldObjectGetData(somSelf);
-                _pWPObjectData = (PVOID)pValue;
+            case 11:        // IDKEY_OBJLONGS, not defined
+                _pObjectLongs = (PVOID)pValue;
                 // store object default view for xwpQueryDefaultView
                 // V0.9.16 (2001-11-25) [umoeller]
-                _ulDefaultView = _pWPObjectData->lDefaultView;
+                _ulDefaultView = _pObjectLongs->lDefaultView;
 
-                _cbWPObjectData = *pcbValue;
-            break; }
+                _cbObjectLongs = *pcbValue;
+
+                // object strings come right after this
+                _pObjectStrings = (PWPOBJECTSTRINGS)(   (PBYTE)(_pObjectLongs)
+                                                      + _cbObjectLongs
+                                                    );
+            break;
         }
     }
 
@@ -1529,7 +1685,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete
-    if (_fDeleted)
+    if (_cdateDeleted.year != 0)    // V0.9.16 (2001-12-06) [umoeller]
         ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
     // now suppress default menu items according to
@@ -1627,6 +1783,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  *@@changed V0.9.7 (2001-01-15) [umoeller]: added WPMENUID_DELETE if trash can is enabled
  *@@changed V0.9.9 (2001-03-10) [pr]: this screwed up print jobs, now checking for WPTransient
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed shredder deleting into trash can
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
@@ -1707,6 +1864,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
             break; }
         #endif
 
+        /*  V0.9.16 (2001-12-06) [umoeller]:
+            disabled the following, or the shredder will delete
+            into the trash can as well... sigh
         case WPMENUID_DELETE:
         {
             PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
@@ -1726,6 +1886,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                                                                     hwndFrame,
                                                                     ulMenuId);
         break; }
+        */
 
         case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
         {

@@ -1,6 +1,7 @@
 <--XFL0140-->: eWorkplace components (C) Copyright 1997-2001 Ulrich M”ller.
 Based on XWorkplace &version; (built &date;). Licenced to Serenity Systems International.
-Contains portions (C) Copyright 2000-2001 Martin Lafaix, Paul Ratcliffe, and others.
+Contains portions (C) Copyright 2000-2001 Martin Lafaix and Paul Ratcliffe.
 Contains portions from the Standard Function Library (C) 1991-99 iMatix corporation.
 
-;
+<--DUMMY_END_MARKER-->:
+

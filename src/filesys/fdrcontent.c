@@ -1028,8 +1028,7 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
                     XWPFileSystemData *somThat = XWPFileSystemGetData(pFSObject);
 
                     // update the fs object's instance data
-                    free(somThat->pszUpperRealName);
-                    somThat->pszUpperRealName = strdup(szNewUpperRealName);
+                    strhStore(&somThat->pszUpperRealName, szNewUpperRealName, NULL);
                     // refresh the tree node to point to the new buffer
                     pNode->Tree.ulKey = (ULONG)somThat->pszUpperRealName;
 
@@ -1867,7 +1866,7 @@ VOID fdrCreateStandardGEAList(VOID)
 
 VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
 {
-    ULONG fl = _wpQueryFldrFlags(somSelf);
+    /* ULONG fl = _wpQueryFldrFlags(somSelf);
     _Pmpf((__FUNCTION__ ": flags for folder %s", _wpQueryTitle(somSelf)));
     if (fl & FOI_POPULATEINPROGRESS)
         _Pmpf(("    FOI_POPULATEINPROGRESS"));
@@ -1879,6 +1878,7 @@ VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
         _Pmpf(("    FOI_POPULATEDWITHFOLDERS"));
     if (fl & FOI_POPULATEDWITHALL)
         _Pmpf(("    FOI_POPULATEDWITHALL"));
+    */
 }
 
 #endif
@@ -2412,7 +2412,7 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         // hidden in the macro code), somFindClass _will_
         // return the proper replacement classes.
 
-        _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
+        // _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
 
         // decode the .CLASSINFO EA, which may give us a
         // class name and the OBJDATA buffer
@@ -2433,7 +2433,7 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
             // if this is "WPDataFile", return NULL instead so we
             // can still check for the default data file subclasses
 
-            _Pmpf(("  got .CLASSINFO %s", pcszClassName));
+            // _Pmpf(("  got .CLASSINFO %s", pcszClassName));
 
             if (    (s_ulWPDataFileLen == ulClassNameLen)
                  && (!memcmp(G_pcszWPDataFile, pcszClassName, s_ulWPDataFileLen))
@@ -2456,7 +2456,7 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                     // this returns either WPDataFile or the
                     // class object of a subclass
 
-            _Pmpf(("  FindBestDataFileClass = %s", pcszClassName));
+            // _Pmpf(("  FindBestDataFileClass = %s", pcszClassName));
         }
 
         if (!pcszClassName)
@@ -3129,7 +3129,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        _Pmpf((__FUNCTION__ ": POPULATING %s", pcszFolderFullPath));
+        // _Pmpf((__FUNCTION__ ": POPULATING %s", pcszFolderFullPath));
 
         // there can only be one populate at a time
         if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
@@ -3201,7 +3201,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
     if (fFindSem)
         fdrReleaseFindMutexSem(somSelf);
 
-    _Pmpf((__FUNCTION__ ": returning %d", fSuccess));
+    // _Pmpf((__FUNCTION__ ": returning %d", fSuccess));
 
     return (fSuccess);
 }

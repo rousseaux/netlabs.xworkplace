@@ -367,7 +367,6 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             if (pobj = fdrFindFSFromName(pNotify->pFolder,
                                          pNotify->pShortName))
             {
-                DosBeep(5000, 30);
                 fsysRefreshFSInfo(pobj, NULL);
             }
         }
@@ -418,10 +417,13 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
                     }
                     break;
 
-                    // case NO_ERROR: the file has reappeared.
-                    // DO NOT FREE IT, or we would delete a
-                    // valid file.
-                    // @@todo refresh the FSobject instead
+                    case NO_ERROR:
+                        // the file has reappeared.
+                        // DO NOT FREE IT, or we would delete a
+                        // valid file; instead, we refresh the
+                        // FS object
+                        // V0.9.16 (2001-12-06) [umoeller]
+                        fsysRefreshFSInfo(pobj, NULL);
                 }
             }
             // else object not in folder: no problem there
@@ -901,7 +903,7 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
             {
                 BOOL    fSemOwned = FALSE;
 
-                _Pmpf((__FUNCTION__ ": %s \"%s\"",
+                /* _Pmpf((__FUNCTION__ ": %s \"%s\"",
                         (pNotify->CNInfo.bAction == RCNF_FILE_ADDED) ? "RCNF_FILE_ADDED"
                             : (pNotify->CNInfo.bAction == RCNF_FILE_DELETED) ? "RCNF_FILE_DELETED"
                             : (pNotify->CNInfo.bAction == RCNF_DIR_ADDED) ? "RCNF_DIR_ADDED"
@@ -911,6 +913,7 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                             : (pNotify->CNInfo.bAction == RCNF_NEWNAME) ? "RCNF_NEWNAME"
                             : "unknown code",
                         pNotify->CNInfo.szName));
+                   */
 
                 // first of all, special handling for the rename sequence...
                 // we could use wpSetTitle on the object, but this would

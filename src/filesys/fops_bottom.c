@@ -740,6 +740,36 @@ FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
 }
 
 /*
+ *@@ fopsFileThreadConfirmDeleteFolder:
+ *      gets called for every folder on the "delete"
+ *      list. If "Delete folder" confirmations are
+ *      enabled, this calls the error callback
+ *      with the FOPSERR_DELETE_CONFIRM_FOLDER error
+ *      code, which should then confirm folder deletion.
+ *
+ *@@added V0.9.16 (2001-12-06) [umoeller]
+ */
+
+FOPSRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
+                                          WPObject *pSubObjThis, // in: folder to be deleted
+                                          PULONG pulIgnoreSubsequent) // in: ignore subsequent errors of the same type
+{
+    if (    // does caller want to have folder deletions confirmed?
+            (_wpQueryConfirmations(pSubObjThis) & CONFIRM_DELETEFOLDER)
+         && ( 0 == ((*pulIgnoreSubsequent) & FOPS_ISQ_DELETE_FOLDERS) )
+       )
+    {
+        return (pftl->pfnErrorCallback(pftl->ulOperation,
+                                       pSubObjThis,
+                                       FOPSERR_DELETE_CONFIRM_FOLDER,
+                                       pulIgnoreSubsequent));
+    }
+
+    //
+    return (NO_ERROR);
+}
+
+/*
  *@@ fopsFileThreadSneakyDeleteFolderContents:
  *      this gets called from fopsFileThreadTrueDelete before
  *      an instance of WPFolder actually gets deleted.
@@ -943,6 +973,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.6 (2000-10-25) [umoeller]: largely rewritten to support sneaky delete (much faster)
  *@@changed V0.9.9 (2001-02-01) [umoeller]: added FOI_DELETEINPROGRESS
  *@@changed V0.9.9 (2001-04-01) [umoeller]: fixed crashes with shadows
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: added confirmation of folder delete, if enabled
  */
 
 FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -966,29 +997,45 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
         pfu->pSourceObject = *ppObject;      // callback has already been called
                                              // for this one
 
-        frc = fopsCallProgressCallback(pftl,
-                                       FOPSUPD_EXPANDING_SOURCEOBJECT_1ST,
-                                       pfu);
-
-        if (frc == NO_ERROR)
+        if (!(frc = fopsCallProgressCallback(pftl,
+                                             FOPSUPD_EXPANDING_SOURCEOBJECT_1ST,
+                                             pfu)))
         {
-            // build list of all objects to be deleted,
-            // but populate folders only...
-            // this will give us all objects in the
-            // folders which are already awake before
-            // the folder itself.
             ULONG   cSubObjects = 0,
                     cSubObjectsTemp = 0,
                     cSubDormantFilesTemp = 0;
-            frc = fopsExpandObjectFlat(&llSubObjects,
-                                       *ppObject,
-                                       TRUE,        // populate folders only
-                                       &cSubObjectsTemp,
-                                       &cSubDormantFilesTemp);
-                    // now cSubObjectsTemp has the no. of awake objects,
-                    // cSubDormantFilesTemp has the no. of dormant files
 
-            // So we need to do the following:
+            // confirm folder deletions?
+            if (_somIsA(*ppObject, _WPFolder))
+                frc = fopsFileThreadConfirmDeleteFolder(pftl,
+                                                        *ppObject,
+                                                        pulIgnoreSubsequent);
+
+            if (!frc)
+            {
+                // build list of all objects to be deleted,
+                // but populate folders only...
+                // this will give us all objects in the
+                // folders which are already awake before
+                // the folder itself.
+                if (!(frc = fopsExpandObjectFlat(&llSubObjects,
+                                                 *ppObject,
+                                                 TRUE,        // populate folders only
+                                                 &cSubObjectsTemp,
+                                                 &cSubDormantFilesTemp)))
+                              // now cSubObjectsTemp has the no. of awake objects,
+                              // cSubDormantFilesTemp has the no. of dormant files
+                {
+                    // say "done collecting objects"
+                    frc = fopsCallProgressCallback(pftl,
+                                                   FOPSUPD_EXPANDING_SOURCEOBJECT_DONE,
+                                                   pfu);
+                    // calc total count for progress
+                    cSubObjects = cSubObjectsTemp + cSubDormantFilesTemp;
+                }
+            }
+
+            // We need to do the following:
 
             // 1) If the object is a non-folder, delete it.
             //    It is some object in a folder which was already
@@ -997,19 +1044,6 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
             //    of all files in the folder (to avoid the WPS
             //    popups for read-only files) and then delete
             //    the folder object.
-
-            if (frc == NO_ERROR)
-            {
-                // _Pmpf((__FUNCTION__ ": fopsExpandObjectFlat got %d + %d objects",
-                   //          cSubObjectsTemp, cSubDormantFilesTemp));
-
-                // say "done collecting objects"
-                frc = fopsCallProgressCallback(pftl,
-                                               FOPSUPD_EXPANDING_SOURCEOBJECT_DONE,
-                                               pfu);
-                // calc total count for progress
-                cSubObjects = cSubObjectsTemp + cSubDormantFilesTemp;
-            }
 
             if (    (frc == NO_ERROR)
                  && (cSubObjects) // avoid division by zero below
@@ -1029,124 +1063,122 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                     // get object to delete...
                     WPObject *pSubObjThis = (WPObject*)pNode->pItemData;
 
-                    // now check if we have a folder...
-                    // if so, we need some special processing
-                    if (_somIsA(pSubObjThis, _WPFolder))
+                    // delete the object: we get here for any instantiated
+                    // Desktop object which must be deleted, that is
+                    // -- for any awake Desktop object in any subfolder (before the folder)
+                    // -- for any folder after its contents have been deleted
+                    //    (either sneakily or by a previous wpFree)
+
+                    // install quiet exception handler here...
+                    // the object on the list MIGHT have gotten deleted
+                    // already, either from some other place or, most
+                    // importantly, if it is a shadow to an object that
+                    // was just deleted... we don't wanna crash here.
+                    BOOL    fObjectValid = TRUE;
+
+                    TRY_QUIET(excpt2)  // V0.9.9 (2001-04-01) [umoeller]
                     {
-                        // folder:
-                        // do sneaky delete of dormant folder contents
-                        // (awake folder contents have already been freed
-                        // because these came before the folder on the
-                        // subobjects list)
-                        WPObject *pobj2 = pSubObjThis;
-                        // _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
-
-                        // before we do anything, set the "delete in progress"
-                        // flag. This greatly reduces the pressure on the WPS
-                        // folder auto-refresh because the WPS can then drop
-                        // all notifications, I guess.
-                        // V0.9.9 (2001-02-01) [umoeller]
-                        _wpModifyFldrFlags(pSubObjThis,
-                                           FOI_DELETEINPROGRESS,
-                                           FOI_DELETEINPROGRESS);
-                        frc = fopsFileThreadSneakyDeleteFolderContents(pftl,
-                                                                       pfu,
-                                                                       &pobj2,
-                                                                       *ppObject,
-                                                                        // main folder; this must be
-                                                                        // a folder, because we have a subobject
-                                                                       pulIgnoreSubsequent,
-                                                                       ulProgressScalarFirst,
-                                                                       cSubObjects,
-                                                                       &ulSubObjectThis);
-                         _wpModifyFldrFlags(pSubObjThis,
-                                            0,
-                                            FOI_DELETEINPROGRESS);
-
-                        if (frc != NO_ERROR)
-                            *ppObject = pobj2;
-
-                        // force the WPS to flush all pending
-                        // auto-refresh information for this folder...
-                        // these have all piled up for the sneaky stuff
-                        // above and will cause some internal overflow
-                        // if we don't give the WPS a chance to process them!
-                        fdrFlushNotifications(pSubObjThis);
+                        // call callback for subobject
+                        pfu->pszSubObject = _wpQueryTitle(pSubObjThis);
                     }
-
-                    if (frc == NO_ERROR)
+                    CATCH(excpt2)
                     {
-                        // _Pmpf(("Real-delete object %s", _wpQueryTitle(pSubObjThis) ));
+                        fObjectValid = FALSE;
+                                // do not attempt to delete this,
+                                // but don't report error either
+                    } END_CATCH();
 
-                        // delete the object: we get here for any instantiated
-                        // Desktop object which must be deleted, that is
-                        // -- for any awake Desktop object in any subfolder (before the folder)
-                        // -- for any folder after its contents have been deleted
-                        //    (either sneakily or by a previous wpFree)
+                    if (fObjectValid)
+                    {
+                        BOOL fIsFolder = _somIsA(pSubObjThis, _WPFolder);
 
-                        // install quiet exception handler here...
-                        // the object on the list MIGHT have gotten deleted
-                        // already, either from some other place or, most
-                        // importantly, if it is a shadow to an object that
-                        // was just deleted... we don't wanna crash here.
-                        BOOL    fObjectValid = TRUE;
-
-                        TRY_QUIET(excpt2)  // V0.9.9 (2001-04-01) [umoeller]
+                        // calc new sub-progress: this is the value we first
+                        // had before working on the subobjects (which
+                        // is a multiple of 100) plus a sub-progress between
+                        // 0 and 100 for the subobjects
+                        pfu->ulProgressScalar = ulProgressScalarFirst
+                                                + ((ulSubObjectThis * 100 )
+                                                     / cSubObjects);
+                        frc = fopsCallProgressCallback(pftl,
+                                                       FOPSUPD_SUBOBJECT_CHANGED
+                                                        | FOPSPROG_UPDATE_PROGRESS,
+                                                       pfu);
+                        if (frc)
                         {
-                            // call callback for subobject
-                            pfu->pszSubObject = _wpQueryTitle(pSubObjThis);
+                            // error or cancelled:
+                            *ppObject = pSubObjThis;
+                            break;
                         }
-                        CATCH(excpt2)
-                        {
-                            fObjectValid = FALSE;
-                                    // do not attempt to delete this,
-                                    // but don't report error either
-                        } END_CATCH();
 
-                        if (fObjectValid)
+                        _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
+                        if (!_wpIsDeleteable(pSubObjThis))
+                            // not deletable: prompt user about
+                            // what to do with this
+                            frc = fopsFileThreadFixNonDeletable(pftl,
+                                                                pSubObjThis,
+                                                                pulIgnoreSubsequent);
+
+                        if (frc == NO_ERROR)
                         {
-                            // calc new sub-progress: this is the value we first
-                            // had before working on the subobjects (which
-                            // is a multiple of 100) plus a sub-progress between
-                            // 0 and 100 for the subobjects
-                            pfu->ulProgressScalar = ulProgressScalarFirst
-                                                    + ((ulSubObjectThis * 100 )
-                                                         / cSubObjects);
-                            frc = fopsCallProgressCallback(pftl,
-                                                           FOPSUPD_SUBOBJECT_CHANGED
-                                                            | FOPSPROG_UPDATE_PROGRESS,
-                                                           pfu);
-                            if (frc)
+                            // either no problem or problem fixed:
+
+                            // now check if we have a folder...
+                            // if so, we need some special processing
+                            if (fIsFolder)
                             {
-                                // error or cancelled:
+                                // folder:
+                                // do sneaky delete of dormant folder contents
+                                // (awake folder contents have already been freed
+                                // because these came before the folder on the
+                                // subobjects list)
+                                WPObject *pobj2 = pSubObjThis;
+                                // _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
+
+                                // before we do anything, set the "delete in progress"
+                                // flag. This greatly reduces the pressure on the WPS
+                                // folder auto-refresh because the WPS can then drop
+                                // all notifications, I guess.
+                                // V0.9.9 (2001-02-01) [umoeller]
+                                _wpModifyFldrFlags(pSubObjThis,
+                                                   FOI_DELETEINPROGRESS,
+                                                   FOI_DELETEINPROGRESS);
+                                frc = fopsFileThreadSneakyDeleteFolderContents(pftl,
+                                                                               pfu,
+                                                                               &pobj2,
+                                                                               *ppObject,
+                                                                                // main folder; this must be
+                                                                                // a folder, because we have a subobject
+                                                                               pulIgnoreSubsequent,
+                                                                               ulProgressScalarFirst,
+                                                                               cSubObjects,
+                                                                               &ulSubObjectThis);
+                                 _wpModifyFldrFlags(pSubObjThis,
+                                                    0,
+                                                    FOI_DELETEINPROGRESS);
+
+                                if (frc != NO_ERROR)
+                                    *ppObject = pobj2;
+
+                                // force the WPS to flush all pending
+                                // auto-refresh information for this folder...
+                                // these have all piled up for the sneaky stuff
+                                // above and will cause some internal overflow
+                                // if we don't give the WPS a chance to process them!
+                                fdrFlushNotifications(pSubObjThis);
+                            } // end if (_somIsA(pSubObjThis, _WPFolder))
+
+                            _Pmpf((__FUNCTION__ ": calling _wpFree"));
+                            if (!_wpFree(pSubObjThis))
+                            {
+                                frc = FOPSERR_WPFREE_FAILED;
                                 *ppObject = pSubObjThis;
                                 break;
                             }
-
-                            _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
-                            if (!_wpIsDeleteable(pSubObjThis))
-                                // not deletable: prompt user about
-                                // what to do with this
-                                frc = fopsFileThreadFixNonDeletable(pftl,
-                                                                    pSubObjThis,
-                                                                    pulIgnoreSubsequent);
-
-                            if (frc == NO_ERROR)
-                            {
-                                // either no problem or problem fixed:
-                                _Pmpf((__FUNCTION__ ": calling _wpFree"));
-                                if (!_wpFree(pSubObjThis))
-                                {
-                                    frc = FOPSERR_WPFREE_FAILED;
-                                    *ppObject = pSubObjThis;
-                                    break;
-                                }
-                            }
-                            else
-                                // error:
-                                *ppObject = pSubObjThis;
-                        } // end if (fObjectValid)
-                    }
+                        }
+                        else
+                            // error:
+                            *ppObject = pSubObjThis;
+                    } // end if (fObjectValid)
 
                     pNode = pNode->pNext;
                     ulSubObjectThis++;

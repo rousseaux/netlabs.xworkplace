@@ -1535,10 +1535,10 @@ BOOL objQueryObjectHotkey(WPObject *somSelf,
          && (pHotkeys = hifQueryObjectHotkeys(&cHotkeys))
        )
     {
-        PGLOBALHOTKEY pHotkeyThis = objFindHotkey(pHotkeys,
-                                                  cHotkeys,
-                                                  _wpQueryHandle(somSelf));
-        if (pHotkeyThis)
+        PGLOBALHOTKEY pHotkeyThis;
+        if (pHotkeyThis = objFindHotkey(pHotkeys,
+                                        cHotkeys,
+                                        _wpQueryHandle(somSelf)))
         {
             // found:
             pHotkey->usFlags = pHotkeyThis->usFlags;
@@ -1979,17 +1979,17 @@ BOOL objQuerySetup(WPObject *somSelf,
     }
 
     // DEFAULTVIEW
-    if (_pWPObjectData)
+    if (_pObjectLongs)
     {
         ULONG ulClassDefaultView = _wpclsQueryDefaultView(_somGetClass(somSelf));
 
-        if (    (_pWPObjectData->lDefaultView != 0x67)      // default view for folders
-             && (_pWPObjectData->lDefaultView != 0x1000)    // default view for data files
-             && (_pWPObjectData->lDefaultView != -1)        // OPEN_DEFAULT
-             && (_pWPObjectData->lDefaultView != ulClassDefaultView) // OPEN_DEFAULT
+        if (    (_pObjectLongs->lDefaultView != 0x67)      // default view for folders
+             && (_pObjectLongs->lDefaultView != 0x1000)    // default view for data files
+             && (_pObjectLongs->lDefaultView != -1)        // OPEN_DEFAULT
+             && (_pObjectLongs->lDefaultView != ulClassDefaultView) // OPEN_DEFAULT
            )
         {
-            switch (_pWPObjectData->lDefaultView)
+            switch (_pObjectLongs->lDefaultView)
             {
                 case OPEN_SETTINGS:
                     xstrcat(pstrSetup, "DEFAULTVIEW=SETTINGS;", 0);
@@ -2019,7 +2019,7 @@ BOOL objQuerySetup(WPObject *somSelf,
                 {
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
-                    sprintf(szTemp, "DEFAULTVIEW=%d;", _pWPObjectData->lDefaultView);
+                    sprintf(szTemp, "DEFAULTVIEW=%d;", _pObjectLongs->lDefaultView);
                     xstrcat(pstrSetup, szTemp, 0);
                 break; }
             }
@@ -2029,11 +2029,11 @@ BOOL objQuerySetup(WPObject *somSelf,
     // HELPLIBRARY  @@todo
 
     // HELPPANEL
-    if (_pWPObjectData)
-        if (_pWPObjectData->ulHelpPanel)
+    if (_pObjectLongs)
+        if (_pObjectLongs->ulHelpPanel)
         {
             CHAR szTemp[40];
-            sprintf(szTemp, "HELPPANEL=%d;", _pWPObjectData->ulHelpPanel);
+            sprintf(szTemp, "HELPPANEL=%d;", _pObjectLongs->ulHelpPanel);
             xstrcat(pstrSetup, szTemp, 0);
         }
 
@@ -2489,8 +2489,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
                                          "Object ID",
                                          CRA_RECORDREADONLY | CRA_EXPANDED);
-        pszObjectID = _wpQueryObjectID(pObject);
-        if (pszObjectID)
+        if (pszObjectID = _wpQueryObjectID(pObject))
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                                pszObjectID,
                                (strcmp(pszObjectID, "<WP_DESKTOP>") != 0
@@ -2499,6 +2498,19 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         else
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                                "none set", 0); // editable!
+
+        // original object ID   V0.9.16 (2001-12-06) [umoeller]
+        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                         "Original object ID",
+                                         CRA_RECORDREADONLY | CRA_EXPANDED);
+        if (pszObjectID = _xwpQueryOriginalObjectID(pObject))
+            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                               pszObjectID,
+                               CRA_RECORDREADONLY);
+        else
+            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                               "none set",
+                               CRA_RECORDREADONLY);
 
         // object handle
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
@@ -3047,6 +3059,7 @@ typedef struct _XFOBJWINDATA
  *      dialog proc for object details dlg.
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed crash if "No" was selected on object ID change confirmation
  */
 
 MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3187,7 +3200,8 @@ MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                                                 pWinData->szOldObjectID);
                                         WinSendMsg(pWinData->hwndCnr,
                                                    CM_INVALIDATERECORD,
-                                                   (MPARAM)pced->pRecord,
+                                                   (MPARAM)&pced->pRecord,
+                                                        // fixed crash V0.9.16 (2001-12-06) [umoeller]
                                                    MPFROM2SHORT(1,
                                                                 CMA_TEXTCHANGED));
                                     }

@@ -134,6 +134,8 @@ interface XWPTrashCan : WPFolder
     wpSaveState: override;
     wpRestoreState: override;
 
+    wpSetup: override;
+
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;

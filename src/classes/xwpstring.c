@@ -334,10 +334,7 @@ MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (usNotifyCode == MLN_KILLFOCUS)
             {
                if (_pszSetupString)
-               {
                    free(_pszSetupString);
-                   _pszSetupString = NULL;
-               }
 
                _pszSetupString = winhQueryWindowText(pcnbp->hwndControl);
                         // uses malloc()
@@ -447,17 +444,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpSetString(XWPString *somSelf,
     XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_xwpSetString");
 
-    if (_pszSetupString)
-    {
-        free(_pszSetupString);
-        _pszSetupString = NULL;
-    }
-
-    if (pszSetupString)
-    {
-        _pszSetupString = strdup(pszSetupString);
-        brc = TRUE;
-    }
+    strhStore(&_pszSetupString, pszSetupString, NULL);
 
     ntbUpdateVisiblePage(somSelf, SP_XWPSTRING);
 
@@ -830,11 +817,7 @@ SOM_Scope void  SOMLINK xwstr_wpUnInitData(XWPString *somSelf)
     XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpUnInitData");
 
-    if (_pszSetupString)
-    {
-        free(_pszSetupString);
-        _pszSetupString = NULL;
-    }
+    strhStore(&_pszSetupString, NULL, NULL);
 
     if (_pvtiSetupThread)
     {
@@ -885,12 +868,7 @@ SOM_Scope void  SOMLINK xwstr_wpObjectReady(XWPString *somSelf,
                 _Pmpf(("OR_FROMCOPY: original _pszSetupString: %s (0x%lX)",
                         (somThat->pszSetupString) ? somThat->pszSetupString : "NULL",
                         _pszSetupString)); */
-                if (somThat->pszSetupString)
-                    // object that we was copied from has a member setup
-                    // string: we MUST copy that string to a new buffer,
-                    // or we get hell on earth if any of the two buffers
-                    // get deleted
-                    _pszSetupString = strdup(somThat->pszSetupString);
+                strhStore(&_pszSetupString, somThat->pszSetupString, NULL);
 
                 _pvtiSetupThread = NULL;
             }
@@ -1053,7 +1031,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpRestoreState(XWPString *somSelf,
                                                      ulReserved);
     cbsz = sizeof(sz);
     if (_wpRestoreString(somSelf, (PSZ)G_pcszXWPString, 1, sz, &cbsz))
-        _pszSetupString = strdup(sz);
+        strhStore(&_pszSetupString, sz, NULL);
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPString, 2, &ul))
         _hobjStatic = (HOBJECT)ul;

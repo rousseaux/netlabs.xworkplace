@@ -34,10 +34,7 @@ for a while, but I forgot to document it.
 <P><LI>File types: Added icon display to "File types" page in "Workplace Shell".
 Also added "Properties" and "Open folder" items to association context menu.
 
-<P><LI>Netscape DDE: Added more command line options for specifying the
-DDE server name and the startup directory, which can make NetscDDE work with
-Mozilla too. Also removed the dull dialog explaining the command line options
-and added a proper help panel (shows up if you double-click on NETSCDDE.EXE only).
+<P><LI>Trash can: Added EMPTRYTRASH=IMMEDIATE setup string.
 
 <P><LI>&xcenter;: Pulse widget now opens "OS/2 Kernel" object on double-click.
 
@@ -46,6 +43,11 @@ widget setup now. The empty bar confused many people initially.
 
 <P><LI>&xcenter;: Added setting for whether object button widgets should show
 in-use emphasis (hatching).
+
+<P><LI>Netscape DDE: Added more command line options for specifying the
+DDE server name and the startup directory, which can make NetscDDE work with
+Mozilla too. Also removed the dull dialog explaining the command line options
+and added a proper help panel (shows up if you double-click on NETSCDDE.EXE only).
 
 <P><LI>xfix: Added object IDs display and deletion.
 
@@ -127,9 +129,21 @@ exception trap logs.
 <P><LI>Common: Fixed a bunch of wrong default template settings for the XWP
 classes.
 
+<P><LI>Common: Fixed wrong owner windows for dialogs created by the new dialog
+formatter, which, among other things, affected the &xwp; message boxes.
+
+<P><LI>Common: Paul Ratcliffe fixed bad AM/PM display for 12:00 noon in a library
+routine which, among other things, affected the "Time" widget.
+
 <P><LI>Startup: Fixed endlessly looping startup folders.
 
+<P><LI>Object Details dialog: Fixed crash if "No" was selected in the confirmation
+dialog after changing the object ID.
+
 <P><LI>Programs: Added more error checking to progOpenProgram.
+Fixed more problems with programs not being started from WPS thread 1,
+which can cause system hangs. Also fixed problem that executable would not start
+if it was not fully qualified in the program settings object, but on the PATH only.
 
 <P><LI>Disks: Added more "drive ready" checks to context menus and settings view
 to avoid some more "drive not ready" popups. Note that context menus still show
@@ -169,17 +183,32 @@ the power icon was changed. Fixed.
 
 <P><LI>&xcenter;: Fixed some bad clipping with object buttons.
 
+<P><LI>File operations: Replacement delete never respected the "Confirm folder deletion"
+setting from the "Confirmations" page. Fixed; if this is enabled, you now get an
+extra prompt before &xwp; kills a folder.
+
 <P><LI>Trash can: Fixed wrong error message if "delete to trash" was still enabled
 internally but the trash can had disappeared for some reason. XWP is now offering
 to recreate the trash can instead.
 
 <P><LI>Trash can: Fixed problems with UNC files.
 
+<P><LI>Trash can: Dropping objects on the shredder would move them into the trash
+can instead. Fixed; they are now properly nuked.
+
 <P><LI>Trash can / true delete: Paul Ratcliffe fixed a bunch of potential traps
 with NULL object titles.
 
+<P><LI>Object hotkeys: It was impossible to set a hotkey into the "Hotkey" entry field
+that was already occupied. Even worse, if the object had been lost, this kept the
+entry field from working at all. Fixed; note that this implies that you can now use
+the same hotkey for several objects at once.
+
 <P><LI>PageMage: &xcenter;s are now sticky always and do not have to be added manually
 to the "Stickies" list any more.
+
+<P><LI>PageMage: System window list would sometimes be moved off to another screen and
+then be hard to see. Made window list sticky always now.
 
 <P><LI>PageMage: Repaint broke after PageMage was disabled and then re-opened. Fixed
 by Paul Ratcliffe.
@@ -190,6 +219,15 @@ the Desktop was ready and during shutdown.
 
 <P><LI>&xshutdown;: Paul Ratcliffe fixed bug trying to close the first switch list
 item twice.
+
+<P><LI>&xshutdown;: I believe I have traced down and fixed the problems with XShutdown
+and the "Desktop not found" problem if XWorkplace is installed on multiple OS/2
+partitions. The problem was quite deep in the WPS internals and actually a WPS bug
+that was exposed by the &xwp; "save objects" function. For some reason, the WPS kept
+deleting the &lt;WP_OBJECT&gt; object ID (and other object IDs) if they didn't match
+the data in the current INI file, which of course they don't if the object ID is from
+another WPS. Fixed that; the object's instance data is now hacked to keep the old
+object ID.
 
 <P><LI>Treesize: Fixed a couple of long-standing cosmetic problems. Added a decent
 help panel.

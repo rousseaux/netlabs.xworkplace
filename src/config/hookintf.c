@@ -60,6 +60,7 @@
 #define INCL_WINSYS
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
+#define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
@@ -75,7 +76,9 @@
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
@@ -1601,9 +1604,9 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPMouse notebook callbacks (notebook.c)                       *
- *                                                                  *
+ *
+ *   XWPMouse "Mappings" notebook page
+ *
  ********************************************************************/
 
 /*
@@ -1902,56 +1905,188 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-ULONG   G_ulScreenCornerSelectedIndex = 0;
-                            // 0 = lower left corner,
-                            // 1 = top left corner,
-                            // 2 = lower right corner,
-                            // 3 = top right corner;
-                            //      the following added with V0.9.4 (2000-06-12) [umoeller]:
-                            // 4 = top border,
-                            // 5 = left border,
-                            // 6 = right border,
-                            // 7 = bottom border
-
-// screen corner object container d'n'd
-HOBJECT G_hobjBeingDragged = NULLHANDLE;
-            // NULLHANDLE means dropping is invalid;
-            // in between CN_DRAGOVER and CN_DROP, this
-            // contains the object handle being dragged
-
-BOOL    G_fShutUpSlider = FALSE;
-
-/*
- *@@ UpdateScreenCornerIndex:
+/* ******************************************************************
  *
- *@@changed V0.9.4 (2000-06-12) [umoeller]: added screen borders
- */
+ *   XWPMouse "Movement 1" settings page
+ *
+ ********************************************************************/
 
-VOID UpdateScreenCornerIndex(USHORT usItemID)
-{
-    switch (usItemID)
+#define STYLE_SLIDERS_WIDTH        150
+#define STYLE_SLIDERS_HEIGHT        30
+#define STYLE_SLIDERTEXT_WIDTH      30
+
+SLDCDATA
+#ifndef __NOSLIDINGFOCUS__
+        SlidingFocusDelayCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     31,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             },
+#endif
+        SlidingMenusDelayCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     31,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             };
+
+CONTROLDEF
+#ifndef __NOSLIDINGFOCUS__
+    SlidingFocusGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_SLIDINGFOCUS_GRP),
+    SlidingFocusCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_SLIDINGFOCUS,
+                            -1,
+                            -1),
+    SlidingFocusDelayTxt1 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
+                            -1,
+                            -1),
+    SlidingFocusDelaySlider =
+        {
+                WC_SLIDER,
+                NULL,
+                WS_VISIBLE | WS_TABSTOP | WS_GROUP
+                    | SLS_HORIZONTAL
+                    | SLS_PRIMARYSCALE1
+                    | SLS_BUTTONSRIGHT
+                    | SLS_SNAPTOINCREMENT,
+                ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
+                CTL_COMMON_FONT,
+                0,
+                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
+                5,               // spacing
+                &SlidingFocusDelayCData
+        },
+    SlidingFocusDelayTxt2 = CONTROLDEF_TEXT(
+                            "10000 ms",     // to be replaced
+                            ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
+                            -1,
+                            -1),
+    BringToTopCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_BRING2TOP,
+                            -1,
+                            -1),
+    IgnoreSeamlessCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_IGNORESEAMLESS,
+                            -1,
+                            -1),
+    IgnoreDesktopCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_IGNOREDESKTOP,
+                            -1,
+                            -1),
+    IgnorePageMageCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_IGNOREPAGEMAGE,
+                            -1,
+                            -1),
+    IgnoreXCenterCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_IGNOREXCENTER,
+                            -1,
+                            -1),
+#endif
+    SlidingMenusGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_SLIDINGMENU_GRP),
+    SlidingMenusCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_SLIDINGMENU,
+                            -1,
+                            -1),
+    SlidingMenusDelayTxt1 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_MENUDELAY_TXT1,
+                            -1,
+                            -1),
+    SlidingMenusDelaySlider =
+        {
+                WC_SLIDER,
+                NULL,
+                WS_VISIBLE | WS_TABSTOP | WS_GROUP
+                    | SLS_HORIZONTAL
+                    | SLS_PRIMARYSCALE1
+                    | SLS_BUTTONSRIGHT
+                    | SLS_SNAPTOINCREMENT,
+                ID_XSDI_MOUSE_MENUDELAY_SLIDER,
+                CTL_COMMON_FONT,
+                0,
+                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
+                5,               // spacing
+                &SlidingMenusDelayCData
+        },
+    SlidingMenusDelayTxt2 = CONTROLDEF_TEXT(
+                            "10000 ms",     // to be replaced
+                            ID_XSDI_MOUSE_MENUDELAY_TXT2,
+                            -1,
+                            -1),
+    CondCascadeCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_CONDCASCADE,
+                            -1,
+                            -1),
+    MenuHiliteCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_MOUSE_MENUHILITE,
+                            -1,
+                            -1);
+
+DLGHITEM dlgMovement1[] =
     {
-        case ID_XSDI_MOUSE_RADIO_TOPLEFT:
-            G_ulScreenCornerSelectedIndex = 1; break;
-        case ID_XSDI_MOUSE_RADIO_TOPRIGHT:
-            G_ulScreenCornerSelectedIndex = 3; break;
-        case ID_XSDI_MOUSE_RADIO_BOTTOMLEFT:
-            G_ulScreenCornerSelectedIndex = 0; break;
-        case ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT:
-            G_ulScreenCornerSelectedIndex = 2; break;
-
-        // V0.9.4 (2000-06-12) [umoeller]
-        case ID_XSDI_MOUSE_RADIO_TOP:
-            G_ulScreenCornerSelectedIndex = 4; break;
-        case ID_XSDI_MOUSE_RADIO_LEFT:
-            G_ulScreenCornerSelectedIndex = 5; break;
-        case ID_XSDI_MOUSE_RADIO_RIGHT:
-            G_ulScreenCornerSelectedIndex = 6; break;
-        case ID_XSDI_MOUSE_RADIO_BOTTOM:
-            G_ulScreenCornerSelectedIndex = 7; break;
-    }
-}
+        START_TABLE,            // root table, required
+#ifndef __NOSLIDINGFOCUS__
+            START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
+                START_GROUP_TABLE(&SlidingFocusGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&SlidingFocusCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&SlidingFocusDelayTxt1),
+                        CONTROL_DEF(&SlidingFocusDelaySlider),
+                        CONTROL_DEF(&SlidingFocusDelayTxt2),
+                    START_ROW(0),
+                        CONTROL_DEF(&BringToTopCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&IgnoreSeamlessCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&IgnoreDesktopCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&IgnorePageMageCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&IgnoreXCenterCB),
+                END_TABLE,
+#endif
+            START_ROW(0),
+                START_GROUP_TABLE(&SlidingMenusGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&SlidingMenusCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&SlidingMenusDelayTxt1),
+                        CONTROL_DEF(&SlidingMenusDelaySlider),
+                        CONTROL_DEF(&SlidingMenusDelayTxt2),
+                    START_ROW(0),
+                        CONTROL_DEF(&CondCascadeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&MenuHiliteCB),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
 
 /*
  *@@ hifMouseMovementInitPage:
@@ -1963,6 +2098,7 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.14 (2001-08-02) [lafaix]: moved the autohide stuff to movement page 2
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: now using dialog formatter
  */
 
 VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1984,13 +2120,21 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
             pcnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
             if (pcnbp->pUser2)
                 memcpy(pcnbp->pUser2, pcnbp->pUser, sizeof(HOOKCONFIG));
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-12-06) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgMovement1,
+                          ARRAYITEMCOUNT(dlgMovement1));
         }
 
         // setup sliders
+#ifndef __NOSLIDINGFOCUS__
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
                            MPFROM2SHORT(5, 10), 3,
                            MPFROM2SHORT(0, 10), 6);
+#endif
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_MENUDELAY_SLIDER),
                            MPFROM2SHORT(5, 10), 3,
@@ -2002,24 +2146,26 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
         // sliding focus
+#ifndef __NOSLIDINGFOCUS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SLIDINGFOCUS,
-                              pdc->fSlidingFocus);
+                              pdc->__fSlidingFocus);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
-                              pdc->fSlidingBring2Top);
+                              pdc->__fSlidingBring2Top);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
-                              pdc->fSlidingIgnoreSeamless);
+                              pdc->__fSlidingIgnoreSeamless);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
-                              pdc->fSlidingIgnoreDesktop);
+                              pdc->__fSlidingIgnoreDesktop);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
-                              pdc->fSlidingIgnorePageMage);
+                              pdc->__fSlidingIgnorePageMage);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
-                              pdc->fSlidingIgnoreXCenter);
+                              pdc->__fSlidingIgnoreXCenter);
 
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  // slider uses .1 seconds ticks
-                                 pdc->ulSlidingFocusDelay / 100);
+                                 pdc->__ulSlidingFocusDelay / 100);
+#endif
 
         // sliding menus
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SLIDINGMENU,
@@ -2040,25 +2186,27 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
+#ifndef __NOSLIDINGFOCUS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
-                          (pdc->fSlidingFocus)
+                          (pdc->__fSlidingFocus)
                           && (pGlobalSettings->fEnablePageMage)
                          );
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
-                          pdc->fSlidingFocus);
+                          pdc->__fSlidingFocus);
+#endif
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT1,
                           pdc->fSlidingMenus);
@@ -2099,6 +2247,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     switch (ulItemID)
     {
+#ifndef __NOSLIDINGFOCUS__
         /*
          * ID_XSDI_MOUSE_SLIDINGFOCUS:
          *      "sliding focus"
@@ -2106,33 +2255,33 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_MOUSE_SLIDINGFOCUS:
             hifLoadHookConfig(pdc);
-            pdc->fSlidingFocus = ulExtra;
+            pdc->__fSlidingFocus = ulExtra;
             pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_BRING2TOP:
             hifLoadHookConfig(pdc);
-            pdc->fSlidingBring2Top = ulExtra;
+            pdc->__fSlidingBring2Top = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNORESEAMLESS:
             hifLoadHookConfig(pdc);
-            pdc->fSlidingIgnoreSeamless = ulExtra;
+            pdc->__fSlidingIgnoreSeamless = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNOREDESKTOP:
             hifLoadHookConfig(pdc);
-            pdc->fSlidingIgnoreDesktop = ulExtra;
+            pdc->__fSlidingIgnoreDesktop = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNOREPAGEMAGE:
             hifLoadHookConfig(pdc);
-            pdc->fSlidingIgnorePageMage = ulExtra;
+            pdc->__fSlidingIgnorePageMage = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNOREXCENTER:
             hifLoadHookConfig(pdc);
-            pdc->fSlidingIgnoreXCenter = ulExtra;
+            pdc->__fSlidingIgnoreXCenter = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_FOCUSDELAY_SLIDER:
@@ -2143,13 +2292,14 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                            SMA_INCREMENTVALUE);
             // convert to ms
             hifLoadHookConfig(pdc);
-            pdc->ulSlidingFocusDelay = lSliderIndex * 100;
-            sprintf(szTemp, "%d ms", pdc->ulSlidingFocusDelay);
+            pdc->__ulSlidingFocusDelay = lSliderIndex * 100;
+            sprintf(szTemp, "%d ms", pdc->__ulSlidingFocusDelay);
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
                               szTemp);
         }
         break;
+#endif
 
         case ID_XSDI_MOUSE_SLIDINGMENU:
             hifLoadHookConfig(pdc);
@@ -2193,13 +2343,15 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
             hifLoadHookConfig(pdc);
 
-            pdc->fSlidingFocus = 0;
-            pdc->fSlidingBring2Top = 0;
-            pdc->fSlidingIgnoreSeamless = 0;
-            pdc->fSlidingIgnoreDesktop = 0;
-            pdc->fSlidingIgnorePageMage = 0;
-            pdc->fSlidingIgnoreXCenter = 0;  // V0.9.9 (2001-04-07) [pr]
-            pdc->ulSlidingFocusDelay = 0;
+#ifndef __NOSLIDINGFOCUS__
+            pdc->__fSlidingFocus = 0;
+            pdc->__fSlidingBring2Top = 0;
+            pdc->__fSlidingIgnoreSeamless = 0;
+            pdc->__fSlidingIgnoreDesktop = 0;
+            pdc->__fSlidingIgnorePageMage = 0;
+            pdc->__fSlidingIgnoreXCenter = 0;  // V0.9.9 (2001-04-07) [pr]
+            pdc->__ulSlidingFocusDelay = 0;
+#endif
             pdc->fSlidingMenus = 0;
             pdc->ulSubmenuDelay = 0;
             pdc->fConditionalCascadeSensitive = 0;
@@ -2224,13 +2376,15 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (pcnbp->pUser2)
             {
                 PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
-                pdc->fSlidingFocus = pBackup->fSlidingFocus;
-                pdc->fSlidingBring2Top = pBackup->fSlidingBring2Top;
-                pdc->fSlidingIgnoreSeamless = pBackup->fSlidingIgnoreSeamless;
-                pdc->fSlidingIgnoreDesktop = pBackup->fSlidingIgnoreDesktop;
-                pdc->fSlidingIgnorePageMage = pBackup->fSlidingIgnorePageMage;
-                pdc->fSlidingIgnoreXCenter = pBackup->fSlidingIgnoreXCenter;  // V0.9.9 (2001-04-07) [pr]
-                pdc->ulSlidingFocusDelay = pBackup->ulSlidingFocusDelay;
+#ifndef __NOSLIDINGFOCUS__
+                pdc->__fSlidingFocus = pBackup->__fSlidingFocus;
+                pdc->__fSlidingBring2Top = pBackup->__fSlidingBring2Top;
+                pdc->__fSlidingIgnoreSeamless = pBackup->__fSlidingIgnoreSeamless;
+                pdc->__fSlidingIgnoreDesktop = pBackup->__fSlidingIgnoreDesktop;
+                pdc->__fSlidingIgnorePageMage = pBackup->__fSlidingIgnorePageMage;
+                pdc->__fSlidingIgnoreXCenter = pBackup->__fSlidingIgnoreXCenter;  // V0.9.9 (2001-04-07) [pr]
+                pdc->__ulSlidingFocusDelay = pBackup->__ulSlidingFocusDelay;
+#endif
                 pdc->fSlidingMenus = pBackup->fSlidingMenus;
                 pdc->ulSubmenuDelay = pBackup->ulSubmenuDelay;
                 pdc->fConditionalCascadeSensitive = pBackup->fConditionalCascadeSensitive;
@@ -2252,6 +2406,14 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     return (mrc);
 }
+
+/* ******************************************************************
+ *
+ *   XWPMouse "Movement 2" settings page
+ *
+ ********************************************************************/
+
+#ifndef __NOMOVEMENT2FEATURES__
 
 /*
  *@@ hifMouseMovement2InitPage:
@@ -2305,26 +2467,26 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
 
         // auto-hide mouse pointer
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECK,
-                              pdc->fAutoHideMouse);
+                              pdc->__fAutoHideMouse);
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                                  SMA_INCREMENTVALUE,
-                                 pdc->ulAutoHideDelay);
+                                 pdc->__ulAutoHideDelay);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU,
-                              pdc->ulAutoHideFlags & AHF_IGNOREMENUS);
+                              pdc->__ulAutoHideFlags & AHF_IGNOREMENUS);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN,
-                              pdc->ulAutoHideFlags & AHF_IGNOREBUTTONS);
+                              pdc->__ulAutoHideFlags & AHF_IGNOREBUTTONS);
 
         // auto-move mouse pointer to default button
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_CHECK,
-                              pdc->fAutoMoveMouse);
+                              pdc->__fAutoMoveMouse);
 
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_AUTOMOVE_SLIDER),
                                  SMA_INCREMENTVALUE,
-                                 pdc->ulAutoMoveDelay / 100);
+                                 pdc->__ulAutoMoveDelay / 100);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_ANIMATE,
-                              ((pdc->ulAutoMoveFlags & AMF_ANIMATE) != 0));
+                              ((pdc->__ulAutoMoveFlags & AMF_ANIMATE) != 0));
 
     }
 
@@ -2334,25 +2496,25 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
-                          pdc->fAutoHideMouse);
+                          pdc->__fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
-                          pdc->fAutoHideMouse);
+                          pdc->__fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
-                          pdc->fAutoHideMouse);
+                          pdc->__fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU,
-                          pdc->fAutoHideMouse);
+                          pdc->__fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN,
-                          pdc->fAutoHideMouse);
+                          pdc->__fAutoHideMouse);
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_TXT1,
-                          pdc->fAutoMoveMouse);
+                          pdc->__fAutoMoveMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_SLIDER,
-                          pdc->fAutoMoveMouse);
+                          pdc->__fAutoMoveMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_TXT2,
-                          pdc->fAutoMoveMouse);
+                          pdc->__fAutoMoveMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_ANIMATE,
-                             (pdc->fAutoMoveMouse)
-                          && (pdc->ulAutoMoveDelay > 0));
+                             (pdc->__fAutoMoveMouse)
+                          && (pdc->__ulAutoMoveDelay > 0));
     }
 }
 
@@ -2381,7 +2543,7 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         case ID_XSDI_MOUSE_AUTOHIDE_CHECK:
             hifLoadHookConfig(pdc);
-            pdc->fAutoHideMouse = ulExtra;
+            pdc->__fAutoHideMouse = ulExtra;
             pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
@@ -2392,8 +2554,8 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                            SMA_INCREMENTVALUE);
             // convert to seconds
             hifLoadHookConfig(pdc);
-            pdc->ulAutoHideDelay = lSliderIndex;
-            sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
+            pdc->__ulAutoHideDelay = lSliderIndex;
+            sprintf(szTemp, "%d s", pdc->__ulAutoHideDelay + 1);
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_AUTOHIDE_TXT2,
                               szTemp);
@@ -2403,22 +2565,22 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU:
             hifLoadHookConfig(pdc);
             if (ulExtra)
-                pdc->ulAutoHideFlags |= AHF_IGNOREMENUS;
+                pdc->__ulAutoHideFlags |= AHF_IGNOREMENUS;
             else
-                pdc->ulAutoHideFlags &= ~AHF_IGNOREMENUS;
+                pdc->__ulAutoHideFlags &= ~AHF_IGNOREMENUS;
         break;
 
         case ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN:
             hifLoadHookConfig(pdc);
             if (ulExtra)
-                pdc->ulAutoHideFlags |= AHF_IGNOREBUTTONS;
+                pdc->__ulAutoHideFlags |= AHF_IGNOREBUTTONS;
             else
-                pdc->ulAutoHideFlags &= ~AHF_IGNOREBUTTONS;
+                pdc->__ulAutoHideFlags &= ~AHF_IGNOREBUTTONS;
         break;
 
         case ID_XSDI_MOUSE_AUTOMOVE_CHECK:
             hifLoadHookConfig(pdc);
-            pdc->fAutoMoveMouse = ulExtra;
+            pdc->__fAutoMoveMouse = ulExtra;
             pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
@@ -2429,8 +2591,8 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                            SMA_INCREMENTVALUE);
             // convert to milliseconds
             hifLoadHookConfig(pdc);
-            pdc->ulAutoMoveDelay = lSliderIndex * 100;
-            sprintf(szTemp, "%d ms", pdc->ulAutoMoveDelay);
+            pdc->__ulAutoMoveDelay = lSliderIndex * 100;
+            sprintf(szTemp, "%d ms", pdc->__ulAutoMoveDelay);
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_AUTOMOVE_TXT2,
                               szTemp);
@@ -2441,9 +2603,9 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_AUTOMOVE_ANIMATE:
             hifLoadHookConfig(pdc);
             if (ulExtra)
-                pdc->ulAutoMoveFlags |= AMF_ANIMATE;
+                pdc->__ulAutoMoveFlags |= AMF_ANIMATE;
             else
-                pdc->ulAutoMoveFlags &= ~AMF_ANIMATE;
+                pdc->__ulAutoMoveFlags &= ~AMF_ANIMATE;
         break;
 
         /*
@@ -2454,12 +2616,12 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
             hifLoadHookConfig(pdc);
 
-            pdc->fAutoHideMouse = 0;
-            pdc->ulAutoHideDelay = 0;
-            pdc->ulAutoHideFlags = 0;
-            pdc->fAutoMoveMouse = 0;
-            pdc->ulAutoMoveFlags = 0;
-            pdc->ulAutoMoveDelay = 0;
+            pdc->__fAutoHideMouse = 0;
+            pdc->__ulAutoHideDelay = 0;
+            pdc->__ulAutoHideFlags = 0;
+            pdc->__fAutoMoveMouse = 0;
+            pdc->__ulAutoMoveFlags = 0;
+            pdc->__ulAutoMoveDelay = 0;
 
             // saving settings here
             hifHookConfigChanged(pdc);
@@ -2479,12 +2641,12 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (pcnbp->pUser2)
             {
                 PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
-                pdc->fAutoHideMouse = pBackup->fAutoHideMouse;
-                pdc->ulAutoHideDelay = pBackup->ulAutoHideDelay;
-                pdc->ulAutoHideFlags = pBackup->ulAutoHideFlags;
-                pdc->fAutoMoveMouse = pBackup->fAutoMoveMouse;
-                pdc->ulAutoMoveFlags = pBackup->ulAutoMoveFlags;
-                pdc->ulAutoMoveDelay = pBackup->ulAutoMoveDelay;
+                pdc->__fAutoHideMouse = pBackup->__fAutoHideMouse;
+                pdc->__ulAutoHideDelay = pBackup->__ulAutoHideDelay;
+                pdc->__ulAutoHideFlags = pBackup->__ulAutoHideFlags;
+                pdc->__fAutoMoveMouse = pBackup->__fAutoMoveMouse;
+                pdc->__ulAutoMoveFlags = pBackup->__ulAutoMoveFlags;
+                pdc->__ulAutoMoveDelay = pBackup->__ulAutoMoveDelay;
 
                 // saving settings here
                 hifHookConfigChanged(pdc);
@@ -2503,10 +2665,69 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
+#endif
+
+/* ******************************************************************
+ *
+ *   XWPScreen "Screen borders" settings page
+ *
+ ********************************************************************/
+
+ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
+ULONG   G_ulScreenCornerSelectedIndex = 0;
+                            // 0 = lower left corner,
+                            // 1 = top left corner,
+                            // 2 = lower right corner,
+                            // 3 = top right corner;
+                            //      the following added with V0.9.4 (2000-06-12) [umoeller]:
+                            // 4 = top border,
+                            // 5 = left border,
+                            // 6 = right border,
+                            // 7 = bottom border
+
+// screen corner object container d'n'd
+HOBJECT G_hobjBeingDragged = NULLHANDLE;
+            // NULLHANDLE means dropping is invalid;
+            // in between CN_DRAGOVER and CN_DROP, this
+            // contains the object handle being dragged
+
+BOOL    G_fShutUpSlider = FALSE;
+
+/*
+ *@@ UpdateScreenCornerIndex:
+ *
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: added screen borders
+ */
+
+VOID UpdateScreenCornerIndex(USHORT usItemID)
+{
+    switch (usItemID)
+    {
+        case ID_XSDI_MOUSE_RADIO_TOPLEFT:
+            G_ulScreenCornerSelectedIndex = 1; break;
+        case ID_XSDI_MOUSE_RADIO_TOPRIGHT:
+            G_ulScreenCornerSelectedIndex = 3; break;
+        case ID_XSDI_MOUSE_RADIO_BOTTOMLEFT:
+            G_ulScreenCornerSelectedIndex = 0; break;
+        case ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT:
+            G_ulScreenCornerSelectedIndex = 2; break;
+
+        // V0.9.4 (2000-06-12) [umoeller]
+        case ID_XSDI_MOUSE_RADIO_TOP:
+            G_ulScreenCornerSelectedIndex = 4; break;
+        case ID_XSDI_MOUSE_RADIO_LEFT:
+            G_ulScreenCornerSelectedIndex = 5; break;
+        case ID_XSDI_MOUSE_RADIO_RIGHT:
+            G_ulScreenCornerSelectedIndex = 6; break;
+        case ID_XSDI_MOUSE_RADIO_BOTTOM:
+            G_ulScreenCornerSelectedIndex = 7; break;
+    }
+}
+
 /*
  *@@ hifMouseCornersInitPage:
  *      notebook callback function (notebook.c) for the
- *      "Mouse hook" page in the "Mouse" settings object.
+ *      "Mouse hook" page in the "Screen" settings object.
  *      Sets the controls on the page according to the
  *      Global Settings.
  *

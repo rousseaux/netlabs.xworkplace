@@ -192,6 +192,7 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all" to some msg boxes
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: added delete folders confirmations
  */
 
 FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
@@ -222,6 +223,16 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             apsz[0] = pszTitle;
             cpsz = 1;
             ulIgnoreFlag = FOPS_ISQ_MOVE2TRASH_READONLY;
+        break;
+
+        case FOPSERR_DELETE_CONFIRM_FOLDER:
+            // V0.9.16 (2001-12-06) [umoeller]
+            // confirm folder deletions
+            ulMsg = 226;        // %1 is a folder. Delete?
+            flFlags = MB_YES_YES2ALL_NO | MB_DEFBUTTON3;
+            apsz[0] = pszTitle;
+            cpsz = 1;
+            ulIgnoreFlag = FOPS_ISQ_DELETE_FOLDERS;
         break;
 
         case FOPSERR_DELETE_READONLY:

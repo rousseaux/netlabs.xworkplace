@@ -3576,6 +3576,7 @@ VOID xsdWaitForExceptions(PSHUTDOWNDATA pShutdownData)
  *      the WPS.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: now skipping saving objects from foreign desktops
  */
 
 BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
@@ -3595,9 +3596,26 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
     TRY_QUIET(excpt1)
     {
         if (pobjThis == pShutdownData->SDConsts.pActiveDesktop)
-            // we already saved the desktop, so skip this
-            // V0.9.16 (2001-10-25) [umoeller]
+                        // we already saved the desktop, so skip this
+                        // V0.9.16 (2001-10-25) [umoeller]
             brc = TRUE;
+        else if (cmnIsObjectFromForeignDesktop(pobjThis))
+                        // never save objects which do not belong to
+                        // a foreign desktop
+                        // V0.9.16 (2001-12-06) [umoeller]
+        {
+            /* CHAR szFolderPath[CCHMAXPATH];
+            _wpQueryFilename(_wpQueryFolder(pobjThis),
+                             szFolderPath,
+                             TRUE);
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "skipping save of object %s (class: %s) in folder %s",
+                   _wpQueryTitle(pobjThis),
+                   _somGetClassName(pobjThis),
+                   szFolderPath);
+            */
+            brc = TRUE;
+        }
         else
             brc = _wpSaveImmediate(pobjThis);
     }
@@ -3608,8 +3626,6 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
 
     return (brc);
 }
-
-
 
 /* ******************************************************************
  *

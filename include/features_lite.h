@@ -41,4 +41,7 @@
 // hook features
 #define __NOPAGEMAGE__                          1
 #define __ALWAYSOBJHOTKEYS__                    1
+#define __NOSLIDINGFOCUS__                      1
+#define __NOMOVEMENT2FEATURES__                 1
+        // disables auto-hide and move-ptr-to-button
 

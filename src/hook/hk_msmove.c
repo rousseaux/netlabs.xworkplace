@@ -213,6 +213,8 @@ VOID SelectMenuItem(HWND hwndMenu,
     }
 }
 
+#ifndef __NOSLIDINGFOCUS__
+
 /*
  *@@ WMMouseMove_SlidingFocus:
  *      this gets called when hookInputHook intercepts
@@ -412,6 +414,8 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                    (MPARAM)NULLHANDLE,
                    (MPARAM)NULLHANDLE);     // stop timers
 }
+
+#endif
 
 /*
  *@@ WMMouseMove_SlidingMenus:
@@ -792,6 +796,8 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
     return (brc);
 }
 
+#ifndef __NOMOVEMENT2FEATURES__
+
 /*
  *@@ WMMouseMove_AutoHideMouse:
  *      this gets called when hookInputHook intercepts
@@ -829,15 +835,17 @@ VOID WMMouseMove_AutoHideMouse(VOID)
     }
 
     // (re)start timer
-    if (    (G_HookData.HookConfig.fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
+    if (    (G_HookData.HookConfig.__fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
          && (G_hwndRootMenu == NULLHANDLE) // V0.9.14 (2001-08-01) [lafaix]
        )
         G_HookData.idAutoHideTimer =
             WinStartTimer(G_HookData.habDaemonObject,
                           G_HookData.hwndDaemonObject,
                           TIMERID_AUTOHIDEMOUSE,
-                          (G_HookData.HookConfig.ulAutoHideDelay + 1) * 1000);
+                          (G_HookData.HookConfig.__ulAutoHideDelay + 1) * 1000);
 }
+
+#endif
 
 /*
  *@@ WMMouseMove:
@@ -932,7 +940,8 @@ BOOL WMMouseMove(PQMSG pqmsg,
                  *
                  */
 
-                if (    (G_HookData.HookConfig.fSlidingFocus)
+#ifndef __NOSLIDINGFOCUS__
+                if (    (G_HookData.HookConfig.__fSlidingFocus)
                      && (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
                    )
                 {
@@ -942,6 +951,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                                              fGlobalMouseMoved,
                                              szClassUnderMouse);
                 }
+#endif
 
                 if (fGlobalMouseMoved)
                 {
@@ -1034,12 +1044,14 @@ BOOL WMMouseMove(PQMSG pqmsg,
                                                  pqmsg->mp1,
                                                  pqmsg->mp2);
 
+#ifndef __NOMOVEMENT2FEATURES__
+
                     /*
                      * auto hide disabled over buttons
                      */
 
-                    if (    (G_HookData.HookConfig.fAutoHideMouse)
-                         && (G_HookData.HookConfig.ulAutoHideFlags & AHF_IGNOREBUTTONS)
+                    if (    (G_HookData.HookConfig.__fAutoHideMouse)
+                         && (G_HookData.HookConfig.__ulAutoHideFlags & AHF_IGNOREBUTTONS)
                          && (!strcmp(szClassUnderMouse, "#3"))
                        )
                     {
@@ -1066,6 +1078,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                         // so that the ending test does not hide the pointer again)
                         fGlobalMouseMoved = FALSE;
                     }
+#endif
 
                 } // end if (fMouseMoved)
 

@@ -1395,7 +1395,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _pulFolderShowAllInTreeView = NULL;
 
-    _pszFolderBkgndImageFile = 0;
+    _pszFolderBkgndImageFile = NULL;
 
     _fUnInitCalled = FALSE;
     _hwndCnrSaved = NULLHANDLE;
@@ -1540,8 +1540,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                 // this has been set by wpRestoreState
                 _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
                     // can return NULL if not found
-                free(_pszDefaultDocDeferred);
-                _pszDefaultDocDeferred = NULL;
+                strhStore(&_pszDefaultDocDeferred, NULL, NULL);
             }
         }
     }
@@ -1580,15 +1579,8 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         // V0.9.16 (2001-11-25) [umoeller]
         G_pConfigFolder = NULL;
 
-    if (_pszFolderBkgndImageFile)
-    {
-        free(_pszFolderBkgndImageFile);
-        _pszFolderBkgndImageFile = NULL;
-    }
-
-    // if this is the folder that was used in the
-    // "find awake fs object" cache, null that
-
+    strhStore(&_pszFolderBkgndImageFile, NULL, NULL);
+    strhStore(&_pszDefaultDocDeferred, NULL, NULL);
 
     // lock out the folder auto-refresh
     if (fdrGetNotifySem(SEM_INDEFINITE_WAIT))
@@ -1794,11 +1786,10 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
     // V0.9.7 (2000-12-18) [umoeller]
 
     if (_wpRestoreString(somSelf, (PSZ)G_pcszXFolder, 8, szDefaultDoc, &cbDefaultDoc))
-    {
         // store file name in instance data; wpObjectReady will then
-        // find the file, which doesn't work when the folder isn't fully initialized.
-        _pszDefaultDocDeferred = strdup(szDefaultDoc);
-    }
+        // find the file, which doesn't work when the folder isn't
+        // fully initialized
+        strhStore(&_pszDefaultDocDeferred, szDefaultDoc, NULL);
 
     // sort keys changed again V0.9.12 (2001-05-18) [umoeller]
 
@@ -1938,7 +1929,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                 if ((pszValue) && (brc))
                 {
                     XFolderData *somThis = XFolderGetData(somSelf);
-                    _pszFolderBkgndImageFile = strdup(pszValue);   // freed in uninitdata
+                    strhStore(&_pszFolderBkgndImageFile, pszValue, NULL);
+                                // freed in uninitdata
                 }
             break;
         }

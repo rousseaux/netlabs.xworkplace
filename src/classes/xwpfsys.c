@@ -161,7 +161,7 @@ SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
         if (_wpQueryFilename(somSelf, sz, FALSE))
         {
             ULONG ulLength;
-            _pszUpperRealName = strhdup(sz, &ulLength);
+            strhStore(&_pszUpperRealName, sz, &ulLength);
             nlsUpper(_pszUpperRealName, ulLength);
         }
     }
@@ -202,8 +202,7 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpUnInitData");
 
-    if (_pszUpperRealName)
-        free(_pszUpperRealName);
+    strhStore(&_pszUpperRealName, NULL, NULL);
 
     XWPFileSystem_parent_WPFileSystem_wpUnInitData(somSelf);
 }

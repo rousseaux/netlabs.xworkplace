@@ -2073,7 +2073,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
                 case 10:
                     return ("IDKEY_OBJVIEWBUTTON");
                 case 11:
-                    return ("IDKEY_OBJDATA");
+                    return ("IDKEY_OBJLONGS");
                 case 12:
                     return ("IDKEY_OBJSTRINGS");
             }

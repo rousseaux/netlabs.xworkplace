@@ -1706,8 +1706,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             switch (usSetting)
             {
@@ -1723,6 +1722,9 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
                                               sizeof(G_szStatusBarFont));
                         sscanf(G_szStatusBarFont, "%d.*%s", &(G_ulStatusBarHeight));
                         G_ulStatusBarHeight += 15;
+                        _Pmpf((__FUNCTION__ ": got font %s, height is %d",
+                                G_szStatusBarFont,
+                                G_ulStatusBarHeight));
                     }
 
                     rc = G_szStatusBarFont;
@@ -1731,6 +1733,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
                 case SBS_TEXTNONESEL:
                     if (!G_szSBTextNoneSel[0])
                     {
+#ifndef __NOCFGSTATUSBARS__
                         // first call:
                         if (!PrfQueryProfileString(HINI_USERPROFILE,
                                                    (PSZ)INIAPP_XWORKPLACE,
@@ -1738,6 +1741,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
                                                    NULL,
                                                    &G_szSBTextNoneSel,
                                                    sizeof(G_szSBTextNoneSel)))
+#endif
                             WinLoadString(G_habThread1,     // kernel.c
                                           cmnQueryNLSModuleHandle(FALSE),
                                           ID_XSSI_SBTEXTNONESEL,
@@ -1749,6 +1753,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
                 case SBS_TEXTMULTISEL:
                     if (!G_szSBTextMultiSel[0])
                     {
+#ifndef __NOCFGSTATUSBARS__
                         // first call:
                         if (!PrfQueryProfileString(HINI_USERPROFILE,
                                                    (PSZ)INIAPP_XWORKPLACE,
@@ -1756,6 +1761,7 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
                                                    NULL,
                                                    &G_szSBTextMultiSel,
                                                    sizeof(G_szSBTextMultiSel)))
+#endif
                             WinLoadString(G_habThread1,     // kernel.c
                                           cmnQueryNLSModuleHandle(FALSE),
                                           ID_XSSI_SBTEXTMULTISEL,
@@ -1774,8 +1780,6 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
 
     return (rc);
 }
-
-#ifndef __NOCFGSTATUSBARS__
 
 /*
  *@@ cmnSetStatusBarSetting:
@@ -1796,8 +1800,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             HAB     habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
             HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
@@ -1831,6 +1834,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                     G_ulStatusBarHeight += 15;
                 }
                 break;
+
+#ifndef __NOCFGSTATUSBARS__
 
                 case SBS_TEXTNONESEL:
                 {
@@ -1878,6 +1883,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                 }
                 break;
 
+#endif
+
                 default:
                     brc = FALSE;
 
@@ -1891,8 +1898,6 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
     return (brc);
 }
-
-#endif
 
 /*
  *@@ cmnQueryStatusBarHeight:
@@ -1934,8 +1939,7 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             ULONG       ulCopied1;
 
@@ -2030,8 +2034,7 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             if (!G_fGlobalSettingsLoaded)
             {
@@ -3715,6 +3718,39 @@ HWND cmnQueryActiveDesktopHWND(VOID)
     return (_wpclsQueryActiveDesktopHWND(_WPDesktop));
 }
 
+/*
+ *@@ cmnIsObjectFromForeignDesktop:
+ *      returns TRUE if somSelf is a foreign desktop
+ *      or sits below a foreign desktop.
+ *
+ *      A desktop is considered "foreign" if it isn't
+ *      the current one.
+ *
+ *@@added V0.9.16 (2001-12-06) [umoeller]
+ */
+
+BOOL cmnIsObjectFromForeignDesktop(WPObject *somSelf)
+{
+    BOOL fForeign = FALSE;
+    WPObject *pCheck = somSelf;
+    WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
+    while (pCheck)
+    {
+        if (    (_somIsA(pCheck, _WPDesktop))
+             && (pCheck != pActiveDesktop)
+           )
+        {
+            // yo, this is foreign:
+            fForeign = TRUE;
+            break;
+        }
+
+        pCheck = _wpQueryFolder(pCheck);
+    }
+
+    return (fForeign);
+}
+
 const char *G_apcszExtensions[]
     = {
                 "EXE",
@@ -4821,6 +4857,7 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
                 const char *pcszApplication, // in: INI application to load/store last path from
                 const char *pcszKey)        // in: INI key to load/store last path from
 {
+    HWND hwndFileDlg;
     FILEDLG fd;
     memset(&fd, 0, sizeof(FILEDLG));
     fd.cbSize = sizeof(FILEDLG);
@@ -4871,17 +4908,18 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
     _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
 
 #ifndef __NEVERNEWFILEDLG__
-    if (    (    cmnIsFeatureEnabled(NewFileDlg)
-              && fdlgFileDlg(hwndOwner, // owner
-                             NULL,
-                             &fd)
-            )
-        ||
+    if (cmnIsFeatureEnabled(NewFileDlg))
+        hwndFileDlg = fdlgFileDlg(hwndOwner, // owner
+                                  NULL,
+                                  &fd);
+    else
 #endif
-           (WinFileDlg(HWND_DESKTOP,
-                       hwndOwner,
-                       &fd))
-        && (fd.lReturn == DID_OK)
+        hwndFileDlg = WinFileDlg(HWND_DESKTOP,
+                                 hwndOwner,
+                                 &fd);
+
+    if (    (hwndFileDlg)
+         && (fd.lReturn == DID_OK)
        )
     {
         _Pmpf((__FUNCTION__ ": got DID_OK"));

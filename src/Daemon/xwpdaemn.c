@@ -738,11 +738,13 @@ VOID DeinstallHook(VOID)
 {
     if (G_pXwpGlobalShared->fAllHooksInstalled)
     {
+#ifndef __NOMOVEMENT2FEATURES__
         // if mouse pointer is currently hidden,
         // show it now (otherwise it'll be lost...)
         if (G_pHookData)
             if (G_pHookData->fMousePointerHidden)
                 WinShowPointer(HWND_DESKTOP, TRUE);
+#endif
 
 #ifndef __NOPAGEMAGE__
         dmnKillPageMage(FALSE);
@@ -752,15 +754,19 @@ VOID DeinstallHook(VOID)
         G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
 
         // stop timers which might still be running V0.9.4 (2000-07-14) [umoeller]
+#ifndef __NOSLIDINGFOCUS__
         WinStopTimer(G_habDaemon,
                      G_pXwpGlobalShared->hwndDaemonObject,
                      TIMERID_SLIDINGFOCUS);
+#endif
         WinStopTimer(G_habDaemon,
                      G_pXwpGlobalShared->hwndDaemonObject,
                      TIMERID_SLIDINGMENU);
+#ifndef __NOMOVEMENT2FEATURES__
         WinStopTimer(G_habDaemon,
                      G_pXwpGlobalShared->hwndDaemonObject,
                      TIMERID_AUTOHIDEMOUSE);
+#endif
 
         // _Pmpf(("XWPDAEMON: hookKilled called"));
 
@@ -847,6 +853,8 @@ VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
     }
 }
 
+#ifndef __NOSLIDINGFOCUS__
+
 /*
  *@@ ProcessSlidingFocus:
  *      this gets called from fnwpDaemonObject to
@@ -884,7 +892,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     BOOL    fIsSeamless = FALSE;
 
     // rule out desktops, if "ignore desktop" is on
-    if (G_pHookData->HookConfig.fSlidingIgnoreDesktop)
+    if (G_pHookData->HookConfig.__fSlidingIgnoreDesktop)
         if (hwnd2Activate == G_pHookData->hwndPMDesktop)
             // target is PM desktop:
             return;
@@ -894,7 +902,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
 
 #ifndef __NOPAGEMAGE__
     // rule out PageMage, if "ignore PageMage" is on
-    if (G_pHookData->HookConfig.fSlidingIgnorePageMage)
+    if (G_pHookData->HookConfig.__fSlidingIgnorePageMage)
         if (hwnd2Activate == G_pHookData->hwndPageMageFrame)
             return;
 #endif
@@ -903,7 +911,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     // rule out XCenter, if "ignore XCenter" is on
     hwndClient = WinWindowFromID(hwnd2Activate, FID_CLIENT);
             // also needed below for seamless
-    if (G_pHookData->HookConfig.fSlidingIgnoreXCenter)
+    if (G_pHookData->HookConfig.__fSlidingIgnoreXCenter)
     {
         // Is-XCenter check: the window must have an FID_CLIENT
         // whose class name is WC_XCENTER_CLIENT
@@ -952,9 +960,9 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     // bring-to-top mode
     // or window to activate is seamless Win-OS/2 window
     // and should be brought to the top?
-    if (    (G_pHookData->HookConfig.fSlidingBring2Top)
+    if (    (G_pHookData->HookConfig.__fSlidingBring2Top)
          || (   (fIsSeamless)
-             && (!G_pHookData->HookConfig.fSlidingIgnoreSeamless)
+             && (!G_pHookData->HookConfig.__fSlidingIgnoreSeamless)
             )
        )
     {
@@ -1104,6 +1112,8 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
     }
 }
 
+#endif
+
 /*
  *@@ ProcessHotCorner:
  *      implementation for XDM_HOTCORNER in fnwpDaemonObject.
@@ -1224,6 +1234,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 
     switch ((ULONG)mp1)
     {
+#ifndef __NOSLIDINGFOCUS__
         /*
          * TIMERID_SLIDINGFOCUS:
          *
@@ -1236,6 +1247,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             ProcessSlidingFocus(G_hwndSlidingUnderMouse,
                                 G_hwndSliding2Activate);
         break;
+#endif
 
         /*
          * TIMERID_SLIDINGMENU:
@@ -1267,6 +1279,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             CheckRemoveableDrive();
         break; */
 
+#ifndef __NOMOVEMENT2FEATURES__
         /*
          * TIMERID_AUTOHIDEMOUSE:
          *
@@ -1278,6 +1291,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             WinShowPointer(HWND_DESKTOP, FALSE);
             G_pHookData->fMousePointerHidden = TRUE;
         break;
+#endif
 
         /*
          * TIMERID_AUTOSCROLL:
@@ -1299,6 +1313,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             G_ulAutoScrollTick++;
         break;
 
+#ifndef __NOMOVEMENT2FEATURES__
         /*
          * TIMERID_MOVINGPTR:
          *      started by XDM_MOVEPTRTOBUTTON and moves the
@@ -1319,7 +1334,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             ARCPARAMS ap = {1, 1, 0, 0};
             HPS     hps = NULLHANDLE;
 
-            if (G_pHookData->HookConfig.ulAutoMoveFlags & AMF_ANIMATE)
+            if (G_pHookData->HookConfig.__ulAutoMoveFlags & AMF_ANIMATE)
             {
                 // animation: prepare painting then
                 hps = WinGetScreenPS(HWND_DESKTOP);
@@ -1350,7 +1365,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                            DRO_OUTLINE,
                            MAKEFIXED(G_lLastRadius, 0));
 
-            if (lMSElapsed >= G_pHookData->HookConfig.ulAutoMoveDelay)
+            if (lMSElapsed >= G_pHookData->HookConfig.__ulAutoMoveDelay)
             {
                 // max time elapsed: stop then
                 pulStopTimer = &G_ulMovingPtrTimer;
@@ -1364,7 +1379,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 // we're somewhere in the middle:
                 LONG lOfs;
-                LONG lMax = (LONG)G_pHookData->HookConfig.ulAutoMoveDelay;
+                LONG lMax = (LONG)G_pHookData->HookConfig.__ulAutoMoveDelay;
 
                 // x
                 lOfs =   (G_ptlMovingPtrEnd.x - G_ptlMovingPtrStart.x)  // max distance to go
@@ -1401,6 +1416,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                 WinReleasePS(hps);
         }
         break;
+#endif
 
         default:
             return (WinDefWindowProc(hwndObject, msg, mp1, mp2));
@@ -1694,6 +1710,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 LoadHotkeysForHook();
             break;
 
+#ifndef __NOSLIDINGFOCUS__
+
             /*
              *@@ XDM_SLIDINGFOCUS:
              *      message posted by the hook when the mouse
@@ -1713,7 +1731,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_SLIDINGFOCUS:
                 G_hwndSlidingUnderMouse = (HWND)mp1;
                 G_hwndSliding2Activate = (HWND)mp2;
-                if (G_pHookData->HookConfig.ulSlidingFocusDelay)
+                if (G_pHookData->HookConfig.__ulSlidingFocusDelay)
                 {
                     // delayed sliding focus:
                     if (G_ulSlidingFocusTimer)
@@ -1728,7 +1746,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         G_ulSlidingFocusTimer = WinStartTimer(G_habDaemon,
                                                               hwndObject,
                                                               TIMERID_SLIDINGFOCUS,
-                                                              G_pHookData->HookConfig.ulSlidingFocusDelay);
+                                                              G_pHookData->HookConfig.__ulSlidingFocusDelay);
                     // else: the daemon is telling us
                     // to stop timers which are running...
                 }
@@ -1739,6 +1757,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         ProcessSlidingFocus(G_hwndSlidingUnderMouse,
                                             G_hwndSliding2Activate);
             break;
+#endif
 
             /*
              *@@ XDM_SLIDINGMENU:
@@ -2244,6 +2263,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
             break;
 
+#ifndef __NOMOVEMENT2FEATURES__
+
             /*
              *@@ XDM_MOVEPTRTOBUTTON:
              *      posted by the hook if "move ptr to button"
@@ -2269,7 +2290,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                    &G_ptlMovingPtrEnd,
                                    1);
 
-                if (G_pHookData->HookConfig.ulAutoMoveDelay)
+                if (G_pHookData->HookConfig.__ulAutoMoveDelay)
                 {
                     // delay configured:
 
@@ -2301,6 +2322,27 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                      G_ptlMovingPtrEnd.x,
                                      G_ptlMovingPtrEnd.y);
             }
+            break;
+#endif
+
+            /*
+             *@@ XDM_DISABLEHOTKEYSTEMP:
+             *      this message allows an application to
+             *      temporarily disable and re-enable object
+             *      hotkeys. This is used by the "Icon" page
+             *      to disable the hotkeys while the "Hotkeys"
+             *      entry field has the focus.
+             *
+             *      Parameters:
+             *
+             *      --  BOOL mp1: if TRUE, hotkeys are disabled;
+             *          if FALSE, hotkeys are enabled again.
+             *
+             *@@added V0.9.16 (2001-12-08) [umoeller]
+             */
+
+            case XDM_DISABLEHOTKEYSTEMP:
+                G_pHookData->fHotkeysDisabledTemp = (BOOL)mp1;
             break;
 
             default:

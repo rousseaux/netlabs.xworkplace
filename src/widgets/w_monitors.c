@@ -704,7 +704,7 @@ BOOL UpdateDiskMonitors(HWND hwnd,
         {
             ULONG ul;
 
-            _Pmpf((__FUNCTION__ ": gave 0x%lX to pid 0x%lX", pAddDiskWatch, pidDaemon));
+            // _Pmpf((__FUNCTION__ ": gave 0x%lX to pid 0x%lX", pAddDiskWatch, pidDaemon));
 
             ZERO(pAddDiskWatch);
             pAddDiskWatch->hwndNotify = hwnd;
@@ -1853,6 +1853,7 @@ VOID MwgtButton1DblClick(HWND hwnd,
  *@@ HackContextMenu:
  *
  *@@added V0.9.14 (2001-08-01) [umoeller]
+ *@@changed V0.9.16 (2001-12-06) [umoeller]: it was impossible to remove a drive that no longer existed; fixed
  */
 
 VOID HackContextMenu(PMONITORPRIVATE pPrivate)
@@ -1892,15 +1893,24 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
                  ul++)
             {
                 PXDISKINFO pThis = &aDiskInfos[ul];
-                if (pThis->flType & DFL_FIXED)
+                BOOL fIsDisplaying = (    (pPrivate->Setup.pszDisks)
+                                       && (strchr(pPrivate->Setup.pszDisks,
+                                                  pThis->cDriveLetter))
+                                     );
+
+                if (   // list all fixed drives
+                       (pThis->flType & DFL_FIXED)
+                       // even if the drive is not listed as "fixed", make
+                       // sure we list the drives that are currently showing;
+                       // otherwise the user can't get rid of broken drives
+                       // V0.9.16 (2001-12-06) [umoeller]
+                     || (fIsDisplaying)
+                   )
                 {
-                    // fixed drive:
                     CHAR szText[10];
                     ULONG afAttr = 0;
                     pdrv_sprintf(szText, "%c:", pThis->cDriveLetter);
-                    if (    (pPrivate->Setup.pszDisks)
-                         && (strchr(pPrivate->Setup.pszDisks, pThis->cDriveLetter))
-                       )
+                    if (fIsDisplaying)
                         afAttr |= MIA_CHECKED;
 
                     pwinhInsertMenuItem(hwndSubmenu,

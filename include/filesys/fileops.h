@@ -269,7 +269,8 @@
 
     #define FOPS_ISQ_MOVE2TRASH_READONLY    0x0001
     #define FOPS_ISQ_DELETE_READONLY        0x0002
-    #define FOPS_ISQ_FONTINSTALL            0x0004
+    #define FOPS_ISQ_DELETE_FOLDERS         0x0004      // V0.9.16 (2001-12-06) [umoeller]
+    #define FOPS_ISQ_FONTINSTALL            0x0008
 
     FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,
                                    ULONG ulOperation,

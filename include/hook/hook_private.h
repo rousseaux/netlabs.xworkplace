@@ -42,12 +42,18 @@
     // #define TIMEOUT_PGMG_WINLIST    6000
 
     // timer IDs for fnwpDaemonObject
+#ifndef __NOSLIDINGFOCUS__
     #define TIMERID_SLIDINGFOCUS        1
+#endif
     #define TIMERID_SLIDINGMENU         2
     #define TIMERID_MONITORDRIVE        3
+#ifndef __NOMOVEMENT2FEATURES__
     #define TIMERID_AUTOHIDEMOUSE       4
+#endif
     #define TIMERID_AUTOSCROLL          5
+#ifndef __NOMOVEMENT2FEATURES__
     #define TIMERID_MOVINGPTR           6
+#endif
 
     /* ******************************************************************
      *                                                                  *
@@ -127,16 +133,6 @@
 
     typedef struct _HOOKDATA
     {
-        // damon/hook configuration data shared by daemon and the hook;
-        // this gets loaded from OS2.INI
-        HOOKCONFIG  HookConfig;
-
-#ifndef __NOPAGEMAGE__
-        // PageMage configuration data shared by daemon and the hook;
-        // this gets loaded from OS2.INI also
-        PAGEMAGECONFIG PageMageConfig;
-#endif
-
         BOOL        fSendMsgHooked,     // send-message hook installed?
                     fLockupHooked,      // lockup hook installed?
                     fInputHooked,       // input hook installed?
@@ -153,17 +149,31 @@
         HAB         habDaemonObject;
                 // anchor block of hwndDaemonObject; cached for speed
 
+        HMODULE     hmodDLL;
+                // XWPHOOK.DLL module handle
+
+        // damon/hook configuration data shared by daemon and the hook;
+        // this gets loaded from OS2.INI
+        HOOKCONFIG  HookConfig;
+
 #ifndef __NOPAGEMAGE__
+        // PageMage configuration data shared by daemon and the hook;
+        // this gets loaded from OS2.INI also
+        PAGEMAGECONFIG PageMageConfig;
+
         HWND        hwndPageMageClient;
                 // PageMage client window, created by pgmcCreateMainControlWnd
         HWND        hwndPageMageFrame;
                 // PageMage frame window, created by pgmcCreateMainControlWnd
         HWND        hwndPageMageMoveThread;
                 // PageMage move thread (fnwpMoveThread)
-#endif
 
-        HMODULE     hmodDLL;
-                // XWPHOOK.DLL module handle
+        BOOL        fDisablePgmgSwitching;
+        BOOL        fDisableMouseSwitch;
+                // TRUE if processing a mouse switch request.  Focus
+                // changes are disable during this.
+                /// V0.9.9 (2001-03-14) [lafaix]
+#endif
 
         HWND        hwndPMDesktop,
                 // desktop window handle (WinQueryDesktopWindow)
@@ -205,19 +215,14 @@
                 // Set by the hook, and used by XDM_BEGINSCROLL
                 // V0.9.9 (2001-03-20) [lafaix]
 
+#ifndef __NOMOVEMENT2FEATURES__
         // auto-hide mouse pointer; added V0.9.1 (99-12-03)
         ULONG       idAutoHideTimer;
                 // if != NULL, auto-hide timer is running
         BOOL        fMousePointerHidden;
                 // TRUE if mouse pointer has been hidden
-
-        // PageMage
-#ifndef __NOPAGEMAGE__
-        BOOL        fDisablePgmgSwitching;
-        BOOL        fDisableMouseSwitch;
-                // TRUE if processing a mouse switch request.  Focus
-                // changes are disable during this.
-                /// V0.9.9 (2001-03-14) [lafaix]
+        // auto-hide mouse pointer state backup; added V0.9.9 (2001-03-21) [lafaix]
+        BOOL        fOldAutoHideMouse;
 #endif
 
         // sliding menus
@@ -226,11 +231,15 @@
                 // V0.9.12 (2001-05-24) [lafaix]: changed meaning (from identity to index)
         MPARAM      mpDelayedSlidingMenuMp1;
 
-        // auto-hide mouse pointer state backup; added V0.9.9 (2001-03-21) [lafaix]
-        BOOL        fOldAutoHideMouse;
-
         // click watches V0.9.14 (2001-08-21) [umoeller]
         BOOL        fClickWatches;
+
+        // object hotkeys: if this flag is set, hotkeys are
+        // temporarily disabled; this gets set when the
+        // Hotkeys entry field on the "Icon" page gets the
+        // focus, via XDM_DISABLEHOTKEYSTEMP
+        // V0.9.16 (2001-12-08) [umoeller]
+        BOOL        fHotkeysDisabledTemp;
 
     } HOOKDATA, *PHOOKDATA;
 

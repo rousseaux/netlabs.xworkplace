@@ -50,7 +50,7 @@ interface XWPFileSystem : WPFileSystem
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpQueryHandle;
+    releaseorder: xwpQueryHandle, xwpQueryUpperRealName;
 
     /*
      * Class Modifiers:

@@ -129,6 +129,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         // moved "corners" to XWPScreen V0.9.9 (2001-03-27) [umoeller]
 
         // second movement page V0.9.14 (2001-08-02) [lafaix]
+#ifndef __NOMOVEMENT2FEATURES__
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
         pcnbp->somSelf = somSelf;
@@ -143,13 +144,14 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         pcnbp->pfncbInitPage    = hifMouseMovement2InitPage;
         pcnbp->pfncbItemChanged = hifMouseMovement2ItemChanged;
         ulrc = ntbInsertPage(pcnbp);
+#endif
 
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_MOUSE_MOVEMENT;
+        pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_MOUSE_MOVEMENT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
         // pcnbp->fEnumerate = TRUE;

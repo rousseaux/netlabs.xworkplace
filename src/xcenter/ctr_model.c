@@ -1634,8 +1634,7 @@ VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substri
                     pNextCloseBracket = NULL;
         ULONG cbClassName = 0;
 
-        _Pmpf((__FUNCTION__ ": decoding widgets for tray %s",
-                                        pTray->pszTrayName));
+        // _Pmpf((__FUNCTION__ ": decoding widgets for tray %s", pTray->pszTrayName));
 
         if (pNextOpenBracket)
         {
@@ -1707,13 +1706,13 @@ VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substri
                                 // malloc'd, do not free
                 }
 
-                _Pmpf(("  got subwidget %s, %s",
+                /* _Pmpf(("  got subwidget %s, %s",
                         (pNewSubwidget->Public.pszWidgetClass)
                             ? pNewSubwidget->Public.pszWidgetClass
                             : "NULL",
                         (pNewSubwidget->Public.pszSetupString)
                             ? pNewSubwidget->Public.pszSetupString
-                            : "NULL"));
+                            : "NULL")); */
 
                 lstAppendItem(&pTray->llSubwidgetSettings,
                               pNewSubwidget);
@@ -1908,8 +1907,7 @@ ULONG ctrpUnstuffSettings(XCenter *somSelf)
                 // this is the marker:
                 // decode it and add the tray settings to the
                 // PRIVATEWIDGETSETTING from the last loop
-                _Pmpf((__FUNCTION__ ": found tray settings %s",
-                        p));
+                // _Pmpf((__FUNCTION__ ": found tray settings %s", p));
 
                 if (pPrevSetting)
                     DecodeTraySettings(p + sizeof(TRAYSETTINGSMARKER) - 1,

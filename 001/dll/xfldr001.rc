@@ -1072,6 +1072,21 @@ BEGIN
     ID_XSDI_DETAILS_GROUP               "~Details"
     ID_XSDI_DETAILS_SETUPSTR_GROUP      "~Setup string"
 
+    /* new "Mouse movement 1" page */
+    ID_XSDI_MOUSE_SLIDINGFOCUS_GRP      "Sliding focus"
+    ID_XSDI_MOUSE_SLIDINGFOCUS          "~Enable"
+    ID_XSDI_MOUSE_FOCUSDELAY_TXT1       "Activation de~lay:"
+    ID_XSDI_MOUSE_BRING2TOP             "Bring windows to ~top"
+    ID_XSDI_MOUSE_IGNORESEAMLESS        "Ignore seamless ~Win-OS/2"
+    ID_XSDI_MOUSE_IGNOREDESKTOP         "~Ignore Desktop"
+    ID_XSDI_MOUSE_IGNOREPAGEMAGE        "Ignore Pa~geMage"
+    ID_XSDI_MOUSE_IGNOREXCENTER         "Ignore ~XCenter"
+    ID_XSDI_MOUSE_SLIDINGMENU_GRP       "Sliding menu selection"
+    ID_XSDI_MOUSE_SLIDINGMENU           "E~nable"
+    ID_XSDI_MOUSE_MENUDELAY_TXT1        "Su~bmenu delay:"
+    ID_XSDI_MOUSE_CONDCASCADE           "~Conditional cascade sensitivity"
+    ID_XSDI_MOUSE_MENUHILITE            "I~mmediate hilite"
+
 END
 
 /* Treesize definitions; added V0.9.0 */

@@ -1479,50 +1479,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSE_MOVEMENT, 0, 0, 232, 164, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Sliding focus", -1, 6, 66, 194, 72
-        AUTOCHECKBOX    "~Enable", ID_XSDI_MOUSE_SLIDINGFOCUS, 14, 122, 96,
-                        8
-        LTEXT           "Activation de~lay:", ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
-                        24, 110, 72, 12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_FOCUSDELAY_SLIDER, 92, 110, 62, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 31, 0, 5, 0
-        CTEXT           "Text", ID_XSDI_MOUSE_FOCUSDELAY_TXT2, 156, 110, 30,
-                        12, DT_VCENTER | NOT WS_GROUP
-        AUTOCHECKBOX    "Bring windows to ~top", ID_XSDI_MOUSE_BRING2TOP, 24,
-                        100, 102, 8
-        AUTOCHECKBOX    "Ignore seamless ~Win-OS/2",
-                        ID_XSDI_MOUSE_IGNORESEAMLESS, 24, 92, 120, 8
-        AUTOCHECKBOX    "~Ignore Desktop", ID_XSDI_MOUSE_IGNOREDESKTOP, 24,
-                        84, 76, 8
-        AUTOCHECKBOX    "Ignore Pa~geMage", ID_XSDI_MOUSE_IGNOREPAGEMAGE, 24,
-                        76, 82, 8
-        AUTOCHECKBOX    "Ignore ~XCenter", ID_XSDI_MOUSE_IGNOREXCENTER, 24,
-                        68, 82, 8
-        GROUPBOX        "Sliding menu selection", -1, 6, 18, 194, 46
-        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_SLIDINGMENU, 12, 48, 132, 8
-        LTEXT           "Su~bmenu delay:", ID_XSDI_MOUSE_MENUDELAY_TXT1, 22,
-                        36, 68, 12, DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP
-        SLIDER          ID_XSDI_MOUSE_MENUDELAY_SLIDER, 92, 36, 62, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 31, 0, 5, 0
-        CTEXT           "Text", ID_XSDI_MOUSE_MENUDELAY_TXT2, 156, 36, 30,
-                        12, DT_VCENTER | NOT WS_GROUP
-        AUTOCHECKBOX    "~Conditional cascade sensitivity",
-                        ID_XSDI_MOUSE_CONDCASCADE, 22, 28, 164, 10
-        AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22,
-                        20, 164, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_NEWFILTER LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "New Filter", ID_XSD_NEWFILTER, 15, 66, 145, 45, WS_VISIBLE,

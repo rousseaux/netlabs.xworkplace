@@ -175,16 +175,16 @@
     {
         // Sliding focus:
 
-        BOOL            fSlidingFocus;
+        BOOL            __fSlidingFocus;
                 // enabled?
-        ULONG           ulSlidingFocusDelay;
+        ULONG           __ulSlidingFocusDelay;
                 // delay in ms; 0 = off
 
-        BOOL            fSlidingBring2Top;
+        BOOL            __fSlidingBring2Top;
                 // bring windows to top or preserve Z-order
-        BOOL            fSlidingIgnoreDesktop;
+        BOOL            __fSlidingIgnoreDesktop;
                 // ignore Desktop windows
-        BOOL            fSlidingIgnoreSeamless;
+        BOOL            __fSlidingIgnoreSeamless;
                 // TRUE: ignore seamless Win-OS/2 windows
                 // FALSE: always bring them to top
 
@@ -233,8 +233,8 @@
                 //     -9       -->  10%
 
         // Auto-hide mouse pointer: V0.9.1 (99-12-03)
-        BOOL            fAutoHideMouse;
-        ULONG           ulAutoHideDelay;
+        BOOL            __fAutoHideMouse;
+        ULONG           __ulAutoHideDelay;
                 // delay in seconds; 0 means 1 second, 2 means 3, ...
 
         // Global object hotkeys enabled:
@@ -245,7 +245,7 @@
 
         // PageMage configuration
         BOOL            fRemoved1, // _fPageMageStayOnTop,
-                        fSlidingIgnorePageMage;
+                        __fSlidingIgnorePageMage;
                                 // on sliding focus
 
         // Sliding menus
@@ -296,7 +296,7 @@
         BOOL            fConditionalCascadeSensitive;
 
         // more PageMage configuration V0.9.7 (2000-12-08) [umoeller]
-        BOOL            fSlidingIgnoreXCenter;
+        BOOL            __fSlidingIgnoreXCenter;
                             // on sliding focus
 
         // screen corner objects sensitivity; in percent of the
@@ -310,10 +310,10 @@
 
         // Auto hide and automatic pointer movement options
         // V0.9.14 (2001-08-02) [lafaix]
-        ULONG           ulAutoHideFlags;
-        BOOL            fAutoMoveMouse;
-        ULONG           ulAutoMoveFlags;
-        ULONG           ulAutoMoveDelay;            // V0.9.14 (2001-08-21) [umoeller]
+        ULONG           __ulAutoHideFlags;
+        BOOL            __fAutoMoveMouse;
+        ULONG           __ulAutoMoveFlags;
+        ULONG           __ulAutoMoveDelay;            // V0.9.14 (2001-08-21) [umoeller]
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*
@@ -421,7 +421,9 @@
 
     #define XDM_FUNCTIONKEYSCHANGED (WM_USER + 407)
 
+#ifndef __NOSLIDINGFOCUS__
     #define XDM_SLIDINGFOCUS        (WM_USER + 408)
+#endif
 
     #define XDM_SLIDINGMENU         (WM_USER + 409)
 
@@ -463,8 +465,6 @@
 
     #define XDM_MOUSECLICKED        (WM_USER + 421)
 
-    #define XDM_MOVEPTRTOBUTTON     (WM_USER + 422)
-
 /*
    #define WM_BUTTON1UP               0x0072
    #define WM_BUTTON1DBLCLK           0x0073
@@ -475,6 +475,12 @@
       #define WM_BUTTON3UP            0x0078
       #define WM_BUTTON3DBLCLK        0x0079
 */
+
+#ifndef __NOMOVEMENT2FEATURES__
+    #define XDM_MOVEPTRTOBUTTON     (WM_USER + 422)
+#endif
+
+    #define XDM_DISABLEHOTKEYSTEMP  (WM_USER + 423)
 
 #endif
 

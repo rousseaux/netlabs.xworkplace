@@ -69,6 +69,7 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
+#include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xfont.ih"
@@ -141,16 +142,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
     {
         if (LOCK_OBJECT(Lock, somSelf))
         {
-            if (_pszFontFile)
-            {
-                free(_pszFontFile);
-                _pszFontFile = NULL;
-            }
-
-            if (pszFontFile)
-                _pszFontFile = strdup(pszFontFile);
-
-
+            strhStore(&_pszFontFile, pszFontFile, NULL);
             brc = TRUE;
         }
     }
@@ -220,16 +212,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFamily(XWPFontObject *somSelf,
     {
         if (LOCK_OBJECT(Lock, somSelf))
         {
-            if (_pszFontFamily)
-            {
-                free(_pszFontFamily);
-            }
-
-            if (pszFontFamily)
-                _pszFontFamily = strdup(pszFontFamily);
-            else
-                _pszFontFamily = NULL;
-
+            strhStore(&_pszFontFamily, pszFontFamily, NULL);
             brc = TRUE;
         }
     }
@@ -305,40 +288,38 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
     {
         if (LOCK_OBJECT(Lock, somSelf))
         {
+            CHAR szError2[200];
+            PSZ  pszError = NULL;
+
             _arcFontFileError = arc;
 
-            if (_pszFontFileError)
+            switch (arc)
             {
-                free(_pszFontFileError);
-                _pszFontFileError = NULL;
+                case NO_ERROR:
+                    pszError = NULL;
+                break;
+
+                // give descriptions for a few common errors:
+                case ERROR_FILE_NOT_FOUND:
+                    pszError = "File not found.";
+                break;
+
+                case ERROR_PATH_NOT_FOUND:
+                    pszError = "Path not found.";
+                break;
+
+                case ERROR_BAD_FORMAT:      // returned by our font description
+                    pszError = "Unknown font format.";
+                break;
+
+                default:
+                    sprintf(szError2, "Error %d occured.", arc);
+                    pszError = szError2;
             }
 
-            if (arc)
-            {
-                // we have a new error:
-                CHAR szError2[200];
-                PSZ  pszError = NULL;
+            strhStore(&_pszFontFileError, pszError, NULL);
 
-                switch (arc)
-                {
-                    // give descriptions for a few common errors:
-                    case ERROR_FILE_NOT_FOUND:
-                        pszError = "File not found."; break;
-
-                    case ERROR_PATH_NOT_FOUND:
-                        pszError = "Path not found."; break;
-
-                    case ERROR_BAD_FORMAT:      // returned by our font description
-                        pszError = "Unknown font format."; break;
-
-                    default:
-                        sprintf(szError2, "Error %d occured.", arc);
-                        pszError = szError2;
-                }
-                _pszFontFileError = strdup(pszError);
-
-                brc = TRUE;
-            }
+            brc = TRUE;
         }
     }
     CATCH(excpt1) {} END_CATCH();
@@ -416,23 +397,9 @@ SOM_Scope void  SOMLINK fono_wpUnInitData(XWPFontObject *somSelf)
 
     XWPFontObject_parent_WPTransient_wpUnInitData(somSelf);
 
-    if (_pszFontFile)
-    {
-        free(_pszFontFile);
-        _pszFontFile = NULL;
-    }
-
-    if (_pszFontFamily)
-    {
-        free(_pszFontFamily);
-        _pszFontFamily = NULL;
-    }
-
-    if (_pszFontFileError)
-    {
-        free(_pszFontFileError);
-        _pszFontFileError = NULL;
-    }
+    strhStore(&_pszFontFile, NULL, NULL);
+    strhStore(&_pszFontFamily, NULL, NULL);
+    strhStore(&_pszFontFileError, NULL, NULL);
 }
 
 /*
