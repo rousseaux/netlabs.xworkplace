@@ -29,7 +29,7 @@
 ; variable information. XWorkplace might crash if these placeholders
 ; are not found.
 ;
-;       Copyright (C) 1997-2000 Ulrich M”ller.
+;       Copyright (C) 1997-2001 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software. You can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -258,14 +258,15 @@ Should we do this now?
 ; the following items have been changed with V0.9.7
 ;
 
-<--XFL0140-->: Copyright (C) 1997-2000 Ulrich M”ller.
+<--XFL0140-->: Copyright (C) 1997-2001 Ulrich M”ller.
 English National Language Support:
-Copyright (C) 1998-2000 Ulrich M”ller.
+Copyright (C) 1998-2001 Ulrich M”ller.
 
 Contains code from APM/2 (C) 1997-1998 Roman Stangl (OpenSource); ported to XFolder 1998 by ARAKAWA Atsushi.
 Contains code from ProgramCommander/2 (C) 1993-1999 Roman Stangl (OpenSource).
 Contains code from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
 Contains code from the Standard Function Library (SFL) (C) 1991-99 iMatix Corporation (http://www.imatix.com).
+Contains code (C) 1999-2000 Christian Langanke.
 
 Compiled using IBM VisualAge C++ 3.08.
 
@@ -324,6 +325,14 @@ Check if maybe the xwplog.log file in the root directory of your boot drive cont
 <--XFL0197-->: XCenter
 
 <--XFL0198-->: Are you sure you want to switch your system to "Suspend" state?
+
+<--XFL0199-->: Whew... apparently all went well. To get you started: Everything you need to enable XWorkplace features is in the "XWorkplace Setup" object in the installation folder that just opened.
+
+The other shadows in that folder mostly point to the original objects that were created in your "System setup" folder.
+
+The "XWorkplace User Guide" contains all the information you will need... and if it doesn't, it has contact addresses for support.
+
+Have fun with XWorkplace!
 
 ; ---------------------------------------------------------------------------------
 ;

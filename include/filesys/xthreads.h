@@ -34,7 +34,7 @@
      *                                                                  *
      ********************************************************************/
 
-    #define WOM_WELCOME                 (WM_USER+150)
+    // #define WOM_WELCOME                 (WM_USER+150)
 
     /*
      *@@ WOM_ADDAWAKEOBJECT:

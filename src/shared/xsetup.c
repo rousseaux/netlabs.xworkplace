@@ -1488,7 +1488,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 // add tools (i.e. controls of the dialog)
                 // according to the usToolIDs array
                 TOOLINFO    ti = {0};
-                ti.ulFlags = /* TTF_CENTERTIP | */ TTF_SUBCLASS;
+                ti.ulFlags = /* TTF_CENTERBELOW | */ TTF_SUBCLASS;
                 ti.hwndToolOwner = pcnbp->hwndDlgPage;
                 ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 // add cnr as tool to tooltip control
@@ -1926,11 +1926,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         cmnEnableTrashCan(pcnbp->hwndFrame,
                            ulExtra);
-        (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
     }
 
     if (ulUpdateFlags)
-        (*(pcnbp->pfncbInitPage))(pcnbp, ulUpdateFlags);
+        pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);
 
     if (fUpdateMouseMovementPage)
         // update "Mouse movement" page
@@ -1965,6 +1965,9 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
             switch (usItemID)
             {
                 case DID_TOOLTIP:
+
+                    _Pmpf((__FUNCTION__ ": got WM_CONTROL for DID_TOOLTIP"));
+
                     if (usNotifyCode == TTN_NEEDTEXT)
                     {
                         PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
@@ -1973,7 +1976,7 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                                                                ID_XCDI_CONTAINER);
                         POINTL       ptlMouse;
 
-                        // _Pmpf(("setFeaturesMessages: got TTN_NEEDTEXT"));
+                        _Pmpf(("  is TTN_NEEDTEXT"));
 
                         // we use pUser2 for the Tooltip string
                         if (pcnbp->pUser2)
@@ -2301,7 +2304,7 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         //   old language
                         cmnSetLanguageCode(szOldLanguageCode);
                         // update display
-                        (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                     }
                     else
                     {
@@ -2871,7 +2874,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCDI_NOWORKERTHREAD:
             pGlobalSettings->NoWorkerThread  = ulExtra;
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break;
@@ -2932,7 +2935,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fWorkerPriorityBeep = pGSBackup->fWorkerPriorityBeep;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break; }
@@ -2944,7 +2947,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break; }

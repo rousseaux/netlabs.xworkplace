@@ -45,14 +45,15 @@ into a new CVS archive.
 There's no way to compile without that
 code.
 
-<P><LI>If you enable debugging code by setting the XWPDEBUG environment
-variable,
+<P><LI>Only if you enable debugging code by setting the <CODE>XWPDEBUG</CODE>
+<A HREF="src1_32env.html">environment variable</A>,
 you need the full <B>PMPRINTF package by Dennis Bareis.</B>
 <P>
 Check the <A HREF="src1_880debug.html">"Debugging"</A> section for details.
 
 <P><LI>Only if you want to build the ring-0 security driver (<CODE>XWPSEC32.SYS</CODE>) for
-XWorkplace Security (see src\xwpsec_ring0), you will need <B>ALP, the IBM assembler.</B>
+<A HREF="src2_860xwpsec.html">XWorkplace Security</A>, you will need
+<B>ALP, the IBM assembler.</B>
 XWPSecurity is only built if the respective
 <A HREF="src1_32env.html">environment variable</A> is set.
 <P>ALP is in the Warp 4 toolkit and in the DDK (I think).
@@ -61,8 +62,6 @@ the assembler files. I tested with 4.00.006, and it refused to accept
 some of the constructs in there. I am no assembler freak, so
 maybe someone else can help.
 
-</UL>Also see the <A HREF="src1_31make.html">"Making XWorkplace"</A> section for how to
-rebuild XWorkplace.
-<BR>
+</UL>
 </BODY>
 </HTML>

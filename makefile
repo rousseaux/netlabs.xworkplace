@@ -377,10 +377,7 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-!ifndef XWP_DEBUG
-# copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-!endif
 !ifdef DYNAMIC_TRACE
         @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
         maptsf $(@B).map /MAJOR=255 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
@@ -402,10 +399,7 @@ $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
         @cd $(MODULESDIR)
-!ifndef XWP_DEBUG
-# create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
-!endif
         @cd $(CURRENT_DIR)
         cmd.exe /c tools\raisebld.cmd include\build.h
 
@@ -438,10 +432,7 @@ $(XWPRUNNING)\plugins\xcenter\winlist.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-!ifndef XWP_DEBUG
-# copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
-!endif
 
 # update DEF file if buildlevel has changed
 src\widgets\winlist.def: include\bldlevel.h
@@ -451,10 +442,7 @@ $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def $(WINLISTOBJS)
         @cd $(MODULESDIR)
-!ifndef XWP_DEBUG
-# create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
-!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -465,10 +453,7 @@ $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-!ifndef XWP_DEBUG
-# copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
-!endif
 
 # update DEF file if buildlevel has changed
 src\widgets\monitors.def: include\bldlevel.h
@@ -480,10 +465,7 @@ $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
 $(MONITOROBJS)
 <<
         @cd $(MODULESDIR)
-!ifndef XWP_DEBUG
-# create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
-!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -494,10 +476,7 @@ $(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
         unlock $@
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-!ifndef XWP_DEBUG
-# copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
-!endif
 
 # update DEF file if buildlevel has changed
 src\widgets\sample.def: include\bldlevel.h
@@ -509,10 +488,7 @@ $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
 $(SAMPLEOBJS)
 <<
         @cd $(MODULESDIR)
-!ifndef XWP_DEBUG
-# create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
-!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -520,10 +496,7 @@ $(SAMPLEOBJS)
 #
 $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
         cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
-!ifndef XWP_DEBUG
-# copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-!endif
 
 # update DEF file if buildlevel has changed
 src\Daemon\xwpdaemn.def: include\bldlevel.h
@@ -538,10 +511,7 @@ $(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
         $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
         $(RC) ..\exe_mt\$(@B).res $(@B).exe
-!ifndef XWP_DEBUG
-# create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
-!endif
         @cd $(CURRENT_DIR)
 
 #
@@ -550,10 +520,7 @@ $(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
 $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 # no unlock, this is a hook        unlock $@
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-!ifndef XWP_DEBUG
-# copy symbol file, which is only needed if debug code is disabled
         cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-!endif
 !ifdef DYNAMIC_TRACE
         @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
         maptsf $(@B).map /MAJOR=253 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
@@ -573,10 +540,7 @@ $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
-!ifndef XWP_DEBUG
-# create symbol file, which is only needed if debug code is disabled
         mapsym /n $(@B).map > NUL
-!endif
         @cd $(CURRENT_DIR)
 
 #

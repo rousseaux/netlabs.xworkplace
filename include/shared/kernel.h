@@ -330,6 +330,8 @@
 
     #define T1M_FOPS_TASK_DONE          (WM_USER+285)
 
+    #define T1M_WELCOME                 (WM_USER+286)
+
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);

@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.7 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated December 30, 2000
+Last updated January 8, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -39,7 +39,10 @@ Last updated December 30, 2000
 
     This version fixes a number of bugs reported for V0.9.6.
     In addition, you get the prototype for the XCenter, a
-    WarpCenter replacement.
+    WarpCenter replacement. After installation, you can
+    create an XCenter instance from the "Objects" page in
+    the "XWorkplace Setup" object. A future version will
+    create a standard XCenter for you.
 
     For details, refer to the "XWorkplace User Guide". To
     extract the documentation only, see "2. INSTALLATION"
@@ -53,11 +56,9 @@ Last updated December 30, 2000
 
     ---> In any case, before installing, MAKE A WPS BACKUP.
 
-    Note: Use WarpIN V0.9.6 or higher to install this archive.
-    Older versions will not be able to create the XWorkplace
-    WPS objects and will probably fail when upgrading XWorkplace
-    from a previous version. Using the latest WarpIN is strongly
-    recommended.
+    Note: Use WarpIN V0.9.7 or higher to install this archive.
+    Version 0.9.6 had a nasty bug with target paths which was
+    kind of annoying.
 
     If you are still unsure whether you should use XWorkplace at
     this point, and if you have WarpIN V0.9.6 installed, you can
@@ -180,7 +181,7 @@ Last updated December 30, 2000
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2000 Ulrich M”ller, Christian Langanke, and others.
+    Copyright (C) 1997-2001 Ulrich M”ller, Christian Langanke, and others.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in

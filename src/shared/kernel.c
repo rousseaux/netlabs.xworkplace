@@ -236,12 +236,14 @@ BOOL krnLock(const char *pcszSourceFile,
     {
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "krnLock mutex request failed!!\n"
-               "    Original requestor: %s (%s, line %d))\n"
-               "    Second requestor: %s (%s, line %d))\n",
+               "    First requestor: %s (%s, line %d))\n"
+               "    Second (failed) requestor: %s (%s, line %d))\n",
+               (G_pcszReqFunction) ? G_pcszReqFunction : "NULL",
                (G_pcszReqSourceFile) ? G_pcszReqSourceFile : "NULL",
                G_ulReqLine,
-               (G_pcszReqFunction) ? G_pcszReqFunction : "NULL",
-               pcszSourceFile, ulLine, pcszFunction);
+               pcszFunction,
+               pcszSourceFile,
+               ulLine);
 
         return (FALSE);
     }
@@ -1498,6 +1500,29 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                               500);     // half a second delay
             break; }
 #endif
+
+            /*
+             *@@ T1M_WELCOME:
+             *      posted if XWorkplace has just been installed.
+             *      This shows a little "Welcom" dialog on thread 1.
+             *      This used to be a worker thread msg, but starting
+             *      windows there wasn't such a good idea.
+             *
+             *@@added V0.9.7 (2001-01-07) [umoeller]
+             */
+
+            case T1M_WELCOME:
+            /* {
+                WPObject *pobj = wpshQueryObjectFromID(XFOLDER_MAINID,
+                                                       NULL);
+                if (pobj)
+                    if (_wpViewObject(pobj, NULLHANDLE, OPEN_CONTENTS, 0))
+                        cmnMessageBoxMsg(NULLHANDLE,
+                                         121,       // xwp
+                                         199,       // welcome
+                                         MB_OK);
+                */ // ### currently disabled... this hangs the system, dammit
+            break;
 
             #ifdef __DEBUG__
             case XM_CRASH:          // posted by debugging context menu of XFldDesktop

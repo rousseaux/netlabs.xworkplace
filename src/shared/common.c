@@ -3420,11 +3420,11 @@ ULONG cmnMessageBoxMsg(HWND hwndOwner,
     CHAR    szTitle[200], szMessage[2000];
 
     cmnGetMessage(NULL, 0,
-            szTitle, sizeof(szTitle)-1,
-            ulTitle);
+                  szTitle, sizeof(szTitle)-1,
+                  ulTitle);
     cmnGetMessage(NULL, 0,
-            szMessage, sizeof(szMessage)-1,
-            ulMessage);
+                  szMessage, sizeof(szMessage)-1,
+                  ulMessage);
 
     return (cmnMessageBox(hwndOwner, szTitle, szMessage, flStyle));
 }
@@ -3447,11 +3447,11 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
     CHAR    szTitle[200], szMessage[2000];
 
     cmnGetMessage(NULL, 0,
-            szTitle, sizeof(szTitle)-1,
-            ulTitle);
+                  szTitle, sizeof(szTitle)-1,
+                  ulTitle);
     cmnGetMessage(pTable, ulTable,
-            szMessage, sizeof(szMessage)-1,
-            ulMessage);
+                  szMessage, sizeof(szMessage)-1,
+                  ulMessage);
 
     return (cmnMessageBox(hwndOwner, szTitle, szMessage, flStyle));
 }

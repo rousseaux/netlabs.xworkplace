@@ -424,7 +424,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *     display hello dlg box
          */
 
-        case WOM_WELCOME:
+        /* case WOM_WELCOME:
         {
             BOOL fDone = FALSE;
             if (doshIsWarp4())
@@ -449,7 +449,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                    ID_XFD_WELCOME,
                                    0);
             }
-        break; }
+        break; } */
 
         /*
          * WOM_QUICKOPEN:
@@ -1564,7 +1564,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                             (MPARAM)RCF_MAININSTALLFOLDER,
                                             MPNULL); */
 
-                        xthrPostWorkerMsg(WOM_WELCOME, MPNULL, MPNULL);
+                        krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
                     }
 
                     fPostNext = TRUE;
