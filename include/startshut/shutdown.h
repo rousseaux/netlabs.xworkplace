@@ -157,6 +157,8 @@
 
     VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp);
 
+    BOOL xsdIsShutdownRunning(VOID);
+
     BOOL xsdInitiateShutdown(VOID);
 
     BOOL xsdInitiateRestartWPS(BOOL fLogoff);
@@ -198,16 +200,12 @@
     #ifdef KERNEL_HEADER_INCLUDED
     #ifdef SOM_WPObject_h
 
-        /*
-         *@@ SHUTDOWNCONSTS:
-         *      structure containing a number of
-         *      shutdown constants which are needed
-         *      by the various parts of XShutdown.
-         *      Use xsdGetShutdownConsts to fill this
-         *      structure.
-         *
-         *@@added V0.9.4 (2000-07-15) [umoeller]
-         */
+        #define XSD_SYSTEM          -1
+        #define XSD_INVISIBLE       -2
+        #define XSD_DEBUGNEED       -3
+
+        #define XSD_DESKTOP         1
+        #define XSD_WARPCENTER      2
 
         typedef struct _SHUTDOWNCONSTS
         {
@@ -216,18 +214,20 @@
             WPObject        *pActiveDesktop;
             HWND            hwndActiveDesktop;
             HWND            hwndOpenWarpCenter; // OPEN_RUNNING view of open WarpCenter
-            PID             pidWPS;     // WinQueryWindowProcess(G_hwndMain, &G_pidWPS, NULL);
-            PID             pidPM;      // WinQueryWindowProcess(HWND_DESKTOP, &G_pidPM, NULL);
+
+            PID             pidWPS,     // WinQueryWindowProcess(G_hwndMain, &G_pidWPS, NULL);
+                            pidPM;      // WinQueryWindowProcess(HWND_DESKTOP, &G_pidPM, NULL);
+
+            HWND            hwndMain,
+                                    // dlg with listbox (visible only in debug mode)
+                            hwndShutdownStatus;
+                                    // status window (always visible)
+            HWND            hwndVioDlg;
+                                    // if != NULLHANDLE, currently open VIO confirmation
+                                    // window
         } SHUTDOWNCONSTS, *PSHUTDOWNCONSTS;
 
         VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts);
-
-        #define XSD_SYSTEM          -1
-        #define XSD_INVISIBLE       -2
-        #define XSD_DEBUGNEED       -3
-
-        #define XSD_DESKTOP         1
-        #define XSD_WARPCENTER      2
 
         LONG xsdIsClosable(HAB hab,
                            PSHUTDOWNCONSTS pConsts,

@@ -335,6 +335,9 @@
 
     #define ID_XSH_RUN                      118
 
+    #define ID_XSH_SETTINGS_PGM_ASSOCIATIONS 119
+    #define ID_XSH_SETTINGS_XC_THREADS      120
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations
@@ -473,6 +476,7 @@
     #define SP_SETUP_PARANOIA       32      // new with V0.9.0
     #define SP_SETUP_OBJECTS        33      // new with V0.9.0
     #define SP_SETUP_XWPLOGO        34      // new with V0.9.6 (2000-11-04) [umoeller]
+    #define SP_SETUP_THREADS        35      // new with V0.9.9 (2001-03-07) [umoeller]
 
     // 4) "Sort" pages both in folder notebooks and
     //    "Workplace Shell"
@@ -536,6 +540,10 @@
     #define SP_XCENTER_VIEW1        170     // new with V0.9.7 (2000-12-05) [umoeller]
     #define SP_XCENTER_VIEW2        171     // new with V0.9.7 (2001-01-18) [umoeller]
     #define SP_XCENTER_WIDGETS      172     // new with V0.9.7 (2000-12-05) [umoeller]
+
+    // 18) WPProgram/WPProgramFile
+    #define SP_PGM_ASSOCS           180     // new with V0.9.9 (2001-03-07) [umoeller]
+    #define SP_PGMFILE_ASSOCS       181     // new with V0.9.9 (2001-03-07) [umoeller]
 
     /********************************************************************
      *
@@ -1218,7 +1226,63 @@
                 pszBytes,
 
                 // title of XFldProgramFile "Resources" page V0.9.7 (2000-12-20) [umoeller]
-                pszResourcesPage;
+                pszResourcesPage,
+
+                // title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller]
+                pszAssociationsPage,
+
+                // miscellaneous new strings with V0.9.9 (2001-03-07) [umoeller]
+                pszWidgetsPage,
+                pszAddWidget,           // "~Add widget",
+                pszWidgetClass,         // "Class";
+                pszWidgetSetup,         // "Setup";
+
+                pszFontFolder,
+                pszFontFile,
+                pszFontFamily,
+                pszFontErrors,
+                pszFontObject,
+                pszCDPlayerView,
+                pszCDPlayer,
+                pszVolumeView,
+                pszVolume,
+                pszAdministrator,
+                pszThreadsPage,
+
+                pszClsListToken,
+
+                pszDriverVersion,       // "Version: "
+                pszDriverVendor,        // "Vendor: "
+
+                pszFontSampleView,
+                pszFontDeinstall,       // "~Deinstall..."
+
+                pszKeyDescription,      // "Key description"
+                pszScanCode,            // "Hardware scan code";
+                pszModifier,            // "Modifier";
+
+                pszDefaultShutdown,     // "Default OS/2 shutdown...",
+                pszInstallingFonts,     // "Installing fonts...";
+
+                pszParameters,          // title of variable prompts dlg
+                pszClose,               // "~Close",
+
+                pszDropped1,            // "... %d objects dropped,",
+                pszDropped2,            // "open folder to see them",
+
+                pszThreadsThread,       // "Thread";
+                pszThreadsTID,          // "TID";
+                pszThreadsPriority,     // "Priority";
+                pszThreadsGroupTitle,   // "XWorkplace threads"
+
+                pszArcRestored,         // "Archive was just restored."
+                pszArcDaysPassed,       // "%d days passed since last backup."
+                pszArcDaysLimit,        // "Limit: %d days."
+                pszArcINIChecking,      // "Checking INI files..."
+                pszArcINIChanged,       // "INI files changed %f %%."
+                pszArcINILimit,         // "Limit: %f %%."
+                pszArcEnabled,          // "WPS archiving enabled."
+                pszArcNotNecc;          // "WPS archiving not necessary."
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;

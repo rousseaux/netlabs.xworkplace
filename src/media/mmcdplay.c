@@ -1247,7 +1247,7 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
                     CHAR            szIniKey[100];
-                    PSZ             pszViewTitle = strdup("CD Player"), // ###
+                    PSZ             pszViewTitle = strdup(pNLSStrings->pszCDPlayerView),
                                     p = NULL;
 
                     // subclass frame

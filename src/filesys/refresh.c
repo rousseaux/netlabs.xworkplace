@@ -1002,6 +1002,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
     thrCreate(&G_tiNotifyWorker,
               refr_fntNotifyWorker,
               NULL,
+              "NotifyWorker",
               THRF_PMMSGQUEUE,
               0);
     // wait for the object window to be created
@@ -1015,6 +1016,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
     thrCreate(&G_tiPumpThread,
               refr_fntPumpThread,
               NULL,
+              "NotificationPump",
               THRF_PMMSGQUEUE,
               0);
 

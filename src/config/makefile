@@ -180,7 +180,7 @@ $(OUTPUTDIR)\fonts.obj: \
 
 $(OUTPUTDIR)\hookintf.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\prfh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -190,7 +190,7 @@ $(OUTPUTDIR)\hookintf.obj: \
 
 $(OUTPUTDIR)\pagemage.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\gpih.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\gpih.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xwpscreen.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
@@ -210,7 +210,7 @@ $(OUTPUTDIR)\sound.obj: \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h $(HLPINC)\winh.h \
     $(INC)\classes\xwpsound.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+    $(INC)\shared\common.h $(INC)\shared\notebook.h \
     $(INC)\media\media.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

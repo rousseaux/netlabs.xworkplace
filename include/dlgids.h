@@ -77,11 +77,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.8"
+#define XFOLDER_VERSION        "0.9.9"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.8"
+#define MINIMUM_NLS_VERSION    "0.9.9"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -481,24 +481,31 @@
  ******************************************/
 
 // XWPSetup info page (V0.9.0)
+// all IDs changed V0.9.9 (2001-03-07) [umoeller]
 #define ID_XCD_STATUS                   1100
 #define ID_XCDI_INFO_KERNEL_RELEASE     1101
-// #define ID_XCDI_INFO_KERNEL_BUILD       1102 removed V0.9.2 (2000-02-20) [umoeller]
-// #define ID_XCDI_INFO_KERNEL_LOCALE      1103
-#define ID_XCDI_INFO_AWAKEOBJECTS       1103
-#define ID_XCDI_INFO_WPSTHREADS         1104
-#define ID_XCDI_INFO_WPSRESTARTS        1105
-#define ID_XCDI_INFO_WORKERSTATUS       1106
-#define ID_XCDI_INFO_FILESTATUS         1107
-#define ID_XCDI_INFO_QUICKSTATUS        1108
-#define ID_XCDI_INFO_SOUNDSTATUS        1109
-#define ID_XCDI_INFO_HOOKSTATUS         1110
-#define ID_XCDI_INFO_LANGUAGE           1111
-#define ID_XCDI_INFO_NLS_RELEASE        1112
-#define ID_XCDI_INFO_NLS_AUTHOR         1113
+#define ID_XCDI_INFO_AWAKEOBJECTS       1102
+#define ID_XCDI_INFO_WPSTHREADS         1103
+#define ID_XCDI_INFO_WPSRESTARTS        1104
+#define ID_XCDI_INFO_SOUNDSTATUS        1105
+#define ID_XCDI_INFO_HOOKSTATUS         1106
+#define ID_XCDI_INFO_LANGUAGE           1107
+#define ID_XCDI_INFO_NLS_RELEASE        1108
+#define ID_XCDI_INFO_NLS_AUTHOR         1109
+#define ID_XCDI_INFO_KERNEL_GROUP       1111
+#define ID_XCDI_INFO_KERNEL_RELEASE_TXT 1112
+#define ID_XCDI_INFO_AWAKEOBJECTS_TXT   1113
+#define ID_XCDI_INFO_WPSTHREADS_TXT     1114
+#define ID_XCDI_INFO_WPSRESTARTS_TXT    1115
+#define ID_XCDI_INFO_SOUNDSTATUS_TXT    1116
+#define ID_XCDI_INFO_HOOKSTATUS_TXT     1117
+#define ID_XCDI_INFO_LANGUAGE_GROUP     1119
+#define ID_XCDI_INFO_LANGUAGE_TXT       1120
+#define ID_XCDI_INFO_NLS_RELEASE_TXT    1121
+#define ID_XCDI_INFO_NLS_AUTHOR_TXT     1122
 
 // XWPSetup "Features" page (V0.9.0)
-#define ID_XCD_FEATURES                 1120
+#define ID_XCD_FEATURES                 1130        // raised V0.9.9 (2001-03-07) [umoeller]
 #define ID_XCDI_CONTAINER               1140
 #define ID_XCDI_SETUP                   1141
 
@@ -1666,6 +1673,12 @@
 // title of "Resources" page V0.9.7 (2000-12-20) [umoeller]
 #define ID_XSSI_PGMFILE_RESOURCES       5981
 
+// title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller]
+#define ID_XSSI_PGM_ASSOCIATIONS        5982
+
+// sigh... more new strings below, after the features page...
+// not enough room here
+
 /******************************************
  *  Features on XWPSetup "Features" page  *
  ******************************************/
@@ -1708,6 +1721,62 @@
 #define ID_XCSI_ANIMOUSE                6052
 #define ID_XCSI_GLOBALHOTKEYS           6053
 #define ID_XCSI_PAGEMAGE                6054
+
+/******************************************
+ *  Still more string IDs                 *
+ ******************************************/
+
+#define ID_XSSI_WIDGETSPAGE             6100
+#define ID_XSSI_ADDWIDGET               6101        // "~ADD WIDGET"
+#define ID_XSSI_WIDGETCLASS             6102        // "Class";
+#define ID_XSSI_WIDGETSETUP             6103        // "Setup";
+
+#define ID_XSSI_FONTFOLDER              6104
+#define ID_XSSI_FONTFILE                6105
+#define ID_XSSI_FONTFAMILY              6106
+#define ID_XSSI_FONTERRORS              6107
+#define ID_XSSI_FONTOBJECT              6108
+#define ID_XSSI_CDPLAYERVIEW            6109
+#define ID_XSSI_CDPLAYER                6110
+#define ID_XSSI_VOLUMEVIEW              6111
+#define ID_XSSI_VOLUME                  6112
+#define ID_XSSI_ADMINISTRATOR           6113
+#define ID_XSSI_THREADSPAGE             6114
+
+#define ID_XSSI_CLSLISTTOKEN            6120
+
+#define ID_XSSI_DRIVERVERSION           6121           // "Version: "
+#define ID_XSSI_DRIVERVENDOR            6122           // "Vendor: "
+
+#define ID_XSSI_FONTSAMPLEVIEW          6123
+#define ID_XSSI_FONTDEINSTALL           6124           // "~Deinstall..."
+
+#define ID_XSSI_KEYDESCRIPTION          6125           // "Key description"
+#define ID_XSSI_SCANCODE                6126           // "Hardware scan code";
+#define ID_XSSI_MODIFIER                6127           // "Modifier";
+
+#define ID_XSSI_DEFAULTSHUTDOWN         6128           // "DEFAULT OS/2 SHUTDOWN..."
+#define ID_XSSI_INSTALLINGFONTS         6129           // "Installing fonts...";
+
+#define ID_XSSI_PARAMETERS              6130           // title of variable prompts dlg
+#define ID_XSSI_CLOSE                   6131           // "~CLOSE"
+
+#define ID_XSSI_DROPPED1                6132           // "... %D OBJECTS DROPPED,"
+#define ID_XSSI_DROPPED2                6133           // "OPEN FOLDER TO SEE THEM"
+
+#define ID_XSSI_THREADSTHREAD           6134           // "Thread";
+#define ID_XSSI_THREADSTID              6135           // "TID";
+#define ID_XSSI_THREADSPRIORITY         6136           // "Priority";
+#define ID_XSSI_THREADSGROUPTITLE       6137           // "XWorkplace threads"
+
+#define ID_XSSI_ARCRESTORED             6138           // "Archive was just restored."
+#define ID_XSSI_ARCDAYSPASSED           6139           // "%d days passed since last backup."
+#define ID_XSSI_ARCDAYSLIMIT            6140           // "Limit: %d days."
+#define ID_XSSI_ARCINICHECKING          6141            // "Checking INI files..."
+#define ID_XSSI_ARCINICHANGED           6142            // "INI files changed %f %%."
+#define ID_XSSI_ARCINILIMIT             6143            // "Limit: %f %%."
+#define ID_XSSI_ARCENABLED              6144            // "WPS archiving enabled."
+#define ID_XSSI_ARCNOTNECC              6145            // "WPS archiving not necessary."
 
 /******************************************
  *          Treesize                      *

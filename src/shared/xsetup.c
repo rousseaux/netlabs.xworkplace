@@ -77,6 +77,7 @@
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\tmsgfile.h"           // "text message file" handling
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -2074,9 +2075,209 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup "Status" page notebook callbacks (notebook.c)         *
- *                                                                  *
+ *
+ *   XWPSetup "Threads" page notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
+
+/*
+ *@@ THREADRECORD:
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+typedef struct _THREADRECORD
+{
+    RECORDCORE      recc;
+    PSZ             pszThreadName;
+    PSZ             pszTID;
+    PSZ             pszPriority;
+} THREADRECORD, *PTHREADRECORD;
+
+/*
+ *@@ ClearThreads:
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+VOID ClearThreads(HWND hwndCnr)
+{
+    PTHREADRECORD prec;
+    while (    (prec = (PTHREADRECORD)WinSendMsg(hwndCnr,
+                                                 CM_QUERYRECORD,
+                                                 (MPARAM)NULL,
+                                                 MPFROM2SHORT(CMA_FIRST,
+                                                              CMA_ITEMORDER)))
+            && ((LONG)prec != -1)
+          )
+    {
+        if (prec->pszThreadName)
+            free(prec->pszThreadName);
+        if (prec->pszTID)
+            free(prec->pszTID);
+        if (prec->pszPriority)
+            free(prec->pszPriority);
+
+        WinSendMsg(hwndCnr,
+                   CM_REMOVERECORD,
+                   (MPARAM)&prec,
+                   MPFROM2SHORT(1,
+                                CMA_FREE));
+    }
+    cnrhInvalidateAll(hwndCnr);
+}
+
+/*
+ *@@ setThreadsInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      XWPSetup "Threads" page.
+ *      Sets the controls on the page according to the
+ *      Global Settings.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                        ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+                                   ID_XFDI_CNR_CNR);
+
+    if (flFlags & CBI_INIT)
+    {
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        XFIELDINFO      xfi[5];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(THREADRECORD, pszThreadName);
+        xfi[i].pszColumnTitle = pNLSStrings->pszThreadsThread; // "Thread";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(THREADRECORD, pszTID);
+        xfi[i].pszColumnTitle = pNLSStrings->pszThreadsTID; // "TID";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(THREADRECORD, pszPriority);
+        xfi[i].pszColumnTitle = pNLSStrings->pszThreadsPriority; // "Priority";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                0);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+            cnrhSetSplitBarAfter(pfi);
+            cnrhSetSplitBarPos(200);
+        } END_CNRINFO(hwndCnr);
+
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszThreadsGroupTitle); // "XWorkplace threads")
+    }
+
+    if (flFlags & (CBI_SET | CBI_SHOW))
+    {
+        CHAR szTemp[1000];
+        PTHREADINFO paThreadInfos;
+        ULONG cThreadInfos = 0;
+
+        ClearThreads(hwndCnr);
+
+        paThreadInfos = thrListThreads(&cThreadInfos);
+        if (paThreadInfos)
+        {
+            // we got thread infos:
+            PQPROCSTAT16 pps = prc16GetInfo(NULL);
+            PPIB ppib;
+            ULONG ul;
+            DosGetInfoBlocks(NULL, &ppib);
+
+            for (ul = 0;
+                 ul < cThreadInfos;
+                 ul++)
+            {
+                PTHREADINFO pThis = &paThreadInfos[ul];
+                PTHREADRECORD prec = (PTHREADRECORD)cnrhAllocRecords(hwndCnr,
+                                                                     sizeof(THREADRECORD),
+                                                                     1);
+                if (prec)
+                {
+                    ULONG ulpri = prc16QueryThreadPriority(pps,
+                                                           ppib->pib_ulpid,
+                                                           pThis->tid);
+                    XSTRING str;
+                    prec->pszThreadName = strdup(pThis->pcszThreadName);
+                    sprintf(szTemp, "%d (%02lX)", pThis->tid, pThis->tid);
+                    prec->pszTID = strdup(szTemp);
+
+                    sprintf(szTemp, "0x%04lX (", ulpri);
+                    xstrInitCopy(&str, szTemp, 0);
+                    switch (ulpri & 0x0F00)
+                    {
+                        case 0x0100:
+                            xstrcat(&str, "Idle", 0);
+                        break;
+
+                        case 0x0200:
+                            xstrcat(&str, "Regular", 0);
+                        break;
+
+                        case 0x0300:
+                            xstrcat(&str, "Time-critical", 0);
+                        break;
+
+                        case 0x0400:
+                            xstrcat(&str, "Foreground server", 0);
+                        break;
+                    }
+
+                    sprintf(szTemp, " +%d)", ulpri & 0xFF);
+                    xstrcat(&str, szTemp, 0);
+
+                    prec->pszPriority = str.psz;
+                }
+                else
+                    break;
+
+                cnrhInsertRecords(hwndCnr,
+                                  NULL,
+                                  (PRECORDCORE)prec,
+                                  FALSE,        // invalidate?
+                                  NULL,
+                                  CRA_RECORDREADONLY,
+                                  1);
+            }
+
+            cnrhInvalidateAll(hwndCnr);
+
+            free(paThreadInfos);
+            prc16FreeInfo(pps);
+        }
+    } // end if (flFlags & CBI_SET)
+
+    if (flFlags & CBI_ENABLE)
+    {
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        ClearThreads(hwndCnr);
+    }
+}
+
+/* ******************************************************************
+ *
+ *   XWPSetup "Status" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -2088,6 +2289,7 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@changed V0.9.2 (2000-02-20) [umoeller]: changed build string handling
  *@@changed V0.9.7 (2000-12-14) [umoeller]: removed kernel build
+ *@@changed V0.9.9 (2001-03-07) [umoeller]: extracted "Threads" page
  */
 
 VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2153,18 +2355,6 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XCDI_INFO_KERNEL_RELEASE,
                           szSearchMask);
-
-        // C runtime locale
-        /* WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_KERNEL_LOCALE,
-                        // query the locale
-                        cmnQueryLocale()); */
-
-        /* sprintf(szText, "Last Workplace Shell startup: %02d:%02d:%02d",
-                            pKernelGlobals->StartupDateTime.hours,
-                            pKernelGlobals->StartupDateTime.minutes,
-                            pKernelGlobals->StartupDateTime.seconds);
-        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szText,
-                            CRA_RECORDREADONLY); */
 
         // sound status
         strcpy(szSearchMask,
@@ -2393,41 +2583,14 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
     {
+        PQPROCSTAT16 pps = prc16GetInfo(NULL);
         PRCPROCESS       prcp;
         // WPS thread count
-        prc16QueryProcessInfo(ppib->pib_ulpid, &prcp);
+        prc16QueryProcessInfo(pps, ppib->pib_ulpid, &prcp);
         WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSTHREADS,
                            prcp.usThreads,
                            FALSE);  // unsigned
-
-        // Worker thread status
-        tid = thrQueryID(&pKernelGlobals->tiWorkerThread);
-        sprintf(szTemp, "TID 0x%lX, prty 0x%04lX, %d msgs",
-                tid,
-                prc16QueryThreadPriority(ppib->pib_ulpid, tid),
-                pKernelGlobals->ulWorkerMsgCount);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_WORKERSTATUS,
-                          szTemp);
-
-        // File thread status
-        tid = thrQueryID(&pKernelGlobals->tiFileThread);
-        sprintf(szTemp, "TID 0x%lX, prty 0x%04lX",
-                tid,
-                prc16QueryThreadPriority(ppib->pib_ulpid, tid));
-        if (xthrIsFileThreadBusy())
-            strcat(szTemp, ", busy");
-        else
-            strcat(szTemp, ", idle");
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_FILESTATUS,
-                        szTemp);
-
-        // Quick thread status
-        tid = thrQueryID(&pKernelGlobals->tiSpeedyThread);
-        sprintf(szTemp, "TID 0x%lX, prty 0x%04lX",
-                tid,
-                prc16QueryThreadPriority(ppib->pib_ulpid, tid));
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_QUICKSTATUS,
-                        szTemp);
+        prc16FreeInfo(pps);
     }
 
     // XWPHook status

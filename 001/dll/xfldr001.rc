@@ -637,6 +637,9 @@ BEGIN
 
     /* V0.9.6 (2000-12-14) [lafaix] */
     ID_XSSI_PGMFILE_RESOURCES           "~Resources"
+
+    /* title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller] */
+    ID_XSSI_PGM_ASSOCIATIONS            "~Associations"
 END
 
 /* Strings for XWPSetup "Features" page
@@ -680,6 +683,63 @@ BEGIN
     ID_XCSI_REPLACEDELETE               "Replace true delete"
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
     ID_XCSI_REPLACEREFRESH              "Replace folder auto-refresh"
+END
+
+/* STILL more miscellaneous strings...
+    (added V0.9.9 (2001-03-07) [umoeller]) */
+STRINGTABLE
+BEGIN
+    ID_XSSI_WIDGETSPAGE                 "~Widgets"
+    ID_XSSI_ADDWIDGET                   "~Add widget"
+    ID_XSSI_WIDGETCLASS                 "Widget class"
+    ID_XSSI_WIDGETSETUP                 "Widget setup"
+
+    ID_XSSI_FONTFOLDER                  "Font folder"
+    ID_XSSI_FONTFILE                    "Font file"
+    ID_XSSI_FONTFAMILY                  "Font family"
+    ID_XSSI_FONTERRORS                  "Font errors"
+    ID_XSSI_FONTOBJECT                  "Installed font"
+    ID_XSSI_CDPLAYERVIEW                "~CD player"
+    ID_XSSI_CDPLAYER                    "CD player"
+    ID_XSSI_VOLUMEVIEW                  "~Volume"
+    ID_XSSI_VOLUME                      "Volume"
+    ID_XSSI_ADMINISTRATOR               "Administrator"
+    ID_XSSI_THREADSPAGE                 "~Threads"
+
+    ID_XSSI_CLSLISTTOKEN                "Token"
+
+    ID_XSSI_DRIVERVERSION               "Version: "
+    ID_XSSI_DRIVERVENDOR                "Vendor: "
+
+    ID_XSSI_FONTSAMPLEVIEW              "~Font sample"
+    ID_XSSI_FONTDEINSTALL               "~Deinstall..."
+
+    ID_XSSI_KEYDESCRIPTION              "Key description"
+    ID_XSSI_SCANCODE                    "Hardware scan code"
+    ID_XSSI_MODIFIER                    "Modifier"
+
+    ID_XSSI_DEFAULTSHUTDOWN             "Default OS/2 shutdown..."
+    ID_XSSI_INSTALLINGFONTS             "Installing fonts..."
+
+    ID_XSSI_PARAMETERS                  "Parameter"
+    ID_XSSI_CLOSE                       "~Close"
+
+    ID_XSSI_DROPPED1                    "... %d objects dropped,"
+    ID_XSSI_DROPPED2                    "open folder to see them"
+
+    ID_XSSI_THREADSTHREAD               "Thread"
+    ID_XSSI_THREADSTID                  "TID"
+    ID_XSSI_THREADSPRIORITY             "Priority"
+    ID_XSSI_THREADSGROUPTITLE           "XWorkplace threads"
+
+    ID_XSSI_ARCRESTORED                 "Archive was just restored."
+    ID_XSSI_ARCDAYSPASSED               "%d days passed since last backup."
+    ID_XSSI_ARCDAYSLIMIT                "Limit: %d days."
+    ID_XSSI_ARCINICHECKING              "Checking INI files..."
+    ID_XSSI_ARCINICHANGED               "INI files changed %f %%."
+    ID_XSSI_ARCINILIMIT                 "Limit: %f %%."
+    ID_XSSI_ARCENABLED                  "WPS archiving enabled."
+    ID_XSSI_ARCNOTNECC                  "WPS archiving not necessary."
 END
 
 /* Treesize definitions; added V0.9.0 */

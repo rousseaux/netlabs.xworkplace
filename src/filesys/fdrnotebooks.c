@@ -71,6 +71,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files

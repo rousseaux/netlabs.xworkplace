@@ -31,13 +31,15 @@ fonz and Stefan Mielcke for contributing.
 <P><LI>File types can now be renamed on "File types" page in "Workplace Shell".
 <P><LI>Added "Unknown only" checkbox to "Import WPS filters" dialog to hide known
 WPS filters.
+<P><LI>Added "Threads" page to XWPSetup.
 <P><LI>Now allowing XShutdown power-off with APM 1.1 also. Use at your own risk; if
 it ain't working, don't blame me.
 
 </UL>Miscellaneous changes:
 <UL><LI>XWorkplace is finally compiled with Pentium optimizations. I had always feared
 that this would break the code for 386 and 486 processors, but the VAC documentation
-now says this is not the case. If this information is incorrect, please notify me.
+clearly says this is not so. If this information is incorrect, please notify me,
+if you can still reach your system.
 <P><LI>Per popular request, the "Duplicates" window on the "System paths" page in
 "OS/2 Kernel" is now non-modal. Besides, an "Edit" button and more system paths
 have been added. Thanks, Paul Ratcliffe.
@@ -63,14 +65,16 @@ Martin Lafaix.
 <P><LI>Deleting the font folder or trash can caused hundreds of stupid WPS
 "cannot delete object" message boxes to pop up. Oh my, this infinite wisdom of the WPS.
 Fixed, the transient objects are now quietly nuked.
-<P><LI>Fixed problems with XCenter closing on shutdown and WPS restart.
+<P><LI>Fixed problems with XCenter closing on shutdown and WPS restart. This was
+several problems actually... a race condition during XShutdown, and improper thread
+termination with the timers. The separate timer thread has been removed.
 <P><LI>"Pulse" widget broke CPU counters on close. Fixed.
 <P><LI>"Undo" and "Default" on XCenter settings pages never worked. Fixed.
 <P><LI>Dragging objects on XCenter bar caused them to always appear on the left. Fixed,
-they are now added to the right.
+they are now properly added to the right.
 <P><LI>"Delete" from folder menu bar crashed. Fixed by Paul Ratcliffe.
-<P><LI>XCenter settings view sometimes appeared on the XCenter view thread, which wasn't
-such a good idea. This is now redirected to thread 1.
+<P><LI>XCenter settings view sometimes appeared on the XCenter view thread, which
+wasn't such a good idea. This is now redirected to thread 1.
 <P><LI>Some XCenter default values were reported wrong in its setup string. Fixed by
 Paul Ratcliffe.
 <P><LI>Object count on "Status" page in XWPSetup went below zero sometimes. Fixed by

@@ -45,6 +45,10 @@ interface XFldProgramFile : WPProgramFile
      *
      */
 
+    ULONG xwpAddResourcesPage(in HWND hwndNotebook);
+    ULONG xwpAddModulePage(in HWND hwndNotebook);
+    ULONG xwpAddAssociationsPage(in HWND hwndNotebook);
+
     ULONG xwpQueryProgType();
 
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
@@ -54,7 +58,10 @@ interface XFldProgramFile : WPProgramFile
   implementation {
 
     releaseorder: xwpQueryProgType,
-                  xwpQuerySetup2;
+                  xwpQuerySetup2,
+                  xwpAddResourcesPage,
+                  xwpAddModulePage,
+                  xwpAddAssociationsPage;
 
     /*
      * Class Modifiers:
@@ -68,7 +75,7 @@ interface XFldProgramFile : WPProgramFile
     filestem = xfpgmf;           //# specifies the filestem for sc-generated files
     metaclass = M_XFldProgramFile;
     dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+    callstyle = oidl;            //# forget CORBA stuff (*ev and such)
 
     /*
      * Internal instance variables for XFldProgramFile:
@@ -96,6 +103,7 @@ interface XFldProgramFile : WPProgramFile
 
     wpQueryDefaultView: override;
 
+    wpAddProgramAssociationPage: override;
     wpAddProgramSessionPage: override;
 
     wpFilterPopupMenu: override;

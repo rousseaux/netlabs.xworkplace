@@ -556,7 +556,7 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
         break;
 
         case XFT_INSTALLFONTS:
-            pszTitle = "Installing fonts..."; // ###
+            pszTitle = pNLSStrings->pszInstallingFonts; // "Installing fonts...";
         break;
     }
 

@@ -151,9 +151,12 @@ typedef struct _OBJBUTTONPRIVATE
     BOOL        fMouseCaptured; // if TRUE, mouse is currently captured
 
     HWND        hwndMenuMain;           // if != NULLHANDLE, this has the currently
-                                        // open WPS context menu (X-button only)
+                                        // open menu (X-button and object buttons)
     HWND        hwndObjectPopup;        // if != NULLHANDLE, this has the currently
                                         // open object WPS context menu (obj button only)
+    BOOL        fOpenedWPSContextMenu;  // TRUE if next WM_COMMAND could be WPS context
+                                        // menu; WM_COMMAND comes in AFTER WM_MENUEND,
+                                        // so we can't check hwndObjectPoup
 
     WPObject    *pobjButton;            // object for this button
     WPObject    *pobjNotify;            // != NULL if xwpAddDestroyNotify has been
@@ -886,6 +889,10 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         }
                     }
                 } // end if (pobj)
+
+                // mark this as non-WPS context menu
+                pPrivate->fOpenedWPSContextMenu = FALSE;
+
             } // end if (   (pPrivate->ulType == BTF_OBJBUTTON) ...
             else
             {
@@ -955,7 +962,10 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 
             if ((HWND)mp2 == pPrivate->hwndObjectPopup)
             {
+                // object popup (WPS context menu for object button):
                 pPrivate->hwndObjectPopup = NULLHANDLE;
+                // remove source emphasis
+                WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
             }
         } // end if (pPrivate)
     } // end if (pWidget)
@@ -970,7 +980,7 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 {
-    BOOL fProcessed = TRUE;
+    BOOL fProcessed = FALSE;
     ULONG ulMenuId = (ULONG)mp1;
 
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -979,85 +989,106 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
         POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
-            switch (ulMenuId)
+            if (pPrivate->ulType == BTF_XBUTTON)
             {
-                case ID_CRMI_SUSPEND:
-                    // check if the "Power" object has been set up
-                    // in OwgtInitMenu
-                    if (pPrivate->pPower)
-                    {
-                        BOOL fGo = FALSE;
-                        if (_wpQueryPowerConfirmation(pPrivate->pPower))
-                            // yeah, that's funny: why do they export this function
-                            // and have this setting, and wpChangePowerState doesn't
-                            // confirm anything?!?
-                            // so do it now
-                            fGo = (cmnMessageBoxMsg(pWidget->hwndWidget,
-                                                    197,        // xcenter
-                                                    198,        // sure suspend?
-                                                    MB_YESNO)
-                                            == MBID_YES);
-                        else
-                            fGo = TRUE;
+                fProcessed = TRUE;
 
-                        if (fGo)
-                        {
-                            // sleep a little while... otherwise the
-                            // "key up" or tiny "mouse move" will immediately
-                            // wake up the system again
-                            winhSleep(pWidget->habWidget, 300);
-                            // tell "Power" object to suspend
-                            _wpChangePowerState(pPrivate->pPower,
-                                                MAKEULONG(6,        // set power state
-                                                          0),       // reserved
-                                                MAKEULONG(1,        // all devices
-                                                          2));      // suspend
-                        }
-                    }
-                break;
-
-                case ID_CRMI_LOGOFF:
-                    xsdInitiateRestartWPS(TRUE);    // logoff
-                break;
-
-                case ID_CRMI_RESTARTWPS:
-                    xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
-                break;
-
-                case ID_CRMI_SHUTDOWN:
-                    xsdInitiateShutdown();
-                break;
-
-                case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]
-                    cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
-                                      NULL);        // boot drive
-                break;
-
-                default:
+                switch (ulMenuId)
                 {
+                    case ID_CRMI_SUSPEND:
+                        // check if the "Power" object has been set up
+                        // in OwgtInitMenu
+                        if (pPrivate->pPower)
+                        {
+                            BOOL fGo = FALSE;
+                            if (_wpQueryPowerConfirmation(pPrivate->pPower))
+                                // yeah, that's funny: why do they export this function
+                                // and have this setting, and wpChangePowerState doesn't
+                                // confirm anything?!?
+                                // so do it now
+                                fGo = (cmnMessageBoxMsg(pWidget->hwndWidget,
+                                                        197,        // xcenter
+                                                        198,        // sure suspend?
+                                                        MB_YESNO)
+                                                == MBID_YES);
+                            else
+                                fGo = TRUE;
+
+                            if (fGo)
+                            {
+                                // sleep a little while... otherwise the
+                                // "key up" or tiny "mouse move" will immediately
+                                // wake up the system again
+                                winhSleep(pWidget->habWidget, 300);
+                                // tell "Power" object to suspend
+                                _wpChangePowerState(pPrivate->pPower,
+                                                    MAKEULONG(6,        // set power state
+                                                              0),       // reserved
+                                                    MAKEULONG(1,        // all devices
+                                                              2));      // suspend
+                            }
+                        }
+                    break;
+
+                    case ID_CRMI_LOGOFF:
+                        xsdInitiateRestartWPS(TRUE);    // logoff
+                    break;
+
+                    case ID_CRMI_RESTARTWPS:
+                        xsdInitiateRestartWPS(FALSE);   // restart WPS, no logoff
+                    break;
+
+                    case ID_CRMI_SHUTDOWN:
+                        xsdInitiateShutdown();
+                    break;
+
+                    case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]
+                        cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
+                                          NULL);        // boot drive
+                    break;
+
+                    default:
+                        fProcessed = FALSE;
+                }
+            } // if (pPrivate->ulType == BTF_XBUTTON)
+            else
+            {
+                // object button:
+                // fProcessed is still FALSE
+                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+                if (     (ulMenuId >= ulFirstVarMenuId)
+                      && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
+                   )
+                {
+                    // yes, variable menu item selected:
+                    // get corresponding menu list item from the list that
+                    // was created by mnuModifyFolderPopupMenu
+                    PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
+                    WPObject    *pObject = NULL;
+
+                    if (pItem)
+                        pObject = pItem->pObject;
+
+                    if (pObject)    // defaults to NULL
+                        _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
+                    fProcessed = TRUE;
+                } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
+                else
                     // other:
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                    ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
-                    if (     (ulMenuId >= ulFirstVarMenuId)
-                          && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
+                    // this MIGHT be a command from a WPS context menu...
+                    if (    pPrivate->fOpenedWPSContextMenu
+                         && pPrivate->pobjButton
                        )
                     {
-                        // yes, variable menu item selected:
-                        // get corresponding menu list item from the list that
-                        // was created by mnuModifyFolderPopupMenu
-                        PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
-                        WPObject    *pObject = NULL;
+                        _wpMenuItemSelected(pPrivate->pobjButton,
+                                            NULLHANDLE,     // hwndFrame
+                                            ulMenuId);
+                    }
 
-                        if (pItem)
-                            pObject = pItem->pObject;
-
-                        if (pObject)    // defaults to NULL
-                            _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-                    } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
-                    else
-                        fProcessed = FALSE;
-                break; }
             }
+
+            pPrivate->fOpenedWPSContextMenu = FALSE;
         }
     }
 
@@ -1071,7 +1102,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-/* MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1081,6 +1112,8 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
         POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
+            pPrivate->fOpenedWPSContextMenu = FALSE;
+
             if (pPrivate->ulType == BTF_OBJBUTTON)
             {
                 // for object buttons, show the WPS context menu
@@ -1093,12 +1126,19 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                     POINTL ptl;
                     ptl.x = SHORT1FROMMP(mp1);
                     ptl.y = SHORT2FROMMP(mp1);
+
+#ifndef MENU_NODISPLAY
+    #define MENU_NODISPLAY            0x40000000
+#endif
                     pPrivate->hwndObjectPopup = _wpDisplayMenu(pPrivate->pobjButton,
                                                                hwnd,            // owner
                                                                NULLHANDLE,
                                                                &ptl,
-                                                               MENU_OBJECTPOPUP,
+                                                               MENU_OBJECTPOPUP | MENU_NODISPLAY,
                                                                0);
+                    ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
+
+                    pPrivate->fOpenedWPSContextMenu = TRUE;
                 }
 
                 mrc = (MPARAM)TRUE;
@@ -1110,7 +1150,7 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
     }
 
     return (mrc);
-} */
+}
 
 /*
  *@@ fnwpObjButtonWidget:
@@ -1276,9 +1316,9 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
 
-        /* case WM_CONTEXTMENU:
+        case WM_CONTEXTMENU:
             mrc = OwgtContextMenu(hwnd, mp1, mp2);
-        break; */
+        break;
 
         /*
          * WM_DESTROY:

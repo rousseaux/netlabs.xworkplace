@@ -819,7 +819,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = "Font file"; // ###
+                pcfi->pTitleData        = pNLSStrings->pszFontFile;
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(FNTO_DETAILS, pszFontFile));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -830,7 +830,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = "Font family"; // ###
+                pcfi->pTitleData        = pNLSStrings->pszFontFamily;
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(FNTO_DETAILS, pszFontFamily));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -841,7 +841,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = "Errors"; // ###
+                pcfi->pTitleData        = pNLSStrings->pszFontErrors;
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(FNTO_DETAILS, pszFontFileError));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -956,10 +956,11 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryDetailsInfo(M_XWPFontObject *somSelf,
 
 SOM_Scope PSZ  SOMLINK fonoM_wpclsQueryTitle(M_XWPFontObject *somSelf)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
     M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_wpclsQueryTitle");
 
-    return ("Installed font"); // ###
+    return (pNLSStrings->pszFontObject);
 }
 
 /*

@@ -74,6 +74,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -1272,17 +1273,17 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszDescription);
-        xfi[i].pszColumnTitle = "Key description";      // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszKeyDescription;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszScanCode);
-        xfi[i].pszColumnTitle = "Hardware scan code";   // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszScanCode; // "Hardware scan code";
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, pszModifier);
-        xfi[i].pszColumnTitle = "Modifier";   // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszModifier; // "Modifier";
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_CENTER;
 

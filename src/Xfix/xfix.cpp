@@ -1295,6 +1295,7 @@ VOID StartInsertHandles(HWND hwndCnr)
     thrCreate(&G_tiInsertHandles,
               fntInsertHandles,
               &G_fInsertHandlesRunning,
+              "InsertHandles",
               THRF_WAIT | THRF_PMMSGQUEUE,
               hwndCnr);     // thread param
 
@@ -2101,6 +2102,7 @@ VOID FrameCommand(HWND hwndFrame,
             thrCreate(&G_tiCheckFiles,
                       fntCheckFiles,
                       &G_fCheckFilesRunning,
+                      "CheckFiles",
                       THRF_WAIT | THRF_PMMSGQUEUE,
                       0);     // thread param
             WinStartTimer(WinQueryAnchorBlock(hwndFrame),

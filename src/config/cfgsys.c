@@ -131,7 +131,6 @@ PSZ G_apszPathNames[] =
             "SET DPATH=",
             "SET BOOKSHELF=",
             "SET HELP="
-            "SET HELP=",
             "SET CLASSPATH=",   // V0.9.9 (2001-03-06) [pr]
             "SET INCLUDE=",
             "SET LIB=",
@@ -2048,14 +2047,16 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 case SP_SCHEDULER:
                 {
+                    PQPROCSTAT16 pps = prc16GetInfo(NULL);
                     // THREADS=
                     winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MAXTHREADS,
                                            128, 4096,
                                            // get current thread count, add 50% for safety,
                                            // and round up to the next multiple of 128
-                                           (( (    (prc16QueryThreadCount(0)  // whole system
+                                           (( (    (prc16QueryThreadCount(pps, 0)  // whole system
                                                  * 3) / 2) + 127 ) / 128) * 128
                                           );
+                    prc16FreeInfo(pps);
 
                     // MAXWAIT=2
                     winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MAXWAIT,
@@ -2312,9 +2313,12 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
     switch (pcnbp->ulPageID)
     {
         case SP_SCHEDULER:
-            sprintf(szTemp, "%d", prc16QueryThreadCount(0));
+        {
+            PQPROCSTAT16 pps = prc16GetInfo(NULL);
+            sprintf(szTemp, "%d", prc16QueryThreadCount(pps, 0));
+            prc16FreeInfo(pps);
             WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_CURRENTTHREADS, szTemp);
-        break;
+        break; }
 
         case SP_MEMORY:
             if (G_szSwapperFilename[0])
@@ -2562,27 +2566,27 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszComponent);
-        xfi[i].pszColumnTitle = "Component"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelComponent;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszFile);
-        xfi[i].pszColumnTitle = "SYSLEVEL File"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelFile;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszVersion);
-        xfi[i].pszColumnTitle = "Version";  // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelVersion;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDCurrent);
-        xfi[i].pszColumnTitle = "Syslevel"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelLevel;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDPrevious);
-        xfi[i].pszColumnTitle = "Previous"; // ###
+        xfi[i].pszColumnTitle = pNLSStrings->pszSyslevelPrevious;
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 

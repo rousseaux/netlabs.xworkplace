@@ -116,7 +116,9 @@
 
     VOID refrClearFolderNotifications(WPFolder *pFolder);
 
-    VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself);
+    #ifdef THREADS_HEADER_INCLUDED
+        VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself);
+    #endif
 
 #endif
 

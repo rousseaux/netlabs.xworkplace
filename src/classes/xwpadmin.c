@@ -252,10 +252,11 @@ SOM_Scope ULONG  SOMLINK admM_wpclsQueryStyle(M_XWPAdmin *somSelf)
 
 SOM_Scope PSZ  SOMLINK admM_wpclsQueryTitle(M_XWPAdmin *somSelf)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryTitle");
 
-    return ("XWorkplace Administrator"); // ### NLS
+    return (pNLSStrings->pszAdministrator);
 }
 
 /*

@@ -2426,7 +2426,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
  *      which is also used by the XFldDisk class.
  */
 
-SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
+SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
                                              HWND  hwndMenu,
                                              HWND  hwndCnr,
                                              ULONG iPosition)

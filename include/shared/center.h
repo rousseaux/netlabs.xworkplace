@@ -484,13 +484,17 @@
 
     // ctrSetSetupString has been defined above
 
-    BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
+    BOOL APIENTRY ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
                         const char *pcszHelpFile,
                         ULONG ulHelpPanelID);
-    typedef BOOL CTRDISPLAYHELP(PXCENTERGLOBALS pGlobals,
+    typedef BOOL APIENTRY CTRDISPLAYHELP(PXCENTERGLOBALS pGlobals,
                         const char *pcszHelpFile,
                         ULONG ulHelpPanelID);
     typedef CTRDISPLAYHELP *PCTRDISPLAYHELP;
+
+    VOID APIENTRY ctrShowContextMenu(PXCENTERWIDGET pWidget, HWND hwndContextMenu);
+    typedef VOID APIENTRY CTRSHOWCONTEXTMENU(PXCENTERWIDGET pWidget, HWND hwndContextMenu);
+    typedef CTRSHOWCONTEXTMENU *PCTRSHOWCONTEXTMENU;
 
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
                 // a pointer to this is in XCENTERWIDGET if the widget

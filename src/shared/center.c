@@ -515,6 +515,62 @@ BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
     return (brc);
 }
 
+/*
+ *@@ ctrShowContextMenu:
+ *      little helper func which allows you to display a
+ *      popup menu on a widget at the mouse position.
+ *
+ *      This is useful if you intercept WM_CONTEXTMENU
+ *      in your widget window proc to show a context
+ *      menu other than the standard one.
+ *
+ *      This function adds emphasis around the widget
+ *      (as with the standard context menu) and then
+ *      displays the specified menu using WinPopupMenu.
+ *      The widget window is specified as the owner
+ *      and will thus receive WM_COMMAND's from menu
+ *      selections.
+ *
+ *      NOTE: It is the caller's responsibility to
+ *      remove the emphasis again when the context menu
+ *      is dismissed. This is most easily done by
+ *      also intercepting WM_MENUEND and checking for
+ *      hwndContextMenu. To remove the emphasis, invalidate
+ *      the XCenter client:
+ *
+ +          WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+VOID ctrShowContextMenu(PXCENTERWIDGET pWidget,
+                        HWND hwndContextMenu)
+{
+    HWND hwndClient = pWidget->pGlobals->hwndClient;
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
+    if (pXCenterData)
+    {
+        POINTL  ptl;
+        WinQueryPointerPos(HWND_DESKTOP, &ptl);
+
+        // draw source emphasis around widget
+        ctrpDrawEmphasis(pXCenterData,
+                         pWidget->hwndWidget,
+                         FALSE,     // draw, not remove emphasis
+                         NULLHANDLE);   // standard PS
+
+        // show menu!!
+        WinPopupMenu(HWND_DESKTOP,
+                     pWidget->hwndWidget,
+                     hwndContextMenu,
+                     ptl.x,
+                     ptl.y,
+                     0,
+                     PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
+                        | PU_MOUSEBUTTON2 | PU_KEYBOARD);
+    }
+}
+
 /* ******************************************************************
  *
  *   Default widget window proc (exported from XFLDR.DLL)
@@ -531,44 +587,23 @@ VOID DwgtContextMenu(HWND hwnd)
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
     {
-        HWND hwndClient = pWidget->pGlobals->hwndClient;
-        PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-        if (pXCenterData)
+        PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
+        if (pClass)
         {
-            PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
-            if (pClass)
-            {
-                POINTL  ptl;
-                WinQueryPointerPos(HWND_DESKTOP, &ptl);
+            // enable "properties" if class has show-settings proc
+            WinEnableMenuItem(pWidget->hwndContextMenu,
+                              ID_CRMI_PROPERTIES,
+                              (pClass->pShowSettingsDlg != 0));
 
-                // enable "properties" if class has show-settings proc
-                WinEnableMenuItem(pWidget->hwndContextMenu,
-                                  ID_CRMI_PROPERTIES,
-                                  (pClass->pShowSettingsDlg != 0));
+            // enable "help" if widget has specified help
+            WinEnableMenuItem(pWidget->hwndContextMenu,
+                              ID_CRMI_HELP,
+                              (    (pWidget->pcszHelpLibrary != NULL)
+                                && (pWidget->ulHelpPanelID != 0)
+                              ));
 
-                // enable "help" if widget has specified help
-                WinEnableMenuItem(pWidget->hwndContextMenu,
-                                  ID_CRMI_HELP,
-                                  (    (pWidget->pcszHelpLibrary != NULL)
-                                    && (pWidget->ulHelpPanelID != 0)
-                                  ));
-
-                // draw source emphasis around widget
-                ctrpDrawEmphasis(pXCenterData,
-                                 hwnd,
-                                 FALSE,     // draw, not remove emphasis
-                                 NULLHANDLE);   // standard PS
-
-                // show menu!!
-                WinPopupMenu(HWND_DESKTOP,
-                             hwnd,
-                             pWidget->hwndContextMenu,
-                             ptl.x,
-                             ptl.y,
-                             0,
-                             PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
-                                | PU_MOUSEBUTTON2 | PU_KEYBOARD);
-            }
+            ctrShowContextMenu(pWidget,
+                               pWidget->hwndContextMenu);
         }
     }
 }
@@ -587,7 +622,7 @@ VOID DwgtMenuEnd(HWND hwnd,
         if (hwndMenu == pWidget->hwndContextMenu)
         {
             WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
-            WinInvalidateRect(pWidget->pGlobals->hwndFrame, NULL, FALSE);
+            // WinInvalidateRect(pWidget->pGlobals->hwndFrame, NULL, FALSE);
         }
     }
 }

@@ -256,7 +256,7 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
             PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                               "~Volume", // ###
+                               pNLSStrings->pszVolumeView,
                                MIS_TEXT, 0);
         }
     }
@@ -489,10 +489,11 @@ SOM_Scope ULONG  SOMLINK volM_wpclsQueryStyle(M_XMMVolume *somSelf)
 
 SOM_Scope PSZ  SOMLINK volM_wpclsQueryTitle(M_XMMVolume *somSelf)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
     M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryTitle");
 
-    return ("Volume");      // ###
+    return (pNLSStrings->pszVolume);
 }
 
 /*

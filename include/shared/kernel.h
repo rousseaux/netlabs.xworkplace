@@ -30,7 +30,7 @@
     #define KERNEL_HEADER_INCLUDED
 
     // required header files
-    #include "helpers\threads.h"
+    // #include "helpers\threads.h"
 
     #ifndef INCL_DOSSEMAPHORES
         #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
@@ -193,7 +193,7 @@
              *      this thread is always running.
              */
 
-            THREADINFO          tiWorkerThread;
+            // THREADINFO          tiWorkerThread;
             HWND                hwndWorkerObject;
 
             ULONG               ulWorkerMsgCount;
@@ -226,7 +226,7 @@
              *      this thread is always running.
              */
 
-            THREADINFO          tiSpeedyThread;
+            // THREADINFO          tiSpeedyThread;
             HWND                hwndSpeedyObject;
 
             /*
@@ -235,7 +235,7 @@
              *      but with regular priority.
              */
 
-            THREADINFO          tiFileThread;
+            // THREADINFO          tiFileThread;
             HWND                hwndFileObject;
 
             /*
@@ -244,7 +244,7 @@
              *      This does not have a PM message queue.
              */
 
-            THREADINFO          tiSentinel;
+            // THREADINFO          tiSentinel;
 
             BOOL                fAutoRefreshReplaced;
                                     // this is set to TRUE if, on WPS startup,
@@ -259,8 +259,8 @@
              *      while XShutdown is in progress.
              */
 
-            THREADINFO          tiShutdownThread,
-                                tiUpdateThread;
+            // THREADINFO          tiShutdownThread,
+            //                     tiUpdateThread;
 
             BOOL                fShutdownRunning;
 

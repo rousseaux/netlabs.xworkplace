@@ -1214,6 +1214,7 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
@@ -1221,7 +1222,7 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // set group cnr title
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          "Wi~dgets");   // ### NLS
+                          pNLSStrings->pszWidgetsPage);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, ulIndex);
@@ -1230,12 +1231,12 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
-        xfi[i].pszColumnTitle = "Class";      // ### NLS
+        xfi[i].pszColumnTitle = pNLSStrings->pszWidgetClass; // "Class";
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, pcszSetupString);
-        xfi[i].pszColumnTitle = "Setup";    // ### NLS
+        xfi[i].pszColumnTitle = pNLSStrings->pszWidgetSetup; // "Setup";
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 

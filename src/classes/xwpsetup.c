@@ -149,7 +149,6 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->pszName = pNLSStrings->pszParanoia;
     pcnbp->ulDlgID = ID_XCD_PARANOIA;
     pcnbp->usFirstControlID = ID_XCDI_VARMENUOFFSET;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_PARANOIA_SUB;        // help panel for menu offset
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
     pcnbp->ulPageID = SP_SETUP_PARANOIA;
     pcnbp->pfncbInitPage    = setParanoiaInitPage;
@@ -169,6 +168,22 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->ulPageID = SP_SETUP_OBJECTS;
     pcnbp->pfncbInitPage    = setObjectsInitPage;
     pcnbp->pfncbItemChanged = setObjectsItemChanged;
+    ntbInsertPage(pcnbp);
+
+    // insert "Threads" page
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndDlg;
+    pcnbp->hmod = savehmod;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszThreadsPage;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_THREADS;
+    pcnbp->ulPageID = SP_SETUP_THREADS;
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
+    pcnbp->pfncbInitPage    = setThreadsInitPage;
     ntbInsertPage(pcnbp);
 
     // insert "XWorkplace Info" page

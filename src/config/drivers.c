@@ -745,6 +745,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
             thrCreate(&pPageData->tiDriversThread,
                       fntDriversThread,
                       NULL, // running flag
+                      "InsertDrivers",
                       THRF_PMMSGQUEUE,        // msgq
                       (ULONG)pcnbp);        // data
                 // this creates a PLINKLIST in pcnbp->pUser
@@ -842,6 +843,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     XSTRING strText2MLE;
                     BOOL fEnable = FALSE,
                          fAcceptsParams = FALSE;
+                    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
                     xstrInit(&strText2MLE, 200);
 
@@ -867,13 +869,13 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             {
                                 // driver description
                                 xstrcat(&strText2MLE,
-                                        "Version: ", 0);    // ###
+                                        pNLSStrings->pszDriverVersion, 0);
                                 xstrcat(&strText2MLE,
                                          precc->szVersion, 0);
 
                                 xstrcatc(&strText2MLE, '\n');
                                 xstrcat(&strText2MLE,
-                                         "Vendor: ", 0);     // ###
+                                        pNLSStrings->pszDriverVendor, 0);
                                 xstrcat(&strText2MLE,
                                          precc->szVendor, 0);
                                 xstrcatc(&strText2MLE, 'n');

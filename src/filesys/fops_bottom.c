@@ -761,9 +761,6 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
 
     BOOL    fFolderSemOwned = FALSE;
 
-    ULONG   ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting); ###
-
     TRY_LOUD(excpt1)
     {
         fFolderSemOwned = !wpshRequestFolderMutexSem(pFolder, 5000);
@@ -893,8 +890,6 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
 
     if (fFolderSemOwned)
         wpshReleaseFolderMutexSem(pFolder);
-
-    // DosExitMustComplete(&ulnesting) ###
 
     return (frc);
 }

@@ -77,6 +77,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -361,9 +362,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 
     if (pKernelGlobals)
     {
-        fShutdownRunning = (   (thrQueryID(&pKernelGlobals->tiShutdownThread))
-                            || (pKernelGlobals->fShutdownRunning)
-                           );
+        fShutdownRunning = xsdIsShutdownRunning();
     }
 
     if (fShutdownRunning)
@@ -416,7 +415,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                    pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OS2_SHUTDOWN,
                                                // WPMENUID_SHUTDOWN,
                                                // changed V0.9.3 (2000-04-26) [umoeller]
-                                   "Default OS/2 shutdown...", // ###
+                                   pNLSStrings->pszDefaultShutdown, // "Default OS/2 shutdown...",
                                    MIS_TEXT,
                                    // disable if Shutdown is currently running
                                    ulShutdownAttr);

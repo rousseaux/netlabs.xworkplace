@@ -487,11 +487,12 @@ SOM_Scope void  SOMLINK fonM_wpclsUnInitData(M_XWPFontFolder *somSelf)
 
 SOM_Scope PSZ  SOMLINK fonM_wpclsQueryTitle(M_XWPFontFolder *somSelf)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPFontFolderData *somThis = M_XWPFontFolderGetData(somSelf); */
     M_XWPFontFolderMethodDebug("M_XWPFontFolder","fonM_wpclsQueryTitle");
 
     // return (M_XWPFontFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
-    return ("Font folder"); // ###
+    return (pNLSStrings->pszFontFolder);
 }
 
 /*

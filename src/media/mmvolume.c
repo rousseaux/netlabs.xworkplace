@@ -198,7 +198,7 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                 {
                     PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
-                    PSZ             pszViewTitle = strdup("Volume"), // ###
+                    PSZ             pszViewTitle = strdup(pNLSStrings->pszVolumeView),
                                     p = NULL;
 
                     // now position the frame and the client:

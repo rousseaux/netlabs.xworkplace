@@ -501,8 +501,9 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
                               NULL);            // pCreateParams
     if (hwndDlg)
     {
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         HWND hwndEntryField = WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD);
-        WinSetWindowText(hwndDlg, "XWorkplace");        // ### we can do better
+        WinSetWindowText(hwndDlg, pNLSStrings->pszParameters);
         WinSetDlgItemText(hwndDlg,
                           ID_XSDI_FT_TITLE,
                           pstrPrompt->psz);

@@ -1851,8 +1851,13 @@ BOOL FrameTimer(HWND hwnd,
  *      the XCenter view's XCENTERWINDATA, which
  *      in turn resides in the frame's QWL_USER.
  *
+ *      The frame is really not visible because it
+ *      is completely covered by the client. But the
+ *      WPS requires us to use a WC_FRAME for the view.
+ *
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  *@@changed V0.9.9 (2001-02-06) [umoeller]: fixed WM_CLOSE problems on wpClose
+ *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy... WM_DESTROY cleanup is now handled here
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1896,8 +1901,8 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              * WM_CLOSE:
              *      we now do the "close" processing in WM_CLOSE
              *      instead of WM_SYSCOMMAND with SC_CLOSE because
-             *      apparently wpClose posts WM_CLOSE messages directly,
-             *      which didn't quite clean up previously.
+             *      apparently wpClose sends (!) WM_CLOSE messages
+             *      directly, which didn't quite clean up previously.
              */
 
             case WM_CLOSE:
@@ -1905,6 +1910,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 UpdateDesktopWorkarea((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
                                       TRUE);            // force remove
                 WinDestroyWindow(hwnd);
+                        // after this pXCenterData is INVALID!
             break;
 
             /*
@@ -2029,20 +2035,54 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              * WM_DESTROY:
              *      stop all running timers.
              *
-             *      The client should get this before the frame.
+             *      Implementation changed with V0.9.9. The client gets this
+             *      before the frame... we used to clean up all data in
+             *      WM_DESTROY of the client, which gave us problems here
+             *      because this came in for the frame after XCENTERWINDATA
+             *      was freed. Not a good idea, so we clean up here now.
              */
 
             case WM_DESTROY:
             {
                 PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-                // tmrStopAllTimers(hwnd);
+                XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
+                // save orig window proc because pXCenterData is freed here
+                PFNWP           pfnwpOrig = pXCenterData->pfnwpFrameOrig;
+
+                _pvOpenView = NULL;
+
+                // kill XTimers
                 tmrDestroySet((PXTIMERSET)pXCenterData->Globals.pvXTimerSet);
-                fCallDefault = TRUE;
+
+                // last chance... update desktop workarea in case
+                // this hasn't been done that. This has probably been
+                // called before, but we better make sure.
+                UpdateDesktopWorkarea(pXCenterData,
+                                      TRUE);            // force remove
+
+                DestroyWidgets(pXCenterData);
+
+                if (pXCenterData->hwndTooltip)
+                    WinDestroyWindow(pXCenterData->hwndTooltip);
+
+                // remove this window from the object's use list
+                _wpDeleteFromObjUseList(pXCenterData->somSelf,
+                                        &pXCenterData->UseItem);
+
+                ctrpFreeClasses();
+
                 // stop the XCenter thread we're running on
                 WinPostMsg(NULLHANDLE,      // post into the queue
                            WM_QUIT,
                            0,
                            0);
+
+                _wpFreeMem(pXCenterData->somSelf,
+                           (PBYTE)pXCenterData);
+
+                // call parent... we can't do that below because
+                // XCenterData has been freed
+                pfnwpOrig(hwnd, msg, mp1, mp2);
             break; }
 
             default:
@@ -2776,37 +2816,11 @@ BOOL ClientSaveSetup(HWND hwndClient,
 }
 
 /*
- *@@ ClientDestroy:
+ * ClientDestroy:
  *      implementation for WM_DESTROY in fnwpXCenterMainClient.
+ *      V0.9.9: removed, we now do this in WM_DESTROY for the
+ *      frame... the client gets this before the frame
  */
-
-VOID ClientDestroy(HWND hwnd)
-{
-    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-    XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
-
-    _pvOpenView = NULL;
-
-    // last chance... update desktop workarea in case
-    // this hasn't been done that. This has probably been
-    // called before, but we better make sure.
-    UpdateDesktopWorkarea(pXCenterData,
-                          TRUE);            // force remove
-
-    DestroyWidgets(pXCenterData);
-
-    if (pXCenterData->hwndTooltip)
-        WinDestroyWindow(pXCenterData->hwndTooltip);
-
-    // remove this window from the object's use list
-    _wpDeleteFromObjUseList(pXCenterData->somSelf,
-                            &pXCenterData->UseItem);
-
-    _wpFreeMem(pXCenterData->somSelf,
-               (PBYTE)pXCenterData);
-
-    ctrpFreeClasses();
-}
 
 /*
  *@@ fnwpXCenterMainClient:
@@ -2841,6 +2855,7 @@ VOID ClientDestroy(HWND hwnd)
  *      class.
  *
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
+ *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy
  */
 
 MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2975,16 +2990,17 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             case WM_CLOSE:
                 // destroy parent (the frame)
                 WinDestroyWindow(WinQueryWindow(hwnd, QW_PARENT));
+                            // after this pXCenterData is invalid!!
             break;
 
             /*
              * WM_DESTROY:
-             *
+             *      removed V0.9.9 (2001-03-07) [umoeller]
              */
 
-            case WM_DESTROY:
-                ClientDestroy(hwnd);
-            break;
+            // case WM_DESTROY:
+                // ClientDestroy(hwnd);
+            // break;
 
             case XCM_SETWIDGETSIZE:
             {
@@ -4200,6 +4216,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
         {
             // context menu for open XCenter client:
             HWND    hwndWidgetsSubmenu = NULLHANDLE;
+            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
             winhInsertMenuSeparator(hwndMenu,
                                     MIT_END,
@@ -4209,7 +4226,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
             hwndWidgetsSubmenu =  winhInsertSubmenu(hwndMenu,
                                                     MIT_END,
                                                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR),
-                                                    "~Add widget", // ###
+                                                    pNLSStrings->pszAddWidget, // "~Add widget",
                                                     MIS_TEXT,
                                                     0, NULL, 0, 0);
             if (G_paWidgetClasses)
@@ -4293,6 +4310,10 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 {
     BOOL fCreated = FALSE;
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)ptiMyself->ulData;
+
+    #ifdef __DEBUG__
+        DosBeep(3000, 30);
+    #endif
 
     if (pXCenterData)
     {
@@ -4596,7 +4617,9 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
         } // end if (fCreated)
     } // if (pXCenterData)
 
-    // free(pXCenterOpenStruct);
+    #ifdef __DEBUG__
+        DosBeep(1500, 30);
+    #endif
 }
 
 /*
@@ -4608,6 +4631,11 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
  *      XCenter view, since we want to allow the user to
  *      specify the XCenter's priority. The new thread is
  *      in ctrp_fntXCenter.
+ *
+ *      This creates an event semaphore which gets posted
+ *      by ctrp_fntXCenter when the XCenter view has been
+ *      created on the new thread so that we can return
+ *      the HWND of the XCenter frame here.
  */
 
 HWND ctrpCreateXCenterView(XCenter *somSelf,
@@ -4663,6 +4691,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                 if (_tid = thrCreate(NULL,
                                      ctrp_fntXCenter,
                                      &fRunning,
+                                     "XCenter",
                                      THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
                                      (ULONG)pXCenterData))
                 {

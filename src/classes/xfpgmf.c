@@ -90,6 +90,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
+#include "filesys\filetype.h"           // extended file types implementation
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
@@ -102,6 +103,109 @@
  ********************************************************************/
 
 static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
+
+/*
+ *@@ xwpAddResourcesPage:
+ *      this new XFldProgramFile method adds the "Resources"
+ *      page to an executable's settings notebook.
+ *
+ *      Gets called from our
+ *      XFldProgramFile::wpAddProgramSessionPage override.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
+                                                    HWND hwndNotebook)
+{
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddResourcesPage");
+
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszResourcesPage;
+    pcnbp->ulDlgID = ID_XSD_PGMFILE_RESOURCES;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
+    pcnbp->ulPageID = SP_PROG_RESOURCES;
+    pcnbp->pfncbInitPage    = fsysResourcesInitPage;
+    return (ntbInsertPage(pcnbp));
+}
+
+/*
+ *@@ xwpAddModulePage:
+ *      this new XFldProgramFile method adds the "Module"
+ *      page to an executable's settings notebook.
+ *
+ *      Gets called from our
+ *      XFldProgramFile::wpAddProgramSessionPage override.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
+                                                 HWND hwndNotebook)
+{
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+
+    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddModulePage");
+
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszModulePage;
+    pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
+    pcnbp->ulPageID = SP_PROG_DETAILS;
+    pcnbp->pfncbInitPage    = fsysProgramInitPage;
+    return (ntbInsertPage(pcnbp));
+}
+
+/*
+ *@@ xwpAddAssociationsPage:
+ *      this new XFldProgramFile method adds our replacement
+ *      "Associations" page to an executable's settings notebook.
+ *
+ *      Gets called from our
+ *      XFldProgramFile::wpAddProgramAssociationPage override,
+ *      if extended associations are enabled.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddAssociationsPage(XFldProgramFile *somSelf,
+                                                       HWND hwndNotebook)
+{
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+
+    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddAssociationsPage");
+
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszAssociationsPage;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGM_ASSOCIATIONS;
+    pcnbp->ulPageID = SP_PGMFILE_ASSOCS;
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
+    pcnbp->pfncbInitPage    = ftypAssociationsInitPage;
+    pcnbp->pfncbItemChanged    = ftypAssociationsItemChanged;
+    return (ntbInsertPage(pcnbp));
+}
 
 /* ******************************************************************
  *
@@ -632,6 +736,33 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
 }
 
 /*
+ *@@ wpAddProgramAssociationPage:
+ *      this WPProgramFile method adds the "Associations" page
+ *      to an executable's settings notebook.
+ *
+ *      If extended associations are enabled, we replace the
+ *      standard "Associations" page with a new page which
+ *      lists the extended file types.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramAssociationPage(XFldProgramFile *somSelf,
+                                                            HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramAssociationPage");
+
+    if (pGlobalSettings->fExtAssocs)
+        return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
+    else
+        return (XFldProgramFile_parent_WPProgramFile_wpAddProgramAssociationPage(somSelf,
+                                                                                 hwndNotebook));
+}
+
+/*
  *@@ wpAddProgramSessionPage:
  *      this instance method adds the "Session" page to
  *      an executable's settings notebook.
@@ -656,58 +787,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
     {
         if (pGlobalSettings->fReplaceFilePage)
         {
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-            PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            _xwpAddResourcesPage(somSelf, hwndNotebook);
 
-            // (2000-12-14) [lafaix] inserting "Resources" page
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = pNLSStrings->pszResourcesPage;
-            pcnbp->ulDlgID = ID_XSD_PGMFILE_RESOURCES;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
-            pcnbp->ulPageID = SP_PROG_RESOURCES;
-            pcnbp->pfncbInitPage    = fsysResourcesInitPage;
-            ntbInsertPage(pcnbp);
-            // (2000-12-14) [lafaix] end changes
-
-            // insert "Module" page
-            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = pNLSStrings->pszModulePage;
-            pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
-            // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
-            // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
-            pcnbp->ulPageID = SP_PROG_DETAILS;
-            pcnbp->pfncbInitPage    = fsysProgramInitPage;
-            ntbInsertPage(pcnbp);
-
-            /* PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            // insert "Module" page
-            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = pNLSStrings->pszModulePage;
-            pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
-            // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
-            // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
-            pcnbp->ulPageID = SP_PROG_DETAILS;
-            pcnbp->pfncbInitPage    = fsysProgramInitPage;
-            ntbInsertPage(pcnbp); */
+            _xwpAddModulePage(somSelf, hwndNotebook);
         }
     }
 

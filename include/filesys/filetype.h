@@ -29,9 +29,9 @@
     #define FILETYPE_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFldDataFile extended associations                             *
-     *                                                                  *
+     *
+     *   XFldDataFile extended associations
+     *
      ********************************************************************/
 
     #ifdef SOM_XFldDataFile_h
@@ -49,13 +49,14 @@
                                            BOOL fDeleteExisting);
     #endif
 
-    /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for XFldWPS "File types" page  *
-     *                                                                  *
-     ********************************************************************/
-
     #ifdef NOTEBOOK_HEADER_INCLUDED
+
+        /* ******************************************************************
+         *
+         *   Notebook callbacks (notebook.c) for XFldWPS "File types" page
+         *
+         ********************************************************************/
+
         VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG flFlags);
 
@@ -68,6 +69,20 @@
         extern ULONG G_cFileTypesPage;
 
         MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+        /* ******************************************************************
+         *
+         *   XWPProgram/XFldProgramFile notebook callbacks (notebook.c)
+         *
+         ********************************************************************/
+
+        VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG flFlags);
+
+        MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                            USHORT usItemID,
+                                            USHORT usNotifyCode,
+                                            ULONG ulExtra);
     #endif
 
 #endif

@@ -873,10 +873,11 @@ SOM_Scope ULONG  SOMLINK cdpM_wpclsQueryStyle(M_XMMCDPlayer *somSelf)
 
 SOM_Scope PSZ  SOMLINK cdpM_wpclsQueryTitle(M_XMMCDPlayer *somSelf)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XMMCDPlayerData *somThis = M_XMMCDPlayerGetData(somSelf); */
     M_XMMCDPlayerMethodDebug("M_XMMCDPlayer","cdpM_wpclsQueryTitle");
 
-    return ("CD Player");   /// ###
+    return (pNLSStrings->pszCDPlayer);
 }
 
 /*

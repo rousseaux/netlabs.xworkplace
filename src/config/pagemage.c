@@ -63,6 +63,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files

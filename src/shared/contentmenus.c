@@ -902,10 +902,13 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     {
         // yes: add a message saying so
         CHAR    szMsgItem[300];
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuSeparator(hwndMenu, MIT_END,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-        sprintf(szMsgItem, "... %d objects dropped,", ulObjectsLeftOut);
-                            // ### NLS!
+        sprintf(szMsgItem,
+                pNLSStrings->pszDropped1, // "... %d objects dropped,",
+                ulObjectsLeftOut);
+
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
@@ -915,7 +918,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
-                           "open folder to see them",
+                           pNLSStrings->pszDropped2, // "open folder to see them",
                            MIS_TEXT,
                            MIA_DISABLED);
     }

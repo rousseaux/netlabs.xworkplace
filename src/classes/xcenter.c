@@ -149,7 +149,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = "Wi~dgets";   // ###
+    pcnbp->pszName = pNLSStrings->pszWidgetsPage;
     pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_WIDGETS;
     pcnbp->ulPageID = SP_XCENTER_WIDGETS;

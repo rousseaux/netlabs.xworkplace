@@ -313,6 +313,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         thrCreate(&G_tiInsertDevices,
                   fntInsertDevices,
                   NULL, // running flag
+                  "InsertDevices",
                   THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
     }
@@ -654,6 +655,7 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         thrCreate(&G_tiInsertIOProcs,
                   fntInsertIOProcs,
                   NULL, // running flag
+                  "InsertIOProcs",
                   THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
     }
@@ -904,6 +906,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         thrCreate(&G_tiInsertCodecs,
                   fntInsertCodecs,
                   NULL, // running flag
+                  "InsertCodecs",
                   THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
     }

@@ -132,8 +132,8 @@ MYOWNINC = $(INC)\filesys
 
 $(OUTPUTDIR)\desktop.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\gpih.h \
-           $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h \
+        $(HLPINC)\shapewin.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfdesk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
@@ -143,7 +143,7 @@ $(OUTPUTDIR)\desktop.obj: \
 
 $(OUTPUTDIR)\disk.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfdisk.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -162,7 +162,7 @@ $(OUTPUTDIR)\fdrmenus.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
            $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h \
-           $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+           $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
     $(INC)\dlgids.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.ih \
     $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\notebook.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
@@ -173,7 +173,7 @@ $(OUTPUTDIR)\fdrmenus.obj: \
 
 $(OUTPUTDIR)\fdrnotebooks.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\winh.h \
+    $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
@@ -183,7 +183,7 @@ $(OUTPUTDIR)\fdrnotebooks.obj: \
 $(OUTPUTDIR)\fdrsubclass.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\winh.h \
+        $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\contentmenus.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
@@ -199,7 +199,8 @@ $(OUTPUTDIR)\fhandles.obj: \
 $(OUTPUTDIR)\fileops.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
+            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\threads.h \
+            $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
@@ -208,8 +209,8 @@ $(OUTPUTDIR)\fileops.obj: \
 
 $(OUTPUTDIR)\filesys.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
-        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\prfh.h \
+        $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfpgmf.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h \
@@ -228,7 +229,8 @@ $(OUTPUTDIR)\folder.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h \
         $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
-        $(HLPINC)\syssound.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
+        $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+        $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfldr.ih $(INC)\classes\xfobj.ih $(INC)\classes\xfdisk.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -238,7 +240,7 @@ $(OUTPUTDIR)\folder.obj: \
 
 $(OUTPUTDIR)\fops_bottom.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+    $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xfont.ih $(INC)\classes\xfontfile.ih \
         $(INC)\classes\xfontobj.ih $(INC)\classes\xtrash.ih $(INC)\classes\xtrashobj.ih \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
@@ -248,7 +250,7 @@ $(OUTPUTDIR)\fops_bottom.obj: \
 
 $(OUTPUTDIR)\fops_top.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\linklist.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\linklist.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
@@ -270,7 +272,7 @@ $(OUTPUTDIR)\object.obj: \
 $(OUTPUTDIR)\program.obj: \
     $(INC)\setup.h \
     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
-        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+        $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfdataf.ih $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h \
@@ -298,7 +300,7 @@ $(OUTPUTDIR)\statbars.obj: \
 $(OUTPUTDIR)\trash.obj: \
      $(INC)\setup.h \
      $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-            $(HLPINC)\stringh.h $(HLPINC)\tree.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
+            $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\tree.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
      $(INC)\classes\xtrash.ih $(INC)\classes\xtrashobj.ih $(INC)\classes\xfobj.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\shared\wpsh.h \

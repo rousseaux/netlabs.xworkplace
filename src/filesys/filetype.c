@@ -3812,4 +3812,49 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
     return (mrc);
 }
 
+/* ******************************************************************
+ *
+ *   XWPProgram/XFldProgramFile notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
+
+/*
+ *@@ ftypAssociationsInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      "Associations" page in program settings notebooks.
+ *      Sets the controls on the page according to the
+ *      file types and instance settings.
+ *
+ *      Note that this is shared between XWPProgram and
+ *      XFldProgramFile.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                              ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+}
+
+/*
+ *@@ ftypAssociationsItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      "Associations" page in program settings notebooks.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *      Note that this is shared between XWPProgram and
+ *      XFldProgramFile.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
+ */
+
+MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                    USHORT usItemID,
+                                    USHORT usNotifyCode,
+                                    ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = 0;
+
+    return (mrc);
+}
 

@@ -254,10 +254,11 @@ SOM_Scope BOOL  SOMLINK fonfM_wpclsCreateDefaultTemplates(M_XWPFontFile *somSelf
 
 SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryTitle(M_XWPFontFile *somSelf)
 {
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryTitle");
 
-    return ("Font file"); // ###
+    return (pNLSStrings->pszFontFile);
 }
 
 /*

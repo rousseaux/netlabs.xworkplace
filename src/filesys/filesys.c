@@ -1560,6 +1560,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         thrCreate(NULL,
                   fntInsertResources,
                   NULL, // running flag
+                  "InsertResources",
                   THRF_PMMSGQUEUE | THRF_TRANSIENT,
                   (ULONG)pcnbp);
     }

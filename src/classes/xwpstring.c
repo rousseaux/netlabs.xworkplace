@@ -96,8 +96,8 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\stringh.h"            // string helper routines
-#include "helpers\winh.h"               // PM helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -673,6 +673,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
                                 fThreadStarted = thrCreate(pti,
                                                            xwstrfntSetupThread,
                                                            NULL, // running flag
+                                                           "InvokeSetupString",
                                                            THRF_PMMSGQUEUE,
                                                            (ULONG)pInvoke);
                                     // the thread frees the structure

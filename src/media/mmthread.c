@@ -514,6 +514,7 @@ BOOL xmmInit(FILE* DumpFile)
         thrCreate(&G_tiMediaThread,
                   xmm_fntMediaThread,
                   NULL, // running flag
+                  "Media",
                   0,    // no msgq
                   0);
         if (DumpFile)

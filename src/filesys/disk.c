@@ -55,6 +55,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files

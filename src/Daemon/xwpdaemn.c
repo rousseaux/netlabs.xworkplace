@@ -471,6 +471,7 @@ BOOL dmnStartPageMage(VOID)
             thrCreate(&G_tiMoveThread,
                       fntMoveThread,
                       NULL, // running flag
+                      "PgmgMove",
                       THRF_WAIT | THRF_PMMSGQUEUE,    // PM msgq
                       0);
                 // this creates the PageMage object window

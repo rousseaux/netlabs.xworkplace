@@ -95,6 +95,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -126,6 +127,8 @@
 // other SOM headers
 // #include <wpdesk.h>                     // WPDesktop
 
+#pragma hdrstop
+
 /* ******************************************************************
  *
  *   Global variables
@@ -147,6 +150,8 @@ static ULONG               G_PageMageConfigFlags = 0;
 // global structure with data needed across threads
 // (see kernel.h)
 static KERNELGLOBALS       G_KernelGlobals = {0};
+
+static THREADINFO          G_tiSentinel = {0};
 
 // resize information for ID_XFD_CONTAINERPAGE, which is used
 // by many settings pages
@@ -436,20 +441,27 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     APIRET      arc;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
+    ULONG       cThreadInfos = 0;
+    PTHREADINFO paThreadInfos = NULL;
+
     // *** thread info
     if (ptib)
     {
         if (ptib->tib_ptib2)
         {
+            THREADINFO ti;
+
             // find out which thread trapped
             tid = ptib->tib_ptib2->tib2_ultid;
 
             fprintf(file,
-                "Crashing thread:\n    TID 0x%lX (%d) ",
-                tid,        // hex
-                tid);       // dec
+                    "Crashing thread:\n    TID 0x%lX (%d) ",
+                    tid,        // hex
+                    tid);       // dec
 
-            if (tid == thrQueryID(&pKernelGlobals->tiWorkerThread))
+            if (thrFindThread(&ti, tid))
+                fprintf(file, " (%s)", ti.pcszThreadName);
+            /* if (tid == thrQueryID(&pKernelGlobals->tiWorkerThread))
                 fprintf(file, " (XWorkplace Worker thread)");
             else if (tid == thrQueryID(&pKernelGlobals->tiSpeedyThread))
                 fprintf(file, " (XWorkplace Speedy thread)");
@@ -461,7 +473,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
                 fprintf(file, " (XWorkplace Shutdown thread)");
             else if (tid == pKernelGlobals->tidWorkplaceThread)
                 fprintf(file, " (PMSHELL's Workplace thread)");
-            else
+            else */
                 fprintf(file, " (unknown thread)");
 
             fprintf(file,
@@ -479,7 +491,26 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
 
     fprintf(file,  "    PMSHELL Workplace thread ID: 0x%lX\n", pKernelGlobals->tidWorkplaceThread);
 
-    if (tid = thrQueryID(&pKernelGlobals->tiWorkerThread))
+    // V0.9.9 (2001-03-07) [umoeller]
+    paThreadInfos = thrListThreads(&cThreadInfos);
+    if (paThreadInfos)
+    {
+        ULONG ul;
+        for (ul = 0;
+             ul < cThreadInfos;
+             ul++)
+        {
+            PTHREADINFO pThis = &paThreadInfos[ul];
+            fprintf(file,
+                    "    %s: ID 0x%lX (%d)\n",
+                    pThis->pcszThreadName,
+                    pThis->tid,
+                    pThis->tid);
+        }
+        free(paThreadInfos);
+    }
+
+    /* if (tid = thrQueryID(&pKernelGlobals->tiWorkerThread))
         fprintf(file,  "    XWorkplace Worker thread ID: 0x%lX (%d)\n", tid, tid);
 
     if (tid = thrQueryID(&pKernelGlobals->tiSpeedyThread))
@@ -492,7 +523,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
         fprintf(file,  "    XWorkplace Shutdown thread ID: 0x%lX (%d)\n", tid, tid);
 
     if (tid = thrQueryID(&pKernelGlobals->tiUpdateThread))
-        fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid);
+        fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid); */
 
     tid = krnQueryLock();
     if (tid)
@@ -2321,16 +2352,17 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
         // we got the queue: then our assumption was valid
         // that we are indeed running _before_ WheelWatcher here...
         // create our own thread instead
-        thrCreate(&G_KernelGlobals.tiSentinel,
+        thrCreate(&G_tiSentinel,
                   refr_fntSentinel,
                   NULL,
+                  "NotifySentinel",
                   THRF_WAIT,
                   0);           // no data here
 
         if (DumpFile)
             fprintf(DumpFile,
                     "  Started XWP Sentinel thread, TID: %d\n",
-                    G_KernelGlobals.tiSentinel.tid);
+                    G_tiSentinel.tid);
 
         G_KernelGlobals.fAutoRefreshReplaced = TRUE;
     }

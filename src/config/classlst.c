@@ -763,6 +763,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
             thrCreate(&pClientData->tiMethodCollectThread,
                       cll_fntMethodCollectThread,
                       NULL, // running flag
+                      "CollectMethods",
                       0,    // no msgq
                       (ULONG)pmti);
 
@@ -2495,7 +2496,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszToken);
-            xfi[i].pszColumnTitle = "Token";  // ###
+            xfi[i].pszColumnTitle = pNLSStrings->pszClsListToken;
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 

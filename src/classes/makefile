@@ -74,10 +74,10 @@ OBJS = \
        $(OUTPUTDIR)\xfstart.obj \
        $(OUTPUTDIR)\xfsys.obj \
        $(OUTPUTDIR)\xfwps.obj \
-       $(OUTPUTDIR)\xtrash.obj \
-       $(OUTPUTDIR)\xtrashobj.obj \
        $(OUTPUTDIR)\xmmcdplay.obj \
        $(OUTPUTDIR)\xmmvolume.obj \
+       $(OUTPUTDIR)\xtrash.obj \
+       $(OUTPUTDIR)\xtrashobj.obj \
        $(OUTPUTDIR)\xwpadmin.obj \
        $(OUTPUTDIR)\xwpfsys.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
@@ -221,7 +221,7 @@ $(OUTPUTDIR)\xfdesk.obj: \
 
 $(OUTPUTDIR)\xfdisk.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\undoc.h \
+            $(HLPINC)\dosh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
             $(INC)\classes\xfldr.ih \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -230,7 +230,9 @@ $(OUTPUTDIR)\xfdisk.obj: \
 
 $(OUTPUTDIR)\xfldr.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\dosh.h $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\eah.h $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\prfh.h $(HLPINC)\wphandle.h \
+            $(HLPINC)\dosh.h $(HLPINC)\cnrh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
+                $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+                $(HLPINC)\winh.h $(HLPINC)\wphandle.h \
             $(INC)\classes\xfdisk.h $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -250,6 +252,7 @@ $(OUTPUTDIR)\xfobj.obj: \
 
 $(OUTPUTDIR)\xfont.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\classes\xfontobj.ih $(INC)\classes\xfldr.ih \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
@@ -259,6 +262,7 @@ $(OUTPUTDIR)\xfont.obj: \
 
 $(OUTPUTDIR)\xfontfile.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
             $(INC)\config\fonts.h \
@@ -281,7 +285,7 @@ $(OUTPUTDIR)\xfpgmf.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
                 $(INC)\shared\wpsh.h \
-            $(INC)\filesys\filesys.h \
+            $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfstart.obj: \
@@ -312,6 +316,7 @@ $(OUTPUTDIR)\xfwps.obj: \
 
 $(OUTPUTDIR)\xmmcdplay.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
             $(INC)\media\media.h \
@@ -319,6 +324,7 @@ $(OUTPUTDIR)\xmmcdplay.obj: \
 
 $(OUTPUTDIR)\xmmvolume.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
             $(INC)\media\media.h \
@@ -346,12 +352,14 @@ $(OUTPUTDIR)\xtrashobj.obj: \
 
 $(OUTPUTDIR)\xwpadmin.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpsetup.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
@@ -366,6 +374,7 @@ $(OUTPUTDIR)\xwpfsys.obj: \
 
 $(OUTPUTDIR)\xwpkeybd.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\hookintf.h \
@@ -381,6 +390,7 @@ $(OUTPUTDIR)\xwpmedia.obj: \
 
 $(OUTPUTDIR)\xwpmouse.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\hookintf.h \
@@ -396,7 +406,8 @@ $(OUTPUTDIR)\xwpscreen.obj: \
 
 $(OUTPUTDIR)\xwpsetup.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\comctl.h $(HLPINC)\winh.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h $(HLPINC)\tmsgfile.h \
+            $(HLPINC)\comctl.h $(HLPINC)\winh.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h \
+                $(HLPINC)\tmsgfile.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
             $(INC)\filesys\xthreads.h \
@@ -406,11 +417,13 @@ $(OUTPUTDIR)\xwpsetup.obj: \
 
 $(OUTPUTDIR)\xwpshadow.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpsound.obj: \
             $(INC)\setup.h \
+            \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\sound.h \
@@ -418,7 +431,8 @@ $(OUTPUTDIR)\xwpsound.obj: \
 
 $(OUTPUTDIR)\xwpstring.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\threads.h \
+                $(HLPINC)\winh.h $(HLPINC)\xstring.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h

@@ -42,6 +42,9 @@
                              ULONG msg, MPARAM mp1, MPARAM mp2,
                              MRESULT *pmrc);
 
+        VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                ULONG flFlags);
+
         VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG flFlags);
 
