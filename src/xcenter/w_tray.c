@@ -958,10 +958,10 @@ STATIC VOID YwgtPaint(HWND hwnd)
        )
     {
         RECTL           rclWin;
-        // CHAR            sz[100];
         const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
         XBUTTONDATA     xbd;
-        ULONG           fl = XBF_BITMAP;        // V0.9.16 (2001-10-28) [umoeller]
+        XBUTTONSTATE    xbs;
+        ULONG           fl = TBBS_BITMAP;        // V0.9.16 (2001-10-28) [umoeller]
 
         HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
         gpihSwitchToRGB(hps);
@@ -974,34 +974,32 @@ STATIC VOID YwgtPaint(HWND hwnd)
                     pWidget->pGlobals->lcolClientBackground);
 
         // draw icon as X-button
-        xbd.rcl.xLeft = 0;
-        xbd.rcl.yBottom = 0;
-        xbd.rcl.yTop = rclWin.yTop;
-        xbd.rcl.xRight =   // pGlobals->cxMiniIcon
+        xbd.dwd.szlWin.cy = rclWin.yTop;
+        xbd.dwd.szlWin.cx =   // pGlobals->cxMiniIcon
                            G_cxTrayBmp      // V0.9.16 (2001-10-28) [umoeller]
                          + 2
                          + 2;
         if (!(pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
-            xbd.rcl.xRight += 4;     // 2*2 for button borders
+            xbd.dwd.szlWin.cx += 4;     // 2*2 for button borders
         else
             // flat buttons:
-            fl |= XBF_FLAT;
-        if (    (pPrivate->fMouseButton1Down)
-             || (pPrivate->fButtonSunk)
-           )
-            fl |= XBF_PRESSED;
+            fl |= TBBS_FLAT;
 
-        xbd.cxIconOrBitmap = G_cxTrayBmp;
-        xbd.cyIconOrBitmap = G_cyTrayBmp;           // V0.9.16 (2001-10-28) [umoeller]
-        xbd.lcol3DDark = pGlobals->lcol3DDark;
-        xbd.lcol3DLight = pGlobals->lcol3DLight;
-        xbd.lMiddle = pGlobals->lcolClientBackground; // WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
+        xbs.fPaintButtonSunk = (    (pPrivate->fMouseButton1Down)
+                                 || (pPrivate->fButtonSunk)
+                               );
+        xbs.fMouseOver = FALSE;
+
+        xbd.szlIconOrBitmap.cx = G_cxTrayBmp;
+        xbd.szlIconOrBitmap.cy = G_cyTrayBmp;           // V0.9.16 (2001-10-28) [umoeller]
+        xbd.dwd.lcolBackground = pGlobals->lcolClientBackground;
 
         xbd.hptr = G_hbmTray;           // V0.9.16 (2001-10-28) [umoeller]
 
-        ctlPaintXButton(hps,
-                        fl,         // note, XBD_BACKGROUND is never set
-                        &xbd);
+        ctlPaintTBButton(hps,
+                         fl,         // note, XBD_BACKGROUND is never set
+                         &xbd,
+                         &xbs);     // V1.0.1 (2002-11-30) [umoeller]
 
         WinEndPaint(hps);
     } // end if (pWidget && pPrivate)

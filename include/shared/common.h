@@ -505,11 +505,6 @@
     // is to be used instead of an instance's one
     #define SET_DEFAULT             255
 
-    // flags for xfSet/QueryStatusBarVisibility
-    #define STATUSBAR_ON            1
-    #define STATUSBAR_OFF           0
-    #define STATUSBAR_DEFAULT       255
-
     // new XWorkplace system sounds indices
     // (in addition to those def'd by helpers\syssound.h)
 #ifndef __NOXSYSTEMSOUNDS__
@@ -690,9 +685,6 @@
     // (set from shared\init.c)
     extern BOOL     G_fIsWarp4;
 
-    extern ULONG    G_cxIconSys;            // V0.9.20 (2002-08-04) [umoeller]
-    extern ULONG    G_cyIconSys;            // V0.9.20 (2002-08-04) [umoeller]
-
     extern ULONG    *G_pulVarMenuOfs;       // V1.0.0 (2002-08-28) [umoeller]
 
     /********************************************************************
@@ -799,6 +791,9 @@
 #ifndef __NOCFGSTATUSBARS__
         sfStatusBars,
 #endif
+
+        sfToolBars,             // added V1.0.1 (2002-11-30) [umoeller]
+
 #ifndef __NEVERCHECKDESKTOP__
         sfCheckDesktop,
         sfPrePopulateDesktop,
@@ -1238,6 +1233,14 @@
     #define STDICON_DESKTOP_OPEN        17
     #define STDICON_FOLDER_CLOSED       18
     #define STDICON_FOLDER_OPEN         19
+
+    // tool bar icons V1.0.1 (2002-11-30) [umoeller]
+    #define STDICON_TB_REFRESH          20
+    #define STDICON_TB_FIND             21
+    #define STDICON_TB_HELP             22
+    #define STDICON_TB_MULTIPLECOLUMNS  23
+    #define STDICON_TB_DETAILS          24
+    #define STDICON_TB_SMALLICONS       25
 
     APIRET cmnGetStandardIcon(ULONG ulStdIcon,
                               HPOINTER *phptr,

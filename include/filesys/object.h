@@ -181,6 +181,10 @@
     #define OBJLIST_QUERYAWAKEFSOBJECT      0x00400000 // V0.9.16 (2001-10-25) [umoeller]
     #define OBJLIST_IMAGECACHE              0x00800000 // V1.0.0 (2002-08-24) [umoeller]
 
+    BOOL objLockFlags(VOID);
+
+    VOID objUnlockFlags(VOID);
+
     BOOL objIsAShadow(WPObject *somSelf);
 
     WPObject* objResolveIfShadow(WPObject *somSelf);

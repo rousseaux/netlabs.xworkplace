@@ -319,11 +319,49 @@ static TREE        *G_DirtyList;
 static HMTX        G_hmtxDirtyList = NULLHANDLE;
 static LONG        G_lDirtyListItemsCount = 0;
 
+// object flags mutex V1.0.0 (2002-08-31) [umoeller]
+// moved this here from xfobj.c V1.0.1 (2002-11-30) [umoeller]
+static HMTX         G_hmtxObjFlags = NULLHANDLE;
+
 /* ******************************************************************
  *
  *   Object internals
  *
  ********************************************************************/
+
+/*
+ *@@ objLockFlags:
+ *      requests the global mutex for protecting instance object
+ *      flags. This has been added to avoid requesting the
+ *      object mutex, which can cause deadlocks.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: moved this here from xfobj.c, renamed, exported
+ */
+
+BOOL objLockFlags(VOID)
+{
+    if (G_hmtxObjFlags)
+        return !DosRequestMutexSem(G_hmtxObjFlags, SEM_INDEFINITE_WAIT);
+
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxObjFlags,
+                              0,
+                              TRUE);
+}
+
+/*
+ *@@ objUnlockFlags:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: moved this here from xfobj.c, renamed, exported
+ */
+
+VOID objUnlockFlags(VOID)
+{
+    DosReleaseMutexSem(G_hmtxObjFlags);
+}
 
 /*
  *@@ objIsAShadow:

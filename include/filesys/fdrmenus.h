@@ -274,17 +274,10 @@
 
     BOOL mnuInsertFldrViewItems(WPFolder *somSelf,
                                 HWND hwndViewSubmenu,
-                                BOOL fInsertNewMenu,
                                 PCNRINFO pCnrInfo,
                                 ULONG ulView);
 
     VOID mnuInvalidateConfigCache(VOID);
-
-    /*
-    BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,
-                                  HWND hwndMenu,
-                                  HWND hwndCnr);
-       */
 
     BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                              HWND hwndMenu,

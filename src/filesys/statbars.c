@@ -126,6 +126,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
@@ -171,7 +172,7 @@ STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARA
 /*
  *@@ stbClassCanHaveStatusBars:
  *      returns TRUE if the given object's class
- *      can have status bars.
+ *      can have status or tool bars.
  *
  *      This rules out the active desktop and
  *      the Object Desktop tab launchpad and
@@ -214,7 +215,7 @@ BOOL stbFolderWantsStatusBars(WPFolder *somSelf)
 }
 
 /*
- *@@ stbViewHasStatusBars:
+ *@@ stbViewHasStatusBar:
  *      returns TRUE if the given view for the given
  *      folder should have a status bar.
  *
@@ -231,10 +232,11 @@ BOOL stbFolderWantsStatusBars(WPFolder *somSelf)
  *      the Object Desktop folder subclasses.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: added split view support
  */
 
-BOOL stbViewHasStatusBars(WPFolder *somSelf,
-                          ULONG ulView)
+BOOL stbViewHasStatusBar(WPFolder *somSelf,
+                         ULONG ulView)         // OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS, or ID_XFMI_OFS_SPLITVIEW
 {
     ULONG               flViews;
 
@@ -250,14 +252,64 @@ BOOL stbViewHasStatusBars(WPFolder *somSelf,
              // 4) status bar only if allowed for the current view type
              && (flViews = cmnQuerySetting(sflSBForViews))
              && (
-                    (   (ulView == OPEN_CONTENTS)
-                     && (flViews & SBV_ICON)
+                    (    (ulView == OPEN_CONTENTS)
+                      && (flViews & SBV_ICON)
                     )
-                 || (   (ulView == OPEN_TREE)
-                     && (flViews & SBV_TREE)
+                 || (    (ulView == OPEN_TREE)
+                      && (flViews & SBV_TREE)
                     )
-                 || (   (ulView == OPEN_DETAILS)
-                     && (flViews & SBV_DETAILS)
+                 || (    (ulView == OPEN_DETAILS)
+                      && (flViews & SBV_DETAILS)
+                    )
+                 || (    (ulView == ID_XFMI_OFS_SPLITVIEW)
+                      && (flViews & SBV_SPLIT)
+                    )
+                )
+           );
+}
+
+/*
+ *@@ stbViewHasToolBar:
+ *      returns TRUE if the given view for the given
+ *      folder should have a tool bar.
+ *
+ *      This returns FALSE if tool bars are disabled
+ *      globally, or locally for the folder, or if
+ *      the folder's class shouldn't have tool bars,
+ *      of if the view has been ruled out in "Workplace
+ *      Shell".
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+BOOL stbViewHasToolBar(WPFolder *somSelf,
+                       ULONG ulView)         // OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS, or ID_XFMI_OFS_SPLITVIEW
+{
+    ULONG               flViews;
+
+    return (
+#ifndef __NOCFGSTATUSBARS__
+                (cmnQuerySetting(sfToolBars))
+             &&
+#endif
+                stbFolderWantsStatusBars(somSelf)
+             // 2) rule out desktop and Object Desktop classes
+             // V0.9.19 (2002-04-17) [umoeller]
+             && (stbClassCanHaveStatusBars(somSelf))
+             // 4) status bar only if allowed for the current view type
+             && (flViews = cmnQuerySetting(sflSBForViews))
+             && (
+                    (    (ulView == OPEN_CONTENTS)
+                      && (flViews & SBV_ICON)
+                    )
+                 || (    (ulView == OPEN_TREE)
+                      && (flViews & SBV_TREE)
+                    )
+                 || (    (ulView == OPEN_DETAILS)
+                      && (flViews & SBV_DETAILS)
+                    )
+                 || (    (ulView == ID_XFMI_OFS_SPLITVIEW)
+                      && (flViews & SBV_SPLIT)
                     )
                 )
            );
@@ -605,6 +657,7 @@ VOID stbDestroy(PSUBCLFOLDERVIEW psli2)
  *      also passes the parameters to this func.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: added support for updating split views
  */
 
 BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
@@ -618,10 +671,23 @@ BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
 {
     PSUBCLFOLDERVIEW    psfv;
 
-    PMPF_STATUSBARS((" ulActivate = %d", ulActivate));
+    PMPF_STATUSBARS(("ulActivate = %d", ulActivate));
 
-    if (psfv = fdrQuerySFV(hwndView, NULL))
+    // fdrQuerySFV doesn't work for split views
+    if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
     {
+        PMPF_STATUSBARS(("view 0x%lX is split view", ulView));
+
+        WinPostMsg(hwndView,
+                   WM_CONTROL,
+                   MPFROM2SHORT(FID_CLIENT,
+                                SN_UPDATESTATUSBAR),
+                   (MPARAM)ulActivate);
+    }
+    else if (psfv = fdrQuerySFV(hwndView, NULL))
+    {
+        PMPF_STATUSBARS(("found SUBCLFOLDERVIEW for view 0x%lX", ulView));
+
         if (ulActivate == 2) // "update" flag
             WinPostMsg(psfv->hwndSupplObject,
                        SOM_ACTIVATESTATUSBAR,
@@ -634,40 +700,9 @@ BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
             // check if the folder should have a status bar
             // depending on the new settings
             // V0.9.19 (2002-04-17) [umoeller]
-            BOOL fNewVisible = stbViewHasStatusBars(somSelf,
-                                                    ulView);
+            BOOL fNewVisible = stbViewHasStatusBar(somSelf,
+                                                   ulView);
 
-/*
-            XFolderData *somThis = XFolderGetData(mpFolder);
-            ULONG flViews;
-            BOOL fVisible = (
-                                // status bar feature enabled?
-#ifndef __NOCFGSTATUSBARS__
-                                (cmnQuerySetting(sfStatusBars))
-                            &&
-#endif
-                                // status bars either enabled for this instance
-                                // or in global settings?
-                                (    (_bStatusBarInstance == STATUSBAR_ON)
-                                  || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                                       && (cmnQuerySetting(sfDefaultStatusBarVisibility))
-                                     )
-                                )
-                            && (flViews = cmnQuerySetting(sflSBForViews))
-                            &&
-                                // status bars enabled for current view type?
-                                (   (   ((ULONG)mpView == OPEN_CONTENTS)
-                                     && (flViews & SBV_ICON)
-                                    )
-                                 || (   ((ULONG)mpView == OPEN_TREE)
-                                     && (flViews & SBV_TREE)
-                                    )
-                                 || (   ((ULONG)mpView == OPEN_DETAILS)
-                                     && (flViews & SBV_DETAILS)
-                                    )
-                                )
-                            );
-*/
 
             if ( fNewVisible != (psfv->hwndStatusBar != NULLHANDLE) )
             {
@@ -3199,6 +3234,7 @@ static const CONTROLDEF
     VisIconCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORICONVIEWS),
     VisTreeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORTREEVIEWS),
     VisDetailsCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORDETAILSVIEWS),
+    VisSplitCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORSPLITVIEWS),     // V1.0.1 (2002-11-30) [umoeller]
     StyleGroup = LOADDEF_GROUP(ID_XSDI_STYLE_GROUP, DEFAULT_TABLE_WIDTH),
     RaisedRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_SBSTYLE_3RAISED),
     SunkenRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_3SUNKEN),
@@ -3218,6 +3254,8 @@ static const DLGHITEM G_dlgStatusBar1[] =
                         CONTROL_DEF(&VisTreeCB),
                     START_ROW(0),
                         CONTROL_DEF(&VisDetailsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&VisSplitCB),
                 END_TABLE,
             START_ROW(0),
                 START_GROUP_TABLE(&StyleGroup),
@@ -3254,6 +3292,7 @@ static const XWPSETTING G_StatusBar1Backup[] =
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.19 (2002-04-24) [umoeller]: now using dialog formatter
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: added split view setting
  */
 
 VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -3288,6 +3327,8 @@ VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               (fl & SBV_TREE) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,
                               (fl & SBV_DETAILS) != 0);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORSPLITVIEWS,
+                              (fl & SBV_SPLIT) != 0);       // V1.0.1 (2002-11-30) [umoeller]
 
         fl = cmnQuerySetting(sulSBStyle);
         switch (fl)
@@ -3318,6 +3359,7 @@ VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: added split view setting
  */
 
 MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3351,6 +3393,11 @@ MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSDI_SBFORDETAILSVIEWS:
             flStyleChanged = SBV_DETAILS;
+            fShowStatusBars = TRUE;
+        break;
+
+        case ID_XSDI_SBFORSPLITVIEWS:       // V1.0.1 (2002-11-30) [umoeller]
+            flStyleChanged = SBV_SPLIT;
             fShowStatusBars = TRUE;
         break;
 

@@ -1252,6 +1252,8 @@ int main(int argc, char* argv[])
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return FALSE;
 
+    winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
+
     DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
 
     /* HWND hwndDlg = NULLHANDLE;

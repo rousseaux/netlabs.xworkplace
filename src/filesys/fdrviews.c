@@ -1345,6 +1345,9 @@ STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
 
     _wpCnrRemoveObject(pobj,
                        hwndCnr);
+            // @@todo this is _very_ inefficient. Removing 1,000 records
+            // can take up to a second this way. Use wpclsRemoveObjects
+            // instead.
 
     if (ulUnlock)
         // this is the "unlock" that corresponds to the "lock"

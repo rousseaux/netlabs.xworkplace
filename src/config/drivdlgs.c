@@ -2327,7 +2327,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             ctlRegisterTooltip(WinQueryAnchorBlock(hwndDlg));
             // create tooltip
             pS506All->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
-                                                    COMCTL_TOOLTIP_CLASS, // wnd class
+                                                    WC_CCTL_TOOLTIP, // wnd class
                                                     "",            // window text
                                                     XWP_TOOLTIP_STYLE,
                                                          // tooltip window style (common.h)

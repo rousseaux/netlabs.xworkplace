@@ -149,7 +149,7 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
     inbp.ulPageID = SP_STARTUPFOLDER;
     inbp.pfncbInitPage    = fdrStartupFolderInitPage;
     inbp.pfncbItemChanged = fdrStartupFolderItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -166,11 +166,11 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpSetXStartup(XFldStartup *somSelf,
     // XFldStartupData *somThis = XFldStartupGetData(somSelf);
     XFldStartupMethodDebug("XFldStartup","xfstup_xwpSetXStartup");
 
-    return (objAddToList(somSelf,
-                         &G_llStartupFolders,
-                         fInsert,
-                         INIKEY_XSTARTUPFOLDERS,
-                         0));
+    return objAddToList(somSelf,
+                        &G_llStartupFolders,
+                        fInsert,
+                        INIKEY_XSTARTUPFOLDERS,
+                        0);
 }
 
 /*
@@ -258,7 +258,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpFree(XFldStartup *somSelf)
 
     // remove from the linked list
     _xwpSetXStartup(somSelf, FALSE);
-    return (XFldStartup_parent_XFolder_wpFree(somSelf));
+    return XFldStartup_parent_XFolder_wpFree(somSelf);
 }
 
 /*
@@ -279,7 +279,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpSaveState(XFldStartup *somSelf)
     if (_ulObjectDelay != XSTARTUP_DEFAULTOBJECTDELAY)
         _wpSaveLong(somSelf, (PSZ)G_pcszXFldStartup, 2, _ulObjectDelay);
 
-    return (XFldStartup_parent_XFolder_wpSaveState(somSelf));
+    return XFldStartup_parent_XFolder_wpSaveState(somSelf);
 }
 
 /*
@@ -302,40 +302,11 @@ SOM_Scope BOOL  SOMLINK xfstup_wpRestoreState(XFldStartup *somSelf,
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFldStartup, 2, &ul))
         _ulObjectDelay = ul;
 
-    return (XFldStartup_parent_XFolder_wpRestoreState(somSelf,
-                                                      ulReserved));
+    return XFldStartup_parent_XFolder_wpRestoreState(somSelf,
+                                                     ulReserved);
 }
 
 /*
-
-/*
- *
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
- *
- *      We remove "Create another" menu item.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- *@@changed V0.9.9 (2001-03-19) [pr]: allow create another
- */
-
-SOM_Scope ULONG  SOMLINK xfstup_wpFilterPopupMenu(XFldStartup *somSelf,
-                                                  ULONG ulFlags,
-                                                  HWND hwndCnr,
-                                                  BOOL fMultiSelect)
-{
-    /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
-    XFldStartupMethodDebug("XFldStartup","xfstup_wpFilterPopupMenu");
-
-    return (XFldStartup_parent_XFolder_wpFilterPopupMenu(somSelf,
-                                                         ulFlags,
-                                                         hwndCnr,
-                                                         fMultiSelect)
-//             & ~CTXT_NEW
-           );
-}
 
 /*
  *@@ wpModifyPopupMenu:
@@ -375,7 +346,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
                        cmnGetString(ID_XSSI_PROCESSCONTENT),
                        MIS_TEXT, 0);
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -426,16 +397,16 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
         }
         return TRUE;
     }
-    else
-        return (XFldStartup_parent_XFolder_wpMenuItemSelected(somSelf,
-                                                              hwndFrame,
-                                                              ulMenuId));
+
+    return XFldStartup_parent_XFolder_wpMenuItemSelected(somSelf,
+                                                         hwndFrame,
+                                                         ulMenuId);
 }
 
 /*
  *@@ wpMenuItemHelpSelected:
  *      display help for "Process content"
- *      menu item.
+ *      menu item. @@todo
  */
 
 SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemHelpSelected(XFldStartup *somSelf,
@@ -444,8 +415,8 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemHelpSelected(XFldStartup *somSelf,
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpMenuItemHelpSelected");
 
-    return (XFldStartup_parent_XFolder_wpMenuItemHelpSelected(somSelf,
-                                                              MenuId));
+    return XFldStartup_parent_XFolder_wpMenuItemHelpSelected(somSelf,
+                                                             MenuId);
 }
 
 /*
@@ -470,7 +441,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpAddSettingsPages(XFldStartup *somSelf,
     XFldStartup_parent_XFolder_wpAddSettingsPages(somSelf, hwndNotebook);
 
     // add the "XWorkplace Startup" page on top
-    return (_xwpAddXFldStartupPage(somSelf, hwndNotebook));
+    return _xwpAddXFldStartupPage(somSelf, hwndNotebook);
 }
 
 /*
@@ -506,7 +477,7 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
               && (!wpshResidesBelow(pFolder, pDesktop))
             );
 
-    return (pFolder);
+    return pFolder;
 }
 
 /*
@@ -591,6 +562,7 @@ SOM_Scope PSZ  SOMLINK xfstupM_wpclsQueryTitle(M_XFldStartup *somSelf)
  *      for the Startup folder.
  *
  *@@changed V0.9.9 (2001-03-19) [pr]: allow copy
+ *@@changed V1.0.1 (2002-11-25) [pr]: allow Create Another
  */
 
 SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
@@ -599,7 +571,7 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsQueryStyle");
 
     return (M_XFldStartup_parent_M_XFolder_wpclsQueryStyle(somSelf)
-                | CLSSTYLE_NEVERTEMPLATE
+                // | CLSSTYLE_NEVERTEMPLATE
                 // | CLSSTYLE_NEVERCOPY
                 // | CLSSTYLE_NEVERDELETE
            );
@@ -673,7 +645,7 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconData(M_XFldStartup *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 /*
@@ -695,7 +667,24 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
+}
+
+/*
+ *@@ wpclsCreateDefaultTemplates:
+ *      This method is used to create templates for the class.
+ *      We prevent this creation by not calling the parent method.
+ *
+ *@@added V1.0.1 (2002-11-25) [pr]
+ */
+
+SOM_Scope BOOL  SOMLINK xfstupM_wpclsCreateDefaultTemplates(M_XFldStartup *somSelf,
+                                                            WPObject* Folder)
+{
+    /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
+    M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsCreateDefaultTemplates");
+
+    return TRUE;
 }
 
 
@@ -740,8 +729,6 @@ SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
 {
     /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
     M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryTitle");
-
-    // return ("XWorkplace Shutdown");
 
     return cmnGetString(ID_XFSI_XWPSHUTDOWNFDR);
                 // V1.0.0 (2002-08-31) [umoeller]
@@ -833,10 +820,7 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconData(M_XFldShutdown *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
-
-    /* return (M_XFldShutdown_parent_M_XFolder_wpclsQueryIconData(somSelf,
-                                                               pIconInfo)); */
+    return sizeof(ICONINFO);
 }
 
 /*
@@ -858,11 +842,7 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconDataN(M_XFldShutdown *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
-
-    /* return (M_XFldShutdown_parent_M_XFolder_wpclsQueryIconDataN(somSelf,
-                                                                pIconInfo,
-                                                                ulIconIndex)); */
+    return sizeof(ICONINFO);
 }
 
 

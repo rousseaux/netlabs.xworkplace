@@ -122,7 +122,8 @@ HWND        G_hwndCnr,
             G_hwndText,
             G_hwndIcon,
             G_hwndClose,
-            G_hwndClear;
+            G_hwndClear,
+            G_hwndRefresh;
 
 // thousands separator from "Country" object
 CHAR        G_szThousand[10];
@@ -716,8 +717,9 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             G_hwndIcon = WinWindowFromID(hwndDlg, ID_TSDI_ICON);
             G_hwndText = WinWindowFromID(hwndDlg, ID_TSDI_TEXT1);
             G_hwndCnr = WinWindowFromID(hwndDlg, ID_TSDI_CNR);
-            G_hwndClear = WinWindowFromID(hwndDlg, DID_CLEAR);
             G_hwndClose = WinWindowFromID(hwndDlg, DID_OK);
+            G_hwndClear = WinWindowFromID(hwndDlg, DID_CLEAR);
+            G_hwndRefresh = WinWindowFromID(hwndDlg, DID_REFRESH);
 
             // set font V0.9.16 (2001-12-02) [umoeller]
             if (doshIsWarp4())
@@ -728,11 +730,11 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                   "9.WarpSans Bold");
                 winhSetWindowFont(G_hwndCnr,
                                   pcszWS);
-                winhSetWindowFont(WinWindowFromID(hwndDlg, DID_OK),
+                winhSetWindowFont(G_hwndClose,
                                   pcszWS);
-                winhSetWindowFont(WinWindowFromID(hwndDlg, DID_CLEAR),
+                winhSetWindowFont(G_hwndClear,
                                   pcszWS);
-                winhSetWindowFont(WinWindowFromID(hwndDlg, DID_REFRESH),
+                winhSetWindowFont(G_hwndRefresh,
                                   pcszWS);
             }
 
@@ -777,6 +779,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
         case TSM_START:
             WinSetWindowText(G_hwndText, G_szRootDir);
             WinEnableWindow(G_hwndClear, FALSE);
+            WinEnableWindow(G_hwndRefresh, FALSE);
             G_fStopThread = FALSE;
             DosCreateThread(&G_tidCollect, fntCollect, 0,
                     CREATE_READY, 4*65536);
@@ -981,6 +984,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
         case TSM_DONEWITHALL:
         {
             WinEnableWindow(G_hwndClear, TRUE);
+            WinEnableWindow(G_hwndRefresh, TRUE);
 
             // insert 100 largest files
             Insert100LargestFiles();
@@ -1477,6 +1481,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 WinShowWindow(G_hwndClose, FALSE);
                 WinShowWindow(G_hwndIcon, FALSE);
                 WinShowWindow(G_hwndClear, FALSE);
+                WinShowWindow(G_hwndRefresh, FALSE);
                 WinShowWindow(G_hwndText, FALSE);
             }
             else if (pswpNew->fl & SWP_RESTORE)
@@ -1487,6 +1492,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 WinShowWindow(G_hwndClose, TRUE);
                 WinShowWindow(G_hwndIcon, TRUE);
                 WinShowWindow(G_hwndClear, TRUE);
+                WinShowWindow(G_hwndRefresh, TRUE);
                 WinShowWindow(G_hwndText, TRUE);
             }
 
@@ -1785,6 +1791,8 @@ int main(int argc, char *argv[])
 
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return FALSE;
+
+    winhInitGlobals();          // V1.0.1 (2002-11-30) [umoeller]
 
     treeInit(&G_LargestFilesTree, &G_cLargestFilesTree);
 

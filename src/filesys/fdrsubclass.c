@@ -160,6 +160,7 @@
 
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -340,6 +341,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
  *@@changed V0.9.9 (2001-03-11) [umoeller]: added ulWindowWordOffset param
  *@@changed V0.9.9 (2001-03-11) [umoeller]: no longer subclassing
  *@@changed V0.9.9 (2001-03-11) [umoeller]: renamed from fdrSubclassFolderView
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: fixed creation of suppl. obj window, which is not needed for split views
  */
 
 PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,           // in: folder frame
@@ -349,6 +351,8 @@ PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,           // in: folder frame
                                   // SUBCLFOLDERVIEW ptr in
                                   // frame's window words, or -1
                                   // for safe default
+                              BOOL fCreateSuppl,        // in: create suppl. object window?
+                                                        // TRUE only for subclassed WPS folders
                               WPFolder *somSelf,
                                    // in: folder; either XFolder's somSelf
                                    // or XFldDisk's root folder
@@ -384,23 +388,22 @@ PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,           // in: folder frame
         // create a supplementary object window
         // for this folder frame (see
         // fdr_fnwpSupplFolderObject for details)
-        if (psliNew->hwndSupplObject = winhCreateObjectWindow(WNDCLASS_SUPPLOBJECT,
-                                                              psliNew))
+        if (    (fCreateSuppl)          // V1.0.1 (2002-11-30) [umoeller]
+             && (psliNew->hwndSupplObject = winhCreateObjectWindow(WNDCLASS_SUPPLOBJECT,
+                                                                   psliNew))
+           )
         {
             psliNew->ulWindowWordOffset
                     = (ulWindowWordOffset == -1)
                          ? G_SFVOffset        // window word offset which we've
                                           // calculated in fdr_SendMsgHook
-                         : ulWindowWordOffset, // changed V0.9.9 (2001-03-11) [umoeller]
-
-            // store SFV in frame's window words
-            WinSetWindowPtr(hwndFrame,
-                            psliNew->ulWindowWordOffset,
-                            psliNew);
+                         : ulWindowWordOffset; // changed V0.9.9 (2001-03-11) [umoeller]
         }
-        else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Unable to create suppl. folder object window.");
+
+        // store SFV in frame's window words
+        WinSetWindowPtr(hwndFrame,
+                        psliNew->ulWindowWordOffset,
+                        psliNew);
     }
 
     return psliNew;
@@ -430,6 +433,7 @@ PSUBCLFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
     if (psfv = fdrCreateSFV(hwndFrame,
                             hwndCnr,
                             -1,    // default window word V0.9.9 (2001-03-11) [umoeller]
+                            TRUE,            // create suppl. object window
                             somSelf,
                             pRealObject))
     {
@@ -503,7 +507,7 @@ VOID fdrRemoveSFV(PSUBCLFOLDERVIEW psfv)
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.1 (2000-02-08) [umoeller]: status bars were added even if globally disabled; fixed.
  *@@changed V0.9.3 (2000-04-08) [umoeller]: adjusted for new folder frame subclassing
- *@@changed V0.9.19 (2002-04-17) [umoeller]: now using stbViewHasStatusBars to fix Object Desktop classes
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now using stbViewHasStatusBar to fix Object Desktop classes
  */
 
 VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
@@ -530,7 +534,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
         fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
 
     // add status bar, if allowed:
-    if (    (stbViewHasStatusBars(somSelf, ulView))      // V0.9.19 (2002-04-17) [umoeller]
+    if (    (stbViewHasStatusBar(somSelf, ulView))      // V0.9.19 (2002-04-17) [umoeller]
          && (psfv)
        )
     {
@@ -1173,6 +1177,8 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
  *      Returns TRUE if the item was processed, FALSE otherwise
  *      and the parent func should be called.
  *
+ *      Also gets called externally from the split view frame.
+ *
  *@@added V1.0.0 (2002-08-28) [umoeller]
  */
 
@@ -1478,64 +1484,10 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
 
         ULONG               flObject = objQueryFlags(pobjDraw);
 
-        // check if we have an icon already or if this
-        // is the first call for this object... in that
-        // case hptrIcon might be NULLHANDLE still
-        if (!(hptrPaint = pmrc->hptrIcon))
-        {
-            PMPF_ICONREPLACEMENTS(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
-
-            // this object does not have an icon yet:
-            // lazy icons enabled?
-            if (    (flOwnerDraw & OWDRFL_LAZYICONS)
-                 && (flObject & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
-               )
-            {
-                // lazy icon drawing:
-                // use default class icon for now and
-                // queue object for lazy icon processing
-                icomQueueLazyIcon(pobjDraw);
-                hptrPaint = _wpclsQueryIcon(_somGetClass(pobjDraw));
-
-                // we have tested for datafile and program, so
-                // this object can't be a shadow, so skip the
-                // check below
-                flOwnerDraw &= ~OWDRFL_SHADOWOVERLAY;
-            }
-            else
-            {
-                // no data file, or lazy icons disabled:
-                // get the icon synchronously
-                hptrPaint = _wpQueryIcon(pobjDraw);
-                        // this should set MINIRECORDCORE.hptrIcon
-            }
-        }
-        else
-        {
-            // pmrc->hptrIcon was set: still check if this is
-            // a folder (cannot happen presently because they
-            // are not owner-drawn) or a shadow to a folder;
-            // in that case, we need to draw an animation icon
-            // if the folder has an open view... pmrc->hptrIcon
-            // ALWAYS has the closed icon for folders!
-            WPObject *pobjTest = pobjDraw;
-
-            if (    (    (flObject & OBJFL_WPFOLDER)
-                      || (    (pobjTest = objResolveIfShadow(pobjDraw))
-                           && (objIsAFolder(pobjTest))
-                         )
-                    )
-                 // && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
-                 // no, no, no! _wpFindViewItem requests the object mutex
-                 // if the current thread doesn't have it, which can deadlock
-                 // the system if a shadow is just being created!
-                 // so use CRA_INUSE instead, which should be correct
-                 // V1.0.0 (2002-09-17) [umoeller]
-                 && (poi->fsAttribute & CRA_INUSE)
-               )
-                hptrPaint = _wpQueryIconN(pobjTest, 1);
-            // else: leave hptrPaint with pmrc->hptrIcon
-        }
+        /*
+         * 1) calculate coordinates:
+         *
+         */
 
         // determine whether to draw mini icon and set
         // up x and y for the icon to be centered in
@@ -1546,15 +1498,15 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         PMPF_ICONREPLACEMENTS(("    cx = %d, cy = %d", cx, cy));
 
         if (    (flOwnerDraw & 0x80000000)      // force mini-icon (Details view)?
-             || (cx < G_cxIconSys)
+             || (cx < G_cxIcon)
            )
         {
             flDraw |= DP_MINI;
 
             x =   poi->rclItem.xLeft
-                + (cx - G_cxIconSys / 2) / 2;
+                + (cx - G_cxIcon / 2) / 2;
             y =   poi->rclItem.yBottom
-                + (cy - G_cyIconSys / 2) / 2;
+                + (cy - G_cyIcon / 2) / 2;
 
             // in Details view, the "selected" rectangle is the
             // same size as the poi rectangle, but the cursor
@@ -1576,10 +1528,10 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         else
         {
             x =   poi->rclItem.xLeft
-                + (cx - G_cxIconSys) / 2
+                + (cx - G_cxIcon) / 2
                 + 1;
             y =   poi->rclItem.yBottom
-                + (cy - G_cyIconSys) / 2
+                + (cy - G_cyIcon) / 2
                 + 1;
 
             rclBack.xLeft = poi->rclItem.xLeft + 2;
@@ -1587,6 +1539,11 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             rclBack.xRight = poi->rclItem.xRight - 1;
             rclBack.yTop = poi->rclItem.yTop - 1;
         }
+
+        /*
+         * 2) draw emphasis
+         *
+         */
 
         // now, with owner draw, the container doesn't do emphasis
         // for us EXCEPT source and target emphasis... so we need
@@ -1678,6 +1635,70 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             }
         }
 
+        /*
+         * 3) draw icon
+         *
+         */
+
+        // check if we have an icon already or if this
+        // is the first call for this object... in that
+        // case hptrIcon might be NULLHANDLE still
+        if (!(hptrPaint = pmrc->hptrIcon))
+        {
+            PMPF_ICONREPLACEMENTS(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
+
+            // this object does not have an icon yet:
+            // lazy icons enabled?
+            if (    (flOwnerDraw & OWDRFL_LAZYICONS)
+                 && (flObject & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
+               )
+            {
+                // lazy icon drawing:
+                // use default class icon for now and
+                // queue object for lazy icon processing
+                icomQueueLazyIcon(pobjDraw);
+                hptrPaint = _wpclsQueryIcon(_somGetClass(pobjDraw));
+
+                // we have tested for datafile and program, so
+                // this object can't be a shadow, so skip the
+                // check below
+                flOwnerDraw &= ~OWDRFL_SHADOWOVERLAY;
+            }
+            else
+            {
+                // no data file, or lazy icons disabled:
+                // get the icon synchronously
+                hptrPaint = _wpQueryIcon(pobjDraw);
+                        // this should set MINIRECORDCORE.hptrIcon
+            }
+        }
+        else
+        {
+            // pmrc->hptrIcon was set: still check if this is
+            // a folder (cannot happen presently because they
+            // are not owner-drawn) or a shadow to a folder;
+            // in that case, we need to draw an animation icon
+            // if the folder has an open view... pmrc->hptrIcon
+            // ALWAYS has the closed icon for folders!
+            WPObject *pobjTest = pobjDraw;
+
+            if (    (    (flObject & OBJFL_WPFOLDER)
+                      || (    (pobjTest = objResolveIfShadow(pobjDraw))
+                           && (objIsAFolder(pobjTest))
+                         )
+                    )
+                 // && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
+                 // no, no, no! _wpFindViewItem requests the object mutex
+                 // if the current thread doesn't have it, which can deadlock
+                 // the system if a shadow is just being created!
+                 // so use CRA_INUSE instead, which should be correct
+                 // V1.0.0 (2002-09-17) [umoeller]
+                 && (poi->fsAttribute & CRA_INUSE)
+               )
+                hptrPaint = _wpQueryIconN(pobjTest, 1);
+            // else: leave hptrPaint with pmrc->hptrIcon
+        }
+
         // the template icons are always drawn via ownerdraw,
         // so we have to do that too
         if (!(_wpQueryStyle(pobjDraw) & OBJSTYLE_TEMPLATE))
@@ -1706,8 +1727,8 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 // icon only if we weren't mini yet
                 if (!(flDraw & DP_MINI))
                     WinDrawPointer(poi->hps,
-                                   x + G_cxIconSys / 8,
-                                   y + G_cyIconSys * 5 / 16,
+                                   x + G_cxIcon / 8,
+                                   y + G_cyIcon * 5 / 16,
                                    hptrPaint,
                                    flDraw | DP_MINI);
             }
@@ -1974,10 +1995,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                 if (psfv->hwndStatusBar)
                     // we have a status bar: calculate its rectangle
-                    // fdrCalcFrameRect(mp1, mp2);
-                    winhCalcExtFrameRect(mp1,
-                                         mp2,
-                                         cmnQueryStatusBarHeight());
+                    ctlCalcExtFrameRect(mp1,
+                                        mp2,
+                                        cmnQueryStatusBarHeight());
             break;
 
             /* *************************

@@ -43,13 +43,14 @@
     #define SBSTYLE_WARP4RECT       3
     #define SBSTYLE_WARP4MENU       4
 
-    #define SBS_STATUSBARFONT       1
-    #define SBS_TEXTNONESEL         2
-    #define SBS_TEXTMULTISEL        4
+    #define SBS_STATUSBARFONT       0x01
+    #define SBS_TEXTNONESEL         0x02
+    #define SBS_TEXTMULTISEL        0x04
 
-    #define SBV_ICON                1
-    #define SBV_TREE                2
-    #define SBV_DETAILS             4
+    #define SBV_ICON                0x01
+    #define SBV_TREE                0x02
+    #define SBV_DETAILS             0x04
+    #define SBV_SPLIT               0x08
 
     // max length of status bar mnemonics
     #define CCHMAXMNEMONICS         256
@@ -98,8 +99,11 @@
 
     BOOL stbFolderWantsStatusBars(WPFolder *somSelf);
 
-    BOOL stbViewHasStatusBars(WPFolder *somSelf,
-                              ULONG ulView);
+    BOOL stbViewHasStatusBar(WPFolder *somSelf,
+                             ULONG ulView);
+
+    BOOL stbViewHasToolBar(WPFolder *somSelf,
+                           ULONG ulView);
 
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
         HWND stbCreate(PSUBCLFOLDERVIEW psli2);

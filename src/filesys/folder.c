@@ -1094,23 +1094,30 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be M_XFolder::xwpclsForEachOpenView
  *@@changed V1.0.0 (2002-08-28) [umoeller]: adjusted for new callback prototype
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: now using new method to include split views
  */
 
 BOOL fdrForEachOpenGlobalView(PFNFOREACHVIEWCALLBACK pfnCallback,
                               ULONG ulMsg)
 {
-    M_WPFolder  *pWPFolderClass = _WPFolder;
-    XFolder     *pFolder;
-    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
-    // M_XFolderMethodDebug("M_XFolder","xfM_xwpclsForEachOpenView");
+    M_WPFolder  *pWPFolderClass = _XFolder;
+    XFolder     *pFolder = NULL;
 
-    for (pFolder = _wpclsQueryOpenFolders(pWPFolderClass, NULL, QC_FIRST, FALSE);
+    /* for (pFolder = _wpclsQueryOpenFolders(pWPFolderClass, NULL, QC_FIRST, FALSE);
          pFolder;
          pFolder = _wpclsQueryOpenFolders(pWPFolderClass, pFolder, QC_NEXT, FALSE))
+    */
+
+    // replaced V1.0.1 (2002-11-30) [umoeller]
+
+    PMPF_STATUSBARS(("calling _xwpclsQueryOpenFolders"));
+
+    while (pFolder = _xwpclsQueryOpenFolders(pWPFolderClass, pFolder, FALSE))
     {
         if (_somIsA(pFolder, pWPFolderClass))
             fdrForEachOpenInstanceView(pFolder, pfnCallback, ulMsg);
     }
+
     return TRUE;
 }
 

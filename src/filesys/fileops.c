@@ -227,7 +227,7 @@ APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
         DosFindClose(hdirFindHandle);
     }
 
-    return (frc);
+    return frc;
 }
 
 /*
@@ -313,7 +313,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     *pulSizeContents = ulSizeContents;
 
-    return (pll);
+    return pll;
 }
 
 /*
@@ -389,7 +389,7 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
         }
     }
 
-    return (pSOI);
+    return pSOI;
 }
 
 /*
@@ -599,7 +599,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
     }
         // _PmpfF(("error %d for %s", _wpQueryTitle(pObject) ));
 
-    return (frc);
+    return frc;
 }
 
 /********************************************************************
@@ -636,7 +636,6 @@ STATIC MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
             {
                 case EN_SETFOCUS: // == BN_CLICKED
                 {
-
                     if (SHORT1FROMMP(mp1) == ID_XFDI_CLASH_RENAMENEWTXT)
                         winhSetDlgItemChecked(hwndDlg, ID_XFDI_CLASH_RENAMENEW, TRUE);
                     else if (SHORT1FROMMP(mp1) == ID_XFDI_CLASH_RENAMEOLDTXT)
@@ -977,6 +976,7 @@ static const DLGHITEM G_dlgFileExists[] =
  *@@added V0.9.3 (2000-05-03) [umoeller]
  *@@changed V0.9.16 (2001-12-31) [umoeller]: largely rewritten
  *@@changed V0.9.20 (2002-08-08) [umoeller]: now using dialog formatter
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: fixed radio box selection problem @@fixes 229
  */
 
 STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
@@ -1165,6 +1165,9 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                 winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
                     // this will automatically select the corresponding
                     // radio button, see fnwpTitleClashDlg above
+                    // V1.0.1 (2002-11-30) [umoeller] no not really,
+                    // so force checking this
+                winhSetDlgItemChecked(hwndConfirm, ulLastFocusID, TRUE);
 
                 // *** go!
                 winhRestoreWindowPos(hwndConfirm,
@@ -1396,7 +1399,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
     }
     END_CATCH();
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1505,133 +1508,6 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     } END_CATCH();
 
     return ulrc;
-
-    /*
-    // nameclashs are only a problem for file-system objects,
-    // and only if we're not creating shadows
-    if (    (_somIsA(somSelf, _WPFileSystem))
-         && (menuID != WPMENUID_CREATESHADOW) // 0x13C) // "create shadow" code
-         && (menuID != WPMENUID_CREATEANOTHER) // 0x065) // various "create another" codes; V0.9.4 (2000-07-15) [umoeller]
-         && (menuID != 0x066)
-         && (menuID < 0x7D0)
-         // && (0 == (_wpQueryNameClashOptions(somSelf, menuID) & NO_NAMECLASH_DIALOG))
-                    // this doesn't work V0.9.9 (2001-04-07) [umoeller]
-       )
-    {
-        CHAR            szFolder[CCHMAXPATH],
-                        szRealNameFound[CCHMAXPATH];
-        WPFileSystem    *pFSExisting = NULL;
-
-        // check whether the target folder is valid
-        if (    (!Folder)
-             || (!_somIsA(Folder, _WPFolder))
-             || (!_wpQueryFilename(Folder, szFolder, TRUE))
-           )
-            return (NAMECLASH_CANCEL);
-
-        pFSExisting = fopsFindObjectWithSameTitle(somSelf,
-                                             Folder,
-                                             szFolder,
-                                             // fCheckTitle:
-                                             (    (menuID == 0x6E)    // "rename" code
-                                               || (menuID == 0x65)    // "create another" code (V0.9.0)
-                                             ),
-                                             szRealNameFound);
-        if (pFSExisting)
-        {
-            #ifdef DEBUG_TITLECLASH
-                CHAR szFolder2[CCHMAXPATH];
-                _Pmpf(("  pObjExisting == 0x%lX", pFSExisting));
-                _Pmpf(("    Title: %s", _wpQueryTitle(pFSExisting) ));
-                _wpQueryFilename(_wpQueryFolder(pFSExisting), szFolder2, TRUE);
-                _Pmpf(("    in folder: %s", szFolder2));
-            #endif
-
-            // file exists: now we need to differentiate.
-            // 1)   If we're copying, we need to always
-            //      display the confirmation.
-            // 2)   If we're renaming somSelf, we only
-            //      display the confirmation if the
-            //      existing object is != somSelf, because
-            //      otherwise we have no problem.
-            if (    (somSelf != pFSExisting)
-                 || (menuID != 0x6E)    // not "rename"
-               )
-            {
-                HWND hwndConfirm = PrepareFileExistsDlg(somSelf,
-                                                        menuID,
-                                                        Folder,
-                                                        szFolder,
-                                                        pFSExisting,
-                                                        szRealNameFound,
-                                                        pszTitle);
-
-                ULONG ulDlgReturn = WinProcessDlg(hwndConfirm);
-
-                // check return value
-                switch (ulDlgReturn)
-                {
-                    case ID_XFDI_CLASH_RENAMENEW:
-                    {
-                        // rename new: copy user's entry to buffer
-                        // provided by the method
-                        WinQueryDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                            cbTitle-1, pszTitle);
-                        ulrc = NAMECLASH_RENAME;
-                    }
-                    break;
-
-                    case ID_XFDI_CLASH_RENAMEOLD:
-                    {
-                        CHAR szTemp[1000];
-                        // rename old: use wpSetTitle on existing object
-                        WinQueryDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                            sizeof(szTemp)-1, szTemp);
-                        _wpSetTitleAndRenameFile(pFSExisting, szTemp, 0);
-
-                        if (menuID == 0x6E)     // "rename" code
-                        {
-                            CHAR szNewRealName2[CCHMAXPATH];
-                            doshMakeRealName(szNewRealName2, pszTitle, '!', TRUE);
-                            _wpSetTitleAndRenameFile(somSelf, pszTitle, 0);
-                        }
-                        ulrc = NAMECLASH_NONE;
-                    }
-                    break;
-
-                    case ID_XFDI_CLASH_REPLACE:
-                        *ppDuplicate = pFSExisting;
-                        ulrc = NAMECLASH_REPLACE;
-                    break;
-
-                    case DID_CANCEL:
-                        ulrc = NAMECLASH_CANCEL;
-                    break;
-                }
-
-                WinDestroyWindow(hwndConfirm);
-            } // end if  (   (menuID != 0x6E) // "rename" code
-              // || (somSelf != pFSExisting)
-              // )
-        }
-        else if (menuID == 0x6E)     // "rename" code
-        {
-            // if (!pobjExisting) and we're renaming
-            CHAR szNewRealName2[CCHMAXPATH];
-            doshMakeRealName(szNewRealName2, pszTitle, '!', TRUE);
-            if (_wpSetTitleAndRenameFile(somSelf,
-                                         pszTitle,
-                                         0))
-                // no error:
-                ulrc = NAMECLASH_NONE;
-            else
-                ulrc = NAMECLASH_CANCEL;
-        }
-    } // end if (_somIsA(somSelf, _WPFileSystem))
-
-    return (ulrc);
-
-    */
 }
 
 /*

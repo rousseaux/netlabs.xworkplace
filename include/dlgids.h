@@ -510,6 +510,7 @@
 #define ID_XSDI_SBSTYLE_3SUNKEN         576
 #define ID_XSDI_SBSTYLE_4RECT           577
 #define ID_XSDI_SBSTYLE_4MENU           578
+#define ID_XSDI_SBFORSPLITVIEWS         579     // added V1.0.1 (2002-11-30) [umoeller]
 
 // "status bars" page 2
 #ifndef __NOCFGSTATUSBARS__
@@ -2079,6 +2080,8 @@
 #endif
 #define ID_XCSI_FDRSPLITVIEWS           6016        // V1.0.0 (2002-09-09) [umoeller]
 
+#define ID_XCSI_ENABLETOOLBARS          6017        // V1.0.1 (2002-11-30) [umoeller]
+
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #ifndef __ALWAYSREPLACEARCHIVING__
 #define ID_XCSI_ARCHIVING               6021
@@ -2504,6 +2507,7 @@
 #define ID_XLMI_METHOD_SORT_INTRO       (WPMENUID_USER+1015)
 #define ID_XLMI_METHOD_SORT_OVERRIDE    (WPMENUID_USER+1016)
 #define ID_XLMI_REFRESH_VIEW            (WPMENUID_USER+1017) // V0.9.6 (2000-11-12) [umoeller]
+#define ID_XLMI_FIND_CLASS              (WPMENUID_USER+1018) // V0.9.21 (2002-08-25) [jsmall]
 
 // "File types" container
 #define ID_XSM_FILETYPES_SEL            (WPMENUID_USER+1020)
@@ -2655,7 +2659,7 @@
 #define ID_XFMI_OFS_ATTR_HIDDEN         (WPMENUID_USER+34)
 #define ID_XFMI_OFS_ATTR_READONLY       (WPMENUID_USER+35)
 
-#define ID_XFM_OFS_WARP3FLDRVIEW        (WPMENUID_USER+36)
+// #define ID_XFM_OFS_WARP3FLDRVIEW        (WPMENUID_USER+36)   // removed V1.0.1 (2002-11-30) [umoeller]
 #define ID_XFMI_OFS_SMALLICONS          (WPMENUID_USER+37)
 #define ID_XFMI_OFS_FLOWED              (WPMENUID_USER+38)
 #define ID_XFMI_OFS_NONFLOWED           (WPMENUID_USER+39)

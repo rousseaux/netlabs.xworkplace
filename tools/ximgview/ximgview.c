@@ -659,8 +659,8 @@ VOID SetWinSize2BmpSize(VOID)
     // limit window size if off screen
     if (G_GlobalSettings.fConstrain2Screen)
     {
-        if ((swpOld.x + lNewCX) > winhQueryScreenCX())
-            lNewCX = winhQueryScreenCX() - swpOld.x;
+        if ((swpOld.x + lNewCX) > G_cxScreen)
+            lNewCX = G_cxScreen - swpOld.x;
         if (lNewY < 0)
         {
             lNewY = 0;
@@ -1090,6 +1090,8 @@ int main(int argc,
 
     if (!(G_hmqMain = WinCreateMsgQueue(G_habMain, 0)))
         return FALSE;
+
+    winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
 
     // initialize global settings
     memset(&G_GlobalSettings, 0, sizeof(G_GlobalSettings));

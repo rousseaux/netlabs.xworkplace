@@ -255,6 +255,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\exeh.h"               // executable helpers
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
@@ -871,8 +872,8 @@ STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
              */
 
             // target icon size == system icon size (32 or 40)
-            ULONG cxDest = G_cxIconSys; // WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
-            ULONG cyRealDest = G_cyIconSys; // cxDest;
+            ULONG cxDest = G_cxIcon; // WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
+            ULONG cyRealDest = G_cyIcon; // cxDest;
 
             // size of one color scan line: with 16 colors,
             // that's two pixels per byte

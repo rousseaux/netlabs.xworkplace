@@ -1786,7 +1786,7 @@ STATIC MRESULT IwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ fnwpMonitorWidgets:
- *      window procedure for the "Sentinel".
+ *      window procedure for the IP monitor.
  *
  */
 

@@ -3072,6 +3072,11 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                                ID_XLMI_REFRESH_VIEW,
                                cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
                                MIS_TEXT, 0);
+            // "Find" V1.0.1 (2002-11-26) [jsmall]
+            winhInsertMenuItem(hwndMenu, MIT_END,
+                               ID_XLMI_FIND_CLASS,
+                               cmnGetString(ID_XSDI_MENU_FIND),  // pszFind
+                               MIS_TEXT, 0);
             _fMenuCnrWhitespace = FALSE;
         }
 
@@ -3107,40 +3112,96 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                       0);           // parameter passed to wpOpen
         brc = TRUE;
     }
-    else if (ulMenuId == ID_XLMI_REGISTER)
+    else switch (ulMenuId)
     {
-        // "Register" menu command:
-        REGISTERCLASSDATA rcd;
-
-        // get class tree cnr dlg
-        HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
-        HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
-        HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
-        PCLASSLISTTREECNRDATA pClassTreeCnrData
-            = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-        if (pClassTreeCnrData)
+        case ID_XLMI_REGISTER:
         {
-            rcd.pszHelpLibrary = cmnQueryHelpLibrary();
-            rcd.ulHelpPanel = ID_XFH_REGISTERCLASS;
-            if (WinDlgBox(HWND_DESKTOP,
-                          hwndDlg,
-                          fnwpRegisterClass,
-                          cmnQueryNLSModuleHandle(FALSE),
-                          ID_XLD_REGISTERCLASS,
-                          &rcd)
-                    == DID_OK)
+            // "Register" menu command:
+            REGISTERCLASSDATA rcd;
+
+            // get class tree cnr dlg
+            HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
+            HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
+            HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
+            PCLASSLISTTREECNRDATA pClassTreeCnrData
+                = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
+            if (pClassTreeCnrData)
+            {
+                rcd.pszHelpLibrary = cmnQueryHelpLibrary();
+                rcd.ulHelpPanel = ID_XFH_REGISTERCLASS;
+                if (WinDlgBox(HWND_DESKTOP,
+                              hwndDlg,
+                              fnwpRegisterClass,
+                              cmnQueryNLSModuleHandle(FALSE),
+                              ID_XLD_REGISTERCLASS,
+                              &rcd)
+                        == DID_OK)
+                {
+                    HPOINTER hptrOld = winhSetWaitPointer();
+                    CHAR    szErrorCode[10] = "?",
+                            szModuleError[500] = "none";
+                    PCSZ pTable[3] = {
+                                rcd.szClassName,
+                                szErrorCode,
+                                szModuleError
+                        };
+                    APIRET arc;
+
+                    /* WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
+                               CM_REMOVERECORD,
+                               (MPARAM)NULL,
+                               MPFROM2SHORT(0, // remove all records
+                                            CMA_FREE | CMA_INVALIDATE));
+                    clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
+                    WinSetPointer(HWND_DESKTOP, hptrOld);
+                    free(pszClassInfo);
+                    pszClassInfo = NULL; */
+
+                    arc = winhRegisterClass(rcd.szClassName,
+                                            rcd.szModName,
+                                            szModuleError,
+                                            sizeof(szModuleError));
+                    WinSetPointer(HWND_DESKTOP, hptrOld);
+
+                    if (arc == NO_ERROR)
+                        // success
+                        cmnMessageBoxExt(hwndDlg,
+                                            121,
+                                            pTable, 1, 131,
+                                            MB_OK);
+                    else
+                    {
+                        // error:
+                        sprintf(szErrorCode, "%d", arc);
+                        cmnMessageBoxExt(hwndDlg,
+                                            104,
+                                            pTable, 3, 132,
+                                            MB_OK);
+                    }
+
+                    // fill cnr again
+                    // WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
+                }
+                brc = TRUE;
+            }
+        } // end else if (ulMenuId == ID_XLMI_REGISTER)
+        break;
+
+        case ID_XLMI_REFRESH_VIEW:
+        {
+            // "Refresh View" menu command:
+
+            // get class tree cnr dlg
+            HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
+            HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
+            HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
+            PCLASSLISTTREECNRDATA pClassTreeCnrData
+                = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
+            if (pClassTreeCnrData)
             {
                 HPOINTER hptrOld = winhSetWaitPointer();
-                CHAR    szErrorCode[10] = "?",
-                        szModuleError[500] = "none";
-                PCSZ pTable[3] = {
-                            rcd.szClassName,
-                            szErrorCode,
-                            szModuleError
-                    };
-                APIRET arc;
 
-                /* WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
+                WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
                            CM_REMOVERECORD,
                            (MPARAM)NULL,
                            MPFROM2SHORT(0, // remove all records
@@ -3148,63 +3209,80 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                 clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
                 free(pszClassInfo);
-                pszClassInfo = NULL; */
-
-                arc = winhRegisterClass(rcd.szClassName,
-                                        rcd.szModName,
-                                        szModuleError,
-                                        sizeof(szModuleError));
-                WinSetPointer(HWND_DESKTOP, hptrOld);
-
-                if (arc == NO_ERROR)
-                    // success
-                    cmnMessageBoxExt(hwndDlg,
-                                        121,
-                                        pTable, 1, 131,
-                                        MB_OK);
-                else
-                {
-                    // error:
-                    sprintf(szErrorCode, "%d", arc);
-                    cmnMessageBoxExt(hwndDlg,
-                                        104,
-                                        pTable, 3, 132,
-                                        MB_OK);
-                }
+                pszClassInfo = NULL;
 
                 // fill cnr again
-                // WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
+                WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
             }
-            brc = TRUE;
         }
-    } // end else if (ulMenuId == ID_XLMI_REGISTER)
-    else if (ulMenuId == ID_XLMI_REFRESH_VIEW)
-    {
-        // "Refresh View" menu command:
+        break;
 
-        // get class tree cnr dlg
-        HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
-        HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
-        HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
-        PCLASSLISTTREECNRDATA pClassTreeCnrData
-            = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-        if (pClassTreeCnrData)
+        case ID_XLMI_FIND_CLASS:
         {
-            HPOINTER hptrOld = winhSetWaitPointer();
+            // get class tree cnr dlg
+            HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
+            HWND hwndSplitMain = WinWindowFromID(hwndClient, ID_SPLITMAIN);
+            HWND hwndDlg = WinWindowFromID(hwndSplitMain, ID_XLD_CLASSLIST);
+            PCLASSLISTTREECNRDATA pClassTreeCnrData;
 
-            WinSendMsg(pClassTreeCnrData->pClientData->pscd->hwndCnr,
-                       CM_REMOVERECORD,
-                       (MPARAM)NULL,
-                       MPFROM2SHORT(0, // remove all records
-                                    CMA_FREE | CMA_INVALIDATE));
-            clsCleanupWpsClasses(pClassTreeCnrData->pClientData->pscd->pwpsc);
-            WinSetPointer(HWND_DESKTOP, hptrOld);
-            free(pszClassInfo);
-            pszClassInfo = NULL;
+            if (pClassTreeCnrData = (PCLASSLISTTREECNRDATA)WinQueryWindowPtr(hwndDlg, QWL_USER))
+            {
+                PRECORDCORE prec = NULL;
+                XSTRING title, text;
+                PSZ searchClass;
+                PLINKLIST pll = pClassTreeCnrData->pClientData->pscd->pwpsc->pllClassList;
+                PLISTNODE pNode;
+                xstrInit(&title, 0);
+                xstrInit(&text, 0);
+                cmnGetMessage(NULL, 0, &title, 256);
+                cmnGetMessage(NULL, 0, &text, 257);
+                searchClass = cmnTextEntryBox(hwndFrame,
+                      (PCSZ)title.psz,        // "Search for Class",
+                      (PCSZ)text.psz,       //  "Enter the name of the class:",
+                      (PCSZ)NULL,
+                      255,
+                      0);
+                xstrClear(&title);
+                xstrClear(&text);
+                if (searchClass)
+                {
+                    pNode = pll->pFirst;
+                    while (pNode)
+                    {
+                        if (!stricmp(((PWPSLISTITEM)pNode->pItemData)->pszClassName, searchClass))
+                        {
+                            prec = ((PWPSLISTITEM)pNode->pItemData)->pRecord;
+                            pNode = NULL;
+                        }
+                        else
+                            pNode = pNode->pNext;
+                    } /* endfor */
 
-            // fill cnr again
-            WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
+                    if (prec)
+                    {
+                        HWND hwndCnr = pClassTreeCnrData->pClientData->pscd->hwndCnr;
+                        cnrhExpandFromRoot(hwndCnr, prec);
+                        cnrhScrollToRecord(hwndCnr, prec, CMA_TEXT, FALSE);
+                        WinSendMsg(hwndCnr,
+                                   CM_SETRECORDEMPHASIS,
+                                   (MPARAM)prec,
+                                   MPFROM2SHORT(TRUE, CRA_CURSORED | CRA_SELECTED));
+                    }
+                    else
+                    {
+                        PCSZ psz = searchClass;
+                        PCSZ apsz[] = { psz };
+                        cmnMessageBoxExt(hwndFrame,
+                                     256,      // XWP search for class
+                                     apsz,
+                                     1,
+                                     233,
+                                     MB_CANCEL);
+                    } /* endif */
+                }
+            }
         }
+        break;
     }
 
     return brc;

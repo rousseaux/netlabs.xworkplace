@@ -1789,8 +1789,8 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
                 swpFrame.x = 10;
                 swpFrame.y = 10;
-                swpFrame.cx = winhQueryScreenCX() - 20;     // fixed V0.9.13 (2001-06-17) [umoeller]
-                swpFrame.cy = winhQueryScreenCY() - 20;     // fixed V0.9.13 (2001-06-17) [umoeller]
+                swpFrame.cx = G_cxScreen - 20;     // fixed V0.9.13 (2001-06-17) [umoeller]
+                swpFrame.cy = G_cyScreen - 20;     // fixed V0.9.13 (2001-06-17) [umoeller]
                 swpFrame.hwndInsertBehind = HWND_TOP;
                 swpFrame.fl = SWP_SIZE | SWP_MOVE | SWP_ZORDER;
 

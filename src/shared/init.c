@@ -96,6 +96,7 @@
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\textview.h"           // PM XTextView control
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #define INCLUDE_WPHANDLE_PRIVATE
@@ -1350,9 +1351,7 @@ VOID initMain(VOID)
     // initialize global vars V0.9.19 (2002-04-24) [umoeller]
     G_fIsWarp4 = doshIsWarp4();
 
-    // V0.9.20 (2002-08-04) [umoeller]
-    G_cxIconSys = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
-    G_cyIconSys = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
+    winhInitGlobals();            // V1.0.1 (2002-11-30) [umoeller]
 
     // force loading of the global settings
     cmnLoadGlobalSettings();
@@ -1464,18 +1463,17 @@ VOID initMain(VOID)
     if (cmnQuerySetting(sfNumLockStartup))
         winhSetNumLock(TRUE);
 
-    /*
-     * CheckClassOrder:
-     *
-     *
-     */
-
-    CheckClassOrder();
-
     TRY_LOUD(excpt1)
     {
         APIRET arc;
         PSZ pszActiveHandles;
+
+        /*
+         * CheckClassOrder:
+         *      moved this inside excpt handler V1.0.1 (2002-11-30) [umoeller]
+         */
+
+        CheckClassOrder();
 
         // assume defaults for the handle hiwords;
         // these should be correct with 95% of all systems
@@ -1799,6 +1797,11 @@ VOID initMain(VOID)
     doshClose(&G_pStartupLogFile);
     */
 
+    // register extra window classes
+
+    ctlRegisterToolbar(G_habThread1);       // V1.0.1 (2002-11-30) [umoeller]
+    ctlRegisterSeparatorLine(G_habThread1);
+    txvRegisterTextView(G_habThread1);
 
     // After this, startup continues normally...
     // XWorkplace comes in again after the desktop has been fully populated.

@@ -154,9 +154,6 @@ extern WPFolder     *G_pConfigFolder;
 // awake objects list V0.9.20 (2002-07-25) [umoeller]
 static HMTX         G_hmtxAwakeObjects = NULLHANDLE;
 
-// object flags mutex V1.0.0 (2002-08-31) [umoeller]
-static HMTX         G_hmtxObjFlags = NULLHANDLE;
-
 static XFldObject   *G_pFirstAwakeObject = NULL,
                     *G_pLastAwakeObject = NULL;
 
@@ -205,41 +202,6 @@ STATIC BOOL LockAwakeObjectsList(VOID)
 STATIC VOID UnlockAwakeObjectsList(VOID)
 {
     DosReleaseMutexSem(G_hmtxAwakeObjects);
-}
-
-/* ******************************************************************
- *
- *   Flags mutex
- *
- ********************************************************************/
-
-/*
- *@@ LockObjFlags:
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-STATIC BOOL LockObjFlags(VOID)
-{
-    if (G_hmtxObjFlags)
-        return !DosRequestMutexSem(G_hmtxObjFlags, SEM_INDEFINITE_WAIT);
-
-    // first call:
-    return !DosCreateMutexSem(NULL,
-                              &G_hmtxObjFlags,
-                              0,
-                              TRUE);
-}
-
-/*
- *@@ UnlockObjFlags:
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-STATIC VOID UnlockObjFlags(VOID)
-{
-    DosReleaseMutexSem(G_hmtxObjFlags);
 }
 
 /* ******************************************************************
@@ -696,7 +658,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        if (fFlagsLocked = LockObjFlags())
+        if (fFlagsLocked = objLockFlags())
         {
             ulrc = _flObject;
         }
@@ -704,7 +666,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
     CATCH(excpt1) {} END_CATCH();
 
     if (fFlagsLocked)
-        UnlockObjFlags();
+        objUnlockFlags();
 
     return ulrc;
 }
@@ -817,7 +779,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
         // will also fix the deadlocks with the lazy icons, which
         // set flags too.
 
-        if (fFlagsLocked = LockObjFlags())
+        if (fFlagsLocked = objLockFlags())
         {
             _flObject     = (
                                 // copy all unaffected
@@ -831,7 +793,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
     CATCH(excpt1) {} END_CATCH();
 
     if (fFlagsLocked)
-        UnlockObjFlags();
+        objUnlockFlags();
 
     return brc;
 }
@@ -881,7 +843,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (fFlagsLocked = LockObjFlags())
+        if (fFlagsLocked = objLockFlags())
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             if (_pvllWidgetNotifies == NULL)
@@ -909,7 +871,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
     CATCH(excpt1) {} END_CATCH();
 
     if (fFlagsLocked)
-        UnlockObjFlags();
+        objUnlockFlags();
 
     return brc;
 }
@@ -931,7 +893,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (fFlagsLocked = LockObjFlags())
+        if (fFlagsLocked = objLockFlags())
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             if (_pvllWidgetNotifies)
@@ -946,7 +908,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
     CATCH(excpt1) {} END_CATCH();
 
     if (fFlagsLocked)
-        UnlockObjFlags();
+        objUnlockFlags();
 
     return brc;
 }
@@ -2458,7 +2420,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
              && (pmrc = pData->pmrc)
              // && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                 // V1.0.0 (2002-09-02) [umoeller]
-             && (fFlagsLocked = LockObjFlags())
+             && (fFlagsLocked = objLockFlags())
            )
         {
             if (_flObject & OBJFL_LAZYLOADINGICON)
@@ -2472,7 +2434,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
                 _flObject &= ~OBJFL_LAZYLOADINGICON;
             }
 
-            UnlockObjFlags();       // V1.0.0 (2002-09-02) [umoeller]
+            objUnlockFlags();       // V1.0.0 (2002-09-02) [umoeller]
             fFlagsLocked = FALSE;
         }
 
@@ -2503,7 +2465,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
         icomUnlockIconShares();
 
     if (fFlagsLocked)
-        UnlockObjFlags();       // V1.0.0 (2002-09-02) [umoeller]
+        objUnlockFlags();       // V1.0.0 (2002-09-02) [umoeller]
 
     return brc;
 }
@@ -4007,7 +3969,7 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
         {
             CHAR    szClass[200];
             if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
-                if (!strcmp(szClass, "wpFolder window"))
+                if (!strcmp(szClass, WC_WPFOLDERWINDOW)) // "wpFolder window"))
                     // folder window:
                     fOpenFoldersFound = TRUE;
         }

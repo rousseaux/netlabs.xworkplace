@@ -233,24 +233,19 @@ PCSZ mnuQueryViewName(ULONG ulView)
  *      On Warp 3, returns FALSE always.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
  */
 
 BOOL mnuQueryDefaultMenuBarVisibility(VOID)
 {
-    if (G_fIsWarp4)
-    {
-        CHAR    szTemp[20] = "";
-        PrfQueryProfileString(HINI_USER,
-                              (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
-                              (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
-                              "ON",         // V0.9.9 (2001-03-27) [umoeller]
-                              szTemp,
-                              sizeof(szTemp));
-        if (!strcmp(szTemp, "ON"))
-            return TRUE;
-    }
-
-    return FALSE;
+    CHAR    szTemp[20] = "";
+    PrfQueryProfileString(HINI_USER,
+                          (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                          (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
+                          "ON",         // V0.9.9 (2001-03-27) [umoeller]
+                          szTemp,
+                          sizeof(szTemp));
+    return (!strcmp(szTemp, "ON"));
 }
 
 /*
@@ -261,19 +256,15 @@ BOOL mnuQueryDefaultMenuBarVisibility(VOID)
  *      if we're running on Warp 3.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
  */
 
 BOOL mnuSetDefaultMenuBarVisibility(BOOL fVisible)
 {
-    if (G_fIsWarp4)
-    {
-        return PrfWriteProfileString(HINI_USER,
-                                     (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
-                                     (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
-                                     fVisible ? "ON" : "OFF");
-    }
-
-    return FALSE;
+    return PrfWriteProfileString(HINI_USER,
+                                 (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                 (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
+                                 fVisible ? "ON" : "OFF");
 }
 
 /*
@@ -284,24 +275,19 @@ BOOL mnuSetDefaultMenuBarVisibility(BOOL fVisible)
  *
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
  */
 
 BOOL mnuQueryShortMenuStyle(VOID)
 {
-    if (G_fIsWarp4)
-    {
-        CHAR    szTemp[20] = "";
-        PrfQueryProfileString(HINI_USER,
-                              (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
-                              (PSZ)WPINIKEY_SHORTMENUS, // "FolderMenus"
-                              "",
-                              szTemp,
-                              sizeof(szTemp));
-        if (!strcmp(szTemp, "SHORT"))
-            return TRUE;
-    }
-
-    return FALSE;
+    CHAR    szTemp[20] = "";
+    PrfQueryProfileString(HINI_USER,
+                          (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                          (PSZ)WPINIKEY_SHORTMENUS, // "FolderMenus"
+                          "",
+                          szTemp,
+                          sizeof(szTemp));
+    return (!strcmp(szTemp, "SHORT"));
 }
 
 /*
@@ -312,19 +298,15 @@ BOOL mnuQueryShortMenuStyle(VOID)
  *      importantly, if we're running on Warp 3.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
  */
 
 BOOL mnuSetShortMenuStyle(BOOL fShort)
 {
-    if (G_fIsWarp4)
-    {
-        return PrfWriteProfileString(HINI_USER,
-                                     (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
-                                     (PSZ)WPINIKEY_SHORTMENUS, // "FolderMenus"
-                                     fShort ? "SHORT" : NULL);
-    }
-
-    return FALSE;
+    return PrfWriteProfileString(HINI_USER,
+                                 (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                 (PSZ)WPINIKEY_SHORTMENUS, // "FolderMenus"
+                                 fShort ? "SHORT" : NULL);
 }
 
 /* ******************************************************************
@@ -828,11 +810,11 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *@@changed V0.9.0 [umoeller]: now using cmnQueryObjectFromID to get the config folder
  *@@changed V0.9.0 [umoeller]: fixed broken "View" item in menu bar
  *@@changed V1.0.0 (2002-08-24) [umoeller]: changed prototype to receive CNRINFO instead of cnr
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed fInsertNewMenu and other Warp 3 code
  */
 
 BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context menu
                             HWND hwndViewSubmenu,   // in: submenu to add items to
-                            BOOL fInsertNewMenu,    // in: insert "View" into hwndViewSubmenu?
                             PCNRINFO pCnrInfo,      // in: cnr info
                             ULONG ulView)           // in: OPEN_* flag
 {
@@ -849,42 +831,20 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     // add "small icons" item for all view types,
     // but disable for Details view
     if (ulView == OPEN_DETAILS)
-    {
-        // Details view: disable and check
-        // "mini icons"
-        usIconsAttr = (MIA_DISABLED | MIA_CHECKED);
-    }
+        // Details view: disable and check "mini icons"
+        usIconsAttr = MIA_DISABLED | MIA_CHECKED;
     else
-    {
         // otherwise: set "mini icons" to cnr info data
         usIconsAttr = (pCnrInfo->flWindowAttr & CV_MINI)
                               ? MIA_CHECKED
                               : 0;
-    }
 
-    if (fInsertNewMenu)
-    {
-        // on Warp 3, we need to add a "View" submenu
-        // for the folder view flags, because Warp 3
-        // doesn't have one
-        hwndViewSubmenu = winhInsertSubmenu(hwndViewSubmenu,
-                                            MIT_END,
-                                            ulOfs + ID_XFM_OFS_WARP3FLDRVIEW,
-                                            cmnGetString(ID_XFSI_FLDRSETTINGS), // pszWarp3FldrView */
-                                                MIS_SUBMENU,
-                                            // item
-                                            ulOfs + ID_XFMI_OFS_SMALLICONS,
-                                            cmnGetString(ID_XFSI_SMALLICONS), // pszSmallIcons */
-                                            MIS_TEXT,
-                                            usIconsAttr);
-    }
-    else
-        winhInsertMenuItem(hwndViewSubmenu,
-                           MIT_END,
-                           ulOfs + ID_XFMI_OFS_SMALLICONS,
-                           cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
-                           MIS_TEXT,
-                           usIconsAttr);
+    winhInsertMenuItem(hwndViewSubmenu,
+                       MIT_END,
+                       ulOfs + ID_XFMI_OFS_SMALLICONS,
+                       cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
+                       MIS_TEXT,
+                       usIconsAttr);
 
     brc = TRUE; // modified flag
 
@@ -920,24 +880,20 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 
     // for all views: add separator before menu and status bar items
     // if one of these is enabled
-    if (    (G_fIsWarp4)
 #ifndef __NOCFGSTATUSBARS__
-         || (cmnQuerySetting(sfStatusBars))  // added V0.9.0
+    if (cmnQuerySetting(sfStatusBars))  // added V0.9.0
 #endif
-       )
         winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
                                 ulOfs + ID_XFMI_OFS_SEPARATOR);
 
-    // on Warp 4, insert "menu bar" item (V0.9.0)
-    if (G_fIsWarp4)
-    {
-        winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                           ulOfs + ID_XFMI_OFS_WARP4MENUBAR,
-                           cmnGetString(ID_XFSI_WARP4MENUBAR),  MIS_TEXT, // pszWarp4MenuBar
-                           (_xwpQueryMenuBarVisibility(somSelf))
-                               ? MIA_CHECKED
-                               : 0);
-    }
+    // insert "menu bar" item (V0.9.0)
+    winhInsertMenuItem(hwndViewSubmenu, MIT_END,
+                       ulOfs + ID_XFMI_OFS_WARP4MENUBAR,
+                       cmnGetString(ID_XFSI_WARP4MENUBAR),
+                       MIS_TEXT,
+                       (_xwpQueryMenuBarVisibility(somSelf))
+                           ? MIA_CHECKED
+                           : 0);
 
     // insert "status bar" item if status bar feature
     // is enabled in XWPSetup
@@ -1497,6 +1453,8 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
  *@@changed V0.9.14 (2001-08-07) [pr]: added Run menu item
  *@@changed V1.0.0 (2002-08-24) [umoeller]: various changes for split view support
  *@@changed V1.0.0 (2002-08-31) [umoeller]: remove iPosition param which was never used
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 code
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: now removing redundant separator on top of "view" submenu
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -1505,7 +1463,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 {
     XFolder         *pFavorite;
     BOOL            rc = TRUE;
-    MENUITEM        mi;
+    MENUITEM        mi,
+                    mi2;
 
     ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
 
@@ -1640,12 +1599,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             cmnAddProductInfoMenuItem(somSelf, hwndMenu);
 #endif
 
-        // on Warp 4, work on the "View" submenu; do this only
+        // work on the "View" submenu; do this only
         // if the "View" menu has not been removed entirely
         // (yes, Warp 3 support is broken now)
-        if (    (G_fIsWarp4)
-             && (!(flWPS & CTXT_VIEW))
-           )
+        if (!(flWPS & CTXT_VIEW))
         {
             SHORT sPos = MIT_END;
 
@@ -1726,38 +1683,27 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                          || (ulRealWPSView == OPEN_DETAILS)
                        )
                     {
-                        if (G_fIsWarp4)
-                        {
-                            // for Warp 4, use the existing "View" submenu,
-                            // but add an additional separator after
-                            // the existing "View"/"Refresh now" item
+                        // for Warp 4, use the existing "View" submenu,
+                        // but add an additional separator after
+                        // the existing "View"/"Refresh now" item
 
-                            // V0.9.19 (2002-04-17) [umoeller]
-                            // add separator only
-                            // -- if both "select by name" and "refresh" are visible
-                            // -- if "select by name" is invisible, but "refresh" is visible
-                            // -- if neither "select by name" nor "refresh" are visible
-                            // but not if only "select by name" is visible
-                            if (    XWPCTXT_REFRESH_IN_VIEW
-                                 != (flXWP & (XWPCTXT_REFRESH_IN_VIEW | XWPCTXT_SELECTSOME))
-                               )
-                                winhInsertMenuSeparator(mi.hwndSubMenu,
-                                                        MIT_END,
-                                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                        // V0.9.19 (2002-04-17) [umoeller]
+                        // add separator only
+                        // -- if both "select by name" and "refresh" are visible
+                        // -- if "select by name" is invisible, but "refresh" is visible
+                        // -- if neither "select by name" nor "refresh" are visible
+                        // but not if only "select by name" is visible
+                        if (    XWPCTXT_REFRESH_IN_VIEW
+                             != (flXWP & (XWPCTXT_REFRESH_IN_VIEW | XWPCTXT_SELECTSOME))
+                           )
+                            winhInsertMenuSeparator(mi.hwndSubMenu,
+                                                    MIT_END,
+                                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-                            mnuInsertFldrViewItems(somSelf,
-                                                   mi.hwndSubMenu,
-                                                   FALSE,       // no submenu
-                                                   &CnrInfo,
-                                                   ulView);
-                        }
-                        else
-                            // Warp 3:
-                            mnuInsertFldrViewItems(somSelf,
-                                                   hwndMenu,
-                                                   TRUE, // on Warp 3, insert new submenu
-                                                   &CnrInfo,
-                                                   ulView);
+                        mnuInsertFldrViewItems(somSelf,
+                                               mi.hwndSubMenu,
+                                               &CnrInfo,
+                                               ulView);
                     }
                 }
 
@@ -1774,6 +1720,25 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                        aSuppressFlags,
                                        ARRAYITEMCOUNT(aSuppressFlags));
                 }
+
+                // finally, check if the top item in the "View" submenu
+                // is a separator bar; we get that if Warp 4 cannot determine
+                // the current view type and then does not insert the
+                // "switch to..." menu items
+                // V1.0.1 (2002-11-30) [umoeller]
+
+                if (WinSendMsg(mi.hwndSubMenu,
+                               MM_QUERYITEMBYPOS16,     // undoc msg, winh.h
+                               MPFROMSHORT(0),
+                               MAKE_16BIT_POINTER(&mi2)))
+                {
+                    // @@todo doesn't work
+                    PMPF_MENUS(("first 'view' submenu item ID: %d", mi2.id));
+                    if (mi2.afStyle & MIS_SEPARATOR)
+                        winhRemoveMenuItem(mi.hwndSubMenu,
+                                           mi2.id);
+                }
+
             } // end if MM_QUERYITEM;
             // else: "View" menu not found; but this can
             // happen with Warp 4 menu bars, which have
@@ -2098,7 +2063,6 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                                             + ID_XFMI_OFS_SEPARATOR));
             mnuInsertFldrViewItems(somSelf,
                                    hwndMenu,
-                                   FALSE,
                                    &CnrInfo,
                                    ulView);
 

@@ -1023,9 +1023,7 @@ STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                        )
                     {
                         WinSetPointer(HWND_DESKTOP,
-                                      WinQuerySysPointer(HWND_DESKTOP,
-                                                         SPTR_WAIT,
-                                                         FALSE));
+                                      winhQueryWaitPointer());
                         break;
                     }
 
@@ -1043,9 +1041,7 @@ STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                          && (pnbp->fShowWaitPointer)
                        )
                     {
-                        mrc = (MRESULT)WinQuerySysPointer(HWND_DESKTOP,
-                                                          SPTR_WAIT,
-                                                          FALSE);
+                        mrc = (MRESULT)winhQueryWaitPointer();
                         break;
                     }
 

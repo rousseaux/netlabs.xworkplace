@@ -56,7 +56,9 @@ Spanish:
 "Xavier Caballe" <xavi@caballe.com>
 
 Swedish:
-"Simon Gr”nlund" <simgron@ibm.net>
+"Simon Gr”nlund" <d97-sgr@d.kth.se>
     (new with V0.83)
 "Roger Lindmark" <roger.lindmark@bredband.net>
     (changed V0.9.9 (2001-02-28) [umoeller])
+"Bj”rn S”derstr”m" <bjorso@os2ug.se>
+    (new with V0.9.20, replaced Simon Gr”nlund)

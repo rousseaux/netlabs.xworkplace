@@ -539,6 +539,12 @@ Thank you.
 
 <--XFL0255-->: This hotkey is already defined.  Would you like to replace its existing definition with this new one?
 
+;
+; the following added with V1.0.1
+;
 
+<--XFL0256-->: &xwp;: Search for class
+
+<--XFL0257-->: Enter the name of the class:
 
 

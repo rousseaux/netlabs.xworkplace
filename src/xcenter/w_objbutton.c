@@ -175,10 +175,7 @@ typedef struct _OBJBUTTONPRIVATE
 
     ULONG       ulType;                 // either BTF_OBJBUTTON or BTF_XBUTTON
 
-    BOOL        fMB1Pressed;            // if TRUE, mouse button is currently pressed
-    BOOL        fIgnoreMB1Up;
-    BOOL        fPaintButtonSunk;       // if TRUE, button control is to be painted "down"
-    BOOL        fMouseCaptured; // if TRUE, mouse is currently captured
+    XBUTTONSTATE bs;                    // V1.0.1 (2002-11-30) [umoeller]
 
     BOOL        fHasDragoverEmphasis;   // TRUE only while something is dragged over obj button
 
@@ -985,35 +982,33 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
            )
         {
             const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
-            // RECTL           rclWin;
-            ULONG           fl = XBF_BACKGROUND;        // paint background
+            ULONG           fl = TBBS_MINIICON | TBBS_BACKGROUND;        // paint background
             XBUTTONDATA     xbd;
+            RECTL           rcl;
 
             if (pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS)
-                fl |= XBF_FLAT;
-            if (pPrivate->fPaintButtonSunk)
-                fl |= XBF_PRESSED;
+                fl |= TBBS_FLAT;
 
             // refresh button data
-            WinQueryWindowRect(hwnd, &xbd.rcl);      // exclusive
+            WinQueryWindowRect(hwnd, &rcl);      // exclusive
+            xbd.dwd.szlWin.cx = rcl.xRight;
+            xbd.dwd.szlWin.cy = rcl.yTop;
 
-            xbd.lcol3DDark = pGlobals->lcol3DDark;
-            xbd.lcol3DLight = pGlobals->lcol3DLight;
-            xbd.lMiddle = pGlobals->lcolClientBackground; // WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
+            xbd.dwd.lcolBackground = pGlobals->lcolClientBackground;
 
             if (pPrivate->ulType == BTF_XBUTTON)
             {
                 // V0.9.19 (2002-04-14) [umoeller]
-                fl |= XBF_BITMAP;
+                fl |= TBBS_BITMAP;
                 xbd.hptr = pPrivate->hbmXMini;
 
-                xbd.cxIconOrBitmap = pPrivate->cxMiniBmp;
-                xbd.cyIconOrBitmap = pPrivate->cyMiniBmp;
+                xbd.szlIconOrBitmap.cx = pPrivate->cxMiniBmp;
+                xbd.szlIconOrBitmap.cy = pPrivate->cyMiniBmp;
             }
             else
             {
-                xbd.cxIconOrBitmap
-                = xbd.cyIconOrBitmap
+                xbd.szlIconOrBitmap.cx
+                = xbd.szlIconOrBitmap.cy
                 = pGlobals->cxMiniIcon;
 
                 if (!pPrivate->pobjButton)
@@ -1032,14 +1027,15 @@ STATIC VOID OwgtPaintButton(HWND hwnd)
                        )
                     {
                         // this object has in-use emphasis:
-                        fl |= XBF_INUSE;
+                        fl |= TBBS_INUSE;
                     }
                 }
             }
 
-            ctlPaintXButton(hps,
-                            fl,
-                            &xbd);
+            ctlPaintTBButton(hps,
+                             fl,
+                             &xbd,
+                             &pPrivate->bs);        // button state
 
         } // end if (pWidget)
 
@@ -1195,7 +1191,7 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
        )
     {
         if (!fIsFromXCenterHotkey)      // V0.9.19 (2002-04-17) [umoeller]
-            pPrivate->fMB1Pressed = TRUE;
+            pPrivate->bs.fMB1Pressed = TRUE;
 
         // since we're not passing the message
         // to WinDefWndProc, we need to give
@@ -1203,27 +1199,27 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
         // dismiss the button's menu, if open
         WinSetFocus(HWND_DESKTOP, hwnd);
 
-        if (    (!pPrivate->fMouseCaptured)
+        if (    (!pPrivate->bs.fMouseCaptured)
              && (!fIsFromXCenterHotkey)     // V0.9.19 (2002-04-17) [umoeller]
            )
         {
             // capture mouse events while the
             // mouse button is down
             WinSetCapture(HWND_DESKTOP, hwnd);
-            pPrivate->fMouseCaptured = TRUE;
+            pPrivate->bs.fMouseCaptured = TRUE;
         }
 
-        if (!pPrivate->fPaintButtonSunk)
+        if (!pPrivate->bs.fPaintButtonSunk)
         {
             // toggle state is still UP (i.e. button pressed
             // for the first time): create menu
 
-            pPrivate->fPaintButtonSunk = TRUE;
+            pPrivate->bs.fPaintButtonSunk = TRUE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             // ignore the next button 1 up
             // V0.9.19 (2002-04-17) [umoeller]
-            pPrivate->fIgnoreMB1Up = TRUE;
+            pPrivate->bs.fIgnoreMB1Up = TRUE;
 
             // prepare globals in fdrmenus.c
             cmnuInitItemCache();
@@ -1313,15 +1309,15 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
        )
     {
         // un-capture the mouse first
-        if (pPrivate->fMouseCaptured)
+        if (pPrivate->bs.fMouseCaptured)
         {
             WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-            pPrivate->fMouseCaptured = FALSE;
+            pPrivate->bs.fMouseCaptured = FALSE;
         }
 
         if (WinIsWindowEnabled(hwnd))
         {
-            pPrivate->fMB1Pressed = FALSE;
+            pPrivate->bs.fMB1Pressed = FALSE;
 
             // toggle state with each WM_BUTTON1UP
             // pPrivate->fPaintButtonSunk = !pPrivate->fPaintButtonSunk;
@@ -1348,16 +1344,16 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
                                   NULLHANDLE);
                     // unset button sunk state
                     // (no toggle)
-                    pPrivate->fPaintButtonSunk = FALSE;
+                    pPrivate->bs.fPaintButtonSunk = FALSE;
                 }
                 // else folder: we do nothing, the work for the menu
                 // has been set up in button-down and init-menu
             }
 
-            if (pPrivate->fIgnoreMB1Up)
-                pPrivate->fIgnoreMB1Up = FALSE;
+            if (pPrivate->bs.fIgnoreMB1Up)
+                pPrivate->bs.fIgnoreMB1Up = FALSE;
             else
-                pPrivate->fPaintButtonSunk = FALSE;
+                pPrivate->bs.fPaintButtonSunk = FALSE;
 
             // repaint sunk button state
             WinInvalidateRect(hwnd, NULL, FALSE);
@@ -1478,7 +1474,7 @@ STATIC VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
         if ((HWND)mp2 == pPrivate->hwndMenuMain)
         {
             // main menu is ending:
-            pPrivate->fPaintButtonSunk = FALSE;
+            pPrivate->bs.fPaintButtonSunk = FALSE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             WinDestroyWindow(pPrivate->hwndMenuMain);

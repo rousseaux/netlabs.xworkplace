@@ -313,6 +313,23 @@
 
     #define VIEW_SPLIT         0x00002000
 
+    // flags for xfSet/QueryStatusBarVisibility
+    #define STATUSBAR_OFF           0
+    #define STATUSBAR_ON            1
+    #define STATUSBAR_DEFAULT       255
+
+    // flags for _flToolBarInstance
+    #define XFFL_TOOLBAR_MASK       0x0003
+    #define XFFL_TOOLBAR_OFF        0x0000
+    #define XFFL_TOOLBAR_ON         0x0001
+    #define XFFL_TOOLBAR_DEFAULT    0x0002
+
+    #define XFFL_SPLIT_DETAILS      0x0004
+    #define XFFL_SPLIT_NOMINI       0x0008
+
+    // default folder value: icon view, mini icons, global toolbar setting
+    #define XFFL_DEFAULTSTYLE (XFFL_TOOLBAR_DEFAULT)
+
     #ifdef LINKLIST_HEADER_INCLUDED
         /*
          *@@ ENUMCONTENT:
@@ -356,10 +373,11 @@
 
     // prototype for wpSetMenuBarVisibility;
     // this is resolved by name (fdrmenus.c)
-
+    /* no longer needed V1.0.1 (2002-11-30) [umoeller]
     typedef BOOL _System xfTP_wpSetMenuBarVisibility(WPFolder *somSelf,
                                                      ULONG ulVisibility);
     typedef xfTP_wpSetMenuBarVisibility *xfTD_wpSetMenuBarVisibility;
+    */
 
     /* ******************************************************************
      *
@@ -408,7 +426,7 @@
     #define FDRUPDATE_REPAINT       1
 
     BOOL fdrUpdateAllFrameWindows(WPFolder *somSelf,
-                                    ULONG ulAction);
+                                  ULONG ulAction);
 
     /* ******************************************************************
      *

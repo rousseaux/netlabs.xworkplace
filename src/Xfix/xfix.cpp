@@ -42,6 +42,7 @@
 
 #include "setup.h"
 
+#include "helpers\comctl.h"
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\dialog.h"
@@ -618,6 +619,11 @@ VOID StandardCommands(HWND hwndFrame, USHORT usCmd)
     }
 }
 
+/*
+ *@@ CompareULongs:
+ *
+ */
+
 LONG inline CompareULongs(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
 {
     ULONG   ul1 = *(PULONG)((PBYTE)precc1 + ulFieldOfs),
@@ -631,7 +637,6 @@ LONG inline CompareULongs(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
 
 /*
  *@@ CompareStrings:
- *
  *
  *@@changed V0.9.16 (2001-10-19) [umoeller]: made this use WinCompareStrings
  */
@@ -1584,8 +1589,8 @@ VOID ViewObjectIDs(VOID)
     {
         // not yet created:
 
-        if (    (G_hwndObjIDsFrame = winhCreateExtStdWindow(&xfd,
-                                                            &hwndObjIDsCnr))
+        if (    (G_hwndObjIDsFrame = ctlCreateStdWindow(&xfd,
+                                                        &hwndObjIDsCnr))
              && (hwndObjIDsCnr)
            )
         {
@@ -2888,9 +2893,6 @@ ULONG XWPENTRY fncbSelectInvalid(HWND hwndCnr,
     return 0;     // continue
 }
 
-
-
-
 /*
  *@@ GetSelectedRecords:
  *      creates a linked list with all records that are
@@ -3730,6 +3732,11 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
  *
  ********************************************************************/
 
+/*
+ *@@ HandleProfile:
+ *
+ */
+
 BOOL HandleProfile(PCSZ pcszFilename,
                    PCSZ pcszUserOrSystem,
                    HINI *phINI)
@@ -3857,6 +3864,8 @@ int main(int argc, char* argv[])
     if (!(hmq = WinCreateMsgQueue(G_hab, 0)))
         return 1;
 
+    winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
+
     G_hptrMain = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
 
     ULONG cb = sizeof(G_cThousands);
@@ -3895,8 +3904,8 @@ int main(int argc, char* argv[])
                   NULL
         };
 
-    if (    (G_hwndMain = winhCreateExtStdWindow(&xfd,
-                                                 &hwndCnr))
+    if (    (G_hwndMain = ctlCreateStdWindow(&xfd,
+                                             &hwndCnr))
          && (hwndCnr)
        )
     {

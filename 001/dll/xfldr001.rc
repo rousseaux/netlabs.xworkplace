@@ -786,6 +786,8 @@ BEGIN
     ID_XCSI_TURBOFOLDERS                "Turbo folders"
     /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
     ID_XCSI_FDRSPLITVIEWS               "Folder split views"
+    /* the following item added with V1.0.1 (2002-11-30) [umoeller] */
+    ID_XCSI_ENABLETOOLBARS              "Enable folder tool bars"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
 /*     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers" removed V0.9.19 (2002-06-02) [umoeller] */
@@ -1212,7 +1214,7 @@ BEGIN
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
     ID_XSDI_ENABLESTATUSBAR             "Display ~status bar"
     ID_XSDI_SHOWINMENUS                 "Sho~w hotkeys in menus"
-    ID_XSDI_HOTKEYS_GROUP               "Ordner-TastenkÅrzel"
+    ID_XSDI_HOTKEYS_GROUP               "Folder hotkeys"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS
         all removed with V0.9.19  */
@@ -1505,6 +1507,8 @@ BEGIN
     ID_XSDI_SBFORICONVIEWS              "~Icon views"
     ID_XSDI_SBFORTREEVIEWS              "~Tree views"
     ID_XSDI_SBFORDETAILSVIEWS           "Det~ails views"
+    /* the following added V1.0.1 (2002-11-30) [umoeller] */
+    ID_XSDI_SBFORSPLITVIEWS             "S~plit views"
     ID_XSDI_STYLE_GROUP                 "Style"
     ID_XSDI_SBSTYLE_3RAISED             "Raised bo~x"
     ID_XSDI_SBSTYLE_3SUNKEN             "~Sunk box"

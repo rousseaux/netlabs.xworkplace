@@ -104,7 +104,6 @@ interface XFldStartup : XFolder
     wpSaveState: override;
     wpRestoreState: override;
 
-    wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
@@ -175,6 +174,9 @@ interface M_XFldStartup : M_XFolder
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;
+
+    wpclsCreateDefaultTemplates: override;
+
   };
 #endif /* __SOMIDL__ */
 };

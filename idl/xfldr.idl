@@ -201,15 +201,28 @@ interface XFolder : WPFolder
 
     BOOL xwpQueryMenuBarVisibility();
 
-    BOOL xwpSetStatusBarVisibility(in ULONG ulVisibility, in BOOL fUpdate);
     ULONG xwpQueryStatusBarVisibility();
+    BOOL xwpSetStatusBarVisibility(in ULONG ulVisibility, in BOOL fUpdate);
+
+    BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+
+    ULONG xwpQueryXFolderStyle();
+    BOOL xwpModifyXFolderStyle(in ULONG flFlags,
+                               in ULONG flMask,
+                               in BOOL fUpdate);
+
+    BOOL xwpBuildToolBar(in ULONG hToolBar,
+                         in ULONG ulView);
+    BOOL xwpAddToolbarButton(in ULONG hToolBar,
+                             in PSZ pcszTitle,
+                             in ULONG flStyle,
+                             in USHORT usID,
+                             in HPOINTER hptrIcon);
 
     BOOL xwpProcessViewCommand(in USHORT usCommand,
                                in HWND hwndCnr,
                                in WPObject pFirstObject,
                                in ULONG ulSelectionFlags);
-
-    BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
@@ -242,7 +255,11 @@ interface XFolder : WPFolder
         xwpSetDefaultDocument,
         xwpQueryDefaultDocument,
         xwpSetDisableCnrAdd,
-        xwpProcessViewCommand;
+        xwpProcessViewCommand,
+        xwpQueryXFolderStyle,
+        xwpModifyXFolderStyle,
+        xwpQueryToolBarLayout,
+        xwpAddToolbarButton;
 
     /*
      * Class Modifiers:
@@ -267,35 +284,6 @@ interface XFolder : WPFolder
                 // pointer to IBMFOLDERDATA, resolved in wpInitData
                 // V0.9.20 (2002-07-25) [umoeller]
 
-    // the following four correspond to the "XFolder" instance
-    // settings page. Each of these can have one of the following
-    // three values:
-    //  0:  setting always disabled (ignore corresponding global setting)
-    //  1:  setting always enabled (ignore corresponding global setting)
-    //  2:  use global setting (default)
-    BYTE            bSnapToGridInstance,
-                    bFolderHotkeysInstance,
-                    bFullPathInstance,
-                    bKeepTitleInstance,
-                    bStatusBarInstance;
-
-    // the following two are for XFolder's replacement sort
-    // settings; these have a transparent default value also
-    LONG            lAlwaysSort,
-                    lFoldersFirst,
-                    lDefSortCrit;
-
-    BOOL            fCachedFoldersFirst;
-                                  // for sort funcs
-
-    BOOL            fUnInitCalled;
-                            // flag for wpUnInitData, which seems
-                            // to get called more than once sometimes
-
-    PVOID           pfnResolvedUpdateStatusBar;
-                            // resolved function pointer to
-                            // xwpUpdateStatusbar (name-lookup resolution)
-
     // default document V0.9.4 (2000-06-09) [umoeller]
     WPFileSystem    pDefaultDocument;
 
@@ -317,21 +305,67 @@ interface XFolder : WPFolder
     PVOID           AbstractsTreeRoot;          // a TREE* really
     LONG            cAbstracts;
 
-    ULONG       cNotificationsPending;
+    ULONG           cNotificationsPending;
                 // count of notifications of this folder; 0 if none.
                 // This is maintained by the refresh functions
                 // (filesys\refresh.c)
                 // V0.9.12 (2001-05-22) [umoeller]
 
-    ULONG       ulLastDisplayedMenuType;
+    ULONG           ulLastDisplayedMenuType;
                 // last ulMenuType in wpDisplayMenu. This gets set
                 // by XFolder::wpDisplayMenu so that all the menu
                 // functions can detect whether this is an "open view",
                 // or regular context menu, or one of the pulldowns.
 
-    SOMObject   pMonitor;
+    SOMObject       pMonitor;
                 // ptr to read-write monitor (see fdrRequestFolderWriteMutexSem)
                 // V0.9.16 (2001-10-25) [umoeller]
+
+    PVOID           pfnResolvedUpdateStatusBar;
+                            // resolved function pointer to
+                            // xwpUpdateStatusbar (name-lookup resolution)
+
+    // the following two are for XFolder's replacement sort
+    // settings; these have a transparent default value also
+    LONG            lAlwaysSort,
+                    lFoldersFirst,
+                    lDefSortCrit;
+
+    ULONG           flXFolderStyle;
+                            // XFFL_* flags (folder.h):
+                            // -- lower two bits (XFFL_TOOLBAR_MASK) specify
+                            //    tool bar visibility (XFFL_TOOLBAR_OFF,
+                            //    XFFL_TOOLBAR_ON, XFFL_TOOLBAR_DEFAULT)
+                            // -- for split views, if XFFL_SPLIT_DETAILS is set,
+                            //    we show the right container in Details view;
+                            //    otherwise we use Icon view in multiple columns
+                            // -- if XFFL_SPLIT_NOMINI is set, we use regular
+                            //    icon size for Icon view, otherwise we use
+                            //    mini icons
+                            // V1.0.1 (2002-11-30) [umoeller]
+
+    // moved all the following non-4-byte values down for better
+    // structure packing
+
+    // the following correspond to the "XFolder" instance settings page.
+    // Each of these can have one of the following
+    // three values:
+    //  0:  setting always disabled (ignore corresponding global setting)
+    //  1:  setting always enabled (ignore corresponding global setting)
+    //  2:  use global setting (default)
+    BYTE            bSnapToGridInstance,
+                    bFolderHotkeysInstance,
+                    bFullPathInstance,
+                    bKeepTitleInstance,
+                    bStatusBarInstance;
+
+    BYTE            bCachedFoldersFirst;
+                                  // for sort funcs
+                                  // made this a BYTE V1.0.1 (2002-11-30) [umoeller]
+    // BYTE            bUnInitCalled;
+                            // flag for wpUnInitData, which seems
+                            // to get called more than once sometimes
+                            // this was not used at all --> removed V1.0.1 (2002-11-30) [umoeller]
 
     /*
      * WPFolder methods overridden by XFolder:
@@ -432,6 +466,9 @@ interface M_XFolder : M_WPFolder
     XFolder xwpclsQueryQuickOpenFolder(in XFolder pFolder);
     BOOL xwpclsQueryMenuBarVisibility();
 
+    XFolder xwpclsQueryOpenFolders(in XFolder pFolder,
+                                   in BOOL fLock);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -439,7 +476,9 @@ interface M_XFolder : M_WPFolder
                     xwpclsQueryFavoriteFolder,
                     xwpclsQueryQuickOpenFolder,
                     xwpclsQueryConfigFolder,
-                    xwpclsQueryMenuBarVisibility;
+                    xwpclsQueryMenuBarVisibility,
+                    xwpclsQueryOpenFolders;
+
 
     /*
      * Class Modifiers:

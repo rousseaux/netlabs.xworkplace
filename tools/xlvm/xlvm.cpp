@@ -1609,6 +1609,7 @@ VOID SetControlsData(HWND hwndClient)
             {
                 LONG lColor = RGBCOL_WHITE;
                 pDriveData->hwndChart = winhCreateControl(hwndClient,
+                                                          hwndClient,
                                                           WC_STATIC,
                                                           "chart",
                                                           SS_TEXT | DT_LEFT | DT_VCENTER
@@ -1635,6 +1636,7 @@ VOID SetControlsData(HWND hwndClient)
             if (!pDriveData->hwndDescription)
             {
                 pDriveData->hwndDescription = winhCreateControl(hwndClient,
+                                                                hwndClient,
                                                                 WC_STATIC,
                                                                 "descr",
                                                                 SS_TEXT | DT_LEFT | DT_VCENTER
@@ -2309,13 +2311,13 @@ MRESULT EXPENTRY fnwpClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
 HWND winhCreateStatusBar(HWND hwndFrame,
                          HWND hwndOwner,
                          USHORT usID,
-                         PSZ pszFont,
+                         PCSZ pcszFont,
                          LONG lColor)
 {
     // create status bar
     HWND        hwndReturn = NULLHANDLE;
     PPRESPARAMS ppp = NULL;
-    winhStorePresParam(&ppp, PP_FONTNAMESIZE, strlen(pszFont)+1, pszFont);
+    winhStorePresParam(&ppp, PP_FONTNAMESIZE, strlen(pcszFont)+1, (PVOID)pcszFont);
     lColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
     winhStorePresParam(&ppp, PP_BACKGROUNDCOLOR, sizeof(lColor), &lColor);
     lColor = CLR_BLACK;
@@ -2445,6 +2447,8 @@ int main(int argc, char* argv[])
 
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return FALSE;
+
+    winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
 
     DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
 

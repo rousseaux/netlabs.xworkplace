@@ -286,7 +286,7 @@ STATIC HWND CreateDimScreenWindow(VOID)
 
     HPS hpsScreen;
     RECTL rcl;
-    HAB hab = winhMyAnchorBlock();      // expensive, but what the heck
+    HAB hab = winhMyAnchorBlock();
 
     // before capturing the screen, sleep a millisecond,
     // because otherwise windows are not fully repainted
@@ -299,8 +299,8 @@ STATIC HWND CreateDimScreenWindow(VOID)
     hpsScreen = WinGetScreenPS(HWND_DESKTOP);
     rcl.xLeft = 0;
     rcl.yBottom = 0;
-    rcl.xRight = winhQueryScreenCX();
-    rcl.yTop = winhQueryScreenCY();
+    rcl.xRight = G_cxScreen;
+    rcl.yTop = G_cyScreen;
     if (G_pbmDim = gpihCreateBmpFromPS(hab,
                                        hpsScreen,
                                        &rcl))
@@ -329,8 +329,8 @@ STATIC HWND CreateDimScreenWindow(VOID)
                            0,       // flags
                            0,
                            0,
-                           winhQueryScreenCX(),
-                           winhQueryScreenCY(),
+                           G_cxScreen,
+                           G_cyScreen,
                            NULLHANDLE,
                            HWND_TOP,
                            0,
@@ -1475,8 +1475,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             {
                 // _Pmpf(( "Size: %d", ulKeyLength ));
                 // items exist: evaluate
-                pINI = malloc(ulKeyLength);
-                if (pINI)
+                if (pINI = malloc(ulKeyLength))
                 {
                     PrfQueryProfileData(HINI_USER,
                                         (PSZ)INIAPP_XWORKPLACE,
@@ -1498,10 +1497,12 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                         (MPARAM)p);
                         p += (strlen(p)+1);
 
-                        if (strlen(p)) {
+                        if (strlen(p))
+                        {
                             strcpy(pliNew->szCommand, p);
                             p += (strlen(p)+1);
                         }
+
                         pData->usItemCount++;
                     }
                     free(pINI);

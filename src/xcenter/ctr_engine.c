@@ -1387,7 +1387,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     }
 
     if (pGlobals->ulPosition == XCENTER_TOP)
-        pXCenterData->yFrame = winhQueryScreenCY() - pXCenterData->cyFrame;
+        pXCenterData->yFrame = G_cyScreen - pXCenterData->cyFrame;
     else
         pXCenterData->yFrame = 0;
 
@@ -3892,7 +3892,7 @@ STATIC BOOL FrameTimer(HWND hwnd,
                 {
                     // XCenter sits at top:
                     // move upwards
-                    pXCenterData->yFrame =   winhQueryScreenCY()
+                    pXCenterData->yFrame =   G_cyScreen
                                            - pXCenterData->cyFrame
                                            + cySubtractCurrent;
                 }
@@ -5684,9 +5684,9 @@ STATIC void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             pGlobals->pCountrySettings = &G_CountrySettings;
             nlsQueryCountrySettings(&G_CountrySettings);
 
-            pXCenterData->cxFrame = winhQueryScreenCX();
+            pXCenterData->cxFrame = G_cxScreen;
 
-            pGlobals->cxMiniIcon = G_cxIconSys /* WinQuerySysValue(HWND_DESKTOP, SV_CXICON) */ / 2;
+            pGlobals->cxMiniIcon = G_cxIcon /* WinQuerySysValue(HWND_DESKTOP, SV_CXICON) */ / 2;
 
             pGlobals->lcol3DDark = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
             pGlobals->lcol3DLight = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0);
@@ -5712,7 +5712,7 @@ STATIC void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             {
                 // at the top:
                 swpFrame.cy = 20;
-                swpFrame.y = winhQueryScreenCY() - swpFrame.cy;
+                swpFrame.y = G_cyScreen - swpFrame.cy;
             }
 
             // register this view in the global list
@@ -5842,7 +5842,7 @@ STATIC void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                     // create tooltip window (shared by all widgets)
                     pGlobals->hwndTooltip
                             = WinCreateWindow(HWND_DESKTOP,  // parent
-                                              COMCTL_TOOLTIP_CLASS, // wnd class
+                                              WC_CCTL_TOOLTIP, // wnd class
                                               "",            // window text
                                               XWP_TOOLTIP_STYLE,
                                                    // tooltip window style (common.h)

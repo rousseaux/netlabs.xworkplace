@@ -237,10 +237,18 @@ $(XWP_LANG_CODE):
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
 
+046:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir 046
+    @cd 046
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..
+
+nls: $(XWP_LANG_CODE) \
 !ifdef BUILD_049_TOO
-nls: $(XWP_LANG_CODE) 049
-!else
-nls: $(XWP_LANG_CODE)
+049 \
+!endif
+!ifdef BUILD_046_TOO
+046
 !endif
 
 # LINKER PSEUDOTARGETS

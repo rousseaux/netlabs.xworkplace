@@ -147,7 +147,7 @@ PSZ fsysQueryEASubject(WPFileSystem *somSelf)
         }
     }
 
-    return (psz);
+    return psz;
 }
 
 /*
@@ -182,7 +182,7 @@ PSZ fsysQueryEAComments(WPFileSystem *somSelf)
         }
     }
 
-    return (psz);
+    return psz;
 }
 
 /*
@@ -218,7 +218,7 @@ PSZ fsysQueryEAKeyphrases(WPFileSystem *somSelf)
         }
     }
 
-    return (psz);
+    return psz;
 }
 
 /*
@@ -472,7 +472,7 @@ STATIC PGEA2LIST GetGEA2List(VOID)
     if (pList = (PGEA2LIST)malloc(G_cbStandardGEA2List))
         memcpy(pList, G_StandardGEA2List, G_cbStandardGEA2List);
 
-    return (pList);
+    return pList;
 }
 
 /*
@@ -664,7 +664,7 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
                                     + pThis->cbName;
                     if (pcbValue)
                         *pcbValue = pThis->cbValue;
-                    return (pbValue);
+                    return pbValue;
                 }
                 else
                     // no value:
@@ -800,7 +800,7 @@ STATIC PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
 
     *pulClassNameLen = ulClassNameLen;
 
-    return (pcszClassName);
+    return pcszClassName;
 }
 
 /*
@@ -891,7 +891,7 @@ STATIC PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
         pcszClassName = ftypFindClassFromInstanceFilter(pcszObjectTitle,
                                                         ulTitleLen);
 
-    return (pcszClassName);     // can be NULL
+    return pcszClassName;     // can be NULL
 }
 
 /*
@@ -1214,7 +1214,7 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
     if (fFolderLocked)
         _wpReleaseFolderMutexSem(pFolder);
 
-    return (pAwake);
+    return pAwake;
 }
 
 /*
@@ -1543,7 +1543,7 @@ STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
  +      |   10.000 files     |             |             |             |
  +      +--------------------+-------------+-------------+-------------+
  *
- *      Obivously, the time that the default WPS populate
+ *      Obviously, the time that the default WPS populate
  *      takes increases exponentially with the no. of objects
  *      in the folder. As a result, the fuller a folder is,
  *      the better this replacement becomes in comparison.
@@ -1707,7 +1707,7 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
         arc = spt.arcReturn;
 
     // return TRUE if no error
-    return (!arc);
+    return !arc;
 }
 
 /*
@@ -2534,7 +2534,7 @@ MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
     if (fUpdate)
         _wpSaveDeferred(pnbp->inbp.somSelf);
 
-    return ((MPARAM)-1);
+    return (MPARAM)-1;
 }
 
 /* ******************************************************************
@@ -2789,7 +2789,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     inbp.pampControlFlags = G_ampFile1Page;
     inbp.cControlFlags = G_cFile1Page;
 
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 

@@ -371,6 +371,7 @@ STATIC BOOL CopyObjectFileName2(WPObject *somSelf, // in: the object which was p
  *                       case, wpMenuItemSelected will be called.
  *
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
+ *@@changed V1.0.0 (2002-11-09) [umoeller]: rewrote copy filename support
  */
 
 BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
@@ -523,7 +524,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
 
     PMPF_MENUS(("leaving"));
 
-    return (fHandled);
+    return fHandled;
 }
 
 /*
@@ -538,6 +539,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
  *@@changed V0.9.19 (2002-06-18) [umoeller]: ID_XFMI_OFS_SELECTSOME never worked right from edit pulldown, fixed
  *@@changed V0.9.19 (2002-06-18) [umoeller]: added "batch rename"
  *@@changed V0.9.20 (2002-08-08) [umoeller]: added replacement "Paste"
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 compat code
  */
 
 BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
@@ -684,6 +686,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
                 // in order to change the menu bar visibility,
                 // we need to resolve the method by name, since
                 // we don't have the Warp 4 toolkit headers
+                /*
                 xfTD_wpSetMenuBarVisibility pwpSetMenuBarVisibility
                     = (xfTD_wpSetMenuBarVisibility)somResolveByName(
                                                     somSelf,
@@ -694,6 +697,10 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
                 else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
                         "Unable to resolve wpSetMenuBarVisibility.");
+                */
+
+                // we do have the headers now V1.0.1 (2002-11-30) [umoeller]
+                _wpSetMenuBarVisibility(somSelf, !fMenuVisible);
 
                 WinSendMsg(hwndMenu,
                            MM_SETITEMATTR,
@@ -1658,9 +1665,9 @@ BOOL fcmdMenuItemHelpSelected(WPObject *somSelf,
                        ulPanel);
         return TRUE;
     }
-    else
-        // none of our items: pass on to parent
-        return FALSE;
+
+    // none of our items: pass on to parent
+    return FALSE;
 }
 
 

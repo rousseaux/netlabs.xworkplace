@@ -20,7 +20,7 @@
 ;
 
 LIBRARY SENTINEL INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:1.0.0#@ XWorkplace memory sentinel plugin DLL'
+Description '@#Ulrich M”ller:1.0.0#@ eWorkplace memory sentinel plugin DLL'
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
 

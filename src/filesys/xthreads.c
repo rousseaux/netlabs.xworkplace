@@ -903,7 +903,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *      the caller and its open subfolders with the full folder path
          *      Parameters:
          *
-         *    XFolder* mp1  folder to update; if this is NULL, all open
+         *      XFolder* mp1  folder to update; if this is NULL, all open
          *                  folders on the system will be updated
          *
          *      ULONG mp2: action to take:

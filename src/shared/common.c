@@ -207,9 +207,6 @@ static PTMFMSGFILE      G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [um
 
 extern BOOL             G_fIsWarp4 = FALSE;     // V0.9.19 (2002-04-24) [umoeller]
 
-extern ULONG            G_cxIconSys = 0;        // V0.9.20 (2002-08-04) [umoeller]
-extern ULONG            G_cyIconSys = 0;        // V0.9.20 (2002-08-04) [umoeller]
-
 #ifdef __DEBUG__
     // here's the debug settings array referenced by the
     // PMPF_* macros in setup.h
@@ -1967,6 +1964,39 @@ static const STDICON aStdIcons[] =
             "folder1.ico",
             6                       // standard open folder icon in pmwp.dll
         },
+
+        // tool bar icons V1.0.1 (2002-11-30) [umoeller]
+
+        {
+            STDICON_TB_REFRESH,
+            "t_refr.ico",
+            6
+        },
+        {
+            STDICON_TB_FIND,
+            "t_find.ico",
+            6
+        },
+        {
+            STDICON_TB_HELP,
+            "t_help.ico",
+            6
+        },
+        {
+            STDICON_TB_MULTIPLECOLUMNS,
+            "t_mulcol.ico",
+            6
+        },
+        {
+            STDICON_TB_DETAILS,
+            "t_detail.ico",
+            6
+        },
+        {
+            STDICON_TB_SMALLICONS,
+            "t_smlico.ico",
+            6
+        }
     };
 
 /*
@@ -2995,6 +3025,11 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fStatusBars",
 #endif
 
+        // V1.0.1 (2002-11-30) [umoeller]
+        sfToolBars, -1, 0,
+            SP_SETUP_FEATURES, 0,
+            "fToolBars",
+
 #ifndef __NOSNAPTOGRID__
         sfSnap2Grid, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableSnap2Grid), 4,
             SP_SETUP_FEATURES, 0,
@@ -3476,7 +3511,7 @@ VOID cmnLoadGlobalSettings(VOID)
         ConvertOldGlobalSettings(pSettings);
         free(pSettings);
 
-        // now delete the old settings
+        // delete the old settings
         PrfWriteProfileData(HINI_USER,
                             (PSZ)INIAPP_XWORKPLACE,
                             (PSZ)INIKEY_GLOBALSETTINGS,
@@ -5051,7 +5086,7 @@ static CONTROLDEF
         },
     ProductInfoSepLine1 =
         {
-            WC_SEPARATORLINE,
+            WC_CCTL_SEPARATOR,
             NULL,
             WS_VISIBLE,
             9998,
@@ -5296,9 +5331,6 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
 #ifndef __NOXSYSTEMSOUNDS__
     cmnPlaySystemSound(ulSound);
 #endif
-
-    ctlRegisterSeparatorLine(G_habThread1);
-    txvRegisterTextView(G_habThread1);
 
     // bitmap
     if (hps = WinGetPS(HWND_DESKTOP))

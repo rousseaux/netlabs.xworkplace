@@ -66,6 +66,9 @@
     #define SPLIT_MENUBAR           0x0010
     #define SPLIT_NOAUTOPOSITION    0x0020
     #define SPLIT_NOAUTOPOPOPULATE  0x0040
+    #define SPLIT_TOOLBAR           0x0100      // V1.0.1 (2002-11-30) [umoeller]
+    #define SPLIT_NOMINI            0x0200      // V1.0.1 (2002-11-30) [umoeller]
+    #define SPLIT_DETAILS           0x0400      // V1.0.1 (2002-11-30) [umoeller]
 
     // WM_CONTROL notifications sent by the controller
     // to its owner; SHORT1FROMMP(mp1) is always FID_CLIENT
@@ -250,6 +253,31 @@
 
     #define SN_VKEY                 0x1005
 
+    /*
+     *@@ SN_UPDATESTATUSBAR:
+     *      WM_CONTROL notification code posted from the
+     *      XFolder view management to a split view frame,
+     *      which should be subclassed to intercept this
+     *      notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This notification gets sent when status bars
+     *      need updating (as with the unreadable code
+     *      for standard status bars with regular WPS
+     *      folders).
+     *
+     *      mp2 is one of:
+     *
+     *      --  1: show/hide status bars according to folder/Global settings;
+     *
+     *      --  2: reformat status bars (e.g. because fonts have changed)
+     *
+     *@@added V1.0.1 (2002-11-30) [umoeller]
+     */
+
+    #define SN_UPDATESTATUSBAR      0x1006
+
     #ifdef THREADS_HEADER_INCLUDED
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
 
@@ -265,7 +293,7 @@
             LONG            lSplitBarPos;   // initial split bar position in percent
 
             WPObject        *pRootObject;   // root object; normally a folder, but
-                                            // be a disk object to, for which we
+                                            // cann be a disk object to, for which we
                                             // then query the root folder
             WPFolder        *pRootsFolder;  // unless this is a disk, == pRootObject
 
@@ -283,9 +311,12 @@
                             hwndFilesFrame,     // child of hwndSplitWindow
                             hwndFilesCnr;       // child of hwndFilesFrame
 
-            HWND            hwndStatusBar;      // if present, or NULLHANDLE
+            HWND            hwndStatusBar,      // if present, or NULLHANDLE
+                            hwndToolBar;        // if present, or NULLHANDLE
 
             HAB             habGUI;             // anchor block of GUI thread
+
+            LONG            lToolBarHeight;
 
             // data for tree view (left)
             PSUBCLFOLDERVIEW psfvTree;
@@ -356,15 +387,6 @@
             volatile TID    tidSplitPopulate;
             HWND            hwndSplitPopulate;
 
-            // LINKLIST        llTreeObjectsInserted;
-                                // linked list of plain WPObject* pointers
-                                // currently inserted in the left tree;
-                                // no auto-free, needed for cleanup
-            // LINKLIST        llFileObjectsInserted;
-                                // linked list of plain WPObject* pointers
-                                // currently inserted in the files cnr;
-                                // no auto-free, needed for cleanup
-
         } FDRSPLITVIEW, *PFDRSPLITVIEW;
 
         #define INSERT_UNLOCKFILTERED       0x10000000
@@ -407,6 +429,9 @@
 
     #endif
     #endif
+
+    WPFolder* fdrQueryOpenFolders(WPFolder *pFind,
+                                  BOOL fLock);
 
     HWND fdrCreateSplitView(WPObject *pRootObject,
                             WPFolder *pRootsFolder,

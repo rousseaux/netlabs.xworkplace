@@ -120,7 +120,7 @@ $(OUTPUTDIR)\$(APPNAME).obj: \
 
 # build targets
 $(APPNAME).def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XML tester"
+          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "HTML-to-IPF converter"
 
 $(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def makefile
           $(LINK) /out:$(MODULESDIR)\$(@B).exe $(OBJS) $(@B).def

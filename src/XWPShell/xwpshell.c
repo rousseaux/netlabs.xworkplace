@@ -1711,6 +1711,12 @@ VOID ShutdownDaemon(VOID)
  *
  ********************************************************************/
 
+/*
+ *@@ ProcessQueueCommand:
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
 APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
                            ULONG pid)
 {
@@ -2048,6 +2054,8 @@ int main(int argc, char *argv[])
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return 99;
 
+    winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
+
     if (winhAnotherInstance("\\SEM32\\XWPSHELL.MTX", FALSE))
     {
         // already running:
@@ -2129,9 +2137,7 @@ int main(int argc, char *argv[])
 
                     // enter standard PM message loop
                     while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-                    {
                         WinDispatchMsg(hab, &qmsg);
-                    }
 
                     ShutdownDaemon();
                 }

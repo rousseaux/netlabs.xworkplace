@@ -187,6 +187,10 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __NOCFGSTATUSBARS__
             ID_XCSI_ENABLESTATUSBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+
+            // V1.0.1 (2002-11-30) [umoeller]
+            ID_XCSI_ENABLETOOLBARS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
 #ifndef __NOSNAPTOGRID__
             ID_XCSI_ENABLESNAP2GRID, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -1161,7 +1165,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             // create tooltip
             if (pxwpc->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
-                                                     COMCTL_TOOLTIP_CLASS, // wnd class
+                                                     WC_CCTL_TOOLTIP, // wnd class
                                                      "",            // window text
                                                      XWP_TOOLTIP_STYLE,
                                                           // tooltip window style (common.h)
@@ -1703,6 +1707,7 @@ static const XWPSETTING G_FeaturesBackup[] =
 #ifndef __NOCFGSTATUSBARS__
         sfStatusBars,
 #endif
+        sfToolBars,             // V1.0.1 (2002-11-30) [umoeller]
 #ifndef __NOSNAPTOGRID__
         sfSnap2Grid,
 #endif
@@ -1883,7 +1888,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         {
             // create tooltip
             if (!(pnbp->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
-                                                      COMCTL_TOOLTIP_CLASS, // wnd class
+                                                      WC_CCTL_TOOLTIP, // wnd class
                                                       "",            // window text
                                                       XWP_TOOLTIP_STYLE,
                                                            // tooltip window style (common.h)
@@ -1956,6 +1961,11 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
                 cmnQuerySetting(sfStatusBars));
 #endif
+
+        // V1.0.1 (2002-11-30) [umoeller]
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLETOOLBARS,
+                cmnQuerySetting(sfToolBars));
+
 #ifndef __NOSNAPTOGRID__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESNAP2GRID,
                 cmnQuerySetting(sfSnap2Grid));
@@ -2078,6 +2088,8 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
                 (fXFolder));
 #endif
+        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLETOOLBARS,
+                (fXFolder));
 #ifndef __NOSNAPTOGRID__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLESNAP2GRID,
                 (fXFolder));
@@ -2269,6 +2281,17 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                                      SP_XFOLDER_FLDR);
             break;
 #endif
+
+            case ID_XCSI_ENABLETOOLBARS:
+                cmnSetSetting(sfToolBars, precc->usCheckState);
+                // update tool bars for open folders
+                xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
+                                  (MPARAM)1,
+                                  MPNULL);
+                // and open settings notebooks
+                ntbUpdateVisiblePage(NULL,   // all somSelf's
+                                     SP_XFOLDER_FLDR);
+            break;
 
 #ifndef __NOSNAPTOGRID__
             case ID_XCSI_ENABLESNAP2GRID:

@@ -348,6 +348,7 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now automatically making XCenter screen border object
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: refresh screen border object only if the func is actually enabled @@fixes 252
  */
 
 MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -380,8 +381,11 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
             // make sure the XCenter is the current screen
             // border object for the matching border
             // V0.9.19 (2002-04-17) [umoeller]
-            hifSetScreenBorderObjectUnique(SCREENCORNER_TOP,
-                                           _wpQueryHandle(pnbp->inbp.somSelf));
+            // but only if _fAutoScreenBorder is enabled
+            // V1.0.1 (2002-11-30) [umoeller]
+            if (_fAutoScreenBorder)
+                hifSetScreenBorderObjectUnique(SCREENCORNER_TOP,
+                                               _wpQueryHandle(pnbp->inbp.somSelf));
         break;
 
         case ID_CRDI_VIEW_BOTTOMOFSCREEN:
@@ -390,8 +394,11 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
             // make sure the XCenter is the current screen
             // border object for the matching border
             // V0.9.19 (2002-04-17) [umoeller]
-            hifSetScreenBorderObjectUnique(SCREENCORNER_BOTTOM,
-                                           _wpQueryHandle(pnbp->inbp.somSelf));
+            // but only if _fAutoScreenBorder is enabled
+            // V1.0.1 (2002-11-30) [umoeller]
+            if (_fAutoScreenBorder)
+                hifSetScreenBorderObjectUnique(SCREENCORNER_BOTTOM,
+                                               _wpQueryHandle(pnbp->inbp.somSelf));
         break;
 
         case ID_CRDI_VIEW_ALWAYSONTOP:

@@ -3,7 +3,7 @@ signal on halt
 '@echo off'
 
 /* Compiled XWorkplace files */
-say 'Do you wish to delete all .OBJ, .RES, .EXE, .DLL, .MAP, .SYM files in'
+say 'Do you wish to delete all .OBJ, .RES, .EXE, .DLL, .MAP, .SYM, .TMF files in'
 call charout , 'the source directories [Y/N] ? '
 parse upper linein yn .
 if yn = 'Y' then do
@@ -16,6 +16,7 @@ if yn = 'Y' then do
   call deletefiles 'bin\modules\*.dll'
   call deletefiles 'bin\modules\*.map'
   call deletefiles 'bin\modules\*.sym'
+  call deletefiles 'bin\modules\*.tmf'
   call deletefiles 'bin\widgets\*.obj'
 end
 

@@ -907,7 +907,7 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
     // check if we have "folders first" enabled
     // (either locally or globally, this flag is
     // set by fdrQuerySortFunc)
-    if (_fCachedFoldersFirst)
+    if (_bCachedFoldersFirst)
     {
         // yes:
         // resolve shadows
@@ -1144,7 +1144,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                     // 3) set the cached "folders first" field so
                     //    that fnCompareDetailsColumn can quickly
                     //    read this
-                    _fCachedFoldersFirst = fFoldersFirst;
+                    _bCachedFoldersFirst = fFoldersFirst;
 
                     /* _Pmpf(("  returning compare details, column %d, folders first: %d",
                             psi->lCurrentSort,

@@ -1653,6 +1653,8 @@ int main(int argc, char *argv[])
     if (!(G_hmq = WinCreateMsgQueue(G_hab, 0)))
         return FALSE;
 
+    winhInitGlobals();      // V1.0.1 (2002-11-30) [umoeller]
+
     // now attempt to find the XWorkplace NLS resource DLL,
     // which we need for all resources (new with XWP 0.9.0)
     if (LoadNLS())

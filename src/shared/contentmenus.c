@@ -203,9 +203,7 @@ static BOOL             G_fPositionBelow = FALSE;
 // global data for owner draw; we cache this for speed
 static BOOL             G_bInitNeeded;          // if TRUE, data is refreshed
 
-static ULONG            G_ulMiniIconSize = 0,
-                        G_cxScreen = 0,     // V0.9.19 (2002-06-18) [umoeller]
-                        G_cyScreen = 0;     // V0.9.19 (2002-06-18) [umoeller]
+static ULONG            G_ulMiniIconSize = 0;
 static RECTL            G_rtlMenuItem;
 static LONG             G_lHiliteBackground,
                         G_lBackground,
@@ -452,9 +450,6 @@ VOID cmnuInitItemCache(VOID)
         // first call: initialize lists
         lstInit(&G_llContentMenuItems, TRUE);
         lstInit(&G_llVarMenuItems, TRUE);
-
-        G_cxScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
-        G_cyScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
     }
     else
     {

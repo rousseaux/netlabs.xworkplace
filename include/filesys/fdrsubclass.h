@@ -100,6 +100,7 @@
     PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
                                   HWND hwndCnr,
                                   ULONG ulWindowWordOffset,
+                                  BOOL fCreateSuppl,
                                   WPFolder *somSelf,
                                   WPObject *pRealObject);
 

@@ -118,6 +118,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -125,6 +126,7 @@
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tree.h"               // red-black binary trees
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"                     // XFldObject
@@ -971,10 +973,32 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
 }
 
 /*
+ *@@ xwpQueryStatusBarVisibility:
+ *      this new instance method returns the status bar visibility of
+ *      a folder:
+ *
+ *      -- STATUSBAR_ON:        status bars visible
+ *      -- STATUSBAR_OFF:       status bars invisible
+ *      -- STATUSBAR_DEFAULT:   use global setting for this folder
+ *
+ *@@changed V0.9.0 [umoeller]: function prototype changed
+ */
+
+SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpQueryStatusBarVisibility");
+
+    return _bStatusBarInstance;
+}
+
+/*
  *@@ xwpSetStatusBarVisibility:
  *      this new instance method sets the status bar visibility of
  *      a folder.
+ *
  *      ulVisibility may be:
+ *
  *      -- STATUSBAR_ON:        show status bars
  *      -- STATUSBAR_OFF:       hide status bars
  *      -- STATUSBAR_DEFAULT:   use global setting for this folder
@@ -1017,86 +1041,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
     }
 
     return TRUE;
-}
-
-/*
- *@@ xwpQueryStatusBarVisibility:
- *      this new instance method returns the status bar visibility of
- *      a folder:
- *      -- STATUSBAR_ON:        status bars visible
- *      -- STATUSBAR_OFF:       status bars invisible
- *      -- STATUSBAR_DEFAULT:   use global setting for this folder
- *
- *@@changed V0.9.0 [umoeller]: function prototype changed
- */
-
-SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
-{
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpQueryStatusBarVisibility");
-
-    return _bStatusBarInstance;
-}
-
-/*
- *@@ xwpProcessViewCommand:
- *      this new XFolder instance method gets called when
- *      XFolder's subclassed window procedure
- *      (fnwpSubclWPFolderWindow) intercepts a WM_COMMAND
- *      message. This gets called before the WPS gets a
- *      chance to process that command, which will probably
- *      result in a call to wpMenuItemSelected for each of
- *      the affected objects in the container.
- *
- *      The purpose of this new message is to allow any folder
- *      (e.g. a subclass of WPFolder) to intercept object
- *      operations _before_ wpMenuItemSelected. While
- *      wpMenuItemSelected is OK for doing things which only
- *      affect a single object, it is not quite suitable
- *      for collecting all selected objects and processing
- *      them all at once. This is where overriding this method
- *      helps.
- *
- *      If this returns TRUE, it is assumed that the command
- *      was processed, and it is swallowed (i.e. not passed
- *      on to the standard WPS processing). If you're not
- *      interested in a command, you must return FALSE,
- *      or you'll break all other menu items.
- *
- *      Parameters:
- *
- *      -- usCommand has the command message (e.g. WPMENUID_DELETE).
- *
- *      -- hwndCnr has the folder's container window where the
- *         command originated from.
- *
- *      -- pFirstObject has the first of the selected objects.
- *
- *      -- ulSelectionFlags has information on the context why
- *         pFirstObject was considered selected. This is one
- *         of SEL_WHITESPACE, SEL_SINGLESEL, SEL_MULTISEL,
- *         SEL_SINGLEOTHER, SEL_NONEATALL (see wpshQuerySourceObject
- *         for details). You can use wpshQueryNextSourceObject to
- *         get the others, if this is indicated here.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed from processObjectCommand
- */
-
-SOM_Scope BOOL  SOMLINK xf_xwpProcessViewCommand(XFolder *somSelf,
-                                                 USHORT usCommand,
-                                                 HWND hwndCnr,
-                                                 WPObject* pFirstObject,
-                                                 ULONG ulSelectionFlags)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpProcessViewCommand");
-
-    return fcmdProcessViewCommand(somSelf,
-                                  usCommand,
-                                  hwndCnr,
-                                  pFirstObject,
-                                  ulSelectionFlags);
 }
 
 /*
@@ -1176,6 +1120,316 @@ SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
     }
 
     return (psz != 0);
+}
+
+/*
+ *@@ xwpQueryXFolderStyle:
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_xwpQueryXFolderStyle(XFolder *somSelf)
+{
+    ULONG   ulrc = 0;
+    BOOL    fFlagsLocked = FALSE;
+    XFolderMethodDebug("XFolder","xf_xwpQueryXFolderStyle");
+
+    // we need the lock here because xwpModifyFlags
+    // reads and writes holding the lock too
+    TRY_LOUD(excpt1)
+    {
+        XFolderData *somThis = XFolderGetData(somSelf);
+
+        if (fFlagsLocked = objLockFlags())
+        {
+            ulrc = _flXFolderStyle;
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFlagsLocked)
+        objUnlockFlags();
+
+    return ulrc;
+}
+
+/*
+ *@@ xwpSetXFolderStyle:
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpModifyXFolderStyle(XFolder *somSelf,
+                                                 ULONG flFlags,
+                                                 ULONG flMask,
+                                                 BOOL fUpdate)
+{
+    BOOL    brc = FALSE,
+            fFlagsLocked = FALSE;
+
+    XFolderMethodDebug("XFolder","xf_xwpSetXFolderStyle");
+
+    TRY_LOUD(excpt1)
+    {
+        XFolderData *somThis = XFolderGetData(somSelf);
+
+        if (fFlagsLocked = objLockFlags())
+        {
+            _flXFolderStyle = (
+                                  // copy all unaffected
+                                  (_flXFolderStyle & ~flFlags)
+                                  // OR with masked new ones
+                                | (flFlags & flMask)
+                              );
+
+            brc = _wpSaveDeferred(somSelf);
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFlagsLocked)
+        objUnlockFlags();
+
+    return brc;
+}
+
+/*
+ *@@ xwpBuildToolBar:
+ *      this new XFolder instance method is called when a
+ *      new folder view is opened and XWorkplace needs the
+ *      tool bar layout for the new view.
+ *
+ *      This method must return an array of TOOLBARCONTROL
+ *      (comctl.h) structures defining the controls to be
+ *      added and store the number of array items in
+ *      *pcControls.
+ *
+ *      It is assumed that the array has been allocated
+ *      with a call of _wpAllocMem on somSelf. The array
+ *      will be freed automatically.
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
+                                           ULONG hToolBar,
+                                           ULONG ulView)
+{
+    HPOINTER    hptr;
+    ULONG       flStyle = _xwpQueryXFolderStyle(somSelf);
+
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpBuildToolBar");
+
+    cmnGetStandardIcon(STDICON_TB_REFRESH, &hptr, NULL, NULL);
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         cmnGetString(ID_XSSI_REFRESHNOW),
+                         TBBS_COMMAND,
+                         WPMENUID_REFRESH,
+                         hptr);
+
+    cmnGetStandardIcon(STDICON_TB_FIND, &hptr, NULL, NULL);
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         cmnGetString(ID_XSDI_MENU_FIND),
+                         TBBS_COMMAND,
+                         WPMENUID_FIND,
+                         hptr);
+
+    cmnGetStandardIcon(STDICON_TB_HELP, &hptr, NULL, NULL);
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         cmnGetString(DID_HELP),
+                         TBBS_COMMAND,
+                         WPMENUID_EXTENDEDHELP,
+                         hptr);
+
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         NULL,          // separator
+                         0,
+                         0,
+                         0);
+
+    cmnGetStandardIcon(STDICON_TB_MULTIPLECOLUMNS, &hptr, NULL, NULL);
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         cmnGetString(ID_XSDI_MENU_ICONVIEW),
+                         TBBS_RADIO
+                            | ((!(flStyle & XFFL_SPLIT_DETAILS))
+                                ? TBBS_CHECKINITIAL
+                                : 0),
+                         0, // WPMENUID_HELP,
+                         hptr);
+
+    cmnGetStandardIcon(STDICON_TB_DETAILS, &hptr, NULL, NULL);
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         cmnGetString(ID_XSDI_MENU_DETAILSVIEW),
+                         TBBS_RADIO
+                            | ((flStyle & XFFL_SPLIT_DETAILS)
+                                ? TBBS_CHECKINITIAL
+                                : 0),
+                         0, // WPMENUID_HELP,
+                         hptr);
+
+    cmnGetStandardIcon(STDICON_TB_SMALLICONS, &hptr, NULL, NULL);
+    _xwpAddToolbarButton(somSelf,
+                         hToolBar,
+                         cmnGetString(ID_XFSI_SMALLICONS),
+                         TBBS_CHECK
+                            | ((!(flStyle & XFFL_SPLIT_NOMINI))
+                                ? TBBS_CHECKINITIAL
+                                : 0),
+                         *G_pulVarMenuOfs + ID_XFMI_OFS_SMALLICONS,
+                         hptr);
+
+    return TRUE;
+}
+
+/*
+ *@@ xwpAddToolbarButton:
+ *      adds a new tool bar button to the internal list
+ *      when a tool bar is built for a new folder view.
+ *
+ *      This can _only_ be called form xwpBuildToolBar.
+ *
+ *      As a special case, if pcszTitle is NULL, this adds
+ *      a vertical separator. All other parameters are ignored.
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpAddToolbarButton(XFolder *somSelf,
+                                               ULONG hToolBar,
+                                               PSZ pcszTitle,
+                                               ULONG flStyle,
+                                               USHORT usID,
+                                               HPOINTER hptrIcon)
+{
+    PLINKLIST       pll;
+    PTOOLBARCONTROL ptc;
+    XSTRING         str;
+    CHAR            sz[50];
+    ULONG           cb;
+    PCSZ            pcszClass;
+    BOOL            brc = FALSE;
+    PSZ             pszBuf;
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpAddToolbarButton");
+
+    xstrInit(&str, 0);
+
+    if (!pcszTitle)
+    {
+        // null title means separator
+        pcszClass = WC_CCTL_SEPARATOR;
+        pszBuf = NULL;
+        ptc = (PTOOLBARCONTROL)malloc(sizeof(TOOLBARCONTROL));
+    }
+    else
+    {
+        cb = sprintf(sz, "#%d#", hptrIcon);
+        xstrcpy(&str, sz, cb);
+        xstrcat(&str, pcszTitle, 0);
+        pcszClass = WC_CCTL_TBBUTTON;
+        if (ptc = (PTOOLBARCONTROL)malloc(sizeof(TOOLBARCONTROL) + str.ulLength + 1))
+        {
+            // string buffer after TOOLBARCONTROL struct
+            pszBuf = (PSZ)(ptc + 1);
+            memcpy(pszBuf, str.psz, str.ulLength + 1);
+        }
+    }
+
+    if (    (pll = (PLINKLIST)hToolBar)
+         && (ptc)
+       )
+    {
+        ptc->pcszClass = pcszClass;
+        ptc->pcszTitle = pszBuf;
+        ptc->flStyle = flStyle
+                    | TBBS_TEXT
+                    // | TBBS_MINIICON |
+                    | TBBS_BIGICON
+                    | TBBS_FLAT
+                    | TBBS_HILITE
+                    | TBBS_DROPMNEMONIC
+                    | TBBS_AUTORESIZE
+                    | WS_VISIBLE
+                    ;
+        ptc->id = usID;
+        ptc->cx = (pcszTitle) ? 50 : 10;
+        ptc->cy = 50;
+        lstAppendItem(pll, ptc);
+        brc = TRUE;
+    }
+
+    xstrClear(&str);
+
+    return brc;
+}
+
+/*
+ *@@ xwpProcessViewCommand:
+ *      this new XFolder instance method gets called when
+ *      XFolder's subclassed window procedure
+ *      (fnwpSubclWPFolderWindow) intercepts a WM_COMMAND
+ *      message. This gets called before the WPS gets a
+ *      chance to process that command, which will probably
+ *      result in a call to wpMenuItemSelected for each of
+ *      the affected objects in the container.
+ *
+ *      The purpose of this new message is to allow any folder
+ *      (e.g. a subclass of WPFolder) to intercept object
+ *      operations _before_ wpMenuItemSelected. While
+ *      wpMenuItemSelected is OK for doing things which only
+ *      affect a single object, it is not quite suitable
+ *      for collecting all selected objects and processing
+ *      them all at once. This is where overriding this method
+ *      helps.
+ *
+ *      If this returns TRUE, it is assumed that the command
+ *      was processed, and it is swallowed (i.e. not passed
+ *      on to the standard WPS processing). If you're not
+ *      interested in a command, you must return FALSE,
+ *      or you'll break all other menu items.
+ *
+ *      Parameters:
+ *
+ *      -- usCommand has the command message (e.g. WPMENUID_DELETE).
+ *
+ *      -- hwndCnr has the folder's container window where the
+ *         command originated from.
+ *
+ *      -- pFirstObject has the first of the selected objects.
+ *
+ *      -- ulSelectionFlags has information on the context why
+ *         pFirstObject was considered selected. This is one
+ *         of SEL_WHITESPACE, SEL_SINGLESEL, SEL_MULTISEL,
+ *         SEL_SINGLEOTHER, SEL_NONEATALL (see wpshQuerySourceObject
+ *         for details). You can use wpshQueryNextSourceObject to
+ *         get the others, if this is indicated here.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed from processObjectCommand
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpProcessViewCommand(XFolder *somSelf,
+                                                 USHORT usCommand,
+                                                 HWND hwndCnr,
+                                                 WPObject* pFirstObject,
+                                                 ULONG ulSelectionFlags)
+{
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpProcessViewCommand");
+
+    return fcmdProcessViewCommand(somSelf,
+                                  usCommand,
+                                  hwndCnr,
+                                  pFirstObject,
+                                  ulSelectionFlags);
 }
 
 /*
@@ -1321,6 +1575,9 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     else
         _pvWPFolderData = NULL; // shouldn't happen, but be safe
 
+    // V1.0.1 (2002-11-30) [umoeller]
+    _flXFolderStyle = XFFL_DEFAULTSTYLE;
+
     // set all the instance variables to safe defaults
     _bSnapToGridInstance = 2;
     _bFullPathInstance = 2;
@@ -1346,8 +1603,6 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _pWszFolderBkgndImageFile = NULL;
     */
-
-    _fUnInitCalled = FALSE;
 
     _pfnResolvedUpdateStatusBar = NULL;
 
@@ -1513,11 +1768,6 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
 
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpUnInitData");
-
-    // make sure we only do this once, because we
-    // seem to get called several times sometimes
-    if (!_fUnInitCalled)
-        _fUnInitCalled = TRUE;
 
     if (somSelf == G_pConfigFolder)
         // unset this or we'll crash on the next menu build
@@ -1703,6 +1953,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDestroyObject(XFolder *somSelf)
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed folder sorts
  *@@changed V0.9.12 (2001-05-18) [umoeller]: reworked for new folder sorting
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: added tool bar
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
@@ -1746,6 +1997,10 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
     _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 12, (ULONG)_lFoldersFirst);
     _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 13, (ULONG)_lAlwaysSort);
 
+    // V1.0.1 (2002-11-30) [umoeller]
+    if (_flXFolderStyle != XFFL_DEFAULTSTYLE)
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 14, (ULONG)_flXFolderStyle);
+
     brc = XFolder_parent_WPFolder_wpSaveState(somSelf);
 
     PMPF_RESTOREDATA(("%s: End of wpSaveState", _wpQueryTitle(somSelf)));
@@ -1779,6 +2034,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  *@@changed V0.9.12 (2001-05-18) [umoeller]: reworked for new folder sorting
  *@@changed V0.9.16 (2002-01-04) [umoeller]: added icon handling
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: added tool bar
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
@@ -1844,8 +2100,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 4, &ul))
         _bStatusBarInstance = (BYTE)ul;
-    else
-        _bStatusBarInstance = STATUSBAR_DEFAULT;
+    /* else         not needed, this is the default from wpInitData
+        _bStatusBarInstance = STATUSBAR_DEFAULT; */
 
     // ID 5 used to be inflated SB frame, must not be used again
 
@@ -1878,6 +2134,10 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 
     PMPF_SORT(("[%s] _bAlwaysSortInstance is %d",
                 _wpQueryTitle(somSelf), _lAlwaysSort));
+
+    // V1.0.1 (2002-11-30) [umoeller]
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 14, &ul))
+        _flXFolderStyle = (BYTE)ul;
 
     // in this case, we MUST call the parent LAST because
     // wpRestoreData checks for whether an XFolder sort setting
@@ -3658,6 +3918,29 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
     }
 
     return brc;
+}
+
+/*
+ *@@ xwpclsQueryOpenFolders:
+ *      this new XFolder method iterates over all open folders.
+ *
+ *      This is terribly ineffective, but for now the only
+ *      option if split views should be included in your
+ *      query too.
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryOpenFolders(M_XFolder *somSelf,
+                                                       XFolder* pFolder,
+                                                       BOOL fLock)
+{
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryOpenFolders");
+
+    PMPF_STATUSBARS(("calling fdrQueryOpenFolders"));
+
+    return fdrQueryOpenFolders(pFolder, fLock);
 }
 
 /*
