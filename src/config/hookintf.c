@@ -2685,15 +2685,6 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 static ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
 static ULONG   G_ulScreenCornerSelectedIndex = 0;
-                            // 0 = lower left corner,
-                            // 1 = top left corner,
-                            // 2 = lower right corner,
-                            // 3 = top right corner;
-                            //      the following added with V0.9.4 (2000-06-12) [umoeller]:
-                            // 4 = top border,
-                            // 5 = left border,
-                            // 6 = right border,
-                            // 7 = bottom border
 
 // screen corner object container d'n'd
 static HOBJECT G_hobjBeingDragged = NULLHANDLE;
@@ -2707,6 +2698,7 @@ static BOOL    G_fShutUpSlider = FALSE;
  *@@ UpdateScreenCornerIndex:
  *
  *@@changed V0.9.4 (2000-06-12) [umoeller]: added screen borders
+ *@@changed v0.9.18 (2002-02-12) [pr]: use defined constants
  */
 
 VOID UpdateScreenCornerIndex(USHORT usItemID)
@@ -2714,23 +2706,23 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
     switch (usItemID)
     {
         case ID_XSDI_MOUSE_RADIO_TOPLEFT:
-            G_ulScreenCornerSelectedIndex = 1; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_TOPLEFT; break;
         case ID_XSDI_MOUSE_RADIO_TOPRIGHT:
-            G_ulScreenCornerSelectedIndex = 3; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_TOPRIGHT; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOMLEFT:
-            G_ulScreenCornerSelectedIndex = 0; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_BOTTOMLEFT; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT:
-            G_ulScreenCornerSelectedIndex = 2; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_BOTTOMRIGHT; break;
 
         // V0.9.4 (2000-06-12) [umoeller]
         case ID_XSDI_MOUSE_RADIO_TOP:
-            G_ulScreenCornerSelectedIndex = 4; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_TOP; break;
         case ID_XSDI_MOUSE_RADIO_LEFT:
-            G_ulScreenCornerSelectedIndex = 5; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_LEFT; break;
         case ID_XSDI_MOUSE_RADIO_RIGHT:
-            G_ulScreenCornerSelectedIndex = 6; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_RIGHT; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOM:
-            G_ulScreenCornerSelectedIndex = 7; break;
+            G_ulScreenCornerSelectedIndex = SCREENCORNER_BOTTOM; break;
     }
 }
 
@@ -2745,6 +2737,7 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
  *@@changed V0.9.9 (2001-01-25) [lafaix]: added more PageMage special functions
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added Corner sensitivity setting
  *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
+ *@@changed V0.9.18 (2002-02-12) [pr]: added Screen Wrap option to special functions
  */
 
 VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2771,7 +2764,7 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
         // check top left screen corner
         G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-        G_ulScreenCornerSelectedIndex = 1;        // top left
+        G_ulScreenCornerSelectedIndex = SCREENCORNER_TOPLEFT;
         winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               G_ulScreenCornerSelectedID,
                               TRUE);
@@ -2794,6 +2787,8 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEDOWN)) ; // pszSpecialPageMageDown
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGELEFT)) ; // pszSpecialPageMageLeft
 #endif
+
+            WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_SCREENWRAP));
         }
 
         // set up container
@@ -2912,6 +2907,7 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added corner sensitivity settings
  *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
  *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
+ *@@changed V0.9.18 (2002-02-12) [pr]: selecting Special Function no longer forces list to 1st entry
  */
 
 MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -3027,7 +3023,8 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_MOUSE_SPECIAL_CHECK:
             hifLoadHookConfig(pdc);
-            pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0xFFFF0000;
+            if (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] < 0xFFFF0000)  //V0.9.18 (2002-02-12) [pr]
+                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0xFFFF0000;
 
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;

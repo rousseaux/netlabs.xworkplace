@@ -85,6 +85,7 @@
 #include <stdio.h>
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
+#include <builtin.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -903,13 +904,12 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
     TRY_LOUD(excpt1)
     {
-        if (    (fSemOwned = LockRunning())
-             && (happ)
+        if (    (happ)
              && ((pProgram != NULL) || (pDataFile != NULL))
            )
         {
-            PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)malloc(sizeof(RUNNINGPROGRAM));
-            if (pRunning)
+            PRUNNINGPROGRAM pRunning;
+            if (pRunning = (PRUNNINGPROGRAM)malloc(sizeof(RUNNINGPROGRAM)))
             {
                 // allocate view item
                 PUSEITEM pUseItemView = 0,
@@ -925,10 +925,12 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                 if (pObjEmph)
                 {
+                    ULONG ulDummy;
+
                     // in any case, add "in-use" emphasis to the object
                     if (pUseItemView = (PUSEITEM)_wpAllocMem(pObjEmph,
                                                              sizeof(USEITEM) + sizeof(VIEWITEM),
-                                                             NULL))
+                                                             &ulDummy))
                     {
                         // VIEWITEM is right behind use item
                         PVIEWITEM pViewItem = (PVIEWITEM)(pUseItemView + 1);
@@ -946,7 +948,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                             // structure as well
                             if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pObjEmph,
                                                                       sizeof(USEITEM) + sizeof(VIEWFILE),
-                                                                      NULL))
+                                                                      &ulDummy))
                             {
                                 // VIEWFILE item is right behind use item
                                 PVIEWFILE pViewFile = (PVIEWFILE)(pUseItemFile + 1);
@@ -966,22 +968,26 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                     if (brc)
                     {
-                        // store this in our internal list
-                        // so we can find the object
-                        // in progAppTerminateNotify
-                        pRunning->pObjEmphasis = pObjEmph;
-                        pRunning->pUseItemView = pUseItemView;
-                        pRunning->pUseItemFile = pUseItemFile; // can be 0
-                        lstAppendItem(&G_llRunning,
-                                      pRunning);
+                        // moved the lock down V0.9.18 (2002-02-13) [umoeller]
+                        if (fSemOwned = LockRunning())
+                        {
+                            // store this in our internal list
+                            // so we can find the object
+                            // in progAppTerminateNotify
+                            pRunning->pObjEmphasis = pObjEmph;
+                            pRunning->pUseItemView = pUseItemView;
+                            pRunning->pUseItemFile = pUseItemFile; // can be 0
+                            lstAppendItem(&G_llRunning,
+                                          pRunning);
 
-                        // set list-notify flag on the object
-                        // so that XFldObject will call
-                        // progRunningAppDestroyed if
-                        // the object is destroyed
-                        _xwpModifyListNotify(pObjEmph,
-                                             OBJLIST_RUNNINGSTORED,
-                                             OBJLIST_RUNNINGSTORED);
+                            // set list-notify flag on the object
+                            // so that XFldObject will call
+                            // progRunningAppDestroyed if
+                            // the object is destroyed
+                            _xwpModifyListNotify(pObjEmph,
+                                                 OBJLIST_RUNNINGSTORED,
+                                                 OBJLIST_RUNNINGSTORED);
+                        }
                     }
                 } // end if (pObjEmph)
 
@@ -1031,42 +1037,44 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
             PLISTNODE pNode = lstQueryFirstNode(&G_llRunning);
             while (pNode)
             {
-                PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)pNode->pItemData;
-                if (pRunning->pUseItemView)
+                PRUNNINGPROGRAM pRunning;
+                PVIEWITEM       pViewItem;
+
+                if (    (pRunning = (PRUNNINGPROGRAM)pNode->pItemData)
+                     && (pRunning->pUseItemView)
+                     // VIEWITEM is right behind use item;
+                     // this exists for both program and data file objects
+                     && (pViewItem = (PVIEWITEM)(pRunning->pUseItemView + 1))
+                     // is this ours?
+                     && (pViewItem->handle == happ)
+                   )
                 {
-                    // VIEWITEM is right behind use item;
-                    // this exists for both program and data file objects
-                    PVIEWITEM pViewItem = (PVIEWITEM)(pRunning->pUseItemView + 1);
+                    // yes, this is ours:
 
-                    if (pViewItem->handle == happ)
+                    // check if we also have a VIEWFILE item
+                    if (pRunning->pUseItemFile)
                     {
-                        // yes, this is ours:
-
-                        // check if we also have a VIEWFILE item
-                        if (pRunning->pUseItemFile)
-                        {
-                            // yes:
-                            _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
-                                                    pRunning->pUseItemFile);
-                            _wpFreeMem(pRunning->pObjEmphasis,
-                                       (PBYTE)pRunning->pUseItemFile);
-                        }
-
-                        // now remove "view" useitem from the object's use list
-                        // (this always exists)
+                        // yes:
                         _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
-                                                pRunning->pUseItemView);
+                                                pRunning->pUseItemFile);
                         _wpFreeMem(pRunning->pObjEmphasis,
-                                   (PBYTE)pRunning->pUseItemView);
-
-                        // remove this thing (auto-free!)
-                        lstRemoveNode(&G_llRunning, pNode);
-
-                        brc = TRUE;
-
-                        // stop searching
-                        break;
+                                   (PBYTE)pRunning->pUseItemFile);
                     }
+
+                    // now remove "view" useitem from the object's use list
+                    // (this always exists)
+                    _wpDeleteFromObjUseList(pRunning->pObjEmphasis,
+                                            pRunning->pUseItemView);
+                    _wpFreeMem(pRunning->pObjEmphasis,
+                               (PBYTE)pRunning->pUseItemView);
+
+                    // remove this thing (auto-free!)
+                    lstRemoveNode(&G_llRunning, pNode);
+
+                    brc = TRUE;
+
+                    // stop searching
+                    break;
                 }
 
                 pNode = pNode->pNext;
@@ -1220,7 +1228,7 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
 
 /*
  *@@ FixSpacesInFilename:
- *      checks if psz contains spaces and, if so,
+ *      checks if pstr contains spaces and, if so,
  *      encloses the string in psz in quotes.
  *      It is assumes that there is enough room
  *      in psz to hold two more characters.
@@ -1228,26 +1236,27 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
  *      Otherwise psz is not changed.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
+ *@@changed V0.9.18 (2002-02-13) [umoeller]: now using XSTRING
  */
 
-VOID FixSpacesInFilename(PSZ psz)
+VOID FixSpacesInFilename(PXSTRING pstr)
 {
-    if (psz)
+    if (pstr && pstr->psz)
     {
-        if (strchr(psz, ' '))
+        if (strchr(pstr->psz, ' '))
         {
             // we have spaces:
             // compose temporary
             XSTRING strTemp;
             xstrInit(&strTemp,
-                     strlen(psz) + 3);  // preallocate: length of original
-                                        // plus two quotes plus null terminator
-            xstrcpy(&strTemp, "\"", 0);
-            xstrcat(&strTemp, psz, 0);
+                     pstr->ulLength + 3);  // preallocate: length of original
+                                           // plus two quotes plus null terminator
+            xstrcpy(&strTemp, "\"", 1);
+            xstrcats(&strTemp, pstr);
             xstrcatc(&strTemp, '"');
 
             // copy back
-            strcpy(psz, strTemp.psz);
+            xstrcpys(pstr, &strTemp);
             xstrClear(&strTemp);
         }
     }
@@ -1293,10 +1302,11 @@ VOID FixSpacesInFilename(PSZ psz)
  *      Postconditions: pstrTemp is freed by the caller.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
+ *@@changed V0.9.18 (2002-02-13) [umoeller]: fixed possible buffer overflows
  */
 
-BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting with "%")
-                       const char *pcszFilename, // in: data file name;
+BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
+                       PCSZ pcszFilename, // in: data file name;
                                                  // ptr is always valid, but can point to ""
                        PXSTRING pstrTemp,       // out: replacement string (e.g. filename)
                        PULONG pcReplace,        // out: no. of chars to replace (w/o null terminator)
@@ -1317,7 +1327,8 @@ BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting wit
 
         case '*':
         {
-            CHAR szTemp[2*CCHMAXPATH] = "";
+            XSTRING strTemp;
+            xstrInit(&strTemp, 0);
 
             if ( (*(p+2)) == '*' )      // "%**" ?
             {
@@ -1329,95 +1340,110 @@ BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting wit
                     {
                         // "%**P": drive and path information without the
                         // last backslash (\)
-                        PSZ pLastBackslash = strrchr(pcszFilename, '\\');
-                        if (pLastBackslash)
-                            strhncpy0(szTemp,
-                                      pcszFilename,
-                                      pLastBackslash - pcszFilename);
-                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+                        PSZ pLastBackslash;
+                        if (pLastBackslash = strrchr(pcszFilename, '\\'))
+                        {
+                            xstrcpy(&strTemp,
+                                    pcszFilename,
+                                    pLastBackslash - pcszFilename);
+                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                        }
 
                         *pfAppendDataFilename = FALSE;
                         *pcReplace = 4;     // "%**?"
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     case 'D':
                     {
                         //  "%**D": drive with ':' or UNC name
-                        PSZ pFirstBackslash = strchr(pcszFilename + 2, '\\');
-                            // works on "C:\blah" or "\\unc\blah"
-                        if (pFirstBackslash)
-                            strhncpy0(szTemp,
-                                      pcszFilename,
-                                      pFirstBackslash - pcszFilename);
-                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+                        ULONG ulDriveSpecLen;
+                        if (!doshGetDriveSpec(pcszFilename,
+                                              NULL,
+                                              &ulDriveSpecLen,
+                                              NULL))
+                                // works on "C:\blah" or "\\unc\blah"
+                        {
+                            xstrcpy(&strTemp,
+                                    pcszFilename,
+                                    ulDriveSpecLen);
+                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                        }
 
                         *pfAppendDataFilename = FALSE;
                         *pcReplace = 4;     // "%**?"
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     case 'N':
                     {
                         //  "%**N": file name without extension.
                         // first find filename
-                        PSZ pLastBackslash = strrchr(pcszFilename + 2, '\\');
+                        PSZ pLastBackslash;
                             // works on "C:\blah" or "\\unc\blah"
-                        if (pLastBackslash)
+                        if (pLastBackslash = strrchr(pcszFilename + 2, '\\'))
                         {
                             // find last dot in filename
-                            PSZ pLastDot = strrchr(pLastBackslash + 1, '.');
-                            if (pLastDot)
+                            PSZ pLastDot;
+                            ULONG ulLength = 0;
+                            if (pLastDot = strrchr(pLastBackslash + 1, '.'))
                             {
                                 // extension found:
                                 // copy from pLastBackslash + 1 to pLastDot
-                                strhncpy0(szTemp,
-                                          pLastBackslash + 1,
-                                          pLastDot - (pLastBackslash + 1));
+                                ulLength = pLastDot - (pLastBackslash + 1);
                             }
-                            else
-                                // no extension:
-                                // copy entire name
-                                strcpy(szTemp, pLastBackslash + 1);
+                            // else no extension:
+                            // copy entire name
+
+                            xstrcpy(&strTemp,
+                                    pLastBackslash + 1,
+                                    ulLength);
+                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
                         }
-                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
 
                         *pfAppendDataFilename = FALSE;
                         *pcReplace = 4;     // "%**?"
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     case 'F':
                     {
                         // "%**F": file name with extension.
                         // find filename
-                        PSZ pLastBackslash = strrchr(pcszFilename + 2, '\\');
+                        PSZ pLastBackslash;
                             // works on "C:\blah" or "\\unc\blah"
-                        if (pLastBackslash)
-                            strcpy(szTemp, pLastBackslash + 1);
-                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+                        if (pLastBackslash = strrchr(pcszFilename + 2, '\\'))
+                        {
+                            xstrcpy(&strTemp, pLastBackslash + 1, 0);
+                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                        }
 
                         *pfAppendDataFilename = FALSE;
                         *pcReplace = 4;     // "%**?"
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     case 'E':
                     {
                         //  "%**E": extension without leading dot.
                         // In HPFS, the extension always comes after the last dot.
-                        PSZ pExt = doshGetExtension(pcszFilename);
-                        if (pExt)
+                        PSZ pExt;
+                        if (pExt = doshGetExtension(pcszFilename))
                         {
-                            strcpy(szTemp, pExt);
-                            FixSpacesInFilename(szTemp);
+                            xstrcpy(&strTemp, pExt, 0);
+                            FixSpacesInFilename(&strTemp);
                                     // improbable, but possible
                         }
 
                         *pfAppendDataFilename = FALSE;
                         *pcReplace = 4;     // "%**?"
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
                 }
             } // end of all those "%**?" cases
             else
@@ -1426,20 +1452,23 @@ BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting wit
                 // we then assume it's "%*" only...
 
                 // "%*": full path of data file
-                strcpy(szTemp, pcszFilename);
-                FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+                xstrcpy(&strTemp, pcszFilename, 0);
+                FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
 
                 *pfAppendDataFilename = FALSE;
                 *pcReplace = 2;     // "%**?"
                 brc = TRUE;
             }
 
-            if (szTemp[0])
+            if (strTemp.ulLength)
                 // something was copied to replace:
-                xstrcpy(pstrTemp, szTemp, 0);
+                xstrcpys(pstrTemp, &strTemp);
             // else: pstrTemp has been zeroed by caller, leave it
 
-        break; } // case '*': (second character)
+            xstrClear(&strTemp);
+
+        }
+        break;  // case '*': (second character)
     } // end switch (*(p+1))
 
     return (brc);
@@ -1483,7 +1512,7 @@ BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting wit
  *      NOTE: Since this program can possibly wait for a prompt
  *      dialog to be filled by the user, this requires a message
  *      queue. Also, this will not return until the dialog has
- *      been displayed.
+ *      been dismissed.
  *
  *      This returns TRUE if all parameters were successfully
  *      converted. This returns FALSE only on fatal internal
@@ -1497,7 +1526,7 @@ BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting wit
  *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted HandlePlaceholder
  */
 
-BOOL progSetupArgs(const char *pcszParams,
+BOOL progSetupArgs(PCSZ pcszParams,
                    WPFileSystem *pFile,         // in: file or NULL
                    PSZ *ppszParamsNew)          // out: new params
 {
@@ -1524,7 +1553,7 @@ BOOL progSetupArgs(const char *pcszParams,
         // we have a params string in the program object:
         // copy it character per character and replace
         // special keywords
-        const char *p = pcszParams;
+        PCSZ p = pcszParams;
 
         while (    (*p)  // not end of string
                 && (brc == TRUE)        // no error, not cancelled
@@ -1568,7 +1597,8 @@ BOOL progSetupArgs(const char *pcszParams,
                         p++;
                     }
                     xstrClear(&strTemp);
-                break; }
+                }
+                break;
 
                 /*
                  *   '[': handle prompt placeholder
@@ -1577,8 +1607,8 @@ BOOL progSetupArgs(const char *pcszParams,
 
                 case '[':
                 {
-                    const char *pEnd = strchr(p + 1, ']');
-                    if (pEnd)
+                    PCSZ pEnd;
+                    if (pEnd = strchr(p + 1, ']'))
                     {
                         XSTRING strPrompt;
                         // copy stuff between brackets
@@ -1602,7 +1632,8 @@ BOOL progSetupArgs(const char *pcszParams,
                     else
                         // no closing bracket: just copy
                         p++;
-                break; }
+                }
+                break;
 
                 default:
                     // any other character: append
@@ -1626,6 +1657,8 @@ BOOL progSetupArgs(const char *pcszParams,
             // this is still TRUE if none of the "%" placeholders have
             // been found;
             // append filename to the end
+            XSTRING strDataFilename;
+            xstrInitCopy(&strDataFilename, szDataFilename, 0);
 
             // if we have parameters already, append space
             // if the last char isn't a space yet
@@ -1635,8 +1668,8 @@ BOOL progSetupArgs(const char *pcszParams,
                      != ' ')
                     xstrcatc(&strParamsNew, ' ');
 
-            FixSpacesInFilename(szDataFilename); // V0.9.7 (2000-12-10) [umoeller]
-            xstrcat(&strParamsNew, szDataFilename, 0);
+            FixSpacesInFilename(&strDataFilename); // V0.9.7 (2000-12-10) [umoeller]
+            xstrcats(&strParamsNew, &strDataFilename);
         }
 
         // return new params to caller
@@ -1661,7 +1694,7 @@ BOOL progSetupArgs(const char *pcszParams,
  */
 
 PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
-                 const char *pcszEnv,          // in: its environment string (or NULL)
+                 PCSZ pcszEnv,          // in: its environment string (or NULL)
                  WPFileSystem *pFile)          // in: file or NULL
 {
     PSZ             pszNewEnv = NULL;
@@ -1881,6 +1914,8 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
     PSZ             pszNewStartupDir = NULL;
     PSZ             pszNewEnvironment = NULL;
 
+    // INT3();
+
     TRY_LOUD(excpt1)
     {
         // get program data
@@ -2021,12 +2056,14 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                             }
 
                             WinDispatchMsg(hab, &qmsg);
+
                             if (fQuit)
                                 break;
                         }
-
-                        WinDestroyWindow(Data.hwndNotify);
                     }
+
+                    if (Data.hwndNotify)
+                        WinDestroyWindow(Data.hwndNotify);
 
                     // _Pmpf((__FUNCTION__ ": left message loop"));
                 }

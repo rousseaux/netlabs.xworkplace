@@ -13,39 +13,60 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
-### release
-    rewrite icon replacements in INF
 
-override all wpQuery/SetIconData too
+CURRENT PROBLEMS
+----------------
 
-align icon page 2 for folders
+--  override all wpQuery/SetIconData too
 
-lost icons for FTP-PM
+--  align icon page 2 for folders
 
->Minor bug - when you open the object properties of an application from the File
->Types tab of the Workplace Shell object, the icon disappears. Selecting
->something else and coming back, the icon will show up again.
+--  program objects:
 
->Minor bug - errors when deinstalling fonts from the font folder say that there was
->an error when installing fonts.
+    --  changes in the properties of a program object is not reflected
+        1) change path in properties
+        2) wps doesn't pick up change on double-click
+        3) path is still correct in properties
 
->Icon loading code - I've had to hit Default/Undo on about a half dozen program
->objects to restore the proper icon. I have discovered that this doesn't work
->properly for any *.cmd or *.exe files that don't have custom icons - the icon is
->always changing back to the open font folder icon (???). It also seems that the
->icons for attachments in PMMail have been adversely affected, as many are now
->showing as blank. I see in the BUGS file that you noticed the problem with
->ProNews - but the problem is much more widespread.
+--  replacement icons:
 
-
-MINOR PROBLEMS
---------------
-
---  turbo folders:
     --  VIO executable icons keep disappearing when templates folder
         was opened
 
     --  pronews.exe not handled correctly in program object
+
+    --  lost icons for FTP-PM
+
+    --  Icon loading code - I've had to hit Default/Undo on about a half dozen program
+        objects to restore the proper icon. I have discovered that this doesn't work
+        properly for any *.cmd or *.exe files that don't have custom icons - the icon is
+        always changing back to the open font folder icon (???). It also seems that the
+        icons for attachments in PMMail have been adversely affected, as many are now
+        showing as blank. I see in the BUGS file that you noticed the problem with
+        ProNews - but the problem is much more widespread.
+
+--  when you open the object properties of an application from the File
+    Types tab of the Workplace Shell object, the icon disappears. Selecting
+    something else and coming back, the icon will show up again.
+
+--  errors when deinstalling fonts from the font folder say that there was
+    an error when installing fonts.
+
+--  Extended Shutdown: Adding a partition to the menu, initially has
+    the wrong partition name shown if the name is longer than 8
+    characters. On LVM volumes they can be much longer. Manualy typing
+    the correct name (in quotes if it contains spaces) solves this
+    problem.
+
+--  Kernel object: Errors page, Drive for POPUPLOG.OS2 shows
+    incorrect drive (always the first HD on your system)
+
+--  XCenter: Double clicking clock object doesn't bring-up the clock
+    properties in eCS.
+
+
+OLDER, MINOR PROBLEMS
+---------------------
 
 --  XCenter:
     --  double-click on tray empty space produces click on icon too
@@ -100,12 +121,6 @@ MINOR PROBLEMS
 
 --  drive not ready:
     reports garbage with TVFS drives
-
---  Font folder:
-    b8) Fontfolder: Deinstalling OS2\DLL\COURIERI.FON, HELVI.FON,
-    TIMESI.FON (file not found errors), fails with error 30024.
-    b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
-    (i.e. non-sized)
 
 --  setup strings for WPShadow: SHADOWID (?) not reported
 

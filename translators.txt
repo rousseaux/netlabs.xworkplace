@@ -22,6 +22,7 @@ Christoph Vogt <ch.vogt@gmx.net>
 Christoph Wingender <christoph.wingender@gmx.net>
 Frank Berke <Frank.Berke@rz.ruhr-uni-bochum.de> V0.9.13 (2001-06-14) [umoeller]
 warpcafe <thklein@netcologne.de> V0.9.17 (2002-02-05) [umoeller]
+Christian Hennecke <christian.hennecke@ruhr-uni-bochum.de> V0.9.18 (2002-02-06) [umoeller]
 
 Italian (updated V0.9.3 (2000-04-08) [umoeller])
 Obelix <nbrion@box.seven.it>

@@ -923,6 +923,9 @@ BEGIN
     ID_XFSI_FDLG_SAVEFILEAS             "Save File As..."
     ID_XFSI_FDLG_OPENFILE               "Open File..."
     ID_XFSI_FDLG_ALLTYPES               "<All types>"
+
+    /* the following have been added with V0.9.18 */
+    ID_XSSI_SPECIAL_SCREENWRAP          "Screen wrap"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

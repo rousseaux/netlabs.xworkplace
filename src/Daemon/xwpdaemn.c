@@ -1123,104 +1123,131 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
  *      implementation for XDM_HOTCORNER in fnwpDaemonObject.
  *
  *@@added V0.9.14 (2001-08-20) [umoeller]
+ *@@changed V0.9.18 (2002-02-12) [pr]: added screen wrap
  */
 
 VOID ProcessHotCorner(MPARAM mp1)
 {
-    if (mp1)
+    // create array index: mp1
+    LONG    lIndex = (LONG)mp1;
+    HOBJECT hobjIndex;
+
+    if (    (G_pHookData)
+         && (lIndex >= SCREENCORNER_MIN)
+         && (lIndex <= SCREENCORNER_MAX)
+            // hot-corner object defined?
+         && (hobjIndex = G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex])
+       )
     {
-        // create array index: mp1 minus one.
-        LONG    lIndex = ((LONG)mp1) - 1;
-        HOBJECT hobjIndex;
+        UCHAR ucScanCode = 0;
 
-        if (    (G_pHookData)
-             && (lIndex >= 0)
-             && (lIndex <= 7)
-                // hot-corner object defined?
-             && (hobjIndex = G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex])
-           )
+        switch (hobjIndex)
         {
-            UCHAR ucScanCode = 0;
-
-            switch (hobjIndex)
-            {
-                // PageMage?
+            // PageMage?
 #ifndef __NOPAGEMAGE__
-                case 0xFFFF0002:
-                    // yes: bring up PageMage window
-                    WinSetWindowPos(G_pHookData->hwndPageMageFrame,
-                                    HWND_TOP,
-                                    0, 0, 0, 0,
-                                    SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
-                    // start or restart timer for flashing
-                    // fixed V0.9.4 (2000-07-10) [umoeller]
-                    if (G_pHookData->PageMageConfig.fFlash)
-                        pgmgcStartFlashTimer();
-                break;
+            case 0xFFFF0002:
+                // yes: bring up PageMage window
+                WinSetWindowPos(G_pHookData->hwndPageMageFrame,
+                                HWND_TOP,
+                                0, 0, 0, 0,
+                                SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
+                // start or restart timer for flashing
+                // fixed V0.9.4 (2000-07-10) [umoeller]
+                if (G_pHookData->PageMageConfig.fFlash)
+                    pgmgcStartFlashTimer();
+            break;
 
-                // PageMage screen change?
-                case 0xFFFF0003:
-                    ucScanCode = 0x61;
-                break;
+            // PageMage screen change?
+            case 0xFFFF0003:
+                ucScanCode = 0x61;
+            break;
 
-                case 0xFFFF0004:
-                    ucScanCode = 0x64;
-                break;
+            case 0xFFFF0004:
+                ucScanCode = 0x64;
+            break;
 
-                case 0xFFFF0005:
-                    ucScanCode = 0x66;
-                break;
+            case 0xFFFF0005:
+                ucScanCode = 0x66;
+            break;
 
-                case 0xFFFF0006:
-                    ucScanCode = 0x63;
-                break;
+            case 0xFFFF0006:
+                ucScanCode = 0x63;
+            break;
 #endif
 
-                default:
-                    // real object or some other special code:
-                    // let XFLDR.DLL thread-1 object handle this
-                    WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
-                               T1M_OPENOBJECTFROMHANDLE,
-                               // pass HOBJECT or special function (0xFFFF000x)
-                               (MPARAM)hobjIndex,
-                               // pass mp1
-                               (MPARAM)(lIndex + 1));
-            } // end switch
-
-#ifndef __NOPAGEMAGE__
-            if (ucScanCode)
+            case 0xFFFF0007: // V0.9.18 (2002-02-12) [pr]
             {
-                POINTL ptlCurrScreen;
-                // shortcuts to global pagemage config
-                PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
-                PPOINTL pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+                POINTL ptlCurrent;
 
-                // we had a PageMage screen change above:
-                // where are we right now ?
-                // (0,0) is _upper_ left, not bottom left
-                ptlCurrScreen.x = G_ptlCurrPos.x / G_szlEachDesktopReal.cx;
-                ptlCurrScreen.y = G_ptlCurrPos.y / G_szlEachDesktopReal.cy;
-
-                // if we do move, wrap the pointer too so
-                // that we don't move too much
-                if (   (pPageMageConfig->bWrapAround)
-                    || ((ucScanCode == 0x61) && (ptlCurrScreen.y > 0))
-                    || ((ucScanCode == 0x66) && (ptlCurrScreen.y < (pptlMaxDesktops->y - 1)))
-                    || ((ucScanCode == 0x64) && (ptlCurrScreen.x < (pptlMaxDesktops->x - 1)))
-                    || ((ucScanCode == 0x63) && (ptlCurrScreen.x > 0)))
+                WinQueryPointerPos(HWND_DESKTOP, &ptlCurrent);
+                switch(lIndex)
                 {
-                    // we must send this message, not post it @@@
-                    WinSendMsg(G_pHookData->hwndPageMageMoveThread,
-                               PGOM_MOUSESWITCH,
-                               (MPARAM)ucScanCode,
-                               0);
-                    WinSetPointerPos(HWND_DESKTOP,
-                                     G_pHookData->lCXScreen / 2,
-                                     G_pHookData->lCYScreen / 2);
+                    case SCREENCORNER_BOTTOMLEFT:
+                        ptlCurrent.x = G_pHookData->lCXScreen - 2; ptlCurrent.y = G_pHookData->lCYScreen - 2; break;
+                    case SCREENCORNER_TOPLEFT:
+                        ptlCurrent.x = G_pHookData->lCXScreen - 2; ptlCurrent.y = 1; break;
+                    case SCREENCORNER_BOTTOMRIGHT:
+                        ptlCurrent.x = 1; ptlCurrent.y = G_pHookData->lCYScreen - 2; break;
+                    case SCREENCORNER_TOPRIGHT:
+                        ptlCurrent.x = 1; ptlCurrent.y = 1; break;
+                    case SCREENCORNER_TOP:
+                        ptlCurrent.y = 1; break;
+                    case SCREENCORNER_LEFT:
+                        ptlCurrent.x = G_pHookData->lCXScreen - 2; break;
+                    case SCREENCORNER_RIGHT:
+                        ptlCurrent.x = 1; break;
+                    case SCREENCORNER_BOTTOM:
+                        ptlCurrent.y = G_pHookData->lCYScreen - 2; break;
                 }
+
+                WinSetPointerPos(HWND_DESKTOP, ptlCurrent.x, ptlCurrent.y);
             }
-#endif
+            break;
+
+            default:
+                // real object or some other special code:
+                // let XFLDR.DLL thread-1 object handle this
+                WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
+                           T1M_OPENOBJECTFROMHANDLE,
+                           // pass HOBJECT or special function (0xFFFF000x)
+                           (MPARAM)hobjIndex,
+                           // pass mp1
+                           (MPARAM)(lIndex + 1));
+        } // end switch
+
+#ifndef __NOPAGEMAGE__
+        if (ucScanCode)
+        {
+            POINTL ptlCurrScreen;
+            // shortcuts to global pagemage config
+            PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+            PPOINTL pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+
+            // we had a PageMage screen change above:
+            // where are we right now ?
+            // (0,0) is _upper_ left, not bottom left
+            ptlCurrScreen.x = G_ptlCurrPos.x / G_szlEachDesktopReal.cx;
+            ptlCurrScreen.y = G_ptlCurrPos.y / G_szlEachDesktopReal.cy;
+
+            // if we do move, wrap the pointer too so
+            // that we don't move too much
+            if (   (pPageMageConfig->bWrapAround)
+                || ((ucScanCode == 0x61) && (ptlCurrScreen.y > 0))
+                || ((ucScanCode == 0x66) && (ptlCurrScreen.y < (pptlMaxDesktops->y - 1)))
+                || ((ucScanCode == 0x64) && (ptlCurrScreen.x < (pptlMaxDesktops->x - 1)))
+                || ((ucScanCode == 0x63) && (ptlCurrScreen.x > 0)))
+            {
+                // we must send this message, not post it @@@
+                WinSendMsg(G_pHookData->hwndPageMageMoveThread,
+                           PGOM_MOUSESWITCH,
+                           (MPARAM)ucScanCode,
+                           0);
+                WinSetPointerPos(HWND_DESKTOP,
+                                 G_pHookData->lCXScreen / 2,
+                                 G_pHookData->lCYScreen / 2);
+            }
         }
+#endif
     }
 }
 
@@ -1801,16 +1828,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      determines whether to open any object.
              *
              *      Parameters:
-             *      -- BYTE mp1: corner reached;
-             *                  1 = lower left corner,
-             *                  2 = top left corner,
-             *                  3 = lower right corner,
-             *                  4 = top right corner.
-             *              Borders added V0.9.4 (2000-06-12) [umoeller]:
-             *                  5 = top border,
-             *                  6 = left border,
-             *                  7 = right border,
-             *                  8 = bottom border.
+             *      -- BYTE mp1: corner reached; see hook\xwphook.h for definitions
              *      -- mp2: unused, always 0.
              *
              *@@changed V0.9.9 (2001-01-25) [lafaix]: PageMage movements actions added

@@ -1465,9 +1465,8 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                         // again until the second thread has
                         // taken the new buffer
                         // _Pmpf((__FUNCTION__ ": blocking on hmtxBuffer"));
-                        if (    (!(arc = DosRequestMutexSem(pspt->hmtxBuffer,
-                                                            SEM_INDEFINITE_WAIT)))
-                           )
+                        if (!(arc = DosRequestMutexSem(pspt->hmtxBuffer,
+                                                       SEM_INDEFINITE_WAIT)))
                         {
                             fSemBuffer = TRUE;
                             // switch the buffer so we can load next file
@@ -1910,6 +1909,38 @@ typedef struct _FILEPAGEDATA
 } FILEPAGEDATA, *PFILEPAGEDATA;
 
 /*
+ *@@ SetDlgDateTime:
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
+ */
+
+VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
+                    ULONG idDate,           // in: dialog item ID for date string
+                    ULONG idTime,           // in: dialog item ID for time string
+                    PFDATE pfDate,          // in: file info
+                    PFTIME pfTime,
+                    PCOUNTRYSETTINGS pcs)   // in: country settings
+{
+    CHAR    szTemp[100];
+
+    nlsFileDate(szTemp,
+                pfDate,
+                pcs->ulDateFormat,
+                pcs->cDateSep);
+    WinSetDlgItemText(hwndDlg,
+                      idDate,
+                      szTemp);
+
+    nlsFileTime(szTemp,
+                pfTime,
+                pcs->ulTimeFormat,
+                pcs->cTimeSep);
+    WinSetDlgItemText(hwndDlg,
+                      idTime,
+                      szTemp);
+}
+
+/*
  *@@ fsysFile1InitPage:
  *      first "File" page notebook callback function (notebook.c).
  *      Sets the controls on the page according to a file's
@@ -2026,22 +2057,26 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                   ((_wpQueryFldrFlags(pcnbp->somSelf) & FOI_WORKAREA) != 0));
 
         // creation date/time
-        nlsFileDate(szTemp, &(fs3.fdateCreation), pcs->ulDateFormat, pcs->cDateSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE, szTemp);
-        nlsFileTime(szTemp, &(fs3.ftimeCreation), pcs->ulTimeFormat, pcs->cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONTIME, szTemp);
-
+        SetDlgDateTime(pcnbp->hwndDlgPage,
+                       ID_XSDI_FILES_CREATIONDATE,
+                       ID_XSDI_FILES_CREATIONTIME,
+                       &fs3.fdateCreation,
+                       &fs3.ftimeCreation,
+                       pcs);
         // last write date/time
-        nlsFileDate(szTemp, &(fs3.fdateLastWrite), pcs->ulDateFormat, pcs->cDateSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITEDATE, szTemp);
-        nlsFileTime(szTemp, &(fs3.ftimeLastWrite), pcs->ulTimeFormat, pcs->cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTWRITETIME, szTemp);
-
+        SetDlgDateTime(pcnbp->hwndDlgPage,
+                       ID_XSDI_FILES_LASTWRITEDATE,
+                       ID_XSDI_FILES_LASTWRITETIME,
+                       &fs3.fdateLastWrite,
+                       &fs3.ftimeLastWrite,
+                       pcs);
         // last access date/time
-        nlsFileDate(szTemp, &(fs3.fdateLastAccess), pcs->ulDateFormat, pcs->cDateSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE, szTemp);
-        nlsFileTime(szTemp, &(fs3.ftimeLastAccess), pcs->ulTimeFormat, pcs->cTimeSep);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSTIME, szTemp);
+        SetDlgDateTime(pcnbp->hwndDlgPage,
+                       ID_XSDI_FILES_LASTACCESSDATE,
+                       ID_XSDI_FILES_LASTACCESSTIME,
+                       &fs3.fdateLastAccess,
+                       &fs3.ftimeLastAccess,
+                       pcs);
 
         // attributes
         ulAttr = _wpQueryAttr(pcnbp->somSelf);

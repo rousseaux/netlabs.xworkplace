@@ -331,8 +331,11 @@ $(XWPLITE_STRING) \
 
 !ifdef XWP_DEBUG
 # debug code
-CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
 # /tm+
+!ifdef ALLOW_INT3
+CC_INT3      = /D__INT3__=1
+!endif
+CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1 $(CC_INT3)
 !else
 # release code
 CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol- /tn+

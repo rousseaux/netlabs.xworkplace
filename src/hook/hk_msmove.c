@@ -858,6 +858,7 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *@@changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added AutoScroll support
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added fixes for while system is locked up
+ *@@changed V0.9.18 (2002-02-12) [pr]: mods. for screen wrap
  */
 
 BOOL WMMouseMove(PQMSG pqmsg,
@@ -958,7 +959,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                     // only if mouse has moved, not
                     // on window change:
 
-                    BYTE    bHotCorner = 0;
+                    BYTE    bHotCorner = -1;
 
                     /*
                      * hot corners:
@@ -973,32 +974,28 @@ BOOL WMMouseMove(PQMSG pqmsg,
                         if (G_ptlMousePosDesktop.x == 0)
                         {
                             if (G_ptlMousePosDesktop.y == 0)
-                                // lower left corner:
-                                bHotCorner = 1;
+                                bHotCorner = SCREENCORNER_BOTTOMLEFT;
                             else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                                // top left corner:
-                                bHotCorner = 2;
+                                bHotCorner = SCREENCORNER_TOPLEFT;
                             // or maybe left screen border:
                             // make sure mouse y is in the middle third of the screen
                             else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
                                       && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                     )
-                                bHotCorner = 6; // left border
+                                bHotCorner = SCREENCORNER_LEFT;
                         }
                         else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
                         {
                             if (G_ptlMousePosDesktop.y == 0)
-                                // lower right corner:
-                                bHotCorner = 3;
+                                bHotCorner = SCREENCORNER_BOTTOMRIGHT;
                             else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                                // top right corner:
-                                bHotCorner = 4;
+                                bHotCorner = SCREENCORNER_TOPRIGHT;
                             // or maybe right screen border:
                             // make sure mouse y is in the middle third of the screen
                             else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
                                       && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                     )
-                                bHotCorner = 7; // right border
+                                bHotCorner = SCREENCORNER_RIGHT;
                         }
                         else
                             // more checks for top and bottom screen border:
@@ -1010,15 +1007,13 @@ BOOL WMMouseMove(PQMSG pqmsg,
                                      && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                    )
                                     if (G_ptlMousePosDesktop.y == 0)
-                                        // bottom border:
-                                        bHotCorner = 8;
+                                        bHotCorner = SCREENCORNER_BOTTOM;
                                     else
-                                        // top border:
-                                        bHotCorner = 5;
+                                        bHotCorner = SCREENCORNER_TOP;
                             }
 
                         // is mouse in a screen corner?
-                        if (bHotCorner)
+                        if (bHotCorner != -1)
                             // yes:
                             // notify thread-1 object window, which
                             // will start the user-configured action

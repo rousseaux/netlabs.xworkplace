@@ -2203,6 +2203,9 @@
 #define ID_XFSI_FDLG_OPENFILE           6213
 #define ID_XFSI_FDLG_ALLTYPES           6214
 
+// the following added with V0.9.18 (2002-02-12) [pr]
+#define ID_XSSI_SPECIAL_SCREENWRAP      6215    // "Screen wrap"
+
 /******************************************
  *  string IDs for status bar mnemonics
  *  (all new with V0.9.14)

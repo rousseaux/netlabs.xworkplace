@@ -139,6 +139,18 @@
     #define AMF_IGNORENOBUTTON  0x00000002L
     #define AMF_ANIMATE         0x00000004L
 
+    // V0.9.18 (2002-02-12) [pr]
+    #define SCREENCORNER_MIN            0
+    #define SCREENCORNER_BOTTOMLEFT     0
+    #define SCREENCORNER_TOPLEFT        1
+    #define SCREENCORNER_BOTTOMRIGHT    2
+    #define SCREENCORNER_TOPRIGHT       3
+    #define SCREENCORNER_TOP            4
+    #define SCREENCORNER_LEFT           5
+    #define SCREENCORNER_RIGHT          6
+    #define SCREENCORNER_BOTTOM         7
+    #define SCREENCORNER_MAX            7
+
     /*
      *@@ HOOKCONFIG:
      *      configuration data for the hook and the daemon.
@@ -287,6 +299,7 @@
                             //      0xFFFF0005 = down one screen
                             //      0xFFFF0006 = left one screen
                             //      [lafaix] end
+                            //      0xFFFF0007 = screen wrap [pr]
                             // Otherwise (> 0 and < 0xFFFF0000), we have
                             // a "real" object handle, and a regular WPS
                             // object is to be opened.

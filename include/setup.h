@@ -402,6 +402,14 @@
         #define __XWPMEMDEBUG__
 
         #include "helpers\memdebug.h"
+
+        // allow _interrupt(3) only on my private machine
+        // or we'll trap every other developer machine too
+        #ifdef __INT3__
+            #define INT3() _interrupt(3)
+        #else
+            #define INT3()
+        #endif
     #endif
 #endif
 

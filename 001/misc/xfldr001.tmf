@@ -646,7 +646,7 @@ Availability: DANIS506.ADD only.
 
 ;
 ; V0.9.16: next come the toolinfos (fly-over help) for the "Features" page (XWPSetup).
-; This has been moved to setup001.tmf with V0.9.16 and is appended to this file
+; This has been moved to xwpfull001.tmf with V0.9.16 and is appended to this file
 ; by the makefile automatically now.
 ;
 
