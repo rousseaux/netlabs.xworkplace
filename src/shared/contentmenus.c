@@ -241,6 +241,7 @@ static LONG             G_lMaxDescender;    // [lafaix]
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.7 (2001-01-19) [umoeller]: reworked WM_ADJUSTWINDOWPOS for screen constrain
  *@@changed V0.9.7 (2001-01-19) [umoeller]: added support for cmnuSetPositionBelow
+ *@@changed V0.9.19 (2002-05-02) [umoeller]: fixed bad object buttons with XCenter border spacing == 0
  */
 
 MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -312,7 +313,14 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                     #endif
 
                     // is this the message that really sets the window?
-                    if (pswp->x && pswp->y && pswp->cx && pswp->cy)
+                    if (    /* pswp->x
+                            X can be 0 if the user has an XCenter object button in the
+                            very top left of the screen and set border spacing to 0
+                            V0.9.19 (2002-05-02) [umoeller]
+                         && */ pswp->y
+                         && pswp->cx
+                         && pswp->cy
+                       )
                     {
                         // yes:
                         ULONG   cxScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN),

@@ -2253,7 +2253,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 
 #ifndef __NOXSHUTDOWN__
 
-#define COLUMN_WIDTH        200
+#define COLUMN_WIDTH        100
 
 static const CONTROLDEF
     ShutdownGroup = LOADDEF_GROUP(ID_SDDI_SHUTDOWNGROUP, SZL_AUTOSIZE),
