@@ -68,8 +68,8 @@ interface XWPSetup : WPAbstract
      *
      */
 
-    wpQueryDefaultView: override;
     wpQueryDefaultHelp: override;
+    wpQueryDefaultView: override;
 
     wpAddObjectWindowPage: override;
 

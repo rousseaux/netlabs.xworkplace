@@ -89,34 +89,43 @@ interface XFolder : WPFolder
     struct FDRLONGARRAY
     {
         /* container view attributes */
-            // offset 0x0000
+    // offset 0x0000:
         ULONG   ulIconViewCnrAttrs;
         ULONG   ulTreeViewCnrAttrs;
-            // offset 0x0008
+    // offset 0x0008:
         ULONG   ulDetlViewCnrAttrs;    // Henk says, always 28 80 30 00
         ULONG   ulFolderFlag;          // Henk says, always 03 02 00 00
-            // offset 0x0010
+    // offset 0x0010:
         ULONG   ulTreeStyle;           // Henk says, always 00 00 00 00
         ULONG   ulDetailsStyle;        // Henk says, always FF FF FF FF
-            // offset 0x0018
+    // offset 0x0018:
         ULONG   rgbTextBkgndCol;      // BB GG RR 00;
                 // this is the same for all views, but it is copied from
                 // some folder background data I don't know; byte 4 is also
                 // used for "transparency" when changed from Details view (duh)
-        ULONG   ul7;      // unknown, always EF FF FF FF
-            // offset 0x0020
-        ULONG   ul8;      // unknown, always EF FF FF FF
+        ULONG   ul7;      // unknown, always EF FF FF FF (0xFFFFFFEF)
 
         /* text colors */
-        ULONG   rgbIconViewTextCol;
-            // offset 0x0028
-        ULONG   ul10;     // unknown, always EF FF FF FF
-        ULONG   rgbTreeViewTextCol;
-            // offset 0x0030
+    // offset 0x0020:
+        ULONG   rgbIconViewTextColColumns;
+                          // this color is used for FLOWED and NONFLOWED views.
+                          // If byte x + 3 is 0xFF, this means use default color;
+                          // otherwise:
+                          // -- byte x + 2 is red
+                          // -- byte x + 1 is green
+                          // -- byte x is blue
+        ULONG   rgbIconViewTextColAsPlaced;
+                          // this color is used for regular icon views.
+    // offset 0x0028:
+        ULONG   rgbTreeViewTextColTextOnly;
+                          // this one is used if icons are NOT visible (TREEVIEW=INVISIBLE)
+        ULONG   rgbTreeViewTextColIcons;
+                          // this one is used if icons are visible (TREEVIEW=MINI or NORMAL)
+    // offset 0x0030:
         ULONG   rgbDetlViewTextCol;
 
-        ULONG   ul13;     // unknown, always 00 00 00 40
-            // offset 0x0038
+        ULONG   ul13;     // unknown, always 00 00 00 40 (0x40000000)
+    // offset 0x0038:
         ULONG   ulIconViewTextVisibility; // 00 00 00 40: standard,
                                         // 00 00 00 00: invisible,
                                         // 01 00 00 00: not transparent
@@ -125,20 +134,20 @@ interface XFolder : WPFolder
                 // is off also.
         ULONG   ulTreeViewTextVisibility; // the same
 
-            // offset 0x0040
+    // offset 0x0040:
         ULONG   ul16;     // unknown, always 00 00 00 00
 
-        // end of structure on Warp 3
-        // the following long's are only available on Warp 4:
+    // end of structure on Warp 3
+    // the following long's are only available on Warp 4:
 
-        ULONG ulMenuBarVisibility;    // 0 = off, 1 = on, 2 = default
+        ULONG   ulMenuBarVisibility;    // 0 = off, 1 = on, 2 = default
 
         /* Shadow text colors */
-            // offset 0x0048
-        ULONG  rgbIconViewShadowCol;
-        ULONG  rgbTreeViewShadowCol;
-            // offset 0x0050
-        ULONG  rgbDetlViewShadowCol;
+    // offset 0x0048:
+        ULONG   rgbIconViewShadowCol;
+        ULONG   rgbTreeViewShadowCol;
+    // offset 0x0050:
+        ULONG   rgbDetlViewShadowCol;
     };
     typedef FDRLONGARRAY *PFDRLONGARRAY;
 
@@ -153,9 +162,9 @@ interface XFolder : WPFolder
         ULONG   ul1;
         ULONG   rgbColor;
         BYTE   bColorOnly; // 0x28 Image, 0x27 Color only
-        BYTE   b9;
-        BYTE   bImageType; // 2=Normal,3=tiled,4=scaled
-        BYTE   b10;
+        BYTE   b9;         // 0x01 -- what's this?
+        BYTE   bImageType; // 0x?2=Normal, 0x?3=tiled, 0x?4=scaled
+        BYTE   b10;        // 0x01 -- what's this?
         BYTE   bScaleFactor;
         BYTE   b12;
     };
@@ -167,12 +176,12 @@ interface XFolder : WPFolder
     // has been provided by Chris Wohlgemuth.
     struct REALSORTINFO
     {
-       LONG       lDefaultSort;     // default sort column index
-       BOOL       fAlwaysSort;      // "always maintain sort order"
-       LONG       lCurrentSort;     // current sort column index
-       PFNCOMPARE pfnCompare;       // container comparison func
-       ULONG      ulFieldOffset;    // ?!?
-       M_WPObject *Class;
+        LONG       lDefaultSort;     // default sort column index
+        BOOL       fAlwaysSort;      // "always maintain sort order"
+        LONG       lCurrentSort;     // current sort column index
+        PFNCOMPARE pfnCompare;       // container comparison func
+        ULONG      ulFieldOffset;    // ?!?
+        M_WPObject *Class;
     };
     typedef REALSORTINFO *PREALSORTINFO;
 
@@ -216,6 +225,9 @@ interface XFolder : WPFolder
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
+    ULONG xwpQuerySetup2(in PSZ pszSetupString,
+                         in ULONG cbSetupString);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -238,7 +250,8 @@ interface XFolder : WPFolder
         xwpQueryMenuBarVisibility,
         xwpBeginEnumContent,
         xwpEnumNext,
-        xwpEndEnumContent;
+        xwpEndEnumContent,
+        xwpQuerySetup2;
 
     /*
      * Class Modifiers:
@@ -298,27 +311,28 @@ interface XFolder : WPFolder
     // This is an ugly hack to access some folder settings for which
     // no methods are defined...
 
-    // pointer to WPFolder's sort data struct
+    // pointer to WPFolder's sort data struct;
+    // this is intercepted in wpRestoreData (IDKEY_FDRSORTINFO)
     PFDRSORTINFO    pFldrSortInfo;
-    // pointer to WPFolder's "long array"
+    // pointer to WPFolder's "long array";
+    // this is intercepted in wpRestoreData (IDKEY_FDRLONGARRAY)
     PFDRLONGARRAY   pFldrLongArray;
-    // pointer to WPFolder's "string array"
+    ULONG           cbFldrLongArray;
+    // pointer to WPFolder's "string array";
+    // this is intercepted in wpRestoreData (IDKEY_FDRSTRARRAY)
     PSZ             pszFldrStrArray;
+    ULONG           cbFldrStrArray;
     // pointer to WPFolder's folder background info
-    PUSHORT         pusFldrBackground;
-    // size of those structures
-    ULONG           cbFldrStrArray,
-                    cbFldrLongArray;
+    PFDRBACKGROUND  pFldrBackground;
+    ULONG           cbFldrBackground;        // normally 14, see above
     // pointer to WPFolder's "SHOWALLINTREEVIEW" flag
-    // (Warp 4 only); this is queried in wpRestoreLong
+    // (Warp 4 only); this is intercepted in wpRestoreLong (IDKEY_FDRTREEVIEWCONTENTS)
     PULONG          pulShowAllInTreeView;
-
-    /*
-     * The following is forced into the .H file:
-     *
-     */
-
-     // passthru C_h_after =     "";
+    // copy of IDKEY_CNRBACKGROUND data;
+    // we cannot store a pointer to instance
+    // data because the pointer used in wpRestoreString (IDKEY_FDRBKGNDIMAGEFILE)
+    // apparently only points to a temporary buffer
+    PSZ             pszFdrBkgndImageFile;
 
     /*
      * WPFolder methods overridden by XFolder:
@@ -336,6 +350,7 @@ interface XFolder : WPFolder
     wpSaveState: override;
     wpRestoreState: override;
     wpRestoreLong: override;
+    wpRestoreString: override;
     wpRestoreData: override;
 
     wpAddFile1Page: override;
@@ -400,6 +415,7 @@ interface M_XFolder : M_WPFolder
     XFolder xwpclsQueryConfigFolder();
     XFolder xwpclsQueryFavoriteFolder(in XFolder pFolder);
     XFolder xwpclsQueryQuickOpenFolder(in XFolder pFolder);
+    BOOL xwpclsQueryMenuBarVisibility();
 
 #ifdef __SOMIDL__
   implementation {
@@ -408,7 +424,8 @@ interface M_XFolder : M_WPFolder
                     xwpclsForEachOpenView,
                     xwpclsQueryFavoriteFolder,
                     xwpclsQueryQuickOpenFolder,
-                    xwpclsQueryConfigFolder;
+                    xwpclsQueryConfigFolder,
+                    xwpclsQueryMenuBarVisibility;
 
     /*
      * Class Modifiers:

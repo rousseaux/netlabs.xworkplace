@@ -331,6 +331,7 @@
 #define ID_XSDI_DTL_HOTKEY              722
 #define ID_XSDI_DTL_HOTKEY_TXT          723
 #define ID_XSDI_DTL_CLEAR               724
+#define ID_XSDI_DTL_SETUP_ENTRY         725
 
 // "File" page replacement (XFolder, XFldDataFile, V0.9.0)
 #define ID_XSD_FILESPAGE                730

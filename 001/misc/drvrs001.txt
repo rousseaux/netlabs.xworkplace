@@ -61,7 +61,22 @@
  *            and modify code in "src\config\drivdlgs.c".
  */
 
-CATEGORY "Hard disk drivers"
+CATEGORY "General"
+    {
+        DRIVER ( "DEVICE=", "APM.SYS",
+                 "IBM Advanced Power Management",
+                 DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "DOS.SYS",
+                 "IBM DOS support driver",
+                 DRVF_CMDREF)
+
+        DRIVER ( "DEVICE=", "TESTCFG.SYS",
+                 "Test-configuration driver for OS/2 installation",
+                 DRVF_CMDREF)
+    }
+
+CATEGORY "Hard disk"
     {
         DRIVER ( "BASEDEV=", "IBM1S506.ADD",
                  "IBM IDE driver",
@@ -77,24 +92,74 @@ CATEGORY "Hard disk drivers"
                  DRVF_CMDREF)
     }
 
-CATEGORY "CD-ROM drivers"
+CATEGORY "CD-ROM"
     {
-        DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
-                 "IBM ATAPI CD-ROM driver",
-                 DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "MITFX001.ADD",
                  "IBM Mitsumi CD-ROM driver",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "SBCD2.ADD",
                  "IBM Sound Blaster CD-ROM driver",
                  DRVF_CMDREF | DRVF_NOPARAMS),
+
+        DRIVER ( "BASEDEV=", "IBMATAPI.FLT",
+                 "IBM ATAPI filter driver",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
+                 "IBM CD-ROM filter driver",
+                 DRVF_CMDREF),
+
+        DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
+                 "IBM CD-ROM filter driver",
+                 DRVF_CMDREF),
+
+        DRIVER ( "BASEDEV=", "RSJIDECD.FLT",
+                 "RSJ CD-ROM filter driver replacement",
+                 DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "LOCKCDR.FLT",
+                 "RSJ CD-ROM-to-WORM conversion filter",
+                 DRVF_CMDREF),
+
         DRIVER ( "DEVICE=", "OS2CDROM.DMD",
                  "IBM CD-ROM manager",
                  DRVF_CMDREF)
     }
 
-CATEGORY "SCSI drivers"
+CATEGORY "SCSI"
     {
+        DRIVER ( "BASEDEV=", "AHA152X.ADD",
+                 "Adaptec AHA-1522/1510 SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "AHA154X.ADD",
+                 "Adaptec AHA-1540/1542 SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "AHA164X.ADD",
+                 "Adaptec AHA-164x SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "AHA174X.ADD",
+                 "Adaptec AHA-1740/1744 SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "AIC7770.ADD",
+                 "Adaptec AHA-2840QVL/2842VL/2740/2742 and AIC-7770 SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "AIC7870.ADD",
+                 "Adaptec AHA-2940 and AIC-7870 SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "AIC78U2.ADD",
+                 "Adaptec U2W SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "BTSCSI.ADD",
+                 "Buslogic generic SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "FD16-700.ADD",
+                 "Future Domain SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "FD7000EX.ADD",
+                 "Future Domain SCSI driver",
+                 DRVF_NOPARAMS),
+        DRIVER ( "BASEDEV=", "FD8XX.ADD",
+                 "Future Domain SCSI driver",
+                 DRVF_NOPARAMS),
+
         DRIVER ( "BASEDEV=", "TMSCSIM.ADD",
                  "Tekram DC-390 SCSI driver",
                  DRVF_NOPARAMS),
@@ -141,9 +206,34 @@ CATEGORY "Installable File Systems"
         DRIVER ( "RUN=", "EXT2_LW.EXE",
                  "Linux ext2fs cache daemon",
                  0)
+        DRIVER ( "IFS=", "TVFS.EXE",
+                 "Toronto Virtual File System",
+                 0)
+        DRIVER ( "RUN=", "TVCTL.EXE",
+                 "Toronto Virtual File System control process",
+                 0)
     }
 
-CATEGORY "Peripherals"
+CATEGORY "Video"
+    {
+        DRIVER ( "DEVICE=", "GRADD.SYS",
+                 "IBM GRADD",
+                 0 )
+
+        DRIVER ( "DEVICE=", "KMGAX64.SYS",
+                 "Matrox",
+                 0 )
+
+        DRIVER ( "DEVICE=", "SDDHELP.SYS",
+                 "SciTech Display Doctor support",
+                 0 )
+
+        DRIVER ( "DEVICE=", "V8514A.SYS",
+                 "8514 driver for DOS/Windows support",
+                 0 )
+    }
+
+CATEGORY "Other peripherals"
     {
         DRIVER ( "BASEDEV=", "IBM1FLPY.ADD",
                  "IBM floppy driver",
@@ -154,21 +244,47 @@ CATEGORY "Peripherals"
         DRIVER ( "BASEDEV=", "XDFLOPPY.FLT",
                  "IBM 1.8MB floppy support",
                  DRVF_CMDREF | DRVF_NOPARAMS),
+
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
                  "IBM printer driver",
                  DRVF_CMDREF),
         DRIVER ( "BASEDEV=", "PRINT02.SYS",
                  "IBM printer driver",
                  DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "PAR1284.SYS",
+                 "Replacement bidi printer driver",
+                 DRVF_CMDREF),
+
         DRIVER ( "BASEDEV=", "IBMKBD.SYS",
                  "IBM generic keyboard driver",
-                 DRVF_CMDREF)
+                 DRVF_CMDREF),
+
         DRIVER ( "DEVICE=", "MOUSE.SYS",
                  "IBM generic mouse driver",
-                 DRVF_CMDREF)
+                 DRVF_CMDREF),
+        DRIVER ( "DEVICE=", "USBMOUSE.SYS",
+                 "USB mouse driver",
+                 0),
+
         DRIVER ( "DEVICE=", "COM.SYS",
-                 "IBM generic serial port driver (COM ports)",
+                 "IBM generic serial (COM) port driver",
                  DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "SIO.SYS",
+                 "SIO enhanced serial (COM) port driver",
+                 DRVF_CMDREF)
+        DRIVER ( "DEVICE=", "USBCOM.SYS",
+                 "USB modem driver",
+                 0),
+
+        DRIVER ( "BASEDEV=", "USBD.SYS",
+                 "USB driver",
+                 0 ),
+        DRIVER ( "BASEDEV=", "USBHID.SYS",
+                 "USB driver",
+                 0 ),
+        DRIVER ( "BASEDEV=", "USBUHCD.SYS",
+                 "IBM DockStation USB driver",
+                 0 ),
     }
 
 CATEGORY "Multimedia"
@@ -176,21 +292,137 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "SB16D2.SYS",
                  "IBM Soundblaster 16 driver",
                  0),
+        DRIVER ( "DEVICE=", "OPL3.SYS",
+                 "Yamaha OPL3 sound chip driver",
+                 0),
+        DRIVER ( "DEVICE=", "OPL3SA.SYS",
+                 "Yamaha SAx sound chip driver",
+                 0),
+        DRIVER ( "DEVICE=", "OPL3VDD.SYS",
+                 "Yamaha SAx sound chip virtual driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "R0STUB.SYS",
+                 "IBM MMPM/2 R0STUB support driver",
+                 0),
+        DRIVER ( "DEVICE=", "SSMDD.SYS",
+                 "IBM MMPM/2 SSMDD support driver",
+                 0),
         DRIVER ( "DEVICE=", "AUDIOVDD.SYS",
                  "IBM MMPM/2 sound sharing driver",
                  0),
+
         DRIVER ( "BASEDEV=", "TIMER0.SYS",
                  "IBM High-resolution timer driver",
                  0),
         DRIVER ( "DEVICE=", "MIDI.SYS",
                  "IBM MIDI driver",
                  0),
+        DRIVER ( "DEVICE=", "MPU401.SYS",
+                 "MPU401 MIDI support driver",
+                 0),
+        DRIVER ( "DEVICE=", "USBAUDIO.SYS",
+                 "MPU401 MIDI support driver",
+                 0),
+        DRIVER ( "RUN=", "MIDIDMON.EXE",
+                 "OS/2 MIDI daemon process",
+                 0),
     }
 
 CATEGORY "Network"
     {
+        DRIVER ( "BASEDEV=", "DETNE2.SYS",
+                 "NE200 card driver",
+                 0),
+
         DRIVER ( "DEVICE=", "EL90X.OS2",
-                 "3Com Fast EtherLink/EtherLink XL Family driver",
+                 "3Com Fast EtherLink/EtherLink XL Family card driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "IBMTOK.OS2",
+                 "IBM TokenRing card driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "IPX.SYS",
+                 "IPX protocol driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "NETBEUI.OS2",
+                 "NetBIOS protocol driver",
+                 0),
+        DRIVER ( "DEVICE=", "NETBIOS.OS2",
+                 "NetBIOS API driver",
+                 0),
+        DRIVER ( "DEVICE=", "TCPBEUI.OS2",
+                 "NetBIOS-over-TCP/IP protocol driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "NETBIOS.SYS",
+                 "NetBIOS driver for Netware client",
+                 0),
+        DRIVER ( "DEVICE=", "NMPIPE.SYS",
+                 "Named pipes driver for Netware client",
+                 0),
+        DRIVER ( "DEVICE=", "NPSERVER.SYS",
+                 "Named pipes driver for Netware server",
+                 0),
+        DRIVER ( "DEVICE=", "SPX.SYS",
+                 "Netware SPX protocol driver",
+                 0),
+        DRIVER ( "DEVICE=", "NWREQ.SYS",
+                 "Netware requester driver",
+                 0),
+            /* must come after NMPIPE, IPX, SPX.SYS */
+        DRIVER ( "DEVICE=", "ODI2NDI.SYS",
+                 "MPTS interface for Netware client",
+                 0),
+        DRIVER ( "DEVICE=", "ROUTE.SYS",
+                 "Router for Netware client",
+                 0),
+
+        DRIVER ( "DEVICE=", "LANMSGDD.OS2",
+                 "IBM LAN logger driver",
+                 0),
+        DRIVER ( "DEVICE=", "NETWKSTA.200",
+                 "MPTS driver",
+                 0),
+            /* requires NETBIOS.OS2 before */
+        DRIVER ( "DEVICE=", "RDRHELP.200",
+                 "MPTS NetBIOS support driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "SOCKETS.SYS",
+                 "MPTS sockets driver",
+                 0),
+
+        DRIVER ( "DEVICE=", "PROTMAN.OS2",
+                 "Network protocol manager",
+                 0),
+
+        DRIVER ( "DEVICE=", "AFINET.SYS",
+                 "TCP/IP AFINET driver",
+                 0),
+        DRIVER ( "DEVICE=", "AFOS2.SYS",
+                 "TCP/IP AFOS2 driver",
+                 0),
+        DRIVER ( "DEVICE=", "IFNDIS.SYS",
+                 "TCP/IP IFNDIS driver",
+                 0),
+        DRIVER ( "RUN=", "CNTRL.EXE",
+                 "TCP/IP stack daemon process",
+                 0),
+
+        DRIVER ( "DEVICE=", "VDOSTCP.SYS",
+                 "TCP/IP support for DOS/Windows",
+                 0),
+        DRIVER ( "DEVICE=", "VDOSTCP.SYS",
+                 "TCP/IP support for DOS/Windows VDD",
+                 0),
+        DRIVER ( "RUN=", "VDOSCTL.EXE",
+                 "TCP/IP stack daemon for DOS/Windows VDD",
+                 0),
+        DRIVER ( "DEVICE=", "VIPX.SYS",
+                 "IPX protocol support for DOS/Windows",
                  0),
     }
 
@@ -204,6 +436,16 @@ CATEGORY "System extensions"
                  0)
         DRIVER ( "DEVICE=", "CPPOPA3.SYS",
                  "IBM VisualAge C++ 3.0 debugger driver",
+                 0)
+
+        DRIVER ( "DEVICE=", "WATCHCAT.SYS",
+                 "WatchCat driver",
+                 0)
+        DRIVER ( "DEVICE=", "KILLER.SYS",
+                 "WatchCat process killer driver",
+                 0)
+        DRIVER ( "DEVICE=", "VWCAT.SYS",
+                 "WatchCat process killer VDD",
                  0)
     }
 

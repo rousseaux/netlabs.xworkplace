@@ -149,6 +149,7 @@ $(OUTPUTDIR)\xfdataf.obj: \
 $(OUTPUTDIR)\xfdesk.obj: \
             $(INC)\setup.h \
             $(HLPINC)\dosh.h $(HLPINC)\winh.h \
+            $(INC)\classes\xfobj.h $(INC)\classes\xfldr.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\filesys\desktop.h $(INC)\filesys\xthreads.h \
@@ -167,7 +168,7 @@ $(OUTPUTDIR)\xfdisk.obj: \
 $(OUTPUTDIR)\xfldr.obj: \
             $(INC)\setup.h \
             $(HLPINC)\dosh.h $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\eah.h $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\prfh.h $(HLPINC)\wphandle.h \
-            $(INC)\classes\xfdisk.h \
+            $(INC)\classes\xfdisk.h $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\filesys.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
@@ -175,7 +176,7 @@ $(OUTPUTDIR)\xfldr.obj: \
 
 $(OUTPUTDIR)\xfobj.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\cnrh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
+            $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\fileops.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \

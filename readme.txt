@@ -1,6 +1,6 @@
 XWorkplace 0.9.0 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated Nov 29, 1999, Ulrich M”ller
+Last updated Jan 04, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -30,10 +30,16 @@ Last updated Nov 29, 1999, Ulrich M”ller
 2. INTRODUCTION
 ===============
 
-    The INF documentation is still largely outdated, sorry.
+    Welcome to the XWorkplace source code. As this thing is complex,
+    I have tried to add plenty of documentation.
 
-    See 001\inf.001\vers_2history.html, which has the revision history.
+    The user guide is still largely outdated, sorry.
+    See 001\inf.001\vers_2history.html, which has the current revision
+    history though.
     After compilation, this can be found in XFLDR001.INF, as usual.
+
+    Programming information is contained in the PROGREF.INF file in
+    the main directory of the source tree.
 
 
 3. INSTALLATION
@@ -124,6 +130,10 @@ Last updated Nov 29, 1999, Ulrich M”ller
 
     3)  The new trash displays wrong info sometimes and cannot delete
         objects which have the read-only attribute on.
+
+        Also, the trash can presently hangs the WPS when objects in
+        the trash can are destroyed. This applies to both destroying
+        single objects as well as emptying the trash can.
 
 
 

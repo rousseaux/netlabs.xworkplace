@@ -100,6 +100,8 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
+#include "xfobj.h"
+#include "xfldr.h"
 
 /* ******************************************************************
  *                                                                  *
@@ -254,6 +256,57 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     pcnbp->pfncbInitPage    = xsdShutdownInitPage;
     pcnbp->pfncbItemChanged = xsdShutdownItemChanged;
     return (ntbInsertPage(pcnbp));
+}
+
+/*
+ *@@ xwpQuerySetup2:
+ *      this XFldObject method is overridden to support
+ *      setup strings for the Desktop.
+ *
+ *      See XFldObject::xwpQuerySetup2 for details.
+ *
+ *@@added V0.9.1 (2000-01-08) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
+                                               PSZ pszSetupString,
+                                               ULONG cbSetupString)
+{
+    ULONG ulReturn = 0;
+    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpQuerySetup2");
+
+    if (pKernelGlobals->fXFolder)
+    {
+        // XFolder class installed:
+
+        // resolve method for XFolder
+        somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = SOM_Resolve(somSelf,
+                                                                        XFolder,
+                                                                        xwpQuerySetup2);
+
+        if (pfn_xwpQuerySetup2)
+        {
+            // call XFolder implementation
+            ulReturn = dtpQuerySetup(somSelf, pszSetupString, cbSetupString);
+
+            // now call XFldObject method
+            if ( (pszSetupString) && (cbSetupString) )
+                // string buffer already specified:
+                // tell XFolder to append to that string
+                ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                               pszSetupString + ulReturn, // append to existing
+                                               cbSetupString + ulReturn);
+            else
+                // string buffer not yet specified:
+                // return length only
+                ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+        }
+    }
+
+    return (ulReturn);
 }
 
 /*

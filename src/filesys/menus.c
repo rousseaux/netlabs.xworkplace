@@ -195,13 +195,14 @@ VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,
                              ULONG ulDefaultSort)
 {
     winhSetMenuItemChecked(hwndSortMenu,
-            WinSendMsg(hwndSortMenu, MM_QUERYDEFAULTITEMID,
-                    MPNULL, MPNULL),        // find current default
-            FALSE);                         // uncheck
+                           WinSendMsg(hwndSortMenu,
+                                      MM_QUERYDEFAULTITEMID,
+                                      MPNULL, MPNULL), // find current default
+                           FALSE);                     // uncheck
 
     WinSendMsg(hwndSortMenu,
-            MM_SETDEFAULTITEMID,
-            (MPARAM)
+               MM_SETDEFAULTITEMID,
+               (MPARAM)
                     ((ulDefaultSort == SV_NAME) ? ID_WPMI_SORTBYNAME
                     : (ulDefaultSort == SV_TYPE) ? ID_WPMI_SORTBYTYPE
                     : (ulDefaultSort == SV_CLASS) ? pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS
@@ -212,7 +213,7 @@ VOID mnuCheckDefaultSortItem(PCGLOBALSETTINGS pGlobalSettings,
                     : (ulDefaultSort == SV_CREATIONDATE) ? ID_WPMI_SORTBYCREATIONDATE
                     : (ulDefaultSort == SV_EXT) ? pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT
                     : pGlobalSettings->VarMenuOffset +ID_XFMI_OFS_SORTFOLDERSFIRST),
-            MPNULL);
+               MPNULL);
 }
 
 /*
@@ -259,29 +260,29 @@ VOID mnuModifySortMenu(WPFolder *somSelf,
                 // now contains "Sort" submenu handle;
                 // insert the new XFolder sort criteria
                 winhInsertMenuItem(hwndSortMenu, 2, // after "type"
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS),
-                        pNLSStrings->pszSortByClass,
-                        MIS_TEXT, 0);
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS),
+                                   pNLSStrings->pszSortByClass,
+                                   MIS_TEXT, 0);
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT),
-                        pNLSStrings->pszSortByExt,
-                        MIS_TEXT, 0);
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT),
+                                   pNLSStrings->pszSortByExt,
+                                   MIS_TEXT, 0);
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST),
-                        pNLSStrings->pszSortFoldersFirst,
-                        MIS_TEXT, 0);
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST),
+                                   pNLSStrings->pszSortFoldersFirst,
+                                   MIS_TEXT, 0);
 
                 winhInsertMenuSeparator(hwndSortMenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                  (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
                 // insert "Always sort"
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ALWAYSSORT),
-                        pNLSStrings->pszAlwaysSort,
-                        MIS_TEXT,
-                        (ALWAYS_SORT)           // check item if "Always sort" is on
-                            ? (MIA_CHECKED)
-                            : 0);
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ALWAYSSORT),
+                                   pNLSStrings->pszAlwaysSort,
+                                   MIS_TEXT,
+                                   (ALWAYS_SORT)           // check item if "Always sort" is on
+                                       ? (MIA_CHECKED)
+                                       : 0);
 
                 mnuCheckDefaultSortItem(pGlobalSettings,
                                         hwndSortMenu,
@@ -431,7 +432,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
              || (pGlobalSettings->fEnableStatusBars)  // added V0.9.0
            )
             winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
         // on Warp 4, insert "menu bar" item (V0.9.0)
         if (fIsWarp4)
@@ -644,8 +645,8 @@ typedef struct _MENULISTITEM
 SHORT fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
 {
     switch (WinCompareStrings((HAB)hab, 0, 0,
-                            ((PMENULISTITEM)pItem1)->szItemString,
-                            ((PMENULISTITEM)pItem2)->szItemString, 0))
+                              ((PMENULISTITEM)pItem1)->szItemString,
+                              ((PMENULISTITEM)pItem2)->szItemString, 0))
     {
         case WCS_LT:    return (-1);
         case WCS_GT:    return (1);
@@ -707,8 +708,10 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
     // and hasn't been filled yet (it could have been re-clicked,
     // and we don't want double menu items)
 
-    if ((ULONG)WinSendMsg(hwndMenu, MM_ITEMIDFROMPOSITION, (MPARAM)0, MPNULL)
-        == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
+    if ((ULONG)WinSendMsg(hwndMenu,
+                          MM_ITEMIDFROMPOSITION,
+                          0, 0)
+            == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
     {
         // get folder to be populated from the linked list
         // (llContentMenuItems)
@@ -799,7 +802,7 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
 
                             // exclude hidden WPS objects
                             if (_wpQueryStyle(pObject2) & OBJSTYLE_NOTVISIBLE)
-                                   fInsert = FALSE;
+                                fInsert = FALSE;
 
                             if (fInsert)
                             {
@@ -837,12 +840,12 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                     {
                         pmli = pNode->pItemData;
                         // folder items
-                        sItemId = mnuPrepareContentSubmenu(
-                                                  pmli->pObject,
-                                                  hwndMenu,
-                                                  pmli->szItemString,
-                                                  MIT_END,
-                                                  pGlobalSettings->FCShowIcons); // OwnerDraw flag
+                        sItemId = mnuPrepareContentSubmenu(pmli->pObject,
+                                                           hwndMenu,
+                                                           pmli->szItemString,
+                                                           MIT_END,
+                                                           pGlobalSettings->FCShowIcons);
+                                                                    // OwnerDraw flag
 
                         // next folder
                         pNode = pNode->pNext;
@@ -852,7 +855,7 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                     // insert separator between them
                     if ((pllFolders->ulCount) && (pllObjects->ulCount))
                        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
                     // insert objects into menu
                     pNode = lstQueryFirstNode(pllObjects);
@@ -860,13 +863,13 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                     {
                         pmli = pNode->pItemData;
                         sItemId = mnuInsertOneObjectMenuItem(hwndMenu,
-                                     MIT_END,
-                                     pmli->szItemString,
-                                     ((pGlobalSettings->FCShowIcons)
-                                        ? MIS_OWNERDRAW
-                                        : MIS_TEXT),
-                                     pmli->pObject,
-                                     OC_CONTENT);
+                                                             MIT_END,
+                                                             pmli->szItemString,
+                                                             ((pGlobalSettings->FCShowIcons)
+                                                                ? MIS_OWNERDRAW
+                                                                : MIS_TEXT),
+                                                             pmli->pObject,
+                                                             OC_CONTENT);
                         if (sItemId)
                             pNode = pNode->pNext;
                         else
@@ -889,7 +892,9 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                     // sItemsPerColumn now contains the items which will
                     // beautifully fit into one column; we now reduce this
                     // number if the last column would contain white space
-                    sItemCount = (USHORT)WinSendMsg(hwndMenu, MM_QUERYITEMCOUNT, MPNULL, MPNULL);
+                    sItemCount = (USHORT)WinSendMsg(hwndMenu,
+                                                    MM_QUERYITEMCOUNT,
+                                                    0, 0);
                     // calculate number of resulting columns
                     sColumns = (sItemCount / sItemsPerColumn) + 1;
                     // distribute remainder in last column to all columns
@@ -901,8 +906,9 @@ VOID mnuFillContentSubmenu(SHORT sMenuId,       // in: menu ID of folder content
                          s < sItemCount;
                          s += sItemsPerColumn)
                     {
-                        sItemId = (USHORT)WinSendMsg(
-                                    hwndMenu, MM_ITEMIDFROMPOSITION, (MPARAM)s, MPNULL);
+                        sItemId = (USHORT)WinSendMsg(hwndMenu,
+                                                     MM_ITEMIDFROMPOSITION,
+                                                     (MPARAM)s, MPNULL);
                         WinSendMsg(hwndMenu,
                                    MM_QUERYITEM,
                                    MPFROM2SHORT(sItemId, FALSE),
@@ -2946,7 +2952,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
             {
                 // these items exist for icon views only
                 ULONG ulViewAttr = _wpQueryFldrAttr(somSelf, OPEN_CONTENTS);
-                switch (ulMenuId2) {
+                switch (ulMenuId2)
+                {
                     case ID_XFMI_OFS_FLOWED:
                         // == CV_NAME | CV_FLOW; not CV_ICON
                         ulViewAttr = (ulViewAttr & ~CV_ICON) | CV_NAME | CV_FLOW;
@@ -2961,6 +2968,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                         ulViewAttr = (ulViewAttr & ~(CV_NAME | CV_FLOW)) | CV_ICON;
                     break;
                 }
+
                 _wpSetFldrAttr(somSelf,
                         ulViewAttr,
                         OPEN_CONTENTS);
@@ -2988,10 +2996,10 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                                                                   FALSE),
                                                      (MPARAM)MIA_CHECKED);
                 _xwpSetStatusBarVisibility(somSelf,
-                                          (ulMenuAttr & MIA_CHECKED)
+                                           (ulMenuAttr & MIA_CHECKED)
                                               ? STATUSBAR_OFF
                                               : STATUSBAR_ON,
-                                          TRUE);  // update open folder views
+                                           TRUE);  // update open folder views
 
                 // toggle "checked" flag in menu
                 ulMenuAttr ^= MIA_CHECKED;  // XOR checked flag;
@@ -3017,9 +3025,9 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                 // in order to change the menu bar visibility,
                 // we need to resolve the method by name, since
                 // we don't have the Warp 4 toolkit headers
-                FN_WPSETMENUBARVISIBILITY *pwpSetMenuBarVisibility =
-                        (FN_WPSETMENUBARVISIBILITY*)somResolveByName(somSelf,
-                                                                  "wpSetMenuBarVisibility");
+                FN_WPSETMENUBARVISIBILITY *pwpSetMenuBarVisibility
+                    = (FN_WPSETMENUBARVISIBILITY*)somResolveByName(somSelf,
+                                                                   "wpSetMenuBarVisibility");
 
                 if (pwpSetMenuBarVisibility)
                     pwpSetMenuBarVisibility(somSelf, !fMenuVisible);
@@ -3136,9 +3144,10 @@ MRESULT mnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
 
     // get the item from the linked list of variable menu items
     // which corresponds to the menu item whose size is being queried
-    PVARMENULISTITEM pItem = (PVARMENULISTITEM)lstItemFromIndex(
-                    &llVarMenuItems,
-                    (poi->idItem - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
+    PVARMENULISTITEM pItem
+        = (PVARMENULISTITEM)lstItemFromIndex(&llVarMenuItems,
+                                             (poi->idItem
+                                                - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
 
     if (ulMiniIconSize == 0)
         // not queried yet?
@@ -3149,8 +3158,11 @@ MRESULT mnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
         // find out the space required for drawing this item with
         // the current font and fill the owner draw structure (mp2)
         // accordingly
-        GpiQueryTextBox(poi->hps, strlen(pItem->szTitle), pItem->szTitle,
-                TXTBOX_COUNT, (PPOINTL)&aptlText);
+        GpiQueryTextBox(poi->hps,
+                        strlen(pItem->szTitle),
+                        pItem->szTitle,
+                        TXTBOX_COUNT,
+                        (PPOINTL)&aptlText);
         poi->rclItem.xLeft = 0;
         poi->rclItem.yBottom = 0;
         poi->rclItem.xRight = aptlText[TXTBOX_TOPRIGHT].x
@@ -3192,9 +3204,10 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
 
     // get the item from the linked list of variable menu items
     // which corresponds to the menu item being drawn
-    PVARMENULISTITEM pItem = (PVARMENULISTITEM)lstItemFromIndex(
-                    &llVarMenuItems,
-                    (poi->idItem - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
+    PVARMENULISTITEM pItem
+        = (PVARMENULISTITEM)lstItemFromIndex(&llVarMenuItems,
+                                             (poi->idItem
+                                                - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
     HPOINTER hIcon;
 
     if (pItem)
@@ -3210,14 +3223,11 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
         // these colors have been initialized by WM_INITMENU
         // above
         if (poi->fsAttribute & MIA_HILITED)
-        {
             lColor = lHiliteBackground;
             // lBmpBackground = lBackground;
-        }
-        else {
+        else
             lColor = lBackground;
             // lBmpBackground = lHiliteBackground;
-        }
 
         // draw rectangle in lColor, size of whole item
         rcl = poi->rclItem;
@@ -3228,17 +3238,18 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
         ptl.y = poi->rclItem.yBottom+4;
         GpiMove(poi->hps, &ptl);
         GpiSetColor(poi->hps,
-            (poi->fsAttribute & MIA_HILITED) ? lHiliteText : lText);
+                    (poi->fsAttribute & MIA_HILITED)
+                        ? lHiliteText
+                        : lText);
         GpiCharString(poi->hps, strlen(pItem->szTitle), pItem->szTitle);
 
         // draw the item's icon
-        WinDrawPointer(poi->hps, poi->rclItem.xLeft+2,
-                poi->rclItem.yBottom
-                +(
-                    (rtlMenuItem.yTop-rtlMenuItem.yBottom-ulMiniIconSize) / 2
-                ),
-                hIcon,
-                DP_MINI);
+        WinDrawPointer(poi->hps,
+                       poi->rclItem.xLeft+2,
+                       poi->rclItem.yBottom
+                         +( (rtlMenuItem.yTop-rtlMenuItem.yBottom-ulMiniIconSize) / 2 ),
+                       hIcon,
+                       DP_MINI);
 
         if (poi->fsAttribute != poi->fsAttributeOld)
         {
@@ -3254,26 +3265,25 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
                 if (hMenuArrowIcon == NULLHANDLE)
                 {
                     hMenuArrowIcon = WinLoadPointer(HWND_DESKTOP,
-                                        cmnQueryMainModuleHandle(),
-                                        (fIsWarp4)
-                                            // on Warp 4, load the triangle
-                                          ? ID_ICONMENUARROW4
-                                            // on Warp 3, load the arrow
-                                          : ID_ICONMENUARROW3);
+                                                    cmnQueryMainModuleHandle(),
+                                                    (fIsWarp4)
+                                                        // on Warp 4, load the triangle
+                                                      ? ID_ICONMENUARROW4
+                                                        // on Warp 3, load the arrow
+                                                      : ID_ICONMENUARROW3);
                 }
                 // _Pmpf(("hIcon: 0x%lX", hMenuArrowIcon));
                 if (hMenuArrowIcon)
                 {
                     // DosBeep(10000, 10);
                     WinDrawPointer(poi->hps,
-                            poi->rclItem.xRight - CX_ARROW,
-                            poi->rclItem.yBottom
-                            +(
-                                (rtlMenuItem.yTop-rtlMenuItem.yBottom-ulMiniIconSize) / 2
-                            ),
-                            hMenuArrowIcon,
-                            DP_MINI);
-
+                                   poi->rclItem.xRight - CX_ARROW,
+                                   poi->rclItem.yBottom
+                                   +(
+                                       (rtlMenuItem.yTop-rtlMenuItem.yBottom-ulMiniIconSize) / 2
+                                   ),
+                                   hMenuArrowIcon,
+                                   DP_MINI);
                 }
             }
         }
@@ -3330,19 +3340,19 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FILEATTRIBS,
-                pGlobalSettings->FileAttribs);
+                              pGlobalSettings->FileAttribs);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_COPYFILENAME,
-                pGlobalSettings->AddCopyFilenameItem);
+                              pGlobalSettings->AddCopyFilenameItem);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FLDRVIEWS,
-                pGlobalSettings->ExtendFldrViewMenu);
+                              pGlobalSettings->ExtendFldrViewMenu);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOVE4REFRESH,
-                pGlobalSettings->MoveRefreshNow);
+                              pGlobalSettings->MoveRefreshNow);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SELECTSOME,
-                pGlobalSettings->AddSelectSomeItem);
+                              pGlobalSettings->AddSelectSomeItem);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FOLDERCONTENT,
-                pGlobalSettings->AddFolderContentItem);
+                              pGlobalSettings->AddFolderContentItem);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FC_SHOWICONS,
-                pGlobalSettings->FCShowIcons);
+                              pGlobalSettings->FCShowIcons);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -3354,9 +3364,9 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  || ( (!fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                ));
         WinEnableControl(pcnbp->hwndPage, ID_XSDI_FOLDERCONTENT,
-                !(pGlobalSettings->NoSubclassing));
+                         !(pGlobalSettings->NoSubclassing));
         WinEnableControl(pcnbp->hwndPage, ID_XSDI_FC_SHOWICONS,
-                !(pGlobalSettings->NoSubclassing));
+                         !(pGlobalSettings->NoSubclassing));
         WinEnableControl(pcnbp->hwndPage, ID_XSDI_SELECTSOME, fViewVisible);
         WinEnableControl(pcnbp->hwndPage, ID_XSDI_FLDRVIEWS, fViewVisible);
     }
@@ -3373,9 +3383,9 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                   USHORT usItemID,
-                                   USHORT usNotifyCode,
-                                   ULONG ulExtra)      // for checkboxes: contains new state
+                               USHORT usItemID,
+                               USHORT usNotifyCode,
+                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
     MRESULT mrc = (MPARAM)0;
@@ -3486,11 +3496,11 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_CASCADE,
-                    pGlobalSettings->MenuCascadeMode);
+                              pGlobalSettings->MenuCascadeMode);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_REMOVEX,
-                    pGlobalSettings->RemoveX);
+                              pGlobalSettings->RemoveX);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_APPDPARAM,
-                    pGlobalSettings->AppdParam);
+                              pGlobalSettings->AppdParam);
 
         switch (pGlobalSettings->TemplatesOpenSettings)
         {
@@ -3500,7 +3510,7 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         }
 
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_TPL_POSITION,
-                    pGlobalSettings->TemplatesReposition);
+                              pGlobalSettings->TemplatesReposition);
     }
 }
 
@@ -3515,9 +3525,9 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  */
 
 MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID,
-                                            USHORT usNotifyCode,
-                                            ULONG ulExtra)      // for checkboxes: contains new state
+                                        USHORT usItemID,
+                                        USHORT usNotifyCode,
+                                        ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
     MRESULT mrc = (MPARAM)0;
@@ -3624,48 +3634,49 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_HELP  ,
-                (pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_CRANOTHER,
-                (pGlobalSettings->DefaultMenuItems & CTXT_CRANOTHER) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_CRANOTHER) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_COPY  ,
-                (pGlobalSettings->DefaultMenuItems & CTXT_COPY     ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_COPY     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_MOVE  ,
-                (pGlobalSettings->DefaultMenuItems & CTXT_MOVE     ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_MOVE     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SHADOW,
-                (pGlobalSettings->DefaultMenuItems & CTXT_SHADOW   ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_SHADOW   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DELETE,
-                (pGlobalSettings->DefaultMenuItems & CTXT_DELETE   ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_DELETE   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_PICKUP,
-                (pGlobalSettings->DefaultMenuItems & CTXT_PICKUP   ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_PICKUP   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FIND  ,
-                (pGlobalSettings->DefaultMenuItems & CTXT_FIND     ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_FIND     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SELECT,
-                (pGlobalSettings->DefaultMenuItems & CTXT_SELECT   ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_SELECT   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_SORT  ,
-                (pGlobalSettings->DefaultMenuItems & CTXT_SORT     ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_SORT     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_ARRANGE,
-                (pGlobalSettings->DefaultMenuItems & CTXT_ARRANGE ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_ARRANGE ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_PRINT  ,
-                (pGlobalSettings->DefaultMenuItems & CTXT_PRINT   ) == 0);
+                              (pGlobalSettings->DefaultMenuItems & CTXT_PRINT   ) == 0);
 
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_WARP4DISPLAY,
-                !pGlobalSettings->RemoveViewMenu);
+                              !pGlobalSettings->RemoveViewMenu);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_INSERT,
-                !pGlobalSettings->RemovePasteItem);
+                              !pGlobalSettings->RemovePasteItem);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_LOCKINPLACE,
-                !pGlobalSettings->RemoveLockInPlaceItem);
+                              !pGlobalSettings->RemoveLockInPlaceItem);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_CHECKDISK,
-                !pGlobalSettings->RemoveCheckDiskItem);
+                              !pGlobalSettings->RemoveCheckDiskItem);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_FORMATDISK,
-                !pGlobalSettings->RemoveFormatDiskItem);
+                              !pGlobalSettings->RemoveFormatDiskItem);
     }
 
     if (flFlags & CBI_INIT)
     {
         // disable items for Warp 3/4
-        if (doshIsWarp4()) {
+        if (doshIsWarp4())
             WinEnableControl(pcnbp->hwndPage, ID_XSDI_SELECT, FALSE);
-        } else {
+        else
+        {
             WinEnableControl(pcnbp->hwndPage, ID_XSDI_LOCKINPLACE, FALSE);
             WinEnableControl(pcnbp->hwndPage, ID_XSDI_WARP4DISPLAY, FALSE);
             WinEnableControl(pcnbp->hwndPage, ID_XSDI_INSERT, FALSE);

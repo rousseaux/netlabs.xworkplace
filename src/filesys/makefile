@@ -201,7 +201,7 @@ $(OUTPUTDIR)\menus.obj: \
 
 $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\except.h $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h \
+    $(HLPINC)\except.h $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \

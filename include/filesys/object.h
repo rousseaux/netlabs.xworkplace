@@ -58,6 +58,10 @@
                             USHORT usKeyCode);
 
     BOOL objRemoveObjectHotkey(HOBJECT hobj);
+
+    ULONG objQuerySetup(WPObject *somSelf,
+                        PSZ pszSetupString,
+                        ULONG cbSetupString);
 #endif
 
 

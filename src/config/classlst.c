@@ -1138,10 +1138,15 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
             HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
             HAB             hab = WinQueryAnchorBlock(hwndClient);
+
+            // register this view
+            _wpRegisterView(pCData->somSelf,
+                            hwndFrame,
+                            pNLSStrings->pszOpenClassList);
+
             // now add the view to the object's use list;
             // this use list is used by wpViewObject and
             // wpClose to check for existing open views.
-
             // get storage for and initialize a use list item
             pClientData = (PCLASSLISTCLIENTDATA)_wpAllocMem(pCData->somSelf,
                                                             sizeof(CLASSLISTCLIENTDATA),
@@ -1154,7 +1159,6 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
             // add the use list item to the object's use list
             _wpAddToObjUseList(pCData->somSelf, &(pClientData->UseItem));
-            _wpRegisterView(pCData->somSelf, hwndFrame, pNLSStrings->pszOpenClassList);
 
             // initialize list of cnr items to be freed later
             lstInit(&pClientData->llCnrStrings, TRUE);
@@ -1163,8 +1167,6 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             // the window procedure can remove it from the list when the window
             // is closed
             WinSetWindowPtr(hwndClient, QWL_USER, pClientData);
-
-            // hab = WinQueryAnchorBlock(hwndFrame);
 
             // store instance data
             pClientData->somThis = XWPClassListGetData(pCData->somSelf);

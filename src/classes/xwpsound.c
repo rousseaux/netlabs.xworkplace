@@ -235,7 +235,8 @@ SOM_Scope ULONG  SOMLINK xsndM_wpclsQueryIconData(M_XWPSound *somSelf,
 
     if (pGlobalSettings->fReplaceIcons)
     {
-        if (pIconInfo) {
+        if (pIconInfo)
+        {
             pIconInfo->fFormat = ICON_RESOURCE;
             pIconInfo->resid   = ID_ICONXWPSOUND;
             pIconInfo->hmod    = cmnQueryMainModuleHandle();

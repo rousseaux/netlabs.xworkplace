@@ -321,9 +321,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WM_CREATE:
         {
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-            WinStartTimer(habWorkerThread, hwndObject,
-                            2,          // id
-                            5*60*1000); // every five minutes
+            WinStartTimer(habWorkerThread,
+                          hwndObject,
+                          2,          // id
+                          5*60*1000); // every five minutes
         break; }
 
         /*
@@ -380,10 +381,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // display simple dialog
                 // pKernelGlobals->ulWorkerFunc2 = 3000;
                 winhCenteredDlgBox(HWND_DESKTOP, HWND_DESKTOP,
-                         WinDefDlgProc,
-                         cmnQueryNLSModuleHandle(FALSE),
-                         ID_XFD_WELCOME,
-                         0);
+                                   WinDefDlgProc,
+                                   cmnQueryNLSModuleHandle(FALSE),
+                                   ID_XFD_WELCOME,
+                                   0);
             }
         break; }
 
@@ -598,25 +599,24 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         // "wait for close" mode
                         // pKernelGlobals->ulWorkerFunc2 = 5110;
                         if (_wpWaitForClose(pPCI->pObject,
-                                pPCI->hwndView, 0, SEM_IMMEDIATE_RETURN, FALSE) == 0)
-                        {
+                                            pPCI->hwndView,
+                                            0,
+                                            SEM_IMMEDIATE_RETURN,
+                                            FALSE) == 0)
                             OKGetNext = TRUE;
-                        }
-                    } else {
+                    }
+                    else
+                    {
                         // timing mode
                         // pKernelGlobals->ulWorkerFunc2 = 5120;
                         if (dtGetULongTime() > ((pPCI->ulFirstTime) + pPCI->ulTiming))
-                        {
                             OKGetNext = TRUE;
-                        }
                     }
 
                     // pKernelGlobals->ulWorkerFunc2 = 5130;
                     if (OKGetNext)
-                    {
                         // pKernelGlobals->ulWorkerFunc2 = 5131;
                         xthrPostWorkerMsg(WOM_PROCESSORDEREDCONTENT, mp1, mp2);
-                    }
                     else
                     {
                         // pKernelGlobals->ulWorkerFunc2 = 5132;
@@ -629,7 +629,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // cancelled: notify that we're done (V0.9.0)
                     pPCI->pObject = NULL;
                     krnSendThread1ObjectMsg(T1M_POCCALLBACK,
-                                             (MPARAM)pPCI, MPNULL);
+                                            (MPARAM)pPCI, MPNULL);
                     free(pPCI);
                 }
             }
@@ -684,9 +684,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
                     // get the mutex semaphore
                     // pKernelGlobals->ulWorkerFunc2 = 6030;
-                    fWorkerAwakeObjectsSemOwned =
-                            (DosRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
-                            == NO_ERROR);
+                    fWorkerAwakeObjectsSemOwned
+                          = (DosRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
+                             == NO_ERROR);
 
                     if (fWorkerAwakeObjectsSemOwned)
                     {
@@ -812,26 +812,17 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             XFolder     *pFolder = NULL,
                         *pCalling = (XFolder*)(mp1);
 
-            // pKernelGlobals->ulWorkerFunc2 = 8002;
             for ( pFolder = _wpclsQueryOpenFolders(_WPFolder, NULL, QC_FIRST, FALSE);
                   pFolder;
                   pFolder = _wpclsQueryOpenFolders(_WPFolder, pFolder, QC_NEXT, FALSE))
             {
-                // pKernelGlobals->ulWorkerFunc2 = 8004;
                 if (wpshCheckObject(pFolder))
                     if (_somIsA(pFolder, _WPFolder))
                     {
-                        // pKernelGlobals->ulWorkerFunc2 = 8006;
                         if (pCalling == NULL)
-                        {
-                            // pKernelGlobals->ulWorkerFunc2 = 8010;
                             fdrUpdateAllFrameWndTitles(pFolder);
-                        }
                         else if (wpshResidesBelow(pFolder, pCalling))
-                        {
-                            // pKernelGlobals->ulWorkerFunc2 = 8020;
                             fdrUpdateAllFrameWndTitles(pFolder);
-                        }
                     }
             }
         break; }
@@ -853,13 +844,13 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             #ifdef DEBUG_STATUSBARS
                 _Pmpf(( "WT: WOM_UPDATEALLSTATUSBARS" ));
             #endif
-            // pKernelGlobals->ulWorkerFunc2 = 8500;
 
             // for each open folder view, call the callback
             // which updates the status bars
             // (fncbUpdateStatusBars in folder.c)
-            _xwpclsForEachOpenView(_XFolder, (ULONG)mp1,
-                        (PFNWP)fncbUpdateStatusBars);
+            _xwpclsForEachOpenView(_XFolder,
+                                   (ULONG)mp1,
+                                   (PFNWP)fncbUpdateStatusBars);
         break; }
 
         /*
@@ -935,8 +926,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 {
                     if (memcmp(szComp, pKey2, cbComp) == 0)
                     {
-                        PrfWriteProfileData(HINI_USER, WPINIAPP_FOLDERPOS, pKey2,
-                            NULL, 0);
+                        PrfWriteProfileData(HINI_USER,
+                                            WPINIAPP_FOLDERPOS, pKey2,
+                                            NULL, 0);
                         #ifdef DEBUG_CNRCONTENT
                             _Pmpf(("  Deleted %s", pKey2));
                         #endif
@@ -1354,19 +1346,19 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                     (PVOID)NULL);
                 fWarningOpen = TRUE;
                 ulReturn = (WinProcessDlg(hwndDlg)
-                           == DID_DEFAULT)
-                           ?  RCF_DEFAULTCONFIGFOLDER
-                           :  RCF_EMPTYCONFIGFOLDERONLY;
+                                 == DID_DEFAULT)
+                            ?  RCF_DEFAULTCONFIGFOLDER
+                            :  RCF_EMPTYCONFIGFOLDERONLY;
                 WinDestroyWindow(hwndDlg);
                 fWarningOpen = FALSE;
             }
 
             if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
                 WinCreateObject("WPFolder",             // now create new config folder w/ proper objID
-                        "XFolder Configuration",
-                        "OBJECTID=<XFOLDER_CONFIG>",
-                        "<WP_DESKTOP>",                 // on desktop
-                        CO_UPDATEIFEXISTS);
+                                "XFolder Configuration",
+                                "OBJECTID=<XFOLDER_CONFIG>",
+                                "<WP_DESKTOP>",                 // on desktop
+                                CO_UPDATEIFEXISTS);
             else if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
                      || (ulReturn == RCF_MAININSTALLFOLDER)
                     )
@@ -2078,16 +2070,17 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 // create it
                 strcpy(szBootupStatus, "Loaded %s");
                 hwndBootupStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                            fnwpGenericStatus,
-                            cmnQueryNLSModuleHandle(FALSE), ID_XFD_BOOTUPSTATUS,
-                            NULL);
+                                              fnwpGenericStatus,
+                                              cmnQueryNLSModuleHandle(FALSE),
+                                              ID_XFD_BOOTUPSTATUS,
+                                              NULL);
                 WinSetWindowPos(hwndBootupStatus,
-                        HWND_TOP,
-                        0, 0, 0, 0,
-                        SWP_SHOW); // show only, do not activate;
-                            // we don't want the window to get the
-                            // focus, because this would close
-                            // open menus and such
+                                HWND_TOP,
+                                0, 0, 0, 0,
+                                SWP_SHOW); // show only, do not activate;
+                                    // we don't want the window to get the
+                                    // focus, because this would close
+                                    // open menus and such
             }
 
             if (hwndBootupStatus)
@@ -2105,8 +2098,9 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                         sprintf(szTemp, szBootupStatus, pszClassTitle);
                     else sprintf(szTemp, szBootupStatus, "???");
 
-                    WinSetDlgItemText(hwndBootupStatus, ID_XFDI_BOOTUPSTATUSTEXT,
-                            szTemp);
+                    WinSetDlgItemText(hwndBootupStatus,
+                                      ID_XFDI_BOOTUPSTATUSTEXT,
+                                      szTemp);
 
                     // show window for 2 secs
                     WinStartTimer(habQuickThread, hwndObject, 1, 2000);
@@ -2125,7 +2119,8 @@ MRESULT EXPENTRY fnwpQuickObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 
                 // timer 1: bootup status wnd
                 case 1:
-                    if (hwndBootupStatus) {
+                    if (hwndBootupStatus)
+                    {
                         WinDestroyWindow(hwndBootupStatus);
                         hwndBootupStatus = NULLHANDLE;
                     }
@@ -2501,8 +2496,8 @@ BOOL xthrStartThreads(VOID)
                 CHAR szError[300] = "";
 
                 arc = DosLoadModule(szError, sizeof(szError),
-                        szSoundDLL,
-                        &hmodSoundDLL);
+                                    szSoundDLL,
+                                    &hmodSoundDLL);
                 #ifdef DEBUG_SOUNDS
                     _Pmpf(("  arc: %d", arc));
                 #endif
@@ -2528,40 +2523,43 @@ BOOL xthrStartThreads(VOID)
                     // and if we do static imports, loading
                     // of XFLDR.DLL would fail also.
                     arc = DosQueryProcAddr(hmodSoundDLL,
-                                0,
-                                "sndOpenSound",
-                                (PFN*)&psndOpenSound);
+                                           0,
+                                           "sndOpenSound",
+                                           (PFN*)&psndOpenSound);
                     #ifdef DEBUG_SOUNDS
                         _Pmpf(("  psndOpenSound: arc %d, 0x%X",
                                 arc, psndOpenSound));
                     #endif
-                    if (arc != NO_ERROR) {
+                    if (arc != NO_ERROR)
+                    {
                         psndOpenSound = NULL;
                         pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLFUNCERROR;
                     }
 
                     arc = DosQueryProcAddr(hmodSoundDLL,
-                                0,
-                                "sndPlaySound",
-                                (PFN*)&psndPlaySound);
+                                           0,
+                                           "sndPlaySound",
+                                           (PFN*)&psndPlaySound);
                     #ifdef DEBUG_SOUNDS
                         _Pmpf(("  psndPlaySound: arc %d, 0x%X",
                                 arc, psndPlaySound));
                     #endif
-                    if (arc != NO_ERROR) {
+                    if (arc != NO_ERROR)
+                    {
                         psndPlaySound = NULL;
                         pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLFUNCERROR;
                     }
 
                     arc = DosQueryProcAddr(hmodSoundDLL,
-                                0,
-                                "sndStopSound",
-                                (PFN*)&psndStopSound);
+                                           0,
+                                           "sndStopSound",
+                                           (PFN*)&psndStopSound);
                     #ifdef DEBUG_SOUNDS
                         _Pmpf(("  psndStopSound: arc %d, 0x%X",
                                 arc, psndStopSound));
                     #endif
-                    if (arc != NO_ERROR) {
+                    if (arc != NO_ERROR)
+                    {
                         psndStopSound = NULL;
                         pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLFUNCERROR;
                     }

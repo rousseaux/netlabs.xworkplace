@@ -48,6 +48,7 @@
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
 #include <os2.h>
@@ -65,6 +66,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 #include "helpers\wphandle.h"           // Henk Kelder's HOBJECT handling
@@ -103,14 +105,20 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject);
 /*
  *@@ OBJECTUSAGERECORD:
  *      extended RECORDCORE structure for
- *      "Internals" settings page.
+ *      "Object" settings page.
+ *      All inserted records are of this type.
  */
 
 typedef struct _OBJECTUSAGERECORD
 {
     RECORDCORE     recc;
-    CHAR           szText[500];
+    CHAR           szText[1000];        // should suffice even for setup strings
 } OBJECTUSAGERECORD, *POBJECTUSAGERECORD;
+
+/*
+ *@@ OBJECTUSAGEDATA:
+ *
+ */
 
 typedef struct _OBJECTUSAGEDATA
 {
@@ -138,7 +146,6 @@ typedef struct _XFOBJWINDATA
     CHAR            szOldObjectID[256];
     BOOL            fEscPressed;
     PRECORDCORE     preccExpanded;
-    // PFNWP           pfnwpOrigEntryField;          // original wnd proc for entry field
 } XFOBJWINDATA, *PXFOBJWINDATA;
 
 #define WM_FILLCNR      WM_USER+1
@@ -146,20 +153,22 @@ typedef struct _XFOBJWINDATA
 /*
  *@@ AddObjectUsage2Cnr:
  *      shortcut for the "object usage" functions below
- *      to add one cnr record core
+ *      to add one cnr record core.
  */
 
-POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,
-    POBJECTUSAGERECORD preccParent, PSZ pszTitle, ULONG flAttrs)
+POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Object" page
+                                      POBJECTUSAGERECORD preccParent, // in: parent record or NULL for root
+                                      PSZ pszTitle,     // in: text to appear in cnr
+                                      ULONG flAttrs)    // in: CRA_* flags for record
 {
-    POBJECTUSAGERECORD preccNew = (POBJECTUSAGERECORD)
-        cnrhAllocRecords(hwndCnr, sizeof(OBJECTUSAGERECORD), 1);
+    POBJECTUSAGERECORD preccNew
+        = (POBJECTUSAGERECORD)cnrhAllocRecords(hwndCnr, sizeof(OBJECTUSAGERECORD), 1);
 
-    strcpy(preccNew->szText, pszTitle);
+    strhncpy0(preccNew->szText, pszTitle, sizeof(preccNew->szText));
     cnrhInsertRecords(hwndCnr,
-                        (PRECORDCORE)preccParent,       // parent
-                        (PRECORDCORE)preccNew,          // new record
-                        preccNew->szText, flAttrs, 1);
+                      (PRECORDCORE)preccParent,       // parent
+                      (PRECORDCORE)preccNew,          // new record
+                      preccNew->szText, flAttrs, 1);
     return (preccNew);
 }
 
@@ -176,8 +185,12 @@ POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,
      *      object usage (FillCnrWithObjectUsage)
      */
 
-    int fncbHeapWalk(const void *pObject, size_t Size, int useflag, int status,
-                          const char *filename, size_t line)
+    int fncbHeapWalk(const void *pObject,
+                     size_t Size,
+                     int useflag,
+                     int status,
+                     const char *filename,
+                     size_t line)
     {
         if (status != _HEAPOK) {
             lHeapStatus = status;
@@ -194,12 +207,67 @@ POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,
 #endif
 
 /*
- *@@ FillCnrWithObjectUsage:
- *      adds all the object details into a given
- *      container window
+ *@@ AddFolderView2Cnr:
+ *
+ *@@added V0.9.1 (2000-01-17) [umoeller]
  */
 
-VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
+VOID AddFolderView2Cnr(HWND hwndCnr,
+                       POBJECTUSAGERECORD preccLevel2,
+                       WPObject *pObject,
+                       ULONG ulView,
+                       PSZ pszView)
+{
+    PSZ pszTemp = 0;
+    ULONG ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
+
+    strhxcpy(&pszTemp, pszView);
+    strhxcat(&pszTemp, ": ");
+
+    if (ulViewAttrs & CV_ICON)
+        strhxcat(&pszTemp, "CV_ICON ");
+    if (ulViewAttrs & CV_NAME)
+        strhxcat(&pszTemp, "CV_NAME ");
+    if (ulViewAttrs & CV_TEXT)
+        strhxcat(&pszTemp, "CV_TEXT ");
+    if (ulViewAttrs & CV_TREE)
+        strhxcat(&pszTemp, "CV_TREE ");
+    if (ulViewAttrs & CV_DETAIL)
+        strhxcat(&pszTemp, "CV_DETAIL ");
+    if (ulViewAttrs & CA_DETAILSVIEWTITLES)
+        strhxcat(&pszTemp, "CA_DETAILSVIEWTITLES ");
+
+    if (ulViewAttrs & CV_MINI)
+        strhxcat(&pszTemp, "CV_MINI ");
+    if (ulViewAttrs & CV_FLOW)
+        strhxcat(&pszTemp, "CV_FLOW ");
+    if (ulViewAttrs & CA_DRAWICON)
+        strhxcat(&pszTemp, "CA_DRAWICON ");
+    if (ulViewAttrs & CA_DRAWBITMAP)
+        strhxcat(&pszTemp, "CA_DRAWBITMAP ");
+    if (ulViewAttrs & CA_TREELINE)
+        strhxcat(&pszTemp, "CA_TREELINE ");
+
+    // owner...
+
+    AddObjectUsage2Cnr(hwndCnr,
+                       preccLevel2,
+                       pszTemp,
+                       CRA_RECORDREADONLY);
+
+    free(pszTemp);
+}
+
+/*
+ *@@ FillCnrWithObjectUsage:
+ *      adds all the object details into a given
+ *      container window.
+ *
+ *@@changed V0.9.1 (2000-01-16) [umoeller]: added object setup string
+ */
+
+VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
+                            WPObject *pObject)  // in: object for which to insert data
 {
     POBJECTUSAGERECORD
                     preccRoot, preccLevel2, preccLevel3;
@@ -217,138 +285,162 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
     if (pObject)
     {
         sprintf(szText, "%s (Class: %s)",
-                _wpQueryTitle(pObject), _somGetClassName(pObject));
+                _wpQueryTitle(pObject),
+                _somGetClassName(pObject));
         preccRoot = AddObjectUsage2Cnr(hwndCnr, NULL, szText,
-                CRA_RECORDREADONLY | CRA_EXPANDED);
+                                       CRA_RECORDREADONLY | CRA_EXPANDED);
 
         // object ID
-        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Object ID",
-                CRA_RECORDREADONLY | CRA_EXPANDED);
+        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                         "Object ID",
+                                         CRA_RECORDREADONLY | CRA_EXPANDED);
         pszObjectID = _wpQueryObjectID(pObject);
         if (pszObjectID)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, pszObjectID,
-                    (strcmp(pszObjectID, "<WP_DESKTOP") != 0
-                        ? 0 // editable!
-                        : CRA_RECORDREADONLY)); // for the Desktop
+            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                               pszObjectID,
+                               (strcmp(pszObjectID, "<WP_DESKTOP") != 0
+                                    ? 0 // editable!
+                                    : CRA_RECORDREADONLY)); // for the Desktop
         else
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "none set", 0); // editable!
+            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                               "none set", 0); // editable!
 
         // object handle
-        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Object handle",
-                CRA_RECORDREADONLY | CRA_EXPANDED);
-        if (_somIsA(pObject, _WPFileSystem)) {
+        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                         "Object handle",
+                                         CRA_RECORDREADONLY | CRA_EXPANDED);
+        if (_somIsA(pObject, _WPFileSystem))
+        {
+            // for file system objects:
+            // do not call wpQueryHandle, because
+            // this always _creates_ a handle!
+            // So instead, we search OS2SYS.INI directly.
             CHAR    szPath[CCHMAXPATH];
             _wpQueryFilename(pObject, szPath,
-                    TRUE);      // fully qualified
+                             TRUE);      // fully qualified
             hObject = wphQueryHandleFromPath(HINI_USER, HINI_SYSTEM,
-                                szPath);
-        } else if (_somIsA(pObject, _WPAbstract)) {
-            hObject = _wpQueryHandle(pObject);
+                                             szPath);
         }
+        else // if (_somIsA(pObject, _WPAbstract))
+            // not file system: that's safe
+            hObject = _wpQueryHandle(pObject);
+
         if ((LONG)hObject > 0)
             sprintf(szObjectHandle, "0x%lX", hObject);
         else
             sprintf(szObjectHandle, "(none queried)");
-        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szObjectHandle, CRA_RECORDREADONLY);
+        AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                           szObjectHandle,
+                           CRA_RECORDREADONLY);
 
         // object style
-        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Object style",
-                            CRA_RECORDREADONLY);
+        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                         "Object style",
+                                         CRA_RECORDREADONLY);
         ul = _wpQueryStyle(pObject);
         if (ul & OBJSTYLE_CUSTOMICON)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                        "Custom icon (destroy icon when object goes dormant)",
-                        CRA_RECORDREADONLY);
+                               "Custom icon (destroy icon when object goes dormant)",
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOCOPY)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no copy",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NODELETE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no delete",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NODRAG)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no drag",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NODROPON)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no drop-on",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOLINK)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no link (cannot have shadows)",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOMOVE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no move",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOPRINT)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no print",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NORENAME)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no rename",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOSETTINGS)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no settings",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_NOSETTINGS)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "not visible",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         if (ul & OBJSTYLE_TEMPLATE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "template",
-                                CRA_RECORDREADONLY);
+                               CRA_RECORDREADONLY);
         /* if (ul & OBJSTYLE_LOCKEDINPLACE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "locked in place",
-                                CRA_RECORDREADONLY); */
+                               CRA_RECORDREADONLY); */
 
         // folder data
-        if (_somIsA(pObject, _WPFolder)) {
+        if (_somIsA(pObject, _WPFolder))
+        {
             preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Folder flags",
-                                CRA_RECORDREADONLY);
+                                             CRA_RECORDREADONLY);
             ul = _wpQueryFldrFlags(pObject);
             if (ul & FOI_POPULATEDWITHALL)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Fully populated",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_POPULATEDWITHFOLDERS)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Populated with folders",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_FIRSTPOPULATE)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Populated with first objects",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_WORKAREA)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Work area",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_CHANGEFONT)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_CHANGEFONT",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_NOREFRESHVIEWS)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_NOREFRESHVIEWS",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_ASYNCREFRESHONOPEN)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_ASYNCREFRESHONOPEN",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_REFRESHINPROGRESS)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_REFRESHINPROGRESS",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_WAMCRINPROGRESS)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_WAMCRINPROGRESS",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_CNRBKGNDOLDFORMAT)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_CNRBKGNDOLDFORMAT",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
             if (ul & FOI_DELETEINPROGRESS)
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_DELETEINPROGRESS",
-                                    CRA_RECORDREADONLY);
+                                   CRA_RECORDREADONLY);
+
+            // folder views:
+            preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Folder view flags",
+                                             CRA_RECORDREADONLY);
+            AddFolderView2Cnr(hwndCnr, preccLevel2, pObject, OPEN_CONTENTS, "Icon view");
+            AddFolderView2Cnr(hwndCnr, preccLevel2, pObject, OPEN_DETAILS, "Details view");
+            AddFolderView2Cnr(hwndCnr, preccLevel2, pObject, OPEN_TREE, "Tree view");
 
             // Desktop: add WPS data
-            if (pObject == _wpclsQueryActiveDesktop(_WPDesktop))
-            {
-                /* PTIB             ptib;
-                PPIB             ppib; */
-                /* TID              tidWorkerThread = 0,
-                                 tidQuickThread = 0; */
+            // we use a conditional compile flag here because
+            // _heap_walk adds additional overhead to malloc()
+            #ifdef DEBUG_MEMORY
+                if (pObject == _wpclsQueryActiveDesktop(_WPDesktop))
+                {
+                    /* PTIB             ptib;
+                    PPIB             ppib; */
+                    /* TID              tidWorkerThread = 0,
+                                     tidQuickThread = 0; */
 
-                preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Workplace Shell status",
-                                    CRA_RECORDREADONLY);
+                    preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                                     "Workplace Shell status",
+                                                     CRA_RECORDREADONLY);
 
-                // we use a conditional compile flag here because
-                // _heap_walk adds additional overhead to malloc()
-                #ifdef DEBUG_MEMORY
                     lObjectCount = 0;
                     lTotalObjectSize = 0;
                     lFreedObjectCount = 0;
@@ -359,34 +451,35 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
 
                     strths(szTemp1, lTotalObjectSize, ',');
                     sprintf(szText, "XFolder memory consumption: %s bytes\n"
-                                "(%d objects used, %d objects freed)",
-                                szTemp1,
-                                lObjectCount,
-                                lFreedObjectCount);
+                            "(%d objects used, %d objects freed)",
+                            szTemp1,
+                            lObjectCount,
+                            lFreedObjectCount);
                     AddObjectUsage2Cnr(hwndCnr, preccLevel2, szText,
-                                        CRA_RECORDREADONLY);
+                                       CRA_RECORDREADONLY);
 
                     sprintf(szText, "XFolder memory heap status: %s",
-                                (lHeapStatus == _HEAPOK) ? "OK"
-                                : (lHeapStatus == _HEAPBADBEGIN) ? "Invalid heap (_HEAPBADBEGIN)"
-                                : (lHeapStatus == _HEAPBADNODE) ? "Damaged memory node"
-                                : (lHeapStatus == _HEAPEMPTY) ? "Heap not initialized"
-                                : "unknown error"
-                                );
+                            (lHeapStatus == _HEAPOK) ? "OK"
+                            : (lHeapStatus == _HEAPBADBEGIN) ? "Invalid heap (_HEAPBADBEGIN)"
+                            : (lHeapStatus == _HEAPBADNODE) ? "Damaged memory node"
+                            : (lHeapStatus == _HEAPEMPTY) ? "Heap not initialized"
+                            : "unknown error"
+                            );
                     AddObjectUsage2Cnr(hwndCnr, preccLevel2, szText,
-                                        CRA_RECORDREADONLY);
-                #endif
-            }
+                                       CRA_RECORDREADONLY);
+                }
+            #endif // DEBUG_MEMORY
         } // end WPFolder
 
-        // object usage
+        // object usage:
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Object usage",
                             CRA_RECORDREADONLY);
 
+        // 1) open views
         preccLevel3 = NULL;
         for (pUseItem = _wpFindUseItem(pObject, USAGE_OPENVIEW, NULL);
-            pUseItem;
-            pUseItem = _wpFindUseItem(pObject, USAGE_OPENVIEW, pUseItem))
+             pUseItem;
+             pUseItem = _wpFindUseItem(pObject, USAGE_OPENVIEW, pUseItem))
         {
             PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem+1);
             ULONG       ulSLIIndex = 0;
@@ -419,46 +512,59 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
             else
                 sprintf(szText + strlen(szText), "\nNot subclassed");
             if (!preccLevel3)
-                preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Currently open views",
-                        CRA_RECORDREADONLY | CRA_EXPANDED);
+                preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                                                 "Currently open views",
+                                                 CRA_RECORDREADONLY | CRA_EXPANDED);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
 
+        // 2) allocated memory
         preccLevel3 = NULL;
         for (pUseItem = _wpFindUseItem(pObject, USAGE_MEMORY, NULL);
-            pUseItem;
-            pUseItem = _wpFindUseItem(pObject, USAGE_MEMORY, pUseItem))
+             pUseItem;
+             pUseItem = _wpFindUseItem(pObject, USAGE_MEMORY, pUseItem))
         {
             PMEMORYITEM pMemoryItem = (PMEMORYITEM)(pUseItem+1);
             sprintf(szText, "Size: %d", pMemoryItem->cbBuffer);
             if (!preccLevel3)
-                preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Allocated memory",
-                        CRA_RECORDREADONLY);
+                preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                                                 "Allocated memory",
+                                                 CRA_RECORDREADONLY);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
 
+        // 3) awake shadows
         preccLevel3 = NULL;
         for (pUseItem = _wpFindUseItem(pObject, USAGE_LINK, NULL);
-            pUseItem;
-            pUseItem = _wpFindUseItem(pObject, USAGE_LINK, pUseItem))
+             pUseItem;
+             pUseItem = _wpFindUseItem(pObject, USAGE_LINK, pUseItem))
         {
             PLINKITEM pLinkItem = (PLINKITEM)(pUseItem+1);
             CHAR      szShadowPath[CCHMAXPATH];
-            if (pLinkItem->LinkObj) {
+            if (pLinkItem->LinkObj)
+            {
                 _wpQueryFilename(_wpQueryFolder(pLinkItem->LinkObj),
-                        szShadowPath, CRA_RECORDREADONLY | CRA_EXPANDED);
-                sprintf(szText, "%s in \n%s", _wpQueryTitle(pLinkItem->LinkObj),
+                                 szShadowPath,
+                                 TRUE);     // fully qualified
+                sprintf(szText, "%s in \n%s",
+                        _wpQueryTitle(pLinkItem->LinkObj),
                         szShadowPath);
-            } else
+            }
+            else
+                // error: shouldn't happen, because pObject
+                // itself is obviously valid
                 strcpy(szText, "broken");
 
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                        "Awake shadows of this object",
-                        CRA_RECORDREADONLY | CRA_EXPANDED);
-            AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
+                                                 "Awake shadows of this object",
+                                                 CRA_RECORDREADONLY | CRA_EXPANDED);
+            AddObjectUsage2Cnr(hwndCnr, preccLevel3,
+                               szText,
+                               CRA_RECORDREADONLY);
         }
 
+        // 4) containers into which object has been inserted
         preccLevel3 = NULL;
         for (pUseItem = _wpFindUseItem(pObject, USAGE_RECORD, NULL);
             pUseItem;
@@ -467,30 +573,36 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
             PRECORDITEM pRecordItem = (PRECORDITEM)(pUseItem+1);
             CHAR szFolderTitle[256];
             WinQueryWindowText(WinQueryWindow(pRecordItem->hwndCnr, QW_PARENT),
-                                sizeof(szFolderTitle)-1,
-                                szFolderTitle);
+                               sizeof(szFolderTitle)-1,
+                               szFolderTitle);
             sprintf(szText, "Container HWND: 0x%lX\n(\"%s\")",
-                        pRecordItem->hwndCnr,
-                        szFolderTitle);
+                    pRecordItem->hwndCnr,
+                    szFolderTitle);
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                        "Folder windows containing this object",
-                        CRA_RECORDREADONLY | CRA_EXPANDED);
+                                                 "Folder windows containing this object",
+                                                 CRA_RECORDREADONLY | CRA_EXPANDED);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
 
+        // 5) applications
         preccLevel3 = NULL;
         for (pUseItem = _wpFindUseItem(pObject, USAGE_OPENFILE, NULL);
             pUseItem;
             pUseItem = _wpFindUseItem(pObject, USAGE_OPENFILE, pUseItem))
         {
             PVIEWFILE pViewFile = (PVIEWFILE)(pUseItem+1);
-            sprintf(szText, "Open handle: 0x%lX", pViewFile->handle);
+            sprintf(szText,
+                    "Open handle: 0x%lX",
+                    pViewFile->handle); // this might be a HAPP;
+                                        // test undocumented WinHSWitchFromHApp on this!
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                        "Applications which opened this object",
-                        CRA_RECORDREADONLY | CRA_EXPANDED);
-            AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
+                                                 "Applications which opened this object",
+                                                 CRA_RECORDREADONLY | CRA_EXPANDED);
+            AddObjectUsage2Cnr(hwndCnr, preccLevel3,
+                               szText,  // open handle
+                               CRA_RECORDREADONLY);
         }
 
         preccLevel3 = NULL;
@@ -509,11 +621,45 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
                     sprintf(szText, "Type: 0x%lX", pUseItem->type);
                     if (!preccLevel3)
                         preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                "Undocumented usage types",
-                                CRA_RECORDREADONLY | CRA_EXPANDED);
-                    AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
+                                                         "Undocumented usage types",
+                                                         CRA_RECORDREADONLY | CRA_EXPANDED);
+                    AddObjectUsage2Cnr(hwndCnr, preccLevel3,
+                                       szText, // "undocumented:"
+                                       CRA_RECORDREADONLY);
                 }
             }
+    } // end if (pObject)
+}
+
+/*
+ *@@ ReportSetupString:
+ *
+ *@@added V0.9.1 (2000-01-17) [umoeller]
+ */
+
+VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
+{
+    HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DTL_SETUP_ENTRY);
+    ULONG cbSetupString = _xwpQuerySetup(somSelf,
+                                         NULL,
+                                         0);
+
+    WinSetWindowText(hwndEF, "");
+
+    if (cbSetupString)
+    {
+        PSZ pszSetupString = malloc(cbSetupString + 1);
+        if (pszSetupString)
+        {
+            if (_xwpQuerySetup(somSelf,
+                               pszSetupString,
+                               cbSetupString + 1))
+            {
+                winhSetEntryFieldLimit(hwndEF, cbSetupString + 1);
+                WinSetWindowText(hwndEF, pszSetupString);
+            }
+            free(pszSetupString);
+        }
     }
 }
 
@@ -535,8 +681,8 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr, WPObject *pObject)
  *      4)  Don't forget to free the structure at WM_DESTROY.
  *
  *@@changed 0.85 [umoeller]: fixed object ID error message
- *@@changed V1.00 [umoeller]: fixed memory leak (thanks Lars Erdmann)
- *@@changed V1.00 [umoeller]: added hotkey support
+ *@@changed V0.9.0 [umoeller]: fixed memory leak (thanks Lars Erdmann)
+ *@@changed V0.9.0 [umoeller]: added hotkey support
  */
 
 MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -620,9 +766,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
             HWND        hwndEntryField = WinWindowFromID(hwndDlg,
                                                          ID_XSDI_DTL_HOTKEY);
             if (_xwpQueryObjectHotkey(pWinData->somSelf,
-                                     &usFlags,
-                                     &ucScanCode,
-                                     &usKeyCode))
+                                      &usFlags,
+                                      &ucScanCode,
+                                      &usKeyCode))
             {
                 CHAR    szKeyName[200];
                 cmnDescribeKey(szKeyName, usFlags, usKeyCode);
@@ -630,6 +776,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
             }
             else
                 WinSetWindowText(hwndEntryField, (cmnQueryNLSStrings())->pszNotDefined);
+
+            // object setup string
+            ReportSetupString(pWinData->somSelf, hwndDlg);
 
             FillCnrWithObjectUsage(pWinData->hwndCnr, pWinData->somSelf);
 
@@ -861,6 +1010,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                MPFROM2SHORT(0, // remove all reccs
                                             CMA_FREE));
                     FillCnrWithObjectUsage(pWinData->hwndCnr, pWinData->somSelf);
+
+                    ReportSetupString(pWinData->somSelf, hwndDlg);
+
                     WinSetPointer(HWND_DESKTOP, hptrOld);
                 break; }
 
@@ -1208,5 +1360,180 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
                              SP_KEYB_OBJHOTKEYS);
 
     return (brc);
+}
+
+/*
+ *@@ objQuerySetup:
+ *      implementation of XFldObject::xwpQuerySetup.
+ *      See remarks there.
+ *
+ *      This returns the length of the XFldObject
+ *      setup string part only.
+ *
+ *@@added V0.9.1 (2000-01-16) [umoeller]
+ */
+
+ULONG objQuerySetup(WPObject *somSelf,
+                    PSZ pszSetupString,     // in: buffer for setup string or NULL
+                    ULONG cbSetupString)    // in: size of that buffer or 0
+{
+    // temporary buffer for building the setup string
+    PSZ     pszTemp = NULL;
+    ULONG   ulReturn = 0;
+    ULONG   ulValue = 0,
+            ulDefaultValue = 0,
+            ulStyle = 0;
+    PSZ     pszValue = 0;
+
+
+    // CCVIEW
+    ulValue = _wpQueryConcurrentView(somSelf);
+    switch (ulValue)
+    {
+        case CCVIEW_ON:
+            strhxcat(&pszTemp, "CCVIEW=YES;");
+        break;
+
+        case CCVIEW_OFF:
+            strhxcat(&pszTemp, "CCVIEW=NO;");
+        break;
+        // ignore CCVIEW_DEFAULT
+    }
+
+    // DEFAULTVIEW
+    ulValue = _wpQueryDefaultView(somSelf);
+    ulDefaultValue = _wpclsQueryDefaultView(_somGetClass(somSelf));
+    if (ulValue != ulDefaultValue)
+        switch (ulValue)
+        {
+            case OPEN_SETTINGS:
+                strhxcat(&pszTemp, "DEFAULTVIEW=SETTINGS;");
+            break;
+
+            case OPEN_CONTENTS:
+                strhxcat(&pszTemp, "DEFAULTVIEW=ICON;");
+            break;
+
+            case OPEN_TREE:
+                strhxcat(&pszTemp, "DEFAULTVIEW=TREE;");
+            break;
+
+            case OPEN_DETAILS:
+                strhxcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
+            break;
+
+            case OPEN_DEFAULT:
+                // ignore
+            break;
+
+            default:
+            {
+                // any other: that's user defined, add decimal ID
+                CHAR szTemp[30];
+                sprintf(szTemp, "DEFAULTVIEW=%d;", ulValue);
+                strhxcat(&pszTemp, szTemp);
+            break; }
+        }
+
+    // HELPLIBRARY
+
+    // HELPPANEL
+
+    // HIDEBUTTON
+    ulValue = _wpQueryButtonAppearance(somSelf);
+    switch (ulValue)
+    {
+        case HIDEBUTTON:
+            strhxcat(&pszTemp, "HIDEBUTTON=YES;");
+        break;
+
+        case MINBUTTON:
+            strhxcat(&pszTemp, "HIDEBUTTON=NO;");
+        break;
+
+        // ignore DEFAULTBUTTON
+    }
+
+    // ICONFILE: cannot be queried!
+    // ICONRESOURCE: cannot be queried!
+
+    // ICONPOS: x, y in percentage of folder coordinates
+
+    // LOCKEDINPLACE: Warp 4 only
+
+    // MENUS: Warp 4 only
+
+    // MINWIN
+    ulValue = _wpQueryMinWindow(somSelf);
+    switch (ulValue)
+    {
+        case MINWIN_HIDDEN:
+            strhxcat(&pszTemp, "MINWIN=HIDE;");
+        break;
+
+        case MINWIN_VIEWER:
+            strhxcat(&pszTemp, "MINWIN=VIEWER;");
+        break;
+
+        case MINWIN_DESKTOP:
+            strhxcat(&pszTemp, "MINWIN=DESKTOP;");
+        break;
+
+        // ignore MINWIN_DEFAULT
+    }
+
+    // NOCOPY:
+    // NODELETE:
+    // NODRAG:
+    // NODROP:
+    // NOLINK:
+    // NOMOVE:
+    // NOPRINT:
+    // NORENAME:
+    // NOSETTINGS:
+    // NOSHADOW:
+    // NOTVISIBLE: compare wpQueryStyle with clsStyle
+    ulStyle = _wpQueryStyle(somSelf);
+
+    if (ulStyle & OBJSTYLE_TEMPLATE)
+        strhxcat(&pszTemp, "TEMPLATE=YES;");
+
+    // TITLE
+    /* pszValue = _wpQueryTitle(somSelf);
+    {
+        strhxcat(&pszTemp, "TITLE=");
+            strhxcat(&pszTemp, pszValue);
+            strhxcat(&pszTemp, ";");
+    } */
+
+    // OBJECTID: always append this LAST!
+    pszValue = _wpQueryObjectID(somSelf);
+    if (pszValue)
+        if (strlen(pszValue))
+        {
+            strhxcat(&pszTemp, "OBJECTID=");
+            strhxcat(&pszTemp, pszValue);
+            strhxcat(&pszTemp, ";");
+        }
+
+    /*
+     * append string
+     *
+     */
+
+    if (pszTemp)
+    {
+        // return string if buffer is given
+        if ((pszSetupString) && (cbSetupString))
+            strhncpy0(pszSetupString,   // target
+                      pszTemp,          // source
+                      cbSetupString);   // buffer size
+
+        // always return length of string
+        ulReturn = strlen(pszTemp);
+        free(pszTemp);
+    }
+
+    return (ulReturn);
 }
 

@@ -183,7 +183,7 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
  */
 
 BOOL stbSetClassMnemonics(SOMClass *pClassObject,
-                                      PSZ pszText)
+                          PSZ pszText)
 {
     BOOL brc = FALSE;
 
@@ -211,8 +211,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
             // and stbQueryClassMnemonics will use
             // the default value
             return (PrfWriteProfileString(HINI_USERPROFILE,
-                    INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
-                    pszText));
+                                          INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
+                                          pszText));
         }
     }
 
@@ -228,8 +228,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
-                pszText));
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
+                                      pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPDisk))
     {
@@ -242,8 +242,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
-                pszText));
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
+                                      pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPProgram))
     {
@@ -256,8 +256,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
-                pszText));
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
+                                      pszText));
     }
     else if (_somDescendedFrom(pClassObject, _XFldObject))
     {
@@ -270,8 +270,8 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // and stbQueryClassMnemonics will use
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
-                INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
-                pszText));
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPOBJECT,
+                                      pszText));
     }
 
     return (FALSE);
@@ -317,9 +317,10 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
             if (szWPUrlStatusBarMnemonics[0] == '\0')
                 // load string if this is the first time
                 if (PrfQueryProfileString(HINI_USERPROFILE,
-                            INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
-                            NULL, &(szWPUrlStatusBarMnemonics),
-                            sizeof(szWPUrlStatusBarMnemonics))
+                                          INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPURL,
+                                          NULL,
+                                          &(szWPUrlStatusBarMnemonics),
+                                          sizeof(szWPUrlStatusBarMnemonics))
                         == 0)
                     // string not found in profile: set default
                     strcpy(szWPUrlStatusBarMnemonics, "\"$U\"$x(70%)$D $T");
@@ -353,8 +354,10 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (szWPDiskStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
-                        NULL, &(szWPDiskStatusBarMnemonics), sizeof(szWPDiskStatusBarMnemonics))
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
+                                      NULL,
+                                      &(szWPDiskStatusBarMnemonics),
+                                      sizeof(szWPDiskStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
@@ -371,8 +374,10 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
         if (szWPProgramStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
             if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
-                        NULL, &(szWPProgramStatusBarMnemonics), sizeof(szWPProgramStatusBarMnemonics))
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPPROGRAM,
+                                      NULL,
+                                      &(szWPProgramStatusBarMnemonics),
+                                      sizeof(szWPProgramStatusBarMnemonics))
                     == 0)
                 // string not found in profile: load default from NLS resources
                 WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
@@ -523,12 +528,12 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         if (p = strstr(*ppszText, "\tD"))  // date
         {
             FILEFINDBUF4 ffb4;
-            ULONG ulDateFormat =
-                PrfQueryProfileInt(HINI_USER, "PM_National", "iDate", 0);
+            ULONG ulDateFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iDate", 0);
             CHAR szDateSep[10];
-            PrfQueryProfileString(HINI_USER, "PM_National", "sDate", "/",
-                szDateSep, sizeof(szDateSep)-1);
-
+            PrfQueryProfileString(HINI_USER,
+                                  "PM_National", "sDate", "/",
+                                  szDateSep,
+                                  sizeof(szDateSep)-1);
             strcpy(szTemp, "?");
             _wpQueryDateInfo(pObject, &ffb4);
             strhFileDate(szTemp, &(ffb4.fdateLastWrite), ulDateFormat, szDateSep[0]);
@@ -539,11 +544,12 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         if (p = strstr(*ppszText, "\tT"))  // time
         {
             FILEFINDBUF4 ffb4;
-            ULONG ulTimeFormat =
-                PrfQueryProfileInt(HINI_USER, "PM_National", "iTime", 0);
+            ULONG ulTimeFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iTime", 0);
             CHAR szTimeSep[10];
-            PrfQueryProfileString(HINI_USER, "PM_National", "sTime", ":",
-                szTimeSep, sizeof(szTimeSep)-1);
+            PrfQueryProfileString(HINI_USER,
+                                  "PM_National", "sTime", ":",
+                                  szTimeSep,
+                                  sizeof(szTimeSep)-1);
 
             strcpy(szTemp, "?");
             _wpQueryDateInfo(pObject, &ffb4);
@@ -630,10 +636,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             double dbl;
 
-            if (ulLogicalDrive == -1) {
+            if (ulLogicalDrive == -1)
+            {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive)
-                            != NO_ERROR)
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
                     ulLogicalDrive = 0;
             }
 
@@ -642,7 +648,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp, dbl,
-                    cThousands);
+                                    cThousands);
             strhxrpl(ppszText, 0, "\tfb", szTemp, 0);
             ulrc++;
         }
@@ -651,10 +657,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             double dbl;
 
-            if (ulLogicalDrive == -1) {
+            if (ulLogicalDrive == -1)
+            {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive)
-                            != NO_ERROR)
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
                     ulLogicalDrive = 0;
             }
 
@@ -663,8 +669,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
-                    ((dbl + 500) / 1000),
-                    cThousands);
+                                    ((dbl + 500) / 1000),
+                                    cThousands);
             strhxrpl(ppszText, 0, "\tfk", szTemp, 0);
             ulrc++;
         }
@@ -673,10 +679,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             double dbl;
 
-            if (ulLogicalDrive == -1) {
+            if (ulLogicalDrive == -1)
+            {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive)
-                            != NO_ERROR)
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
                     ulLogicalDrive = 0;
             }
 
@@ -685,8 +691,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
-                    ((dbl + 512) / 1024),
-                    cThousands);
+                                    ((dbl + 512) / 1024),
+                                    cThousands);
             strhxrpl(ppszText, 0, "\tfK", szTemp, 0);
             ulrc++;
         }
@@ -695,10 +701,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             double dbl;
 
-            if (ulLogicalDrive == -1) {
+            if (ulLogicalDrive == -1)
+            {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive)
-                            != NO_ERROR)
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
                     ulLogicalDrive = 0;
             }
 
@@ -707,8 +713,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
-                    ((dbl +500000) / 1000000),
-                    cThousands);
+                                    ((dbl +500000) / 1000000),
+                                    cThousands);
             strhxrpl(ppszText, 0, "\tfm", szTemp, 0);
             ulrc++;
         }
@@ -717,10 +723,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             double dbl;
 
-            if (ulLogicalDrive == -1) {
+            if (ulLogicalDrive == -1)
+            {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive)
-                            != NO_ERROR)
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
                     ulLogicalDrive = 0;
             }
 
@@ -729,8 +735,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strcpy(szTemp, "?");
             else
                strhThousandsDouble(szTemp,
-                    ((dbl + (1024*1024/2)) / (1024*1024)),
-                    cThousands);
+                                   ((dbl + (1024*1024/2)) / (1024*1024)),
+                                   cThousands);
             strhxrpl(ppszText, 0, "\tfM", szTemp, 0);
             ulrc++;
         }
@@ -739,10 +745,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             CHAR szBuffer[200];
 
-            if (ulLogicalDrive == -1) {
+            if (ulLogicalDrive == -1)
+            {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive)
-                            != NO_ERROR)
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
                     ulLogicalDrive = 0;
             }
 
@@ -848,7 +854,8 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             SOMClass *pClassObject = _somGetClass(pObject);
             if (pClassObject)
                 strhxrpl(ppszText, 0, "\tw", _wpclsQueryTitle(pClassObject), 0);
-            else strhxrpl(ppszText, 0, "\tw", "?", 0);
+            else
+                strhxrpl(ppszText, 0, "\tw", "?", 0);
             ulrc++;
         }
 
@@ -1633,10 +1640,6 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           (PSZ)cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
     }
 
-    if (flFlags & CBI_ENABLE)
-    {
-    }
-
     if (flFlags & CBI_DESTROY)
         if (pSBClassObjectSelected)
         {
@@ -1658,9 +1661,9 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                     USHORT usItemID,
-                                     USHORT usNotifyCode,
-                                     ULONG ulExtra)      // for checkboxes: contains new state
+                                 USHORT usItemID,
+                                 USHORT usNotifyCode,
+                                 ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;

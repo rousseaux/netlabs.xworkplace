@@ -116,7 +116,7 @@
 /*
  *@@ xwpAddXWPSetupPages:
  *      this actually adds the new pages into the
- *      "XWorkplace Configuration" notebook
+ *      "XWorkplace Configuration" notebook.
  */
 
 SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
@@ -203,17 +203,17 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
 /*
  *@@ wpQueryDefaultView:
  *      this returns the default view of the object, which
- *      for XWPSetup is the settings notebook.
+ *      for XWPSetup is the settings notebook. This must
+ *      be overridden for direct WPAbstract subclasses,
+ *      because otherwise double-clicks on the object won't
+ *      work.
  */
 
 SOM_Scope ULONG  SOMLINK xwset_wpQueryDefaultView(XWPSetup *somSelf)
 {
-    /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_wpQueryDefaultView");
 
-    return (OPEN_SETTINGS);
-
-    /* return (XWPSetup_parent_WPAbstract_wpQueryDefaultView(somSelf)); */
+    return (OPEN_SETTINGS);     // settings view is default
 }
 
 /*

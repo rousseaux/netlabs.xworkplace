@@ -9,9 +9,11 @@
 XWorkplace stores all its global settings in your OS2.INI file. (By contrast,
 the settings for individual WPS objects are stored by the WPS, mostly in
 the <CODE>.CLASSINFO</CODE> extended attributes.)
-<P>This section is supposed to explain the keys in the "XFolder" section
-in OS2.INI. The name of that section is purely historical, to preserve
-compatibility with older XFolder versions.
+<!-- the following changed with V0.9.1 -->
+<P>This section is supposed to explain the keys in the "XWorkplace" section
+in OS2.INI. If you had XFolder installed previously, XWorkplace copies this
+data from the "XFolder" section, which remains in OS2.INI so that you can
+switch back to XFolder later if you choose to de-install XWorkplace.
 <P>Note: XWorkplace does not rely on the INI keys. If you really mess up something
 bad, you can simply delete a key with an INI editor or the whole "XFolder"
 section altogether. After the next WPS restart, XWorkplace will reinitialize itself
@@ -87,9 +89,14 @@ If a key is not found, a <B>default</B> is loaded from the NLS DLL.
 <DD>The last ten file filters entered in the "Select by name" dialog, each of which is
 terminated with a null byte.
 
+<!-- the following added with V0.9.1 -->
+<DT><CODE>TrashCan::Drives</CODE>
+<DD>A binary array of bytes specifying drives support for the XWorkplace trash can.
+
 <DT><CODE>Version</CODE>
-<DD>The XWorkplace version which is running. This only used to be set by the
-<CODE>INSTALL.CMD</CODE> file and is not used otherwise.
+<DD>The XWorkplace version which is running. This is only set for informational
+purposes (e.g. for other applications which might be interested), but not read
+by XWorkplace itself.
 
 <DT><CODE>WndPos*</CODE>
 <DD>Various window positions to make them reappear where you closed them. These

@@ -207,71 +207,77 @@ ULONG AddTrashObjectsForTrashDir(XWPTrashCan *pTrashCan,  // in: trashcan to add
         wpshCheckIfPopulated(pTrashDir);
 
         fTrashDirSemOwned = !_wpRequestObjectMutexSem(pTrashDir, SEM_INDEFINITE_WAIT);
-
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("  wpPopulate: fTrashDirSemOwned = %d", fTrashDirSemOwned));
-        #endif
-
-        for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
-                (pObject);
-                pObject = _wpQueryContent(pTrashDir, pObject, (ULONG)QC_NEXT)
-            )
+        if (fTrashDirSemOwned)
         {
-            BOOL    fAddTrashObject = TRUE;
-            if (_somIsA(pObject, _WPFolder))
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("  wpPopulate: fTrashDirSemOwned = %d", fTrashDirSemOwned));
+            #endif
+
+            for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
+                    (pObject);
+                    pObject = _wpQueryContent(pTrashDir, pObject, (ULONG)QC_NEXT)
+                )
             {
-                // another folder found:
-                // check the attributes if it's one of the
-                // \TRASH subdirectories added by the trashcan
-                // or maybe a "real" WPS folder that had been
-                // deleted
-                CHAR    szFolderPath[CCHMAXPATH] = "";
-                ULONG   ulAttrs = 0;
-                _wpQueryFilename(pObject, szFolderPath, TRUE);
-                if (doshQueryPathAttr(szFolderPath, &ulAttrs) == NO_ERROR)
-                    if (ulAttrs & FILE_HIDDEN)
-                    {
-                        // hidden directory: this is a trash directory,
-                        // so recurse!
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
-                        #endif
-
-                        ulObjectCount += AddTrashObjectsForTrashDir(pTrashCan,
-                                                                    pObject, // new trash dir
-                                                                    pdTotalSize);
-                        // skip the following
-                        fAddTrashObject = FALSE;
-                    }
-            }
-
-            if (fAddTrashObject)
-            {
-                // non-folder:
-                // add to trashcan!
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("    Adding %s, _XWPTrashObject: 0x%lX",
-                                _wpQueryTitle(pObject),
-                                _XWPTrashObject));
-                #endif
-
-                if (_XWPTrashObject)
+                BOOL    fAddTrashObject = TRUE;
+                if (_somIsA(pObject, _WPFolder))
                 {
-                    XWPTrashObject *pTrashObject = 0;
-                    // note that M_XWPTrashObject::xwpclsCreateTrashObject
-                    // will automatically check for whether a trash
-                    // object exists for a given related object
-                    if (pTrashObject = _xwpclsCreateTrashObject(_XWPTrashObject,
-                                             pTrashCan,
-                                             pObject))  // related object
+                    // another folder found:
+                    // check the attributes if it's one of the
+                    // \TRASH subdirectories added by the trashcan
+                    // or maybe a "real" WPS folder that had been
+                    // deleted
+                    CHAR    szFolderPath[CCHMAXPATH] = "";
+                    ULONG   ulAttrs = 0;
+                    _wpQueryFilename(pObject, szFolderPath, TRUE);
+                    if (doshQueryPathAttr(szFolderPath, &ulAttrs) == NO_ERROR)
+                        if (ulAttrs & FILE_HIDDEN)
+                        {
+                            // hidden directory: this is a trash directory,
+                            // so recurse!
+                            #ifdef DEBUG_TRASHCAN
+                                _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
+                            #endif
+
+                            ulObjectCount += AddTrashObjectsForTrashDir(pTrashCan,
+                                                                        pObject, // new trash dir
+                                                                        pdTotalSize);
+                            // skip the following
+                            fAddTrashObject = FALSE;
+                        }
+                }
+
+                if (fAddTrashObject)
+                {
+                    // non-folder:
+                    // add to trashcan!
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("    Adding %s, _XWPTrashObject: 0x%lX",
+                                    _wpQueryTitle(pObject),
+                                    _XWPTrashObject));
+                    #endif
+
+                    if (_XWPTrashObject)
                     {
-                        // successfully created:
-                        ulObjectCount++;
-                        *pdTotalSize += _xwpQueryRelatedSize(pTrashObject);
+                        XWPTrashObject *pTrashObject = 0;
+                        // note that M_XWPTrashObject::xwpclsCreateTrashObject
+                        // will automatically check for whether a trash
+                        // object exists for a given related object
+                        if (pTrashObject = _xwpclsCreateTrashObject(_XWPTrashObject,
+                                                 pTrashCan,
+                                                 pObject))  // related object
+                        {
+                            // successfully created:
+                            ulObjectCount++;
+                            *pdTotalSize += _xwpQueryRelatedSize(pTrashObject);
+                        }
                     }
                 }
-            }
-        } // end for (   pObject = _wpQueryContent(...
+            } // end for (   pObject = _wpQueryContent(...
+        } // end if (fTrashDirSemOwned)
+        else
+            krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
+                                    (MPARAM)strdup("Couldn't request mutex semaphore"),
+                                    (MPARAM)FALSE);
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1092,30 +1098,37 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
         // because if we deleted the trash objects in this
         // loop already, the next items would not be found
         fTrashCanSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-        pllTrashObjects = CreateTrashObjectsList(somSelf);
-
-        // now delete the items
-        pNode = lstQueryFirstNode(pllTrashObjects);
-        while (pNode)
+        if (fTrashCanSemOwned)
         {
-            pTrashObject = (XWPTrashObject*)(pNode->pItemData);
+            pllTrashObjects = CreateTrashObjectsList(somSelf);
 
-            if (_xwpDestroyTrashObject(pTrashObject))
-                ulrc++;
+            // now delete the items
+            pNode = lstQueryFirstNode(pllTrashObjects);
+            while (pNode)
+            {
+                pTrashObject = (XWPTrashObject*)(pNode->pItemData);
 
-            // go for next
-            pNode = pNode->pNext;
-        }
+                if (_xwpDestroyTrashObject(pTrashObject))
+                    ulrc++;
 
-        lstFree(pllTrashObjects);
+                // go for next
+                pNode = pNode->pNext;
+            }
 
-        // now reconstruct the list and check whether
-        // we have successfully destroyed all objects
-        _ulTrashObjectCount = 0;
-        pllTrashObjects = CreateTrashObjectsList(somSelf);
-        _ulTrashObjectCount = lstCountItems(pllTrashObjects);
-        lstFree(pllTrashObjects);
-        _xwpSetCorrectTrashIcon(somSelf);
+            lstFree(pllTrashObjects);
+
+            // now reconstruct the list and check whether
+            // we have successfully destroyed all objects
+            _ulTrashObjectCount = 0;
+            pllTrashObjects = CreateTrashObjectsList(somSelf);
+            _ulTrashObjectCount = lstCountItems(pllTrashObjects);
+            lstFree(pllTrashObjects);
+            _xwpSetCorrectTrashIcon(somSelf);
+        } // end if (fTrashCanSemOwned)
+        else
+            krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
+                                    (MPARAM)strdup("Couldn't request mutex semaphore"),
+                                    (MPARAM)FALSE);
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1359,7 +1372,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
                                                 ULONG ulMenuId)
 {
     BOOL                brc = TRUE;
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     ULONG               ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
@@ -1479,7 +1492,6 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
             // populate with all:
             if ((ulFldrFlags & FOI_POPULATEDWITHALL) == 0)
             {
-                // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 CHAR        szTrashDir[30],
                             cDrive;
                 BYTE        bIndex;     // into abSupportedDrives[]
@@ -1952,6 +1964,7 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
     {
         PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(5000);
         // store the class object in KERNELGLOBALS
+        pKernelGlobals->fXWPTrashCan = TRUE;
         krnUnlockGlobals();
     }
 
@@ -2585,6 +2598,14 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
  *@@ wpFilterPopupMenu:
  *      this instance method allows the object to filter out
  *      unwanted menu items from the context menu.
+ *
+ *@@changed V0.9.1 (2000-01-12) [umoeller]: now removing "Create another" as well
+ */
+
+/*
+ *@@ wpFilterPopupMenu:
+ *           this instance method allows the object to filter out
+ *           unwanted menu items from the context menu.
  */
 
 SOM_Scope ULONG  SOMLINK xtro_wpFilterPopupMenu(XWPTrashObject *somSelf,
@@ -2600,8 +2621,9 @@ SOM_Scope ULONG  SOMLINK xtro_wpFilterPopupMenu(XWPTrashObject *somSelf,
                                                                 hwndCnr,
                                                                 fMultiSelect)
             // remove the whole "Open" menu, since
-            // trash objects cannot be opened
-            & ~(CTXT_OPEN)
+            // trash objects cannot be opened;
+            // remove "create another" as well
+            & ~(CTXT_OPEN | CTXT_NEW)
         );
 }
 
@@ -2873,27 +2895,34 @@ SOM_Scope XWPTrashObject*  SOMLINK xtroM_xwpclsCreateTrashObject(M_XWPTrashObjec
             // we need not worry, because then we definitely
             // have no trash objects in the trash can.
             fTrashCanSemOwned = !_wpRequestObjectMutexSem(pTrashCan, SEM_INDEFINITE_WAIT);
-            pllTrashObjects = CreateTrashObjectsList(pTrashCan);
-
-            // now delete the items
-            pNode = lstQueryFirstNode(pllTrashObjects);
-            while (pNode)
+            if (fTrashCanSemOwned)
             {
-                WPObject *pTestRelatedObject = _xwpQueryRelatedObject(
-                            (XWPTrashObject*)pNode->pItemData); // item data is trash object
+                pllTrashObjects = CreateTrashObjectsList(pTrashCan);
 
-                if (pTestRelatedObject == pRelatedObject)
+                // now delete the items
+                pNode = lstQueryFirstNode(pllTrashObjects);
+                while (pNode)
                 {
-                    // exists already: set flag and break
-                    fRelatedExistsAlready = TRUE;
-                    break; // while (pNode)
-                }
+                    WPObject *pTestRelatedObject = _xwpQueryRelatedObject(
+                                (XWPTrashObject*)pNode->pItemData); // item data is trash object
 
-                // go for next
-                pNode = pNode->pNext;
-            } // end while (pNode)
+                    if (pTestRelatedObject == pRelatedObject)
+                    {
+                        // exists already: set flag and break
+                        fRelatedExistsAlready = TRUE;
+                        break; // while (pNode)
+                    }
 
-            lstFree(pllTrashObjects);
+                    // go for next
+                    pNode = pNode->pNext;
+                } // end while (pNode)
+
+                lstFree(pllTrashObjects);
+            } // end if (fTrashCanSemOwned)
+            else
+                krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT,
+                                        (MPARAM)strdup("Couldn't request mutex semaphore"),
+                                        (MPARAM)FALSE);
         }
         CATCH(excpt1) { } END_CATCH();
 

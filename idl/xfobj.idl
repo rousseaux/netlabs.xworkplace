@@ -54,6 +54,12 @@ interface XFldObject : WPObject
                             in UCHAR ucScanCode,
                             in USHORT usKeyCode);
 
+    ULONG xwpQuerySetup(in PSZ pszSetupString,
+                        in ULONG cbSetupString);
+
+    ULONG xwpQuerySetup2(in PSZ pszSetupString,
+                         in ULONG cbSetupString);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -61,7 +67,9 @@ interface XFldObject : WPObject
                   xwpQueryDeletion,
                   xwpSetDeletion,
                   xwpQueryObjectHotkey,
-                  xwpSetObjectHotkey;
+                  xwpSetObjectHotkey,
+                  xwpQuerySetup,
+                  xwpQuerySetup2;
 
     //# Class Modifiers
     externalprefix = xfobj_;
@@ -136,6 +144,9 @@ interface M_XFldObject : M_WPObject
 
 #ifdef __SOMIDL__
   implementation {
+
+    releaseorder:
+                xwpclsRemoveObjectHotkey;
 
     //# Class Modifiers
     externalprefix = xfobjM_;

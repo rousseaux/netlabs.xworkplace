@@ -324,20 +324,23 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndFrame = NULLHANDLE; // default: error occured
-    XFolder*        pRootFolder = NULL;
 
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpViewObject");
 
     // "Drive not ready" replacement enabled?
     if (pGlobalSettings->fReplDriveNotReady)
+    {
         // yes: use the safe way of opening the
         // drive (this prompts the user upon errors)
+        XFolder*        pRootFolder = NULL;
         pRootFolder = dskCheckDriveReady(somSelf);
-
-    if (    (pRootFolder)   // root folder found
-         || (!pGlobalSettings->fReplDriveNotReady)  // replacement disabled
-       )
+        if (pRootFolder)
+            // success: call default
+            hwndFrame = XFldDisk_parent_WPDisk_wpViewObject(somSelf, hwndCnr,
+                                                            ulView, param);
+    }
+    else
         hwndFrame = XFldDisk_parent_WPDisk_wpViewObject(somSelf, hwndCnr,
                                                         ulView, param);
 

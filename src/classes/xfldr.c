@@ -127,6 +127,7 @@
 #include <wprootf.h>                    // WPRootFolder
 #include <wpshadow.h>                   // WPShadow
 #include <wpdesk.h>
+#include "xfobj.h"
 #include "xfdisk.h"
 
 // implementation includes which require other filesys\ headers
@@ -836,7 +837,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
  *
  *      Warp 4 does have a method for querying this, but we want
  *      XWorkplace to run on Warp 3 also, so I have rewritten this.
- *      This simply returns FALSE on Warp 3.
  *
  *@@added V0.9.0 [umoeller]
  */
@@ -1105,6 +1105,51 @@ SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
 }
 
 /*
+ *@@ xwpQuerySetup2:
+ *      this XFldObject method is overridden to support
+ *      setup strings for folders.
+ *
+ *      See XFldObject::xwpQuerySetup2 for details.
+ *
+ *@@added V0.9.1 (2000-01-17) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
+                                           PSZ pszSetupString,
+                                           ULONG cbSetupString)
+{
+    ULONG ulReturn = 0;
+
+    // resolve method for XFldObject
+    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = SOM_Resolve(somSelf,
+                                                                    XFldObject,
+                                                                    xwpQuerySetup2);
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpQuerySetup2");
+
+    if (pfn_xwpQuerySetup2)
+    {
+        // call XFolder implementation
+        ulReturn = fdrQuerySetup(somSelf, pszSetupString, cbSetupString);
+
+        // now call XFldObject method
+        if ( (pszSetupString) && (cbSetupString) )
+            // string buffer already specified:
+            // tell XFldObject to append to that string
+            ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                           pszSetupString + ulReturn, // append to existing
+                                           cbSetupString + ulReturn);
+        else
+            // string buffer not yet specified:
+            // return length only
+            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+    }
+
+    return (ulReturn);
+}
+
+/*
  *@@ wpInitData:
  *      this instance method gets called when the object
  *      is being initialized. We initialize our instance
@@ -1131,11 +1176,15 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _pFldrSortInfo = NULL;
     _pFldrLongArray = NULL;
     _pszFldrStrArray = NULL;
-    _pusFldrBackground = NULL;
     _cbFldrStrArray = 0;
     _cbFldrLongArray = 0;
 
+    _pFldrBackground = NULL;
+    _cbFldrBackground = 0;
+
     _pulShowAllInTreeView = NULL;
+
+    _pszFdrBkgndImageFile = 0;
 
     _fUnInitCalled = FALSE;
     _hwndCnrSaved = NULLHANDLE;
@@ -1207,6 +1256,9 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
     // seem to get called several times sometimes
     if (!_fUnInitCalled)
         _fUnInitCalled = TRUE;
+
+    if (_pszFdrBkgndImageFile)
+        free(_pszFdrBkgndImageFile);
 
     XFolder_parent_WPFolder_wpUnInitData(somSelf);
         // fixed this (V0.9.0)
@@ -1563,6 +1615,90 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 }
 
 /*
+ *@@ IdentifyRestoreID:
+ *
+ *@@added V0.9.1 (2000-01-17) [umoeller]
+ */
+
+PSZ IdentifyRestoreID(PSZ pszClass,
+                      ULONG ulKey)
+{
+    if (strcmp(pszClass, "WPFolder") == 0)
+    {
+        switch (ulKey)
+        {
+            case IDKEY_FDRCONTENTATTR    : // 2900
+                return ("IDKEY_FDRCONTENTATTR");
+            case IDKEY_FDRTREEATTR       : // 2901
+                return ("IDKEY_FDRTREEATTR");
+            case IDKEY_FDRCVLFONT        : // 2902
+                return ("IDKEY_FDRCVLFONT");
+            case IDKEY_FDRCVNFONT        : // 2903
+                return ("IDKEY_FDRCVNFONT");
+            case IDKEY_FDRCVIFONT        : // 2904
+                return ("IDKEY_FDRCVIFONT");
+            case IDKEY_FDRTVLFONT        : // 2905
+                return ("IDKEY_FDRTVLFONT");
+            case IDKEY_FDRTVNFONT        : // 2906
+                return ("IDKEY_FDRTVNFONT");
+            case IDKEY_FDRDETAILSATTR    : // 2907
+                return ("IDKEY_FDRDETAILSATTR");
+            case IDKEY_FDRDVFONT         : // 2908
+                return ("IDKEY_FDRDVFONT");
+            case IDKEY_FDRDETAILSCLASS   : // 2909
+                return ("IDKEY_FDRDETAILSCLASS");
+            case IDKEY_FDRICONPOS        : // 2910
+                return ("IDKEY_FDRICONPOS");
+            case IDKEY_FDRINVISCOLUMNS   : // 2914
+                return ("IDKEY_FDRINVISCOLUMNS");
+            case IDKEY_FDRINCCLASS       : // 2920
+                return ("IDKEY_FDRINCCLASS");
+            case IDKEY_FDRINCNAME        : // 2921
+                return ("IDKEY_FDRINCNAME");
+            case IDKEY_FDRFSYSSEARCHINFO : // 2922
+                return ("IDKEY_FDRFSYSSEARCHINFO");
+            case IDKEY_FILTERCONTENT     : // 2923
+                return ("IDKEY_FILTERCONTENT");
+            case IDKEY_CNRBACKGROUND     : // 2924
+                return ("IDKEY_CNRBACKGROUND");
+            case IDKEY_FDRINCCRITERIA    : // 2925
+                return ("IDKEY_FDRINCCRITERIA");
+            case IDKEY_FDRICONVIEWPOS    : // 2926
+                return ("IDKEY_FDRICONVIEWPOS");
+            case IDKEY_FDRSORTCLASS      : // 2927
+                return ("IDKEY_FDRSORTCLASS");
+            case IDKEY_FDRSORTATTRIBS    : // 2928
+                return ("IDKEY_FDRSORTATTRIBS");
+            case IDKEY_FDRSORTINFO       : // 2929
+                return ("IDKEY_FDRSORTINFO");
+            case IDKEY_FDRSNEAKYCOUNT    : // 2930
+                return ("IDKEY_FDRSNEAKYCOUNT");
+            case IDKEY_FDRLONGARRAY      : // 2931
+                return ("IDKEY_FDRLONGARRAY");
+            case IDKEY_FDRSTRARRAY       : // 2932
+                return ("IDKEY_FDRSTRARRAY");
+            case IDKEY_FDRCNRBACKGROUND  : // 2933
+                return ("IDKEY_FDRCNRBACKGROUND");
+            case IDKEY_FDRBKGNDIMAGEFILE : // 2934
+                return ("IDKEY_FDRBKGNDIMAGEFILE");
+            case IDKEY_FDRBACKGROUND     : // 2935
+                return ("IDKEY_FDRBACKGROUND");
+            case IDKEY_FDRSELFCLOSE      : // 2936
+                return ("IDKEY_FDRSELFCLOSE");
+
+            case 2937:
+                return ("IDKEY_FDRODMENUBARON");
+            case 2938:
+                return ("IDKEY_FDRGRIDINFO");
+            case 2939:
+                return ("IDKEY_FDRTREEVIEWCONTENTS");
+        }
+    }
+
+    return ("unknown");
+}
+
+/*
  *@@ wpRestoreLong:
  *      this instance method restores a 32-bit data
  *      value from the folder EAs upon object awakening.
@@ -1608,17 +1744,56 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
                         _pulShowAllInTreeView = pulValue;
                     }
             break; }
-
-            #ifdef DEBUG_RESTOREDATA
-                default:
-                {
-                    _Pmpf(("Long IDKEY_xxx (%s %d) --> 0x%lX",
-                            pszClass, ulKey,
-                            *pulValue));        // data returned
-                break; }
-            #endif
         }
+
+        if (pulValue)
+            _Pmpf(("Long %s (%s %d) --> 0x%lX",
+                    IdentifyRestoreID(pszClass, ulKey),
+                    pszClass, ulKey,
+                    *pulValue));        // data returned
     }
+    return (brc);
+}
+
+/*
+ *@@ wpRestoreString:
+ *
+ *@@added V0.9.1 (2000-01-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
+                                           PSZ pszClass, ULONG ulKey,
+                                           PSZ pszValue, PULONG pcbValue)
+{
+    BOOL brc = FALSE;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpRestoreString");
+
+    brc = XFolder_parent_WPFolder_wpRestoreString(somSelf,
+                                                  pszClass, ulKey,
+                                                  pszValue, pcbValue);
+
+    if (strcmp(pszClass, "WPFolder") == 0)
+    {
+        switch (ulKey)
+        {
+            case IDKEY_FDRBKGNDIMAGEFILE: // 2934
+                if ((pszValue) && (brc))
+                {
+                    XFolderData *somThis = XFolderGetData(somSelf);
+                    _pszFdrBkgndImageFile = strdup(pszValue);
+                }
+            break;
+        }
+
+        if ((pszValue) && (brc))
+            _Pmpf(("Strg %s (%s %d) --> %s",
+                    IdentifyRestoreID(pszClass, ulKey),
+                    pszClass, ulKey,
+                    pszValue));        // data returned
+    }
+
+
     return (brc);
 }
 
@@ -1654,9 +1829,9 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 
     // always call parent, even for the sort data, or
     // the WPFolder original gets confused
-    brc = XFolder_parent_WPFolder_wpRestoreData(somSelf, pszClass,
-                                                ulKey, pValue,
-                                                pcbValue);
+    brc = XFolder_parent_WPFolder_wpRestoreData(somSelf,
+                                                pszClass, ulKey,
+                                                pValue, pcbValue);
 
     // after we have restored the setting by calling the
     // default WPFolder method, we check for a few flags
@@ -1665,6 +1840,15 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
     // data
     if (strcmp(pszClass, "WPFolder") == 0)
     {
+        // #ifdef DEBUG_RESTOREDATA
+        if ((pValue) && (brc))
+            _Pmpf(("Data %s (%s %d) size_in %d -> out %d",
+                    IdentifyRestoreID(pszClass, ulKey),
+                    pszClass, ulKey,
+                    cbOrigValue,    // size in or 0 if size queried
+                    *pcbValue));    // size out
+        // #endif
+
         switch (ulKey)
         {
             case IDKEY_FDRSORTINFO:
@@ -1698,15 +1882,25 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
             break; }
 
             case IDKEY_FDRBACKGROUND:       // size: 2 bytes
-                if (cbOrigValue == 2)
+                if (pValue)
                 {
-                    if (pValue)
-                    {
-                        XFolderData *somThis = XFolderGetData(somSelf);
-                        _pusFldrBackground = (PUSHORT)pValue;
-                    }
+                    XFolderData *somThis = XFolderGetData(somSelf);
+                    _cbFldrBackground = *pcbValue;
+                    _pFldrBackground = (PVOID)pValue;
                 }
             break;
+
+            /* case IDKEY_FDRCNRBACKGROUND:
+                _Pmpf(("%s::wpRestoreString: IDKEY_FDRCNRBACKGROUND -> %d",
+                       _wpQueryTitle(somSelf),
+                       brc));
+                if (pValue)
+                {
+                    XFolderData *somThis = XFolderGetData(somSelf);
+                    _cbFdrCnrBackground = *pcbValue;
+                    _pszFdrCnrBackground = pValue;     // buffer
+                }
+            break; */
 
             case IDKEY_FDRLONGARRAY:        // size: 84 bytes
             {
@@ -1725,20 +1919,22 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 400 bytes (as it is with Warp 4 fixpak 8)
-                _cbFldrStrArray = *pcbValue;
                 if (pValue)
+                {
+                    _cbFldrStrArray = *pcbValue;
                     _pszFldrStrArray = (PSZ)pValue;
+                }
             break; }
 
-            #ifdef DEBUG_RESTOREDATA
-                default:
+            /* case IDKEY_CNRBACKGROUND:
+            {
+                XFolderData *somThis = XFolderGetData(somSelf);
+                if (pValue)
                 {
-                    _Pmpf(("Data IDKEY_xxx (%s %d) size %d -> %d",
-                            pszClass, ulKey,
-                            cbOrigValue,    // size in or 0 if size queried
-                            *pcbValue));    // size out
-                break; }
-            #endif
+                    _cbCnrBackground = *pcbValue;
+                    _pvCnrBackground = pValue;
+                }
+            break; } */
 
             /*
              * the following others were queried for G:\root\test
@@ -2809,6 +3005,39 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
 }
 
 /*
+ *@@ xwpclsQueryMenuBarVisibility:
+ *      this returns the default visibility of menu bars
+ *      as specified in the "System" object. Warp 4 has
+ *      no method for this, so this has been added.
+ *
+ *      On Warp 3, this returns FALSE always.
+ *
+ *@@added V0.9.1 (2000-01-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
+{
+    BOOL brc = FALSE;
+    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryMenuBarVisibility");
+
+    if (doshIsWarp4())
+    {
+        PSZ psz = prfhQueryProfileData(HINI_USER,
+                                       "PM_Workplace", "FolderMenuBar",
+                                       NULL);
+        if (psz)
+        {
+            if (strcmp(psz, "OFF") != 0)
+                brc = TRUE;
+            free(psz);
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ wpclsInitData:
  *      this initializes the WPFolder / XFolder class as a whole;
  *      we need to call the parent and then set some XFolder
@@ -2965,5 +3194,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
                                                                ulIconIndex);
     return (ulrc);
 }
+
+
 
 

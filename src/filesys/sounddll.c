@@ -116,9 +116,9 @@
  */
 
 VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
-                         PUSHORT pusDeviceID,   // in/out: "device" ID (= sound file).
-                                // This is != 0 if we're already playing something
-                         PSZ pszFile)           // in: sound file to play
+                           PUSHORT pusDeviceID,   // in/out: "device" ID (= sound file).
+                                  // This is != 0 if we're already playing something
+                           PSZ pszFile)           // in: sound file to play
 {
     ULONG           ulrc;
     MCI_OPEN_PARMS  mop;
@@ -131,15 +131,15 @@ VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
         // current job and close device first
         mgp.hwndCallback = hwndObject;
         mciSendCommand(*pusDeviceID,
-                    MCI_STOP,
-                    MCI_WAIT,
-                    &mgp,
-                    0);
+                       MCI_STOP,
+                       MCI_WAIT,
+                       &mgp,
+                       0);
         mciSendCommand(*pusDeviceID,
-                    MCI_CLOSE,
-                    MCI_WAIT,
-                    &mgp,
-                    0);
+                       MCI_CLOSE,
+                       MCI_WAIT,
+                       &mgp,
+                       0);
         #ifdef DEBUG_SOUNDS
             _Pmpf(("SOUND.DLL: Stopped old sound"));
         #endif
@@ -167,10 +167,10 @@ VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
     //     with other applications and get MM_MCIPASSDEVICE msgs.
     // From now on, the sound file will be our "device".
     ulrc = mciSendCommand(0,
-                MCI_OPEN,
-                MCI_WAIT | MCI_OPEN_ELEMENT | MCI_READONLY | MCI_OPEN_SHAREABLE,
-                &mop,
-                0);                              // No user parm
+                          MCI_OPEN,
+                          MCI_WAIT | MCI_OPEN_ELEMENT | MCI_READONLY | MCI_OPEN_SHAREABLE,
+                          &mop,
+                          0);                              // No user parm
 
     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
     {
@@ -188,16 +188,16 @@ VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
         // otherwise we won't be able to play that sound again
         // (remember: "device" is the sound file here)
         mciSendCommand(mop.usDeviceID,
-                    MCI_CLOSE,
-                    MCI_WAIT,
-                    &mgp,
-                    0);
+                       MCI_CLOSE,
+                       MCI_WAIT,
+                       &mgp,
+                       0);
         #ifdef DEBUG_SOUNDS
         {
             CHAR szError[1000];
             mciGetErrorString(ulrc, szError, sizeof(szError));
             _Pmpf(("  DeviceID %d has error %d (\"%s\")",
-                        mop.usDeviceID, ulrc, szError));
+                   mop.usDeviceID, ulrc, szError));
         }
         #endif
 
@@ -220,8 +220,8 @@ VOID EXPENTRY sndOpenSound(HWND hwndObject,       // in: Quick thread object wnd
  */
 
 VOID EXPENTRY sndPlaySound(HWND hwndObject,     // in: Quick thread object wnd
-                         PUSHORT pusDeviceID, // in: "device" ID (= sound file)
-                         ULONG ulVolume)      // in: volume for sound (0-100)
+                           PUSHORT pusDeviceID, // in: "device" ID (= sound file)
+                           ULONG ulVolume)      // in: volume for sound (0-100)
 {
     MCI_PLAY_PARMS  mpp;
     MCI_SET_PARMS   msp;
@@ -243,10 +243,10 @@ VOID EXPENTRY sndPlaySound(HWND hwndObject,     // in: Quick thread object wnd
     // the Quick thread object window
     mpp.hwndCallback = (HWND)hwndObject;
     mciSendCommand(*pusDeviceID,
-                    MCI_PLAY,
-                    MCI_NOTIFY,
-                    (PVOID)&mpp,
-                    0);
+                   MCI_PLAY,
+                   MCI_NOTIFY,
+                   (PVOID)&mpp,
+                   0);
 }
 
 /*
@@ -275,16 +275,16 @@ VOID EXPENTRY sndStopSound(PUSHORT pusDeviceID)
     // stop playing the sound (this will probably do
     // nothing if the sound is already done with)
     mciSendCommand(*pusDeviceID,
-                MCI_STOP,
-                MCI_WAIT,
-                &mgp,
-                0);
+                   MCI_STOP,
+                   MCI_WAIT,
+                   &mgp,
+                   0);
     // close the device
     mciSendCommand(*pusDeviceID,
-                MCI_CLOSE,
-                MCI_WAIT,
-                &mgp,
-                0);
+                   MCI_CLOSE,
+                   MCI_WAIT,
+                   &mgp,
+                   0);
     // set the Quick thread's device ID to 0 so
     // we know that we're not currently playing
     // anything

@@ -446,7 +446,8 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                     HWND hwndFrame2 = // wpshQueryFrameFromView(pFolder, OPEN_CONTENTS);
                             WinQueryWindow(hwndCnr, QW_PARENT);
 
-                    if (hwndFrame2) {
+                    if (hwndFrame2)
+                    {
                         // the passed mouse coords are relative to screen,
                         // so subtract frame wnd coords
                         WinQueryWindowPos(hwndFrame2, &swp);
@@ -469,11 +470,9 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
 
             fFolderSemOwned = !_wpRequestObjectMutexSem(pFolder, SEM_INDEFINITE_WAIT);
             wpshCheckIfPopulated(pFolder);
-            pNewObject = _wpCreateFromTemplate(
-                    pTemplate,
-                    pFolder,
-                    TRUE
-                );
+            pNewObject = _wpCreateFromTemplate(pTemplate,
+                                               pFolder,
+                                               TRUE);
 
             if (pNewObject)
             {
@@ -502,17 +501,17 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                         // the WPS shares records among views, so we need
                         // to update the record core info first
                         WinSendMsg(hwndCnr,
-                                    CM_QUERYRECORDINFO,
-                                    (MPARAM)&pmrc,
-                                    (MPARAM)1);         // one record only
+                                   CM_QUERYRECORDINFO,
+                                   (MPARAM)&pmrc,
+                                   (MPARAM)1);         // one record only
                         // un-display the new object at the old (default) location
                         WinSendMsg(hwndCnr,
-                                    CM_ERASERECORD,
-                                        // this only changes the visibility of the
-                                        // record without changing the recordcore;
-                                        // this msg is intended for drag'n'drop and such
-                                    (MPARAM)pmrc,
-                                    NULL);
+                                   CM_ERASERECORD,
+                                       // this only changes the visibility of the
+                                       // record without changing the recordcore;
+                                       // this msg is intended for drag'n'drop and such
+                                   (MPARAM)pmrc,
+                                   NULL);
 
                         // move object
                         pmrc->ptlIcon.x = pptlMenuMousePos->x;
@@ -520,16 +519,16 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
 
                         // repaint at new position
                         WinSendMsg(hwndCnr,
-                                    CM_INVALIDATERECORD,
-                                    (MPARAM)&pmrc,
-                                    MPFROM2SHORT(1,     // one record only
-                                        CMA_REPOSITION | CMA_ERASE));
+                                   CM_INVALIDATERECORD,
+                                   (MPARAM)&pmrc,
+                                   MPFROM2SHORT(1,     // one record only
+                                       CMA_REPOSITION | CMA_ERASE));
 
                         // scroll cnr work area to make the new object visible
                         cnrhScrollToRecord(hwndCnr,
-                                (PRECORDCORE)pmrc,
-                                CMA_TEXT,
-                                FALSE);
+                                           (PRECORDCORE)pmrc,
+                                           CMA_TEXT,
+                                           FALSE);
                     }
 
                 } // end if ((hwndCnr) && (pmrc))
@@ -549,9 +548,9 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                 {
                     // open settings of the newly created object
                     _wpViewObject(pNewObject,
-                        NULLHANDLE,
-                        OPEN_SETTINGS,
-                        0L);
+                                  NULLHANDLE,
+                                  OPEN_SETTINGS,
+                                  0L);
                 }
                 else if (usOpenSettings == 2)
                 {
@@ -573,11 +572,10 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                             // need to find out the "Title" column of
                             // the container which we need to pass to
                             // the container for enabling direct editing
-                            pFieldInfo = (PFIELDINFO)WinSendMsg(
-                                hwndCnr,
-                                CM_QUERYDETAILFIELDINFO,
-                                MPNULL,
-                                (MPARAM)CMA_FIRST);
+                            pFieldInfo = (PFIELDINFO)WinSendMsg(hwndCnr,
+                                                                CM_QUERYDETAILFIELDINFO,
+                                                                MPNULL,
+                                                                (MPARAM)CMA_FIRST);
 
                             // pFieldInfo now points to the first Details
                             // column; now we go through all the Details
@@ -593,11 +591,10 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                     break; // while
 
                                 // else get next column
-                                pFieldInfo = (PFIELDINFO)WinSendMsg(
-                                    hwndCnr,
-                                    CM_QUERYDETAILFIELDINFO,
-                                    pFieldInfo,
-                                    (MPARAM)CMA_NEXT);
+                                pFieldInfo = (PFIELDINFO)WinSendMsg(hwndCnr,
+                                                                    CM_QUERYDETAILFIELDINFO,
+                                                                    pFieldInfo,
+                                                                    (MPARAM)CMA_NEXT);
                             }
 
                             // in Details view, direct editing needs the
@@ -605,7 +602,8 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                             CnrEditData.pFieldInfo = pFieldInfo;
                             CnrEditData.id = CID_LEFTDVWND;
                         }
-                        else {
+                        else
+                        {
                             // other than Details view: that's easy,
                             // we only need the container ID
                             CnrEditData.pFieldInfo = NULL;
@@ -623,9 +621,9 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                         // finally, this message switches to
                         // direct editing of the title
                         WinPostMsg(hwndCnr,
-                            CM_OPENEDIT,
-                            (MPARAM)&CnrEditData,
-                            MPNULL);
+                                   CM_OPENEDIT,
+                                   (MPARAM)&CnrEditData,
+                                   MPNULL);
                     } // end if (hwndCnr)
                 } // end else if (usOpenSettings == 2)
 

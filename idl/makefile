@@ -8,7 +8,9 @@
 #
 #       Input:          ./*.IDL
 #
-#       Output:         ../include/classes/*.h, ../include/classes/*.ih
+#       Output:         ../include/classes/*.h
+#                       ../include/classes/*.ih
+#                       ../src/classes/*.c
 #
 
 # Say hello to yourself.
@@ -70,7 +72,7 @@ all: $(OUTPUTDIR)\xclslist.h \
         sc -p -v -r -d..\src\classes -maddstar -mnoint -S128000 -C128000 -sc $(@B).idl
 # emit DEF (this dir):
         sc -p -v -r -maddstar -mnoint -S128000 -C128000 -s def $(@B).idl
-# cleanup IH:
+# cleanup IH: this removes the ugly #pragma's for VAC++ 3.0
         strrpl $(OUTPUTDIR)\$(@B).ih "#pragma checkout(suspend)" " "
         strrpl $(OUTPUTDIR)\$(@B).ih "#pragma checkout(resume)" " "
 

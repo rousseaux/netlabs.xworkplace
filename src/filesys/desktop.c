@@ -95,7 +95,83 @@
 
 /* ******************************************************************
  *                                                                  *
- *   XFldDesktop implementation                                     *
+ *   Query setup strings                                            *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ dtpQuerySetup:
+ *      implementation of XFldDesktop::xwpQuerySetup2.
+ *      See remarks there.
+ *
+ *      This returns the length of the XFldDesktop
+ *      setup string part only.
+ *
+ *@@added V0.9.1 (2000-01-20) [umoeller]
+ */
+
+ULONG dtpQuerySetup(WPDesktop *somSelf,
+                    PSZ pszSetupString,
+                    ULONG cbSetupString)
+{
+    PSZ     pszTemp = NULL;
+    ULONG   ulReturn = 0;
+    ULONG   ulValue = 0,
+            ulDefaultValue = 0;
+
+    // AUTOLOCKUP=YES/NO
+    /* if (_wpQueryAutoLockup(somSelf))
+        strhxcat(&pszTemp, "AUTOLOCKUP=YES");
+
+    // LOCKUPAUTODIM=YES/NO
+    if (_wpQueryLockupAutoDim(somSelf) == FALSE)
+        strhxcat(&pszTemp, "LOCKUPAUTODIM=NO");
+
+    // LOCKUPBACKGROUND
+
+    // LOCKUPFULLSCREEN
+    if (_wpQueryLockupFullScreen(somSelf) == FALSE)
+        strhxcat(&pszTemp, "LOCKUPFULLSCREEN=NO");
+
+    // LOCKUPONSTARTUP
+    if (_wpQueryLockupOnStart(somSelf))
+        strhxcat(&pszTemp, "LOCKUPONSTARTUP=YES");
+
+    _wpQueryLockupBackground();
+
+    // LOCKUPTIMEOUT
+    ulValue = _wpQueryLockupTimeout(somSelf);
+    if (ulValue != 3)
+    {
+        CHAR szTemp[300];
+        sprintf(szTemp, "LOCKUPTIMEOUT=%d", ulValue);
+        strhxcat(&pszTemp, szTemp);
+    } */
+
+    /*
+     * append string
+     *
+     */
+
+    if (pszTemp)
+    {
+        // return string if buffer is given
+        if ( (pszSetupString) && (cbSetupString) )
+            strhncpy0(pszSetupString,   // target
+                      pszTemp,          // source
+                      cbSetupString);   // buffer size
+
+        // always return length of string
+        ulReturn = strlen(pszTemp);
+        free(pszTemp);
+    }
+
+    return (ulReturn);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   Desktop menus                                                  *
  *                                                                  *
  ********************************************************************/
 
@@ -138,21 +214,22 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             if (pGlobalSettings->fDTMShutdown)
             {
                 // "Shutdown" menu item enabled:
-                hwndMenuInsert = winhInsertSubmenu(
-                                  hwndMenu,
-                                  // position: after existing "Shutdown" item
-                                  (SHORT)WinSendMsg(hwndMenu,
-                                          MM_ITEMPOSITIONFROMID,
-                                          MPFROM2SHORT(WPMENUID_SHUTDOWN, FALSE),
-                                          MPNULL) + 1,
-                                  pGlobalSettings->VarMenuOffset + ID_XFM_OFS_SHUTDOWNMENU,
-                                  pNLSStrings->pszShutdown,
-                                  MIS_TEXT,
-                                  // first item ID in "Shutdown" menu:
-                                  // default OS/2 shutdown
-                                  WPMENUID_SHUTDOWN,
-                                  "Default OS/2 shutdown...",
-                                  MIS_TEXT, 0);
+                hwndMenuInsert
+                    = winhInsertSubmenu(hwndMenu,
+                                        // position: after existing "Shutdown" item
+                                        (SHORT)WinSendMsg(hwndMenu,
+                                                          MM_ITEMPOSITIONFROMID,
+                                                          MPFROM2SHORT(WPMENUID_SHUTDOWN,
+                                                                       FALSE),
+                                                          MPNULL) + 1,
+                                        pGlobalSettings->VarMenuOffset + ID_XFM_OFS_SHUTDOWNMENU,
+                                        pNLSStrings->pszShutdown,
+                                        MIS_TEXT,
+                                        // first item ID in "Shutdown" menu:
+                                        // default OS/2 shutdown
+                                        WPMENUID_SHUTDOWN,
+                                        "Default OS/2 shutdown...",
+                                        MIS_TEXT, 0);
 
                 sOrigShutdownPos = MIT_END;
 
@@ -324,26 +401,26 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_SORT,
-            pGlobalSettings->fDTMSort);
+                              pGlobalSettings->fDTMSort);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_ARRANGE,
-            pGlobalSettings->fDTMArrange);
+                              pGlobalSettings->fDTMArrange);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_SYSTEMSETUP,
-            pGlobalSettings->fDTMSystemSetup);
+                              pGlobalSettings->fDTMSystemSetup);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_LOCKUP  ,
-            pGlobalSettings->fDTMLockup);
+                              pGlobalSettings->fDTMLockup);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_SHUTDOWN,
-            pGlobalSettings->fDTMShutdown);
+                              pGlobalSettings->fDTMShutdown);
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_SHUTDOWNMENU,
-            pGlobalSettings->fDTMShutdownMenu);
+                              pGlobalSettings->fDTMShutdownMenu);
     }
 
     if (flFlags & CBI_ENABLE)
     {
         WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_SHUTDOWNMENU,
-                          (     (pGlobalSettings->fXShutdown)
-                            &&  (pGlobalSettings->fDTMShutdown)
-                            &&  (!pGlobalSettings->NoWorkerThread)
-                          ));
+                         (     (pGlobalSettings->fXShutdown)
+                           &&  (pGlobalSettings->fDTMShutdown)
+                           &&  (!pGlobalSettings->NoWorkerThread)
+                         ));
     }
 }
 
@@ -468,7 +545,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // prepare the control to properly display
             // stretched bitmaps
             ctlPrepareStretchedBitmap(WinWindowFromID(pcnbp->hwndPage,
-                                              ID_XSDI_DTP_LOGOBITMAP),
+                                                      ID_XSDI_DTP_LOGOBITMAP),
                                       TRUE);    // preserve proportions
 
             // set entry field limit
@@ -491,11 +568,11 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PSZ         pszBootLogoFile = cmnQueryBootLogoFile();
 
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_BOOTUPSTATUS,
-                pGlobalSettings->ShowBootupStatus);
+                              pGlobalSettings->ShowBootupStatus);
 
         // "boot logo enabled"
         winhSetDlgItemChecked(pcnbp->hwndPage, ID_XSDI_DTP_BOOTLOGO,
-                pGlobalSettings->BootLogo);
+                              pGlobalSettings->BootLogo);
 
         // "boot logo style"
         if (pGlobalSettings->bBootLogoStyle == 0)
@@ -503,7 +580,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         else
             usRadioID = ID_XSDI_DTP_LOGO_BLOWUP;
         winhSetDlgItemChecked(pcnbp->hwndPage, usRadioID,
-                BM_CHECKED);
+                              BM_CHECKED);
 
         // set boot logo file entry field
         WinSetDlgItemText(pcnbp->hwndPage,
@@ -546,7 +623,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         free(pszBootLogoFile);
 
         WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_LOGOBITMAP,
-                          pGlobalSettings->BootLogo);
+                         pGlobalSettings->BootLogo);
 
         if (WinQueryObject(XFOLDER_STARTUPID))
             WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
@@ -656,7 +733,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 PSZ pszNewBootLogoFile = winhQueryWindowText(pcnbp->hwndControl);
                 if (usNotifyCode == EN_CHANGE)
                     WinEnableControl(pcnbp->hwndPage, ID_XSDI_DTP_TESTLOGO,
-                                        (access(pszNewBootLogoFile, 0) == 0));
+                                     (access(pszNewBootLogoFile, 0) == 0));
                 else if (usNotifyCode == EN_KILLFOCUS)
                 {
                     // query new file name from entry field

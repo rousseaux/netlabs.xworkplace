@@ -283,6 +283,12 @@ Contained 0 This is used to access the SOM Interface Repository (those ".IR" fil
 Container 0 Container class for the SOM Interface Repository. See "Contained".
 SOMClass 0 This is the root class for all SOM metaclasses. Since, with SOM, all classes are objects too, they need to be an instance of a class themselves, the so-called "metaclass". Per default, SOMClass is the metaclass for any SOM class, but most classes define their own metaclasses with their own methods.
 SOMClassMgr 0 An instance of this class is created by the SOM runtime automatically to manage SOM classes. This is needed for run-time class manipulation.
-
+WPClassManager 0 The WPS subclasses the SOMClassMgr to implement WPS class manipulation.
+SOMMCooperative 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
+SOMMCooperativeSistered 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
+SOMMCooperativeRedispatched 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
+SOMMBeforeAfter 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
+SOMMSingleInstance 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
+SOMMTraced 0 Part of the SOM metaclass framework. See the SOM Programming Guide for details.
 
 

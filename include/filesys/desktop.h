@@ -26,12 +26,34 @@
 #ifndef SETPAGES_HEADER_INCLUDED
     #define SETPAGES_HEADER_INCLUDED
 
+    /* ******************************************************************
+     *                                                                  *
+     *   Query setup strings                                            *
+     *                                                                  *
+     ********************************************************************/
+
+    ULONG dtpQuerySetup(WPDesktop *somSelf,
+                        PSZ pszSetupString,
+                        ULONG cbSetupString);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   Desktop menus                                                  *
+     *                                                                  *
+     ********************************************************************/
+
     VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                             HWND hwndMenu);
 
     BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                              HWND hwndFrame,
                              ULONG ulMenuId);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   XFldDesktop notebook settings pages callbacks (notebook.c)     *
+     *                                                                  *
+     ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,

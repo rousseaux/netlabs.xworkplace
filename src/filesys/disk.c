@@ -122,21 +122,27 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
         if (pRootFolder == NULL)
         {
             // drive not ready:
-            CHAR    szError[400],
+            CHAR    szError[1000],
                     szTitle[400];
             ULONG   ulLen = 0;
+            APIRET  arc2 = NO_ERROR;
 
             // get error message for APIRET
-            CHAR    szDrive[3] = "C:";
+            CHAR    szDrive[3] = "?:";
             PSZ     pszTable = szDrive;
             szDrive[0] = _wpQueryLogicalDrive(somSelf) + 'A' - 1;
 
-            DosGetMessage(&pszTable, 1,
-                          szError, sizeof(szError),
-                          arc,
-                          "OSO001.MSG",        // default OS/2 message file
-                          &ulLen);
+            arc2 = DosGetMessage(NULL, 0, // &pszTable, 1,
+                                 szError, sizeof(szError),
+                                 arc,
+                                 "OSO001.MSG",        // default OS/2 message file
+                                 &ulLen);
             szError[ulLen] = 0;
+
+            if (arc2 != NO_ERROR)
+                sprintf(szError,
+                        "%s: DosGetMessage returned error %d",
+                        __FUNCTION__, arc2);
 
             cmnGetMessage(NULL, 0, szTitle, sizeof(szTitle), 104);
                             // "XFolder: Error"

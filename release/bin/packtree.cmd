@@ -17,5 +17,5 @@ foldername = filespec("NAME", directory());
 
 /* now pack */
 Say "Packing "directory()" into file "foldername".zip..."
-"zip -r9 "foldername".zip *"
+"zip -r9 ..\"foldername".zip *"
 

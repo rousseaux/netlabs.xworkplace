@@ -966,7 +966,7 @@ BEGIN
     BEGIN
         GROUPBOX        "Treesize V1.3", -1, 5, 24, 230, 150
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
-        LTEXT           "(W) (C) 1998 Ulrich M”ller", -1, 15, 156, 145, 8
+        LTEXT           "(C) 1998-2000 Ulrich M”ller", -1, 15, 156, 145, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "ulrich.moeller@rz.hu-berlin.de", -1, 15, 147, 145, 
                         8
@@ -1667,24 +1667,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_OBJECTDETAILS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_OBJECTDETAILS, 0, 0, 275, 180, NOT FS_DLGBORDER | 
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_XSDI_DTL_CNR, 12, 52, 212, 76, CCS_SINGLESEL | 
-                        CCS_VERIFYPOINTERS
-        GROUPBOX        "Internals", -1, 6, 48, 225, 89, NOT WS_GROUP
-        GROUPBOX        "Object settings", -1, 6, 22, 226, 24
-        LTEXT           "~Object hotkey:", ID_XSDI_DTL_HOTKEY_TXT, 12, 26, 
-                        64, 12, DT_VCENTER | DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_DTL_HOTKEY, 80, 28, 104, 8, ES_MARGIN
-        PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 190, 26, 36, 12
-        PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_OSD_SETTINGS_KERNEL1 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_OSD_SETTINGS_KERNEL1, 0, 0, 275, 180, NOT FS_DLGBORDER | 
@@ -1961,7 +1943,7 @@ BEGIN
     BEGIN
         GROUPBOX        "XWorkplace %a", ID_XFDI_XFLDVERSION, 5, 24, 215, 99
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
-        LTEXT           "(C) 1997-99 Ulrich M”ller", -1, 15, 105, 145, 8
+        LTEXT           "(C) 1997-2000 Ulrich M”ller", -1, 15, 105, 145, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "ulrich.moeller@rz.hu-berlin.de", -1, 15, 96, 145, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
@@ -2207,8 +2189,8 @@ BEGIN
                         "lt is none", -1, 70, 42, 235, 11, DT_WORDBREAK
         LTEXT           "-P <params>", 207, 10, 45, 55, 8
                         PRESPARAMS PP_FONTNAMESIZE, "8.Courier"
-        RTEXT           "Netscape DDE Interface V1.2 (W) (C) 1998 Ulrich M”l"
-                        "ler", 205, 10, 159, 275, 8
+        RTEXT           "Netscape DDE Interface V1.2 (C) 1998-2000 Ulrich M”"
+                        "ller", 205, 10, 159, 275, 8
         LTEXT           "start Netscape minimized", -1, 70, 33, 260, 11, 
                         DT_WORDBREAK
         LTEXT           "-m", 204, 10, 36, 20, 8
@@ -2234,7 +2216,7 @@ BEGIN
         LTEXT           "Starting Netscape...", -1, 5, 1, 160, 9, 
                         DT_WORDBREAK
         RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-99 Ulrich M”ller", -1, 25, 12, 110, 8
+        RTEXT           "(C) 1998-2000 Ulrich M”ller", -1, 25, 12, 110, 8
     END
 END
 
@@ -2247,7 +2229,7 @@ BEGIN
         LTEXT           "Contacting Netscape...", -1, 5, 1, 160, 9, 
                         DT_WORDBREAK
         RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-99 Ulrich M”ller", -1, 25, 12, 110, 8
+        RTEXT           "(C) 1998-2000 Ulrich M”ller", -1, 25, 12, 110, 8
     END
 END
 
@@ -2470,5 +2452,26 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
         PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_OBJECTDETAILS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_OBJECTDETAILS, 0, 0, 275, 180, NOT FS_DLGBORDER | 
+            WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_XSDI_DTL_CNR, 12, 66, 212, 76, CCS_SINGLESEL | 
+                        CCS_VERIFYPOINTERS
+        GROUPBOX        "Internals", -1, 6, 46, 225, 106, NOT WS_GROUP
+        LTEXT           "Setup:", -1, 12, 52, 24, 12, DT_VCENTER
+        ENTRYFIELD      "", ID_XSDI_DTL_SETUP_ENTRY, 40, 54, 182, 8, 
+                        ES_MARGIN | ES_READONLY
+        GROUPBOX        "Object settings", -1, 6, 22, 226, 22
+        LTEXT           "~Object hotkey:", ID_XSDI_DTL_HOTKEY_TXT, 12, 24, 
+                        64, 12, DT_VCENTER | DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_DTL_HOTKEY, 80, 26, 104, 8, ES_MARGIN
+        PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 190, 24, 36, 12
+        PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
     END
 END

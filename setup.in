@@ -53,7 +53,7 @@
 #    extra heap checking functions into XWorkplace.
 #    This will slow down XWorkplace's performance SIGNIFICANTLY.
 
-# DEBUG=YES
+DEBUG=YES
 
 
 # DYNAMIC TRACE
