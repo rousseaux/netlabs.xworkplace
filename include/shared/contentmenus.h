@@ -64,17 +64,29 @@
          *      and folder content items.
          *
          *      This is returned also from cmnuGetVarItem.
+         *
+         *@@changed V0.9.19 (2002-06-18) [umoeller]: now allocating size dynamically
          */
 
         typedef struct _VARMENULISTITEM
         {
             WPObject    *pObject;       // object pointer
-            CHAR        szTitle[100];   // object title (truncated if neccessary)
             ULONG       ulObjType;
                     // for folder content menus, one of the following:
                     // -- OC_CONTENTFOLDER: content submenu (folder)
                     // -- OC_CONTENT: non-folder item (any class)
                     // for other menus, any of the OC_* flags
+
+            ULONG       ulTitleLen;     // strlen(szTitle)
+
+            PSZ         pszTitle;       // object title; points to
+                                        // after aptlPositions
+                                        // NOTE: can be NULL!
+
+            POINTL      aptlPositions[1];
+                                // array of ulTitleLen POINTL structs for
+                                // the GpiQueryCharString call in
+                                // cmnuMeasureItem (points to after szTitle)
         } VARMENULISTITEM, *PVARMENULISTITEM;
 
         /*

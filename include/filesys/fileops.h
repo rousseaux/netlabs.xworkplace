@@ -136,6 +136,9 @@
     BOOL fopsMoveObjectConfirmed(WPObject *pObject,
                                  WPFolder *pTargetFolder);
 
+    BOOL fopsRenameObjectConfirmed(WPObject *pObject,
+                                   PCSZ pcszNewTitle);
+
     /********************************************************************
      *
      *   Generic file tasks framework

@@ -455,6 +455,21 @@ Do you wish to start the program anyway?
 
 <--XFL0237-->: A protection violation occured. The operation cannot continue.
 
+<--XFL0238-->: Rename
+    "%1"
+to
+    "%2"?
+
+<--XFL0239-->: The "replace" expression you have specified is invalid. The following error occured:
+
+%1
+
+If you are using backreferences (e.g. "\1") in the "replace" string, make sure you specify corresponding brackets in the "find" string.
+
+<--XFL0240-->: No objects were found that matched your find criteria.
+
+<--XFL0241-->: %1 object(s) matched your find criteria. Of these, %2 object(s) were renamed.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

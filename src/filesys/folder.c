@@ -1394,7 +1394,150 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
 #endif
 
 /*
+ * GetICONPOS:
+ *
+ *
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ */
+
+static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
+                           PSORTBYICONPOS psip)
+{
+    PICONPOS                    pip;
+    CHAR                        *p;
+    USHORT usStartPos = 21;     // OS/2 2.1 and above, says Henk
+
+    // ICONPOS is defined in PMWP.H as folllows:
+    //     typedef struct _ICONPOS
+    //     {
+    //        POINTL  ptlIcon;
+    //        CHAR    szIdentity[1];
+    //     } ICONPOS;
+    //     typedef ICONPOS *PICONPOS;
+
+    // now compare all the objects in the .ICONPOS structure
+    // to the identity string of the search object
+
+    for (   pip = (PICONPOS)(psip->pICONPOS + usStartPos);
+            (PBYTE)pip < (psip->pICONPOS + psip->usICONPOSSize);
+        )
+    {   // pip now points to an ICONPOS structure
+
+        // go beyond the class name
+        if (p = strchr(pip->szIdentity, ':'))
+        {
+            /* #ifdef DEBUG_ORDEREDLIST
+                _Pmpf(("      Identities: %s and %s...", p, poli->szIdentity));
+            #endif */
+
+            if (!stricmp(p, poli->szIdentity))
+                // object found: return the ICONPOS address
+                return (pip);
+            else
+                // not identical: go to next ICONPOS structure
+                pip = (PICONPOS)(   (PBYTE)pip
+                                  + sizeof(POINTL)
+                                  + strlen(pip->szIdentity)
+                                  + 1);
+        }
+        else
+            break;
+    }
+    return NULL;
+}
+
+/*
+ * fdrSortByICONPOS:
+ *      callback sort function for lstSort to sort the
+ *      menu items according to a folder's ICONPOS EAs.
+ *      pICONPOS points to the ICONPOS data.
+ *
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ */
+
+SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
+{
+    /* #ifdef DEBUG_ORDEREDLIST
+        _Pmpf(("    Comparing %s and %s...",
+            _wpQueryTitle(((PORDEREDLISTITEM)pItem1)->pObj),
+            _wpQueryTitle(((PORDEREDLISTITEM)pItem2)->pObj)
+        ));
+    #endif */
+    if ((pItem1) && (pItem2))
+    {
+        PICONPOS pip1 = GetICONPOS(((PORDEREDLISTITEM)pItem1), psip),
+                 pip2 = GetICONPOS(((PORDEREDLISTITEM)pItem2), psip);
+
+        if ((pip1) && (pip2))
+            if (pip1 < pip2)
+                return (-1);
+            else return (1);
+        else if (pip1)
+            return (-1);
+        else if (pip2)
+            return (1);
+    }
+
+    return 0;
+}
+
+/* ******************************************************************
+ *
+ *   "Select some" dialog
+ *
+ ********************************************************************/
+
+#define EF_LIMIT        CCHMAXPATH
+
+/*
+ *@@ AddEntryToDropDown:
+ *      copies the current contents of the drop-down
+ *      entry field to the list, making sure it's unique.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+VOID AddEntryToDropDown(HWND hwndDlg,
+                        ULONG ulID,
+                        BOOL fSelect)       // in: select entry field too?
+{
+    HWND    hwndDropDown = WinWindowFromID(hwndDlg, ulID);
+    CHAR    szMask[EF_LIMIT];
+
+    if (WinQueryWindowText(hwndDropDown,
+                           sizeof(szMask),
+                           szMask))
+    {
+        SHORT sLBIndex;
+
+        if (fSelect)
+        {
+            WinSetFocus(HWND_DESKTOP, hwndDropDown);
+            // select entire string in drop-down
+            winhEntryFieldSelectAll(hwndDropDown);
+        }
+
+        // add file mask to list box (V0.9.0);
+        // if it exists, delete the old one first
+        sLBIndex = (SHORT)WinSendMsg(hwndDropDown,
+                                     LM_SEARCHSTRING,
+                                     MPFROM2SHORT(0,       // no flags
+                                                  LIT_FIRST),
+                                     szMask);
+        if (sLBIndex != LIT_NONE)
+            // found: remove
+            WinDeleteLboxItem(hwndDropDown,
+                              sLBIndex);
+
+        WinInsertLboxItem(hwndDropDown,
+                          0,            // at beginning
+                          szMask);
+    }
+}
+
+/*
  *@@ DoSelect:
+ *      does the actual selection from fnwpSelectSome.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
@@ -1403,7 +1546,7 @@ static VOID DoSelect(HWND hwndDlg,
                      BOOL fSelect,
                      BOOL fRegExp)
 {
-    CHAR szMask[CCHMAXPATH];
+    CHAR    szMask[EF_LIMIT];
 
     HWND    hwndFrame;
     HWND    hwndCnr;
@@ -1422,11 +1565,11 @@ static VOID DoSelect(HWND hwndDlg,
         if (strlen(szMask))
         {
             PMINIRECORDCORE pmrc = NULL;
-            ERE *pERE = NULL;
+            ERE *pEre = NULL;
             int rc = 0;
 
             if (fRegExp)
-                if (!(pERE = rxpCompile(szMask,
+                if (!(pEre = rxpCompile(szMask,
                                         0,
                                         &rc)))
                 {
@@ -1462,7 +1605,7 @@ static VOID DoSelect(HWND hwndDlg,
                     ERE_MATCHINFO   mi;
 
                     if (fRegExp)
-                        fMatch = (    (rxpMatch_fwd(pERE,
+                        fMatch = (    (rxpMatch_fwd(pEre,
                                                     0,
                                                     pmrc->pszIcon,
                                                     0,
@@ -1489,36 +1632,100 @@ static VOID DoSelect(HWND hwndDlg,
                 }
             } while (pmrc);
 
-            if (pERE)
-                rxpFree(pERE);
+            if (pEre)
+                rxpFree(pEre);
 
         }
 
-        WinSetFocus(HWND_DESKTOP, hwndDropDown);
-        // select entire string in drop-down
-        winhEntryFieldSelectAll(hwndDropDown);
-
-        // add file mask to list box (V0.9.0);
-        // if it exists, delete the old one first
-        sLBIndex = (SHORT)WinSendMsg(hwndDropDown,
-                                     LM_SEARCHSTRING,
-                                     MPFROM2SHORT(0,       // no flags
-                                                  LIT_FIRST),
-                                     szMask);
-        if (sLBIndex != LIT_NONE)
-            // found: remove
-            WinDeleteLboxItem(hwndDropDown,
-                              sLBIndex);
-
-        WinInsertLboxItem(hwndDropDown,
-                          0,            // at beginning
-                          szMask);
+        AddEntryToDropDown(hwndDlg,
+                           ID_XFDI_SOME_ENTRYFIELD,
+                           TRUE);       // select
     }
 }
 
 /*
- *@@ fdr_fnwpSelectSome:
- *      dlg proc for "Select by name" window.
+ *@@ FillDropDownFromIni:
+ *      Shared by both fnwpSelectSome and fnwpBatchRename.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+static VOID FillDropDownFromIni(HWND hwndDropDown,
+                                PCSZ pcszIniKey) // in: XWorkplace ini key
+{
+    PSZ     pszLast10 = NULL;
+    ULONG   cbLast10 = 0;
+
+    // load last 10 selections from OS2.INI (V0.9.0)
+    if (pszLast10 = prfhQueryProfileData(HINI_USER,
+                                         INIAPP_XWORKPLACE,
+                                         pcszIniKey,
+                                         &cbLast10))
+    {
+        // something found:
+        PSZ     p = pszLast10;
+        while (p < (pszLast10 + cbLast10))
+        {
+            WinInsertLboxItem(hwndDropDown, LIT_END, p);
+
+            p += strlen(p) + 1; // go beyond null byte
+        }
+
+        free(pszLast10);
+    }
+}
+
+/*
+ *@@ WriteDropDownToIni:
+ *      reverse to FillDropDownFromIni, this writes
+ *      up to ten entries from the drop-down back
+ *      to OS2.INI.
+ *
+ *      Shared by both fnwpSelectSome and fnwpBatchRename.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+VOID WriteDropDownToIni(HWND hwndDropDown,
+                        PCSZ pcszIniKey)
+{
+    ULONG   ul;
+    PSZ     pszToSave = NULL;
+    ULONG   cbToSave = 0;
+
+    for (ul = 0;
+         ul < 10;
+         ul++)
+    {
+        CHAR    szEntry[EF_LIMIT];
+        if (WinQueryLboxItemText(hwndDropDown,
+                                 ul,
+                                 szEntry,
+                                 sizeof(szEntry))
+            < 1)
+            break;
+
+        strhArrayAppend(&pszToSave,
+                        szEntry,
+                        0,
+                        &cbToSave);
+    }
+
+    if (cbToSave)
+        PrfWriteProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)pcszIniKey,
+                            pszToSave,
+                            cbToSave);
+
+    if (pszToSave)
+        free(pszToSave);
+}
+
+/*
+ *@@ fnwpSelectSome:
+ *      dlg proc for "Select by name" window, used by
+ *      fdrShowSelectSome.
  *
  *      This selects or deselects items in the corresponding
  *      folder window, which is stored in QWL_USER.
@@ -1529,9 +1736,9 @@ static VOID DoSelect(HWND hwndDlg,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: added regexp; fixed entry field length
  */
 
-static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    MRESULT mrc = MPNULL;
+    MRESULT mrc = 0;
     BOOL    fWriteAndClose = FALSE;
 
     switch (msg)
@@ -1543,34 +1750,15 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
 
         case WM_INITDLG:
         {
-            CHAR    szTitle[CCHMAXPATH];
-            PSZ     pszLast10 = NULL;
-            ULONG   cbLast10 = 0;
-
             HWND    hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
 
-            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)mp2); // Owner frame hwnd;
+            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)mp2); // owner frame hwnd;
 
-            winhSetEntryFieldLimit(hwndDropDown, 250);
+            winhSetEntryFieldLimit(hwndDropDown, EF_LIMIT);
                     // was missing V0.9.19 (2002-04-17) [umoeller]
 
-            // load last 10 selections from OS2.INI (V0.9.0)
-            if (pszLast10 = prfhQueryProfileData(HINI_USER,
-                                                 INIAPP_XWORKPLACE,
-                                                 INIKEY_LAST10SELECTSOME, // "SelectSome"
-                                                 &cbLast10))
-            {
-                // something found:
-                PSZ     p = pszLast10;
-                while (p < (pszLast10 + cbLast10))
-                {
-                    WinInsertLboxItem(hwndDropDown, LIT_END, p);
-
-                    p += strlen(p) + 1; // go beyond null byte
-                }
-
-                free(pszLast10);
-            }
+            FillDropDownFromIni(hwndDropDown,
+                                INIKEY_LAST10SELECTSOME);
 
             // give the drop-down the focus
             WinSetFocus(HWND_DESKTOP, hwndDropDown);
@@ -1682,35 +1870,8 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
     {
         // dialog closing:
         // write drop-down entries back to OS2.INI (V0.9.0)
-        ULONG   ul = 0;
-        PSZ     pszToSave = NULL;
-        ULONG   cbToSave = 0;
-        HWND    hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
-
-        for (ul = 0;
-             ul < 10;
-             ul++)
-        {
-            CHAR    szEntry[CCHMAXPATH];
-            if (WinQueryLboxItemText(hwndDropDown,
-                                     ul,
-                                     szEntry,
-                                     sizeof(szEntry))
-                < 1)
-                break;
-
-            strhArrayAppend(&pszToSave,
-                            szEntry,
-                            0,
-                            &cbToSave);
-        }
-
-        if (cbToSave)
-            PrfWriteProfileData(HINI_USER,
-                                (PSZ)INIAPP_XWORKPLACE,
-                                (PSZ)INIKEY_LAST10SELECTSOME, // "SelectSome"
-                                pszToSave,
-                                cbToSave);
+        WriteDropDownToIni(WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD),
+                           INIKEY_LAST10SELECTSOME);
 
         WinDestroyWindow(hwndDlg);
     }
@@ -1721,68 +1882,67 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
 #define BUTTON_WIDTH        75
 
 static const CONTROLDEF
-    IntroText = CONTROLDEF_TEXT_WORDBREAK(
+    SomeIntroTxt = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XFDI_SOME_INTROTXT,
                             -100),
-    MaskEF = CONTROLDEF_DROPDOWN(
+    SomeMaskEF = CONTROLDEF_DROPDOWN(
                             ID_XFDI_SOME_ENTRYFIELD,
                             -100,
                             175),
-    RegExpCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XFDI_SOME_REGEXP_CP,
-                            -100,
-                            -1),
-    SelectButton = CONTROLDEF_DEFNOFOCUSBUTTON(
+    SomeRegExpCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_SOME_REGEXP_CP),
+    SomeCaseSensitiveCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_SOME_CASESENSITIVE_CB),
+    SomeSelectButton = CONTROLDEF_DEFNOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_SELECT,
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT),
-    DeselectButton = CONTROLDEF_NOFOCUSBUTTON(
+    SomeDeselectButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_DESELECT,
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT),
-    SelectAllButton = CONTROLDEF_NOFOCUSBUTTON(
+    SomeSelectAllButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_SELECTALL,
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT),
-    DeselectAllButton = CONTROLDEF_NOFOCUSBUTTON(
+    SomeDeselectAllButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_DESELECTALL,
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT),
-    CloseButton = CONTROLDEF_NOFOCUSBUTTON(
+    SomeCloseButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             DID_CLOSE,
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT),
-    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+    SomeHelpButton = CONTROLDEF_HELPPUSHBUTTON(
                             LOAD_STRING,
                             DID_HELP,
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM dlgSelectSome[] =
+static const DLGHITEM G_dlgSelectSome[] =
     {
         START_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&IntroText),
+                CONTROL_DEF(&SomeIntroTxt),
             START_ROW(0),
-                CONTROL_DEF(&MaskEF),
+                CONTROL_DEF(&SomeMaskEF),
             START_ROW(0),
-                CONTROL_DEF(&RegExpCB),
+                CONTROL_DEF(&SomeRegExpCB),
             START_ROW(0),
-                CONTROL_DEF(&SelectButton),
-                CONTROL_DEF(&DeselectButton),
+                CONTROL_DEF(&SomeCaseSensitiveCB),
             START_ROW(0),
-                CONTROL_DEF(&SelectAllButton),
-                CONTROL_DEF(&DeselectAllButton),
+                CONTROL_DEF(&SomeSelectButton),
+                CONTROL_DEF(&SomeDeselectButton),
             START_ROW(0),
-                CONTROL_DEF(&CloseButton),
-                CONTROL_DEF(&HelpButton),
+                CONTROL_DEF(&SomeSelectAllButton),
+                CONTROL_DEF(&SomeDeselectAllButton),
+            START_ROW(0),
+                CONTROL_DEF(&SomeCloseButton),
+                CONTROL_DEF(&SomeHelpButton),
         END_TABLE,
     };
 
@@ -1791,6 +1951,7 @@ static const DLGHITEM dlgSelectSome[] =
  *      shows the "Select some" window.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed leak
  */
 
 VOID fdrShowSelectSome(HWND hwndFrame)
@@ -1798,16 +1959,17 @@ VOID fdrShowSelectSome(HWND hwndFrame)
     HWND hwndSelectSome;
     PDLGHITEM paNew;
 
-    if (!cmnLoadDialogStrings(dlgSelectSome,
-                              ARRAYITEMCOUNT(dlgSelectSome),
+    if (!cmnLoadDialogStrings(G_dlgSelectSome,
+                              ARRAYITEMCOUNT(G_dlgSelectSome),
                               &paNew))
+    {
         if (!dlghCreateDlg(&hwndSelectSome,
                            hwndFrame,         // owner
                            FCF_FIXED_DLG,
-                           fdr_fnwpSelectSome,
+                           fnwpSelectSome,
                            cmnGetString(ID_XFDI_SELECTSOME_TITLE),
                            paNew,
-                           ARRAYITEMCOUNT(dlgSelectSome),
+                           ARRAYITEMCOUNT(G_dlgSelectSome),
                            (PVOID)hwndFrame,    // dlg params
                            cmnQueryDefaultFont()))
         {
@@ -1816,94 +1978,616 @@ VOID fdrShowSelectSome(HWND hwndFrame)
                              PLF_SMART);
             WinShowWindow(hwndSelectSome, TRUE);
         }
+
+        free(paNew);        // was missing V0.9.19 (2002-06-18) [umoeller]
+    }
+}
+
+/* ******************************************************************
+ *
+ *   "Batch rename" dialog
+ *
+ ********************************************************************/
+
+static const CONTROLDEF
+    BatchIntroTxt = CONTROLDEF_TEXT_WORDBREAK(
+                            LOAD_STRING,
+                            ID_XFDI_BATCH_INTROTXT,
+                            -100),
+    BatchSourceTxt = LOADDEF_TEXT(
+                            ID_XFDI_BATCH_SOURCETXT),
+    BatchSourceEF = CONTROLDEF_DROPDOWN(
+                            ID_XFDI_BATCH_SOURCEEF,
+                            -100,
+                            175),
+    BatchTargetTxt = LOADDEF_TEXT(
+                            ID_XFDI_BATCH_TARGETTXT),
+    BatchTargetEF = CONTROLDEF_DROPDOWN(
+                            ID_XFDI_BATCH_TARGETEF,
+                            -100,
+                            175),
+    BatchSelectedOnlyCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_BATCH_SELONLYCB),
+    BatchGoButton = CONTROLDEF_DEFPUSHBUTTON(
+                            LOAD_STRING,
+                            ID_XFDI_BATCH_GO,
+                            BUTTON_WIDTH,
+                            STD_BUTTON_HEIGHT),
+    BatchCloseButton = CONTROLDEF_NOFOCUSBUTTON(
+                            LOAD_STRING,
+                            DID_CLOSE,
+                            BUTTON_WIDTH,
+                            STD_BUTTON_HEIGHT);
+
+static const DLGHITEM G_dlgBatchRename[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&BatchIntroTxt),
+            START_ROW(0),
+                CONTROL_DEF(&BatchSourceTxt),
+            START_ROW(0),
+                CONTROL_DEF(&BatchSourceEF),
+            START_ROW(0),
+                CONTROL_DEF(&BatchTargetTxt),
+            START_ROW(0),
+                CONTROL_DEF(&BatchTargetEF),
+            START_ROW(0),
+                CONTROL_DEF(&SomeCaseSensitiveCB),
+            START_ROW(0),
+                CONTROL_DEF(&BatchSelectedOnlyCB),
+            START_ROW(0),
+                CONTROL_DEF(&BatchGoButton),
+                CONTROL_DEF(&BatchCloseButton),
+                CONTROL_DEF(&SomeHelpButton),
+        END_TABLE,
+    };
+
+/*
+ *@@ CompileRegexp:
+ *      calls rxpCompile and displays an error box
+ *      if applicable.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+ERE* CompileRegexp(HWND hwndDlg,    // in: dlg with entry field
+                   ULONG ulID,      // in: entry field ID
+                   PSZ psz,         // out: entry field string
+                   ULONG cb,        // in: size of *psz
+                   BOOL fCaseSense) // in: case sensitive match?
+{
+    ERE*    pEre = NULL;
+    int     rc = 0;
+
+    HWND    hwndEF;
+
+    if (hwndEF = WinWindowFromID(hwndDlg, ulID))
+    {
+        if (WinQueryWindowText(hwndEF, cb, psz))
+        {
+            if (!fCaseSense)
+                nlsUpper(psz, 0);
+
+            if (!(pEre = rxpCompile(psz,
+                                    0,
+                                    &rc)))
+                cmnErrorMsgBox(hwndDlg,
+                               rc,
+                               234,
+                               MB_OK,
+                               TRUE);
+        }
+
+        if (!pEre)
+            WinSetFocus(HWND_DESKTOP, hwndEF);
+    }
+
+    return pEre;
 }
 
 /*
- * GetICONPOS:
+ *@@ ConfirmRename:
+ *      displays a slightly more sophisticated message
+ *      box for the rename operation. Returns MBID_YES,
+ *      MBID_NO, or MBID_CANCEL.
  *
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@added V0.9.19 (2002-06-18) [umoeller]
  */
 
-static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
-                           PSORTBYICONPOS psip)
+ULONG ConfirmRename(HWND hwndOwner,
+                    PCSZ pcszDlgTitle,
+                    PXSTRING pstrMsg,
+                    WPObject *pobj,
+                    PCSZ pcszNewTitle,
+                    BOOL *pfYes2All)        // in/out: "yes to all" pressed?
 {
-    PICONPOS                    pip;
-    CHAR                        *p;
-    USHORT usStartPos = 21;     // OS/2 2.1 and above, says Henk
+    ULONG ulrc = MBID_CANCEL;       // if something goes wrong
 
-    // ICONPOS is defined in PMWP.H as folllows:
-    //     typedef struct _ICONPOS
-    //     {
-    //        POINTL  ptlIcon;
-    //        CHAR    szIdentity[1];
-    //     } ICONPOS;
-    //     typedef ICONPOS *PICONPOS;
+    if (*pfYes2All)
+        ulrc = MBID_YES;
+    else
+    {
+        #define ICON_WIDTH      50
 
-    // now compare all the objects in the .ICONPOS structure
-    // to the identity string of the search object
+        CONTROLDEF
+            Icon1 = CONTROLDEF_ICON(NULLHANDLE, 0),
+            Spacing = CONTROLDEF_TEXT(NULL, 0, 1, 1),
+            RenameTxt = CONTROLDEF_TEXT_WORDBREAK(NULL, 10, MSGBOX_TEXTWIDTH - 50),
+            YesButton = LOADDEF_DEFPUSHBUTTON(DID_YES),
+            Yes2AllButton = LOADDEF_PUSHBUTTON(DID_YES2ALL),
+            NoButton = LOADDEF_PUSHBUTTON(DID_NO),
+            CancelButton = LOADDEF_PUSHBUTTON(DID_CANCEL),
+            GroupObject = CONTROLDEF_GROUP(NULL, -1, SZL_AUTOSIZE, SZL_AUTOSIZE),
+            IconObject = CONTROLDEF_ICON(NULLHANDLE, ICON_WIDTH),
+            IconTitle = CONTROLDEF_TEXT(NULLHANDLE, 0, ICON_WIDTH, SZL_AUTOSIZE);
 
-    for (   pip = (PICONPOS)(psip->pICONPOS + usStartPos);
-            (PBYTE)pip < (psip->pICONPOS + psip->usICONPOSSize);
-        )
-    {   // pip now points to an ICONPOS structure
+        DLGHITEM dlgConfirm[] =
+            {
+                // outer table: two colums (1 == dlg icon, 2== all the rest)
+                START_TABLE,
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&Icon1),
+                    START_TABLE,
+                        // all the rest table: two rows
+                        // 1 == inner table,
+                        // 2 == buttons
+                        START_ROW(ROW_VALIGN_CENTER),
+                            START_TABLE,
+                                // inner table:
+                                // two columns,
+                                // 1 == text,
+                                // 2 == object's icon
+                                START_ROW(0),
+                                    START_TABLE,
+                                        START_ROW(ROW_VALIGN_CENTER),
+                                            CONTROL_DEF(&Spacing),
+                                        START_ROW(ROW_VALIGN_CENTER),
+                                            CONTROL_DEF(&RenameTxt),
+                                        START_ROW(ROW_VALIGN_CENTER),
+                                            CONTROL_DEF(&Spacing),
+                                    END_TABLE,
+                                    START_GROUP_TABLE(&GroupObject),
+                                        START_ROW(0),
+                                            CONTROL_DEF(&IconObject),
+                                        START_ROW(0),
+                                            CONTROL_DEF(&IconTitle),
+                                    END_TABLE,
+                            END_TABLE,
+                        START_ROW(ROW_VALIGN_CENTER),
+                            CONTROL_DEF(&YesButton),
+                            CONTROL_DEF(&Yes2AllButton),
+                            CONTROL_DEF(&NoButton),
+                            CONTROL_DEF(&CancelButton),
+                    END_TABLE,
+                END_TABLE
+            };
 
-        // go beyond the class name
-        if (p = strchr(pip->szIdentity, ':'))
+        PCSZ apcsz[2] =
+                {
+                    _wpQueryTitle(pobj),
+                    pcszNewTitle
+                };
+
+        HWND        hwndConfirm;
+        PDLGHITEM   paNew;
+
+        cmnGetMessage(apcsz, 2,
+                      pstrMsg,
+                      238);  // rename %1 to %2?
+
+        // set controls
+        Icon1.pcszText = (PCSZ)cmnQueryDlgIcon();
+        RenameTxt.pcszText = pstrMsg->psz;
+        IconObject.pcszText = (PCSZ)_wpQueryIcon(pobj);
+        IconTitle.pcszText = apcsz[0];      // _wpQueryTitle(pobj)
+
+        if (!cmnLoadDialogStrings(dlgConfirm,
+                                  ARRAYITEMCOUNT(dlgConfirm),
+                                  &paNew))
         {
-            /* #ifdef DEBUG_ORDEREDLIST
-                _Pmpf(("      Identities: %s and %s...", p, poli->szIdentity));
-            #endif */
+            if (!dlghCreateDlg(&hwndConfirm,
+                               hwndOwner,
+                               FCF_FIXED_DLG,
+                               WinDefDlgProc,
+                               pcszDlgTitle,
+                               paNew,
+                               ARRAYITEMCOUNT(dlgConfirm),
+                               NULL,
+                               cmnQueryDefaultFont()))
+            {
+                winhCenterWindow(hwndConfirm);
+                switch (WinProcessDlg(hwndConfirm))
+                {
+                    case DID_YES:
+                        ulrc = MBID_YES;
+                    break;
 
-            if (!stricmp(p, poli->szIdentity))
-                // object found: return the ICONPOS address
-                return (pip);
+                    case DID_YES2ALL:
+                        ulrc = MBID_YES;
+                        *pfYes2All = TRUE;
+                    break;
+
+                    case DID_NO:
+                        ulrc = MBID_NO;
+                    break;
+
+                    case DID_CANCEL:
+                        ulrc = MBID_CANCEL;
+                    break;
+                }
+
+                WinDestroyWindow(hwndConfirm);
+            }
+
+            free(paNew);
+        }
+    }
+
+    return ulrc;
+}
+
+/*
+ *@@ DoRename:
+ *      does the actual rename operation from fnwpBatchRename
+ *      by throwing the regexps at every record core in the
+ *      folder.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+VOID DoRename(HWND hwndDlg)
+{
+    HWND    hwndFrame;
+    HWND    hwndCnr;
+    PMINIRECORDCORE pmrc = NULL;
+    CHAR    szSource[EF_LIMIT],
+            szTarget[EF_LIMIT];
+    ERE     *pEreSource = NULL;
+
+    PCSZ    pcszDlgTitle = cmnGetString(ID_XFDI_BATCHRENAME_TITLE);
+
+    BOOL    fSelectedOnly = winhIsDlgItemChecked(hwndDlg, ID_XFDI_BATCH_SELONLYCB),
+            fCaseSense = winhIsDlgItemChecked(hwndDlg, ID_XFDI_SOME_CASESENSITIVE_CB);
+
+    if (    (hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER))
+         && (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
+         && (pEreSource = CompileRegexp(hwndDlg,
+                                        ID_XFDI_BATCH_SOURCEEF,
+                                        szSource,
+                                        sizeof(szSource),
+                                        fCaseSense))
+         && (WinQueryDlgItemText(hwndDlg,
+                                 ID_XFDI_BATCH_TARGETEF,
+                                 sizeof(szTarget),
+                                 szTarget))
+       )
+    {
+        // now go through all the container items in hwndCnr
+        // and match them against pEreSource
+        BOOL    fCancelled = FALSE,
+                fSaveTarget = TRUE;
+        XSTRING strMsg;
+        ULONG   cMatched = 0,
+                cRenamed = 0;
+
+        BOOL    fYes2All = FALSE;       // set to TRUE by ConfirmRename
+
+        xstrInit(&strMsg, 0);
+
+        while (!fCancelled)
+        {
+            WPObject *pobjThis;
+            PCSZ     pcszTitleOrig,
+                     pcszTitleMatch;
+            if (    (pmrc = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                        CM_QUERYRECORD,
+                                                        (MPARAM)pmrc,
+                                                        MPFROM2SHORT(
+                                                            (pmrc)
+                                                                ? CMA_NEXT
+                                                                : CMA_FIRST,
+                                                            CMA_ITEMORDER)
+                                                        ))
+                 && (pobjThis = OBJECT_FROM_PREC(pmrc))
+                 && (pcszTitleOrig = _wpQueryTitle(pobjThis))
+                            // record might not be up to date... better make sure
+               )
+            {
+                BOOL    fMatch;
+                int     pos,
+                        length;
+                ERE_MATCHINFO   mi;
+
+                CHAR    szThis[CCHMAXPATH];
+
+                if (!fCaseSense)
+                {
+                    strcpy(szThis, pcszTitleOrig);
+                    nlsUpper(szThis, 0);
+                    pcszTitleMatch = szThis;
+                }
+                else
+                    pcszTitleMatch = pcszTitleOrig;
+
+                fMatch = (    (    (!fSelectedOnly)
+                                || (pmrc->flRecordAttr & CRA_SELECTED)
+                              )
+                           && (rxpMatch_fwd(pEreSource,
+                                            0,
+                                            pcszTitleMatch,
+                                            0,
+                                            &pos,
+                                            &length,
+                                            &mi))
+                           && (pos == 0)
+                           && (length = strlen(pmrc->pszIcon))
+                         );
+
+                if (fMatch)
+                {
+                    // source matches:
+                    // create target filename
+                    CHAR szNewTitle[CCHMAXPATH];
+                    int rc;
+                    if (!rxpSubsWith(pcszTitleMatch,
+                                     pos,
+                                     length,
+                                     &mi,
+                                     // replacement regexp:
+                                     szTarget,
+                                     // output buffer:
+                                     szNewTitle,
+                                     sizeof(szNewTitle),
+                                     &rc))
+                    {
+                        // substition error:
+                        cmnErrorMsgBox(hwndDlg,
+                                       rc,
+                                       239,
+                                       MB_CANCEL,
+                                       TRUE);
+
+                        // we can't continue
+                        fCancelled = TRUE;
+
+                        // and don't save target
+                        fSaveTarget = FALSE;
+                    }
+                    else
+                    {
+                        // count matches, even if no rename
+                        ++cMatched;
+
+                        switch (ConfirmRename(hwndDlg,
+                                              pcszDlgTitle,
+                                              &strMsg,
+                                              pobjThis,
+                                              szNewTitle,
+                                              &fYes2All))
+                        {
+                            case MBID_YES:
+                                if (fopsRenameObjectConfirmed(pobjThis,
+                                                              szNewTitle))
+                                    // count renamed too
+                                    ++cRenamed;
+                            break;
+
+                            case MBID_NO:
+                            break;
+
+                            case MBID_CANCEL:
+                                fCancelled = TRUE;
+                            break;
+                        }
+                    }
+                }
+            }
             else
-                // not identical: go to next ICONPOS structure
-                pip = (PICONPOS)(   (PBYTE)pip
-                                  + sizeof(POINTL)
-                                  + strlen(pip->szIdentity)
-                                  + 1);
+                // no more records:
+                break;
+        }; // while (!fCancelled)
+
+        if (!cMatched)
+        {
+            if (!fCancelled)
+            {
+                // if nothing _matched_, report that, or the user
+                // gets no response at all (note, no response if
+                // no _rename_)
+                cmnGetMessage(NULL, 0,
+                              &strMsg,
+                              240);     // no objects
+                cmnMessageBox(hwndDlg,
+                              pcszDlgTitle,
+                              strMsg.psz,
+                              0,
+                              MB_OK);
+            }
         }
         else
-            break;
+        {
+            // something matched:
+            // report results if not cancelled
+            if (!fCancelled)
+            {
+                CHAR szMatched[30], szRenamed[30];
+                PCSZ apcsz[2] =
+                        {
+                            szMatched,
+                            szRenamed
+                        };
+                PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
+                nlsThousandsULong(szMatched,
+                                  cMatched,
+                                  pcs->cThousands);
+                nlsThousandsULong(szRenamed,
+                                  cRenamed,
+                                  pcs->cThousands);
+
+                cmnGetMessage(apcsz, 2,
+                              &strMsg,
+                              241);     // %1 object(s) matched your find criteria. %2 object(s) were renamed.
+
+                cmnMessageBox(hwndDlg,
+                              pcszDlgTitle,
+                              strMsg.psz,
+                              0,
+                              MB_OK);
+            }
+
+            // save if we had _matches_ (irrespective of renames),
+            // and even if we cancelled
+            AddEntryToDropDown(hwndDlg, ID_XFDI_BATCH_SOURCEEF, TRUE);
+            rxpFree(pEreSource);
+
+            // we get here also if the target failed, so check
+            if (fSaveTarget)
+                AddEntryToDropDown(hwndDlg, ID_XFDI_BATCH_TARGETEF, FALSE);
+        }
+
+        xstrClear(&strMsg);
     }
-    return NULL;
 }
 
 /*
- * fdrSortByICONPOS:
- *      callback sort function for lstSort to sort the
- *      menu items according to a folder's ICONPOS EAs.
- *      pICONPOS points to the ICONPOS data.
+ *@@ fnwpBatchRename:
+ *      dlg proc for "batch rename" window, used by
+ *      fdrShowBatchRename.
  *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *      This selects or deselects items in the corresponding
+ *      folder window, which is stored in QWL_USER.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
  */
 
-SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
+static MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    /* #ifdef DEBUG_ORDEREDLIST
-        _Pmpf(("    Comparing %s and %s...",
-            _wpQueryTitle(((PORDEREDLISTITEM)pItem1)->pObj),
-            _wpQueryTitle(((PORDEREDLISTITEM)pItem2)->pObj)
-        ));
-    #endif */
-    if ((pItem1) && (pItem2))
-    {
-        PICONPOS pip1 = GetICONPOS(((PORDEREDLISTITEM)pItem1), psip),
-                 pip2 = GetICONPOS(((PORDEREDLISTITEM)pItem2), psip);
+    MRESULT mrc = 0;
+    BOOL    fWriteAndClose = FALSE;
 
-        if ((pip1) && (pip2))
-            if (pip1 < pip2)
-                return (-1);
-            else return (1);
-        else if (pip1)
-            return (-1);
-        else if (pip2)
-            return (1);
+    switch (msg)
+    {
+        case WM_INITDLG:
+        {
+            HWND    hwndDropDown;
+
+            WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)mp2); // owner frame hwnd;
+
+            hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_BATCH_SOURCEEF);
+            winhSetEntryFieldLimit(hwndDropDown, EF_LIMIT);
+            FillDropDownFromIni(hwndDropDown,
+                                INIKEY_LAST10BATCHSOURCE);
+
+            hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_BATCH_TARGETEF);
+            winhSetEntryFieldLimit(hwndDropDown, EF_LIMIT);
+            FillDropDownFromIni(hwndDropDown,
+                                INIKEY_LAST10BATCHTARGET);
+
+            WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+        }
+        break;
+
+        case WM_COMMAND:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case ID_XFDI_BATCH_GO:
+                    DoRename(hwndDlg);
+                break;
+
+                case DID_CLOSE:
+                case DID_CANCEL:
+                    WinPostMsg(hwndDlg, WM_CLOSE, 0, 0);
+                break;
+            }
+        break;
+
+        case WM_CONTROL:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case ID_XFDI_BATCH_SOURCEEF:
+                case ID_XFDI_BATCH_TARGETEF:
+                    if (SHORT2FROMMP(mp1) == EN_CHANGE)
+                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+                break;
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
+        break;
+
+        case XM_ENABLEITEMS:
+            WinEnableControl(hwndDlg,
+                             ID_XFDI_BATCH_GO,
+                             (    (WinQueryDlgItemTextLength(hwndDlg, ID_XFDI_BATCH_SOURCEEF))
+                               && (WinQueryDlgItemTextLength(hwndDlg, ID_XFDI_BATCH_TARGETEF))
+                             ));
+        break;
+
+        case WM_HELP:
+            cmnDisplayHelp(NULL,
+                           ID_XFH_BATCHRENAME);
+        break;
+
+        /*
+         * WM_CLOSE:
+         *
+         */
+
+        case WM_CLOSE:
+            fWriteAndClose = TRUE;
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
-    return 0;
+    if (fWriteAndClose)
+    {
+        // dialog closing:
+        WriteDropDownToIni(WinWindowFromID(hwndDlg, ID_XFDI_BATCH_SOURCEEF),
+                           INIKEY_LAST10BATCHSOURCE);
+        WriteDropDownToIni(WinWindowFromID(hwndDlg, ID_XFDI_BATCH_TARGETEF),
+                           INIKEY_LAST10BATCHTARGET);
+        WinDestroyWindow(hwndDlg);
+    }
+
+    return mrc;
+}
+
+/*
+ *@@ fdrShowBatchRename:
+ *      shows the "Batch rename" window.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+VOID fdrShowBatchRename(HWND hwndFrame)
+{
+    HWND hwndSelectSome;
+    PDLGHITEM paNew;
+
+    if (!cmnLoadDialogStrings(G_dlgBatchRename,
+                              ARRAYITEMCOUNT(G_dlgBatchRename),
+                              &paNew))
+    {
+        if (!dlghCreateDlg(&hwndSelectSome,
+                           hwndFrame,         // owner
+                           FCF_FIXED_DLG,
+                           fnwpBatchRename,
+                           cmnGetString(ID_XFDI_BATCHRENAME_TITLE),
+                           paNew,
+                           ARRAYITEMCOUNT(G_dlgBatchRename),
+                           (PVOID)hwndFrame,    // dlg params
+                           cmnQueryDefaultFont()))
+        {
+            winhPlaceBesides(hwndSelectSome,
+                             WinWindowFromID(hwndFrame, FID_CLIENT),
+                             PLF_SMART);
+            WinShowWindow(hwndSelectSome, TRUE);
+        }
+
+        free(paNew);
+    }
 }
 
 /* ******************************************************************

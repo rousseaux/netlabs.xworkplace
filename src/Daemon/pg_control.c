@@ -528,7 +528,7 @@ typedef struct _MINIWINDOW
     // in client coordinates (inclusive)
     POINTL          ptlLowerLeft,
                     ptlTopRight;
-    PPAGERWININFO   pWinInfo;       // ptr to PAGERWININFO this item
+    PXWININFO       pWinInfo;       // ptr to wininfo this item
                                     // represents; always valid
 } MINIWINDOW, *PMINIWINDOW;
 
@@ -542,108 +542,36 @@ VOID DrawPointer(HPS hpsMem,
                  PMINIWINDOW pMiniThis,
                  LONG lcolCenter)
 {
-    POINTERINFO pi;
     HPOINTER hptr;
 
     if (    (hptr = pMiniThis->pWinInfo->hptrFrame)
-         && (WinQueryPointerInfo(hptr, &pi))
+            // do nothing if we've crashed on this icon before;
+            // I had crashes with the x-file icon on the old
+            // code... apparently this works now, but better
+            // be safe than sorry
+         && (!(pMiniThis->pWinInfo->flFlags & WLF_ICONCRASHED))
        )
     {
-        POINTL  aptl[4];
-        LONG    cxTarget = G_pHookData->cxIcon / 2,
-                cyTarget = G_pHookData->cyIcon / 2,
-                cxSource,
-                cySource,
-                cySourceReal,
-                lDelta;
-        HBITMAP hbmAnd,
-                hbmCol;
-        ULONG   flOpt;
-
-        if (    (hbmAnd = pi.hbmMiniPointer)
-             && (hbmCol = pi.hbmMiniColor)
-           )
+        TRY_LOUD(excpt1)
         {
-            // if we have a mini icon, use that
-            cxSource = G_pHookData->cxIcon / 2;
-            cySource = G_pHookData->cyIcon / 2;
+            RECTL rclClip;
+            rclClip.xLeft = pMiniThis->ptlLowerLeft.x + 1;
+            rclClip.yBottom = pMiniThis->ptlLowerLeft.y + 1;
+            rclClip.xRight = pMiniThis->ptlTopRight.x - 1;
+            rclClip.yTop = pMiniThis->ptlTopRight.y - 1;
+
+            gpihDrawPointer(hpsMem,
+                            pMiniThis->ptlLowerLeft.x + 1,
+                            pMiniThis->ptlLowerLeft.y + 1,
+                            hptr,
+                            &G_pHookData->szlIcon,
+                            &rclClip,
+                            DP_MINI);
         }
-        else
+        CATCH(excpt1)
         {
-            // scale down the normal icon
-            hbmAnd = pi.hbmPointer;
-            hbmCol = pi.hbmColor;
-            cxSource = G_pHookData->cxIcon;
-            cySource = G_pHookData->cyIcon;
-        }
-
-        cySourceReal = cySource;
-
-        // we need to clip the icon if it would be
-        // larger than the inner part of the mini
-        // window
-        lDelta = cxTarget - (pMiniThis->ptlTopRight.x - pMiniThis->ptlLowerLeft.x - 1);
-        if (lDelta > 0)
-        {
-            cxTarget -= lDelta;
-            cxSource -= lDelta;
-        }
-
-        lDelta = cyTarget - (pMiniThis->ptlTopRight.y - pMiniThis->ptlLowerLeft.y - 1);
-        if (lDelta > 0)
-        {
-            cyTarget -= lDelta;
-            cySource -= lDelta;
-        }
-
-        // aptl[0]: target bottom-left
-        aptl[0].x = pMiniThis->ptlLowerLeft.x + 1;
-        aptl[0].y = pMiniThis->ptlLowerLeft.y + 1;
-
-        // aptl[1]: target top-right (inclusive!)
-        aptl[1].x = aptl[0].x + cxTarget - 1;
-        aptl[1].y = aptl[0].y + cyTarget - 1;
-
-        // aptl[2]: source bottom-left
-        aptl[2].x = 0;
-        aptl[2].y = 0;
-
-        // aptl[3]: source top-right (exclusive!)
-        aptl[3].x = cxSource;
-        aptl[3].y = cySource;
-
-        // work on the AND image
-        // (lower part of the monochrome image)
-        GpiSetColor(hpsMem, RGBCOL_WHITE);
-        GpiSetBackColor(hpsMem, RGBCOL_BLACK);
-        GpiWCBitBlt(hpsMem,     // target
-                    hbmAnd,     // src bmp
-                    4L,         // must always be 4
-                    aptl,       // point array
-                    ROP_SRCAND,   // source AND target
-                    BBO_IGNORE);
-
-        // paint the real image; the parts that
-        // are to be transparent are black
-        if (hbmCol)
-            GpiWCBitBlt(hpsMem,
-                        hbmCol,
-                        4L,         // must always be 4
-                        aptl,       // point array
-                        ROP_SRCPAINT,
-                        BBO_IGNORE);
-
-        GpiSetColor(hpsMem, lcolCenter);
-
-        // work on the XOR image
-        aptl[2].y += cySourceReal;           // exclusive
-        aptl[3].y += cySourceReal; // exclusive
-        GpiWCBitBlt(hpsMem,
-                    hbmAnd,
-                    4L,         // must always be 4
-                    aptl,       // point array
-                    ROP_SRCINVERT,
-                    BBO_IGNORE);
+            pMiniThis->pWinInfo->flFlags |= WLF_ICONCRASHED;
+        } END_CATCH();
     }
 }
 
@@ -761,7 +689,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
 
                 while (hwndThis = WinGetNextWindow(henum))
                 {
-                    PPAGERWININFO pWinInfo;
+                    PXWININFO pWinInfo;
                     // go thru local list and find the
                     // current enumeration window
                     if (    (WinIsWindowVisible(hwndThis))
@@ -769,74 +697,58 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                                                        NULL))
                        )
                     {
+                        BYTE bTypeThis;
+
                         // item is on list:
-                        ULONG   flSaved = pWinInfo->swp.fl;
-                        BYTE    bTypeThis = pWinInfo->bWindowType;
-
-                        // update window pos in window list
-                        WinQueryWindowPos(pWinInfo->swctl.hwnd,
-                                          &pWinInfo->swp);
-
-                        // update the bWindowType status, as restoring
-                        // a previously minimized or hidden window may
-                        // change it
-                        // (we don't have to update "special" windows)
-                        // V0.9.18 (2002-02-20) [lafaix]
-                        if (    (flSaved != pWinInfo->swp.fl)
-                             && (    (bTypeThis == WINDOW_NORMAL)
-                                  || (bTypeThis == WINDOW_MINIMIZE)
+                        if (!pgrGetWinData(&pWinInfo->data))
+                            WinPostMsg(G_pHookData->hwndDaemonObject,
+                                       XDM_WINDOWCHANGE,
+                                       (MPARAM)hwndThis,
+                                       (MPARAM)WM_DESTROY);
+                        else
+                        {
+                             bTypeThis = pWinInfo->data.bWindowType;
+                             if (    (bTypeThis == WINDOW_NORMAL)
                                   || (bTypeThis == WINDOW_MAXIMIZE)
+                                  || (    (bTypeThis == WINDOW_STICKY)
+                                       && (flPager & PGRFL_INCLUDESTICKY)
+                                     )
+                                  || (    (bTypeThis == WINDOW_NIL)
+                                       && (flPager & PGRFL_INCLUDESECONDARY)
+                                     )
                                 )
-                           )
-                        {
-                            bTypeThis = WINDOW_NORMAL;
-                            if (pWinInfo->swp.fl & SWP_MINIMIZE)
-                                bTypeThis = WINDOW_MINIMIZE;
-                            else
-                            if (pWinInfo->swp.fl & SWP_MAXIMIZE)
-                                bTypeThis = WINDOW_MAXIMIZE;
+                            {
+                                // this window is to be painted:
+                                // use a new item on the MINIWINDOW
+                                // array then and calculate the
+                                // mapping of the mini window
+
+                                PMINIWINDOW pMiniThis
+                                    = &paMiniWindows[cMiniWindowsUsed++];
+
+                                LONG    xThis = pWinInfo->data.swp.x + xCurrent,
+                                        yThis = pWinInfo->data.swp.y + yCurrent;
+
+                                // store WININFO ptr; we hold the winlist
+                                // locked all the time, so this is safe
+                                pMiniThis->pWinInfo = pWinInfo;
+
+                                pMiniThis->hwnd = hwndThis;
+
+                                pMiniThis->ptlLowerLeft.x
+                                    =   xThis / dScale_X;
+
+                                pMiniThis->ptlLowerLeft.y
+                                    =   yThis / dScale_Y;
+
+                                pMiniThis->ptlTopRight.x
+                                    =   (xThis + pWinInfo->data.swp.cx) / dScale_X - 1;
+
+                                pMiniThis->ptlTopRight.y
+                                    =   (yThis + pWinInfo->data.swp.cy) / dScale_Y - 1;
+
+                            } // end if (    (bTypeThis == WINDOW_NORMAL) ...
                         }
-
-                        if (    (bTypeThis == WINDOW_NORMAL)
-                             || (bTypeThis == WINDOW_MAXIMIZE)
-                             || (    (bTypeThis == WINDOW_STICKY)
-                                  && (flPager & PGRFL_INCLUDESTICKY)
-                                )
-                             || (    (bTypeThis == WINDOW_NIL)
-                                  && (flPager & PGRFL_INCLUDESECONDARY)
-                                )
-                           )
-                        {
-                            // this window is to be painted:
-                            // use a new item on the MINIWINDOW
-                            // array then and calculate the
-                            // mapping of the mini window
-
-                            PMINIWINDOW pMiniThis
-                                = &paMiniWindows[cMiniWindowsUsed++];
-
-                            LONG    xThis = pWinInfo->swp.x + xCurrent,
-                                    yThis = pWinInfo->swp.y + yCurrent;
-
-                            // store WININFO ptr; we hold the winlist
-                            // locked all the time, so this is safe
-                            pMiniThis->pWinInfo = pWinInfo;
-
-                            pMiniThis->hwnd = hwndThis;
-
-                            pMiniThis->ptlLowerLeft.x
-                                =   xThis / dScale_X;
-
-                            pMiniThis->ptlLowerLeft.y
-                                =   yThis / dScale_Y;
-
-                            pMiniThis->ptlTopRight.x
-                                =   (xThis + pWinInfo->swp.cx) / dScale_X - 1;
-
-                            pMiniThis->ptlTopRight.y
-                                =   (yThis + pWinInfo->swp.cy) / dScale_Y - 1;
-
-                        } // end if (    (bTypeThis == WINDOW_NORMAL) ...
                     } // end if (WinIsVisible)
                 } // end while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
 
@@ -911,7 +823,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                         } // end if (flPager & PGRFL_MINIWIN_ICONS)
 
                         if (    (flPager & PGRFL_MINIWIN_TITLES)
-                             && (pcszSwtitle = pMiniThis->pWinInfo->swctl.szSwtitle)
+                             && (pcszSwtitle = pMiniThis->pWinInfo->data.swctl.szSwtitle)
                              && (ulSwtitleLen = strlen(pcszSwtitle))
                            )
                         {
@@ -1003,13 +915,13 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
                 // V0.9.18 (2002-02-20) [lafaix]
                 if (pgrLockWinlist())
                 {
-                    PPAGERWININFO pWinInfo = pgrFindWinInfo(hwndPoint, NULL);
+                    PXWININFO pWinInfo = pgrFindWinInfo(hwndPoint, NULL);
 
                     if (    (pWinInfo)
-                         && (    (pWinInfo->bWindowType == WINDOW_NORMAL)
-                              || (pWinInfo->bWindowType == WINDOW_MAXIMIZE)
+                         && (    (pWinInfo->data.bWindowType == WINDOW_NORMAL)
+                              || (pWinInfo->data.bWindowType == WINDOW_MAXIMIZE)
                               || (    (fAllowStickes)
-                                   && (pWinInfo->bWindowType == WINDOW_STICKY)
+                                   && (pWinInfo->data.bWindowType == WINDOW_STICKY)
                                  )
                             )
                        )

@@ -776,6 +776,7 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
  *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed broken source object with folder menu bars, which broke new "View" menu items
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: optimized, added "batch rename" to view pulldown
  */
 
 static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -784,6 +785,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
 {
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
+    ULONG           ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
 
     #ifdef DEBUG_MENUS
         _Pmpf(( "WM_INITMENU: sMenuIDMsg = %lX, hwndMenuMsg = %lX",
@@ -826,7 +828,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                           MM_ITEMIDFROMPOSITION,
                           (MPARAM)0,        // menu item index
                           MPNULL)
-               == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY))
+               == (ulVarMenuOffset + ID_XFMI_OFS_DUMMY))
     {
         // okay, let's go
 #ifndef __NOFOLDERCONTENTS__
@@ -876,6 +878,8 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                                                        MPFROM2SHORT(0x73,
                                                                     FALSE),
                                                        MPNULL);
+                        ULONG flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(psfv->somSelf));
+
                         #ifdef DEBUG_MENUS
                             _Pmpf(("  'Edit' menu found"));
                         #endif
@@ -886,12 +890,22 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                                 // V0.9.12 (2001-05-29) [umoeller]
 
                         // insert "Select by name" after that item
-                        winhInsertMenuItem(hwndMenuMsg,
-                                           sPos+1,
-                                           (cmnQuerySetting(sulVarMenuOffset)
-                                                   + ID_XFMI_OFS_SELECTSOME),
-                                           cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
-                                           MIS_TEXT, 0);
+                        // fixed V0.9.19 (2002-06-18) [umoeller]:
+                        // only if menu item is enabled
+                        if (!(flXWP & XWPCTXT_SELECTSOME))
+                            winhInsertMenuItem(hwndMenuMsg,
+                                               ++sPos,
+                                               ulVarMenuOffset + ID_XFMI_OFS_SELECTSOME,
+                                               cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
+                                               MIS_TEXT, 0);
+
+                        // insert "Batch rename" V0.9.19 (2002-06-18) [umoeller]
+                        if (!(flXWP & XWPCTXT_BATCHRENAME))
+                            winhInsertMenuItem(hwndMenuMsg,
+                                               ++sPos,
+                                               ulVarMenuOffset + ID_XFMI_OFS_BATCHRENAME,
+                                               cmnGetString(ID_XSDI_MENU_BATCHRENAME),
+                                               MIS_TEXT, 0);
                     }
                     break;
 
@@ -916,7 +930,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                         // and now insert the "folder view" items
                         winhInsertMenuSeparator(hwndMenuMsg,
                                                 MIT_END,
-                                                (cmnQuerySetting(sulVarMenuOffset)
+                                                (ulVarMenuOffset
                                                         + ID_XFMI_OFS_SEPARATOR));
                         mnuInsertFldrViewItems(psfv->somSelf,
                                                hwndMenuMsg,  // hwndViewSubmenu
@@ -942,10 +956,10 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
 
 #ifndef __XWPLITE__
                         winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
-                                               (cmnQuerySetting(sulVarMenuOffset)
+                                               (ulVarMenuOffset
                                                        + ID_XFMI_OFS_SEPARATOR));
                         winhInsertMenuItem(hwndMenuMsg, MIT_END,
-                                           (cmnQuerySetting(sulVarMenuOffset)
+                                           (ulVarMenuOffset
                                                    + ID_XFMI_OFS_PRODINFO),
                                            cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                                            MIS_TEXT, 0);

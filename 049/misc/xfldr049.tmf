@@ -454,6 +454,19 @@ Soll das Programm trotzdem gestartet werden?
 
 <--XFL0237-->: Eine Schutzverletzung ist aufgetreten. Die Operation kann nicht fortgesetzt werden.
 
+<--XFL0238-->: Rename
+    "%1"
+to
+    "%2"?
+
+<--XFL0239-->: String substition failed in regexp "%1".
+
+If you are using backreferences (e.g. "\1") in the target string, make sure you are using corresponding brackets in the source string.
+
+<--XFL0240-->: No objects were found that matched your find criteria.
+
+<--XFL0241-->: %1 object(s) matched your find criteria. Of these, %2 object(s) were renamed.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

@@ -142,6 +142,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
@@ -202,7 +203,9 @@ static BOOL             G_fPositionBelow = FALSE;
 static BOOL             G_bInitNeeded;          // if TRUE, data is refreshed
 
 static ULONG            G_ulVarMenuOfs;     // V0.9.16 (2002-01-09) [umoeller]
-static ULONG            G_ulMiniIconSize = 0;
+static ULONG            G_ulMiniIconSize = 0,
+                        G_cxScreen = 0,     // V0.9.19 (2002-06-18) [umoeller]
+                        G_cyScreen = 0;     // V0.9.19 (2002-06-18) [umoeller]
 static RECTL            G_rtlMenuItem;
 static LONG             G_lHiliteBackground,
                         G_lBackground,
@@ -315,9 +318,6 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                        )
                     {
                         // yes:
-                        ULONG   cxScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN),
-                                cyScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
-
                         if (G_fPositionBelow)
                         {
                             // position menu below button:
@@ -330,15 +330,15 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                         // always constrain the damn thing to the screen...
                         // PM makes large popup menus show up off the screen
                         // which is not terribly helpful.
-                        if (pswp->x + pswp->cx > cxScreen)
+                        if (pswp->x + pswp->cx > G_cxScreen)
                             // off screen:
-                            if (pswp->cx < cxScreen)
-                                pswp->x = cxScreen - pswp->cx;
+                            if (pswp->cx < G_cxScreen)
+                                pswp->x = G_cxScreen - pswp->cx;
 
-                        if (pswp->y + pswp->cy > cyScreen)
+                        if (pswp->y + pswp->cy > G_cyScreen)
                             // off screen:
-                            if (pswp->cy < cyScreen)
-                                pswp->y = cyScreen - pswp->cy;
+                            if (pswp->cy < G_cyScreen)
+                                pswp->y = G_cyScreen - pswp->cy;
                     }
                 }
                 mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
@@ -458,6 +458,9 @@ VOID cmnuInitItemCache(VOID)
         // first call: initialize lists
         lstInit(&G_llContentMenuItems, TRUE);
         lstInit(&G_llVarMenuItems, TRUE);
+
+        G_cxScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+        G_cyScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
     }
     else
     {
@@ -481,35 +484,69 @@ VOID cmnuInitItemCache(VOID)
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: fixed bug with filenames > 100 chars
  *@@changed V0.9.0 [umoeller]: lowered menu item limit
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: optimized memory management
  */
 
 BOOL cmnuAppendMi2List(WPObject *pObject,
                        ULONG ulObjType)     // in: OC_* flag
 {
-    // remember program object's data for later use in wpMenuItemSelected
-    // itemCount is unique for each inserted object
-    PVARMENULISTITEM pNewItem = (PVARMENULISTITEM)malloc(sizeof(VARMENULISTITEM));
-    pNewItem->pObject = pObject;
-    strhncpy0(pNewItem->szTitle,
-              _wpQueryTitle(pObject),
-              sizeof(pNewItem->szTitle)-1);
+    PVARMENULISTITEM    pNewItem;
 
-    strhBeautifyTitle(pNewItem->szTitle);
+    CHAR                szTitle[CCHMAXPATH];
+    PCSZ                pcszTitle;
+    ULONG               ulTitleLen = 0,
+                        cbPtlArray;
 
-    pNewItem->ulObjType = ulObjType;
-    lstAppendItem(&G_llVarMenuItems, pNewItem);
-
-    if (G_sNextMenuId < 0x7800)       // lowered V0.9.0
+    // allocate VARMENULISTITEM dynamically
+    // based on the object title's length
+    // V0.9.19 (2002-06-18) [umoeller]
+    if (pcszTitle = _wpQueryTitle(pObject))
     {
-        G_sNextMenuId++;
-        G_ulVarItemCount++;
-        return TRUE;
+        // copy to temp buffer first so we can know
+        // the size of the beautified string
+        ulTitleLen = strhBeautifyTitle2(szTitle,
+                                        pcszTitle);
     }
-    else
+
+    cbPtlArray = sizeof(POINTL) * (ulTitleLen + 1);
+
+    if (pNewItem = (PVARMENULISTITEM)malloc(   sizeof(VARMENULISTITEM)
+                                             + cbPtlArray
+                                                        // for pptlPositions
+                                             + ulTitleLen + 1
+                                                        // for pszTitle
+                                           ))
     {
+        pNewItem->pObject = pObject;
+        pNewItem->ulObjType = ulObjType;
+
+        if (!ulTitleLen)
+            pNewItem->pszTitle = NULL;
+        else
+        {
+            // point pszTitle to after POINTL array
+            pNewItem->pszTitle =   (PBYTE)pNewItem->aptlPositions
+                                 + cbPtlArray;
+            memcpy(pNewItem->pszTitle,
+                   szTitle,             // beautified copy
+                   ulTitleLen + 1);     // null-terminate
+        }
+
+        pNewItem->ulTitleLen = ulTitleLen;
+
+        lstAppendItem(&G_llVarMenuItems, pNewItem);
+
+        if (G_sNextMenuId < 0x7800)       // lowered V0.9.0
+        {
+            G_sNextMenuId++;
+            G_ulVarItemCount++;
+            return TRUE;
+        }
+
         krnPostThread1ObjectMsg(T1M_LIMITREACHED, MPNULL, MPNULL);
-        return FALSE;
     }
+
+    return FALSE;
 }
 
 /*
@@ -1202,6 +1239,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.7 (2001-01-26) [lafaix]: added CharBox and MaxDescender queries
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: now truncating long titles with ellipses
  */
 
 MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
@@ -1241,15 +1279,60 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
         // find out the space required for drawing this item with
         // the current font and fill the owner draw structure (mp2)
         // accordingly
-        POINTL aptlText[TXTBOX_COUNT];
-        GpiQueryTextBox(poi->hps,
-                        strlen(pItem->szTitle),
-                        pItem->szTitle,
-                        TXTBOX_COUNT,
-                        (PPOINTL)&aptlText);
-        poi->rclItem.xRight = aptlText[TXTBOX_TOPRIGHT].x
-                                + G_ulMiniIconSize
-                                + 6;     // lafaix
+
+            /* POINTL aptlText[TXTBOX_COUNT];
+            GpiQueryTextBox(poi->hps,
+                            pItem->ulTitleLen,
+                            pItem->pszTitle,
+                            TXTBOX_COUNT,
+                            (PPOINTL)&aptlText);
+            poi->rclItem.xRight = aptlText[TXTBOX_TOPRIGHT].x
+                                    + G_ulMiniIconSize
+                                    + 6;     // lafaix
+            */
+
+        // V0.9.19 (2002-06-18) [umoeller]: rewritten to insert ellipse
+        // if the string to be painted is terribly long
+
+        LONG    cxTitle = 0;
+
+        // it would be more accurate if I moved this call
+        // into the loop so that the array is updated with
+        // every ellipse that replaces one character, but
+        // why add that much expense for a couple of pixels...
+        // this can get called 200 times for each menu item
+        // in the worst case
+        GpiQueryCharStringPos(poi->hps,
+                              0,        // no options
+                              pItem->ulTitleLen,
+                              pItem->pszTitle,
+                              NULL,
+                              pItem->aptlPositions);
+
+        while (TRUE)
+        {
+            cxTitle = pItem->aptlPositions[pItem->ulTitleLen].x;
+
+            if (    (cxTitle > G_cxScreen / 4)
+                 && (pItem->ulTitleLen > 10)
+               )
+            {
+                // "abcdefghijkl"
+                //  ^ pItem->pszTitle
+                //              ^ pItem->pszTitle[pItem->ulTitleLen]
+                //          ^ pItem->pszTitle[pItem->ulTitleLen - 4]
+                memcpy(pItem->pszTitle + pItem->ulTitleLen - 4,
+                       "...",
+                       4);      // null-terminate
+                --(pItem->ulTitleLen);
+            }
+            else
+                break;
+        }
+
+        poi->rclItem.xRight =   cxTitle
+                              + G_ulMiniIconSize
+                              + 6;     // lafaix
 
         poi->rclItem.yTop = G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom;
 
@@ -1277,6 +1360,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
  *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked painting stuff
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
  *@@changed V0.9.19 (2002-04-14) [lafaix]: fixed text vertical position
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: added in-use emphasis
  */
 
 BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
@@ -1291,7 +1375,7 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
     // get the item from the linked list of variable menu items
     // which corresponds to the menu item being drawn
     PVARMENULISTITEM pItem;
-    HPOINTER hIcon;
+    HPOINTER hptrIcon;
 
     if (pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                                    (poi->idItem
@@ -1317,10 +1401,13 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
         }
         else
         {
+            LONG    xIcon,
+                    yIcon;
+
             // get the item's (object's) icon;
             // this call can take a while if the folder
             // was just queried
-            hIcon = _wpQueryIcon(pItem->pObject);
+            hptrIcon = _wpQueryIcon(pItem->pObject);
 
             // switch to RGB mode
             GpiCreateLogColorTable(poi->hps, 0, LCOLF_RGB, 0, 0, NULL);
@@ -1376,18 +1463,6 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
             if ((G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom) < (G_ulMiniIconSize + 2))
                 ptl.y += (G_ulMiniIconSize + 2 - (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom)) / 2;
 
-//            ptl.y =    poi->rclItem.yBottom
-//                     + (    (   poi->rclItem.yTop
-//                              - poi->rclItem.yBottom
-//                              - G_ulMiniIconSize
-//                            ) / 2
-//                       )
-//                     + G_lMaxDescender
-//                     + 2;
-
-            // center this vertically V0.9.16 (2001-10-31) [umoeller]
-            // ptl.y += (cyMenuItem - G_ulMiniIconSize) / 2;
-
             // print the item's text
             GpiMove(poi->hps, &ptl);
             GpiSetColor(poi->hps,
@@ -1395,20 +1470,46 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
                             ? G_lHiliteText
                             : G_lText);
             GpiSetCharBox(poi->hps, &G_szfCharBox);
-            GpiCharString(poi->hps, strlen(pItem->szTitle), pItem->szTitle);
+            GpiCharString(poi->hps,
+                          pItem->ulTitleLen,
+                          pItem->pszTitle);
+
+            // calc icon position
+            xIcon = poi->rclItem.xLeft + 6;
+                    // center vertically:
+                    // V0.9.16 (2001-10-31) [umoeller]
+            yIcon = poi->rclItem.yBottom
+                    + (    (   poi->rclItem.yTop
+                             - poi->rclItem.yBottom
+                             - G_ulMiniIconSize
+                           ) / 2
+                      );
+
+            // draw the icon hatched if we have an open view
+            // V0.9.19 (2002-06-18) [umoeller]
+            if (_wpFindViewItem(pItem->pObject, VIEW_ANY, NULL))
+            {
+                POINTL ptl2;
+                ptl2.x = xIcon - 2;
+                ptl2.y = rcl.yBottom;
+                GpiMove(poi->hps,
+                        &ptl2);
+                GpiSetPattern(poi->hps, PATSYM_DIAG1);
+                GpiSetColor(poi->hps, 0);       // RGB black
+                ptl2.x += G_ulMiniIconSize + 2 - 1; // inclusive!
+                ptl2.y = rcl.yTop - 1; // inclusive!
+                GpiBox(poi->hps,
+                       DRO_FILL,
+                       &ptl2,
+                       0,
+                       0);
+            }
 
             // draw the item's icon
             WinDrawPointer(poi->hps,
-                           poi->rclItem.xLeft + 6,
-                           // center vertically:
-                           // V0.9.16 (2001-10-31) [umoeller]
-                           poi->rclItem.yBottom
-                           + (    (   poi->rclItem.yTop
-                                    - poi->rclItem.yBottom
-                                    - G_ulMiniIconSize
-                                  ) / 2
-                             ),
-                           hIcon,
+                           xIcon,
+                           yIcon,
+                           hptrIcon,
                            DP_MINI);
         }
 

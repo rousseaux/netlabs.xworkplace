@@ -155,6 +155,10 @@
     // last ten selections in "Select some" (V0.9.0)
     DECLARE_CMN_STRING(INIKEY_LAST10SELECTSOME, "SelectSome");
 
+    // last ten selections in "Batch rename" V0.9.19 (2002-06-18) [umoeller]
+    DECLARE_CMN_STRING(INIKEY_LAST10BATCHSOURCE, "BatchRenameSource");
+    DECLARE_CMN_STRING(INIKEY_LAST10BATCHTARGET, "BatchRenameTarget");
+
     // supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
     DECLARE_CMN_STRING(INIKEY_TRASHCANDRIVES, "TrashCan::Drives");
 

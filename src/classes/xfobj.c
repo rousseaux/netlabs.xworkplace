@@ -219,10 +219,19 @@ SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
     inbp.ulDlgID = ID_XFD_EMPTYDLG;
     inbp.ulPageID = ulPageID; // SP_OBJECT_ICONPAGE1;
-    inbp.usPageStyleFlags = BKA_MAJOR;
-    inbp.fEnumerate = TRUE;
-    inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
+
+    if (ulPageID == SP_OBJECT_ICONPAGE2)
+    {
+        inbp.usPageStyleFlags = BKA_MINOR;
+    }
+    else
+    {
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
                 // no new string needed, was defined for trash can already
+    }
+
+    inbp.fEnumerate = TRUE;
     inbp.ulDefaultHelpPanel  = ulDefaultHelpPanel; // ID_XSH_OBJICONPAGE1;
     inbp.pfncbInitPage    = icoIcon1InitPage;
     inbp.pfncbItemChanged = icoIcon1ItemChanged;

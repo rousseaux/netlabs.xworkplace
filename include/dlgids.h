@@ -226,9 +226,19 @@
 
 /* ******************************************************************
  *
- *   Miscellaneous dialogs >= 200
+ *   Miscellaneous dialogs >= 150
  *
  ********************************************************************/
+
+// batch rename dialog V0.9.19 (2002-06-18) [umoeller]
+#define ID_XFDI_BATCHRENAME_TITLE       150
+#define ID_XFDI_BATCH_INTROTXT          151
+#define ID_XFDI_BATCH_SOURCETXT         152
+#define ID_XFDI_BATCH_SOURCEEF          153
+#define ID_XFDI_BATCH_TARGETTXT         154
+#define ID_XFDI_BATCH_TARGETEF          155
+#define ID_XFDI_BATCH_GO                156
+#define ID_XFDI_BATCH_SELONLYCB         157
 
 // for product info
 // #define ID_XFD_PRODINFO                 200      // removed V0.9.16 (2001-11-10) [umoeller]
@@ -246,6 +256,7 @@
 #define ID_XFDI_SOME_DESELECTALL        215
 #define ID_XFDI_SOME_INTROTXT           216
 #define ID_XFDI_SOME_REGEXP_CP          217
+#define ID_XFDI_SOME_CASESENSITIVE_CB   218
 
 // generic dlg text removed V0.9.18 (2002-02-06) [umoeller]
 // #define ID_XFD_GENERICDLG               220
@@ -415,6 +426,7 @@
 #define ID_XSDI_MENU_LOCKDISK           494
 #define ID_XSDI_MENU_EJECTDISK          495
 #define ID_XSDI_MENU_UNLOCKDISK         496
+#define ID_XSDI_MENU_BATCHRENAME        497         // V0.9.19 (2002-06-18) [umoeller]
 
 // new menu items
 // #define ID_XSD_SET25ADDMENUS            530      // removed V0.9.16 (2001-09-29) [umoeller]
@@ -2571,6 +2583,9 @@
 
 // folder split view V0.9.19 (2002-05-07) [umoeller]
 #define ID_XFMI_OFS_SPLITVIEW           (WPMENUID_USER+55)
+
+// batch rename V0.9.19 (2002-06-18) [umoeller]
+#define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+56)
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by

@@ -269,5 +269,7 @@
 
     #define ID_XSH_WIDGET_IPMON_MAIN        160     // V0.9.19 (2002-06-05) [umoeller]
     #define ID_XSH_OBJICONPAGE1_X           161     // V0.9.19 (2002-06-15) [umoeller]
+
+    #define ID_XFH_BATCHRENAME              162     // V0.9.19 (2002-06-18) [umoeller]
 #endif
 

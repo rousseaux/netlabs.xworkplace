@@ -316,8 +316,11 @@ BOOL mnuSetShortMenuStyle(BOOL fShort)
  *
  *      1)  There are several "menu categories" for
  *          certain groups of WPS classes. These
- *          are specified with a bit mask here. The
- *          following categories are supported:
+ *          are specified with a bit mask here. These
+ *          appear in the "Category" drop-down on the
+ *          "Workplace Shell" Menu 2 page.
+ *
+ *          The following categories are supported:
  *
  *          --  CONFFL_WPOBJECT             0x00000000
  *          --  CONFFL_WPDATAFILE           0x00000001
@@ -325,14 +328,22 @@ BOOL mnuSetShortMenuStyle(BOOL fShort)
  *          --  CONFFL_WPDESKTOP            0x00000004
  *          --  CONFFL_WPDISK               0x00000008
  *
+ *          I could also have tied this to each specific
+ *          WPS class, but that would have meant configuration
+ *          hell for the user in the "Workplace Shell"
+ *          object.
+ *
  *      2)  For each such category, there are two XWPSETTING
- *          items, one for the WPS menu items holding
- *          a CTXT_* bit mask, and one for the new XWP
- *          menu items holding an XWPCTXT_* bit mask.
+ *          items (cmnQuerySetting), one for the WPS menu items
+ *          holding a CTXT_* bit mask, and one for the new
+ *          XWP menu items holding an XWPCTXT_* bit mask.
+ *
  *          Note that the XWPCTXT_* represent both new
  *          XWP menu items such as the "File attributes"
  *          menu plus some WPS menu item for which there
- *          is no CTXT_* flag, such as "locked in place".
+ *          is no CTXT_* flag, such as "locked in place",
+ *          because we have to remove them manually via
+ *          WinSendMsg from the context menu in wpModifyPopupMenu.
  *          See CATEGORYWITHFLAG.
  *
  *          For example, the XWPSETTING sflMenuFolderWPS
@@ -341,11 +352,9 @@ BOOL mnuSetShortMenuStyle(BOOL fShort)
  *          for all folders.
  *
  *          When a bit is set, the corresponding menu
- *          item is _removed_. This is so that we can
- *          easily apply the CTXT_* flags in wpFilterMenu.
- *          The default value for each setting is 0,
- *          meaning that all WPS and XWP menu items are
- *          visible per default.
+ *          item is _removed_. The default value for each
+ *          setting is 0, meaning that all WPS and XWP
+ *          menu items are visible per default.
  *
  *          These settings replace a lot of the old
  *          XWPSETTING's like sfRemoveLockInPlaceItem
@@ -353,12 +362,23 @@ BOOL mnuSetShortMenuStyle(BOOL fShort)
  *          differently whether these menu items should
  *          be visible for each category.
  *
+ *          This has consequences:
+ *
+ *          --  The setting is _reverse_ to the respective
+ *              checkbox on the "Menu 2" page. This is so
+ *              that we can easily apply the CTXT_* flags
+ *              in wpFilterMenu.
+ *
+ *          --  If a new menu item is added with a new XWP
+ *              release, the bit in the XWPSETTING will be
+ *              initially 0, meaning that the new item is
+ *              visible per default.
+ *
  *      3)  The category bit mask is stored in
  *          MENUITEMDEF.flConfig. In addition, there
  *          are a _lot_ of other flags to make the
  *          display correct on the "Menu" page in
  *          "Workplace Shell".
- *
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
@@ -502,6 +522,10 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
             ID_XSSI_SELECTSOME, ID_XFMI_OFS_SELECTSOME,
                     CONFFL_WPFOLDER,
                     XWPCTXT_HIGHBIT | XWPCTXT_SELECTSOME,
+            // "Batch rename" V0.9.19 (2002-06-18) [umoeller]
+            ID_XSDI_MENU_BATCHRENAME, ID_XFMI_OFS_BATCHRENAME,
+                    CONFFL_WPFOLDER,
+                    XWPCTXT_HIGHBIT | XWPCTXT_BATCHRENAME,
             // "~Refresh now",
             ID_XSSI_REFRESHNOW, WPMENUID_REFRESH,       // 503, correct
                     CONFFL_WPFOLDER,
@@ -1533,9 +1557,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     _Pmpf(("  'View'/'Select' hwnd:0x%X", mi.hwndSubMenu));
                 #endif
 
-                // add "Select by name" only if not in Tree view V0.9.1 (2000-02-01) [umoeller]
+                // add "Select by name" and "Batch rename" only
+                // if not in Tree view V0.9.1 (2000-02-01) [umoeller]
                 if (
-                        (!(flXWP & XWPCTXT_SELECTSOME))
+                        (!(flXWP & (XWPCTXT_SELECTSOME | XWPCTXT_BATCHRENAME)))
                      && (    (ulView == OPEN_CONTENTS)
                           || (ulView == OPEN_DETAILS)
                         )
@@ -1551,19 +1576,25 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                                  MPNULL);
                     // else: using MIT_END (above)
 
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  Adding 'Select some' @ ofs %d, hwndSubmenu: 0x%lX",
-                                    sPos, mi.hwndSubMenu));
-                    #endif
-                    winhInsertMenuItem(mi.hwndSubMenu,
-                                       sPos,
-                                       ulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
-                                       cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
-                                       MIS_TEXT, 0);
+                    if (!(flXWP & XWPCTXT_SELECTSOME))
+                        winhInsertMenuItem(mi.hwndSubMenu,
+                                           sPos++,
+                                           ulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
+                                           cmnGetString(ID_XSSI_SELECTSOME),
+                                           MIS_TEXT, 0);
+
+                    // add batch rename V0.9.19 (2002-06-18) [umoeller]
+                    if (!(flXWP & XWPCTXT_BATCHRENAME))
+                        winhInsertMenuItem(mi.hwndSubMenu,
+                                           sPos++,
+                                           ulVarMenuOfs + ID_XFMI_OFS_BATCHRENAME,
+                                           cmnGetString(ID_XSDI_MENU_BATCHRENAME),
+                                           MIS_TEXT, 0);
+
                     if (G_fIsWarp4)
                     {
                         winhInsertMenuSeparator(mi.hwndSubMenu,
-                                                sPos + 1,
+                                                sPos,
                                                 ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
                         // if all the "switch view" items are disabled, we
@@ -2182,11 +2213,10 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
                                        // out: if TRUE is returned (ie. the menu item was handled
                                        // here), this determines whether the menu should be dismissed
 {
-    ULONG               ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
-    BOOL                fHandled = TRUE;
-
-    WPObject *pObject = somSelf;
-    WPFileSystem *pFileSystem = objResolveIfShadow(pObject);
+    ULONG           ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
+    BOOL            fHandled = TRUE;
+    WPObject        *pObject = somSelf;
+    WPFileSystem    *pFileSystem = objResolveIfShadow(pObject);
 
     #ifdef DEBUG_MENUS
         _Pmpf(("mnuFileSystemSelectingMenuItem"));
@@ -2314,6 +2344,8 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
  *      to a folder. It will always be a folder.
  *
  *@@changed V0.9.0 [umoeller]: added support for "Menu bar" item
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: ID_XFMI_OFS_SELECTSOME never worked right from edit pulldown, fixed
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: added "batch rename"
  */
 
 BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
@@ -2324,10 +2356,10 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                                 ULONG ulSelection,
                                 BOOL *pfDismiss)
 {
-    // XFolderData *somThis = XFolderGetData(somSelf);
-
-    ULONG               ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
-    BOOL                fHandled = TRUE;
+    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
+    BOOL        fHandled = TRUE;
+    HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
     #ifdef DEBUG_MENUS
         _Pmpf(("mnuFolderSelectingMenuItem"));
@@ -2335,8 +2367,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 
     // first check if it's one of the "Sort" menu items
     if (!(fHandled = fdrSortMenuItemSelected(somSelf,
-                                             WinQueryWindow(hwndCnr,
-                                                            QW_PARENT), // frame window
+                                             hwndFrame,
                                              hwndMenu,
                                              usItem,
                                              pfDismiss))) // dismiss flag == return value
@@ -2410,13 +2441,13 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                                OPEN_CONTENTS);
 
                 winhSetMenuItemChecked(hwndMenu,
-                                       cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_FLOWED,
+                                       ulVarMenuOffset + ID_XFMI_OFS_FLOWED,
                                        (ulMenuId2 == ID_XFMI_OFS_FLOWED));
                 winhSetMenuItemChecked(hwndMenu,
-                                       cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_NONFLOWED,
+                                       ulVarMenuOffset + ID_XFMI_OFS_NONFLOWED,
                                        (ulMenuId2 == ID_XFMI_OFS_NONFLOWED));
                 winhSetMenuItemChecked(hwndMenu,
-                                       cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_NOGRID,
+                                       ulVarMenuOffset + ID_XFMI_OFS_NOGRID,
                                        (ulMenuId2 == ID_XFMI_OFS_NOGRID));
 
                 // do not dismiss menu
@@ -2484,6 +2515,37 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                 // do not dismiss menu
                 *pfDismiss = FALSE;
             }
+            break;
+
+// Note V0.9.19 (2002-06-18) [umoeller]:
+// ID_XFMI_OFS_SELECTSOME was moved here from
+// mnuMenuItemSelected because it never worked
+// from the "Edit" pulldown menu as soon as any
+// non-folder object was selected in the folder,
+// becasue the WPS then called wpMenuItemSelected
+// on that object. So it was moved here, and
+// "batch rename" was added at the same time.
+
+            /*
+             * ID_XFMI_OFS_SELECTSOME:
+             *      show "Select by name" dialog.
+             */
+
+            case ID_XFMI_OFS_SELECTSOME:
+                fdrShowSelectSome(hwndFrame);
+                        // V0.9.19 (2002-04-17) [umoeller]
+                // but do dismiss
+            break;
+
+            /*
+             * ID_XFMI_OFS_BATCHRENAME:
+             *      show "batch rename" dialog.
+             *      V0.9.19 (2002-06-18) [umoeller]
+             */
+
+            case ID_XFMI_OFS_BATCHRENAME:
+                fdrShowBatchRename(hwndFrame);
+                // but do dismiss
             break;
 
             default:
@@ -2879,7 +2941,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
     TRY_LOUD(excpt1)
     {
-        ULONG               ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
+        ULONG   ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
 
         if (somSelf)
         {
@@ -2946,9 +3008,12 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                 break;
 #endif
 
+#if 0       // moved this to mnuFolderSelectingMenuItem, see remarks there
+            // V0.9.19 (2002-06-18) [umoeller]
+
                 /*
                  * ID_XFMI_OFS_SELECTSOME:
-                 *      "Select by name"
+                 *      show "Select by name" dialog.
                  */
 
                 case ID_XFMI_OFS_SELECTSOME:
@@ -2956,6 +3021,18 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                             // V0.9.19 (2002-04-17) [umoeller]
                     brc = TRUE;
                 break;
+
+                /*
+                 * ID_XFMI_OFS_BATCHRENAME:
+                 *      show "batch rename" dialog.
+                 *      V0.9.19 (2002-06-18) [umoeller]
+                 */
+
+                case ID_XFMI_OFS_BATCHRENAME:
+                    fdrShowBatchRename(hwndFrame);
+                    brc = TRUE;
+                break;
+#endif
 
                 /*
                  * ID_XFMI_OFS_COPYFILENAME_SHORT:
@@ -3163,7 +3240,8 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf,
 {
     ULONG   ulFirstVarMenuId;
     ULONG   ulPanel = 0;
-    ULONG   ulMenuId2 = MenuId - cmnQuerySetting(sulVarMenuOffset);
+    ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG   ulMenuId2 = MenuId - ulVarMenuOffset;
 
     // first check for variable menu item IDs
     switch(ulMenuId2)
@@ -3182,6 +3260,10 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf,
 
         case ID_XFMI_OFS_SELECTSOME:
             ulPanel = ID_XFH_SELECTSOME;
+        break;
+
+        case ID_XFMI_OFS_BATCHRENAME:       // V0.9.19 (2002-06-18) [umoeller]
+            ulPanel = ID_XFH_BATCHRENAME;
         break;
 
         // items in "View" submenu
@@ -3245,7 +3327,7 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf,
                 default:
                     // if F1 was pressed over one of the variable menu items,
                     // open a help panel with generic help on XFolder
-                    ulFirstVarMenuId = (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE);
+                    ulFirstVarMenuId = (ulVarMenuOffset + ID_XFMI_OFS_VARIABLE);
                     if ( (MenuId >= ulFirstVarMenuId)
                             && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
                          )

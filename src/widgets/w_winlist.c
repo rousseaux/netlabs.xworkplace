@@ -27,7 +27,7 @@
  *      With V0.9.19, the window list has been reworked
  *      quite a bit to cooperate with the XWP daemon
  *      in order to no longer block the PM SIQ in certain
- *      situations.
+ *      situations. See pg_winlist.c for details.
  *
  *@@added V0.9.7 (2000-12-06) [umoeller]
  *@@header "shared\center.h"

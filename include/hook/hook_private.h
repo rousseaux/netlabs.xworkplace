@@ -216,10 +216,10 @@
         // when calculating coordinates which might be off-screen;
         // V0.9.2 (2000-02-23) [umoeller])
         LONG        cxScreen,
-                    cyScreen,
+                    cyScreen;
+
         // and system icon size V0.9.19 (2002-06-13) [umoeller]
-                    cxIcon,
-                    cyIcon;
+        SIZEL       szlIcon;
 
         HWND        hwndActivatedByUs;
                 // this gets set to a window which was activated by the

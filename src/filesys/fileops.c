@@ -1548,7 +1548,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
                                      &pReplaceThis,  // object to replace (if NAMECLASH_REPLACE)
                                      szNewTitle,     // in/out: object title
                                      sizeof(szNewTitle),
-                                     0x006B);        // move code
+                                     WPMENUID_MOVE);
 
     // _Pmpf(("    _wpConfirmObjectTitle returned %d", ulAction));
 
@@ -1583,6 +1583,60 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
         fDidMove = _wpMoveObject(pObject, pTargetFolder);
 
     return (fDidMove);
+}
+
+/*
+ *@@ fopsRenameObjectConfirmed:
+ *      renames an object.
+ *
+ *      This calls _wpConfirmObjectTitle before to
+ *      check whether the title can be used.
+ *      If "Replace file exists" has been enabled,
+ *      this will call the XWorkplace replacement
+ *      method (XFldObject::wpConfirmObjectTitle).
+ *      This handles the return codes correctly.
+ *
+ *      Returns TRUE if the object has been renamed.
+ *
+ *@@added V0.9.19 (2002-06-18) [umoeller]
+ */
+
+BOOL fopsRenameObjectConfirmed(WPObject *pObject,
+                               PCSZ pcszNewTitle)
+{
+    // check if object exists in that folder already
+    // (this might call the XFldObject replacement)
+    WPObject    *pReplaceThis = pObject;
+    CHAR        szNewTitle[CCHMAXPATH];
+    BOOL        fDoRename = TRUE,
+                fDidRename = FALSE;
+    ULONG       ulAction;
+
+    strcpy(szNewTitle, pcszNewTitle);
+    ulAction = _wpConfirmObjectTitle(pObject,      // object
+                                     _wpQueryFolder(pObject), // folder
+                                     &pReplaceThis,  // object to replace (if NAMECLASH_REPLACE)
+                                     szNewTitle,     // in/out: object title
+                                     sizeof(szNewTitle),
+                                     110);          // rename code, not in toolkit
+
+    // _Pmpf(("    _wpConfirmObjectTitle returned %d", ulAction));
+
+    switch (ulAction)
+    {
+        case NAMECLASH_CANCEL:
+        case NAMECLASH_REPLACE:     // shouldn't happen
+            fDoRename = FALSE;
+        break;
+
+        // case NAMECLASH_RENAME:
+        // then we have
+    }
+
+    if (fDoRename)
+        fDidRename = _wpSetTitle(pObject, szNewTitle);
+
+    return (fDidRename);
 }
 
 

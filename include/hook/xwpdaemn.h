@@ -82,24 +82,15 @@
         } WINLISTRECORD, *PWINLISTRECORD;
     #endif
 
-    #pragma pack(1)
-
     /*
-     *@@ PAGERWININFO:
-     *      one of these exists for every window
-     *      which is currently handled by XPager.
+     *@@ XWINDATA:
+     *      variable data collected by pgrGetWinData.
+     *      This struct is also part of XWININFO.
      *
-     *      This was completely revamped with V0.9.7.
-     *      XPager no longer uses a global fixed
-     *      array of these items, but maintains a
-     *      linked list now. I believe some of the
-     *      XPager hangs we had previously were
-     *      due to an overflow of the global array.
-     *
-     *@@added V0.9.7 (2001-01-21) [umoeller]
+     *@@added V0.9.19 (2002-06-18) [umoeller]
      */
 
-    typedef struct _PAGERWININFO
+    typedef struct _XWINDATA
     {
         HSWITCH     hsw;                // switch entry or NULLHANDLE
 
@@ -114,7 +105,6 @@
                         // CHAR szSwTitle[MAXNAMEL+4]
                         // ULONG bProgType
 
-        HPOINTER    hptrFrame;          // frame icon (WM_QUERYICON)
 
         BYTE        bWindowType;
             // the following types are treated as "normal"
@@ -136,13 +126,34 @@
 
         SWP         swp;                // last known window pos
 
+    } XWINDATA, *PXWINDATA;
+
+    /*
+     *@@ XWININFO:
+     *      one of these exists for every window
+     *      that is currently on the daemon window
+     *      list. See pg_winlist.c.
+     *
+     *@@added V0.9.7 (2001-01-21) [umoeller]
+     *@@changed V0.9.19 (2002-06-18) [umoeller]: largely reworked for new winlist
+     */
+
+    typedef struct _XWININFO
+    {
+        XWINDATA    data;
+
+        HPOINTER    hptrFrame;          // frame icon (WM_QUERYICON)
+        ULONG       flFlags;            // persistent flags for this entry
+            #define WLF_ICONCRASHED     0x0001
+                        // sometimes we get inexplicable crashes in the
+                        // daemon in bitblt... if the exception handler
+                        // there catches one of those, it sets this
+                        // bit to make sure we won't try again
         #ifdef DEBUG_WINDOWLIST
             PWINLISTRECORD prec;
         #endif
 
-    } PAGERWININFO, *PPAGERWININFO;
-
-    #pragma pack()
+    } XWININFO, *PXWININFO;
 
     /* ******************************************************************
      *
@@ -156,10 +167,10 @@
 
     VOID pgrUnlockWinlist(VOID);
 
-    PPAGERWININFO pgrFindWinInfo(HWND hwndThis,
-                                 PVOID *ppListNode);
+    PXWININFO pgrFindWinInfo(HWND hwndThis,
+                             PVOID *ppListNode);
 
-    BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo);
+    BOOL pgrGetWinData(PXWINDATA pWinData);
 
     BOOL pgrCreateWinInfo(HWND hwnd);
 

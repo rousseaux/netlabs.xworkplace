@@ -48,6 +48,8 @@
     #define CLIPBOARDKEY "%**C"        /* code in program object's parameter list for
                                           inserting clipboard data */
 
+    // a bunch of decls only in the Warp 4 toolkit:
+
     #ifndef MENUS_SHORT
         #define MENUS_SHORT     0
         #define MENUS_LONG      1
@@ -162,6 +164,8 @@
 #ifndef __NOMOVEREFRESHNOW__
     #define XWPCTXT_REFRESH_IN_MAIN     0x00040000
 #endif
+    #define XWPCTXT_BATCHRENAME         0x00080000
+            // V0.9.19 (2002-06-18) [umoeller]
 
     #define XWPCTXT_HIGHBIT             0x80000000
 

@@ -323,8 +323,8 @@ VOID InitializeGlobalsForHooks(VOID)
     G_HookData.cyScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
 
     // V0.9.19 (2002-06-13) [umoeller]
-    G_HookData.cxIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
-    G_HookData.cyIcon = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
+    G_HookData.szlIcon.cx = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
+    G_HookData.szlIcon.cy = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
 
     // PM desktop (the WPS desktop is handled by the daemon)
     G_HookData.hwndPMDesktop = WinQueryDesktopWindow(G_HookData.habDaemonObject,

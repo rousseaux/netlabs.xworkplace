@@ -537,7 +537,7 @@ BEGIN
     ID_XFSI_ATTR_READONLY               "Read-only"
 
     ID_XFSI_FLDRSETTINGS                "~View"
-    ID_XFSI_SMALLICONS                  "~Small icons"
+    ID_XFSI_SMALLICONS                  "Small ~icons"
     ID_XFSI_FLOWED                      "~Multiple columns"
     ID_XFSI_NONFLOWED                   "~Single column"
     ID_XFSI_NOGRID                      "~As placed"
@@ -1344,6 +1344,14 @@ BEGIN
     ID_XTDI_CONFIRMDESTROY              "Confirm destro~y"
     ID_XTDI_ALWAYSTRUEDELETE            "~Always delete immediately (never use trash can)"
 
+    /* new batch rename dialog */
+    ID_XFDI_BATCHRENAME_TITLE           "Batch Rename"
+    ID_XFDI_BATCH_INTROTXT              "Please specify source and target regular expressions for the rename operation in the below entry fields."
+    ID_XFDI_BATCH_SOURCETXT             "~Find regular expression:"
+    ID_XFDI_BATCH_TARGETTXT             "~Rename to expression:"
+    ID_XFDI_BATCH_SELONLYCB             "Match s~elected objects only"
+    ID_XFDI_BATCH_GO                    "~Start renaming..."
+
     /* strings formerly in ID_XFD_SELECTSOME */
     ID_XFDI_SELECTSOME_TITLE            "Select by Name"
     ID_XFDI_SOME_INTROTXT               "Please specify a selection mask (e.g. ""*.txt"") or a regular expression:"
@@ -1352,6 +1360,7 @@ BEGIN
     ID_XFDI_SOME_SELECTALL              "Select ~all"
     ID_XFDI_SOME_DESELECTALL            "Dese~lect all"
     ID_XFDI_SOME_REGEXP_CP              "~Regular expression"
+    ID_XFDI_SOME_CASESENSITIVE_CB       "~Case-sensitive match"
 
     /* strings formerly in ID_SCD_PAGER_WINDOW */
     ID_SCDI_PGR1_WINDOW_GROUP          "&pgr; control window"
@@ -1500,6 +1509,8 @@ BEGIN
     ID_XSDI_MENU_LOCKDISK               "~Lock disk"
     ID_XSDI_MENU_EJECTDISK              "~Eject disk"
     ID_XSDI_MENU_UNLOCKDISK             "~Unlock disk"
+
+    ID_XSDI_MENU_BATCHRENAME            "Rename o~bjects..."
 
     /* XPager "sticky" page and related dialogs */
     ID_SCDI_STICKY_GROUP                "Sticky windows"

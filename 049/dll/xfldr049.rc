@@ -1334,6 +1334,14 @@ BEGIN
     ID_XTDI_CONFIRMDESTROY              "~EndgÅltiges Lîschen bestÑtigen"
     ID_XTDI_ALWAYSTRUEDELETE            "S~tets sofort lîschen (Papierkorb umgehen)"
 
+    /* new batch rename dialog */
+    ID_XFDI_BATCHRENAME_TITLE           "Objekte umbenennen"
+    ID_XFDI_BATCH_INTROTXT              "Geben Sie regulÑre AusdrÅcke fÅr das Suchen und Ersetzen von Objektnamen in den folgenden Eingabefeldern an."
+    ID_XFDI_BATCH_SOURCETXT             "RegulÑrer Ausdruck fÅr ~Suchen:"
+    ID_XFDI_BATCH_TARGETTXT             "Ausdruck fÅr ~Ersetzen:"
+    ID_XFDI_BATCH_SELONLYCB             "~Nur ausgewÑhlte Objekte beachten"
+    ID_XFDI_BATCH_GO                    "~Umbenennen..."
+
     /* strings formerly in ID_XFD_SELECTSOME */
     ID_XFDI_SELECTSOME_TITLE            "Nach Namen auswÑhlen"
     ID_XFDI_SOME_INTROTXT               "Bitte geben Sie eine Auswahlmaske (z.B. ""*.txt"") oder einen regulÑren Ausdruck an:"
@@ -1342,6 +1350,7 @@ BEGIN
     ID_XFDI_SOME_SELECTALL              "Alles aus~wÑhlen"
     ID_XFDI_SOME_DESELECTALL            "A~lles zurÅcknehmen"
     ID_XFDI_SOME_REGEXP_CP              "~RegulÑrer Ausdruck"
+    ID_XFDI_SOME_CASESENSITIVE_CB       "~Gro·-/Kleinschreibung beachten"
 
     /* strings formerly in ID_SCD_PAGER_WINDOW */
     ID_SCDI_PGR1_WINDOW_GROUP          "&pgr;-Kontrollfenster"
@@ -1490,6 +1499,8 @@ BEGIN
     ID_XSDI_MENU_LOCKDISK               "Laufwerk ~sperren"
     ID_XSDI_MENU_EJECTDISK              "DatentrÑger ~ausgeben"
     ID_XSDI_MENU_UNLOCKDISK             "Laufwerk ~freigeben"
+
+    ID_XSDI_MENU_BATCHRENAME            "O~bjekte umbenennen..."
 
     /* XPager "sticky" page and related dialogs */
     ID_SCDI_STICKY_GROUP                "Haftfenster"

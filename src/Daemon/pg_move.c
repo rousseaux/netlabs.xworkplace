@@ -180,62 +180,61 @@ BOOL MoveCurrentDesktop(HAB hab,
                 {
                     PLISTNODE pNext = pNode->pNext; // V0.9.15 (2001-09-14) [umoeller]
 
-                    PPAGERWININFO pEntryThis = (PPAGERWININFO)pNode->pItemData;
+                    PXWININFO pEntryThis = (PXWININFO)pNode->pItemData;
 
-                    if (!WinIsWindow(hab, pEntryThis->swctl.hwnd))
+                    if (!WinIsWindow(hab, pEntryThis->data.swctl.hwnd))
                         // window no longer valid:
                         // remove from the list NOW
-                        // lstRemoveNode(&G_llWinInfos, pNode);
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_WINDOWCHANGE,
-                                   (MPARAM)pEntryThis->swctl.hwnd,
+                                   (MPARAM)pEntryThis->data.swctl.hwnd,
                                    (MPARAM)WM_DESTROY);
                     else
                     {
                         BOOL fRefreshThis = FALSE;
 
-                        if (     (!strcmp(pEntryThis->szClassName, "#1")
-                              && (!(WinQueryWindowULong(pEntryThis->swctl.hwnd, QWL_STYLE)
+                        if (     (!strcmp(pEntryThis->data.szClassName, "#1")
+                              && (!(WinQueryWindowULong(pEntryThis->data.swctl.hwnd, QWL_STYLE)
                                             & FS_NOMOVEWITHOWNER))
                                  )
                            )
                         {
-                            pahwndNoMoveWithOwner[cNoMoveWithOwner++] = pEntryThis->swctl.hwnd;
-                            WinSetWindowBits(pEntryThis->swctl.hwnd,
+                            pahwndNoMoveWithOwner[cNoMoveWithOwner++] = pEntryThis->data.swctl.hwnd;
+                            WinSetWindowBits(pEntryThis->data.swctl.hwnd,
                                              QWL_STYLE,
                                              FS_NOMOVEWITHOWNER,
                                              FS_NOMOVEWITHOWNER);
                         }
 
-                        WinQueryWindowPos(pEntryThis->swctl.hwnd, &pEntryThis->swp);
+                        WinQueryWindowPos(pEntryThis->data.swctl.hwnd, &pEntryThis->data.swp);
 
                         // fix outdated minimize/maximize/hide flags
-                        if (    (pEntryThis->bWindowType == WINDOW_MINIMIZE)
-                             && ( (pEntryThis->swp.fl & SWP_MINIMIZE) == 0)
+                        if (    (pEntryThis->data.bWindowType == WINDOW_MINIMIZE)
+                             && ( (pEntryThis->data.swp.fl & SWP_MINIMIZE) == 0)
                            )
                             // no longer minimized:
                             fRefreshThis = TRUE;
-                        else if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
-                                  && ( (pEntryThis->swp.fl & SWP_MAXIMIZE) == 0)
+                        else if (    (pEntryThis->data.bWindowType == WINDOW_MAXIMIZE)
+                                  && ( (pEntryThis->data.swp.fl & SWP_MAXIMIZE) == 0)
                                 )
                             // no longer minimized:
                             fRefreshThis = TRUE;
 
-                        if (pEntryThis->bWindowType == WINDOW_NORMAL)
+                        if (pEntryThis->data.bWindowType == WINDOW_NORMAL)
                         {
-                            if (pEntryThis->swp.fl & SWP_HIDE)
+                            if (pEntryThis->data.swp.fl & SWP_HIDE)
                                 fRefreshThis = TRUE;
-                            else if (pEntryThis->swp.fl & SWP_MINIMIZE)
+                            else if (pEntryThis->data.swp.fl & SWP_MINIMIZE)
                                 // now minimized:
-                                pEntryThis->bWindowType = WINDOW_MINIMIZE;
-                            else if (pEntryThis->swp.fl & SWP_MAXIMIZE)
+                                pEntryThis->data.bWindowType = WINDOW_MINIMIZE;
+                            else if (pEntryThis->data.swp.fl & SWP_MAXIMIZE)
                                 // now maximized:
-                                pEntryThis->bWindowType = WINDOW_MAXIMIZE;
+                                pEntryThis->data.bWindowType = WINDOW_MAXIMIZE;
                         }
 
                         if (fRefreshThis)
                         {
-                            if (!pgrGetWinInfo(pEntryThis))
+                            if (!pgrGetWinData(&pEntryThis->data))
                             {
                                 // window no longer valid:
                                 // remove from the list NOW
@@ -243,7 +242,7 @@ BOOL MoveCurrentDesktop(HAB hab,
                                 // lstRemoveNode(&G_llWinInfos, pNode);
                                 WinPostMsg(G_pHookData->hwndDaemonObject,
                                            XDM_WINDOWCHANGE,
-                                           (MPARAM)pEntryThis->swctl.hwnd,
+                                           (MPARAM)pEntryThis->data.swctl.hwnd,
                                            (MPARAM)WM_DESTROY);
 
                                 // update pEntryThis so that we don't try to
@@ -257,13 +256,13 @@ BOOL MoveCurrentDesktop(HAB hab,
                         // hidden, or invisible
                         // V0.9.19 (2002-04-04) [lafaix]
                         if (    (pEntryThis)
-                             && (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)
-                                  || (    (pEntryThis->bWindowType == WINDOW_NORMAL)
-                                       && (!(pEntryThis->swp.fl & SWP_HIDE))
+                             && (    (pEntryThis->data.bWindowType == WINDOW_MAXIMIZE)
+                                  || (    (pEntryThis->data.bWindowType == WINDOW_NORMAL)
+                                       && (!(pEntryThis->data.swp.fl & SWP_HIDE))
                                      )
-                                  || (    (pEntryThis->bWindowType == WINDOW_NIL)
-                                       && (!(pEntryThis->swp.fl & SWP_HIDE))
-                                       && (WinQueryWindowULong(pEntryThis->swctl.hwnd,
+                                  || (    (pEntryThis->data.bWindowType == WINDOW_NIL)
+                                       && (!(pEntryThis->data.swp.fl & SWP_HIDE))
+                                       && (WinQueryWindowULong(pEntryThis->data.swctl.hwnd,
                                                                QWL_STYLE)
                                                    & WS_VISIBLE)
                                      )
@@ -280,9 +279,11 @@ BOOL MoveCurrentDesktop(HAB hab,
                             PSWP    pswpNewThis = &paswpNew[cSwpNewUsed];
 
                             // we have queried the window pos above
-                            memcpy(pswpNewThis, &pEntryThis->swp, sizeof(SWP));
+                            memcpy(pswpNewThis,
+                                   &pEntryThis->data.swp,
+                                   sizeof(SWP));
 
-                            pswpNewThis->hwnd = pEntryThis->swctl.hwnd;
+                            pswpNewThis->hwnd = pEntryThis->data.swctl.hwnd;
                             // add the delta for moving
                             pswpNewThis->x += dx;
                             pswpNewThis->y += dy;
