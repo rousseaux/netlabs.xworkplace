@@ -63,6 +63,9 @@
 #define INCL_WINSTDCNR
 #define INCL_WINSHELLDATA       // Prf* functions
 
+#define INCL_WINCLIPBOARD
+#define INCL_WINATOM
+
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIPRIMITIVES
 #include <os2.h>
@@ -99,6 +102,7 @@
 #include "xfldr.ih"
 #include "xfobj.ih"
 #include "xfdisk.ih"
+#include "xfdataf.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -1505,11 +1509,9 @@ SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
  *@@added V0.9.19 (2002-06-18) [umoeller]
  */
 
-VOID AddEntryToDropDown(HWND hwndDlg,
-                        ULONG ulID,
+VOID AddEntryToDropDown(HWND hwndDropDown,
                         BOOL fSelect)       // in: select entry field too?
 {
-    HWND    hwndDropDown = WinWindowFromID(hwndDlg, ulID);
     CHAR    szMask[EF_LIMIT];
 
     if (WinQueryWindowText(hwndDropDown,
@@ -1645,8 +1647,7 @@ static VOID DoSelect(HWND hwndDlg,
 
         }
 
-        AddEntryToDropDown(hwndDlg,
-                           ID_XFDI_SOME_ENTRYFIELD,
+        AddEntryToDropDown(hwndDropDown,
                            TRUE);       // select
     }
 }
@@ -1701,6 +1702,8 @@ VOID WriteDropDownToIni(HWND hwndDropDown,
     PSZ     pszToSave = NULL;
     ULONG   cbToSave = 0;
 
+    _PmpfF(("entering"));
+
     for (ul = 0;
          ul < 10;
          ul++)
@@ -1712,6 +1715,8 @@ VOID WriteDropDownToIni(HWND hwndDropDown,
                                  sizeof(szEntry))
             < 1)
             break;
+
+        _Pmpf(("   got %s", szEntry));
 
         strhArrayAppend(&pszToSave,
                         szEntry,
@@ -2247,7 +2252,9 @@ ULONG ConfirmRename(HWND hwndOwner,
 VOID DoRename(HWND hwndDlg)
 {
     HWND    hwndFrame;
-    HWND    hwndCnr;
+    HWND    hwndCnr,
+            hwndSource,
+            hwndTarget;
     PMINIRECORDCORE pmrc = NULL;
     CHAR    szSource[EF_LIMIT],
             szTarget[EF_LIMIT];
@@ -2260,15 +2267,16 @@ VOID DoRename(HWND hwndDlg)
 
     if (    (hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER))
          && (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
+         && (hwndSource = WinWindowFromID(hwndDlg, ID_XFDI_BATCH_SOURCEEF))
+         && (hwndTarget = WinWindowFromID(hwndDlg, ID_XFDI_BATCH_TARGETEF))
          && (pEreSource = CompileRegexp(hwndDlg,
                                         ID_XFDI_BATCH_SOURCEEF,
                                         szSource,
                                         sizeof(szSource),
                                         fCaseSense))
-         && (WinQueryDlgItemText(hwndDlg,
-                                 ID_XFDI_BATCH_TARGETEF,
-                                 sizeof(szTarget),
-                                 szTarget))
+         && (WinQueryWindowText(hwndTarget,
+                                sizeof(szTarget),
+                                szTarget))
        )
     {
         // now go through all the container items in hwndCnr
@@ -2448,12 +2456,12 @@ VOID DoRename(HWND hwndDlg)
 
             // save if we had _matches_ (irrespective of renames),
             // and even if we cancelled
-            AddEntryToDropDown(hwndDlg, ID_XFDI_BATCH_SOURCEEF, TRUE);
+            AddEntryToDropDown(hwndSource, TRUE);
             rxpFree(pEreSource);
 
             // we get here also if the target failed, so check
             if (fSaveTarget)
-                AddEntryToDropDown(hwndDlg, ID_XFDI_BATCH_TARGETEF, FALSE);
+                AddEntryToDropDown(hwndTarget, FALSE);
         }
 
         xstrClear(&strMsg);
@@ -2602,6 +2610,541 @@ VOID fdrShowBatchRename(HWND hwndFrame)
         }
 
         free(paNew);
+    }
+}
+
+/* ******************************************************************
+ *
+ *   Replacement "Paste" dialog
+ *
+ ********************************************************************/
+
+/*
+ *@@ PASTEDLGDATA:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+typedef struct _PASTEDLGDATA
+{
+    HWND            hwndFrame;      // folder frame
+
+    HAB             hab;
+
+    HWND            hwndPreview,
+                    hwndObjTitle,
+                    hwndFormat,
+                    hwndClass;
+
+    WPFolder        *pFolder;       // folder to paste to
+
+} PASTEDLGDATA, *PPASTEDLGDATA;
+
+HWND        G_hwndOpenPasteDlg = NULLHANDLE;
+                    // there's only one clipboard, so allow one paste dialog only
+
+typedef ULONG _System ENUMCLIPBOARDCLASSES(M_WPDataFile *somSelf, ULONG aCBFormat, ULONG aPrevious);
+typedef ULONG _System RENDERFROMCLIPBOARD(WPDataFile *somSelf, ULONG aRenderAs);
+
+/*
+ *@@ winhInsertLboxItemHandle:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+SHORT winhInsertLboxItemHandle(HWND hwndListbox,
+                               SHORT sIndex,
+                               PCSZ pcsz,
+                               ULONG ulHandle)
+{
+    SHORT s;
+
+    s = (SHORT)WinSendMsg(hwndListbox,
+                          LM_INSERTITEM,
+                          (MPARAM)sIndex,
+                          (MPARAM)pcsz);
+    WinSendMsg(hwndListbox,
+               LM_SETITEMHANDLE,
+               (MPARAM)s,
+               (MPARAM)ulHandle);
+
+    return s;
+}
+
+/*
+ *@@ PasteQuerySelectedFormat:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+ULONG PasteQuerySelectedFormat(PPASTEDLGDATA pData)
+{
+    SHORT s = winhQueryLboxSelectedItem(pData->hwndFormat, LIT_FIRST);
+    return winhQueryLboxItemHandle(pData->hwndFormat, s);
+}
+
+/*
+ *@@ PasteFillClassesForFormat:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+static BOOL PasteFillClassesForFormat(PPASTEDLGDATA pData)
+{
+    BOOL    brc = FALSE;
+    HATOMTBL hat;
+    ENUMCLIPBOARDCLASSES *_wpclsEnumClipboardClasses;
+
+    ULONG   ulFormat = PasteQuerySelectedFormat(pData);
+
+    CHAR    szLastClass[100];
+    BOOL    fSelected = FALSE;
+
+    PrfQueryProfileString(HINI_USER,
+                          (PSZ)INIAPP_XWORKPLACE,
+                          (PSZ)INIKEY_LASTPASTECLASS,
+                          "",
+                          szLastClass,
+                          sizeof(szLastClass));
+
+    winhDeleteAllItems(pData->hwndClass);
+    WinSetWindowText(pData->hwndClass, "");
+
+    if (    (hat = WinQuerySystemAtomTable())
+         && (_wpclsEnumClipboardClasses = (ENUMCLIPBOARDCLASSES*)wpshResolveFor(_WPDataFile,
+                                                                                NULL,
+                                                                                "wpclsEnumClipboardClasses"))
+       )
+    {
+        ULONG ulClass;
+        for (ulClass = _wpclsEnumClipboardClasses(_WPDataFile, ulFormat, 0);
+             ulClass;
+             ulClass = _wpclsEnumClipboardClasses(_WPDataFile, ulFormat, ulClass))
+        {
+            CHAR szTemp[100];
+            if (WinQueryAtomName(hat,
+                                 ulClass,
+                                 szTemp,
+                                 sizeof(szTemp)))
+            {
+                SHORT s;
+
+                s = winhInsertLboxItemHandle(pData->hwndClass,
+                                             LIT_END,
+                                             szTemp,
+                                             // remember the ulClass as the listbox item handle
+                                             ulClass);
+
+                if (!strcmp(szTemp, szLastClass))
+                {
+                    winhSetLboxSelectedItem(pData->hwndClass,
+                                            s,
+                                            TRUE);
+                    fSelected = TRUE;
+                }
+            }
+
+            brc = TRUE;
+        }
+
+        if (!fSelected)
+            winhSetLboxSelectedItem(pData->hwndClass,
+                                    0,
+                                    TRUE);
+    }
+
+    return brc;
+}
+
+/*
+ *@@ PasteFillControls:
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must have opened the clipboard, which
+ *          is closed here.
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+static BOOL PasteFillControls(HWND hwndDlg, PPASTEDLGDATA pData)
+{
+    BOOL    brc = FALSE,
+            fClip = TRUE;
+
+    HATOMTBL hat;
+
+    if (hat = WinQuerySystemAtomTable())
+    {
+
+        // 1) enumerate clipboard formats
+
+        ULONG   ulFormat,
+                ulCurrentFormat = -1,
+                cbCurrentFormat = sizeof(ulCurrentFormat),
+                cFormats = 0;
+        CHAR    szTemp[300];
+        SHORT   s;
+        BOOL    fSelectedFormat = FALSE;
+
+        PrfQueryProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_LASTPASTEFORMAT,
+                            &ulCurrentFormat,
+                            &cbCurrentFormat);
+
+        winhDeleteAllItems(pData->hwndFormat);
+
+        for (ulFormat = WinEnumClipbrdFmts(pData->hab, 0);
+             ulFormat;
+             ulFormat = WinEnumClipbrdFmts(pData->hab, ulFormat))
+        {
+            SHORT   sIndex;
+            PCSZ    pcszFormatName = NULL;
+
+            _Pmpf(("  got format %d", ulFormat));
+
+            switch (ulFormat)
+            {
+                case CF_BITMAP:
+                    pcszFormatName = "Bitmap";
+                break;
+
+                case CF_METAFILE:
+                    pcszFormatName = "Metafile";
+                break;
+
+                case CF_TEXT:
+                    pcszFormatName = "Plain text";
+
+                    WinSetWindowText(pData->hwndPreview,
+                                     (PSZ)WinQueryClipbrdData(pData->hab, CF_TEXT));
+                break;
+
+                default:
+                    if (WinQueryAtomName(hat,
+                                         ulFormat,
+                                         szTemp,
+                                         sizeof(szTemp)))
+                        pcszFormatName = szTemp;
+            }
+
+            if (pcszFormatName)
+            {
+                ++cFormats;
+
+                s = winhInsertLboxItemHandle(pData->hwndFormat,
+                                             LIT_END,
+                                             pcszFormatName,
+                                             // remember the ulFormat as the listbox item handle
+                                             ulFormat);
+
+                if (ulCurrentFormat == ulFormat)
+                {
+                    winhSetLboxSelectedItem(pData->hwndFormat,
+                                            s,
+                                            TRUE);
+                    fSelectedFormat = TRUE;
+                }
+            }
+        }
+
+        if (!fSelectedFormat)
+            winhSetLboxSelectedItem(pData->hwndFormat,
+                                    0,
+                                    TRUE);
+
+        WinCloseClipbrd(pData->hab);
+        fClip = FALSE;
+
+        // 2) enumerate available classes
+
+        if (cFormats)
+            brc = PasteFillClassesForFormat(pData);
+    }
+
+    if (fClip)
+        WinCloseClipbrd(pData->hab);
+
+    WinEnableControl(hwndDlg, DID_OK, brc);
+
+    return brc;
+}
+
+/*
+ *@@ fnwpPaste:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        /*
+         * WM_INITDLG:
+         *      mp2 has PPASTEDLGDATA.
+         */
+
+        case WM_INITDLG:
+        {
+            PPASTEDLGDATA pData = (PPASTEDLGDATA)mp2;
+            WinSetWindowPtr(hwndDlg, QWL_USER, pData);
+
+            pData->hab = WinQueryAnchorBlock(hwndDlg);
+
+            pData->hwndPreview = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_PREVIEW_PANE);
+            pData->hwndObjTitle = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_OBJTITLE_DROP);
+            pData->hwndFormat = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_FORMAT_DROP);
+            pData->hwndClass = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_CLASS_DROP);
+
+            winhSetPresColor(pData->hwndPreview,
+                             PP_BACKGROUNDCOLOR,
+                             RGBCOL_WHITE);
+
+            // fill formats and classes
+            PasteFillControls(hwndDlg, pData);
+
+            // fill titles
+            FillDropDownFromIni(pData->hwndObjTitle,
+                                INIKEY_LAST10PASTETITLES);
+
+            winhSetLboxSelectedItem(pData->hwndObjTitle, 0, TRUE);
+            WinSetFocus(HWND_DESKTOP, pData->hwndObjTitle);
+            mrc = (MRESULT)TRUE;        // we changed focus
+            winhEntryFieldSelectAll(pData->hwndObjTitle);
+        }
+        break;
+
+        case WM_CONTROL:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case ID_XFDI_PASTE_FORMAT_DROP:
+                    if (SHORT2FROMMP(mp1) == LN_SELECT)
+                    {
+                        // refresh the classes if a new format is selected
+                        PPASTEDLGDATA pData = WinQueryWindowPtr(hwndDlg, QWL_USER);
+                        PasteFillClassesForFormat(pData);
+                    }
+                break;
+            }
+        break;
+
+        case WM_HELP:
+        {
+            PPASTEDLGDATA pData = WinQueryWindowPtr(hwndDlg, QWL_USER);
+            cmnDisplayHelp(pData->pFolder, ID_XSH_PASTEDLG);
+        }
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+#define CX_RIGHT        120
+
+static const CONTROLDEF
+    PastePreviewTxt = LOADDEF_TEXT(ID_XFDI_PASTE_PREVIEW_TXT),
+    PastePreviewPane = CONTROLDEF_TEXT("W", ID_XFDI_PASTE_PREVIEW_PANE, CX_RIGHT, 30),
+    PasteObjTitleTxt = LOADDEF_TEXT(ID_XFDI_PASTE_OBJTITLE_TXT),
+    PasteObjTitleDrop = CONTROLDEF_DROPDOWN(ID_XFDI_PASTE_OBJTITLE_DROP, CX_RIGHT, 50),
+    PasteFormatTxt = LOADDEF_TEXT(ID_XFDI_PASTE_FORMAT_TXT),
+    PasteFormatDrop = CONTROLDEF_DROPDOWNLIST(ID_XFDI_PASTE_FORMAT_DROP, CX_RIGHT, 50),
+    PasteClassTxt = LOADDEF_TEXT(ID_XFDI_PASTE_CLASS_TXT),
+    PasteClassDrop = CONTROLDEF_DROPDOWNLIST(ID_XFDI_PASTE_CLASS_DROP, CX_RIGHT, 50);
+
+static const DLGHITEM G_dlgPaste[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_TABLE_ALIGN,
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PastePreviewTxt),
+                        CONTROL_DEF(&PastePreviewPane),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PasteObjTitleTxt),
+                        CONTROL_DEF(&PasteObjTitleDrop),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PasteFormatTxt),
+                        CONTROL_DEF(&PasteFormatDrop),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PasteClassTxt),
+                        CONTROL_DEF(&PasteClassDrop),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_OKButton),
+                CONTROL_DEF(&G_CancelButton),
+                CONTROL_DEF(&G_HelpButton),
+        END_TABLE
+    };
+
+/*
+ *@@ DoPaste:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+static BOOL DoPaste(WPFolder *pFolder,
+                    PSZ pszClass,
+                    PSZ pszFilename,
+                    ULONG cbFilename,           // in: buffer size
+                    ULONG ulFormat)
+{
+    BOOL    brc = FALSE;
+    somId   somidClassName;
+    RENDERFROMCLIPBOARD *_wpRenderFromClipboard;
+
+    if (somidClassName = somIdFromString(pszClass))
+    {
+        SOMClass *pClassObject;
+        if (pClassObject = _somFindClass(SOMClassMgrObject,
+                                         somidClassName,
+                                         0,
+                                         0))
+        {
+            WPObject *pobjNew;
+
+            if (pobjNew = _wpclsNew(pClassObject,
+                                    pszFilename,
+                                    NULL,
+                                    pFolder,
+                                    TRUE))            // lock
+            {
+                WPObject *pobj2 = pobjNew;
+                switch (_wpConfirmObjectTitle(pobjNew,
+                                              pFolder,
+                                              &pobj2,
+                                              pszFilename,
+                                              cbFilename,
+                                              110))     // rename code
+                {
+                    case NAMECLASH_RENAME:
+                        _wpSetTitle(pobjNew, pszFilename);
+                    break;
+
+                    case NAMECLASH_CANCEL:
+                        _wpFree(pobjNew);
+                        pobjNew = NULL;
+                    break;
+                }
+
+                if (    (pobjNew)
+                     && (_wpRenderFromClipboard = (RENDERFROMCLIPBOARD*)wpshResolveFor(pobjNew,
+                                                                                       NULL,
+                                                                                       "wpRenderFromClipboard"))
+                   )
+                {
+                    brc = _wpRenderFromClipboard(pobjNew,
+                                                 ulFormat);
+                }
+            }
+        }
+
+        SOMFree(somidClassName);
+    }
+
+    return brc;
+}
+
+/*
+ *@@ fdrShowPasteDlg:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+VOID fdrShowPasteDlg(WPFolder *pFolder,
+                     HWND hwndFrame)
+{
+    PDLGHITEM paNew;
+
+    PPASTEDLGDATA pData;
+
+    // if we have another open paste dialog,
+    // active it and return
+    if (G_hwndOpenPasteDlg)
+    {
+        WinAlarm(HWND_DESKTOP, WA_WARNING);
+        WinSetActiveWindow(HWND_DESKTOP, G_hwndOpenPasteDlg);
+        return;
+    }
+
+    // we open the clipboard here, which is closed during
+    // WM_INITDLG in PasteFillControls; we shouldn't even
+    // show the dialog if the clipboard is empty
+    if (    (WinOpenClipbrd(winhMyAnchorBlock()))
+         && (pData = NEW(PASTEDLGDATA))
+       )
+    {
+        pData->hwndFrame = hwndFrame;
+        pData->pFolder = pFolder;
+
+        if (!cmnLoadDialogStrings(G_dlgPaste,
+                                  ARRAYITEMCOUNT(G_dlgPaste),
+                                  &paNew))
+        {
+            PSZ pszTitle = strdup(cmnGetString(ID_XFDI_PASTE_TITLE));
+            ULONG ulOfs = 0;
+
+            strhFindReplace(&pszTitle, &ulOfs, "%1", _wpQueryTitle(pFolder));
+
+            if (!dlghCreateDlg(&G_hwndOpenPasteDlg,
+                               hwndFrame,         // owner
+                               FCF_FIXED_DLG,
+                               fnwpPaste,
+                               pszTitle,
+                               paNew,
+                               ARRAYITEMCOUNT(G_dlgPaste),
+                               (PVOID)pData,
+                               cmnQueryDefaultFont()))
+            {
+                winhPlaceBesides(G_hwndOpenPasteDlg,
+                                 WinWindowFromID(hwndFrame, FID_CLIENT),
+                                 PLF_SMART);
+                if (DID_OK == WinProcessDlg(G_hwndOpenPasteDlg))
+                {
+                    CHAR    szFilename[CCHMAXPATH];
+                    CHAR    szClass[100];
+                    ULONG   ulFormat = PasteQuerySelectedFormat(pData);
+
+                    WinQueryWindowText(pData->hwndObjTitle, sizeof(szFilename), szFilename);
+                    WinQueryWindowText(pData->hwndClass, sizeof(szClass), szClass);
+
+                    if (DoPaste(pData->pFolder,
+                                szClass,
+                                szFilename,
+                                sizeof(szFilename),
+                                ulFormat))
+                    {
+                        AddEntryToDropDown(pData->hwndObjTitle, FALSE);
+                        WriteDropDownToIni(pData->hwndObjTitle,
+                                           INIKEY_LAST10PASTETITLES);
+
+                        PrfWriteProfileData(HINI_USER,
+                                            (PSZ)INIAPP_XWORKPLACE,
+                                            (PSZ)INIKEY_LASTPASTEFORMAT,
+                                            &ulFormat,
+                                            sizeof(ulFormat));
+
+                        PrfWriteProfileString(HINI_USER,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_LASTPASTECLASS,
+                                              szClass);
+                    }
+                }
+
+                WinDestroyWindow(G_hwndOpenPasteDlg);
+                G_hwndOpenPasteDlg = NULLHANDLE;
+            }
+
+            free(paNew);
+        }
+
+        free(pData);
     }
 }
 

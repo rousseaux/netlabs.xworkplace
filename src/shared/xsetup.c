@@ -1321,20 +1321,23 @@ static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
              || (!fReplacements && !G_aClasses[ul].ppcszReplacesClass)
            )
         {
+            PCONTROLDEF pDef;
+
             (*ppDlgItemThis)->Type = TYPE_START_NEW_ROW;
-            (*ppDlgItemThis)->ulData = ROW_VALIGN_CENTER;
+            (*ppDlgItemThis)->fl = ROW_VALIGN_CENTER;
             (*ppDlgItemThis)++;
 
             // fill the controldef
-            memcpy(*ppControlDefThis,
+            pDef = *ppControlDefThis;
+            memcpy(pDef,
                    pOneClass,
                    sizeof(CONTROLDEF));
-            (*ppControlDefThis)->pcszText = *(G_aClasses[ul].ppcszClassName);
-            (*ppControlDefThis)->usID = ID_CLASSES_FIRST + ul;
+            pDef->pcszText = *(G_aClasses[ul].ppcszClassName);
+            pDef->usID = ID_CLASSES_FIRST + ul;
 
             // and append the controldef
             (*ppDlgItemThis)->Type = TYPE_CONTROL_DEF;
-            (*ppDlgItemThis)->ulData = (ULONG)(*ppControlDefThis);
+            (*ppDlgItemThis)->pCtlDef = *ppControlDefThis;
             (*ppDlgItemThis)++;
             (*ppControlDefThis)++;
         }

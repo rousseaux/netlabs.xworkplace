@@ -3205,10 +3205,19 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 default:
-                    // anything else: check if it's one of our variable menu items
-                    brc = CheckForVariableMenuItems(somSelf,
-                                                    hwndFrame,
-                                                    ulMenuId);
+                    switch (ulMenuId)
+                    {
+                        case WPMENUID_PASTE:        // V0.9.20 (2002-08-08) [umoeller]
+                            fdrShowPasteDlg(somSelf, hwndFrame);
+                            brc = TRUE;
+                        break;
+
+                        default:
+                            // anything else: check if it's one of our variable menu items
+                            brc = CheckForVariableMenuItems(somSelf,
+                                                            hwndFrame,
+                                                            ulMenuId);
+                    }
 
             } // end switch;
         } // end if (somSelf)

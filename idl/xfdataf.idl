@@ -81,6 +81,8 @@ interface XFldDataFile : WPDataFile
      *
      */
 
+    //# 1)  init/uninit methods
+
     wpInitData: override;
     wpUnInitData: override;
 
@@ -88,11 +90,29 @@ interface XFldDataFile : WPDataFile
 
     wpRestoreState: override;
 
+    //# 2)  WPObject query/set methods
+
+    //# 3)  icon methods
+
+    wpQueryIcon: override;
+    wpQueryIconData: override;
+    wpSetIconData: override;
+
+    //# 4)  class-specific query/set methods
+
+    wpQueryAssociatedProgram: override;
+    wpQueryAssociatedFileIcon: override;
+    wpSetAssociatedFileIcon: override;
+
+    //# 5)  menu methods
+
     wpDisplayMenu: override;
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
 
     wpMenuItemHelpSelected: override;
+
+    //# 6)  open view methods
 
     wpOpen: override;
 
@@ -102,20 +122,11 @@ interface XFldDataFile : WPDataFile
 
     wpAddFileTypePage: override;
 
-    wpQueryAssociatedProgram: override;
-    wpQueryAssociatedFileIcon: override;
-    wpSetAssociatedFileIcon: override;
+    //# 7)  file operation methods
 
-    wpQueryIcon: override;
-    wpQueryIconData: override;
-    wpSetIconData: override;
-
-    wpCreateFromTemplate: override;
     wpSetRealName: override;
 
-#ifdef __PRIVATE__
-
-#endif
+    wpCreateFromTemplate: override;
 
   }; // implementation
 #endif /* __SOMIDL__ */

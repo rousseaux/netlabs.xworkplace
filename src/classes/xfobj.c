@@ -1892,274 +1892,6 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 }
 
 /*
- *@@ wpSetTitle:
- *      this WPObject instance method sets a new title
- *      for the object. This gets called during object
- *      instantiation and later if the object title is
- *      changed, e.g. from the settings notebook or
- *      via direct editing in a folder container.
- *
- *      Since this stupid method also resorts the folder
- *      after title changes, I have rewritten this.
- *
- *      From my testing, this is the ONLY place in the
- *      WPS which actually allocates memory for the
- *      title string and stores that in MINIRECORDCORE.pszIcon.
- *      So we can safely override this and allocate the
- *      string memory for our own heap (as long as we free
- *      the memory properly in wpUnInitData).
- *
- *@@added V0.9.16 (2002-01-04) [umoeller]
- *@@changed V0.9.20 (2002-07-25) [umoeller]: extended mutex protection
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
-                                      PSZ pszNewTitle)
-{
-    BOOL    brc = TRUE,
-            fLocked = FALSE;
-
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpSetTitle");
-
-    // return (XFldObject_parent_WPObject_wpSetTitle(somSelf, pszNewTitle));
-
-    TRY_LOUD(excpt1)
-    {
-        if (!pszNewTitle)
-            brc = FALSE;
-        else
-        {
-            PMINIRECORDCORE pRecord = _wpQueryCoreRecord(somSelf);
-            ULONG       ulNewTitleLen = strlen(pszNewTitle);
-            PSZ         pszNewTitleCopy;
-            ULONG       ulError;
-
-            // use the WPS heap in order not to clutter up
-            // our own heap with all the string data
-            if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
-                                                ulNewTitleLen + 1,
-                                                &ulError)))
-                brc = FALSE;
-            else
-            {
-                ULONG           ulStyle = _wpQueryStyle(somSelf);
-                BOOL            fIsInitialized = (0 != (_flObject & OBJFL_INITIALIZED));
-
-                // LOCK the object if it is already initialized... no need
-                // to do so if this gets called in the process of setting
-                // up the object though
-
-                // (moved the lock up here V0.9.20 (2002-07-25) [umoeller])
-
-                if (fIsInitialized)
-                    if (!(fLocked = !_wpRequestObjectMutexSem(somSelf, 5000)))
-                    {
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "Couldn't get object mutex sem in five seconds. Aborting object rename.");
-                        brc = FALSE;
-                    }
-
-                if (    (!fIsInitialized)
-                     || (fLocked)
-                   )
-                {
-                    PSZ p;
-
-                    memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
-
-                    // replace all '^' with '\n'
-                    p = pszNewTitleCopy;
-                    while (p = strchr(p, '^'))
-                        *p = '\n';
-
-                    if (strhcmp(pRecord->pszIcon, pszNewTitleCopy))
-                    {
-                        // new title is different:
-                        if (    (ulStyle & OBJSTYLE_TEMPLATE)
-                             && (fIsInitialized)
-                           )
-                        {
-                            // renaming a template: template entries in
-                            // OS2.INI are based on names, so unset
-                            // the template flag; this will nuke the
-                            // template entry from OS2.INI, we'll add
-                            // a new one below
-                            _wpModifyStyle(somSelf,
-                                           OBJSTYLE_TEMPLATE,
-                                           0);
-                        }
-
-                        // now go set the new string which we allocated above
-                        if (pRecord->pszIcon)
-                            _wpFreeMem(somSelf, pRecord->pszIcon);
-                        pRecord->pszIcon = pszNewTitleCopy;     // can be NULL V0.9.19 (2002-04-25) [umoeller]
-
-                        // alright, don't free this
-                        pszNewTitleCopy = NULL;
-
-                        // this was missing V0.9.17 (2002-02-05) [umoeller]
-                        // abstracts don't save themselves otherwise
-                        if (    (fIsInitialized)
-                             && (_flObject & OBJFL_WPABSTRACT)
-                           )
-                            _wpSaveDeferred(somSelf);
-
-                        // now go refresh all the views if the object
-                        // is already initialized;
-                        // no need to do otherwise because then we can neither
-                        // have shadows pointing to it nor can it be
-                        // inserted into a container yet
-
-                        // note: fLocked is TRUE only if the object _was_ intialized,
-                        // see above
-                        if (fLocked)
-                            objRefreshUseItems(somSelf,
-                                               pRecord->pszIcon,
-                                               NULLHANDLE);     // no new icon V0.9.20 (2002-07-31) [umoeller]
-
-                        if (    (ulStyle & OBJSTYLE_TEMPLATE)
-                             && (fIsInitialized)
-                           )
-                        {
-                            // re-enter the template entry we killed above
-                            _wpModifyStyle(somSelf,
-                                           OBJSTYLE_TEMPLATE,
-                                           OBJSTYLE_TEMPLATE);
-                        }
-                    }
-                }
-
-                if (pszNewTitleCopy)
-                    // title hasn't changed, or something else went wrong:
-                    _wpFreeMem(somSelf, pszNewTitleCopy);
-
-            } // end else if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
-        } // end if (!pszNewTitle)
-    }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
-
-    if (fLocked)
-        _wpReleaseObjectMutexSem(somSelf);
-
-    return brc;
-}
-
-/*
- *@@ wpSetObjectID:
- *      this WPObject method sets a new object ID for the
- *      object. We must then invalidate our backup object
- *      ID, or we'll run into problems in wpSaveState.
- *
- *      See XFldObject::xwpQueryOriginalObjectID for details.
- *
- *@@added V0.9.16 (2001-12-06) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
-                                         PSZ pszObjectID)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpSetObjectID");
-
-    // now this is a true overwrite of the object ID,
-    // so nuke the one we backed up, but only if the
-    // object has been initialized
-    if (_flObject & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
-        wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
-
-    return XFldObject_parent_WPObject_wpSetObjectID(somSelf,
-                                                    pszObjectID);
-}
-
-/*
- *@@ wpSetIcon:
- *
- *@@added V0.9.20 (2002-07-31) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
-{
-    BOOL            brc = FALSE;
-    BOOL            fSharedLocked = FALSE,
-                    fSelfLocked = FALSE;
-    XFldObjectData  *somThis = XFldObjectGetData(somSelf);
-
-    XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
-
-    TRY_LOUD(excpt1)
-    {
-        PIBMOBJECTDATA  pData;
-        PMINIRECORDCORE pmrc;
-
-        // nasty hack for lazy icons: wpSetIcon will not update
-        // the records of the object in all open views if the
-        // current MINIRECORDCORE.hptrIcon is NULLHANDLE. However
-        // we can't preset the hptrIcon thing to the class default
-        // icon in our cnr owner draw proc because then the
-        // _wpQueryIcon call in fntLazyIcons would fail
-        // because it would think there was already an icon.
-        // So we have to use another object flag (OBJFL_LAZYLOADINGICON)
-        // which is set by icomQueueLazyIcon when the object gets added
-        // to the lazy load queue and is reset again here on the first
-        // wpSetIcon that comes in afterwards, which (hopefully) is
-        // from fntLazyIcons.
-        if (    (pData = (PIBMOBJECTDATA)_pvWPObjectData)
-             && (pmrc = pData->pmrc)
-             && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
-           )
-        {
-            if (_flObject & OBJFL_LAZYLOADINGICON)
-            {
-                pmrc->hptrIcon = _wpclsQueryIcon(_somGetClass(somSelf));
-
-                _wpModifyStyle(somSelf,
-                               OBJSTYLE_NOTDEFAULTICON,
-                               0);
-
-                _flObject &= ~OBJFL_LAZYLOADINGICON;
-            }
-
-            _wpReleaseObjectMutexSem(somSelf);
-            fSelfLocked = FALSE;
-        }
-
-        // now go call the parent, which updates the object in all
-        // open views
-        if (XFldObject_parent_WPObject_wpSetIcon(somSelf, hptrNewIcon))
-        {
-            // now update client icons, if we're an icon server
-
-            if (fSharedLocked = icomLockIconShares())
-            {
-                WPObject *pobjClient = _pFirstIconClient;
-
-                while (pobjClient)
-                {
-                    XFldObjectData *somThat = XFldObjectGetData(pobjClient);
-                    _wpSetIcon(pobjClient, hptrNewIcon);
-                    pobjClient = somThat->pNextClient;
-                }
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
-
-    if (fSharedLocked)
-        icomUnlockIconShares();
-
-    if (fSelfLocked)
-        _wpReleaseObjectMutexSem(somSelf);
-
-    return brc;
-}
-
-/*
  *@@ wpSaveDeferred:
  *      this WPObject method saves object instance data
  *      asynchronously on a separate thread.
@@ -2420,6 +2152,637 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
     }
 
     return brc;
+}
+
+/*
+ *@@ wpSetObjectID:
+ *      this WPObject method sets a new object ID for the
+ *      object. We must then invalidate our backup object
+ *      ID, or we'll run into problems in wpSaveState.
+ *
+ *      See XFldObject::xwpQueryOriginalObjectID for details.
+ *
+ *@@added V0.9.16 (2001-12-06) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
+                                         PSZ pszObjectID)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpSetObjectID");
+
+    // now this is a true overwrite of the object ID,
+    // so nuke the one we backed up, but only if the
+    // object has been initialized
+    if (_flObject & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
+        wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
+
+    return XFldObject_parent_WPObject_wpSetObjectID(somSelf,
+                                                    pszObjectID);
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object. This should hand out a help
+ *      panel describing what this object can do in general
+ *      and return TRUE.
+ *
+ *      "Default help" is displayed when help is requested
+ *      on an object itself, i.e. when a single object is
+ *      selected and F1 is pressed (or when "Extended help"
+ *      is selected from the context menu).
+ *
+ *      Default help can either be instance or class help.
+ *      WPObject::wpQueryDefaultHelp checks for whether
+ *      the object has HELPLIBRARY and/or HELPPANEL set and
+ *      hands out those values if so, or otherwise calls the
+ *      class method wpclsQueryDefaultHelp on the object's
+ *      class object instead.
+ *
+ *      As a result, classes should only override the instance
+ *      method if they want to display specific help depending
+ *      on the object's instance settings. For example, this
+ *      makes sense in XWPProgramFile::wpQueryDefaultHelp in
+ *      order to differentiate between program types. To
+ *      change help for an entire class without breaking
+ *      instance help settings for an object, classes should
+ *      override wpclsQueryDefaultHelp. (Finally got this
+ *      right with 0.9.20.)
+ *
+ *      We override this method to hand out more meaningful
+ *      help for many default WPS objects which have no
+ *      HELPPANEL assigned, unfortunately. We no longer call
+ *      the parent, but check the instance data ourselves
+ *      and base additional help on the object ID.
+ *
+ *@@added V0.9.20 (2002-07-12) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
+                                              PULONG pHelpPanelId,
+                                              PSZ HelpLibrary)
+{
+    PIBMOBJECTDATA  pod;
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpQueryDefaultHelp");
+
+    if (    (pod = _pvWPObjectData)
+#ifndef __ALWAYSREPLACEHELP__
+         && (cmnQuerySetting(sfHelpReplacements))
+#endif
+       )
+    {
+        // check the help library, if it's null, it's WPHELP.HLP
+        PSZ     p;
+        ULONG   ul;
+        if (    (    (!(p = pod->pszHelpLibrary))
+                  || (!*p)
+                )
+                // and no help panel assigned
+             && (!(pod->ulHelpPanelID))
+                // but we have an object ID
+             && (p = _wpQueryObjectID(somSelf))
+             && (*p)
+           )
+        {
+            static const struct
+            {
+                PCSZ    pcszID;
+                ULONG   ulHelpPanelId;
+            } aObjectIDsWithHelp[] =
+            {
+                // "picture viewer" never had one
+                "<WP_PICV>",                ID_XSH_PICVIEW,
+                // programs folder never had one
+                "<WP_PROGRAMSFOLDER>",      ID_XSH_PROGRAMSFDR,
+                "<WP_CONNECTIONSFOLDER>",   ID_XSH_CONNECTIONSFDR,
+                "<WP_INTERNET>",            ID_XSH_INTERNETFDR,
+                "<WP_ASSISTANCE>",          ID_XSH_OS2INFORMATIONFDR,
+                "<WP_TROUBLEINFO>",         ID_XSH_OS2INFORMATIONFDR,
+                "<WP_PRINTERSFOLDER>",      ID_XSH_PRINTERSFDR,
+                "<WP_INSTREMFOLDER>",       ID_XSH_INSTALLREMOVEFDR,
+                // items in system setup:
+                "<WP_LOCALE>",              ID_XSH_SYSSETUP_LOCALE,
+                "<LVMGUI>",                 ID_XSH_SYSSETUP_LVMGUI,
+                "<MMPM2_SETUP>",            ID_XSH_SYSSETUP_MMPM2,
+                "<WP_REGEDIT>",             ID_XSH_SYSSETUP_REGEDIT,
+                // Appearance folder under System Setup, new with eCS 1.1
+                "<WP_CONFIG_LOOK>",         ID_XSH_SYSSETUP_LOOK,
+                "<ECS_ESTLRLITEPREF>",      ID_XSH_SYSSETUP_ESTYLER,
+                "<ECS_THEMEMGRPREF>",       ID_XSH_SYSSETUP_THEMEMGR,
+                "<ECS_ITHEME>",             ID_XSH_SYSSETUP_ITHEME,
+                // Network folder under System Setup
+                "<WP_CONFIG_NET>",          ID_XSH_SYSSETUP_NET,
+                "<TCP/IP>",                 ID_XSH_SYSSETUP_NET,
+                // "Refresh removeable media" in Drives
+                "<LVMREFRESH>",             ID_XSH_DRIVES_REFRESHMEDIA,
+            };
+
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aObjectIDsWithHelp);
+                 ++ul)
+            {
+                if (!strcmp(p, aObjectIDsWithHelp[ul].pcszID))
+                {
+                    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+                    *pHelpPanelId = aObjectIDsWithHelp[ul].ulHelpPanelId;
+                    return TRUE;
+                }
+            }
+        }
+
+        if (ul = pod->ulHelpPanelID)
+        {
+            *pHelpPanelId = ul;
+            if (p = pod->pszHelpLibrary)
+                strcpy(HelpLibrary, p);
+            else
+                *HelpLibrary = '\0';
+
+            return TRUE;
+        }
+
+        return _wpclsQueryDefaultHelp(_somGetClass(somSelf),
+                                      pHelpPanelId,
+                                      HelpLibrary);
+    }
+
+    return XFldObject_parent_WPObject_wpQueryDefaultHelp(somSelf,
+                                                         pHelpPanelId,
+                                                         HelpLibrary);
+}
+
+/*
+ *@@ wpSetIcon:
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
+{
+    BOOL            brc = FALSE;
+    BOOL            fSharedLocked = FALSE,
+                    fSelfLocked = FALSE;
+    XFldObjectData  *somThis = XFldObjectGetData(somSelf);
+
+    XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
+
+    TRY_LOUD(excpt1)
+    {
+        PIBMOBJECTDATA  pData;
+        PMINIRECORDCORE pmrc;
+
+        // nasty hack for lazy icons: wpSetIcon will not update
+        // the records of the object in all open views if the
+        // current MINIRECORDCORE.hptrIcon is NULLHANDLE. However
+        // we can't preset the hptrIcon thing to the class default
+        // icon in our cnr owner draw proc because then the
+        // _wpQueryIcon call in fntLazyIcons would fail
+        // because it would think there was already an icon.
+        // So we have to use another object flag (OBJFL_LAZYLOADINGICON)
+        // which is set by icomQueueLazyIcon when the object gets added
+        // to the lazy load queue and is reset again here on the first
+        // wpSetIcon that comes in afterwards, which (hopefully) is
+        // from fntLazyIcons.
+        if (    (pData = (PIBMOBJECTDATA)_pvWPObjectData)
+             && (pmrc = pData->pmrc)
+             && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+           )
+        {
+            if (_flObject & OBJFL_LAZYLOADINGICON)
+            {
+                pmrc->hptrIcon = _wpclsQueryIcon(_somGetClass(somSelf));
+
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               0);
+
+                _flObject &= ~OBJFL_LAZYLOADINGICON;
+            }
+
+            _wpReleaseObjectMutexSem(somSelf);
+            fSelfLocked = FALSE;
+        }
+
+        // now go call the parent, which updates the object in all
+        // open views
+        if (XFldObject_parent_WPObject_wpSetIcon(somSelf, hptrNewIcon))
+        {
+            // now update client icons, if we're an icon server
+
+            if (fSharedLocked = icomLockIconShares())
+            {
+                WPObject *pobjClient = _pFirstIconClient;
+
+                while (pobjClient)
+                {
+                    XFldObjectData *somThat = XFldObjectGetData(pobjClient);
+                    _wpSetIcon(pobjClient, hptrNewIcon);
+                    pobjClient = somThat->pNextClient;
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fSharedLocked)
+        icomUnlockIconShares();
+
+    if (fSelfLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
+}
+
+/*
+ *@@ wpAddToObjUseList:
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
+                                             PUSEITEM pUseItem)
+{
+    BOOL    fLocked = FALSE,
+            brc = FALSE;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpAddToObjUseList");
+
+    TRY_LOUD(excpt1)
+    {
+        PIBMOBJECTDATA pod;
+
+        if (    (cmnQuerySetting(sfDatafileOBJHANDLE))
+             || (!(_flObject & OBJFL_WPDATAFILE))
+             || (pUseItem->type != USAGE_OPENVIEW)
+             || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
+           )
+            brc = XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
+                                                               pUseItem);
+        else
+        {
+            // object handles for data files disabled,
+            // AND this is a data file,
+            // AND this is a USAGE_OPENVIEW:
+            // run our replacement
+
+            _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+
+            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+            {
+                PUSEITEM    puiThis = NULL,
+                            puiFirst = NULL;
+                PVIEWITEM   pvi = (PVIEWITEM)(pUseItem + 1);
+                PRECORDITEM priThis;
+
+                pvi->hwndCnr = NULLHANDLE;
+                pvi->pRecord = NULL;
+
+                do
+                {
+                    if (puiThis = _wpFindUseItem(somSelf, USAGE_RECORD, puiThis))
+                    {
+                        if (!puiFirst)
+                            puiFirst = puiThis;
+
+                        priThis = (PRECORDITEM)(puiThis + 1);
+
+                        if (    WinQueryWindow(priThis->hwndCnr, QW_PARENT)
+                             == WinQueryActiveWindow(HWND_DESKTOP)
+                           )
+                        {
+                            pvi->hwndCnr = priThis->hwndCnr;
+                            pvi->pRecord = priThis->pRecord;
+
+                            brc = TRUE;
+                            break;
+                        }
+                    }
+                } while (puiThis);
+
+                if (    puiFirst
+                     && !pvi->hwndCnr
+                     && !pvi->pRecord
+                   )
+                {
+                    priThis = (PRECORDITEM)(puiFirst + 1);
+                    pvi->hwndCnr = priThis->hwndCnr;
+                    pvi->pRecord = priThis->pRecord;
+                }
+
+                // the useitems are in a linked list,
+                // so do list management
+                pUseItem->pNext = NULL;
+
+                if (!(puiThis = pod->pUseItemFirst))
+                {
+                    _Pmpf(("    adding hwnd %lX as first ui",
+                           ((PVIEWITEM)(pUseItem + 1))->handle
+                         ));
+                    pod->pUseItemFirst = pUseItem;
+                }
+                else
+                {
+                    while (puiThis->pNext)
+                        puiThis = puiThis->pNext;
+
+                    _Pmpf(("    adding hwnd %lX as non-first ui",
+                           ((PVIEWITEM)(pUseItem + 1))->handle
+                         ));
+
+                    puiThis->pNext = pUseItem;
+                }
+
+                if (!pod->hevViewItems)
+                {
+                    _Pmpf(("    creating event sem"));
+                    DosCreateEventSem(NULL, &pod->hevViewItems, 0, FALSE);
+                }
+
+                if (fLocked)
+                    fLocked = (BOOL)_wpReleaseObjectMutexSem(somSelf);
+
+                _wpCnrSetEmphasis(somSelf, CRA_INUSE, TRUE);
+
+                _wpLockObject(somSelf);
+
+                brc = TRUE;
+            }
+
+                /*
+                PUSEITEM    pThis,
+                            pNext;
+
+                brc = TRUE;
+
+                if (!(pThis = pod->pUseItemFirst))
+                    // this is the first useitem:
+                    pod->pUseItemFirst = pUseItem;
+                else
+                {
+                    // we have other useitems:
+                    // append to tail, but make sure
+                    // the item is not in the list yet
+                    BOOL fAlreadyAdded = FALSE;
+                    while (pNext = pThis->pNext)
+                    {
+                        if (pThis == pUseItem)
+                        {
+                            brc = FALSE;
+                            break;
+                        }
+                        pThis = pNext;
+                    }
+
+                    if (brc)
+                        pThis->pNext = pUseItem;
+                }
+
+                if (brc)
+                {
+                    // set in-use emphasis
+                    _wpCnrSetEmphasis(somSelf,
+                                      CRA_INUSE,
+                                      TRUE);
+
+                    // lock the object once
+                    _wpLockObject(somSelf);
+
+                    // the WPS then creates an event semaphore here
+                    if (!(pod->hevViewItems))
+                        DosCreateEventSem(NULL,
+                                          &pod->hevViewItems,
+                                          0,
+                                          FALSE);
+                }
+                */
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
+}
+
+/*
+ *@@ wpDeleteFromObjUseList:
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
+                                                  PUSEITEM pUseItem)
+{
+    BOOL    fLocked = FALSE,
+            brc = FALSE;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpDeleteFromObjUseList");
+
+    TRY_LOUD(excpt1)
+    {
+        PIBMOBJECTDATA pod;
+
+        if (    (cmnQuerySetting(sfDatafileOBJHANDLE))
+             || (!(_flObject & OBJFL_WPDATAFILE))
+             || (pUseItem->type != USAGE_OPENVIEW)
+             || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
+           )
+            brc = XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
+                                                                    pUseItem);
+        else
+        {
+            // object handles for data files disabled,
+            // AND this is a data file,
+            // AND this is a USAGE_OPENVIEW:
+            // run our replacement
+
+            _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+
+            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+            {
+                PUSEITEM    puiThis = pod->pUseItemFirst,
+                            puiPrev = NULL;
+
+                while (puiThis)
+                {
+                    if (puiThis == pUseItem)
+                    {
+                        // found:
+                        if (puiPrev)
+                            puiPrev->pNext = puiThis->pNext;        // can be NULL
+                        else
+                            // we were the first in the list:
+                            pod->pUseItemFirst = puiThis->pNext;    // can be NULL
+
+                        brc = TRUE;
+
+                        break;
+                    }
+
+                    puiPrev = puiThis;
+                    puiThis = puiThis->pNext;
+                }
+
+                if (brc)
+                {
+                    // turn off CRA_INUSE if this was the last USAGE_OPENVIEW
+                    BOOL fAnotherInuse = FALSE;
+                    puiThis = pod->pUseItemFirst;
+                    while (puiThis)
+                    {
+                        if (puiThis->type == USAGE_OPENVIEW)
+                        {
+                            fAnotherInuse = TRUE;
+                            break;
+                        }
+
+                        puiThis = puiThis->pNext;
+                    }
+
+                    if (!fAnotherInuse)
+                        _wpCnrSetEmphasis(somSelf, CRA_INUSE, FALSE);
+
+                    DosPostEventSem(pod->hevViewItems);
+
+                    _wpUnlockObject(somSelf);
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
+}
+
+/*
+ *@@ wpCnrSetEmphasis:
+ *      this WPObject method changes the emphasis flags of
+ *      the object's MINIRECORDCORE (and updates all views
+ *      where this object is inserted).
+ *
+ *      We override this method to be able to intercept the
+ *      CRA_INUSE emphasis in case the object is currently
+ *      used in an XCenter object button widget, which then
+ *      needs to be repainted.
+ *
+ *      With V0.9.13, I tried overriding
+ *      wpAddTo/DeleteFromObjectUseList, which didn't quite
+ *      work.
+ *
+ *@@added V0.9.14 (2001-07-30) [umoeller]
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: reversed call order to fix XCenter object button display
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpCnrSetEmphasis(XFldObject *somSelf,
+                                            ULONG ulEmphasisAttr,
+                                            BOOL fTurnOn)
+{
+    XFldObjectMethodDebug("XFldObject","xo_wpCnrSetEmphasis");
+
+    // moved parent call to top
+    // V0.9.19 (2002-05-07) [umoeller]
+    if (XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
+                                                    ulEmphasisAttr,
+                                                    fTurnOn))
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
+        if (    (ulEmphasisAttr & CRA_INUSE)
+             && (_pvllWidgetNotifies)
+           )
+        {
+            // we have windows that requested notifications:
+            // go thru list
+            PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
+            while (pNode)
+            {
+                WinPostMsg((HWND)pNode->pItemData,
+                           WM_CONTROL,
+                           MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                        XN_INUSECHANGED),
+                           (MPARAM)somSelf);
+                pNode = pNode->pNext;
+            }
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ wpRequestObjectMutexSem:
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xo_wpRequestObjectMutexSem(XFldObject *somSelf,
+                                                    ULONG ulTimeout)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpRequestObjectMutexSem");
+
+#ifdef USE_FASTMUTEX
+    return semRequest((PFASTMTX)&_mtxObject);
+#else
+    return XFldObject_parent_WPObject_wpRequestObjectMutexSem(somSelf,
+                                                              ulTimeout);
+#endif
+}
+
+/*
+ *@@ wpAssertObjectMutexSem:
+ *      this WPObject instance method verifies that an object's mutex
+ *      semaphore is held for the current thread.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpAssertObjectMutexSem(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpAssertObjectMutexSem");
+
+#ifdef USE_FASTMUTEX
+    return semAssert((PFASTMTX)&_mtxObject);
+#else
+    return XFldObject_parent_WPObject_wpAssertObjectMutexSem(somSelf);
+#endif
+}
+
+/*
+ *@@ wpReleaseObjectMutexSem:
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpReleaseObjectMutexSem");
+
+#ifdef USE_FASTMUTEX
+    return semRelease((PFASTMTX)&_mtxObject);
+#else
+    return XFldObject_parent_WPObject_wpReleaseObjectMutexSem(somSelf);
+#endif
 }
 
 /*
@@ -2714,138 +3077,6 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
 
     return XFldObject_parent_WPObject_wpMenuItemHelpSelected(somSelf,
                                                              MenuId);
-}
-
-/*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object. This should hand out a help
- *      panel describing what this object can do in general
- *      and return TRUE.
- *
- *      "Default help" is displayed when help is requested
- *      on an object itself, i.e. when a single object is
- *      selected and F1 is pressed (or when "Extended help"
- *      is selected from the context menu).
- *
- *      Default help can either be instance or class help.
- *      WPObject::wpQueryDefaultHelp checks for whether
- *      the object has HELPLIBRARY and/or HELPPANEL set and
- *      hands out those values if so, or otherwise calls the
- *      class method wpclsQueryDefaultHelp on the object's
- *      class object instead.
- *
- *      As a result, classes should only override the instance
- *      method if they want to display specific help depending
- *      on the object's instance settings. For example, this
- *      makes sense in XWPProgramFile::wpQueryDefaultHelp in
- *      order to differentiate between program types. To
- *      change help for an entire class without breaking
- *      instance help settings for an object, classes should
- *      override wpclsQueryDefaultHelp. (Finally got this
- *      right with 0.9.20.)
- *
- *      We override this method to hand out more meaningful
- *      help for many default WPS objects which have no
- *      HELPPANEL assigned, unfortunately. We no longer call
- *      the parent, but check the instance data ourselves
- *      and base additional help on the object ID.
- *
- *@@added V0.9.20 (2002-07-12) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
-                                              PULONG pHelpPanelId,
-                                              PSZ HelpLibrary)
-{
-    PIBMOBJECTDATA  pod;
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpQueryDefaultHelp");
-
-    if (    (pod = _pvWPObjectData)
-#ifndef __ALWAYSREPLACEHELP__
-         && (cmnQuerySetting(sfHelpReplacements))
-#endif
-       )
-    {
-        // check the help library, if it's null, it's WPHELP.HLP
-        PSZ     p;
-        ULONG   ul;
-        if (    (    (!(p = pod->pszHelpLibrary))
-                  || (!*p)
-                )
-                // and no help panel assigned
-             && (!(pod->ulHelpPanelID))
-                // but we have an object ID
-             && (p = _wpQueryObjectID(somSelf))
-             && (*p)
-           )
-        {
-            static const struct
-            {
-                PCSZ    pcszID;
-                ULONG   ulHelpPanelId;
-            } aObjectIDsWithHelp[] =
-            {
-                // "picture viewer" never had one
-                "<WP_PICV>",                ID_XSH_PICVIEW,
-                // programs folder never had one
-                "<WP_PROGRAMSFOLDER>",      ID_XSH_PROGRAMSFDR,
-                "<WP_CONNECTIONSFOLDER>",   ID_XSH_CONNECTIONSFDR,
-                "<WP_INTERNET>",            ID_XSH_INTERNETFDR,
-                "<WP_ASSISTANCE>",          ID_XSH_OS2INFORMATIONFDR,
-                "<WP_TROUBLEINFO>",         ID_XSH_OS2INFORMATIONFDR,
-                "<WP_PRINTERSFOLDER>",      ID_XSH_PRINTERSFDR,
-                "<WP_INSTREMFOLDER>",       ID_XSH_INSTALLREMOVEFDR,
-                // items in system setup:
-                "<WP_LOCALE>",              ID_XSH_SYSSETUP_LOCALE,
-                "<LVMGUI>",                 ID_XSH_SYSSETUP_LVMGUI,
-                "<MMPM2_SETUP>",            ID_XSH_SYSSETUP_MMPM2,
-                "<WP_REGEDIT>",             ID_XSH_SYSSETUP_REGEDIT,
-                // Appearance folder under System Setup, new with eCS 1.1
-                "<WP_CONFIG_LOOK>",         ID_XSH_SYSSETUP_LOOK,
-                "<ECS_ESTLRLITEPREF>",      ID_XSH_SYSSETUP_ESTYLER,
-                "<ECS_THEMEMGRPREF>",       ID_XSH_SYSSETUP_THEMEMGR,
-                "<ECS_ITHEME>",             ID_XSH_SYSSETUP_ITHEME,
-                // Network folder under System Setup
-                "<WP_CONFIG_NET>",          ID_XSH_SYSSETUP_NET,
-                "<TCP/IP>",                 ID_XSH_SYSSETUP_NET,
-                // "Refresh removeable media" in Drives
-                "<LVMREFRESH>",             ID_XSH_DRIVES_REFRESHMEDIA,
-            };
-
-            for (ul = 0;
-                 ul < ARRAYITEMCOUNT(aObjectIDsWithHelp);
-                 ++ul)
-            {
-                if (!strcmp(p, aObjectIDsWithHelp[ul].pcszID))
-                {
-                    strcpy(HelpLibrary, cmnQueryHelpLibrary());
-                    *pHelpPanelId = aObjectIDsWithHelp[ul].ulHelpPanelId;
-                    return TRUE;
-                }
-            }
-        }
-
-        if (ul = pod->ulHelpPanelID)
-        {
-            *pHelpPanelId = ul;
-            if (p = pod->pszHelpLibrary)
-                strcpy(HelpLibrary, p);
-            else
-                *HelpLibrary = '\0';
-
-            return TRUE;
-        }
-
-        return _wpclsQueryDefaultHelp(_somGetClass(somSelf),
-                                      pHelpPanelId,
-                                      HelpLibrary);
-    }
-
-    return XFldObject_parent_WPObject_wpQueryDefaultHelp(somSelf,
-                                                         pHelpPanelId,
-                                                         HelpLibrary);
 }
 
 /*
@@ -3230,6 +3461,163 @@ SOM_Scope ULONG  SOMLINK xo_wpAddObjectGeneralPage(XFldObject *somSelf,
 }
 
 /*
+ *@@ wpSetTitle:
+ *      this WPObject instance method sets a new title
+ *      for the object. This gets called during object
+ *      instantiation and later if the object title is
+ *      changed, e.g. from the settings notebook or
+ *      via direct editing in a folder container.
+ *
+ *      Since this stupid method also resorts the folder
+ *      after title changes, I have rewritten this.
+ *
+ *      From my testing, this is the ONLY place in the
+ *      WPS which actually allocates memory for the
+ *      title string and stores that in MINIRECORDCORE.pszIcon.
+ *      So we can safely override this and allocate the
+ *      string memory for our own heap (as long as we free
+ *      the memory properly in wpUnInitData).
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: extended mutex protection
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
+                                      PSZ pszNewTitle)
+{
+    BOOL    brc = TRUE,
+            fLocked = FALSE;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpSetTitle");
+
+    // return (XFldObject_parent_WPObject_wpSetTitle(somSelf, pszNewTitle));
+
+    TRY_LOUD(excpt1)
+    {
+        if (!pszNewTitle)
+            brc = FALSE;
+        else
+        {
+            PMINIRECORDCORE pRecord = _wpQueryCoreRecord(somSelf);
+            ULONG       ulNewTitleLen = strlen(pszNewTitle);
+            PSZ         pszNewTitleCopy;
+            ULONG       ulError;
+
+            // use the WPS heap in order not to clutter up
+            // our own heap with all the string data
+            if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
+                                                ulNewTitleLen + 1,
+                                                &ulError)))
+                brc = FALSE;
+            else
+            {
+                ULONG           ulStyle = _wpQueryStyle(somSelf);
+                BOOL            fIsInitialized = (0 != (_flObject & OBJFL_INITIALIZED));
+
+                // LOCK the object if it is already initialized... no need
+                // to do so if this gets called in the process of setting
+                // up the object though
+
+                // (moved the lock up here V0.9.20 (2002-07-25) [umoeller])
+
+                if (fIsInitialized)
+                    if (!(fLocked = !_wpRequestObjectMutexSem(somSelf, 5000)))
+                    {
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Couldn't get object mutex sem in five seconds. Aborting object rename.");
+                        brc = FALSE;
+                    }
+
+                if (    (!fIsInitialized)
+                     || (fLocked)
+                   )
+                {
+                    PSZ p;
+
+                    memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
+
+                    // replace all '^' with '\n'
+                    p = pszNewTitleCopy;
+                    while (p = strchr(p, '^'))
+                        *p = '\n';
+
+                    if (strhcmp(pRecord->pszIcon, pszNewTitleCopy))
+                    {
+                        // new title is different:
+                        if (    (ulStyle & OBJSTYLE_TEMPLATE)
+                             && (fIsInitialized)
+                           )
+                        {
+                            // renaming a template: template entries in
+                            // OS2.INI are based on names, so unset
+                            // the template flag; this will nuke the
+                            // template entry from OS2.INI, we'll add
+                            // a new one below
+                            _wpModifyStyle(somSelf,
+                                           OBJSTYLE_TEMPLATE,
+                                           0);
+                        }
+
+                        // now go set the new string which we allocated above
+                        if (pRecord->pszIcon)
+                            _wpFreeMem(somSelf, pRecord->pszIcon);
+                        pRecord->pszIcon = pszNewTitleCopy;     // can be NULL V0.9.19 (2002-04-25) [umoeller]
+
+                        // alright, don't free this
+                        pszNewTitleCopy = NULL;
+
+                        // this was missing V0.9.17 (2002-02-05) [umoeller]
+                        // abstracts don't save themselves otherwise
+                        if (    (fIsInitialized)
+                             && (_flObject & OBJFL_WPABSTRACT)
+                           )
+                            _wpSaveDeferred(somSelf);
+
+                        // now go refresh all the views if the object
+                        // is already initialized;
+                        // no need to do otherwise because then we can neither
+                        // have shadows pointing to it nor can it be
+                        // inserted into a container yet
+
+                        // note: fLocked is TRUE only if the object _was_ intialized,
+                        // see above
+                        if (fLocked)
+                            objRefreshUseItems(somSelf,
+                                               pRecord->pszIcon,
+                                               NULLHANDLE);     // no new icon V0.9.20 (2002-07-31) [umoeller]
+
+                        if (    (ulStyle & OBJSTYLE_TEMPLATE)
+                             && (fIsInitialized)
+                           )
+                        {
+                            // re-enter the template entry we killed above
+                            _wpModifyStyle(somSelf,
+                                           OBJSTYLE_TEMPLATE,
+                                           OBJSTYLE_TEMPLATE);
+                        }
+                    }
+                }
+
+                if (pszNewTitleCopy)
+                    // title hasn't changed, or something else went wrong:
+                    _wpFreeMem(somSelf, pszNewTitleCopy);
+
+            } // end else if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
+        } // end if (!pszNewTitle)
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
+}
+
+/*
  *@@ wpConfirmObjectTitle:
  *      this instance method is called by the WPS during file
  *      operations (copy, move, rename etc.) for every single
@@ -3375,203 +3763,8 @@ SOM_Scope ULONG  SOMLINK xo_wpConfirmObjectTitle(XFldObject *somSelf,
     }
     #endif
 
-    return (ulrc);
+    return ulrc;
 }
-
-/*
- *@@ wpAddToObjUseList:
- *
- *@@added V0.9.20 (2002-08-04) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
-                                             PUSEITEM pUseItem)
-{
-    BOOL    fLocked = FALSE,
-            brc = FALSE;
-
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpAddToObjUseList");
-
-    TRY_LOUD(excpt1)
-    {
-        PIBMOBJECTDATA pod;
-
-        if (    (cmnQuerySetting(sfDatafileOBJHANDLE))
-             || (!(_flObject & OBJFL_WPDATAFILE))
-             || (pUseItem->type != USAGE_OPENVIEW)
-             || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
-           )
-            brc = XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
-                                                               pUseItem);
-        else
-        {
-            // object handles for data files disabled,
-            // AND this is a data file,
-            // AND this is a USAGE_OPENVIEW:
-            // run our replacement
-
-            // the useitems are in a linked list,
-            // so do list management first
-            pUseItem->pNext = NULL;
-            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
-            {
-                PUSEITEM    pThis,
-                            pNext;
-                if (!(pThis = pod->pUseItemFirst))
-                    // this is the first useitem:
-                    pod->pUseItemFirst = pUseItem;
-                else
-                {
-                    // we have other useitems: append to tail
-                    while (pNext = pThis->pNext)
-                        pThis = pNext;
-
-                    pThis->pNext = pUseItem;
-                }
-
-                // set in-use emphasis
-                _wpCnrSetEmphasis(somSelf,
-                                  CRA_INUSE,
-                                  TRUE);
-
-                // lock the object once
-                _wpLockObject(somSelf);
-
-                // the WPS then creates an event semaphore here
-                if (!(pod->hevViewItems))
-                    DosCreateEventSem(NULL,
-                                      &pod->hevViewItems,
-                                      0,
-                                      FALSE);
-
-                brc = TRUE;
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
-
-    if (fLocked)
-        _wpReleaseObjectMutexSem(somSelf);
-
-    return brc;
-}
-
-/*
- *@@ wpCnrSetEmphasis:
- *      this WPObject method changes the emphasis flags of
- *      the object's MINIRECORDCORE (and updates all views
- *      where this object is inserted).
- *
- *      We override this method to be able to intercept the
- *      CRA_INUSE emphasis in case the object is currently
- *      used in an XCenter object button widget, which then
- *      needs to be repainted.
- *
- *      With V0.9.13, I tried overriding
- *      wpAddTo/DeleteFromObjectUseList, which didn't quite
- *      work.
- *
- *@@added V0.9.14 (2001-07-30) [umoeller]
- *@@changed V0.9.19 (2002-05-07) [umoeller]: reversed call order to fix XCenter object button display
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpCnrSetEmphasis(XFldObject *somSelf,
-                                            ULONG ulEmphasisAttr,
-                                            BOOL fTurnOn)
-{
-    BOOL brc;
-
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpCnrSetEmphasis");
-
-    // moved parent call to top
-    // V0.9.19 (2002-05-07) [umoeller]
-    brc = XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
-                                                      ulEmphasisAttr,
-                                                      fTurnOn);
-
-    if (    (ulEmphasisAttr & CRA_INUSE)
-         && (_pvllWidgetNotifies)
-       )
-    {
-        // we have windows that requested notifications:
-        // go thru list
-        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
-        while (pNode)
-        {
-            WinPostMsg((HWND)pNode->pItemData,
-                       WM_CONTROL,
-                       MPFROM2SHORT(ID_XCENTER_CLIENT,
-                                    XN_INUSECHANGED),
-                       (MPARAM)somSelf);
-            pNode = pNode->pNext;
-        }
-    }
-
-    return brc;
-}
-
-/*
- *@@ wpRequestObjectMutexSem:
- *
- *@@added V0.9.20 (2002-08-04) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xo_wpRequestObjectMutexSem(XFldObject *somSelf,
-                                                    ULONG ulTimeout)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpRequestObjectMutexSem");
-
-#ifdef USE_FASTMUTEX
-    return semRequest((PFASTMTX)&_mtxObject);
-#else
-    return (XFldObject_parent_WPObject_wpRequestObjectMutexSem(somSelf,
-                                                               ulTimeout));
-#endif
-}
-
-/*
- *@@ wpAssertObjectMutexSem:
- *      this WPObject instance method verifies that an object's mutex
- *      semaphore is held for the current thread.
- *
- *@@added V0.9.20 (2002-08-04) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpAssertObjectMutexSem(XFldObject *somSelf)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpAssertObjectMutexSem");
-
-#ifdef USE_FASTMUTEX
-    return semAssert((PFASTMTX)&_mtxObject);
-#else
-    return (XFldObject_parent_WPObject_wpAssertObjectMutexSem(somSelf));
-#endif
-}
-
-/*
- *@@ wpReleaseObjectMutexSem:
- *
- *@@added V0.9.20 (2002-08-04) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpReleaseObjectMutexSem");
-
-#ifdef USE_FASTMUTEX
-    return semRelease((PFASTMTX)&_mtxObject);
-#else
-    return (XFldObject_parent_WPObject_wpReleaseObjectMutexSem(somSelf));
-#endif
-}
-
 
 /* ******************************************************************
  *
@@ -3598,7 +3791,7 @@ SOM_Scope BOOL  SOMLINK xoM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
     M_XFldObjectMethodDebug("M_XFldObject","xoM_xwpclsRemoveObjectHotkey");
 
-    return (objRemoveObjectHotkey(hobj));
+    return objRemoveObjectHotkey(hobj);
 }
 
 /*
@@ -3711,8 +3904,8 @@ SOM_Scope WPObject*  SOMLINK xoM_wpclsQueryObject(M_XFldObject *somSelf,
 
     _PmpfF(("HOBJECT 0x%lX", hObject));
 
-    return (M_XFldObject_parent_M_WPObject_wpclsQueryObject(somSelf,
-                                                            hObject));
+    return M_XFldObject_parent_M_WPObject_wpclsQueryObject(somSelf,
+                                                           hObject);
 }
 
 /*
@@ -3736,8 +3929,8 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
     M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsQuerySettingsPageSize");
 
-    /* return (M_XFldObject_parent_M_WPObject_wpclsQuerySettingsPageSize(somSelf,
-                                                                      pSizl)); */
+    /* return M_XFldObject_parent_M_WPObject_wpclsQuerySettingsPageSize(somSelf,
+                                                                        pSizl); */
     pSizl->cx = 275;       // size of "Object" page
     pSizl->cy = 150;       // size of "Object" page
 

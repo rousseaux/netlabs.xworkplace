@@ -320,7 +320,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
         _wpSaveDeferred(somSelf);
     }
 
-    return (fUpdate);
+    return fUpdate;
 }
 
 /*
@@ -621,7 +621,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         }
     }
 
-    return ((ULONG)pec);
+    return (ULONG)pec;
 }
 
 /*
@@ -666,7 +666,7 @@ SOM_Scope WPObject*  SOMLINK xf_xwpEnumNext(XFolder *somSelf,
         }
     }
 
-    return (pObject);
+    return pObject;
 }
 
 /*
@@ -736,7 +736,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpStartFolderContents(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpStartFolderContents");
 
-    return (fdrStartFolderContents(somSelf, ulTiming));
+    return fdrStartFolderContents(somSelf, ulTiming);
 }
 
 /*
@@ -756,11 +756,11 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
 #ifndef __NOFOLDERCONTENTS__
-    return (objAddToList(somSelf,
-                         &G_llFavoriteFolders,
-                         fInsert,
-                         INIKEY_FAVORITEFOLDERS,
-                         OBJLIST_FAVORITEFOLDER));
+    return objAddToList(somSelf,
+                        &G_llFavoriteFolders,
+                        fInsert,
+                        INIKEY_FAVORITEFOLDERS,
+                        OBJLIST_FAVORITEFOLDER);
 #else
     return FALSE;
 #endif
@@ -780,8 +780,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
 #ifndef __NOFOLDERCONTENTS__
-    return (objIsOnList(somSelf,
-                        &G_llFavoriteFolders));
+    return objIsOnList(somSelf,
+                       &G_llFavoriteFolders);
 #else
     return FALSE;
 #endif
@@ -804,11 +804,11 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
 #ifndef __NOQUICKOPEN__
-    return (objAddToList(somSelf,
-                         &G_llQuickOpenFolders,
-                         fQuickOpen,
-                         INIKEY_QUICKOPENFOLDERS,
-                         OBJLIST_QUICKOPENFOLDER));
+    return objAddToList(somSelf,
+                        &G_llQuickOpenFolders,
+                        fQuickOpen,
+                        INIKEY_QUICKOPENFOLDERS,
+                        OBJLIST_QUICKOPENFOLDER);
 #else
     return FALSE;
 #endif
@@ -828,8 +828,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
 #ifndef __NOQUICKOPEN__
-    return (objIsOnList(somSelf,
-                        &G_llQuickOpenFolders));
+    return objIsOnList(somSelf,
+                       &G_llQuickOpenFolders);
 #else
     return FALSE;
 #endif
@@ -931,7 +931,7 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
             _wpReleaseObjectMutexSem(pobjLock);
     }
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -1044,7 +1044,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpQueryStatusBarVisibility");
 
-    return (_bStatusBarInstance);
+    return _bStatusBarInstance;
 }
 
 /*
@@ -1098,11 +1098,11 @@ SOM_Scope BOOL  SOMLINK xf_xwpProcessObjectCommand(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpProcessObjectCommand");
 
-    return (fdrProcessObjectCommand(somSelf,
-                                    usCommand,
-                                    hwndCnr,
-                                    pFirstObject,
-                                    ulSelectionFlags));
+    return fdrProcessObjectCommand(somSelf,
+                                   usCommand,
+                                   hwndCnr,
+                                   pFirstObject,
+                                   ulSelectionFlags);
 }
 
 /*
@@ -1213,7 +1213,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
     inbp.pfncbInitPage    = fdrXFolderInitPage;
     inbp.pfncbItemChanged = fdrXFolderItemChanged;
 
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -1236,9 +1236,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf, PVOID pstrSetup)
     if (fdrQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        return (wpshParentQuerySetup2(somSelf,
-                                      _somGetParent(_XFolder),
-                                      pstrSetup));
+        return wpshParentQuerySetup2(somSelf,
+                                     _somGetParent(_XFolder),
+                                     pstrSetup);
     }
 
     return FALSE;
@@ -1660,7 +1660,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDestroyObject(XFolder *somSelf)
 
     return brc;
 
-    // return (XFolder_parent_WPFolder_wpDestroyObject(somSelf));
+    // return XFolder_parent_WPFolder_wpDestroyObject(somSelf);
 }
 
 /*
@@ -2221,206 +2221,6 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 }
 
 /*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
- *
- *      This removes default menu entries according to the
- *      global menu settings.
- *
- *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
- *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
-                                                 ULONG ulFlags,
-                                                 HWND hwndCnr,
-                                                 BOOL fMultiSelect)
-{
-    ULONG ulMenuFilter = 0;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
-
-    ulMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
-                                                             ulFlags,
-                                                             hwndCnr,
-                                                             fMultiSelect);
-    #ifdef DEBUG_MENUS
-        _Pmpf(("XFolder::wpFilterPopupMenu parent flags:"));
-        _Pmpf(("  CTXT_CRANOTHER %d", ulMenuFilter & CTXT_CRANOTHER));
-    #endif
-
-    // if object has been deleted already (ie. is in trashcan),
-    // remove delete
-    if (_xwpQueryDeletion(somSelf, NULL, NULL))
-        ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
-
-    // now suppress default menu items according to
-    // Global Settings;
-    // the DefaultMenuItems field in pGlobalSettings is
-    // ready-made for this function; the "Workplace Shell"
-    // notebook page for removing menu items sets this field with
-    // the proper CTXT_xxx flags
-    return ((ulMenuFilter)
-            & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)))
-        );
-}
-
-/*
- *@@ wpModifyPopupMenu:
- *      this WPObject instance methods gets called by the WPS
- *      when a context menu needs to be built for the object
- *      and allows the object to manipulate its context menu.
- *      This gets called _after_ wpFilterPopupMenu.
- *
- *      We add the various XFolder menu entries here
- *      by calling the common XFolder function in fdrmenus.c,
- *      which is also used by the XFldDisk class.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
-                                             HWND  hwndMenu,
-                                             HWND  hwndCnr,
-                                             ULONG iPosition)
-{
-    BOOL                rc = TRUE;
-    HWND                hwndCnr2 = hwndCnr;
-
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    /* _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
-    _Pmpf(("  somThis for %s: 0x%lX", _wpQueryTitle(somSelf), somThis)); */
-
-    XFolderMethodDebug("XFolder","xf_wpModifyPopupMenu");
-
-    // call parent
-    XFolder_parent_WPFolder_wpModifyPopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
-
-    // _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
-
-    if (hwndCnr == NULLHANDLE)
-    {
-        // bug in Warp 3: if the popup menu is requested
-        // on container whitespace, hwndCnr is passed as
-        // NULLHANDLE; we therefore use this ugly
-        // workaround
-        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclassedFolderFrame
-    }
-
-    // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
-    if (rc = mnuModifyFolderPopupMenu(somSelf,
-                                      hwndMenu,
-                                      hwndCnr2,
-                                      iPosition))
-        fdrAddHotkeysToMenu(somSelf,
-                            hwndCnr,
-                            hwndMenu);
-
-    return (rc);
-}
-
-/*
- *@@ wpMenuItemSelected:
- *      this WPObject method processes menu selections.
- *      This must be overridden to support new menu
- *      items which have been added in wpModifyPopupMenu.
- *
- *      See XFldObject::wpMenuItemSelected for additional
- *      remarks.
- *
- *      We pass the input to mnuMenuItemSelected in fdrmenus.c
- *      because disk menu items are mostly shared with XFldDisk.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
-                                                 HWND hwndFrame,
-                                                 ULONG ulMenuId)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpMenuItemSelected");
-
-    // call the menu item checker common to XFolder and XFldDisk
-    // (fdrmenus.c); this returns TRUE if one of the manipulated
-    // menu items was selected
-    if (mnuMenuItemSelected(somSelf, hwndFrame, ulMenuId))
-        return TRUE;
-
-    // none of our menu items: pass on to parent
-    return (XFolder_parent_WPFolder_wpMenuItemSelected(somSelf, hwndFrame, ulMenuId));
-}
-
-/*
- *@@ wpMenuItemHelpSelected:
- *      display help for a context menu item.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
-                                                     ULONG MenuId)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpMenuItemHelpSelected");
-
-    // call the common help processor in fdrmenus.c;
-    // if this returns TRUE, help was requested for one
-    // of the new menu items
-    if (mnuMenuItemHelpSelected(somSelf, MenuId))
-        return TRUE;
-
-    // else: none of our menu items, call default
-    return (XFolder_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
-                                                           MenuId));
-}
-
-/*
- *@@ wpDisplayMenu:
- *      this WPObject instance method creates and displays
- *      an object's popup menu, which is returned.
- *
- *      From my testing (after overriding menu methods),
- *      I found out that wpDisplayMenu calls the following
- *      methods in this order:
- *
- *      --  wpFilterMenu (Warp-4-specific);
- *      --  wpFilterPopupMenu;
- *      --  wpModifyPopupMenu;
- *      --  wpModifyMenu (Warp-4-specific).
- *
- *      Normally, we wouldn't need to override this method...
- *      if there was a way to find out what menu type is
- *      currently being built. Since there isn't, we store
- *      the ulMenuType in the instance data so we can check
- *      in our menu manipulation code.
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- */
-
-SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
-                                         HWND hwndOwner,
-                                         HWND hwndClient,
-                                         POINTL* ptlPopupPt,
-                                         ULONG ulMenuType,
-                                         ULONG ulReserved)
-{
-    HWND hwndMenu;
-
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
-
-    _ulLastDisplayedMenuType = ulMenuType;
-        // V0.9.12 (2001-05-29) [umoeller]
-
-    hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
-                                                     hwndOwner,
-                                                     hwndClient,
-                                                     ptlPopupPt,
-                                                     ulMenuType,
-                                                     ulReserved);
-
-    return (hwndMenu);
-}
-
-/*
  *@@ wpQueryDefaultView:
  *      this WPObject method returns the default view of an object,
  *      that is, which view is opened if the program file is
@@ -2528,7 +2328,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 
     // _PmpfF(("returning %d", ulDefaultView));
 
-    return (ulDefaultView);
+    return ulDefaultView;
 }
 
 /*
@@ -2583,6 +2383,206 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
     return XFolder_parent_WPFolder_wpQueryDefaultHelp(somSelf,
                                                       pHelpPanelId,
                                                       HelpLibrary);
+}
+
+/*
+ *@@ wpDisplayMenu:
+ *      this WPObject instance method creates and displays
+ *      an object's popup menu, which is returned.
+ *
+ *      From my testing (after overriding menu methods),
+ *      I found out that wpDisplayMenu calls the following
+ *      methods in this order:
+ *
+ *      --  wpFilterMenu (Warp-4-specific);
+ *      --  wpFilterPopupMenu;
+ *      --  wpModifyPopupMenu;
+ *      --  wpModifyMenu (Warp-4-specific).
+ *
+ *      Normally, we wouldn't need to override this method...
+ *      if there was a way to find out what menu type is
+ *      currently being built. Since there isn't, we store
+ *      the ulMenuType in the instance data so we can check
+ *      in our menu manipulation code.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
+                                         HWND hwndOwner,
+                                         HWND hwndClient,
+                                         POINTL* ptlPopupPt,
+                                         ULONG ulMenuType,
+                                         ULONG ulReserved)
+{
+    HWND hwndMenu;
+
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
+
+    _ulLastDisplayedMenuType = ulMenuType;
+        // V0.9.12 (2001-05-29) [umoeller]
+
+    hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
+                                                     hwndOwner,
+                                                     hwndClient,
+                                                     ptlPopupPt,
+                                                     ulMenuType,
+                                                     ulReserved);
+
+    return hwndMenu;
+}
+
+/*
+ *@@ wpFilterPopupMenu:
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      This removes default menu entries according to the
+ *      global menu settings.
+ *
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
+                                                 ULONG ulFlags,
+                                                 HWND hwndCnr,
+                                                 BOOL fMultiSelect)
+{
+    ULONG ulMenuFilter = 0;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
+
+    ulMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
+                                                             ulFlags,
+                                                             hwndCnr,
+                                                             fMultiSelect);
+    #ifdef DEBUG_MENUS
+        _Pmpf(("XFolder::wpFilterPopupMenu parent flags:"));
+        _Pmpf(("  CTXT_CRANOTHER %d", ulMenuFilter & CTXT_CRANOTHER));
+    #endif
+
+    // if object has been deleted already (ie. is in trashcan),
+    // remove delete
+    if (_xwpQueryDeletion(somSelf, NULL, NULL))
+        ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
+
+    // now suppress default menu items according to
+    // Global Settings;
+    // the DefaultMenuItems field in pGlobalSettings is
+    // ready-made for this function; the "Workplace Shell"
+    // notebook page for removing menu items sets this field with
+    // the proper CTXT_xxx flags
+    return ((ulMenuFilter)
+            & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)))
+        );
+}
+
+/*
+ *@@ wpModifyPopupMenu:
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We add the various XFolder menu entries here
+ *      by calling the common XFolder function in fdrmenus.c,
+ *      which is also used by the XFldDisk class.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
+                                             HWND  hwndMenu,
+                                             HWND  hwndCnr,
+                                             ULONG iPosition)
+{
+    BOOL                rc = TRUE;
+    HWND                hwndCnr2 = hwndCnr;
+
+    XFolderData *somThis = XFolderGetData(somSelf);
+
+    /* _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
+    _Pmpf(("  somThis for %s: 0x%lX", _wpQueryTitle(somSelf), somThis)); */
+
+    XFolderMethodDebug("XFolder","xf_wpModifyPopupMenu");
+
+    // call parent
+    XFolder_parent_WPFolder_wpModifyPopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
+
+    // _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
+
+    if (hwndCnr == NULLHANDLE)
+    {
+        // bug in Warp 3: if the popup menu is requested
+        // on container whitespace, hwndCnr is passed as
+        // NULLHANDLE; we therefore use this ugly
+        // workaround
+        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclassedFolderFrame
+    }
+
+    // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
+    if (rc = mnuModifyFolderPopupMenu(somSelf,
+                                      hwndMenu,
+                                      hwndCnr2,
+                                      iPosition))
+        fdrAddHotkeysToMenu(somSelf,
+                            hwndCnr,
+                            hwndMenu);
+
+    return rc;
+}
+
+/*
+ *@@ wpMenuItemSelected:
+ *      this WPObject method processes menu selections.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
+ *
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      remarks.
+ *
+ *      We pass the input to mnuMenuItemSelected in fdrmenus.c
+ *      because disk menu items are mostly shared with XFldDisk.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
+                                                 HWND hwndFrame,
+                                                 ULONG ulMenuId)
+{
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpMenuItemSelected");
+
+    // call the menu item checker common to XFolder and XFldDisk
+    // (fdrmenus.c); this returns TRUE if one of the manipulated
+    // menu items was selected
+    if (mnuMenuItemSelected(somSelf, hwndFrame, ulMenuId))
+        return TRUE;
+
+    // none of our menu items: pass on to parent
+    return XFolder_parent_WPFolder_wpMenuItemSelected(somSelf, hwndFrame, ulMenuId);
+}
+
+/*
+ *@@ wpMenuItemHelpSelected:
+ *      display help for a context menu item.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
+                                                     ULONG MenuId)
+{
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpMenuItemHelpSelected");
+
+    // call the common help processor in fdrmenus.c;
+    // if this returns TRUE, help was requested for one
+    // of the new menu items
+    if (mnuMenuItemHelpSelected(somSelf, MenuId))
+        return TRUE;
+
+    // else: none of our menu items, call default
+    return XFolder_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
+                                                          MenuId);
 }
 
 /*
@@ -2697,7 +2697,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                     hwndNewFrame));
     #endif
 
-    return (hwndNewFrame);
+    return hwndNewFrame;
 }
 
 /*
@@ -2842,7 +2842,7 @@ SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
     if (_fInwpAddFolderView1Page)
         ppageinfo->usPageStyleFlags = fsOld;
 
-    return (ul);
+    return ul;
 }
 
 /*
@@ -2892,12 +2892,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
         inbp.pfncbInitPage    = icoIcon1InitPage;
         inbp.pfncbItemChanged = icoIcon1ItemChanged;
 
-        return (ntbInsertPage(&inbp)); */
+        return ntbInsertPage(&inbp); */
     }
 
 #ifndef __ALWAYSREPLACEICONPAGE__
-    return (XFolder_parent_WPFolder_wpAddObjectGeneralPage2(somSelf,
-                                                            hwndNotebook));
+    return XFolder_parent_WPFolder_wpAddObjectGeneralPage2(somSelf,
+                                                           hwndNotebook);
 #endif
 }
 
@@ -2925,12 +2925,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
     if (cmnQuerySetting(sfReplaceFilePage))
     {
 #endif
-        return (fsysInsertFilePages(somSelf,
-                                    hwndNotebook));
+        return fsysInsertFilePages(somSelf,
+                                   hwndNotebook);
 #ifndef __ALWAYSREPLACEFILEPAGE__
     }
     else
-        return (XFolder_parent_WPFolder_wpAddFile1Page(somSelf, hwndNotebook));
+        return XFolder_parent_WPFolder_wpAddFile1Page(somSelf, hwndNotebook);
 #endif
 }
 
@@ -2959,7 +2959,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
         return SETTINGS_PAGE_REMOVED;
 #ifndef __ALWAYSREPLACEFILEPAGE__
     else
-        return (XFolder_parent_WPFolder_wpAddFile2Page(somSelf, hwndNotebook));
+        return XFolder_parent_WPFolder_wpAddFile2Page(somSelf, hwndNotebook);
 #endif
 }
 
@@ -2988,7 +2988,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
         return SETTINGS_PAGE_REMOVED;
 #ifndef __ALWAYSREPLACEFILEPAGE__
     else
-        return (XFolder_parent_WPFolder_wpAddFile3Page(somSelf, hwndNotebook));
+        return XFolder_parent_WPFolder_wpAddFile3Page(somSelf, hwndNotebook);
 #endif
 }
 
@@ -3061,12 +3061,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
         inbp.pfncbInitPage    = fdrSortInitPage;
         inbp.pfncbItemChanged = fdrSortItemChanged;
 
-        return (ntbInsertPage(&inbp));
+        return ntbInsertPage(&inbp);
     }
 
 #ifndef __ALWAYSEXTSORT__
-    return (XFolder_parent_WPFolder_wpAddFolderSortPage(somSelf,
-                                                        hwndNotebook));
+    return XFolder_parent_WPFolder_wpAddFolderSortPage(somSelf,
+                                                       hwndNotebook);
 #endif
 }
 
@@ -3105,7 +3105,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
             // only? We never get called then!
     }
 
-    return (ul);
+    return ul;
 }
 
 /*
@@ -3272,9 +3272,9 @@ SOM_Scope WPObject*  SOMLINK xf_wpQueryContent(XFolder *somSelf,
     if (_fDisableAutoCnrAdd)
         // do not call the parent!!
         // call our own implementation instead
-        return (fdrQueryContent(somSelf, Object, ulOption));
+        return fdrQueryContent(somSelf, Object, ulOption);
 
-    return (XFolder_parent_WPFolder_wpQueryContent(somSelf, Object, ulOption));
+    return XFolder_parent_WPFolder_wpQueryContent(somSelf, Object, ulOption);
 }
 
 /*
@@ -3296,7 +3296,6 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
                                               PICONPOS pIconPos,
                                               ULONG cbSize)
 {
-    BOOL rc;
     XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
 
     // XFolderData *somThis = XFolderGetData(somSelf);
@@ -3310,206 +3309,9 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
         mnuInvalidateConfigCache();
     }
 
-    rc =  (XFolder_parent_WPFolder_wpStoreIconPosData(somSelf,
+    return XFolder_parent_WPFolder_wpStoreIconPosData(somSelf,
                                                       pIconPos,
-                                                      cbSize));
-
-    return (rc);
-}
-
-/*
- *@@ wpDragOver:
- *      overridden for debugging.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-/* SOM_Scope MRESULT  SOMLINK xf_wpDragOver(XFolder *somSelf, HWND hwndCnr,
-                                         PDRAGINFO pdrgInfo)
-{
-    MRESULT mrc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpDragOver");
-
-    mrc = XFolder_parent_WPFolder_wpDragOver(somSelf, hwndCnr,
-                                             pdrgInfo);
-
-    _Pmpf(("XFolder::wpDragOver: parent returned MRESULT 0x%lX", mrc));
-
-    return mrc;
-} */
-
-/*
- *@@ wpRender:
- *      overridden for debugging.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-/* SOM_Scope MRESULT  SOMLINK xf_wpRender(XFolder *somSelf, PDRAGTRANSFER pdxfer)
-{
-    MRESULT mrc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpRender");
-
-    mrc = XFolder_parent_WPFolder_wpRender(somSelf, pdxfer);
-
-    _Pmpf(("XFolder::wpRender: parent returned MRESULT 0x%lX", mrc));
-
-    return mrc;
-
-} */
-
-/*
- *@@ wpRenderComplete:
- *      overridden for debugging.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-/* SOM_Scope MRESULT  SOMLINK xf_wpRenderComplete(XFolder *somSelf,
-                                               PDRAGTRANSFER pdxfer,
-                                               ULONG ulResult)
-{
-    MRESULT mrc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpRenderComplete");
-
-    mrc = XFolder_parent_WPFolder_wpRenderComplete(somSelf,
-                                                     pdxfer,
-                                                     ulResult);
-
-    _Pmpf(("XFolder::wpRenderComplete: parent returned MRESULT 0x%lX", mrc));
-
-    return mrc;
-} */
-
-/*
- *@@ wpFormatDragItem:
- *      overridden for debugging.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-/* SOM_Scope BOOL  SOMLINK xf_wpFormatDragItem(XFolder *somSelf,
-                                            PDRAGITEM pdrgItem)
-{
-    BOOL brc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpFormatDragItem");
-
-    brc = (XFolder_parent_WPFolder_wpFormatDragItem(somSelf,
-                                                     pdrgItem));
-    _Pmpf(("XFolder::wpFormatDragItem: parent returned BOOL %d", brc));
-
-    return brc;
-
-} */
-
-/*
- *@@ wpDrop:
- *      overridden for debugging.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-/* SOM_Scope MRESULT  SOMLINK xf_wpDrop(XFolder *somSelf, HWND hwndCnr,
-                                     PDRAGINFO pdrgInfo, PDRAGITEM pdrgItem)
-{
-    MRESULT mrc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpDrop");
-
-    mrc = (XFolder_parent_WPFolder_wpDrop(somSelf, hwndCnr,
-                                           pdrgInfo, pdrgItem));
-    _Pmpf(("XFolder::wpDrop: parent returned MRESULT 0x%lX", mrc));
-
-    return mrc;
-} */
-
-/*
- *@@ wpEndConversation:
- *      overridden for debugging.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-/* SOM_Scope MRESULT  SOMLINK xf_wpEndConversation(XFolder *somSelf,
-                                                ULONG ulItemID,
-                                                ULONG flResult)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpEndConversation");
-
-    return (XFolder_parent_WPFolder_wpEndConversation(somSelf,
-                                                      ulItemID,
-                                                      flResult));
-} */
-
-/*
- *@@ wpSetTitle:
- *      this is called when the folder is renamed.
- *      We then need to update the titles of this
- *      folder AND of possibly open subfolders with
- *      the full path; we pass this task to the Worker
- *      thread, since it may take a while.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
-{
-    BOOL rc;
-    // XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpSetTitle");
-
-    /* if (wpshResidesBelow(somSelf, pCfg))
-    {
-        // somSelf is in the config folder hierarchy:
-        // invalidate the content lists for the config
-        // folders so that they will be rebuilt
-        mnuInvalidateConfigCache();
-    } */
-
-    rc = XFolder_parent_WPFolder_wpSetTitle(somSelf, pszNewTitle);
-
-    if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
-        // any open views: update titles
-        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
-
-    return (rc);
-}
-
-/*
- *@@ wpMoveObject:
- *      this is called when the folder is moved to a
- *      different location; we then need to update
- *      the titles of this folder AND of possibly open
- *      subfolders with the full path; we pass this
- *      job to the Worker thread.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
-                                        WPFolder* Folder)
-{
-    BOOL rc;
-    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpMoveObject");
-
-    if (    (pCfg)
-         && (wpshResidesBelow(somSelf, pCfg))
-       )
-        // this was in the config folder hierarchy:
-        mnuInvalidateConfigCache();
-
-    // call the parent method first, which will actually move the folder
-    rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
-
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
-
-    return rc;
+                                                      cbSize);
 }
 
 /*
@@ -3582,6 +3384,72 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
     return brc;
 }
 
+/*
+ *@@ wpSetTitle:
+ *      this is called when the folder is renamed.
+ *      We then need to update the titles of this
+ *      folder AND of possibly open subfolders with
+ *      the full path; we pass this task to the Worker
+ *      thread, since it may take a while.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
+{
+    BOOL rc;
+    // XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpSetTitle");
+
+    /* if (wpshResidesBelow(somSelf, pCfg))
+    {
+        // somSelf is in the config folder hierarchy:
+        // invalidate the content lists for the config
+        // folders so that they will be rebuilt
+        mnuInvalidateConfigCache();
+    } */
+
+    rc = XFolder_parent_WPFolder_wpSetTitle(somSelf, pszNewTitle);
+
+    if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
+        // any open views: update titles
+        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
+
+    return rc;
+}
+
+/*
+ *@@ wpMoveObject:
+ *      this is called when the folder is moved to a
+ *      different location; we then need to update
+ *      the titles of this folder AND of possibly open
+ *      subfolders with the full path; we pass this
+ *      job to the Worker thread.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
+                                        WPFolder* Folder)
+{
+    BOOL rc;
+    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpMoveObject");
+
+    if (    (pCfg)
+         && (wpshResidesBelow(somSelf, pCfg))
+       )
+        // this was in the config folder hierarchy:
+        mnuInvalidateConfigCache();
+
+    // call the parent method first, which will actually move the folder
+    rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
+
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
+
+    return rc;
+}
+
 /* ******************************************************************
  *
  *   here come the XFolder class methods
@@ -3611,7 +3479,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
     if (!wpshCheckObject(G_pConfigFolder))
         G_pConfigFolder = NULL;
 
-    return (G_pConfigFolder);
+    return G_pConfigFolder;
 }
 
 /*
@@ -3635,10 +3503,10 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryFavoriteFolder");
 
 #ifndef __NOFOLDERCONTENTS__
-    return (objEnumList(&G_llFavoriteFolders,
-                        pFolder,
-                        INIKEY_FAVORITEFOLDERS,
-                        OBJLIST_FAVORITEFOLDER));
+    return objEnumList(&G_llFavoriteFolders,
+                       pFolder,
+                       INIKEY_FAVORITEFOLDERS,
+                       OBJLIST_FAVORITEFOLDER);
 #else
     return NULL;
 #endif
@@ -3665,10 +3533,10 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryQuickOpenFolder");
 
 #ifndef __NOQUICKOPEN__
-    return (objEnumList(&G_llQuickOpenFolders,
-                        pFolder,
-                        INIKEY_QUICKOPENFOLDERS,
-                        OBJLIST_QUICKOPENFOLDER));
+    return objEnumList(&G_llQuickOpenFolders,
+                       pFolder,
+                       INIKEY_QUICKOPENFOLDERS,
+                       OBJLIST_QUICKOPENFOLDER);
 #else
     return NULL;
 #endif
@@ -3804,9 +3672,9 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
         return TRUE;
         // means that the Templates folder should _not_ create templates
         // by itself; we pretend that we've done this
-    else
-        return (M_XFolder_parent_M_WPFolder_wpclsCreateDefaultTemplates(somSelf,
-                                                                    Folder));
+
+    return M_XFolder_parent_M_WPFolder_wpclsCreateDefaultTemplates(somSelf,
+                                                                   Folder);
 }
 
 /*
@@ -3844,11 +3712,11 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
         // return that
         // _PmpfF(("returning %u", cmnQuerySetting(sulDefaultFolderView)));
 
-        return (ul);
+        return ul;
     }
 
     // return the stupid 103 code
-    return (M_XFolder_parent_M_WPFolder_wpclsQueryDefaultView(somSelf));
+    return M_XFolder_parent_M_WPFolder_wpclsQueryDefaultView(somSelf);
 }
 
 /*
@@ -3871,10 +3739,10 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
 
 #ifndef __ALWAYSFIXCLASSTITLES__
     if (!cmnQuerySetting(sfFixClassTitles))
-        return (M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
+        return M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf);
 #endif
 
-    return (cmnGetString(ID_XSSI_CLASSTITLE_FOLDER));
+    return cmnGetString(ID_XSSI_CLASSTITLE_FOLDER);
 }
 
 /*
@@ -4105,6 +3973,6 @@ SOM_Scope HPOINTER  SOMLINK xfM_wpclsQueryIconN(M_XFolder *somSelf,
         hptr = M_XFolder_parent_M_WPFolder_wpclsQueryIconN(somSelf,
                                                            ulIconIndex);
 
-    return (hptr);
+    return hptr;
 }
 

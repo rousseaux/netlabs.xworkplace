@@ -1589,6 +1589,13 @@ BEGIN
     ID_XFDI_CLASH_REPLACE               "~Replace existing object"
     ID_XFDI_CLASH_RENAMENEW             "Rename ~new object to:"
     ID_XFDI_CLASH_RENAMEOLD             "Rename e~xisting object to:"
+
+    /* new replacement "Paste" dialog V0.9.20 (2002-08-08) [umoeller] */
+    ID_XFDI_PASTE_TITLE                 "Paste Clipboard to ""%1"""
+    ID_XFDI_PASTE_PREVIEW_TXT           "Preview:"
+    ID_XFDI_PASTE_OBJTITLE_TXT          "Object ~title:"
+    ID_XFDI_PASTE_FORMAT_TXT            "~Format:"
+    ID_XFDI_PASTE_CLASS_TXT             "Object c~lass:"
 END
 
 /* Treesize definitions; added V0.9.0 */

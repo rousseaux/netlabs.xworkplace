@@ -376,19 +376,18 @@
 
     /* ******************************************************************
      *
-     *   "Select some" dialog
+     *   Folder edit dialogs
      *
      ********************************************************************/
 
     VOID fdrShowSelectSome(HWND hwndFrame);
 
-    /* ******************************************************************
-     *
-     *   "Batch rename" dialog
-     *
-     ********************************************************************/
-
     VOID fdrShowBatchRename(HWND hwndFrame);
+
+    #ifdef SOM_WPFolder_h
+        VOID fdrShowPasteDlg(WPFolder *pFolder,
+                             HWND hwndFrame);
+    #endif
 
     /* ******************************************************************
      *

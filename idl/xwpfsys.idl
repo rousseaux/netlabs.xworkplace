@@ -95,24 +95,36 @@ interface XWPFileSystem : WPFileSystem
      *
      */
 
+    //# 1)  init/uninit methods
+
     wpInitData: override;
     wpUnInitData: override;
-    wpObjectReady: override;
 
-    wpOpen: override;
-
-    wpSetTitleAndRenameFile: override;
-    wpSetRealName: override;
+    //# 2)  WPObject query/set methods
 
     wpQueryHandle: override;
+
+    //# 3)  icon methods
 
     wpQueryIcon: override;
 
     wpSetIconData: override;
 
-    wpRefreshFSInfo: override;
+    //# 4)  class-specific query/set methods
 
-    wpCnrRefreshDetails: override;
+    //# 5)  menu methods
+
+    //# 6)  open view methods
+
+    wpOpen: override;
+
+    //# 7)  file operation methods
+
+    wpSetTitleAndRenameFile: override;
+
+    wpSetRealName: override;
+
+    wpRefreshFSInfo: override;
 
 #ifdef __PRIVATE__
 

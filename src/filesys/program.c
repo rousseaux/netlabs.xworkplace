@@ -4,31 +4,26 @@
  *      various program-related implementation code
  *      (especially WPProgram and WPProgramFile).
  *
- *      Presently, this implements:
+ *      The code in this file now implements a complete
+ *      replacement for the WPS program startup. This
+ *      was required because of the following limitations:
  *
- *      -- Starting an executable via WinStartApp
- *         from a program object, with full in-use
- *         management and session handling. See
- *         progOpenProgram.
+ *      1)  It is impossible to call WPProgram::wpOpen with a
+ *          data file parameter to have the program opened
+ *          with that data file. As a result, for extended
+ *          associations to work, we must start all program
+ *          objects manually... the WPS just doesn't export
+ *          ANYTHING that we could use for that purpose.
  *
- *      Roadmap:
+ *      2)  WPProgram and WPProgramFile call into the WPS
+ *          file-system handles engine all the time. In order
+ *          to prepare for our file-handles engine replacement,
+ *          a complete replacement was in order for this reason
+ *          as well.
  *
- *      WPProgram and WPProgramFile need to be rewritten
- *      entirely since they call into the WPS-internal
- *      file-handles routines routines all the time.
- *
- *      Rewriting them will require the following steps:
- *
- *      1)  Override and rewrite all methods which appear
- *          to call into the file handles routines. The
- *          rewrites are required to only call
- *          wpQueryProgDetails, wpSetProgDetails, and
- *          wpQueryHandle.
- *
- *      2)  After the file handles cache has been replaced
- *          at some point in the future, replace
- *          those three methods with new implementations
- *          which call the new XWP file handles routines.
+ *      The major entry point into this engine is progOpenProgram,
+ *      which can open both program objects, program files,
+ *      and handle data files as arguments to both.
  *
  *      This file is ALL new with V0.9.6.
  *
@@ -1005,7 +1000,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                          pUseItemFile = 0;
                 WPObject *pobjEmph = 0;
 
-                if (pDataFile == NULL)
+                if (!pDataFile)
                     // object to work on is program object
                     pobjEmph = pProgram;
                 else
@@ -1040,8 +1035,10 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                         // yo this call creates a handle!
                         // V0.9.20 (2002-08-04) [umoeller]
-                        if (brc = _wpAddToObjUseList(pobjEmph,
-                                                     pUseItemView))
+                        if (    (brc = _wpAddToObjUseList(pobjEmph,
+                                                          pUseItemView))
+                             && (pDataFile)     // was missing V0.9.20 (2002-08-08) [umoeller]
+                           )
                         {
                             // success:
                             // for data file associations, add VIEWFILE
@@ -1961,7 +1958,7 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
  *      this, and since there is _no way_ of starting a
  *      program object with a data file as a parameter
  *      using the standard WPS methods, I had to rewrite
- *      all this.
+ *      all this for extended associations to work.
  *
  *      Presently, if extended assocs are enabled, this
  *      gets called from:
@@ -2060,6 +2057,13 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
     PSZ             pszNewEnvironment = NULL;
 
     // INT3();
+
+    #ifdef DEBUG_PROGRAMSTART
+        _PmpfF(("[%s] entering, argDataFile [%s]",
+                _wpQueryTitle(pProgObject),
+                (pArgDataFile) ? _wpQueryTitle(pArgDataFile) : "NULL"
+              ));
+    #endif
 
     xstrInit(&strParamsNew, 0);
     xstrInit(&strStartupDirNew, 0);

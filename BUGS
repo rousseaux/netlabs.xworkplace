@@ -14,15 +14,13 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
-FIXED SINCE 0.9.19
-------------------
-
---  In the desktop RMB menu, XWorkPlace->XWorkPlace User Guide yields the
-    view.exe error message, "Topic not found"
-
-
 CURRENT PROBLEMS
 ----------------
+
+--  Command line windows lose frame icons all the time.
+
+--  use items crash
+
 
 >b4) XCenter: Window List widget doen't always filter correctly. This
 >is reproducable with emacs; the emacsserver process gets started as

@@ -101,6 +101,8 @@ interface XWPProgramFile : WPProgramFile
      *
      */
 
+    //# 1)  init/uninit methods
+
     wpInitData: override;
 
     wpUnInitData: override;
@@ -111,28 +113,36 @@ interface XWPProgramFile : WPProgramFile
     wpRestoreState: override;
     wpRestoreData: override;
 
-    wpSetProgIcon: override;
-
-    wpQueryIconData: override;
-    wpSetIconData: override;
-
-    wpSetAssociationType: override;
+    //# 2)  WPObject query/set methods
 
     wpQueryDefaultView: override;
     wpQueryDefaultHelp: override;
 
+    //# 3)  icon methods
+
+    wpQueryIconData: override;
+    wpSetIconData: override;
+
+    wpSetProgIcon: override;
+
+    //# 4)  class-specific query/set methods
+
     wpQueryProgDetails: override;
     wpSetProgDetails: override;
+
+    //# 5)  menu methods
+
+    wpFilterPopupMenu: override;
+
+    //# 6)  open view methods
+
+    wpOpen: override;
 
     wpAddProgramAssociationPage: override;
     wpAddProgramPage: override;
     wpAddProgramSessionPage: override;
 
-    wpFilterPopupMenu: override;
-
-#ifdef __PRIVATE__
-
-#endif
+    //# 7)  file operation methods
 
   }; // implementation
 #endif /* __SOMIDL__ */

@@ -1482,6 +1482,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
     ULONG cControlDefs = 0;
     PDLGHITEM paNew;
     PCONTROLDEF pDefTargetThis;
+    const CONTROLDEF *pDef;
 
     // loop 1:
     // first check how much mem we need;
@@ -1496,14 +1497,13 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
          ul++)
     {
         PCDLGHITEM pThis = &paDlgItems[ul];
-        PCONTROLDEF pDef;
         // allocate an extra CONTROLDEF if the
         // DLGHITEM points to one and the control
         // def has a LOAD_STRING entry
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
-             && (pDef = (PCONTROLDEF)pThis->ulData)
+             && (pDef = pThis->pCtlDef)
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
@@ -1531,7 +1531,6 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
     {
         // copy DLGHITEM
         PCDLGHITEM pThis = &paDlgItems[ul];
-        PCONTROLDEF pDef;
         memcpy(&paNew[ul], pThis, sizeof(DLGHITEM));
 
         // again, if the DLGHITEM points to a CONTOLDEF
@@ -1540,7 +1539,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
-             && (pDef = (PCONTROLDEF)pThis->ulData)
+             && (pDef = pThis->pCtlDef)
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
@@ -1549,7 +1548,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
             // and replace the LOAD_STRING with the real string
             pDefTargetThis->pcszText = cmnGetString(pDef->usID);
             // and point DLGHITEM to this CONTROLDEF instead
-            paNew[ul].ulData = (ULONG)pDefTargetThis;
+            paNew[ul].pCtlDef = pDefTargetThis;
             ++pDefTargetThis;
         }
         // otherwise we use the const DLGHITEM that was

@@ -168,7 +168,7 @@ SOM_Scope ULONG  SOMLINK xpg_xwpAddAssociationsPage(XWPProgram *somSelf,
     ulrc = ftypInsertAssociationsPage(somSelf,
                                       hwndNotebook);
 #endif
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -194,9 +194,9 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQuerySetup2(XWPProgram *somSelf,
     if (progQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        return (wpshParentQuerySetup2(somSelf,
-                                      _somGetParent(_XWPProgram),
-                                      pstrSetup));
+        return wpshParentQuerySetup2(somSelf,
+                                     _somGetParent(_XWPProgram),
+                                     pstrSetup);
     }
 
     return FALSE;
@@ -485,7 +485,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpDestroyObject(XWPProgram *somSelf)
 
     return brc;
 
-    // return (XWPProgram_parent_WPProgram_wpDestroyObject(somSelf));
+    // return XWPProgram_parent_WPProgram_wpDestroyObject(somSelf);
 }
 
 /*
@@ -535,74 +535,6 @@ SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
 }
 
 /*
- *@@ wpOpen:
- *      this WPObject instance method gets called when
- *      a new view needs to be opened. Normally, this
- *      gets called after wpViewObject has scanned the
- *      object's USEITEMs and has determined that a new
- *      view is needed.
- *
- *      This _normally_ runs on thread 1 of the WPS, but
- *      this is not always the case. If this gets called
- *      in response to a menu selection from the "Open"
- *      submenu or a double-click in the folder, this runs
- *      on the thread of the folder (which _normally_ is
- *      thread 1). However, if this results from WinOpenObject
- *      or an OPEN setup string, this will not be on thread 1.
- *
- *      We call our own implementation here if extended
- *      associations are enabled.
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- *@@changed V0.9.16 (2002-01-04) [umoeller]: if ext assocs are enabled, xwp now handles program open too
- */
-
-SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf,
-                                   HWND hwndCnr,
-                                   ULONG ulView,
-                                   ULONG param)
-{
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpg_wpOpen");
-
-#ifndef __NEVEREXTASSOCS__
-    if (cmnQuerySetting(sfExtAssocs))
-    {
-        if (ulView == OPEN_RUNNING)
-        {
-            HWND hwnd = NULLHANDLE;
-            APIRET arc;
-            CHAR szFailing[CCHMAXPATH];
-
-            if (arc = progOpenProgram(somSelf,
-                                      NULL,      // no assoc data file
-                                      ulView,
-                                      &hwnd,
-                                      sizeof(szFailing),
-                                      szFailing))
-            {
-                // error opening program: ask user if he wants
-                // to change the settings
-                if (cmnProgramErrorMsgBox(NULLHANDLE,
-                                          somSelf,
-                                          szFailing,
-                                          arc)
-                            == MBID_YES)
-                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                            (MPARAM)somSelf,
-                                            (MPARAM)OPEN_SETTINGS);
-            }
-
-            return (hwnd);
-        }
-    } // end if (cmnQuerySetting(sfExtAssocs))
-#endif
-
-    return (XWPProgram_parent_WPProgram_wpOpen(somSelf, hwndCnr,
-                                               ulView, param));
-}
-
-/*
  *@@ wpQueryIcon:
  *      this WPObject instance method returns the HPOINTER
  *      with the current icon of the object. For some WPS
@@ -635,10 +567,10 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
             _wpSetProgIcon(somSelf, NULL);
         }
 
-        return (pmrc->hptrIcon);
+        return pmrc->hptrIcon;
     }
 
-    return (XWPProgram_parent_WPProgram_wpQueryIcon(somSelf));
+    return XWPProgram_parent_WPProgram_wpQueryIcon(somSelf);
 }
 
 /*
@@ -948,7 +880,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
         return brc;
     }
 
-    return (XWPProgram_parent_WPProgram_wpSetProgIcon(somSelf, pfeal));
+    return XWPProgram_parent_WPProgram_wpSetProgIcon(somSelf, pfeal);
 }
 
 /*
@@ -1081,11 +1013,11 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
             cbRequired = 0;
         } END_CATCH();
 
-        return (cbRequired);
+        return cbRequired;
     }
 
-    return (XWPProgram_parent_WPProgram_wpQueryIconData(somSelf,
-                                                        pIconInfo));
+    return XWPProgram_parent_WPProgram_wpQueryIconData(somSelf,
+                                                       pIconInfo);
 }
 
 /*
@@ -1141,67 +1073,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
 
     // all other cases, or icon replacements disabled:
     // call parent (WPProgram)
-    return (XWPProgram_parent_WPProgram_wpSetIconData(somSelf,
-                                                      pIconInfo));
-}
-
-/*
- *@@ wpSetAssociationType:
- *      this WPProgram(File) method sets the types
- *      this object is associated with.
- *
- *      We must invalidate the caches if the WPS
- *      messes with this.
- *
- *@@added V0.9.9 (2001-04-02) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xpg_wpSetAssociationType(XWPProgram *somSelf,
-                                                 PSZ pszType)
-{
-    BOOL brc = FALSE;
-
-    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpg_wpSetAssociationType");
-
-    brc = XWPProgram_parent_WPProgram_wpSetAssociationType(somSelf,
-                                                           pszType);
-
-    return brc;
-}
-
-/*
- *@@ wpMoveObject:
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xpg_wpMoveObject(XWPProgram *somSelf,
-                                         WPFolder* Folder)
-{
-    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpg_wpMoveObject");
-
-    return (XWPProgram_parent_WPProgram_wpMoveObject(somSelf,
-                                                     Folder));
-}
-
-/*
- *@@ wpCopyObject:
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- */
-
-SOM_Scope WPObject*  SOMLINK xpg_wpCopyObject(XWPProgram *somSelf,
-                                              WPFolder* Folder,
-                                              BOOL fLock)
-{
-    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpg_wpCopyObject");
-
-    return (XWPProgram_parent_WPProgram_wpCopyObject(somSelf,
-                                                     Folder,
-                                                     fLock));
+    return XWPProgram_parent_WPProgram_wpSetIconData(somSelf,
+                                                     pIconInfo);
 }
 
 /*
@@ -1316,9 +1189,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
 
     } // end if (RunReplacement)
 
-    return (XWPProgram_parent_WPProgram_wpQueryProgDetails(somSelf,
-                                                           pProgDetails,
-                                                           pulSize));
+    return XWPProgram_parent_WPProgram_wpQueryProgDetails(somSelf,
+                                                          pProgDetails,
+                                                          pulSize);
 }
 
 /*
@@ -1347,7 +1220,7 @@ USHORT GetFSHandle(PCSZ pcszFile)
         _wpUnlockObject(pFile);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1401,7 +1274,7 @@ APIRET progStore(WPObject *somSelf,
             *ppszTarget = NULL;
     }
     else
-        return (ERROR_INVALID_PARAMETER);
+        return ERROR_INVALID_PARAMETER;
 
     if (pulLength)
         *pulLength = ulLength;
@@ -1624,6 +1497,76 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
 }
 
 /*
+ *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
+ *
+ *      We call our own implementation here if extended
+ *      associations are enabled.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@changed V0.9.16 (2002-01-04) [umoeller]: if ext assocs are enabled, xwp now handles program open too
+ */
+
+SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf,
+                                   HWND hwndCnr,
+                                   ULONG ulView,
+                                   ULONG param)
+{
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    XWPProgramMethodDebug("XWPProgram","xpg_wpOpen");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        if (ulView == OPEN_RUNNING)
+        {
+            HWND hwnd = NULLHANDLE;
+            APIRET arc;
+            CHAR szFailing[CCHMAXPATH];
+
+            if (arc = progOpenProgram(somSelf,
+                                      NULL,      // no assoc data file
+                                      ulView,
+                                      &hwnd,
+                                      sizeof(szFailing),
+                                      szFailing))
+            {
+                // error opening program: ask user if he wants
+                // to change the settings
+                if (cmnProgramErrorMsgBox(NULLHANDLE,
+                                          somSelf,
+                                          szFailing,
+                                          arc)
+                            == MBID_YES)
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                            (MPARAM)somSelf,
+                                            (MPARAM)OPEN_SETTINGS);
+            }
+
+            return hwnd;
+        }
+    } // end if (cmnQuerySetting(sfExtAssocs))
+#endif
+
+    return XWPProgram_parent_WPProgram_wpOpen(somSelf,
+                                              hwndCnr,
+                                              ulView,
+                                              param);
+}
+
+/*
  *@@ wpAddProgramPage:
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
@@ -1635,8 +1578,8 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramPage(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpAddProgramPage");
 
-    return (XWPProgram_parent_WPProgram_wpAddProgramPage(somSelf,
-                                                         hwndNotebook));
+    return XWPProgram_parent_WPProgram_wpAddProgramPage(somSelf,
+                                                        hwndNotebook);
 }
 
 /*
@@ -1651,8 +1594,8 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramSessionPage(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpAddProgramSessionPage");
 
-    return (XWPProgram_parent_WPProgram_wpAddProgramSessionPage(somSelf,
-                                                                hwndNotebook));
+    return XWPProgram_parent_WPProgram_wpAddProgramSessionPage(somSelf,
+                                                               hwndNotebook);
 }
 
 /*
@@ -1673,11 +1616,45 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
-        return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
+        return _xwpAddAssociationsPage(somSelf, hwndNotebook);
 #endif
 
-    return (XWPProgram_parent_WPProgram_wpAddProgramAssociationPage(somSelf,
-                                                                    hwndNotebook));
+    return XWPProgram_parent_WPProgram_wpAddProgramAssociationPage(somSelf,
+                                                                   hwndNotebook);
+}
+
+/*
+ *@@ wpMoveObject:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpg_wpMoveObject(XWPProgram *somSelf,
+                                         WPFolder* Folder)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpg_wpMoveObject");
+
+    return XWPProgram_parent_WPProgram_wpMoveObject(somSelf,
+                                                    Folder);
+}
+
+/*
+ *@@ wpCopyObject:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xpg_wpCopyObject(XWPProgram *somSelf,
+                                              WPFolder* Folder,
+                                              BOOL fLock)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpg_wpCopyObject");
+
+    return XWPProgram_parent_WPProgram_wpCopyObject(somSelf,
+                                                    Folder,
+                                                    fLock);
 }
 
 /* ******************************************************************
@@ -1765,7 +1742,7 @@ SOM_Scope ULONG  SOMLINK xpgM_wpclsQueryIconData(M_XWPProgram *somSelf,
         ulrc = M_XWPProgram_parent_M_WPProgram_wpclsQueryIconData(somSelf,
                                                                   pIconInfo);
 
-    return (ulrc);
+    return ulrc;
 }
 
 

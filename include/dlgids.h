@@ -242,6 +242,17 @@
 #define ID_XFDI_BATCH_GO                156
 #define ID_XFDI_BATCH_SELONLYCB         157
 
+// replacement "Paste" dialog V0.9.20 (2002-08-08) [umoeller]
+#define ID_XFDI_PASTE_TITLE             170
+#define ID_XFDI_PASTE_PREVIEW_TXT       171
+#define ID_XFDI_PASTE_PREVIEW_PANE      172
+#define ID_XFDI_PASTE_OBJTITLE_TXT      173
+#define ID_XFDI_PASTE_OBJTITLE_DROP     174
+#define ID_XFDI_PASTE_FORMAT_TXT        175
+#define ID_XFDI_PASTE_FORMAT_DROP       176
+#define ID_XFDI_PASTE_CLASS_TXT         177
+#define ID_XFDI_PASTE_CLASS_DROP        178
+
 // for product info
 // #define ID_XFD_PRODINFO                 200      // removed V0.9.16 (2001-11-10) [umoeller]
 #define ID_XFD_PRODLOGO                 201

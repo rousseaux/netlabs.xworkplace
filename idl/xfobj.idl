@@ -242,6 +242,8 @@ interface XFldObject : WPObject
      *
      */
 
+    //# 1)  init/uninit methods
+
     wpInitData: override;
     wpObjectReady: override;
 
@@ -251,26 +253,41 @@ interface XFldObject : WPObject
     wpFree: override;
     wpUnInitData: override;
 
-    wpSetTitle: override;
-//# wpSetDefaultView: override; removed V0.9.19 (2002-07-01) [umoeller]
-    wpSetObjectID: override;
-
-    wpSetIcon: override;
-//# wpSetIconHandle: override;
-
     wpSaveDeferred: override;
     wpSaveImmediate: override;
 
     wpSaveState: override;
     wpRestoreState: override;
-//# wpRestoreData: override;    removed V0.9.20 (2002-07-25) [umoeller]
+
+    //# 2)  WPObject query/set methods
+
+    wpSetObjectID: override;
+
+    wpQueryDefaultHelp: override;
+
+    //# 3)  icon methods
+
+    wpSetIcon: override;
+
+    //# 4)  class-specific query/set methods
+
+    wpAddToObjUseList: override;
+    wpDeleteFromObjUseList: override;
+    wpCnrSetEmphasis: override;
+
+    wpRequestObjectMutexSem: override;
+    wpAssertObjectMutexSem: override;
+    wpReleaseObjectMutexSem: override;
+
+    //# 5)  menu methods
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
-    wpQueryDefaultHelp: override;
+    //# 6)  open view methods
+
     wpDisplayHelp: override;
 
     wpViewObject: override;
@@ -278,17 +295,11 @@ interface XFldObject : WPObject
     wpAddSettingsPages: override;
     wpAddObjectGeneralPage: override;
 
+    //# 7)  file operation methods
+
+    wpSetTitle: override;
+
     wpConfirmObjectTitle: override;
-
-    wpAddToObjUseList: override;
-    wpCnrSetEmphasis: override;
-
-    wpRequestObjectMutexSem: override;
-    wpAssertObjectMutexSem: override;
-    wpReleaseObjectMutexSem: override;
-
-//#    wpAddToObjUseList: override;
-//#    wpDeleteFromObjUseList: override;
 
 #ifdef __PRIVATE__
 

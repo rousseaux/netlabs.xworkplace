@@ -191,25 +191,175 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
 }
 
 /*
- *@@ wpObjectReady:
- *      this WPObject notification method gets called by the
- *      WPS when object instantiation is complete, for any reason.
- *      ulCode and refObject signify why and where from the
- *      object was created.
- *      The parent method must be called first.
+ *@@ wpQueryHandle:
+ *      overridden for debugging.
  *
- *      See XFldObject::wpObjectReady for remarks about using
- *      this method as a copy constructor.
+ *@@added V0.9.20 (2002-08-04) [umoeller]
  */
 
-SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,
-                                          ULONG ulCode, WPObject* refObject)
+SOM_Scope HOBJECT  SOMLINK xfs_wpQueryHandle(XWPFileSystem *somSelf)
+{
+#ifdef __DEBUG__
+    CHAR    szFilename[CCHMAXPATH];
+#endif
+
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryHandle");
+
+#ifdef __DEBUG__
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+        _PmpfF(("[%s]", szFilename));
+#endif
+
+    return XWPFileSystem_parent_WPFileSystem_wpQueryHandle(somSelf);
+}
+
+/*
+ *@@ wpQueryIcon:
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
+ *
+ *      WPDataFile overrides this method to defer icon loading
+ *      for data files until the icon is first needed.
+ *      See XFldDataFile::wpQueryIcon for more about that.
+ *
+ *      However, WPFolder does _not_ override this method, so
+ *      for folders, the WPFileSystem implementation gets called.
+ *      Unfortunately, that implementation is very expensive.
+ *      Even though (as with all file-system objects) the icon
+ *      data from the .ICON EA is passed to
+ *      WPFolder::wpRestoreState, the WPS apparently doesn't
+ *      even check the buffer but checks the icon EAs _again_
+ *      in this method, which isn't exactly speedy. What we
+ *      can do here safely is check if an icon was set in
+ *      our XFolder::wpRestoreState override (which does parse
+ *      the FEA2LIST) and if not, load a default icon here.
+ *
+ *      I'd love to have shared this implementation with
+ *      XFldDataFile, but since WPDataFile overrides this
+ *      method, we have to override that override again
+ *      for XFldDataFile.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
 {
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpObjectReady");
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryIcon");
 
-    XWPFileSystem_parent_WPFileSystem_wpObjectReady(somSelf,
-                                                    ulCode, refObject);
+#ifndef __NOTURBOFOLDERS__
+    if (cmnQuerySetting(sfTurboFolders))
+    {
+        HPOINTER hptrReturn = NULLHANDLE;
+        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+        if (!(hptrReturn = prec->hptrIcon))
+        {
+            // first call, and icon wasn't set in wpRestoreState:
+            // use class default icon
+            // (again, note that we override this for XFldDataFile
+            // so this really only affects folders)
+            if (hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf)))
+            {
+                _wpSetIcon(somSelf, hptrReturn);
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               0);
+            }
+        }
+
+        // V0.9.18 (2002-03-24) [umoeller]
+        // fixed to never call the parent any more,
+        // which nukes our shared icons sometimes
+        return (hptrReturn);
+    }
+
+#endif
+
+    return (XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf));
+}
+
+/*
+ *@@ wpSetIconData:
+ *      this WPObject method sets a new persistent icon for
+ *      the object and stores the new icon permanently.
+ *
+ *      We need to override this for our icon replacements
+ *      because the WPS will do evil things to our standard
+ *      icons again.
+ *
+ *      Note that XFldProgramFile and XWPProgramFile override
+ *      this too to support their better ICON_CLEAR case.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
+                                          PICONINFO pIconInfo)
+{
+    CHAR        szFilename[CCHMAXPATH];
+    HPOINTER    hptrNew = NULLHANDLE;
+
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetIconData");
+
+    if (icomRunReplacement())
+    {
+        BOOL    brc = FALSE;
+        BOOL    fNotDefaultIcon = FALSE;
+
+        if (    (pIconInfo)
+             && (_wpQueryFilename(somSelf, szFilename, TRUE))
+           )
+        {
+            switch (pIconInfo->fFormat)
+            {
+                case ICON_DATA:
+                case ICON_RESOURCE:
+                case ICON_FILE:
+                    // WinSetFileIcon supports this
+                    if (WinSetFileIcon(szFilename, pIconInfo))
+                    {
+                        // change the visible icon too
+                        if (hptrNew = WinLoadFileIcon(szFilename, FALSE))
+                            fNotDefaultIcon = TRUE;
+
+                        brc = TRUE;
+                    }
+                break;
+
+                case ICON_CLEAR:
+                    // WinSetFileIcon(ICON_CLEAR) clears the .ICON
+                    // EA for us, so no need to worry...
+                    // note, this case is now also overridden by
+                    // XFldDataFile and XWPProgramFile, so effectively
+                    // this code only ever gets used by folders
+                    if (WinSetFileIcon(szFilename, pIconInfo))
+                    {
+                        // use class default icon
+                        hptrNew = _wpclsQueryIcon(_somGetClass(somSelf));
+                        brc = TRUE;
+                    }
+                break;
+            }
+        }
+
+        if (hptrNew)
+        {
+            _wpSetIcon(somSelf, hptrNew);
+            _wpModifyStyle(somSelf,
+                           OBJSTYLE_NOTDEFAULTICON,
+                           (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
+        }
+
+        return brc;
+    }
+
+    return (XWPFileSystem_parent_WPFileSystem_wpSetIconData(somSelf,
+                                                            pIconInfo));
 }
 
 /*
@@ -473,178 +623,6 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
 }
 
 /*
- *@@ wpQueryHandle:
- *      overridden for debugging.
- *
- *@@added V0.9.20 (2002-08-04) [umoeller]
- */
-
-SOM_Scope HOBJECT  SOMLINK xfs_wpQueryHandle(XWPFileSystem *somSelf)
-{
-#ifdef __DEBUG__
-    CHAR    szFilename[CCHMAXPATH];
-#endif
-
-    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryHandle");
-
-#ifdef __DEBUG__
-    if (_wpQueryFilename(somSelf, szFilename, TRUE))
-        _PmpfF(("[%s]", szFilename));
-#endif
-
-    return XWPFileSystem_parent_WPFileSystem_wpQueryHandle(somSelf);
-}
-
-/*
- *@@ wpQueryIcon:
- *      this WPObject instance method returns the HPOINTER
- *      with the current icon of the object. For some WPS
- *      classes, icon loading is deferred until the first
- *      call to this method.
- *      See icons.c for an introduction.
- *
- *      WPDataFile overrides this method to defer icon loading
- *      for data files until the icon is first needed.
- *      See XFldDataFile::wpQueryIcon for more about that.
- *
- *      However, WPFolder does _not_ override this method, so
- *      for folders, the WPFileSystem implementation gets called.
- *      Unfortunately, that implementation is very expensive.
- *      Even though (as with all file-system objects) the icon
- *      data from the .ICON EA is passed to
- *      WPFolder::wpRestoreState, the WPS apparently doesn't
- *      even check the buffer but checks the icon EAs _again_
- *      in this method, which isn't exactly speedy. What we
- *      can do here safely is check if an icon was set in
- *      our XFolder::wpRestoreState override (which does parse
- *      the FEA2LIST) and if not, load a default icon here.
- *
- *      I'd love to have shared this implementation with
- *      XFldDataFile, but since WPDataFile overrides this
- *      method, we have to override that override again
- *      for XFldDataFile.
- *
- *@@added V0.9.16 (2002-01-04) [umoeller]
- */
-
-SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
-{
-    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryIcon");
-
-#ifndef __NOTURBOFOLDERS__
-    if (cmnQuerySetting(sfTurboFolders))
-    {
-        HPOINTER hptrReturn = NULLHANDLE;
-        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
-        if (!(hptrReturn = prec->hptrIcon))
-        {
-            // first call, and icon wasn't set in wpRestoreState:
-            // use class default icon
-            // (again, note that we override this for XFldDataFile
-            // so this really only affects folders)
-            if (hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf)))
-            {
-                _wpSetIcon(somSelf, hptrReturn);
-                _wpModifyStyle(somSelf,
-                               OBJSTYLE_NOTDEFAULTICON,
-                               0);
-            }
-        }
-
-        // V0.9.18 (2002-03-24) [umoeller]
-        // fixed to never call the parent any more,
-        // which nukes our shared icons sometimes
-        return (hptrReturn);
-    }
-
-#endif
-
-    return (XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf));
-}
-
-/*
- *@@ wpSetIconData:
- *      this WPObject method sets a new persistent icon for
- *      the object and stores the new icon permanently.
- *
- *      We need to override this for our icon replacements
- *      because the WPS will do evil things to our standard
- *      icons again.
- *
- *      Note that XFldProgramFile and XWPProgramFile override
- *      this too to support their better ICON_CLEAR case.
- *
- *@@added V0.9.18 (2002-03-19) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
-                                          PICONINFO pIconInfo)
-{
-    CHAR        szFilename[CCHMAXPATH];
-    HPOINTER    hptrNew = NULLHANDLE;
-
-    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetIconData");
-
-    if (icomRunReplacement())
-    {
-        BOOL    brc = FALSE;
-        BOOL    fNotDefaultIcon = FALSE;
-
-        if (    (pIconInfo)
-             && (_wpQueryFilename(somSelf, szFilename, TRUE))
-           )
-        {
-            switch (pIconInfo->fFormat)
-            {
-                case ICON_DATA:
-                case ICON_RESOURCE:
-                case ICON_FILE:
-                    // WinSetFileIcon supports this
-                    if (WinSetFileIcon(szFilename, pIconInfo))
-                    {
-                        // change the visible icon too
-                        if (hptrNew = WinLoadFileIcon(szFilename, FALSE))
-                            fNotDefaultIcon = TRUE;
-
-                        brc = TRUE;
-                    }
-                break;
-
-                case ICON_CLEAR:
-                    // WinSetFileIcon(ICON_CLEAR) clears the .ICON
-                    // EA for us, so no need to worry...
-                    // note, this case is now also overridden by
-                    // XFldDataFile and XWPProgramFile, so effectively
-                    // this code only ever gets used by folders
-                    if (WinSetFileIcon(szFilename, pIconInfo))
-                    {
-                        // use class default icon
-                        hptrNew = _wpclsQueryIcon(_somGetClass(somSelf));
-                        brc = TRUE;
-                    }
-                break;
-            }
-        }
-
-        if (hptrNew)
-        {
-            _wpSetIcon(somSelf, hptrNew);
-            _wpModifyStyle(somSelf,
-                           OBJSTYLE_NOTDEFAULTICON,
-                           (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
-        }
-
-        return brc;
-    }
-
-    return (XWPFileSystem_parent_WPFileSystem_wpSetIconData(somSelf,
-                                                            pIconInfo));
-}
-
-/*
  *@@ wpRefreshFSInfo:
  *      this unpublished WPFileSystem instance method is supposed
  *      to refresh the object with new file-system information.
@@ -683,41 +661,6 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefreshFSInfo(XWPFileSystem *somSelf,
                                                              pReserved,
                                                              ulUnknown);
 }
-
-/*
- *@@ wpCnrRefreshDetails:
- *      this WPObject instance method causes all currently visible
- *      RECORDCORE structures to  be refreshed with the current
- *      object details. Unfortunately, this gets called way too
- *      often during wpRefresh, so we hack this a little bit
- *      to avoid flickering details views.
- *
- *      The way this works is that our wpInitData sets the instance
- *      variable _ulCnrRefresh to -1, meaning that we should always
- *      call the parent. If that is != -1, we simply do not call
- *      the parent, but raise the variable by 1;
- *      this way we can count pending changes during wpRefresh and
- *      then reset the variable to -1 and call this explicitly.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- *@@changed V0.9.19 (2002-04-17) [umoeller]: doesn't work, disabled for now
- */
-
-SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
-{
-    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpCnrRefreshDetails");
-
-    // if (_ulCnrRefresh == -1)
-        XWPFileSystem_parent_WPFileSystem_wpCnrRefreshDetails(somSelf);
-    // doesn't work, disabled for now V0.9.19 (2002-04-17) [umoeller]
-
-    /* else
-        // just count, we're in wpRefresh
-        (_ulCnrRefresh)++;
-       */
-}
-
 
 /* ******************************************************************
  *

@@ -883,6 +883,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.18 (2002-02-19) [lafaix]: uses G_szlXPagerClient
  *@@changed V0.9.18 (2002-02-20) [lafaix]: reworked to correctly handle pager settings
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: fixed NIL windows
  */
 
 static HWND FindWindow(PPAGERWINDATA pWinData,
@@ -890,8 +891,9 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
                        BOOL fAllowStickes)      // in: if TRUE, allow returning sticky windows
 {
     HWND    hwndResult = NULLHANDLE;
+    ULONG   flPager = G_pHookData->PagerConfig.flPager;
 
-    if (G_pHookData->PagerConfig.flPager & PGRFL_MINIWINDOWS)
+    if (flPager & PGRFL_MINIWINDOWS)
     {
         // mini windows are shown: check if the point denotes one of them
         // V0.9.18 (2002-02-20) [lafaix]
@@ -938,6 +940,10 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
                     if (    (pWinInfo)
                          && (    (pWinInfo->data.bWindowType == WINDOW_NORMAL)
                               || (pWinInfo->data.bWindowType == WINDOW_MAXIMIZE)
+                                 // fixed NIL windows V0.9.20 (2002-08-08) [umoeller]
+                              || (    (pWinInfo->data.bWindowType == WINDOW_NIL)
+                                   && (flPager & PGRFL_INCLUDESECONDARY)
+                                 )
                               || (    (fAllowStickes)
                                    && (pWinInfo->data.bWindowType == WINDOW_STICKY)
                                  )
@@ -956,6 +962,7 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
         }
         WinEndEnumWindows(henumPoint);
     }
+
     return (hwndResult);
 }
 
@@ -1141,11 +1148,13 @@ static VOID PagerPositionFrame(VOID)
  *      in fnwpPager.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: added shift mb2 click for hiding pager
  */
 
 static MRESULT PagerButtonClick(HWND hwnd,
                                 ULONG msg,
-                                MPARAM mp1)
+                                MPARAM mp1,
+                                MPARAM mp2)
 {
     POINTL  ptlMouse =
         {
@@ -1260,21 +1269,31 @@ static MRESULT PagerButtonClick(HWND hwnd,
         {
             case WM_BUTTON2CLICK:
                 // mouse button 2 on empty area:
-                // tell XFLDR.DLL that pager context menu
-                // was requested, together with desktop
-                // coordinates of where the user clicked
-                // so the XFLDR.DLL can display the context
-                // menu.... we don't want the NLS stuff in
-                // the daemon! V0.9.11 (2001-04-25) [umoeller]
-                WinMapWindowPoints(G_pHookData->hwndPagerClient,
-                                   HWND_DESKTOP,
-                                   &ptlMouse,
-                                   1);
-                WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
-                           T1M_PAGERCTXTMENU,
-                           MPFROM2SHORT(ptlMouse.x,
-                                        ptlMouse.y),
-                           0);
+
+                // if shift is pressed, hide the pager
+                // V0.9.20 (2002-08-08) [umoeller]
+                if (    (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
+                     && (SHORT2FROMMP(mp2) & KC_SHIFT)
+                   )
+                    WinShowWindow(G_pHookData->hwndPagerFrame, FALSE);
+                else
+                {
+                    // tell XFLDR.DLL that pager context menu
+                    // was requested, together with desktop
+                    // coordinates of where the user clicked
+                    // so the XFLDR.DLL can display the context
+                    // menu.... we don't want the NLS stuff in
+                    // the daemon! V0.9.11 (2001-04-25) [umoeller]
+                    WinMapWindowPoints(G_pHookData->hwndPagerClient,
+                                       HWND_DESKTOP,
+                                       &ptlMouse,
+                                       1);
+                    WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
+                               T1M_PAGERCTXTMENU,
+                               MPFROM2SHORT(ptlMouse.x,
+                                            ptlMouse.y),
+                               0);
+                }
             break;
 
             case WM_BUTTON1CLICK:
@@ -1921,7 +1940,7 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             case WM_BUTTON1CLICK:
             case WM_BUTTON2CLICK:
-                mrc = PagerButtonClick(hwnd, msg, mp1);
+                mrc = PagerButtonClick(hwnd, msg, mp1, mp2);
             break;
 
             /*

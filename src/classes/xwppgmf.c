@@ -267,7 +267,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddAssociationsPage(XWPProgramFile *somSelf,
                                       hwndNotebook);
 #endif
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -365,7 +365,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
                 _ulAppType, appDescribeAppType(_ulAppType)));
     #endif
 
-    return (_ulAppType);
+    return _ulAppType;
 
 }
 
@@ -393,9 +393,9 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
     if (progQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        return (wpshParentQuerySetup2(somSelf,
-                                      _somGetParent(_XWPProgramFile),
-                                      pstrSetup));
+        return wpshParentQuerySetup2(somSelf,
+                                     _somGetParent(_XWPProgramFile),
+                                     pstrSetup);
     }
 
     return FALSE;
@@ -513,7 +513,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpDestroyObject(XWPProgramFile *somSelf)
 
     return brc;
 
-    // return (XWPProgramFile_parent_WPProgramFile_wpDestroyObject(somSelf));
+    // return XWPProgramFile_parent_WPProgramFile_wpDestroyObject(somSelf);
 }
 
 /*
@@ -642,11 +642,177 @@ SOM_Scope BOOL  SOMLINK xpgf_wpRestoreData(XWPProgramFile *somSelf,
         }
     }
 
-    return (XWPProgramFile_parent_WPProgramFile_wpRestoreData(somSelf,
-                                                               pszClass,
-                                                               ulKey,
-                                                               pValue,
-                                                               pcbValue));
+    return XWPProgramFile_parent_WPProgramFile_wpRestoreData(somSelf,
+                                                             pszClass,
+                                                             ulKey,
+                                                             pValue,
+                                                             pcbValue);
+}
+
+/*
+ *@@ wpQueryDefaultView:
+ *      this WPObject method returns the default view of an object,
+ *      that is, which view is opened if the program file is
+ *      double-clicked upon. This is also used to mark
+ *      the default view in the "Open" context submenu.
+ *
+ *      For WPProgramFile, the WPS always returns
+ *      OPEN_RUNNING (0x04), which doesn't make sense
+ *      for DLL's and drivers, which cannot be executed.
+ *      We therefore return the value for "first associated
+ *      program", which is 0x1000.
+ *      Oh yes, as usual, this value is undocumented. ;-)
+ */
+
+SOM_Scope ULONG  SOMLINK xpgf_wpQueryDefaultView(XWPProgramFile *somSelf)
+{
+    ULONG ulView;
+
+    ULONG ulProgType = _xwpQueryProgType(somSelf, NULL, NULL);
+
+    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultView");
+
+    #ifdef DEBUG_ASSOCS
+        _Pmpf(( "wpQueryDefaultView for %s", _wpQueryTitle(somSelf) ));
+    #endif
+
+    ulView = XWPProgramFile_parent_WPProgramFile_wpQueryDefaultView(somSelf);
+
+    if (    (ulProgType == PROG_DLL)
+         || (ulProgType == PROG_PDD)
+         || (ulProgType == PROG_VDD)
+         || (ulProgType == PROG_DEFAULT)
+       )
+        if (ulView == OPEN_RUNNING)
+            // we can neither run DLL's nor drivers, so we
+            // pass the first context menu item
+            ulView = 0x1000;        // this is the WPS internal code
+                                    // for the first association view
+
+    return ulView;
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      The WPObject implementation checks for whether the
+ *      object has instance help settings set (HELPLIBRARY,
+ *      HELPPANEL) and, if so, returns those settings or
+ *      calls the class method wpclsQueryDefaultHelp instead.
+ *      It is thus recommended to always override the class
+ *      method because otherwise instance help settings
+ *      break for objects of a class (fixed with 0.9.20).
+ *
+ *      We make an exception here because we need to select
+ *      the default help panel based on the program type
+ *      of this program file, and no sane person would
+ *      change the default help panel for a program file
+ *      on disk anyway.
+ *
+ *      We replace the default help panel for program files
+ *      because the WPS even displays the standard data
+ *      file help for them: "This data file is associated
+ *      with the system editor per default." Yeah, right.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ *@@changed V0.9.20 (2002-07-12) [umoeller]: added more help
+ */
+
+SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
+                                                PULONG pHelpPanelId,
+                                                PSZ HelpLibrary)
+{
+    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultHelp");
+
+    // if (cmnQuerySetting(sfExtAssocs))
+    {
+        strcpy(HelpLibrary, cmnQueryHelpLibrary());
+
+        // V0.9.20 (2002-07-12) [umoeller]
+        if (ctsIsCommandFile(somSelf))
+        {
+            // batch file:
+            CHAR szFilename[CCHMAXPATH];
+            if (    (_wpQueryFilename(somSelf, szFilename, FALSE))
+                 && (!stricmp(szFilename, "AUTOEXEC.BAT"))
+               )
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_AUTOEXEC;
+            else
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_BATCH;
+
+            return TRUE;
+        }
+
+        switch (_xwpQueryProgType(somSelf, NULL, NULL))
+        {
+            // DLLs, drivers
+            case PROG_DLL:                  // (PROGCATEGORY)6
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_DLL;
+            break;
+
+            case PROG_PDD:                  // (PROGCATEGORY)8
+            case PROG_VDD:                  // (PROGCATEGORY)9
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_DRIVER;
+            break;
+
+            /*
+            // OS/2 text mode
+            case PROG_FULLSCREEN:           // (PROGCATEGORY)1
+            case PROG_WINDOWABLEVIO:        // (PROGCATEGORY)2
+
+            // PM
+            case PROG_PM:                   // (PROGCATEGORY)3
+
+            // DOS
+            case PROG_VDM:                  // (PROGCATEGORY)4
+            // case PROG_REAL:                // (PROGCATEGORY)4
+            case PROG_WINDOWEDVDM:          // (PROGCATEGORY)7
+
+            // windoze
+            case PROG_WINDOW_REAL:          // (PROGCATEGORY)10
+            case PROG_WINDOW_PROT:          // (PROGCATEGORY)11
+            // case PROG_30_STD:               // (PROGCATEGORY)11
+            case PROG_WINDOW_AUTO:          // (PROGCATEGORY)12
+            case PROG_SEAMLESSVDM:          // (PROGCATEGORY)13
+            // case PROG_30_STDSEAMLESSVDM:    // (PROGCATEGORY)13
+            case PROG_SEAMLESSCOMMON:       // (PROGCATEGORY)14
+            // case PROG_30_STDSEAMLESSCOMMON:  // (PROGCATEGORY)14
+            case PROG_31_STDSEAMLESSVDM:    // (PROGCATEGORY)15
+            case PROG_31_STDSEAMLESSCOMMON:  // (PROGCATEGORY)16
+            case PROG_31_ENHSEAMLESSVDM:    // (PROGCATEGORY)17
+            case PROG_31_ENHSEAMLESSCOMMON:  // (PROGCATEGORY)18
+            case PROG_31_ENH:               // (PROGCATEGORY)19
+            case PROG_31_STD:               // (PROGCATEGORY)20
+
+            case PROG_DOS_GAME:             // (PROGCATEGORY)21
+            case PROG_WIN_GAME:             // (PROGCATEGORY)22
+            case PROG_DOS_MODE:             // (PROGCATEGORY)23
+            case PROG_RESERVED:             // (PROGCATEGORY)255
+            case PROG_DEFAULT:             // (PROGCATEGORY)0
+            case PROG_GROUP:               // (PROGCATEGORY)5
+            */
+
+            default:
+                *pHelpPanelId = ID_XSH_PROGRAMFILE_MAIN;
+            break;
+
+        }
+
+        return TRUE;
+    }
+
+    /* return XWPProgramFile_parent_WPProgramFile_wpQueryDefaultHelp(somSelf,
+                                                                     pHelpPanelId,
+                                                                     HelpLibrary);
+    */
+// #endif
 }
 
 /*
@@ -789,96 +955,6 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
 }
 
 /*
- *@@ wpSetProgIcon:
- *      this instance method exists for both WPProgram and
- *      WPProgramFile and is supposed to set the visual icon
- *      for this executable file to the appropriate custom or
- *      default icon.
- *
- *      This isn't entirely correct if the executable has its
- *      own non-default icon data (from OS2.INI or its .ICON
- *      EA) because in that case, wpRestoreState sets the icon
- *      directly, and this never gets called.
- *
- *      For WPProgramFile, this gets called from the
- *      wpSetAssociatedFileIcon override (which in turn gets
- *      called from WPDataFile::wpQueryIcon if a data file doesn't
- *      have a custom icon in its .ICON EA...).
- *      See icons.c for an introduction to all this mess.
- *
- *      In that situation, if turbo folders are enabled, we replace
- *      the icon loading entirely to avoid the problems with PE
- *      executables. In that case, we invoke cmnGetStandardIcon
- *      to return either an icon from ICONS.DLL (if enabled)
- *      or from PMWP.DLL.
- *
- *      Note that I have never seen the PFEA2LIST pointer to be
- *      set to anything but NULL, so we do not handle loading
- *      an icons from EAs here.
- *
- *      Note that this also gets called for instances of the
- *      WPCommandFile subclass (BAT and CMD extension), so we
- *      better not open the executable for those here.
- *
- *      One important difference: The WPS always returns a new
- *      icon for each executable, even if it's one of the standard
- *      icon resources from PMWP.DLL. We handle this differently
- *      and will return a global icon if it's from ICONS.DLL or
- *      PMWP.DLL to speed things up and reduce memory usage.
- *      However, this implies that we must reset the OBJSTYLE_NOTDEFAULTICON
- *      style flag in those cases or the icon will be nuked when
- *      the program file goes dormant.
- *
- *@@changed V0.9.16 (2001-12-08) [umoeller]: mostly rewritten for speed and global icons support
- *@@changed V0.9.18 (2002-03-19) [umoeller]: extracted ProgramFileIconHandler, reworked logic to no longer call the parent
- */
-
-SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
-                                           PFEA2LIST pfeal)
-{
-    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetProgIcon");
-
-    // turbo folders enabled?
-    if (icomRunReplacement())
-    {
-        BOOL        brc = FALSE;
-        HPOINTER    hptr = NULLHANDLE;
-        BOOL        fNotDefaultIcon = FALSE;
-
-        if (brc = ProgramFileIconHandler(somSelf,
-                                         &hptr,
-                                         NULL,
-                                         NULL,
-                                         &fNotDefaultIcon))
-        {
-            // some icon was found: set it...
-            _wpSetIcon(somSelf, hptr);
-            _wpModifyStyle(somSelf,
-                           OBJSTYLE_NOTDEFAULTICON,
-                           (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
-
-            #ifdef DEBUG_ICONREPLACEMENTS
-            {
-                ULONG ulStyle;
-                _Pmpf(("End of xpgf_wpSetProgIcon, new style: 0x%lX %s %s",
-                         ulStyle = _wpQueryStyle(somSelf),
-                         (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
-                         (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
-            }
-            #endif
-        }
-
-        return brc;
-    }
-
-    // only if features are disabled:
-    // call default parent method
-    return (XWPProgramFile_parent_WPProgramFile_wpSetProgIcon(somSelf,
-                                                               pfeal));
-}
-
-/*
  *@@ wpQueryIconData:
  *      this WPObject instance method can be called to find out the
  *      object's icon data.
@@ -1013,11 +1089,11 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryIconData(XWPProgramFile *somSelf,
             }
         }
 
-        return (cbRequired);
+        return cbRequired;
     }
 
-    return (XWPProgramFile_parent_WPProgramFile_wpQueryIconData(somSelf,
-                                                                pIconInfo));
+    return XWPProgramFile_parent_WPProgramFile_wpQueryIconData(somSelf,
+                                                               pIconInfo);
 }
 
 /*
@@ -1066,199 +1142,98 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetIconData(XWPProgramFile *somSelf,
     // all other cases, or icon replacements disabled:
     // call parent, which will end up in XWPFileSystem
     // (WPProgramFile doesn't override this)
-    return (XWPProgramFile_parent_WPProgramFile_wpSetIconData(somSelf,
-                                                              pIconInfo));
+    return XWPProgramFile_parent_WPProgramFile_wpSetIconData(somSelf,
+                                                             pIconInfo);
 }
 
 /*
- *@@ wpSetAssociationType:
- *      this WPProgram(File) method sets the types
- *      this object is associated with.
+ *@@ wpSetProgIcon:
+ *      this instance method exists for both WPProgram and
+ *      WPProgramFile and is supposed to set the visual icon
+ *      for this executable file to the appropriate custom or
+ *      default icon.
  *
- *      We must invalidate the caches if the WPS
- *      messes with this.
+ *      This isn't entirely correct if the executable has its
+ *      own non-default icon data (from OS2.INI or its .ICON
+ *      EA) because in that case, wpRestoreState sets the icon
+ *      directly, and this never gets called.
  *
- *@@added V0.9.9 (2001-04-02) [umoeller]
+ *      For WPProgramFile, this gets called from the
+ *      wpSetAssociatedFileIcon override (which in turn gets
+ *      called from WPDataFile::wpQueryIcon if a data file doesn't
+ *      have a custom icon in its .ICON EA...).
+ *      See icons.c for an introduction to all this mess.
+ *
+ *      In that situation, if turbo folders are enabled, we replace
+ *      the icon loading entirely to avoid the problems with PE
+ *      executables. In that case, we invoke cmnGetStandardIcon
+ *      to return either an icon from ICONS.DLL (if enabled)
+ *      or from PMWP.DLL.
+ *
+ *      Note that I have never seen the PFEA2LIST pointer to be
+ *      set to anything but NULL, so we do not handle loading
+ *      an icons from EAs here.
+ *
+ *      Note that this also gets called for instances of the
+ *      WPCommandFile subclass (BAT and CMD extension), so we
+ *      better not open the executable for those here.
+ *
+ *      One important difference: The WPS always returns a new
+ *      icon for each executable, even if it's one of the standard
+ *      icon resources from PMWP.DLL. We handle this differently
+ *      and will return a global icon if it's from ICONS.DLL or
+ *      PMWP.DLL to speed things up and reduce memory usage.
+ *      However, this implies that we must reset the OBJSTYLE_NOTDEFAULTICON
+ *      style flag in those cases or the icon will be nuked when
+ *      the program file goes dormant.
+ *
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: mostly rewritten for speed and global icons support
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: extracted ProgramFileIconHandler, reworked logic to no longer call the parent
  */
 
-SOM_Scope BOOL  SOMLINK xpgf_wpSetAssociationType(XWPProgramFile *somSelf,
-                                                  PSZ pszType)
-{
-    BOOL brc = FALSE;
-
-    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetAssociationType");
-
-    brc = XWPProgramFile_parent_WPProgramFile_wpSetAssociationType(somSelf,
-                                                                   pszType);
-
-    return brc;
-}
-
-/*
- *@@ wpQueryDefaultView:
- *      this WPObject method returns the default view of an object,
- *      that is, which view is opened if the program file is
- *      double-clicked upon. This is also used to mark
- *      the default view in the "Open" context submenu.
- *
- *      For WPProgramFile, the WPS always returns
- *      OPEN_RUNNING (0x04), which doesn't make sense
- *      for DLL's and drivers, which cannot be executed.
- *      We therefore return the value for "first associated
- *      program", which is 0x1000.
- *      Oh yes, as usual, this value is undocumented. ;-)
- */
-
-SOM_Scope ULONG  SOMLINK xpgf_wpQueryDefaultView(XWPProgramFile *somSelf)
-{
-    ULONG ulView;
-
-    ULONG ulProgType = _xwpQueryProgType(somSelf, NULL, NULL);
-
-    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultView");
-
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(( "wpQueryDefaultView for %s", _wpQueryTitle(somSelf) ));
-    #endif
-
-    ulView = XWPProgramFile_parent_WPProgramFile_wpQueryDefaultView(somSelf);
-
-    if (    (ulProgType == PROG_DLL)
-         || (ulProgType == PROG_PDD)
-         || (ulProgType == PROG_VDD)
-         || (ulProgType == PROG_DEFAULT)
-       )
-        if (ulView == OPEN_RUNNING)
-            // we can neither run DLL's nor drivers, so we
-            // pass the first context menu item
-            ulView = 0x1000;        // this is the WPS internal code
-                                    // for the first association view
-
-    return (ulView);
-}
-
-/*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      The WPObject implementation checks for whether the
- *      object has instance help settings set (HELPLIBRARY,
- *      HELPPANEL) and, if so, returns those settings or
- *      calls the class method wpclsQueryDefaultHelp instead.
- *      It is thus recommended to always override the class
- *      method because otherwise instance help settings
- *      break for objects of a class (fixed with 0.9.20).
- *
- *      We make an exception here because we need to select
- *      the default help panel based on the program type
- *      of this program file, and no sane person would
- *      change the default help panel for a program file
- *      on disk anyway.
- *
- *      We replace the default help panel for program files
- *      because the WPS even displays the standard data
- *      file help for them: "This data file is associated
- *      with the system editor per default." Yeah, right.
- *
- *@@added V0.9.16 (2002-01-13) [umoeller]
- *@@changed V0.9.20 (2002-07-12) [umoeller]: added more help
- */
-
-SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
-                                                PULONG pHelpPanelId,
-                                                PSZ HelpLibrary)
+SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
+                                           PFEA2LIST pfeal)
 {
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultHelp");
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetProgIcon");
 
-    // if (cmnQuerySetting(sfExtAssocs))
+    // turbo folders enabled?
+    if (icomRunReplacement())
     {
-        strcpy(HelpLibrary, cmnQueryHelpLibrary());
+        BOOL        brc = FALSE;
+        HPOINTER    hptr = NULLHANDLE;
+        BOOL        fNotDefaultIcon = FALSE;
 
-        // V0.9.20 (2002-07-12) [umoeller]
-        if (ctsIsCommandFile(somSelf))
+        if (brc = ProgramFileIconHandler(somSelf,
+                                         &hptr,
+                                         NULL,
+                                         NULL,
+                                         &fNotDefaultIcon))
         {
-            // batch file:
-            CHAR szFilename[CCHMAXPATH];
-            if (    (_wpQueryFilename(somSelf, szFilename, FALSE))
-                 && (!stricmp(szFilename, "AUTOEXEC.BAT"))
-               )
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_AUTOEXEC;
-            else
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_BATCH;
+            // some icon was found: set it...
+            _wpSetIcon(somSelf, hptr);
+            _wpModifyStyle(somSelf,
+                           OBJSTYLE_NOTDEFAULTICON,
+                           (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
 
-            return TRUE;
+            #ifdef DEBUG_ICONREPLACEMENTS
+            {
+                ULONG ulStyle;
+                _Pmpf(("End of xpgf_wpSetProgIcon, new style: 0x%lX %s %s",
+                         ulStyle = _wpQueryStyle(somSelf),
+                         (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
+                         (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
+            }
+            #endif
         }
 
-        switch (_xwpQueryProgType(somSelf, NULL, NULL))
-        {
-            // DLLs, drivers
-            case PROG_DLL:                  // (PROGCATEGORY)6
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_DLL;
-            break;
-
-            case PROG_PDD:                  // (PROGCATEGORY)8
-            case PROG_VDD:                  // (PROGCATEGORY)9
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_DRIVER;
-            break;
-
-            /*
-            // OS/2 text mode
-            case PROG_FULLSCREEN:           // (PROGCATEGORY)1
-            case PROG_WINDOWABLEVIO:        // (PROGCATEGORY)2
-
-            // PM
-            case PROG_PM:                   // (PROGCATEGORY)3
-
-            // DOS
-            case PROG_VDM:                  // (PROGCATEGORY)4
-            // case PROG_REAL:                // (PROGCATEGORY)4
-            case PROG_WINDOWEDVDM:          // (PROGCATEGORY)7
-
-            // windoze
-            case PROG_WINDOW_REAL:          // (PROGCATEGORY)10
-            case PROG_WINDOW_PROT:          // (PROGCATEGORY)11
-            // case PROG_30_STD:               // (PROGCATEGORY)11
-            case PROG_WINDOW_AUTO:          // (PROGCATEGORY)12
-            case PROG_SEAMLESSVDM:          // (PROGCATEGORY)13
-            // case PROG_30_STDSEAMLESSVDM:    // (PROGCATEGORY)13
-            case PROG_SEAMLESSCOMMON:       // (PROGCATEGORY)14
-            // case PROG_30_STDSEAMLESSCOMMON:  // (PROGCATEGORY)14
-            case PROG_31_STDSEAMLESSVDM:    // (PROGCATEGORY)15
-            case PROG_31_STDSEAMLESSCOMMON:  // (PROGCATEGORY)16
-            case PROG_31_ENHSEAMLESSVDM:    // (PROGCATEGORY)17
-            case PROG_31_ENHSEAMLESSCOMMON:  // (PROGCATEGORY)18
-            case PROG_31_ENH:               // (PROGCATEGORY)19
-            case PROG_31_STD:               // (PROGCATEGORY)20
-
-            case PROG_DOS_GAME:             // (PROGCATEGORY)21
-            case PROG_WIN_GAME:             // (PROGCATEGORY)22
-            case PROG_DOS_MODE:             // (PROGCATEGORY)23
-            case PROG_RESERVED:             // (PROGCATEGORY)255
-            case PROG_DEFAULT:             // (PROGCATEGORY)0
-            case PROG_GROUP:               // (PROGCATEGORY)5
-            */
-
-            default:
-                *pHelpPanelId = ID_XSH_PROGRAMFILE_MAIN;
-            break;
-
-        }
-
-        return TRUE;
+        return brc;
     }
 
-    /* return (XWPProgramFile_parent_WPProgramFile_wpQueryDefaultHelp(somSelf,
-                                                                   pHelpPanelId,
-                                                                   HelpLibrary));
-    */
-// #endif
+    // only if features are disabled:
+    // call default parent method
+    return XWPProgramFile_parent_WPProgramFile_wpSetProgIcon(somSelf,
+                                                             pfeal);
 }
 
 /*
@@ -1331,8 +1306,108 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgDetails(XWPProgramFile *somSelf,
     XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetProgDetails");
 
-    return (XWPProgramFile_parent_WPProgramFile_wpSetProgDetails(somSelf,
-                                                                 pProgDetails));
+    return XWPProgramFile_parent_WPProgramFile_wpSetProgDetails(somSelf,
+                                                                pProgDetails);
+}
+
+/*
+ *@@ wpFilterPopupMenu:
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove the "Program" context menu entry for
+ *      DLL's and drivers.
+ */
+
+SOM_Scope ULONG  SOMLINK xpgf_wpFilterPopupMenu(XWPProgramFile *somSelf,
+                                                ULONG ulFlags,
+                                                HWND hwndCnr,
+                                                BOOL fMultiSelect)
+{
+    ULONG ulFilter;
+    ULONG ulProgType = _xwpQueryProgType(somSelf, NULL, NULL);
+
+    /* XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf); */
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpFilterPopupMenu");
+
+    ulFilter = XWPProgramFile_parent_WPProgramFile_wpFilterPopupMenu(somSelf,
+                                                                      ulFlags,
+                                                                      hwndCnr,
+                                                                      fMultiSelect);
+    if (    (ulProgType == PROG_DLL)
+         || (ulProgType == PROG_PDD)
+         || (ulProgType == PROG_VDD)
+         || (ulProgType == PROG_DEFAULT)
+       )
+        ulFilter &= ~ CTXT_PROGRAM;
+
+    return ulFilter;
+}
+
+/*
+ *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xpgf_wpOpen(XWPProgramFile *somSelf,
+                                    HWND hwndCnr, ULONG ulView,
+                                    ULONG param)
+{
+    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpOpen");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        if (ulView == OPEN_RUNNING)
+        {
+            HWND hwnd = NULLHANDLE;
+            APIRET arc;
+            CHAR szFailing[CCHMAXPATH];
+
+            if (arc = progOpenProgram(somSelf,
+                                      NULL,      // no assoc data file
+                                      ulView,
+                                      &hwnd,
+                                      sizeof(szFailing),
+                                      szFailing))
+            {
+                // error opening program: ask user if he wants
+                // to change the settings
+                if (cmnProgramErrorMsgBox(NULLHANDLE,
+                                          somSelf,
+                                          szFailing,
+                                          arc)
+                            == MBID_YES)
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                            (MPARAM)somSelf,
+                                            (MPARAM)OPEN_SETTINGS);
+            }
+
+            return hwnd;
+        }
+    } // end if (cmnQuerySetting(sfExtAssocs))
+#endif
+
+    return XWPProgramFile_parent_WPProgramFile_wpOpen(somSelf,
+                                                      hwndCnr,
+                                                      ulView,
+                                                      param);
 }
 
 /*
@@ -1371,11 +1446,11 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XWPProgramFile *somSel
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
-        return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
+        return _xwpAddAssociationsPage(somSelf, hwndNotebook);
 #endif
 
-    return (XWPProgramFile_parent_WPProgramFile_wpAddProgramAssociationPage(somSelf,
-                                                                             hwndNotebook));
+    return XWPProgramFile_parent_WPProgramFile_wpAddProgramAssociationPage(somSelf,
+                                                                           hwndNotebook);
 }
 
 /*
@@ -1407,8 +1482,8 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramPage(XWPProgramFile *somSelf,
             return SETTINGS_PAGE_REMOVED;
     }
 
-    return (XWPProgramFile_parent_WPProgramFile_wpAddProgramPage(somSelf,
-                                                                  hwndNotebook));
+    return XWPProgramFile_parent_WPProgramFile_wpAddProgramPage(somSelf,
+                                                                hwndNotebook);
 }
 
 /*
@@ -1459,43 +1534,8 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
             return SETTINGS_PAGE_REMOVED;
     }
 
-    return (XWPProgramFile_parent_WPProgramFile_wpAddProgramSessionPage(somSelf,
-                                                                         hwndNotebook));
-}
-
-/*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
- *
- *      We remove the "Program" context menu entry for
- *      DLL's and drivers.
- */
-
-SOM_Scope ULONG  SOMLINK xpgf_wpFilterPopupMenu(XWPProgramFile *somSelf,
-                                                ULONG ulFlags,
-                                                HWND hwndCnr,
-                                                BOOL fMultiSelect)
-{
-    ULONG ulFilter;
-    ULONG ulProgType = _xwpQueryProgType(somSelf, NULL, NULL);
-
-    /* XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf); */
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpFilterPopupMenu");
-
-    ulFilter = XWPProgramFile_parent_WPProgramFile_wpFilterPopupMenu(somSelf,
-                                                                      ulFlags,
-                                                                      hwndCnr,
-                                                                      fMultiSelect);
-    if (    (ulProgType == PROG_DLL)
-         || (ulProgType == PROG_PDD)
-         || (ulProgType == PROG_VDD)
-         || (ulProgType == PROG_DEFAULT)
-       )
-        ulFilter &= ~ CTXT_PROGRAM;
-
-    return (ulFilter);
+    return XWPProgramFile_parent_WPProgramFile_wpAddProgramSessionPage(somSelf,
+                                                                       hwndNotebook);
 }
 
 /* ******************************************************************
@@ -1552,10 +1592,10 @@ SOM_Scope PSZ  SOMLINK xpgfM_wpclsQueryInstanceFilter(M_XWPProgramFile *somSelf)
     {
 #ifndef __NOICONREPLACEMENTS__
         if (cmnQuerySetting(sfIconReplacements))
-            return ((PSZ)G_pcszInstanceFilter);
+            return (PSZ)G_pcszInstanceFilter;
 #endif
 
-        return ("*.COM,*.EXE");
+        return "*.COM,*.EXE";
         // the below code doesn't work: there is no wpclsQueryInstanceFilter
         // method in WPProgramFile. Apparently the WPS uses some internal hack
         // to explicitly make COM and EXE files program files, but this won't
@@ -1563,6 +1603,6 @@ SOM_Scope PSZ  SOMLINK xpgfM_wpclsQueryInstanceFilter(M_XWPProgramFile *somSelf)
         // V0.9.16 (2001-11-25) [umoeller]
     }
 
-    return (M_XWPProgramFile_parent_M_WPProgramFile_wpclsQueryInstanceFilter(somSelf));
+    return M_XWPProgramFile_parent_M_WPProgramFile_wpclsQueryInstanceFilter(somSelf);
 }
 

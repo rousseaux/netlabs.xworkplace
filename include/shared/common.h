@@ -163,6 +163,11 @@
     DECLARE_CMN_STRING(INIKEY_LAST10BATCHSOURCE, "BatchRenameSource");
     DECLARE_CMN_STRING(INIKEY_LAST10BATCHTARGET, "BatchRenameTarget");
 
+    // last ten filenames in "Paste" dialog V0.9.20 (2002-08-08) [umoeller]
+    DECLARE_CMN_STRING(INIKEY_LAST10PASTETITLES, "PasteTitles");
+    DECLARE_CMN_STRING(INIKEY_LASTPASTEFORMAT, "PasteFormat");
+    DECLARE_CMN_STRING(INIKEY_LASTPASTECLASS, "PasteClass");
+
     // supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
     DECLARE_CMN_STRING(INIKEY_TRASHCANDRIVES, "TrashCan::Drives");
 
