@@ -259,6 +259,7 @@ PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in
         pMapping->Tree.ulKey // pszSourceRealName
             = (ULONG)strdup(pcszSourceRealName);
         if (!treeInsert(&G_MappingsTreeRoot,
+                        NULL,
                         (TREE*)pMapping,
                         fnCompareStrings))
         {
@@ -458,7 +459,7 @@ VOID InitMappings(XWPTrashCan *somSelf,
                 BYTE        bIndex = 0;
                 CHAR        cDrive = 0;
 
-                treeInit(&G_MappingsTreeRoot);
+                treeInit(&G_MappingsTreeRoot, NULL);
 
                 // zero the "dirty" array
                 memset(&G_abMappingDrivesDirty, 0, sizeof(G_abMappingDrivesDirty));
@@ -604,6 +605,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
         if (LOCK_OBJECT(Lock, pTrashCan))
         {
             treeDelete(&G_MappingsTreeRoot,
+                       NULL,
                        (TREE*)pMapping);
             if (pMapping->Tree.ulKey) // pszSourceRealName)
             {
@@ -2257,20 +2259,19 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
             // whether default processing should occur
 
             // manually resolve parent method
-            somTD_XWPTrashCan_xwpProcessObjectCommand pxwpProcessObjectCommand
+            somTD_XWPTrashCan_xwpProcessObjectCommand pxwpProcessObjectCommand;
+
+            if (pxwpProcessObjectCommand
                 = (somTD_XWPTrashCan_xwpProcessObjectCommand)wpshResolveFor(
                                                        somSelf,
                                                        _somGetParent(_XWPTrashCan),
-                                                       "xwpProcessObjectCommand");
-            if (pxwpProcessObjectCommand)
-            {
+                                                       "xwpProcessObjectCommand"))
                 // let parent method return TRUE or FALSE
                 brc = pxwpProcessObjectCommand(somSelf,
                                                usCommand,
                                                hwndCnr,
                                                pFirstObject,
                                                ulSelectionFlags);
-            }
         }
     }
 

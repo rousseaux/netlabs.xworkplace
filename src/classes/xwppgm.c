@@ -146,15 +146,9 @@ SOM_Scope BOOL  SOMLINK xpgm_xwpQuerySetup2(XWPProgram *somSelf,
     if (progQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
-
-        if (pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(
-                                                    somSelf,
-                                                    _somGetParent(_XWPProgram),
-                                                    "xwpQuerySetup2"))
-        {
-            return (pfn_xwpQuerySetup2(somSelf, pstrSetup));
-        }
+        return (wpshParentQuerySetup2(somSelf,
+                                      _somGetParent(_XWPProgram),
+                                      pstrSetup));
     }
 
     return (FALSE);

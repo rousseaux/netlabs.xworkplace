@@ -319,4 +319,16 @@ EXPORTS
     M_XWPProgramClassData
     M_XWPProgramNewClass
 
+    XWPNetworkCClassData
+    XWPNetworkClassData
+    XWPNetworkNewClass
+    M_XWPNetworkCClassData
+    M_XWPNetworkClassData
+    M_XWPNetworkNewClass
+    XWPNetServerCClassData
+    XWPNetServerClassData
+    XWPNetServerNewClass
+    M_XWPNetServerCClassData
+    M_XWPNetServerClassData
+    M_XWPNetServerNewClass
 

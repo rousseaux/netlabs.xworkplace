@@ -506,7 +506,7 @@ void cmnLoadString(HAB habDesktop,
 
 HMTX        G_hmtxStringsCache = NULLHANDLE;
 TREE        *G_StringsCache;
-ULONG       G_cStringsInCache = 0;
+LONG        G_cStringsInCache = 0;
 
 /*
  *@@ LockStrings:
@@ -524,8 +524,8 @@ BOOL LockStrings(VOID)
                                  &G_hmtxStringsCache,
                                  0,
                                  TRUE);
-        treeInit(&G_StringsCache);
-        G_cStringsInCache = 0;
+        treeInit(&G_StringsCache,
+                 &G_cStringsInCache);
     }
     else
         brc = !DosRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
@@ -608,6 +608,7 @@ typedef struct _STRINGTREENODE
  *      message specifying the ID that failed.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad string count which was never set
  */
 
 PSZ cmnGetString(ULONG ulStringID)
@@ -646,6 +647,7 @@ PSZ cmnGetString(ULONG ulStringID)
                                   ulStringID,
                                   &pNode->pszLoaded);
                     treeInsert(&G_StringsCache,
+                               &G_cStringsInCache,      // fixed V0.9.16 (2001-10-19) [umoeller]
                                (TREE*)pNode,
                                treeCompareKeys);
                     pszReturn = pNode->pszLoaded;
@@ -685,7 +687,7 @@ VOID UnloadAllStrings(VOID)
             // array of all string node pointers;
             // we don't want to rebalance the tree
             // for each node
-            ULONG           cNodes = G_cStringsInCache;
+            LONG            cNodes = G_cStringsInCache;
             PSTRINGTREENODE *papNodes
                 = (PSTRINGTREENODE*)treeBuildArray(G_StringsCache,
                                                    &cNodes);
@@ -714,8 +716,8 @@ VOID UnloadAllStrings(VOID)
             }
 
             // reset the tree to "empty"
-            treeInit(&G_StringsCache);
-            G_cStringsInCache = 0;
+            treeInit(&G_StringsCache,
+                     &G_cStringsInCache);
         }
     }
     CATCH(excpt1) {} END_CATCH();
@@ -4075,9 +4077,10 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                         if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
                             ulFlags |= APP_RUN_SEPARATE;
 
-                        happ = appStartApp(NULLHANDLE,        // no notify
-                                           &pd,
-                                           ulFlags); //V0.9.14
+                        arc = appStartApp(NULLHANDLE,        // no notify
+                                          &pd,
+                                          ulFlags, //V0.9.14
+                                          &happ);
                     }
                 }
             }
@@ -4407,7 +4410,7 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
 
 ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                         CHAR cDrive,        // in: drive letter
-                        PSZ pszTitle,       // in: msgbox title
+                        PCSZ pcszTitle,       // in: msgbox title
                         APIRET arc,         // in: DOS error code to get msg for
                         ULONG ulFlags,      // in: as in cmnMessageBox flStyle
                         BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
@@ -4462,7 +4465,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
     }
 
     mbrc = cmnMessageBox(HWND_DESKTOP,
-                         pszTitle,
+                         pcszTitle,
                          strError.psz,
                          ulFlags);
     xstrClear(&strError);
@@ -4610,22 +4613,41 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
     // default: copy pszFile
     strcpy(fd.szFullFile, pszFile);
 
-    if ( (hini) && (flFlags & WINH_FOD_INILOADDIR) )
+    _Pmpf((__FUNCTION__ ": pszFile = %s", pszFile));
+
+    if (    (hini)
+         && (flFlags & WINH_FOD_INILOADDIR)
+         // overwrite with initial directory for FOD from OS2.INI
+         && (PrfQueryProfileString(hini,
+                                   (PSZ)pcszApplication,
+                                   (PSZ)pcszKey,
+                                   "",      // default string V0.9.9 (2001-02-10) [umoeller]
+                                   fd.szFullFile,
+                                   sizeof(fd.szFullFile)-10)
+                     >= 2)
+       )
     {
-        // overwrite with initial directory for FOD from OS2.INI
-        if (PrfQueryProfileString(hini,
-                                  (PSZ)pcszApplication,
-                                  (PSZ)pcszKey,
-                                  "",      // default string V0.9.9 (2001-02-10) [umoeller]
-                                  fd.szFullFile,
-                                  sizeof(fd.szFullFile)-10)
-                    >= 2)
-        {
-            // found: append "\*"
-            strcat(fd.szFullFile, "\\");
-            strcat(fd.szFullFile, pszFile);
-        }
+        // found: append the original file mask
+        // V0.9.16 (2001-10-19) [umoeller]
+        PCSZ p;
+        PCSZ pcszMask = "*";
+
+        if (!(p = strrchr(pszFile, '\\')))
+            p = pszFile;
+        else
+            p++;
+
+        if (    (strchr(p, '*'))
+             || (strchr(p, '?'))
+           )
+            // caller has specified file mask:
+            pcszMask = p;       // exclude backslash
+
+        strcat(fd.szFullFile, "\\");
+        strcat(fd.szFullFile, pcszMask);
     }
+
+    _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
 
     if (    fdlgFileDlg(hwndOwner, // owner
                         NULL,

@@ -585,11 +585,17 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
 
         if (pAssocObject)
         {
-            hwnd = (HWND)progOpenProgram(pAssocObject,
+            APIRET arc = progOpenProgram(pAssocObject,
                                          somSelf,
-                                         ulView2);
+                                         ulView2,
+                                         &hwnd);
 
-            // _wpUnlockObject(pAssocObject);
+            if (arc)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "progOpenProgram returned %d for %s",
+                       arc,
+                       _wpQueryTitle(pAssocObject));
+                    // _wpUnlockObject(pAssocObject);
                     // do not unlock the assoc object...
                     // this is still needed in the use list!!!
         }

@@ -104,11 +104,11 @@
 
 #include "shared\center.h"              // public XCenter interfaces
 
-#include "filesys\object.h"             // XFldObject implementation
-
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\icons.h"              // icons handling
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -159,15 +159,11 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpNukePhysical(XFldObject *somSelf)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpNukePhysical");
 
-    _wpDestroyObject = (xfTD_wpDestroyObject)wpshResolveFor(
-                                            somSelf,
-                                            NULL,
-                                            "wpDestroyObject");
-    if (_wpDestroyObject)
-    {
+    if (_wpDestroyObject = (xfTD_wpDestroyObject)wpshResolveFor(
+                                             somSelf,
+                                             NULL,
+                                             "wpDestroyObject"))
         brc = _wpDestroyObject(somSelf);
-        _Pmpf((__FUNCTION__ ": _wpDestroyObject returned %d", brc));
-    }
 
     return (brc);
 }
@@ -735,7 +731,9 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
  *      --  This method only resolves the method pointer for
  *          the "xwpQuerySetup2" method, which must to the actual
  *          setup string composing. See XFldObject::xwpQuerySetup2
- *          for details. Never override this method for subclasses;
+ *          for details.
+ *
+ *      --  Never override this method for subclasses;
  *          override xwpQuerySetup2 instead.
  *
  *@@added V0.9.1 (2000-01-16) [umoeller]
@@ -832,8 +830,9 @@ SOM_Scope void  SOMLINK xfobj_xwpFreeSetupBuffer(XFldObject *somSelf,
  *          has been replaced with XFldObject and therefore have no
  *          idea that XFldObject is actually a parent class of all
  *          other WPS classes. You must manually resolve the SOM
- *          method pointer for the parent class of your class using
- *          wpshParentResolve. See the code sample below.
+ *          method pointer for the parent class of your class;
+ *          wpshParentQuerySetup2 has been provided to make this
+ *          easier. See the code sample below.
  *
  *      2.  You must call the parent method _after_ your implementation
  *          to make sure XFldObject gets called last, because the OBJECTID
@@ -857,34 +856,14 @@ SOM_Scope void  SOMLINK xfobj_xwpFreeSetupBuffer(XFldObject *somSelf,
  *          using its object mutex. So sending messages and other
  *          stuff is a no-no.
  *
- *      Use the following code to call the parent method:
+ *      Use the following code to call the parent method (V0.9.16):
  *
- +          PSZ pszMySetupStringSoFar = ...;
- +                  // setup strings for your class
- +          ULONG cbMySetupStringSoFar = strlen(pszMySetupStringSoFar);
- +                  // length of that setup string or 0 if none
+ +          xstrcat(pstrSetup, "MYSETUPSTRING=VALUE;", 0);
+ +              // and so on... settings for your class
  +
- +          // manually resolve method for parent class
- +          somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2
- +              = wpshParentResolve(somSelf,    // object
- +                                     _YourClass, // class object; replace this with
- +                                          // the class you're coding this method for
- +                                     "xwpQuerySetup2"); // method name
- +          if (pfn_xwpQuerySetup2)
- +              // now call parent method
- +              if ( (pszSetupString) && (cbSetupString) )
- +                  // string buffer already specified:
- +                  // tell parent class to append to that string
- +                  cbMySetupStringSoFar += pfn_xwpQuerySetup2(somSelf,
- +                                            pszSetupString + cbMySetupStringSoFar,
- +                                              // append to existing string
- +                                            cbSetupString - cbMySetupStringSoFar);
- +                                              // remaining space in buffer
- +              else
- +                  // string buffer not yet specified: return length only
- +                  ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
- +
- +          return (cbMySetupStringSoFar);
+ +          return (wpshParentQuerySetup2(somSelf,
+ +                                        _somGetParent(_XWPMyClass),
+ +                                        pstrSetup));
  *
  *      If all methods obey these conventions, this results in a complete
  *      setup string for any object of any class, with the subclass's strings
@@ -1753,8 +1732,8 @@ SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
         pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
                     // no new string needed, was defined for trash can already
         pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE1;
-        pcnbp->pfncbInitPage    = objIcon1InitPage;
-        pcnbp->pfncbItemChanged = objIcon1ItemChanged;
+        pcnbp->pfncbInitPage    = icoIcon1InitPage;
+        pcnbp->pfncbItemChanged = icoIcon1ItemChanged;
 
         return (ntbInsertPage(pcnbp));
     }

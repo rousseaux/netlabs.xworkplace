@@ -255,7 +255,7 @@ ULONG cfgQuerySwapperSize(VOID)
 
     if (G_szSwapperFilename[0])
     {
-        ulrc = doshQueryPathSize(G_szSwapperFilename);
+        doshQueryPathSize(G_szSwapperFilename, &ulrc);
     }
 
     return (ulrc);
@@ -369,8 +369,9 @@ MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                         && (fd.lReturn == DID_OK)
                        )
                     {
-                        WinSetDlgItemText(hwndDlg, ID_XLDI_CLASSMODULE,
-                                    fd.szFullFile);
+                        WinSetDlgItemText(hwndDlg,
+                                          ID_XLDI_CLASSMODULE,
+                                          fd.szFullFile);
                     }
                 break; }
 
@@ -2208,7 +2209,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // round up to the next multiple of 2 MB
                     if (strlen(G_szSwapperFilename) != 0)
                     {
-                        ULONG ulSize = doshQueryPathSize(G_szSwapperFilename)/1024/1024;
+                        ULONG ulSize;
+                        doshQueryPathSize(G_szSwapperFilename, &ulSize);
+                        ulSize /= 1024*1024;
                         winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MINSWAPSIZE,
                                                2, 100,
                                                ( (((ulSize*3)/2)+1) / 2 ) * 2
@@ -2484,13 +2487,15 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
         case SP_MEMORY:
             if (G_szSwapperFilename[0])
             {
-                ULONG ulSize = doshQueryPathSize(G_szSwapperFilename)/1024/1024;
-                if (ulSize)
+                ULONG ulSize;
+                if (!doshQueryPathSize(G_szSwapperFilename, &ulSize))
                 {
+                    ulSize /= 1024*1024;
                     sprintf(szTemp, "%d", ulSize);
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_CURRENTSWAPSIZE,
                         (szTemp));
-                } else
+                }
+                else
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_CURRENTSWAPSIZE, "???");
             }
         break;

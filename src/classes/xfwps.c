@@ -105,6 +105,7 @@
  *@@ xwpAddWPSMenuPages:
  *
  *@@added V0.9.16 (2001-10-08) [umoeller]
+ *@@changed V0.9.16 (2001-10-23) [umoeller]: fixed page subtitles
  */
 
 SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
@@ -129,7 +130,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = cmnGetString(ID_XSSI_2REMOVEITEMS);  // psz2RemoveItems
     pcnbp->ulDlgID = ID_XSD_SET2REMOVEMENUS;
-    pcnbp->usFirstControlID = ID_XSDI_FIND;
+    // pcnbp->usFirstControlID = ID_XSDI_FIND;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_REMOVEMENUS;
     pcnbp->ulPageID = SP_2REMOVEITEMS;
@@ -147,7 +148,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = cmnGetString(ID_XSSI_26CONFIGITEMS);  // psz26ConfigFolderMenus
     pcnbp->ulDlgID = ID_XSD_SET26CONFIGMENUS;
-    pcnbp->usFirstControlID = ID_XSDI_CASCADE;
+    // pcnbp->usFirstControlID = ID_XSDI_CASCADE;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_CFGM;
     pcnbp->ulPageID = SP_26CONFIGITEMS;
@@ -163,10 +164,12 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_25ADDITEMS);  // psz25AddItems
+    pcnbp->pszName
+    = pcnbp->pszMinorName              // V0.9.16 (2001-10-23) [umoeller]
+    = cmnGetString(ID_XSSI_25ADDITEMS);  // psz25AddItems
     // pcnbp->ulDlgID = ID_XSD_SET25ADDMENUS;
     pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    pcnbp->usFirstControlID = ID_XSDI_FILEATTRIBS;
+    // pcnbp->usFirstControlID = ID_XSDI_FILEATTRIBS;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_ADDMENUS;
     pcnbp->ulPageID = SP_25ADDITEMS;
@@ -285,7 +288,9 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MINOR;
         pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
+        // pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
+            // this is page 2, don't give it a title (context menu)
+            // V0.9.16 (2001-10-23) [umoeller]
         pcnbp->ulDlgID = ID_XSD_SET28STATUSBARS2;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SB2;
         pcnbp->ulPageID = SP_28STATUSBAR2;

@@ -54,19 +54,9 @@
 #define INCL_DOSMISC
 #define INCL_DOSERRORS
 
-#define INCL_WINWINDOWMGR
-#define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
-#define INCL_WINDIALOGS
-#define INCL_WININPUT
-#define INCL_WINTRACKRECT
-#define INCL_WINPOINTERS
-#define INCL_WINSYS
-#define INCL_WINTIMER
 #define INCL_WINMENUS
 
-#define INCL_GPIPRIMITIVES
-#define INCL_GPILOGCOLORTABLE
 #include <os2.h>
 
 // C library headers
@@ -88,7 +78,6 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
-#include "xfobj.ih"                     // XFldObject
 
 // XWorkplace implementation headers
 #include "bldlevel.h"                   // XWorkplace build level definitions
@@ -990,6 +979,7 @@ XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
  *          specified subwidget index is too large.
  *
  *@@added V0.9.14 (2001-08-01) [umoeller]
+ *@@changed V0.9.16 (2001-10-18) [umoeller]: mostly rewritten
  */
 
 XCRET ctrpFindWidgetSetting(XCenter *somSelf,

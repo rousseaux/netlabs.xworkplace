@@ -182,7 +182,7 @@ const char **G_appszXFolderKeys[]
           };
 
 /*
- *@@ WaitForApp:
+ *@@ appWaitForApp:
  *      waits for the specified application to terminate.
  *
  *      Returns:
@@ -520,21 +520,21 @@ VOID ShowPanicDlg(VOID)
                     pd.progt.progc = PROG_PM;
                     pd.progt.fbVisible = SHE_VISIBLE;
                     pd.pszExecutable = szXfix;
-                    happXFix = appStartApp(G_KernelGlobals.hwndThread1Object,
-                                           &pd,
-                                           0); // V0.9.14
-
-                    if (WaitForApp(szXfix,
-                                   happXFix)
-                        == 1)
-                    {
-                        // handle section changed:
-                        cmnMessageBoxMsg(NULLHANDLE,
-                                         121,       // xwp
-                                         205,       // restart wps now.
-                                         MB_OK);
-                        DosExit(EXIT_PROCESS, 0);
-                    }
+                    if (!appStartApp(G_KernelGlobals.hwndThread1Object,
+                                     &pd,
+                                     0, // V0.9.14
+                                     &happXFix))
+                        if (WaitForApp(szXfix,
+                                       happXFix)
+                            == 1)
+                        {
+                            // handle section changed:
+                            cmnMessageBoxMsg(NULLHANDLE,
+                                             121,       // xwp
+                                             205,       // restart wps now.
+                                             MB_OK);
+                            DosExit(EXIT_PROCESS, 0);
+                        }
 
                     fRepeat = TRUE;
                 break; }
@@ -547,11 +547,12 @@ VOID ShowPanicDlg(VOID)
                     pd.progt.progc = PROG_WINDOWABLEVIO;
                     pd.progt.fbVisible = SHE_VISIBLE;
                     pd.pszExecutable = "*";        // use OS2_SHELL
-                    happCmd = appStartApp(G_KernelGlobals.hwndThread1Object,
-                                          &pd,
-                                          0); // V0.9.14
-                    WaitForApp(getenv("OS2_SHELL"),
-                               happCmd);
+                    if (!appStartApp(G_KernelGlobals.hwndThread1Object,
+                                     &pd,
+                                     0, // V0.9.14
+                                     &happCmd))
+                        WaitForApp(getenv("OS2_SHELL"),
+                                   happCmd);
                 break; }
 
                 case ID_XFDI_PANIC_SHUTDOWN:        // shutdown
@@ -682,7 +683,7 @@ VOID ShowStartupDlgs(VOID)
  *@@changed V0.9.10 (2001-04-08) [umoeller]: added exception handling
  */
 
-VOID ReplaceWheelWatcher(FILE *DumpFile)
+VOID ReplaceWheelWatcher(PXFILE pLogFile)
 {
     APIRET      arc = NO_ERROR;
 
@@ -690,12 +691,12 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
     {
         HQUEUE      hqWheelWatcher = NULLHANDLE;
 
-        if (DumpFile)
+        if (pLogFile)
         {
             PQPROCSTAT16 pInfo;
 
-            fprintf(DumpFile,
-                    "\nEntering " __FUNCTION__":\n");
+            doshWriteLogEntry(pLogFile,
+                              "Entering " __FUNCTION__ ":");
 
             if (!(arc = prc16GetInfo(&pInfo)))
             {
@@ -708,8 +709,8 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
                     ULONG       ul;
                     PQTHREAD16  pThread;
 
-                    fprintf(DumpFile,
-                            "  Running WPS threads at this point:\n");
+                    doshWriteLogEntry(pLogFile,
+                                       "  Running WPS threads at this point:");
 
                     for (ul = 0, pThread = (PQTHREAD16)PTR(pProcess->ulThreadList, 0);
                          ul < pProcess->usThreads;
@@ -718,10 +719,10 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
                         // CHAR    sz[100];
                         HENUM   henum;
                         HWND    hwndThis;
-                        fprintf(DumpFile,
-                                "    Thread %02d has priority 0x%04lX\n",
-                                pThread->usTID,
-                                pThread->ulPriority);
+                        doshWriteLogEntry(pLogFile,
+                                          "    Thread %02d has priority 0x%04lX",
+                                          pThread->usTID,
+                                          pThread->ulPriority);
 
                         henum = WinBeginEnumWindows(HWND_OBJECT);
                         while (hwndThis = WinGetNextWindow(henum))
@@ -735,10 +736,10 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
                             {
                                 CHAR szClass[100];
                                 WinQueryClassName(hwndThis, sizeof(szClass), szClass);
-                                fprintf(DumpFile,
-                                        "        object wnd 0x%lX (%s)\n",
-                                        hwndThis,
-                                        szClass);
+                                doshWriteLogEntry(pLogFile,
+                                                  "        object wnd 0x%lX (%s)",
+                                                  hwndThis,
+                                                  szClass);
                             }
                         }
                         WinEndEnumWindows(henum);
@@ -749,8 +750,9 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
             }
             else
             {
-                fprintf(DumpFile,
-                        "  !!! Cannot get WPS thread info, prc16GetInfo returned %d.\n", arc);
+                doshWriteLogEntry(pLogFile,
+                                  "  !!! Cannot get WPS thread info, prc16GetInfo returned %d",
+                                  arc);
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "prc16GetInfo returned %d.", arc);
             }
@@ -765,11 +767,10 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
         arc = DosCreateQueue(&hqWheelWatcher,
                              QUE_FIFO,
                              "\\QUEUES\\FILESYS\\NOTIFY");
-        if (DumpFile)
-            fprintf(DumpFile,
-                    "  Created HQUEUE 0x%lX (DosCreateQueue returned %d)\n",
-                    hqWheelWatcher,
-                    arc);
+        doshWriteLogEntry(pLogFile,
+                          "  Created HQUEUE 0x%lX (DosCreateQueue returned %d)",
+                          hqWheelWatcher,
+                          arc);
 
         if (arc == NO_ERROR)
         {
@@ -783,10 +784,9 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
                       THRF_WAIT,
                       0);           // no data here
 
-            if (DumpFile)
-                fprintf(DumpFile,
-                        "  Started XWP Sentinel thread, TID: %d\n",
-                        G_tiSentinel.tid);
+            doshWriteLogEntry(pLogFile,
+                              "  Started XWP Sentinel thread, TID: %d",
+                              G_tiSentinel.tid);
 
             G_KernelGlobals.fAutoRefreshReplaced = TRUE;
         }
@@ -805,25 +805,25 @@ VOID ReplaceWheelWatcher(FILE *DumpFile)
  *@@added V0.9.16 (2001-09-29) [umoeller]
  */
 
-VOID CheckDesktopValid(FILE *DumpFile)
+VOID CheckDesktopValid(PXFILE pLogFile)
 {
     HOBJECT hobjDesktop = 0;
     ULONG cb = sizeof(hobjDesktop);
 
-    fprintf(DumpFile,
-            "\nEntering " __FUNCTION__":\n");
+    doshWriteLogEntry(pLogFile,
+                      "Entering " __FUNCTION__ ":");
 
     if (!PrfQueryProfileData(HINI_USER,
                              (PSZ)WPINIAPP_LOCATION,      // "PM_Workplace:Location"
                              (PSZ)WPOBJID_DESKTOP,        // "<WP_DESKTOP>"
                              &hobjDesktop,
                              &cb))
-        fprintf(DumpFile,
-                "  ERROR: Cannot find <WP_DESKTOP> in PM_Workplace:Location in OS2.INI\n");
+        doshWriteLogEntry(pLogFile,
+                          "  ERROR: Cannot find <WP_DESKTOP> in PM_Workplace:Location in OS2.INI");
     else
         if (!hobjDesktop)
-            fprintf(DumpFile,
-                    "  ERROR: <WP_DESKTOP> in PM_Workplace:Location in OS2.INI has a null handle\n");
+            doshWriteLogEntry(pLogFile,
+                              "  ERROR: <WP_DESKTOP> in PM_Workplace:Location in OS2.INI has a null handle");
         else
         {
             // OK, check if that handle is valid.
@@ -834,27 +834,27 @@ VOID CheckDesktopValid(FILE *DumpFile)
                                              hobjDesktop,
                                              szDesktopPath,
                                              sizeof(szDesktopPath)))
-                fprintf(DumpFile,
-                        "  ERROR %d resolving <WP_DESKTOP> handle 0x%lX\n",
-                        hobjDesktop);
+                doshWriteLogEntry(pLogFile,
+                                  "  ERROR %d resolving <WP_DESKTOP> handle 0x%lX",
+                                  hobjDesktop);
             else
             {
                 ULONG ulAttr;
 
-                fprintf(DumpFile,
-                        "  <WP_DESKTOP> handle 0x%lX points to \"%s\"\n",
-                        hobjDesktop,
-                        szDesktopPath);
+                doshWriteLogEntry(pLogFile,
+                                  "  <WP_DESKTOP> handle 0x%lX points to \"%s\"",
+                                  hobjDesktop,
+                                  szDesktopPath);
                 if (arc = doshQueryPathAttr(szDesktopPath,
                                             &ulAttr))
-                    fprintf(DumpFile,
-                            "  ERROR: doshQueryPathAttr returned %d\n",
-                            arc);
+                    doshWriteLogEntry(pLogFile,
+                                      "  ERROR: doshQueryPathAttr returned %d",
+                                      arc);
                 else
                     if (0 == (ulAttr & FILE_DIRECTORY))
-                        fprintf(DumpFile,
-                                "  ERROR: Desktop path \"%s\" is not a directory.\n",
-                                arc);
+                        doshWriteLogEntry(pLogFile,
+                                          "  ERROR: Desktop path \"%s\" is not a directory.",
+                                          arc);
             }
         }
 }
@@ -936,131 +936,129 @@ VOID CheckDesktopValid(FILE *DumpFile)
 
 VOID initMain(VOID)
 {
-    FILE        *DumpFile = NULL;
+    PXFILE      pLogFile = NULL;
 
     static BOOL fInitialized = FALSE;
 
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
+    // moved this here from xthrStartThreads
+    PTIB        ptib;
+    PPIB        ppib;
+
+    CHAR        szDumpFile[CCHMAXPATH];
+
     // check if we're called for the first time,
     // because we better initialize this only once
-    if (!fInitialized)
+    if (fInitialized)
+        return;
+
+    fInitialized = TRUE;
+
+    if (pGlobalSettings->fWriteXWPStartupLog)       // V0.9.14 (2001-08-21) [umoeller]
     {
-        // moved this here from xthrStartThreads
-        PTIB        ptib;
-        PPIB        ppib;
+        APIRET arc;
+        ULONG cbFile = 0;
 
-        CHAR        szDumpFile[CCHMAXPATH];
+        sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
 
-        fInitialized = TRUE;
-
-        if (pGlobalSettings->fWriteXWPStartupLog)       // V0.9.14 (2001-08-21) [umoeller]
+        if (!(arc = doshOpen(szDumpFile,
+                             XOPEN_READWRITE_APPEND,
+                             &cbFile,
+                             &pLogFile)))
         {
-            sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
-
-            if (DumpFile = fopen(szDumpFile, "w"))
-            {
-                DATETIME dt;
-                DosGetDateTime(&dt);
-                fprintf(DumpFile,
-                        "\nXWorkplace startup log -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
-                        dt.year, dt.month, dt.day,
-                        dt.hours, dt.minutes, dt.seconds);
-                fprintf(DumpFile,
-                        "----------------------------------------------------------\n");
-
-                fprintf(DumpFile,
-                        "\nEntering " __FUNCTION__":\n");
-            }
+            doshWrite(pLogFile,
+                      "\r\n\r\nStartup log opened, entering " __FUNCTION__ "\r\n",
+                      0);
+            doshWrite(pLogFile,
+                      "------------------------------------------------------\r\n\r\n",
+                      0);
         }
+    }
 
-        // zero KERNELGLOBALS
-        memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
+    // zero KERNELGLOBALS
+    memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
 
-        // moved this here from xthrStartThreads V0.9.9 (2001-01-31) [umoeller]
-        if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
-        {
-            if (ppib)
-                G_KernelGlobals.pidWPS = ppib->pib_ulpid;
-            if (ptib && ptib->tib_ptib2)
-                G_KernelGlobals.tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
+    // moved this here from xthrStartThreads V0.9.9 (2001-01-31) [umoeller]
+    if (!DosGetInfoBlocks(&ptib, &ppib))
+    {
+        if (ppib)
+            G_KernelGlobals.pidWPS = ppib->pib_ulpid;
+        if (ptib && ptib->tib_ptib2)
+            G_KernelGlobals.tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
 
-            if (DumpFile)
-                fprintf(DumpFile,
-                        "\n" __FUNCTION__ ": PID 0x%lX, TID 0x%lX\n",
-                        G_KernelGlobals.pidWPS,
-                        G_KernelGlobals.tidWorkplaceThread);
-        }
+        doshWriteLogEntry(pLogFile,
+                          __FUNCTION__ ": PID 0x%lX, TID 0x%lX",
+                          G_KernelGlobals.pidWPS,
+                          G_KernelGlobals.tidWorkplaceThread);
+    }
 
-        #ifdef __XWPMEMDEBUG__
-            // set global memory error callback
-            G_pMemdLogFunc = krnMemoryError;
-        #endif
+    #ifdef __XWPMEMDEBUG__
+        // set global memory error callback
+        G_pMemdLogFunc = krnMemoryError;
+    #endif
 
-        // store Desktop startup time
-        DosGetDateTime(&G_KernelGlobals.StartupDateTime);
+    // store Desktop startup time
+    DosGetDateTime(&G_KernelGlobals.StartupDateTime);
 
-        // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
-        winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
-                               &G_KernelGlobals.hwndSysError);
+    // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
+    winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
+                           &G_KernelGlobals.hwndSysError);
 
-        // initialize awake-objects list (which holds
-        // plain WPObject* pointers)
-        // G_KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
-                                        // moved to xthreads.c V0.9.9 (2001-04-04) [umoeller]
+    // initialize awake-objects list (which holds
+    // plain WPObject* pointers)
+    // G_KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
+                                    // moved to xthreads.c V0.9.9 (2001-04-04) [umoeller]
 
-        // register exception hooks for /helpers/except.c
-        excRegisterHooks(krnExceptOpenLogFile,
-                         krnExceptExplainXFolder,
-                         krnExceptError,
-                         !pGlobalSettings->fNoExcptBeeps);
+    // register exception hooks for /helpers/except.c
+    excRegisterHooks(krnExceptOpenLogFile,
+                     krnExceptExplainXFolder,
+                     krnExceptError,
+                     !pGlobalSettings->fNoExcptBeeps);
 
-        // create thread-1 object window
-        WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                         (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
-                         (PFNWP)fnwpThread1Object,   // Window procedure
-                         0,                  // class style
-                         0);                 // extra window words
-        G_KernelGlobals.hwndThread1Object
-            = winhCreateObjectWindow(WNDCLASS_THREAD1OBJECT, // class name
-                                     NULL);        // create params
+    // create thread-1 object window
+    WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                     (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
+                     (PFNWP)fnwpThread1Object,   // Window procedure
+                     0,                  // class style
+                     0);                 // extra window words
+    G_KernelGlobals.hwndThread1Object
+        = winhCreateObjectWindow(WNDCLASS_THREAD1OBJECT, // class name
+                                 NULL);        // create params
 
-        if (DumpFile)
-            fprintf(DumpFile,
-                    "XWorkplace thread-1 object window created, HWND 0x%lX\n",
-                    G_KernelGlobals.hwndThread1Object);
+    doshWriteLogEntry(pLogFile,
+                      "XWorkplace thread-1 object window created, HWND 0x%lX",
+                      G_KernelGlobals.hwndThread1Object);
 
-        // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
-        G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
+    // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
+    G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
 
-        // create API object window V0.9.9 (2001-03-23) [umoeller]
-        WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                         (PSZ)WNDCLASS_APIOBJECT,    // class name
-                         (PFNWP)fnwpAPIObject,   // Window procedure
-                         0,                  // class style
-                         0);                 // extra window words
-        G_KernelGlobals.hwndAPIObject
-            = winhCreateObjectWindow(WNDCLASS_APIOBJECT, // class name
-                                     NULL);        // create params
+    // create API object window V0.9.9 (2001-03-23) [umoeller]
+    WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                     (PSZ)WNDCLASS_APIOBJECT,    // class name
+                     (PFNWP)fnwpAPIObject,   // Window procedure
+                     0,                  // class style
+                     0);                 // extra window words
+    G_KernelGlobals.hwndAPIObject
+        = winhCreateObjectWindow(WNDCLASS_APIOBJECT, // class name
+                                 NULL);        // create params
 
-        if (DumpFile)
-            fprintf(DumpFile,
-                    "XWorkplace API object window created, HWND 0x%lX\n",
-                    G_KernelGlobals.hwndAPIObject);
+    doshWriteLogEntry(pLogFile,
+                      "XWorkplace API object window created, HWND 0x%lX",
+                      G_KernelGlobals.hwndAPIObject);
 
-        // if shift is pressed, show "Panic" dialog
-        // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
-        // of thread-1 window... we need this for starting xfix from
-        // the "panic" dlg
-        ShowStartupDlgs();
+    // if shift is pressed, show "Panic" dialog
+    // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
+    // of thread-1 window... we need this for starting xfix from
+    // the "panic" dlg
+    ShowStartupDlgs();
 
-        // check if "replace folder refresh" is enabled...
-        if (krnReplaceRefreshEnabled())
-        {
-            // yes: kick out WPS wheel watcher thread,
-            // start our own one instead
-            ReplaceWheelWatcher(DumpFile);
-        }
+    // check if "replace folder refresh" is enabled...
+    if (krnReplaceRefreshEnabled())
+    {
+        // yes: kick out WPS wheel watcher thread,
+        // start our own one instead
+        ReplaceWheelWatcher(pLogFile);
     }
 
     /*
@@ -1072,10 +1070,10 @@ VOID initMain(VOID)
         winhSetNumLock(TRUE);
 
     // go check if the desktop is valid
-    CheckDesktopValid(DumpFile);
+    CheckDesktopValid(pLogFile);
 
     // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
-    xmmInit(DumpFile);
+    xmmInit(pLogFile);
             // moved this down V0.9.9 (2001-01-31) [umoeller]
 
     /*
@@ -1083,7 +1081,7 @@ VOID initMain(VOID)
      *
      */
 
-    xthrStartThreads(DumpFile);
+    xthrStartThreads(pLogFile);
 
     /*
      *  check Desktop archiving (V0.9.0)
@@ -1129,10 +1127,9 @@ VOID initMain(VOID)
                                           SHMEM_XWPGLOBAL,
                                           PAG_READ | PAG_WRITE);
 
-        if (DumpFile)
-            fprintf(DumpFile,
-                    "\nAttempted to access " SHMEM_XWPGLOBAL ", DosGetNamedSharedMem returned %d\n",
-                    arc);
+        doshWriteLogEntry(pLogFile,
+                          "Attempted to access " SHMEM_XWPGLOBAL ", DosGetNamedSharedMem returned %d",
+                          arc);
 
         if (arc != NO_ERROR)
         {
@@ -1143,16 +1140,17 @@ VOID initMain(VOID)
             // startup, so we allocate the shared mem now and
             // start the XWorkplace daemon
 
-            if (DumpFile)
-                fprintf(DumpFile, "--> XWPDAEMN not running, starting now.\n");
+            doshWriteLogEntry(pLogFile,
+                              "--> XWPDAEMN not running, starting now.");
 
             arc = DosAllocSharedMem((PVOID*)&pXwpGlobalShared,
                                     SHMEM_XWPGLOBAL,
                                     sizeof(XWPGLOBALSHARED), // rounded up to 4KB
                                     PAG_COMMIT | PAG_READ | PAG_WRITE);
 
-            if (DumpFile)
-                fprintf(DumpFile, "  DosAllocSharedMem returned %d\n", arc);
+            doshWriteLogEntry(pLogFile,
+                              "  DosAllocSharedMem returned %d\n",
+                              arc);
 
             if (arc == NO_ERROR)
             {
@@ -1202,11 +1200,10 @@ VOID initMain(VOID)
                                                                    // displays a msg box
                                                              NULL,
                                                              0);// no SAF_INSTALLEDCMDLINE,
-                    if (DumpFile)
-                        fprintf(DumpFile,
-                                "  WinStartApp for %s returned HAPP 0x%lX\n",
-                                pd.pszExecutable,
-                                G_KernelGlobals.happDaemon);
+                    doshWriteLogEntry(pLogFile,
+                                      "  WinStartApp for %s returned HAPP 0x%lX\n",
+                                      pd.pszExecutable,
+                                      G_KernelGlobals.happDaemon);
 
                     /* if (!G_KernelGlobals.happDaemon)
                         // success:
@@ -1221,8 +1218,8 @@ VOID initMain(VOID)
             // this means the daemon is already running
             // and we have a Desktop restart
 
-            if (DumpFile)
-                fprintf(DumpFile, "--> XWPDAEMN already running, refreshing.\n");
+            doshWriteLogEntry(pLogFile,
+                              "--> XWPDAEMN already running, refreshing.");
 
             // store new thread-1 object wnd
             pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
@@ -1261,10 +1258,9 @@ VOID initMain(VOID)
         APIRET arc = DosGetNamedSharedMem((PVOID*)&pXWPShellShared,
                                           SHMEM_XWPSHELL,
                                           PAG_READ | PAG_WRITE);
-        if (DumpFile)
-            fprintf(DumpFile,
-                    "\nAttempted to access " SHMEM_XWPSHELL ", DosGetNamedSharedMem returned %d\n",
-                    arc);
+        doshWriteLogEntry(pLogFile,
+                          "Attempted to access " SHMEM_XWPSHELL ", DosGetNamedSharedMem returned %d",
+                          arc);
 
         if (arc == NO_ERROR)
         {
@@ -1279,20 +1275,17 @@ VOID initMain(VOID)
             // will clear that flag.
             pXWPShellShared->fNoLogonButRestart = TRUE;
 
-            if (DumpFile)
-                fprintf(DumpFile, "--> XWPSHELL running, refreshed; enabling multi-user mode.\n");
+            doshWriteLogEntry(pLogFile,
+                              "--> XWPSHELL running, refreshed; enabling multi-user mode.");
         }
         else
-            if (DumpFile)
-                fprintf(DumpFile, "--> XWPSHELL not running, going into single-user mode.\n");
+            doshWriteLogEntry(pLogFile,
+                              "--> XWPSHELL not running, going into single-user mode.");
     }
 
-    if (DumpFile)
-    {
-        fprintf(DumpFile,
-                        "\nLeaving " __FUNCTION__", closing log.\n");
-        fclose(DumpFile);
-    }
+    doshWriteLogEntry(pLogFile,
+                      "Leaving " __FUNCTION__", closing log.");
+    doshClose(&pLogFile);
 
     // After this, startup continues normally...
     // XWorkplace comes in again after the desktop has been fully populated.

@@ -264,7 +264,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
                     != NULLHANDLE);
     }
 
-    /* if (_wpScanSetupString(somSelf,
+    if (_wpScanSetupString(somSelf,
                            (PSZ)pcszSetupString,
                            "TESTFILEDLG",
                            szValue,
@@ -281,7 +281,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
             winhDebugBox(NULLHANDLE,
                          "Test file dlg",
                          szFullFile);
-    } */
+    }
 
     return (brc);
 }
@@ -1290,14 +1290,16 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case DID_BROWSE:
             {
-                FILEDLG fd;
+                // FILEDLG fd;
+                CHAR szFile[CCHMAXPATH] = "*.BMP";
                 PSZ pszNewBootLogoFile = winhQueryWindowText(WinWindowFromID(pcnbp->hwndDlgPage,
                                                                              ID_XSDI_DTP_LOGOFILE));
 
-                memset(&fd, 0, sizeof(FILEDLG));
+                /* memset(&fd, 0, sizeof(FILEDLG));
                 fd.cbSize = sizeof(FILEDLG);
                 fd.fl = FDS_OPEN_DIALOG
                           | FDS_CENTER;
+                */
 
                 if (pszNewBootLogoFile)
                 {
@@ -1307,27 +1309,33 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         // contains directory:
                         PSZ pszDir = strhSubstr(pszNewBootLogoFile, p + 1);
-                        strcpy(fd.szFullFile, pszDir);
+                        strcpy(szFile, pszDir);
                         free(pszDir);
                     }
                     free(pszNewBootLogoFile);
                 }
-                strcat(fd.szFullFile, "*.bmp");
+                strcat(szFile, "*.bmp");
 
-                if (    WinFileDlg(HWND_DESKTOP,    // parent
+                /* if (    WinFileDlg(HWND_DESKTOP,    // parent
                                    pcnbp->hwndFrame, // owner
                                    &fd)
                     && (fd.lReturn == DID_OK)
-                   )
+                   ) */
+                if (cmnFileDlg(pcnbp->hwndFrame,
+                               szFile,
+                               0, // WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                               0,
+                               0,
+                               0))
                 {
                     // copy file from FOD to page
                     WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_XSDI_DTP_LOGOFILE,
-                                      fd.szFullFile);
+                                      szFile);
                     PrfWriteProfileString(HINI_USER,
                                           (PSZ)INIAPP_XWORKPLACE,
                                           (PSZ)INIKEY_BOOTLOGOFILE,
-                                          fd.szFullFile);
+                                          szFile);
                     // update the display by calling the INIT callback
                     pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                 }

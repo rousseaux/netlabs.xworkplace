@@ -141,6 +141,7 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\statbars.h"           // status bar translation logic
@@ -1288,8 +1289,10 @@ SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_SETTINGS_FLDR1; V0.9.16 (2001-09-29) [umoeller]
     pcnbp->ulPageID = SP_XFOLDER_FLDR;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = "~XFolder";
+    pcnbp->usPageStyleFlags = BKA_MAJOR | BKA_MINOR;
+    pcnbp->fEnumerate = TRUE;
+    pcnbp->pszName = cmnGetString(ID_XSSI_VIEWPAGE);    // V0.9.16 (2001-10-23) [umoeller]
+    pcnbp->pszMinorName = cmnGetString(ID_XSSI_GENERALVIEWPAGE);  // V0.9.16 (2001-10-23) [umoeller]
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDR1;
     pcnbp->pfncbInitPage    = fdrXFolderInitPage;
     pcnbp->pfncbItemChanged = fdrXFolderItemChanged;
@@ -1317,14 +1320,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf, PVOID pstrSetup)
     if (fdrQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
-        if (pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(
-                                                         somSelf,
-                                                         _somGetParent(_XFolder),
-                                                         "xwpQuerySetup2"))
-        {
-            return (pfn_xwpQuerySetup2(somSelf, pstrSetup));
-        }
+        return (wpshParentQuerySetup2(somSelf,
+                                      _somGetParent(_XFolder),
+                                      pstrSetup));
     }
 
     return (FALSE);
@@ -1418,6 +1416,8 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _ppLastObj = NULL;
 
     _cNotificationsPending = 0;
+
+    _fInwpAddFolderView1Page = FALSE;
 }
 
 /*
@@ -1607,14 +1607,6 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
 
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpFree");
-
-    /* if (wpshResidesBelow(somSelf, pCfg))
-    {
-        // somSelf is in the config folder hierarchy:
-        // invalidate the content lists for the config
-        // folders so that they will be rebuilt
-        mnuInvalidateConfigCache();
-    } */ // now handled by XFldObject::wpUninitData
 
     /* if (pGlobalSettings->CleanupINIs)
     {
@@ -2768,6 +2760,50 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf, ULONG ulView,
 }
 
 /*
+ *@@ wpInsertSettingsPage:
+ *      this WPObject helper method actually inserts a
+ *      settings page into an object's settings notebook.
+ *      This normally gets called by all the wpAdd*
+ *      methods to register a page with a settings notebook.
+ *
+ *      We override this for XFolder to allow for hacking
+ *      the "Icon view" page, which is normally BKA_MAJOR
+ *      but must now be BKA_MINOR for our new top "View"
+ *      page.
+ *
+ *@@added V0.9.16 (2001-10-23) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
+                                                 HWND hwndNotebook,
+                                                 PPAGEINFO ppageinfo)
+{
+    USHORT  fsOld;
+    ULONG   ul;
+
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpInsertSettingsPage");
+
+    if (_fInwpAddFolderView1Page)
+    {
+        // we are in the context of XFolder::wpAddFolderView1Page:
+        // hack BKA_MAJOR to be BKA_MINOR instead
+        fsOld = ppageinfo->usPageStyleFlags;
+        ppageinfo->usPageStyleFlags = BKA_MINOR;
+    }
+
+    ul = XFolder_parent_WPFolder_wpInsertSettingsPage(somSelf,
+                                                      hwndNotebook,
+                                                      ppageinfo);
+
+    // restore the old setting to be on the safe side
+    if (_fInwpAddFolderView1Page)
+        ppageinfo->usPageStyleFlags = fsOld;
+
+    return (ul);
+}
+
+/*
  *@@ wpAddObjectGeneralPage2:
  *      this WPObject instance method adds the "Animation icon"
  *      page to an object's settings notebook.
@@ -2804,11 +2840,11 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
         pcnbp->ulPageID = SP_OBJECT_ICONPAGE2;      // page 2!
         pcnbp->usPageStyleFlags = BKA_MINOR;
         pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);    // @@todo
-                    // no new string needed, was defined for trash can already
+        // pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
+                    // no title, this should be "page 2/2"
         pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE2;
-        pcnbp->pfncbInitPage    = objIcon1InitPage;
-        pcnbp->pfncbItemChanged = objIcon1ItemChanged;
+        pcnbp->pfncbInitPage    = icoIcon1InitPage;
+        pcnbp->pfncbItemChanged = icoIcon1ItemChanged;
 
         return (ntbInsertPage(pcnbp));
     }
@@ -2938,8 +2974,9 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderBackgroundPage(XFolder *somSelf,
 
     brc = XFolder_parent_WPFolder_wpAddFolderBackgroundPage(somSelf,
                                                             hwndNotebook);
-    if (brc)
+    /* if (brc)
         _xwpAddXFolderPages(somSelf, hwndNotebook);
+       */
 
     return (brc);
 }
@@ -2988,165 +3025,36 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
 }
 
 /*
- *@@ wpAddSettingsPages:
- *      this WPObject instance method gets called by the WPS
- *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
+ *@@ wpAddFolderView1Page:
+ *      this WPFolder method adds the "Icon view" page to the
+ *      folder settings notebook.
  *
- *      This call xwpAddXFolderPages.
+ *      We override this to add the standard "View" page on
+ *      top of that (formerly the "XFolder" page).
+ *
+ *@@added V0.9.16 (2001-10-23) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xf_wpAddSettingsPages(XFolder *somSelf,
+SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
                                                  HWND hwndNotebook)
 {
-    BOOL            rc;
-    // PAGEINFO        pi;
+    ULONG ul;
+    XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddFolderView1Page");
 
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddSettingsPages");
+    // evil hack for wpInsertSettingsPage
+    _fInwpAddFolderView1Page = TRUE;
+    ul = XFolder_parent_WPFolder_wpAddFolderView1Page(somSelf,
+                                                      hwndNotebook);
+    _fInwpAddFolderView1Page = FALSE;
 
-    rc = (XFolder_parent_WPFolder_wpAddSettingsPages(somSelf,
-                                                     hwndNotebook));
+    if (ul)
+        _xwpAddXFolderPages(somSelf, hwndNotebook);
+            // @@todo what if a WPFolder subclass overrides
+            // this method to return SETTINGS_PAGE_REMOVED
+            // only? We never get called then!
 
-    /* if (rc)
-        rc = _xwpAddXFolderPages(somSelf, hwndNotebook); */
-
-    return (rc);
-}
-
-/*
- *@@ wpSetFldrFlags:
- *      overridden for debugging
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpSetFldrFlags(XFolder *somSelf, ULONG ulFlags)
-{
-    ULONG brc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpSetFldrFlags");
-
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpSetFldrFlags for %s: 0x%lX",
-               _wpQueryTitle(somSelf),
-               ulFlags
-               ));
-    #endif
-    brc = XFolder_parent_WPFolder_wpSetFldrFlags(somSelf, ulFlags);
-    return (brc);
-}
-
-/*
- *@@ wpQueryFldrFlags:
- *      overridden for debugging
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpQueryFldrFlags(XFolder *somSelf)
-{
-    ULONG ulFlags;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpQueryFldrFlags");
-
-    ulFlags = XFolder_parent_WPFolder_wpQueryFldrFlags(somSelf);
-
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpQueryFldrFlags for %s: 0x%lX",
-                    _wpQueryTitle(somSelf),
-                    ulFlags
-                    ));
-    #endif
-    return (ulFlags);
-}
-
-/*
- *@@ wpSetFldrAttr:
- *      this sets new container attributes
- *      (those CV_* flags) for the specified folder view
- *      (OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS);
- *      overridden for debugging
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpSetFldrAttr(XFolder *somSelf, ULONG Attr,
-                                         ULONG ulView)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpSetFldrAttr");
-
-    #ifdef DEBUG_SORT
-    {
-        CHAR szInfo[300] = "";
-        _Pmpf(("wpSetFldrAttr for %s", _wpQueryTitle(somSelf)));
-        if (Attr & CV_ICON)
-            strcpy(szInfo, "CV_ICON ");
-        if (Attr & CV_NAME)
-            strcat(szInfo, "CV_NAME ");
-        if (Attr & CV_TEXT)
-            strcat(szInfo, "CV_TEXT ");
-        if (Attr & CV_TREE)
-            strcat(szInfo, "CV_TREE ");
-        if (Attr & CV_DETAIL)
-            strcat(szInfo, "CV_DETAIL ");
-        if (Attr & CV_MINI)
-            strcat(szInfo, "CV_MINI ");
-        if (Attr & CV_FLOW)
-            strcat(szInfo, "CV_FLOW ");
-        if (Attr & CA_OWNERDRAW)
-            strcat(szInfo, "CA_OWNERDRAW ");
-        if (Attr & CA_OWNERPAINTBACKGROUND)
-            strcat(szInfo, "CA_OWNERPAINTBACKGROUND ");
-
-        _Pmpf(("  Flags: %s", szInfo));
-    }
-    #endif
-
-    return (XFolder_parent_WPFolder_wpSetFldrAttr(somSelf, Attr,
-                                                  ulView));
-}
-
-/*
- *@@ wpQueryFldrAttr:
- *      this returns the current container attributes
- *      (those CV_* flags) for the specified folder view
- *      (OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS);
- *      overridden for debugging
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpQueryFldrAttr(XFolder *somSelf,
-                                            ULONG ulView)
-{
-    ULONG ulAttr = 0;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpQueryFldrAttr");
-
-    ulAttr = XFolder_parent_WPFolder_wpQueryFldrAttr(somSelf,
-                                                    ulView);
-    #ifdef DEBUG_SORT
-    {
-        CHAR szInfo[300] = "";
-        _Pmpf(("wpQueryFldrAttr for %s", _wpQueryTitle(somSelf)));
-        if (ulAttr & CV_ICON)
-            strcpy(szInfo, "CV_ICON ");
-        if (ulAttr & CV_NAME)
-            strcat(szInfo, "CV_NAME ");
-        if (ulAttr & CV_TEXT)
-            strcat(szInfo, "CV_TEXT ");
-        if (ulAttr & CV_TREE)
-            strcat(szInfo, "CV_TREE ");
-        if (ulAttr & CV_DETAIL)
-            strcat(szInfo, "CV_DETAIL ");
-        if (ulAttr & CV_MINI)
-            strcat(szInfo, "CV_MINI ");
-        if (ulAttr & CV_FLOW)
-            strcat(szInfo, "CV_FLOW ");
-        if (ulAttr & CA_OWNERDRAW)
-            strcat(szInfo, "CA_OWNERDRAW ");
-        if (ulAttr & CA_OWNERPAINTBACKGROUND)
-            strcat(szInfo, "CA_OWNERPAINTBACKGROUND ");
-
-        _Pmpf(("  Flags: %s", szInfo));
-    }
-    #endif // DEBUG_SORT
-
-    return (ulAttr);
+    return (ul);
 }
 
 /*
@@ -3741,6 +3649,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
  *      On Warp 3, this returns FALSE always.
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed wrong default on Warp 4
  */
 
 SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
@@ -3751,15 +3660,17 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
 
     if (doshIsWarp4())
     {
-        PSZ psz;
-        if (psz = prfhQueryProfileData(HINI_USER,
-                                       WPINIAPP_WORKPLACE, // "PM_Workplace"
-                                       WPINIKEY_MENUBAR, // "FolderMenuBar",
-                                       NULL))
+        CHAR szValue[10];
+        if (PrfQueryProfileString(HINI_USER,
+                                  (PSZ)WPINIAPP_WORKPLACE, // "PM_Workplace"
+                                  (PSZ)WPINIKEY_MENUBAR, // "FolderMenuBar",
+                                  "ON",     // default on Warp 4
+                                            // V0.9.16 (2001-10-19) [umoeller]
+                                  szValue,
+                                  sizeof(szValue)))
         {
-            if (strcmp(psz, "OFF") != 0)
+            if (!strcmp(szValue, "ON"))
                 brc = TRUE;
-            free(psz);
         }
     }
 

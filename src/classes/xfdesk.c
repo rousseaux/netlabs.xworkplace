@@ -145,7 +145,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = cmnGetString(ID_XSSI_DTPMENUPAGE);  // pszDtpMenuPage
-    pcnbp->usFirstControlID = ID_XSDI_DTP_SORT;
+    // pcnbp->usFirstControlID = ID_XSDI_DTP_SORT;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP1_SUB;   // help panel for "Sort"
     pcnbp->ulDlgID = ID_XSD_DTP_MENUITEMS;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_MENUITEMS;
@@ -258,7 +258,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     pcnbp->pszName = cmnGetString(ID_XSSI_XSHUTDOWNPAGE);  // pszXShutdownPage
     // pcnbp->ulDlgID = ID_XSD_DTP_SHUTDOWN;
     pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    pcnbp->usFirstControlID = ID_SDDI_REBOOT;
+    // pcnbp->usFirstControlID = ID_SDDI_REBOOT;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_SHUTDOWN;
     pcnbp->ulPageID = SP_DTP_SHUTDOWN;
@@ -288,15 +288,9 @@ SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
     if (dtpQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
-
-        if (pfn_xwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(
-                                                         somSelf,
-                                                         _somGetParent(_XFldDesktop),
-                                                         "xwpQuerySetup2"))
-        {
-            return (pfn_xwpQuerySetup2(somSelf, pstrSetup));
-        }
+        return (wpshParentQuerySetup2(somSelf,
+                                      _somGetParent(_XFldDesktop),
+                                      pstrSetup));
     }
 
     return (FALSE);
@@ -541,28 +535,28 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpAddSettingsPages");
 
-    rc = (XFldDesktop_parent_WPDesktop_wpAddSettingsPages(somSelf,
-                                                            hwndNotebook));
-    if (rc)
-        if (_wpIsCurrentDesktop(somSelf))
-        {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    if (    (rc = XFldDesktop_parent_WPDesktop_wpAddSettingsPages(somSelf,
+                                                                 hwndNotebook))
+         && (_wpIsCurrentDesktop(somSelf))
+       )
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-            // insert "Menu" page
-            _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
+        // insert "Menu" page
+        _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
 
-            if (pGlobalSettings->fXShutdown)
-                _xwpInsertXFldDesktopShutdownPage(somSelf, hwndNotebook);
+        if (pGlobalSettings->fXShutdown)
+            _xwpInsertXFldDesktopShutdownPage(somSelf, hwndNotebook);
 
-            if (pGlobalSettings->fReplaceArchiving)
-                // insert new "Archives" page;
-                // at the same time, the old archives page method
-                // will return SETTINGS_PAGE_REMOVED
-                _xwpInsertXFldDesktopArchivesPage(somSelf, hwndNotebook);
+        if (pGlobalSettings->fReplaceArchiving)
+            // insert new "Archives" page;
+            // at the same time, the old archives page method
+            // will return SETTINGS_PAGE_REMOVED
+            _xwpInsertXFldDesktopArchivesPage(somSelf, hwndNotebook);
 
-            // insert "Startup" page
-            _xwpInsertXFldDesktopStartupPage(somSelf, hwndNotebook);
-        }
+        // insert "Startup" page
+        _xwpInsertXFldDesktopStartupPage(somSelf, hwndNotebook);
+    }
 
     return (rc);
 }

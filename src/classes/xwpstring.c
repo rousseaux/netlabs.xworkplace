@@ -784,15 +784,9 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
     xstrcat(pstrSetup, (_fConfirm) ? "YES;" : "NO;", 0);
 
     // manually resolve parent method
-    if (pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(somSelf,
-                                                          _somGetParent(_XWPString),
-                                                          "xwpQuerySetup2"))
-    {
-        return (pfn_xwpQuerySetup2(somSelf, pstrSetup));
-    }
-
-    return (FALSE);
+    return (wpshParentQuerySetup2(somSelf,
+                                  _somGetParent(_XWPString),
+                                  pstrSetup));
 }
 
 /*
@@ -1199,7 +1193,8 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemHelpSelected");
 
     if (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
-        brc = cmnDisplayHelp(somSelf, ID_XSH_SETTINGS_XWPSTRING_MAIN);
+        brc = cmnDisplayHelp(somSelf,
+                             ID_XSH_SETTINGS_XWPSTRING_MAIN);
     else
         brc = XWPString_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
                                                                  MenuId);

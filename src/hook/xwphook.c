@@ -1560,10 +1560,15 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
          */
 
         case WM_CHAR:
-            if (   (    (G_HookData.HookConfig.fGlobalHotkeys)
+            // process this if
+            if (
+                        // a) object hotkeys are enabled or
+                   (    (G_HookData.HookConfig.fGlobalHotkeys)
+                        // b) pagemage switch-screen hotkeys are enabled
                     ||  (G_HookData.PageMageConfig.fEnableArrowHotkeys)
                    )
-               && (!G_HookData.hwndLockupFrame)    // system not locked up
+                  // and system is not locked up
+               && (!G_HookData.hwndLockupFrame)
                )
             {
                 brc = WMChar_Main(pqmsg);

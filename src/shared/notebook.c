@@ -91,6 +91,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+#include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -98,7 +99,6 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wpfolder.h>
 
 // finally, our own header file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -547,11 +547,9 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                         else
                             // no (default), don't pass:
                             // same handling as with WM_HELP
-                            ntbDisplayFocusHelp(pcnbp->somSelf,
-                                                pcnbp->usFirstControlID,
-                                                pcnbp->ulFirstSubpanel,
-                                                pcnbp->ulDefaultHelpPanel);
-
+                            cmnDisplayHelp(pcnbp->somSelf,
+                                           pcnbp->ulDefaultHelpPanel);
+                                // V0.9.16 (2001-10-23) [umoeller]
                     break;
 
                     case CN_BEGINEDIT:
@@ -947,19 +945,9 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                  */
 
                 case WM_HELP:
-                    #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("ntb_fnwpPageCommon: WM_HELP"));
-                    #endif
-
-                    // this routine checks the current focus
-                    // and retrieves the corresponding help
-                    // panel; this only works with XFolder
-                    // dialog IDs, on which the calculations
-                    // are based
-                    ntbDisplayFocusHelp(pcnbp->somSelf,
-                                        pcnbp->usFirstControlID,
-                                        pcnbp->ulFirstSubpanel,
-                                        pcnbp->ulDefaultHelpPanel);
+                    cmnDisplayHelp(pcnbp->somSelf,
+                                   pcnbp->ulDefaultHelpPanel);
+                            // V0.9.16 (2001-10-23) [umoeller]
                 break; // WM_HELP
 
                 /*
@@ -1593,6 +1581,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed usItemID to ULONG in "item changed" callback
+ *@@changed V0.9.16 (2001-10-23) [umoeller]: finally found out how to set minor tab titles
  */
 
 ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
@@ -1619,14 +1608,29 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
     pi.idDefaultHelpPanel  = pcnbp->ulDefaultHelpPanel;
 
     // insert page
-    ulrc = _wpInsertSettingsPage(pcnbp->somSelf,
-                                 pcnbp->hwndNotebook,
-                                 &pi);
+    if (ulrc = _wpInsertSettingsPage(pcnbp->somSelf,
+                                     pcnbp->hwndNotebook,
+                                     &pi))
             // this returns the notebook page ID
-
-    if (ulrc)
     {
         // successfully inserted:
+
+        // if this is a major tab, hack the "page info"
+        // to display the minor tab title in the notebook
+        // context menu V0.9.16 (2001-10-23) [umoeller]
+        if (pcnbp->pszMinorName)
+        {
+            BOOKPAGEINFO bpi;
+            memset(&bpi, 0, sizeof(&bpi));
+            bpi.cb = sizeof(BOOKPAGEINFO);
+            bpi.fl = BFA_MINORTABTEXT;
+            bpi.pszMinorTab = pcnbp->pszMinorName;
+            bpi.cbMinorTab = strlen(pcnbp->pszMinorName);
+            WinSendMsg(pcnbp->hwndNotebook,
+                       BKM_SETPAGEINFO,
+                       (MPARAM)ulrc,
+                       (MPARAM)&bpi);
+        }
 
         // store PM notebook page ID
         pcnbp->ulNotebookPageID = ulrc;
@@ -1838,7 +1842,7 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
 }
 
 /*
- *@@ ntbDisplayFocusHelp:
+ * ntbDisplayFocusHelp:
  *      this is used from all kinds of settings dlg procs to
  *      display help panels.
  *
@@ -1873,10 +1877,13 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
  *
  *      This returns FALSE if step 3) failed also.
  *
- *@@changed V0.9.0 [umoeller]: functionality altered completely
+ *changed V0.9.0 [umoeller]: functionality altered completely
+ *
+ *      This code was no longer really used and thus removed.
+ *      V0.9.16 (2001-10-23) [umoeller]
  */
 
-BOOL ntbDisplayFocusHelp(WPObject *somSelf,         // in: input for wpDisplayHelp
+/* BOOL ntbDisplayFocusHelp(WPObject *somSelf,         // in: input for wpDisplayHelp
                          USHORT usFirstControlID,   // in: first dialog item ID
                          ULONG ulFirstSubpanel,     // in: help panel ID which corresponds to usFirstControlID
                          ULONG ulPanelIfNotFound)   // in: subsidiary help panel ID
@@ -1921,6 +1928,6 @@ BOOL ntbDisplayFocusHelp(WPObject *somSelf,         // in: input for wpDisplayHe
         }
     }
     return (brc);
-}
+} */
 
 

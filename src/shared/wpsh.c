@@ -94,17 +94,18 @@
 #include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
-
-// other SOM headers
-#pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpfolder.h>
-#include <wpdisk.h>
-#include <wpshadow.h>
+#include "xfobj.ih"
+#include "xfldr.ih"
 
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+
+// other SOM headers
+#pragma hdrstop                 // VAC++ keeps crashing otherwise
+#include <wpdisk.h>
+#include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -1260,7 +1261,7 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
 
 WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
                               BOOL bForceMap,  // in: force mapping change
-                              APIRET *parc)    // out: DOS error code; may be NULL
+                              APIRET *parc)    // out: DOS error code (ptr may be NULL)
 {
     WPFolder *pReturnFolder = NULL;
     APIRET   arc = NO_ERROR;
@@ -2358,9 +2359,36 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
 
 /* ******************************************************************
  *
- *   Folder content hacks
+ *   Method call helpers
  *
  ********************************************************************/
+
+/*
+ *@@ wpshParentQuerySetup2:
+ *      little helper for calling the parent
+ *      xwpQuerySetup2 method. Standard code
+ *      required for every xwpQuerySetup2
+ *      override.
+ *
+ *@@added V0.9.16 (2001-10-19) [umoeller]
+ */
+
+BOOL wpshParentQuerySetup2(WPObject *somSelf,       // in: object
+                           SOMClass *pClass,        // in: parent class
+                           PVOID pstrSetup)         // in: setup string buffer
+{
+    somTD_XFldObject_xwpQuerySetup2 pxwpQuerySetup2;
+
+    if (pxwpQuerySetup2 = (somTD_XFldObject_xwpQuerySetup2)wpshResolveFor(
+                                                     somSelf,
+                                                     pClass,
+                                                     "xwpQuerySetup2"))
+    {
+        return (pxwpQuerySetup2(somSelf, pstrSetup));
+    }
+
+    return (FALSE);
+}
 
 /*
  *@@ wpshGetNextObjPointer:
@@ -2383,13 +2411,9 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
             = (xfTD_get_pobjNext)wpshResolveFor(somSelf,
                                                 NULL,        // use somSelf's class
                                                 "_get_pobjNext");
-    if (!__get_pobjNext)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method.");
-    else
+    if (__get_pobjNext)
     {
-        ppObjNext = __get_pobjNext(somSelf);
-        if (!ppObjNext)
+        if (!(ppObjNext = __get_pobjNext(somSelf)))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "__get_pobjNext returned NULL.");
     }
@@ -2452,14 +2476,12 @@ ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
 {
     ULONG ulrc = -1;
 
-    xfTD_wpRequestFolderMutexSem _wpRequestFolderMutexSem
+    xfTD_wpRequestFolderMutexSem _wpRequestFolderMutexSem;
+
+    if (_wpRequestFolderMutexSem
             = (xfTD_wpRequestFolderMutexSem)wpshResolveFor(somSelf,
                                                            NULL, // use somSelf's class
-                                                           "wpRequestFolderMutexSem");
-    if (!_wpRequestFolderMutexSem)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method.");
-    else
+                                                           "wpRequestFolderMutexSem"))
         ulrc = _wpRequestFolderMutexSem(somSelf, ulTimeout);
 
     return (ulrc);
@@ -2477,14 +2499,12 @@ ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf)
 {
     ULONG ulrc = -1;
 
-    xfTD_wpReleaseFolderMutexSem _wpReleaseFolderMutexSem
+    xfTD_wpReleaseFolderMutexSem _wpReleaseFolderMutexSem;
+
+    if (_wpReleaseFolderMutexSem
             = (xfTD_wpReleaseFolderMutexSem)wpshResolveFor(somSelf,
                                                            NULL, // use somSelf's class
-                                                           "wpReleaseFolderMutexSem");
-    if (!_wpReleaseFolderMutexSem)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method.");
-    else
+                                                           "wpReleaseFolderMutexSem"))
         ulrc = _wpReleaseFolderMutexSem(somSelf);
 
     return (ulrc);
@@ -2525,14 +2545,12 @@ ULONG wpshRequestFindMutexSem(WPFolder *somSelf,
 {
     ULONG ulrc = -1;
 
-    xfTD_wpRequestFindMutexSem _wpRequestFindMutexSem
+    xfTD_wpRequestFindMutexSem _wpRequestFindMutexSem;
+
+    if (_wpRequestFindMutexSem
             = (xfTD_wpRequestFindMutexSem)wpshResolveFor(somSelf,
                                                          NULL, // use somSelf's class
-                                                         "wpRequestFindMutexSem");
-    if (!_wpRequestFindMutexSem)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method.");
-    else
+                                                         "wpRequestFindMutexSem"))
         ulrc = _wpRequestFindMutexSem(somSelf, ulTimeout);
 
     return (ulrc);
@@ -2548,14 +2566,12 @@ ULONG wpshReleaseFindMutexSem(WPFolder *somSelf)
 {
     ULONG ulrc = -1;
 
-    xfTD_wpReleaseFindMutexSem _wpReleaseFindMutexSem
+    xfTD_wpReleaseFindMutexSem _wpReleaseFindMutexSem;
+
+    if (_wpReleaseFindMutexSem
             = (xfTD_wpReleaseFindMutexSem)wpshResolveFor(somSelf,
                                                          NULL, // use somSelf's class
-                                                         "wpReleaseFindMutexSem");
-    if (!_wpReleaseFindMutexSem)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method.");
-    else
+                                                         "wpReleaseFindMutexSem"))
         ulrc = _wpReleaseFindMutexSem(somSelf);
 
     return (ulrc);
@@ -2571,14 +2587,12 @@ ULONG wpshFlushNotifications(WPFolder *somSelf)
 {
     ULONG ulrc = 0;
 
-    xfTD_wpFlushNotifications _wpFlushNotifications
+    xfTD_wpFlushNotifications _wpFlushNotifications;
+
+    if (_wpFlushNotifications
         = (xfTD_wpFlushNotifications)wpshResolveFor(somSelf,
                                                     NULL, // use somSelf's class
-                                                    "wpFlushNotifications");
-    if (!_wpFlushNotifications)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method.");
-    else
+                                                    "wpFlushNotifications"))
         ulrc = _wpFlushNotifications(somSelf);
 
     return (ulrc);
@@ -2614,10 +2628,7 @@ BOOL wpshGetNotifySem(ULONG ulTimeout)
                                                 "wpclsGetNotifySem");
         }
 
-        if (!_wpclsGetNotifySem)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Unable to resolve method pointer.");
-        else
+        if (_wpclsGetNotifySem)
             brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
     }
 
@@ -2648,10 +2659,7 @@ VOID wpshReleaseNotifySem(VOID)
                                                 "wpclsReleaseNotifySem");
         }
 
-        if (!_wpclsReleaseNotifySem)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Unable to resolve method pointer.");
-        else
+        if (_wpclsReleaseNotifySem)
             _wpclsReleaseNotifySem(pWPFolder);
     }
 }

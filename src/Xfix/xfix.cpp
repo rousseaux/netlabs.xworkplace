@@ -54,6 +54,7 @@
 #include "helpers\threads.h"
 #include "helpers\tree.h"
 #include "helpers\winh.h"
+#define INCLUDE_WPHANDLE_PRIVATE
 #include "helpers\wphandle.h"
 #include "helpers\xstring.h"
 
@@ -103,7 +104,7 @@ ULONG       G_cDuplicatesFound = 0;
 
 PHANDLESBUF G_pHandlesBuf = NULL;
 
-PDRIV       G_aDriveNodes[27] = {0};        // drive nodes for each drive
+PDRIVE       G_aDriveNodes[27] = {0};        // drive nodes for each drive
 PNODE       G_aRootNodes[27] = {0};         // nodes for each root dir
 
 /* USHORT      G_usHiwordAbstract = 0,
@@ -139,7 +140,7 @@ typedef struct _OBJID
 } OBJID, *POBJID;
 
 TREE    *G_ObjIDsTree;          // has all OBJID nodes
-ULONG   G_cObjIDs = 0;          // count of nodes
+LONG    G_cObjIDs = 0;          // count of nodes
 
 /*
  *@@ OBJIDRECORD:
@@ -442,7 +443,7 @@ BOOL ComposeFullName(PNODERECORD precc,
 {
     if (!precc->arcResolve)
     {
-        APIRET arc = wphComposePath(G_pHandlesBuf,
+        APIRET arc = wphComposePath((HHANDLES)G_pHandlesBuf,
                                     pNode->usHandle,
                                     precc->szLongName,
                                     sizeof(precc->szLongName),
@@ -607,13 +608,35 @@ LONG inline CompareULongs(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
     return (0);
 }
 
+/*
+ *@@ CompareStrings:
+ *
+ *
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: made this use WinCompareStrings
+ */
+
 LONG inline CompareStrings(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
 {
     char *psz1 = *(char**)((PBYTE)precc1 + ulFieldOfs);
     char *psz2 = *(char**)((PBYTE)precc2 + ulFieldOfs);
     if ((psz1) && (psz2))
-       return (strcmp(psz1,
-                      psz2));
+    {
+        switch (WinCompareStrings(G_hab,
+                                  0,     // current codepage
+                                  0,     // current country
+                                  psz1,
+                                  psz2,
+                                  0))    // reserved
+        {
+            case WCS_LT: return -1;
+            case WCS_GT: return +1;
+            default:
+            // case WCS_EQ:
+                return 0;
+        }
+        /* return (strcmp(psz1,
+                       psz2)); */
+    }
     else if (psz1)
         // string 1 exists, but 2 doesn't:
         return (1);
@@ -717,8 +740,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                         WPINIAPP_LOCATION, // "PM_Workplace:Location",
                                         &pszObjIDs)))
         {
-            treeInit(&G_ObjIDsTree);
-            G_cObjIDs = 0;
+            treeInit(&G_ObjIDsTree, &G_cObjIDs);
 
             // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
             const char *pcszObjIDThis = pszObjIDs;
@@ -732,10 +754,10 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     pcszObjIDThis,
                                     &pNewNode->Tree.ulKey,
                                     &cb);
-                if (!treeInsert(&G_ObjIDsTree,
-                                (TREE*)pNewNode,
-                                treeCompareKeys))      // sort by handle
-                    G_cObjIDs++;
+                treeInsert(&G_ObjIDsTree,
+                           &G_cObjIDs,
+                           (TREE*)pNewNode,
+                           treeCompareKeys);      // sort by handle
 
                 pcszObjIDThis += strlen(pcszObjIDThis) + 1;   // next key
             }
@@ -802,9 +824,9 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                     // we don't really care about these, because the root
                     // directory has a real NODE too, so we just
                     // skip this
-                    PDRIV pDriv = (PDRIV)pCur;
+                    PDRIVE pDriv = (PDRIVE)pCur;
                     cReccsTotal++;
-                    pCur += sizeof(DRIV) + strlen(pDriv->szName);
+                    pCur += sizeof(DRIVE) + strlen(pDriv->szName);
                 }
                 else if (!memicmp(pCur, "NODE", 4))
                 {
@@ -838,7 +860,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                                 &pszFolderPoses)))
                 {
                     TREE    *FolderPosesTree;
-                    treeInit(&FolderPosesTree);
+                    treeInit(&FolderPosesTree, NULL);
 
                     // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
                     // fixed... this shouldn't have used the full key name for
@@ -858,6 +880,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                         pNewNode->szDecimalHandle[c] = '\0';
                         pNewNode->Tree.ulKey = (ULONG)pNewNode->szDecimalHandle;
                         treeInsert(&FolderPosesTree,
+                                   NULL,
                                    (TREE*)pNewNode,
                                    CompareStrings);
                                 // @@ free the tree nodes
@@ -892,7 +915,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                 // we don't care about these, because the root
                                 // directory has a real NODE too, so we just
                                 // skip this
-                                PDRIV pDriv = (PDRIV)pCur;
+                                PDRIVE pDriv = (PDRIVE)pCur;
                                 preccThis->pszType = "DRIV";
                                 strcpy(preccThis->szShortNameCopy,
                                        pDriv->szName);
@@ -925,7 +948,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     }
                                 }
 
-                                pCur += sizeof(DRIV) + strlen(pDriv->szName);
+                                pCur += sizeof(DRIVE) + strlen(pDriv->szName);
                             }
                             else if (!memicmp(pCur, "NODE", 4))
                             {
@@ -1069,8 +1092,8 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     // parents tree
 
                                     // get the NODE from the record hash table
-                                    PNODE pNodeStart = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle],
-                                          pNodeThis = pNodeStart;
+                                    PNODETREENODE pNodeStart = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle],
+                                                  pNodeThis = pNodeStart;
 
                                     PNODERECORD pPrevParent = NULL;
 
@@ -1078,11 +1101,11 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     {
                                         PNODERECORD pParentRec = NULL;
 
-                                        if (pNodeThis->usParentHandle)
+                                        if (pNodeThis->pNode->usParentHandle)
                                         {
                                             // we have a parent:
                                             pParentRec
-                                                = G_RecordHashTable[pNodeThis->usParentHandle];
+                                                = G_RecordHashTable[pNodeThis->pNode->usParentHandle];
 
                                             if (pParentRec)
                                             {
@@ -1230,11 +1253,11 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
         if (preccThis->ulHandle)
         {
             // get the NODE from the record hash table
-            PNODE pNodeThis = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle];
-            if (pNodeThis->usParentHandle)
+            PNODETREENODE pNodeThis = G_pHandlesBuf->NodeHashTable[preccThis->ulHandle];
+            if (pNodeThis->pNode->usParentHandle)
             {
                 // record has parent:
-                PNODERECORD pParentRec = G_RecordHashTable[pNodeThis->usParentHandle];
+                PNODERECORD pParentRec = G_RecordHashTable[pNodeThis->pNode->usParentHandle];
 
                 if (pParentRec)
                 {
@@ -2224,9 +2247,9 @@ VOID NukeObjID(PNODERECORD prec,
 
     // remove the objid from the tree
     if (!treeDelete(&G_ObjIDsTree,
+                    &G_cObjIDs,
                     (TREE*)prec->pObjID))
     {
-        G_cObjIDs--;
         CHAR sz2[30];
 
         if (G_hwndObjIDsFrame)
@@ -2397,8 +2420,8 @@ ULONG RemoveHandles(HWND hwndCnr,
             if (memcmp(pbItem, "DRIV", 4) == 0)
             {
                 // it's a DRIVE node:
-                PDRIV pDrivDelete = (PDRIV)pbItem;
-                cbDelete = sizeof(DRIV) + strlen(pDrivDelete->szName);
+                PDRIVE pDrivDelete = (PDRIVE)pbItem;
+                cbDelete = sizeof(DRIVE) + strlen(pDrivDelete->szName);
                 fIsDrive = TRUE;
             }
             else if (memcmp(pbItem, "NODE", 4) == 0)
@@ -2500,7 +2523,7 @@ ULONG RemoveHandles(HWND hwndCnr,
             pNode = pNode->pNext;
         } // end while (pNode)
 
-        wphRebuildNodeHashTable(G_pHandlesBuf);
+        wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf);
         RebuildRecordsHashTable();
 
         // only now that we have rebuilt all record
@@ -2652,8 +2675,8 @@ BOOL WriteAllBlocks(PSZ pszHandles,
             ULONG ulPartSize;
             if (!memicmp(p, "DRIV", 4))
             {
-                PDRIV pDriv = (PDRIV)p;
-                ulPartSize = sizeof(DRIV) + strlen(pDriv->szName);
+                PDRIVE pDriv = (PDRIVE)p;
+                ulPartSize = sizeof(DRIVE) + strlen(pDriv->szName);
             }
             else if (!memicmp(p, "NODE", 4))
             {
@@ -3810,31 +3833,37 @@ int main(int argc, char* argv[])
                 if (arc = wphLoadHandles(HINI_USER,
                                          HINI_SYSTEM,
                                          pszActiveHandles,
-                                         &G_pHandlesBuf))
+                                         (HHANDLES*)&G_pHandlesBuf))
                     MessageBox(NULLHANDLE,
                                MB_CANCEL,
                                "Error %d occured loading the handles from the INI files.",
                                arc);
                 else
                 {
-                    wphRebuildNodeHashTable(G_pHandlesBuf);
+                    if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf))
+                        MessageBox(NULLHANDLE,
+                                   MB_CANCEL,
+                                   "Error %d building handles cache.",
+                                   arc);
+                    else
+                    {
+                        StartInsertHandles(hwndCnr);
 
-                    StartInsertHandles(hwndCnr);
+                        // display introductory help with warnings
+                        WinPostMsg(G_hwndMain,
+                                   WM_COMMAND,
+                                   (MPARAM)IDMI_HELP_GENERAL,
+                                   0);
 
-                    // display introductory help with warnings
-                    WinPostMsg(G_hwndMain,
-                               WM_COMMAND,
-                               (MPARAM)IDMI_HELP_GENERAL,
-                               0);
+                        // standard PM message loop
+                        while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
+                            WinDispatchMsg(G_hab, &qmsg);
 
-                    // standard PM message loop
-                    while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
-                        WinDispatchMsg(G_hab, &qmsg);
-
-                    if (G_tidInsertHandlesRunning)
-                        thrFree(&G_tiInsertHandles);
-                    if (G_tidCheckFilesRunning)
-                        thrFree(&G_tiCheckFiles);
+                        if (G_tidInsertHandlesRunning)
+                            thrFree(&G_tiInsertHandles);
+                        if (G_tidCheckFilesRunning)
+                            thrFree(&G_tiCheckFiles);
+                    }
                 }
             }
         }

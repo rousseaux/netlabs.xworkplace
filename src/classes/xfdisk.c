@@ -126,16 +126,23 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
                                                 HWND hwndCnr,
                                                 BOOL fMultiSelect)
 {
+    ULONG ulrc;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterPopupMenu");
 
-    return (XFldDisk_parent_WPDisk_wpFilterPopupMenu(somSelf,
-                                                     ulFlags,
-                                                     hwndCnr,
-                                                     fMultiSelect)
-        & ~( pGlobalSettings->DefaultMenuItems | CTXT_NEW )
-        );
+    _Pmpf((__FUNCTION__ ": entering"));
+
+    ulrc = (    XFldDisk_parent_WPDisk_wpFilterPopupMenu(somSelf,
+                                                         ulFlags,
+                                                         hwndCnr,
+                                                         fMultiSelect)
+             &  ~( pGlobalSettings->DefaultMenuItems | CTXT_NEW )
+           );
+
+    _Pmpf((__FUNCTION__ ": leaving"));
+
+    return (ulrc);
 }
 
 /*
@@ -160,29 +167,33 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     BOOL            rc;
 
-    // get the "root folder" of the WPDisk object; that is the
-    // folder which is opened when the disk object is opened
-    // (i.e. the folder of the root directory). This returns
-    // NULL if the drive is not ready.
-    XFolder         *pFolder = _wpQueryRootFolder(somSelf);
-
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpModifyPopupMenu");
 
-    rc = XFldDisk_parent_WPDisk_wpModifyPopupMenu(somSelf,hwndMenu,hwndCnr,iPosition);
+    _Pmpf((__FUNCTION__ ": entering"));
 
-    if (pGlobalSettings->RemoveFormatDiskItem)
-        winhRemoveMenuItem(hwndMenu, ID_WPMI_FORMATDISK);
+    if (rc = XFldDisk_parent_WPDisk_wpModifyPopupMenu(somSelf,
+                                                      hwndMenu,
+                                                      hwndCnr,
+                                                      iPosition))
+    {
+        WPFolder *pFolder = _wpQueryRootFolder(somSelf);
 
-    if (pGlobalSettings->RemoveCheckDiskItem)
-        winhRemoveMenuItem(hwndMenu, ID_WPMI_CHECKDISK);
+        if (pGlobalSettings->RemoveFormatDiskItem)
+            winhRemoveMenuItem(hwndMenu, ID_WPMI_FORMATDISK);
 
-    if (pFolder)
-        // drive ready:
-        rc = mnuModifyFolderPopupMenu(pFolder,
-                                      hwndMenu,
-                                      hwndCnr,    // @@todo this seems to be NULLHANDLE
-                                      iPosition);
+        if (pGlobalSettings->RemoveCheckDiskItem)
+            winhRemoveMenuItem(hwndMenu, ID_WPMI_CHECKDISK);
+
+        if (pFolder)
+            // drive ready:
+            rc = mnuModifyFolderPopupMenu(pFolder,
+                                          hwndMenu,
+                                          hwndCnr,    // @@todo this seems to be NULLHANDLE
+                                          iPosition);
+    }
+
+    _Pmpf((__FUNCTION__ ": leaving"));
 
     return (rc);
 }
@@ -248,6 +259,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
  *      popups. So we try to implement this here.
  *
  *@@changed V0.9.0 [umoeller]: added global setting for disabling this feature
+ *@@changed V0.9.16 (2001-10-23) [umoeller]: now intercepting OPEN_SETTINGS too
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
@@ -261,23 +273,35 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpViewObject");
 
+    _Pmpf((__FUNCTION__ ": entering"));
+
     // "Drive not ready" replacement enabled?
     if (    (pGlobalSettings->fReplDriveNotReady)
-         && (ulView != OPEN_SETTINGS)
+         // && (ulView != OPEN_SETTINGS)
+                // V0.9.16 (2001-10-23) [umoeller]
+                // do this for settings too,
+                // however, on eCS this _never_ gets called...
+                // we leave this in here in case Warp 3 behaves
+                // differently, but we do the same check again in
+                // wpOpen below now
        )
     {
         // yes: use the safe way of opening the
         // drive (this prompts the user upon errors)
         XFolder*        pRootFolder = NULL;
-        pRootFolder = dskCheckDriveReady(somSelf);
-        if (pRootFolder)
-            // success: call default
-            hwndFrame = XFldDisk_parent_WPDisk_wpViewObject(somSelf, hwndCnr,
-                                                            ulView, param);
+        if (!(pRootFolder = dskCheckDriveReady(somSelf)))
+            // error: do _not_ call default
+            somSelf = NULL;
     }
-    else
-        hwndFrame = XFldDisk_parent_WPDisk_wpViewObject(somSelf, hwndCnr,
-                                                        ulView, param);
+
+    if (somSelf)
+        // drive checking disabled, or disk is ready:
+        hwndFrame = XFldDisk_parent_WPDisk_wpViewObject(somSelf,
+                                                        hwndCnr,
+                                                        ulView,
+                                                        param);
+
+    _Pmpf((__FUNCTION__ ": leaving"));
 
     return (hwndFrame);
 }
@@ -304,6 +328,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
  *
  *@@changed V0.9.2 (2000-03-06) [umoeller]: drives were checked even if replacement dlg was disabled; fixed
  *@@changed V0.9.3 (2000-04-08) [umoeller]: adjusted for new folder subclassing
+ *@@changed V0.9.16 (2001-10-23) [umoeller]: now intercepting OPEN_SETTINGS too
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
@@ -311,16 +336,18 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                       ULONG ulView,
                                       ULONG param)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndNewFrame = NULLHANDLE; // default: error occured
+
+    _Pmpf((__FUNCTION__ ": entering"));
 
     switch (ulView)
     {
         case OPEN_CONTENTS:
         case OPEN_TREE:
         case OPEN_DETAILS:
+        case OPEN_SETTINGS:     // V0.9.16 (2001-10-23) [umoeller]
         {
-            APIRET          arc = NO_ERROR;
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             XFolder*        pRootFolder = 0;
             // XFldDiskData *somThis = XFldDiskGetData(somSelf);
             XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
@@ -334,8 +361,11 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                 // pRootFolder instead of somSelf to most following method calls.
                 // We use wpshQueryRootFolder instead of wpQueryRootFolder to
                 // avoid "Drive not ready" popups.
-                pRootFolder = wpshQueryRootFolder(somSelf, FALSE, &arc);
-                if (pRootFolder)
+                if (pRootFolder = dskCheckDriveReady(somSelf))
+                                // V0.9.16 (2001-10-23) [umoeller]
+                                // now using dskCheckDriveReady instead of
+                                // wpshQueryRootFolder because wpViewObject
+                                // never gets called for OPEN_SETTINGS
                     // drive ready: call parent to get frame handle
                     hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
                                                                  hwndCnr,
@@ -346,77 +376,68 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
             else
             {
                 // "drive not ready" replacement disabled:
-                hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
+                if (hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
                                                              hwndCnr,
                                                              ulView,
-                                                             param);
-                if (hwndNewFrame)
+                                                             param))
                     // no error:
                     pRootFolder = _wpQueryRootFolder(somSelf);
             }
 
-            if (pRootFolder)
+            if (    (pRootFolder)
+                 && (hwndNewFrame)
+                 && (ulView != OPEN_SETTINGS)
+               )
             {
+                PSUBCLASSEDFOLDERVIEW psfv = NULL;
 
-                if (hwndNewFrame)
-                {
-                    // open successful:
-                    if (   (ulView == OPEN_CONTENTS)
-                        || (ulView == OPEN_TREE)
-                        || (ulView == OPEN_DETAILS)
-                       )
-                    {
-                        PSUBCLASSEDFOLDERVIEW psfv = NULL;
+                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
-                        hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
-
-                        // subclass frame window; this is the same
-                        // proc which is used for normal folder frames,
-                        // we just use pRootFolder instead.
-                        // However, we pass somSelf as the "real" object
-                        // which will then be stored in *psli.
-                        psfv = fdrSubclassFolderView(hwndNewFrame,
-                                                     hwndCnr,
-                                                     pRootFolder, // folder
-                                                     somSelf);    // real object; for disks, this
-                                                                  // is the WPDisk object...
-                        // add status bar, if allowed: as opposed to
-                        // XFolder's, for XFldDisk's we only check the
-                        // global setting, because there's no instance
-                        // setting for this with XFldDisk's
-                        if (
+                // subclass frame window; this is the same
+                // proc which is used for normal folder frames,
+                // we just use pRootFolder instead.
+                // However, we pass somSelf as the "real" object
+                // which will then be stored in *psli.
+                psfv = fdrSubclassFolderView(hwndNewFrame,
+                                             hwndCnr,
+                                             pRootFolder, // folder
+                                             somSelf);    // real object; for disks, this
+                                                          // is the WPDisk object...
+                // add status bar, if allowed: as opposed to
+                // XFolder's, for XFldDisk's we only check the
+                // global setting, because there's no instance
+                // setting for this with XFldDisk's
+                if (
 #ifndef __NOCFGSTATUSBARS__
-                                (cmnIsFeatureEnabled(StatusBars))
-                                                        // feature enabled?
-                             &&
+                        (cmnIsFeatureEnabled(StatusBars))
+                                                // feature enabled?
+                     &&
 #endif
-                                (pGlobalSettings->fDefaultStatusBarVisibility)
-                                                        // bars visible per default?
-                           )
-                            // assert that subclassed list item is valid
-                            if (psfv)
-                                // add status bar only if allowed for the current view type
-                                if (    (   (ulView == OPEN_CONTENTS)
-                                         && (pGlobalSettings->SBForViews & SBV_ICON)
-                                        )
-                                     || (   (ulView == OPEN_TREE)
-                                         && (pGlobalSettings->SBForViews & SBV_TREE)
-                                        )
-                                     || (   (ulView == OPEN_DETAILS)
-                                         && (pGlobalSettings->SBForViews & SBV_DETAILS)
-                                        )
-                                    )
-                                    // this reformats the window with the status bar
-                                    fdrCreateStatusBar(pRootFolder, psfv, TRUE);
+                        (pGlobalSettings->fDefaultStatusBarVisibility)
+                                                // bars visible per default?
+                   )
+                    // assert that subclassed list item is valid
+                    if (psfv)
+                        // add status bar only if allowed for the current view type
+                        if (    (   (ulView == OPEN_CONTENTS)
+                                 && (pGlobalSettings->SBForViews & SBV_ICON)
+                                )
+                             || (   (ulView == OPEN_TREE)
+                                 && (pGlobalSettings->SBForViews & SBV_TREE)
+                                )
+                             || (   (ulView == OPEN_DETAILS)
+                                 && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                                )
+                            )
+                            // this reformats the window with the status bar
+                            fdrCreateStatusBar(pRootFolder, psfv, TRUE);
 
-                        // extended sort functions
-                        if (pGlobalSettings->ExtFolderSort)
-                            if (hwndCnr)
-                                fdrSetFldrCnrSort(pRootFolder,
-                                                  hwndCnr,
-                                                  FALSE);
-                    }
-                }
+                // extended sort functions
+                if (pGlobalSettings->ExtFolderSort)
+                    if (hwndCnr)
+                        fdrSetFldrCnrSort(pRootFolder,
+                                          hwndCnr,
+                                          FALSE);
             } // if (pRootFolder)
         break; }
 
@@ -428,7 +449,41 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                                          param);
     } // switch (ulView)
 
+    _Pmpf((__FUNCTION__ ": leaving"));
+
     return (hwndNewFrame);
+}
+
+/*
+ *@@ wpAddSettingsPages:
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      We override this so we can attempt to avoid the
+ *      disk error msg boxes here.
+ *
+ *@@added V0.9.16 (2001-10-23) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
+                                                  HWND hwndNotebook)
+{
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddSettingsPages");
+
+    if (pGlobalSettings->fReplDriveNotReady)
+    {
+        WPFolder *pRoot;
+        if (!(pRoot = wpshQueryRootFolder(somSelf, FALSE, NULL)))
+            return FALSE;
+    }
+
+    return (XFldDisk_parent_WPDisk_wpAddSettingsPages(somSelf,
+                                                      hwndNotebook));
 }
 
 /*

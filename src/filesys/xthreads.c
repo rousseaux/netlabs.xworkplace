@@ -246,8 +246,8 @@ BOOL xthrLockAwakeObjectsList(VOID)
                                      0,
                                      TRUE))
         {
-            treeInit(&G_AwakeObjectsTree);
-            G_lAwakeObjectsCount = 0;
+            treeInit(&G_AwakeObjectsTree,
+                     &G_lAwakeObjectsCount);
 
             if (!(G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
                                                 _HEAP_MIN_SIZE,
@@ -371,11 +371,12 @@ VOID WorkerAddObject(WPObject *pObj2Store)
                 {
                     pNode->ulKey = (ULONG)pObj2Store;
 
-                    if (!treeInsert(&G_AwakeObjectsTree,
-                                    pNode,
-                                    treeCompareKeys))
-                        // increment global count
-                        G_lAwakeObjectsCount++;
+                    treeInsert(&G_AwakeObjectsTree,
+                               // increment global count
+                               &G_lAwakeObjectsCount,
+                               pNode,
+                               treeCompareKeys);
+
                     #ifdef DEBUG_AWAKEOBJECTS
                         else
                             _Pmpf(("WT: Item is already on list"));
@@ -440,14 +441,13 @@ VOID WorkerRemoveObject(WPObject *pObj)
                                      treeCompareKeys))
                 {
                     treeDelete(&G_AwakeObjectsTree,
+                               // decrement global count
+                               &G_lAwakeObjectsCount,
                                pNode);
                     (free)(pNode);        // works with user heap
                             // free must be in brackets so it won't
                             // get replaced with debug malloc, if enabled
                             // V0.9.12 (2001-05-21) [umoeller]
-
-                    // decrement global count
-                    G_lAwakeObjectsCount--;
                 }
             }
         }
@@ -2624,15 +2624,14 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
-BOOL xthrStartThreads(FILE *DumpFile)
+BOOL xthrStartThreads(PVOID pLogFile)
 {
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
 
-    if (DumpFile)
-        fprintf(DumpFile,
-                "\nEntering " __FUNCTION__":\n");
+    doshWriteLogEntry(pLogFile,
+                      "Entering " __FUNCTION__":");
 
     if (pKernelGlobals)
     {
@@ -2661,10 +2660,9 @@ BOOL xthrStartThreads(FILE *DumpFile)
                           THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
 
-                if (DumpFile)
-                    fprintf(DumpFile,
-                            "  Started XWP Worker thread, TID: %d\n",
-                            G_tiWorkerThread.tid);
+                doshWriteLogEntry(pLogFile,
+                                  "  Started XWP Worker thread, TID: %d",
+                                  G_tiWorkerThread.tid);
 
                 thrCreate(&G_tiSpeedyThread,
                           fntSpeedyThread,
@@ -2673,10 +2671,9 @@ BOOL xthrStartThreads(FILE *DumpFile)
                           THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
 
-                if (DumpFile)
-                    fprintf(DumpFile,
-                            "  Started XWP Speedy thread, TID: %d\n",
-                            G_tiSpeedyThread.tid);
+                doshWriteLogEntry(pLogFile,
+                                  "  Started XWP Speedy thread, TID: %d",
+                                  G_tiSpeedyThread.tid);
             }
 
             thrCreate(&G_tiFileThread,
@@ -2686,10 +2683,9 @@ BOOL xthrStartThreads(FILE *DumpFile)
                       THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                       0);
 
-            if (DumpFile)
-                fprintf(DumpFile,
-                        "  Started XWP File thread, TID: %d\n",
-                        G_tiFileThread.tid);
+            doshWriteLogEntry(pLogFile,
+                              "  Started XWP File thread, TID: %d",
+                              G_tiFileThread.tid);
         }
 
         krnUnlockGlobals();

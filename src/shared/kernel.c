@@ -255,7 +255,8 @@ BOOL krnLock(const char *pcszSourceFile,        // in: __FILE__
     if (!G_hmtxCommonLock)
     {
         // first call:
-        treeInit(&G_ClassNamesTree);        // V0.9.16 (2001-09-29) [umoeller]
+        treeInit(&G_ClassNamesTree,        // V0.9.16 (2001-09-29) [umoeller]
+                 NULL);
         return (!DosCreateMutexSem(NULL,         // unnamed
                                    &G_hmtxCommonLock,
                                    0,            // unshared
@@ -415,6 +416,7 @@ BOOL krnClassInitialized(PCSZ pcszClassName)
         {
             pNew->ulKey = (ULONG)pcszClassName;
             brc = !treeInsert(&G_ClassNamesTree,
+                              NULL,
                               pNew,
                               treeCompareStrings);
         }
@@ -1787,6 +1789,8 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
         /*
          *@@ APIM_NETSCDDEHELP:
          *      displays the help for NetscapeDDE.
+         *
+         *      No parameters.
          *
          *@@added V0.9.16 (2001-10-02) [umoeller]
          */

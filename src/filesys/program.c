@@ -265,9 +265,37 @@ BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
 }
 
 /*
+ *@@ progIsProgramOrProgramFile:
+ *      returns
+ *
+ *      --  1 if somSelf is a WPProgram
+ *
+ *      --  2 if somSelf is a WPProgramFile
+ *
+ *      --  0 otherwise.
+ *
+ *@@added V0.9.16 (2001-10-19) [umoeller]
+ */
+
+ULONG progIsProgramOrProgramFile(WPObject *somSelf)
+{
+    if (_somIsA(somSelf, _WPProgram))
+        return 1;
+
+    if (_somIsA(somSelf, _WPProgramFile))
+        return 2;
+
+    return 0;
+}
+
+/*
  *@@ progQueryDetails:
  *      returns the PROGDETAILS of the specified
  *      object or NULL on errors.
+ *
+ *      This does check whether pProgObject is
+ *      a WPProgram or WPProgramFile to avoid
+ *      crashes.
  *
  *      Caller must free() the returned buffer.
  *
@@ -279,9 +307,7 @@ PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram 
     ULONG   ulSize = 0;
     PPROGDETAILS    pProgDetails = 0;
     // make sure we really have a program
-    if (    (_somIsA(pProgObject, _WPProgram))
-         || (_somIsA(pProgObject, _WPProgramFile))
-       )
+    if (progIsProgramOrProgramFile(pProgObject))
     {
         if ((_wpQueryProgDetails(pProgObject, (PPROGDETAILS)NULL, &ulSize)))
             if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
@@ -1302,13 +1328,16 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
  *@@changed V0.9.7 (2000-12-17) [umoeller]: now building environment correctly
  *@@changed V0.9.12 (2001-05-22) [umoeller]: extracted progQueryDetails
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed crash cleanup
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed prototype for APIRET
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed root folder problems
  */
 
-HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
-                     WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
-                     ULONG ulMenuID)            // in: with data files, menu ID that was used
+APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
+                       WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
+                       ULONG ulMenuID,            // in: with data files, menu ID that was used
+                       HAPP *phapp)             // out: HAPP
 {
-    HAPP            happ = 0;
+    APIRET          arc = NO_ERROR;
     PSZ             pszParams = NULL;
     PPROGDETAILS    pProgDetails = NULL;
 
@@ -1316,7 +1345,9 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
     {
         // get program data
         // (progQueryDetails checks for whether this is a valid object)
-        if (pProgDetails = progQueryDetails(pProgObject))
+        if (!(pProgDetails = progQueryDetails(pProgObject)))
+            arc = ERROR_NOT_ENOUGH_MEMORY;
+        else
         {
             // OK, now we got the program object data....
             /*
@@ -1332,11 +1363,16 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
               SWP          swpInitial;      //  Initial window position and size.
             } PROGDETAILS; */
 
+            _Pmpf(("exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
+            _Pmpf(("params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
+            _Pmpf(("startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
+
             // fix parameters (placeholders etc.)
-            if (    (progSetupArgs(pProgDetails->pszParameters,
-                                   pArgDataFile,
-                                   &pszParams))
-               )
+            if (!(progSetupArgs(pProgDetails->pszParameters,
+                                pArgDataFile,
+                                &pszParams)))
+                arc = ERROR_INTERRUPT;
+            else
             {
                 PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
@@ -1353,7 +1389,14 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                         if (    (pFilesFolder = _wpQueryFolder(pArgDataFile))
                              && (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
                            )
+                        {
+                            // bullshit, this returns "K:" only for root
+                            // folders, so check!!
+                            // @@todo fix this everywhere V0.9.16 (2001-10-19) [umoeller]
+                            if (strlen(szDatafileDir) < 3)
+                                strcpy(szDatafileDir + 1, ":\\");
                             pszStartupDir = szDatafileDir;
+                        }
                     }
 
                 // set the new params and startup dir
@@ -1368,18 +1411,17 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
 
                 // start the app (more hacks in appStartApp,
                 // which calls WinStartApp in turn)
-                happ = appStartApp(pKernelGlobals->hwndThread1Object,
-                                   pProgDetails,
-                                   0); // V0.9.14
-
-                if (happ)
+                if (!(arc = appStartApp(pKernelGlobals->hwndThread1Object,
+                                        pProgDetails,
+                                        0, // V0.9.14
+                                        phapp)))        // V0.9.16 (2001-10-19) [umoeller]
                 {
                     // app started OK:
                     // set in-use emphasis on either
                     // the data file or the program object
                     progStoreRunningApp(pProgObject,
                                         pArgDataFile,
-                                        happ,
+                                        *phapp,
                                         ulMenuID);
                 }
             } // end if progSetupArgs
@@ -1387,7 +1429,7 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
     }
     CATCH(excpt1)
     {
-        happ = 0;
+        arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
 
     if (pszParams)
@@ -1400,6 +1442,6 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
         free(pProgDetails);
     }
 
-    return (happ);
+    return (arc);
 }
 

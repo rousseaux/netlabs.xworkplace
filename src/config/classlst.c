@@ -422,7 +422,9 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
                 case ID_XLDI_BROWSE:
                 {
-                    FILEDLG fd;
+                    CHAR szFile[CCHMAXPATH] = "*.DLL";
+
+                    /* FILEDLG fd;
                     memset(&fd, 0, sizeof(FILEDLG));
                     fd.cbSize = sizeof(FILEDLG);
                     fd.fl = FDS_OPEN_DIALOG | FDS_CENTER;
@@ -436,10 +438,18 @@ MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                                        hwndDlg,
                                        &fd)
                         && (fd.lReturn == DID_OK)
-                       )
+                       ) */
+
+                    if (cmnFileDlg(hwndDlg,     // V0.9.16 (2001-10-19) [umoeller]
+                                   szFile,
+                                   WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                                   HINI_USER,
+                                   INIAPP_XWORKPLACE,
+                                   "RegisterClassLastDir"))
                     {
-                        WinSetDlgItemText(hwndDlg, ID_XLDI_CLASSMODULE,
-                                    fd.szFullFile);
+                        WinSetDlgItemText(hwndDlg,
+                                          ID_XLDI_CLASSMODULE,
+                                          szFile);
                     }
                 break; }
 
@@ -712,6 +722,8 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         if (pwps->pClassObject)
             if (fIsWPSClass)
                 hClassIcon = _wpclsQueryIcon(pwps->pClassObject);
+                        // uh-oh, resource leak here
+                        // @@todo V0.9.16 (2001-10-19) [umoeller]
         WinSendDlgItemMsg(pClientData->hwndClassInfoDlg, ID_XLDI_ICON,
                           SM_SETHANDLE,
                           (MPARAM)hClassIcon,  // NULLHANDLE if error -> hide

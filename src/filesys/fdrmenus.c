@@ -187,6 +187,10 @@ static HMTX        G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [u
 static LINKLIST    G_llConfigContent;
 static BOOL        G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
+static POINTL      G_ptlMouseMenu;              // ptr position when menu was opened
+                                                // moved this here from XFolder instance
+                                                // data V0.9.16 (2001-10-23) [umoeller]
+
 /* ******************************************************************
  *
  *   Various helper funcs
@@ -852,15 +856,12 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         HWND        hwndFrame = NULLHANDLE;
         ULONG       ulView = -1;
         BOOL        bSepAdded = FALSE;
-        POINTL      ptlMouse;
 
         if (hwndCnr)
             hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
         // store mouse pointer position for creating objects from templates
-        WinQueryMsgPos(G_habThread1, &ptlMouse);
-        _MenuMousePosX = ptlMouse.x;
-        _MenuMousePosY = ptlMouse.y;
+        WinQueryMsgPos(G_habThread1, &G_ptlMouseMenu);      // V0.9.16 (2001-10-23) [umoeller]
 
         #ifdef DEBUG_MENUS
             _Pmpf(("mnuModifyFolderPopupMenu, hwndCnr: 0x%lX", hwndCnr));
@@ -1804,9 +1805,6 @@ BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                     if (psfv)
                     {
                         XFolderData     *somThis = XFolderGetData(somSelf);
-                        POINTL          ptlMousePos;
-                        ptlMousePos.x = _MenuMousePosX;
-                        ptlMousePos.y = _MenuMousePosY;
 
                         wpshCreateFromTemplate(WinQueryAnchorBlock(hwndFrame),
                                                pObject,  // template
@@ -1817,7 +1815,7 @@ BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                                                         // 1: open settings notebook
                                                         // 2: make title editable
                                                pGlobalSettings->TemplatesReposition,
-                                               &ptlMousePos);
+                                               &G_ptlMouseMenu); // V0.9.16 (2001-10-23) [umoeller]
                         /* G_ptlTemplateMousePos.x = _MenuMousePosX;
                         G_ptlTemplateMousePos.y = _MenuMousePosY;
                         WinPostMsg(psfv->hwndSupplObject,
@@ -1857,7 +1855,7 @@ BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                     // which are marked as OC_CONTENT; MB2 clicks into
                     // content menus are handled by the subclassed folder wnd proc
                     _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-                break;
+
             } // end switch
         } //end else (pObject == NULL)
         brc = TRUE;

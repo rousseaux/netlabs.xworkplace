@@ -138,6 +138,8 @@ const char *WC_ADDCHILDRENOBJ   = "XWPFileDlgAddChildren";
  *
  *      This pretty much holds all the data the
  *      file dlg needs while it is running.
+ *
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: added UNC support
  */
 
 typedef struct _FILEDLGDATA
@@ -205,14 +207,20 @@ typedef struct _FILEDLGDATA
     LINKLIST    llFileObjectsInserted;
 
     // full file name etc., parsed and set by ParseFileString()
-    ULONG       ulLogicalDrive;         // e.g. 3 for 'C'
-    CHAR        szDir[CCHMAXPATH],      // e.g. "\whatever"
-                szFileMask[CCHMAXPATH],    // e.g. "*.txt"
-                szFileName[CCHMAXPATH]; // e.g. "test.txt"
+    // ULONG       ulLogicalDrive;          // e.g. 3 for 'C'
+    CHAR        szDrive[CCHMAXPATH];        // e.g. "C:" if local drive,
+                                            // or "\\SERVER\RESOURCE" if UNC
+    BOOL        fUNCDrive;                  // TRUE if szDrive specifies something UNC
+    CHAR        szDir[CCHMAXPATH],          // e.g. "\whatever"
+                szFileMask[CCHMAXPATH],     // e.g. "*.txt"
+                szFileName[CCHMAXPATH];     // e.g. "test.txt"
 
     BOOL        fFileDlgReady;
             // while this is FALSE (during the initial setup),
             // the dialog doesn't react to any changes in the containers
+
+    ULONG       cThreadsRunning;
+            // if > 0, STPR_WAIT is used for the pointer
 
 } FILEDLGDATA, *PFILEDLGDATA;
 
@@ -951,7 +959,7 @@ BOOL ctlComboFromEntryField(HWND hwnd,          // in: entry field to be convert
  *      This returns a ULONG bitset with any combination
  *      of the following:
  *
- *      -- FFL_DRIVE: drive was specified,
+ *      -- FFL_DRIVE: drive (or UNC resource) was specified,
  *         and FILEDLGDATA.ulLogicalDrive has been updated.
  *
  *      -- FFL_PATH: directory was specified,
@@ -976,27 +984,66 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
 
     const char  *p;
 
+    if (    !(pcszFullFile)
+         || !(*pcszFullFile)
+       )
+        return 0;
+
     _Pmpf((__FUNCTION__ ": parsing %s", pcszFullFile));
 
-    // check if a drive is specified
-    if (    (*pcszFullFile)
-         && (pcszFullFile[1] == ':')
-       )
+    if (pcszFullFile[1] == ':')
     {
-        // yes:
-        LONG lNew = toupper(*pcszFullFile) - 'A' + 1;
-        if (lNew > 0 && lNew <= 26)
-            pWinData->ulLogicalDrive = lNew;
+        // local drive specified:
+        if (    (*pcszFullFile >= 'A')
+             && (*pcszFullFile <= 'Z')
+           )
+        {
+            pWinData->szDrive[0] = *pcszFullFile;
+            pWinData->szDrive[1] = ':';
+            pWinData->szDrive[2] = '\0';
+            pWinData->fUNCDrive = FALSE;
 
-        _Pmpf(("  new logical drive is %d", pWinData->ulLogicalDrive));
-        p = pcszFullFile + 2;
-        ulChanged |= FFL_DRIVE;
+            p = pcszFullFile + 2;
+            ulChanged |= FFL_DRIVE;
+        }
+        else
+            // this is not a valid drive:
+            p = NULL;
+    }
+    else if (    (pcszFullFile[0] == '\\')
+              && (pcszFullFile[1] == '\\')
+            )
+    {
+        // UNC drive specified:
+        // this better be a full \\SERVER\RESOURCE string
+        PCSZ pResource;
+        if (pResource = strchr(pcszFullFile + 3, '\\'))
+        {
+            // we got at least \\SERVER\RESOURCE:
+            // check if more stuff is coming
+            if (p = strchr(pResource + 1, '\\'))
+                // yes: copy server and resource excluding that backslash
+                strhncpy0(pWinData->szDrive,
+                          pcszFullFile,
+                          p - pcszFullFile);
+            else
+                // server and resource only:
+                strcpy(pWinData->szDrive,
+                       pcszFullFile);
+
+            pWinData->fUNCDrive = TRUE;
+            ulChanged |= FFL_DRIVE;
+        }
+        else
+            // invalid UNC name:
+            p = NULL;
     }
     else
+        // no new drive: start at front
         p = pcszFullFile;
 
     // get path from there
-    if (*p)
+    if (p && *p)
     {
         // p2 = last backslash
         const char *p2 = strrchr(p, '\\');
@@ -1037,8 +1084,8 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
             BOOL fIsDir = FALSE;
 
             sprintf(szFull,
-                    "%c:%s\\%s",
-                    'A' + pWinData->ulLogicalDrive - 1,        // drive letter
+                    "%s%s\\%s",
+                    pWinData->szDrive,      // either C: or \\SERVER\RESOURCE
                     pWinData->szDir,
                     p2);        // entry
             if (!DosQueryPathInfo(szFull,
@@ -1576,6 +1623,8 @@ ULONG ClearContainer(HWND hwndCnr,
  *
  *      Returns a HPOINTER for either the wait or
  *      arrow pointer.
+ *
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed sticky wait pointer
  */
 
 HPOINTER QueryCurrentPointer(HWND hwndMainClient)
@@ -1585,7 +1634,7 @@ HPOINTER QueryCurrentPointer(HWND hwndMainClient)
     PFILEDLGDATA    pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER);
 
     if (pWinData)
-        if (pWinData->tidInsertContentsRunning)
+        if (pWinData->cThreadsRunning)
             idPtr = SPTR_WAIT;
 
     return (WinQuerySysPointer(HWND_DESKTOP,
@@ -1602,32 +1651,41 @@ HPOINTER QueryCurrentPointer(HWND hwndMainClient)
 
 VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 {
-    PMINIRECORDCORE precSelect = NULL;
+    PMINIRECORDCORE precDiskSelect = NULL;
+    WPFolder        *pRootFolder = NULL;
 
-    // go thru the disks list and find the WPDisk*
-    // which matches the current logical drive
-    PLISTNODE pNode = lstQueryFirstNode(&pWinData->llDisks);
-    WPFolder *pRootFolder = NULL;
-
-    _Pmpf((__FUNCTION__ ": pWinData->ulLogicalDrive = %d", pWinData->ulLogicalDrive));
-
-    while (pNode)
+    if (pWinData->fUNCDrive)
     {
-        WPDisk *pDisk = (WPDisk*)pNode->pItemData;
+         // @@todo
+    }
+    else
+    {
+        // we currently have a local drive:
+        // go thru the disks list and find the WPDisk*
+        // which matches the current logical drive
+        PLISTNODE pNode = lstQueryFirstNode(&pWinData->llDisks);
 
-        if (_wpQueryLogicalDrive(pDisk) == pWinData->ulLogicalDrive)
+        _Pmpf((__FUNCTION__ ": pWinData->szDrive = %s",
+               pWinData->szDrive));
+
+        while (pNode)
         {
-            precSelect = _wpQueryCoreRecord(pDisk);
-            pRootFolder = wpshQueryRootFolder(pDisk, FALSE, NULL);
-            break;
+            WPDisk *pDisk = (WPDisk*)pNode->pItemData;
+
+            if (_wpQueryLogicalDrive(pDisk) == pWinData->szDrive[0] - 'A' + 1)
+            {
+                precDiskSelect = _wpQueryCoreRecord(pDisk);
+                pRootFolder = wpshQueryRootFolder(pDisk, FALSE, NULL);
+                break;
+            }
+
+            pNode = pNode->pNext;
         }
 
-        pNode = pNode->pNext;
+        _Pmpf(("    precDisk = 0x%lX", precDiskSelect));
     }
 
-    _Pmpf(("    precDisk = 0x%lX", precSelect));
-
-    if ((precSelect) && (pRootFolder))
+    if ((precDiskSelect) && (pRootFolder))
     {
         // we got a valid disk and root folder:
         WPFolder *pFullFolder;
@@ -1637,12 +1695,12 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 
         WinPostMsg(pWinData->hwndAddChildren,
                    ACM_ADDCHILDREN,
-                   (MPARAM)precSelect,      // for disk now
+                   (MPARAM)precDiskSelect,      // for disk now
                    0);
 
         sprintf(szFull,
-                "%c:%s",
-                'A' + pWinData->ulLogicalDrive - 1,        // drive letter
+                "%s%s",
+                pWinData->szDrive,      // C: or \\SERVER\RESOURCE
                 pWinData->szDir);
         pFullFolder = _wpclsQueryFolder(_WPFolder, szFull, TRUE);
                     // this also awakes all folders in between
@@ -1653,7 +1711,7 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         if (pFullFolder)
         {
             CHAR szComponent[CCHMAXPATH];
-            PMINIRECORDCORE precParent = precSelect;    // start with disk
+            PMINIRECORDCORE precParent = precDiskSelect; // start with disk
             WPFolder *pFdrThis = pRootFolder;
             const char *pcThis = &pWinData->szDir[1];   // start after root '\'
 
@@ -1683,8 +1741,7 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 
                 // now szComponent contains the current
                 // path component;
-                // e.g. if szDir was "F:\OS2\BOOK",
-                // we now have "OS2"
+                // e.g. if szDir was "F:\OS2\BOOK", we now have "OS2"
 
                 _Pmpf(("    checking component %s", szComponent));
 
@@ -1713,7 +1770,7 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                                    0);
 
                         precParent = pNew;
-                        precSelect = precParent;
+                        precDiskSelect = precParent;
                     }
                     else
                         break;
@@ -1734,18 +1791,18 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         } // if (pFullFolder)
     } // if ((precSelect) && (pRootFolder))
 
-    if (precSelect)
+    if (precDiskSelect)
     {
         ULONG ul;
         // got valid folder, apparently:
         cnrhExpandFromRoot(pWinData->hwndDrivesCnr,
-                           (PRECORDCORE)precSelect);
+                           (PRECORDCORE)precDiskSelect);
         ul = cnrhScrollToRecord(pWinData->hwndDrivesCnr,
-                                (PRECORDCORE)precSelect,
+                                (PRECORDCORE)precDiskSelect,
                                 CMA_ICON | CMA_TEXT | CMA_TREEICON,
                                 TRUE);       // keep parent
         cnrhSelectRecord(pWinData->hwndDrivesCnr,
-                         precSelect,
+                         precDiskSelect,
                          TRUE);
         if (ul && ul != 3)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -2010,57 +2067,73 @@ VOID _Optlink fntAddChildren(PTHREADINFO ptiMyself)
  *
  *      This expects a INSERTTHREADSDATA pointer
  *      as ulUser, which is free()'d on exit.
+ *
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: added excpt handling
  */
 
 VOID _Optlink fntInsertContents(PTHREADINFO ptiMyself)
 {
-    PINSERTTHREADSDATA pThreadData
-        = (PINSERTTHREADSDATA)ptiMyself->ulData;
-    if (pThreadData)
+    TRY_LOUD(excpt1)
     {
-        PFILEDLGDATA pWinData = pThreadData->pWinData;
-
-        if (pWinData)
+        PINSERTTHREADSDATA pThreadData
+            = (PINSERTTHREADSDATA)ptiMyself->ulData;
+        if (pThreadData)
         {
-            if (pThreadData->pll)
-            {
-                PLISTNODE pNode = lstQueryFirstNode(pThreadData->pll);
-                while (pNode)
-                {
-                    PMINIRECORDCORE prec = (PMINIRECORDCORE)pNode->pItemData;
-                    WPFolder *pFolder = GetFSFromRecord(prec, TRUE);
-                    if (pFolder)
-                    {
-                        ClearContainer(pWinData->hwndFilesCnr,
-                                       &pWinData->llFileObjectsInserted);
+            PFILEDLGDATA pWinData = pThreadData->pWinData;
 
+            if (pWinData)
+            {
+                // set wait pointer
+                (pWinData->cThreadsRunning)++;
+                WinPostMsg(pWinData->hwndMainClient,
+                           XM_UPDATEPOINTER,
+                           0, 0);
+
+                if (pThreadData->pll)
+                {
+                    PLISTNODE pNode = lstQueryFirstNode(pThreadData->pll);
+                    while (pNode)
+                    {
+                        PMINIRECORDCORE prec = (PMINIRECORDCORE)pNode->pItemData;
+                        WPFolder *pFolder = GetFSFromRecord(prec, TRUE);
                         if (pFolder)
                         {
-                            InsertFolderContents(pWinData->hwndMainClient,
-                                                 pWinData->hwndFilesCnr,
-                                                 pFolder,
-                                                 NULL,      // no parent
-                                                 FALSE,         // all records
-                                                 pWinData->szFileMask, // file mask
-                                                 &pWinData->llFileObjectsInserted,
-                                                 NULL,
-                                                 &ptiMyself->fExit);
+                            ClearContainer(pWinData->hwndFilesCnr,
+                                           &pWinData->llFileObjectsInserted);
+
+                            if (pFolder)
+                            {
+                                InsertFolderContents(pWinData->hwndMainClient,
+                                                     pWinData->hwndFilesCnr,
+                                                     pFolder,
+                                                     NULL,      // no parent
+                                                     FALSE,         // all records
+                                                     pWinData->szFileMask, // file mask
+                                                     &pWinData->llFileObjectsInserted,
+                                                     NULL,
+                                                     &ptiMyself->fExit);
+                            }
                         }
+
+                        pNode = pNode->pNext;
                     }
 
-                    pNode = pNode->pNext;
+                    lstFree(&pThreadData->pll);
                 }
 
-                lstFree(&pThreadData->pll);
+                // clear wait pointer
+                (pWinData->cThreadsRunning)--;
+                WinPostMsg(pWinData->hwndMainClient,
+                           XM_UPDATEPOINTER,
+                           0, 0);
             }
 
-            WinPostMsg(pWinData->hwndMainClient,
-                       XM_UPDATEPOINTER,
-                       0, 0);
+            free(pThreadData);
         }
-
-        free(pThreadData);
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 }
 
 /*
@@ -2903,9 +2976,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case XM_UPDATEPOINTER:
             WinSetPointer(HWND_DESKTOP,
-                          WinQuerySysPointer(HWND_DESKTOP,
-                                             SPTR_ARROW,
-                                             FALSE));
+                          QueryCurrentPointer(hwnd));
         break;
 
         default:
@@ -3559,8 +3630,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
                             if (pfd->lReturn == DID_OK)
                             {
                                 sprintf(pfd->szFullFile,
-                                        "%c:%s\\%s",
-                                        'A' + WinData.ulLogicalDrive - 1,        // drive letter
+                                        "%s%s\\%s",
+                                        WinData.szDrive,     // C: or \\SERVER\RESOURCE
                                         WinData.szDir,
                                         WinData.szFileName);
                                 pfd->ulFQFCount = 1;

@@ -3288,6 +3288,7 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-19) [umoeller]: extracted FrameDestroy
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added WM_QUERYFRAMEINFO, which returns 0
  *@@changed V0.9.16 (2001-10-02) [umoeller]: fixed 100% CPU load while mouse was over disabled XCenter (settings dlg etc)
+ *@@changed V0.9.16 (2001-10-23) [umoeller]: removed all activation message handling as a temporary fix for Mozilla problems
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3486,7 +3487,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              *      for example.
              */
 
-            case WM_ACTIVATE:
+            /* case WM_ACTIVATE:
                 // test added V0.9.16 (2001-10-02) [umoeller]
                 _Pmpf((__FUNCTION__ ": WM_ACTIVATE %d", mp1));
                 if (mp1)
@@ -3494,7 +3495,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 else
                     DosBeep(3000, 30);
                 fCallDefault = TRUE;
-            break;
+            break; */
 
             /*
              * WM_COMMAND:

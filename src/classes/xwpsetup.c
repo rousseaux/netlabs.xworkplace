@@ -146,7 +146,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = cmnGetString(ID_XSSI_PARANOIA);  // pszParanoia
     pcnbp->ulDlgID = ID_XCD_PARANOIA;
-    pcnbp->usFirstControlID = ID_XCDI_VARMENUOFFSET;
+    // pcnbp->usFirstControlID = ID_XCDI_VARMENUOFFSET;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
     pcnbp->ulPageID = SP_SETUP_PARANOIA;
     pcnbp->pfncbInitPage    = setParanoiaInitPage;

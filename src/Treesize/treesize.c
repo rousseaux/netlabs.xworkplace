@@ -106,7 +106,7 @@ struct {
 } Settings;
 
 TREE    *G_LargestFilesTree;
-ULONG   G_cLargestFilesTree = 0;
+LONG    G_cLargestFilesTree = 0;
 
 const char      *G_pcszXFldTreesize = "XFldTreesize";
 
@@ -242,9 +242,9 @@ VOID CollectDirectory(PDIRINFO pdiThis)
                     pFileEntry->pszFilename = strdup(ffb3.achName);
 
                     treeInsert(&G_LargestFilesTree,
+                               &G_cLargestFilesTree,
                                (TREE*)pFileEntry,
                                treeCompareKeys);
-                    G_cLargestFilesTree++;
                 }
             }
         }
@@ -1759,7 +1759,7 @@ int main(int argc, char *argv[])
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return FALSE;
 
-    treeInit(&G_LargestFilesTree);
+    treeInit(&G_LargestFilesTree, &G_cLargestFilesTree);
 
     // check command line parameters: in C,
     // the first parameter is always the full

@@ -487,16 +487,16 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
  *      Desktop startup.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: changed to XFILE log file
  */
 
-BOOL xmmInit(FILE* DumpFile)
+BOOL xmmInit(PVOID pLogFile)
 {
     HMODULE hmodMDM = NULLHANDLE,
             hmodMMIO = NULLHANDLE;
 
-    if (DumpFile)
-        fprintf(DumpFile,
-                "\nEntering " __FUNCTION__":\n");
+    doshWriteLogEntry(pLogFile,
+                      "Entering " __FUNCTION__ ":");
 
     G_ulMMPM2Working = MMSTAT_WORKING;
 
@@ -514,10 +514,9 @@ BOOL xmmInit(FILE* DumpFile)
                 != NO_ERROR)
             G_ulMMPM2Working = MMSTAT_IMPORTSFAILED;
 
-    if (DumpFile)
-        fprintf(DumpFile,
-                "  Resolved MMPM/2 imports, new XWP media status: %d\n",
-                G_ulMMPM2Working);
+    doshWriteLogEntry(pLogFile,
+                      "  Resolved MMPM/2 imports, new XWP media status: %d",
+                      G_ulMMPM2Working);
 
     if (G_ulMMPM2Working == MMSTAT_WORKING)
     {
@@ -527,10 +526,9 @@ BOOL xmmInit(FILE* DumpFile)
                   "Media",
                   0,    // no msgq
                   0);
-        if (DumpFile)
-            fprintf(DumpFile,
-                    "  Started XWP Media thread, TID: %d\n",
-                    G_tiMediaThread.tid);
+        doshWriteLogEntry(pLogFile,
+                          "  Started XWP Media thread, TID: %d",
+                          G_tiMediaThread.tid);
     }
 
     return (G_ulMMPM2Working == MMSTAT_WORKING);

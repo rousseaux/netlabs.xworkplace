@@ -1342,7 +1342,9 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
         case ID_XSDI_SOUND_BROWSE:
         {
-            FILEDLG fd;
+            CHAR szFile[CCHMAXPATH] = "*";
+
+            /* FILEDLG fd;
             memset(&fd, 0, sizeof(FILEDLG));
             fd.cbSize = sizeof(FILEDLG);
             fd.fl = FDS_OPEN_DIALOG
@@ -1366,10 +1368,17 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                pcnbp->hwndFrame, // owner
                                &fd)
                 && (fd.lReturn == DID_OK)
-               )
+               ) */
+
+            if (cmnFileDlg(pcnbp->hwndFrame,        // V0.9.16 (2001-10-19) [umoeller]
+                           szFile,
+                           WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                           HINI_USER,
+                           INIAPP_XWORKPLACE,
+                           INIKEY_XWPSOUNDLASTDIR)) // "XWPSound:LastDir"
             {
                 // get the directory that was used
-                PSZ p = strrchr(fd.szFullFile, '\\');
+                /* PSZ p = strrchr(szFile, '\\');
                 if (p)
                 {
                     // contains directory:
@@ -1383,12 +1392,12 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                               pszDir);
                         free(pszDir);
                     }
-                }
+                } */
 
                 // copy file from FOD to page
                 WinSetDlgItemText(pcnbp->hwndDlgPage,
                                   ID_XSDI_SOUND_FILE,
-                                  fd.szFullFile);
+                                  szFile);
                 // rewrite that one sound MMPM.INI
                 UpdateMMPMINI(pcnbp);
             }

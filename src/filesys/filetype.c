@@ -180,7 +180,7 @@ static BOOL                G_fTypesWithFiltersValid = FALSE;
                         // set to TRUE if G_llTypesWithFilters has been filled
 
 static TREE                *G_WPSTypeAssocsTreeRoot = NULL;
-static ULONG               G_cWPSTypeAssocsTreeItems = 0;       // added V0.9.12 (2001-05-22) [umoeller]
+static LONG                G_cWPSTypeAssocsTreeItems = 0;       // added V0.9.12 (2001-05-22) [umoeller]
 static BOOL                G_fWPSTypesValid = FALSE;
 
 static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
@@ -213,7 +213,8 @@ BOOL ftypLockCaches(VOID)
         {
             lstInit(&G_llTypesWithFilters,
                     TRUE);         // auto-free
-            treeInit(&G_WPSTypeAssocsTreeRoot);
+            treeInit(&G_WPSTypeAssocsTreeRoot,
+                     &G_cWPSTypeAssocsTreeItems);
         }
     }
     else
@@ -287,7 +288,7 @@ VOID ftypInvalidateCaches(VOID)
             // array from the tree first to avoid
             // rebalancing the tree on every node
             // delete
-            ULONG cItems = G_cWPSTypeAssocsTreeItems;
+            LONG cItems = G_cWPSTypeAssocsTreeItems;
             TREE **papNodes = treeBuildArray(G_WPSTypeAssocsTreeRoot,
                                              &cItems);
 
@@ -314,8 +315,8 @@ VOID ftypInvalidateCaches(VOID)
             }
 
             // reset the tree root
-            treeInit(&G_WPSTypeAssocsTreeRoot);
-            G_cWPSTypeAssocsTreeItems = 0;
+            treeInit(&G_WPSTypeAssocsTreeRoot,
+                     &G_cWPSTypeAssocsTreeItems);
 
             G_fWPSTypesValid = FALSE;
         }
@@ -419,6 +420,7 @@ int TREEENTRY CompareTypeStrings(ULONG ul1, ULONG ul2)
  *      -- Caller must hold the cache mutex.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad types count
  */
 
 VOID BuildWPSTypesCache(VOID)
@@ -447,9 +449,10 @@ VOID BuildWPSTypesCache(VOID)
 
                 // insert into binary tree
                 treeInsert(&G_WPSTypeAssocsTreeRoot,
-                          (TREE*)pNewNode,
-                          CompareTypeStrings);
-                G_cWPSTypeAssocsTreeItems++; // V0.9.12 (2001-05-22) [umoeller]
+                           &G_cWPSTypeAssocsTreeItems,   // V0.9.16 (2001-10-19) [umoeller]
+                           (TREE*)pNewNode,
+                           CompareTypeStrings);
+                // G_cWPSTypeAssocsTreeItems++; // V0.9.12 (2001-05-22) [umoeller]
             }
             else
                 break;
@@ -3859,12 +3862,12 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             CHAR szFilename[CCHMAXPATH];
             sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
-            if (winhFileDlg(pcnbp->hwndDlgPage,
-                            szFilename,
-                            WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
-                            HINI_USER,
-                            INIAPP_XWORKPLACE,
-                            "XWPFileTypesDlg"))
+            if (cmnFileDlg(pcnbp->hwndDlgPage,
+                           szFilename,
+                           WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                           HINI_USER,
+                           INIAPP_XWORKPLACE,
+                           "XWPFileTypesDlg"))
             {
                 // create XML document then
                 CHAR szError[30];
@@ -3909,12 +3912,12 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             CHAR szFilename[CCHMAXPATH];
             sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
-            if (winhFileDlg(pcnbp->hwndDlgPage,
-                            szFilename,
-                            WINH_FOD_SAVEDLG | WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
-                            HINI_USER,
-                            INIAPP_XWORKPLACE,
-                            "XWPFileTypesDlg"))
+            if (cmnFileDlg(pcnbp->hwndDlgPage,
+                           szFilename,
+                           WINH_FOD_SAVEDLG | WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                           HINI_USER,
+                           INIAPP_XWORKPLACE,
+                           "XWPFileTypesDlg"))
             {
                 // check if file exists
                 CHAR szError[30];

@@ -4856,6 +4856,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.9 (2001-04-04) [umoeller]: moved all post-close stuff to fntShutdownThread
  *@@changed V0.9.12 (2001-04-29) [umoeller]: now starting update thread after shutdown folder processing
  *@@changed V0.9.12 (2001-04-29) [umoeller]: now using new shutdown folder implementation
+ *@@changed V0.9.16 (2001-10-22) [pr]: fixed bug trying to close the first switch list item twice
  */
 
 MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -5013,13 +5014,14 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     // mark status as "closing windows now"
                     pShutdownData->ulStatus = XSD_CLOSING;
                     winhEnableDlgItem(pShutdownData->SDConsts.hwndMain,
-                                     ID_SDDI_BEGINSHUTDOWN,
-                                     FALSE);
+                                      ID_SDDI_BEGINSHUTDOWN,
+                                      FALSE);
 
-                    WinPostMsg(pShutdownData->SDConsts.hwndMain,
+                    // V0.9.16 (2001-10-22) [pr]: ID_SDMI_UPDATESHUTLIST kicks this off
+                    /* WinPostMsg(pShutdownData->SDConsts.hwndMain,
                                WM_COMMAND,
                                MPFROM2SHORT(ID_SDMI_CLOSEITEM, 0),
-                               MPNULL);
+                               MPNULL); */
                 break; }
 
                 /*

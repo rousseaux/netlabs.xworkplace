@@ -894,20 +894,19 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
             // whether default processing should occur
 
             // manually resolve parent method
-            somTD_XWPFontFolder_xwpProcessObjectCommand pxwpProcessObjectCommand
+            somTD_XWPFontFolder_xwpProcessObjectCommand pxwpProcessObjectCommand;
+
+            if (pxwpProcessObjectCommand
                 = (somTD_XWPFontFolder_xwpProcessObjectCommand)wpshResolveFor(
                                                        somSelf,
                                                        _somGetParent(_XWPFontFolder),
-                                                       "xwpProcessObjectCommand");
-            if (pxwpProcessObjectCommand)
-            {
+                                                       "xwpProcessObjectCommand"))
                 // let parent method return TRUE or FALSE
                 brc = pxwpProcessObjectCommand(somSelf,
                                                usCommand,
                                                hwndCnr,
                                                pFirstObject,
                                                ulSelectionFlags);
-            }
         }
     }
 
