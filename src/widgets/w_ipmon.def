@@ -1,11 +1,8 @@
 
 ;
-; sentinel.def:
-;       module definition file for SENTINEL.DLL, an XCenter
+; w_ipmon.def:
+;       module definition file for IPMON.DLL, an XCenter
 ;       plug-in widget DLL.
-;
-;       Note that we better name the DLL XTHESEUS because
-;       we will run into name conflicts otherwise.
 ;
 ;       Copyright (C) 2001-2003 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
@@ -19,7 +16,7 @@
 ;       GNU General Public License for more details.
 ;
 
-LIBRARY SENTINEL INITGLOBAL TERMGLOBAL
+LIBRARY IPMON INITGLOBAL TERMGLOBAL
 Description '@#Ulrich M”ller:1.1.0#@ XWorkplace IP monitor plugin DLL'
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
