@@ -1,0 +1,59 @@
+<HTML WIDTH=70% XPOS=right NOSUBLINKS="intro" NOSUBLINKS="xices" NOSUBLINKS="vers_">
+<HEAD>
+    <TITLE>
+        &xwp; 0.9.14
+    </TITLE>
+</HEAD>
+<!-- Note: This file changes almost with every XFolder version.
+     I do not recommend translating it, because I do not keep logs
+     about changes to this file.
+     Simply use the English original instead. -->
+<BODY>
+<B>&xwp; 0.9.14 (July 6, 2001)</B>
+
+<P>New features:
+
+<UL><LI>General: Added <A HREF="setupstr_4xfdesktop.html">SHOWRUNDLG setup string</A>.
+
+<P><LI>Treesize: Added "100 largest files" function.
+
+</UL><P>Miscellaneous changes:
+
+<UL><LI>XCenter: Optimized internal timers, which now use less CPU time
+(depending on how many widgets are running). Thanks Martin Lafaix for
+the oriental meditation hints.
+
+</UL>Bugfixes:
+
+<UL><LI>General: New message boxes never had focus on default button. Fixed.
+
+<P><LI>General: Some message boxes didn't react to mouse clicks at all and could
+only be dismissed via keyboard. Fixed.
+
+<P><LI>XFolder: Folder hotkeys for sort and arrange sorted the desktop
+even if the respective menu items were disabled for the desktop. Fixed;
+these are suppressed now to avoid accidentally sorting or arranging the
+desktop.
+
+<P><LI>XFolder: Fixed a number of problems with "Create another" in tree views,
+most notably that the new object wouldn't appear unless the tree view had
+SHOWALLINTREEVIEW set.
+
+<P><LI>"OS/2 kernel" object: "Syslevels" page never displayed TCP/IP data, fixed.
+
+<P><LI>"Keyboard" object: "Hotkeys" page never used 8.Helv font if enabled. Fixed
+by Paul Ratcliffe.
+
+<P><LI>XCenter: If XCenter was on top of screen, menus weren't displayed in
+the proper direction. Fixed for object buttons and X-button by Martin Lafaix.
+
+<P><LI>XCenter: MB2 context menu on border or sizing bar broke with 0.9.13. Fixed by
+Martin Lafaix.
+
+<P><LI>XCenter: Pulse widget broke with some recent version on some system, causing
+crashes. Fixed, hopefully.
+
+</UL>
+</BODY>
+</HTML>
+
