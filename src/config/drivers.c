@@ -72,6 +72,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
@@ -223,7 +224,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
             PSZ p = pszConfigSys;  // search pointer
             while (p)
             {
-                if (p = strhGetParameter(p,
+                if (p = csysGetParameter(p,
                                          pSpecThis->pszKeyword,
                                          szRestOfLine,
                                          sizeof(szRestOfLine)))
@@ -611,7 +612,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
                       1);
 
     // load CONFIG.SYS text; freed below
-    if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
+    if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
         winhDebugBox(HWND_DESKTOP,
                  pKernelGlobals->szConfigSys,
                  "XFolder was unable to open the CONFIG.SYS file.");
@@ -627,7 +628,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
                 cmnQueryLanguageCode());
 
         // load drivers.txt file; freed below
-        if (doshReadTextFile(szDriverSpecsFilename,
+        if (doshLoadTextFile(szDriverSpecsFilename,
                              &pszDriverSpecsFile)
                 != NO_ERROR)
             winhDebugBox(HWND_DESKTOP,
@@ -854,39 +855,35 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         if (precc->pDriverSpec)
                         {
                             xstrcpy(&strText2MLE,
-                                     precc->pDriverSpec->pszDescription);
+                                    precc->pDriverSpec->pszDescription,
+                                    0);
+                            xstrcatc(&strText2MLE, '\n');
+                            xstrcat(&strText2MLE, "File: ", 0);
                             xstrcat(&strText2MLE,
-                                     "\n");
-                            xstrcat(&strText2MLE,
-                                     "File: ");
-                            xstrcat(&strText2MLE,
-                                     precc->szDriverNameFull);
-                            xstrcat(&strText2MLE,
-                                     "\n");
+                                    precc->szDriverNameFull, 0);
+                            xstrcatc(&strText2MLE, '\n');
 
                             if (precc->arc == NO_ERROR)
                             {
                                 // driver description
                                 xstrcat(&strText2MLE,
-                                         "Version: ");    // ###
+                                        "Version: ", 0);    // ###
                                 xstrcat(&strText2MLE,
-                                         precc->szVersion);
+                                         precc->szVersion, 0);
 
+                                xstrcatc(&strText2MLE, '\n');
                                 xstrcat(&strText2MLE,
-                                         "\n");
+                                         "Vendor: ", 0);     // ###
                                 xstrcat(&strText2MLE,
-                                         "Vendor: ");     // ###
-                                xstrcat(&strText2MLE,
-                                         precc->szVendor);
-                                xstrcat(&strText2MLE,
-                                         "\n");
+                                         precc->szVendor, 0);
+                                xstrcatc(&strText2MLE, 'n');
                             }
                             else
                             {
                                 // error:
                                 PSZ pszErr = doshQuerySysErrorMsg(precc->arc);
                                         // will be freed
-                                xstrcat(&strText2MLE, pszErr);
+                                xstrcat(&strText2MLE, pszErr, 0);
                                 free(pszErr);
                             }
 
@@ -1152,7 +1149,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     PSZ     pszConfigSys = NULL;
 
-                    if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys))
+                    if (csysLoadConfigSys(NULL, &pszConfigSys))
                         winhDebugBox(pcnbp->hwndFrame,
                                  (PSZ)pKernelGlobals->szConfigSys,
                                  "XFolder was unable to open the CONFIG.SYS file.");
@@ -1160,18 +1157,17 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         CHAR    szBackup[CCHMAXPATH];
                         ULONG   ulOfs = 0;
-                        strhrpl(&pszConfigSys,
-                                &ulOfs,
-                                precc->szConfigSysLine,
-                                szNewLine);
+                        strhFindReplace(&pszConfigSys,
+                                        &ulOfs,
+                                        precc->szConfigSysLine,
+                                        szNewLine);
                         // update record core
                         strcpy(precc->szConfigSysLine, szNewLine);
                         strcpy(precc->szParams, szNewParams);
                         // write file!
-                        if (doshWriteTextFile(pKernelGlobals->szConfigSys,
-                                              pszConfigSys,
-                                              NULL,     // pulWritten
-                                              szBackup)
+                        if (csysWriteConfigSys(NULL,
+                                               pszConfigSys,
+                                               szBackup)
                                 == NO_ERROR)
                             // "file written" msg
                             cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,

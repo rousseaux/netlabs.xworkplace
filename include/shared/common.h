@@ -447,7 +447,7 @@
     // 2) in "OS/2 Kernel"
     #define SP_SCHEDULER            20
     #define SP_MEMORY               21
-    #define SP_HPFS                 22
+    // #define SP_HPFS                 22   this is dead! we now have a settings dlg
     #define SP_FAT                  23
     #define SP_ERRORS               24
     #define SP_WPS                  25

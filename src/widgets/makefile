@@ -125,19 +125,22 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 
 $(OUTPUTDIR)\w_monitors.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\timer.h \
+    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 
 $(OUTPUTDIR)\w_winlist.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
+    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
+        $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 
 $(OUTPUTDIR)\____sample.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\prfh.h $(HLPINC)\gpih.h $(HLPINC)\winh.h \
+    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\winh.h \
+        $(HLPINC)\xstring.h \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 

@@ -1297,7 +1297,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                 "\n\nPlease post a bug report to "
                                 "xworkplace-user@egroups.com and attach the the file "
                                 "XWPTRAP.LOG, which you will find in the root "
-                                "directory of your boot drive. ");
+                                "directory of your boot drive. ", 0);
                         winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", strMsg.psz);
                     }
 

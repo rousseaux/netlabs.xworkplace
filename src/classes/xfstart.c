@@ -215,17 +215,12 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      information and how to intercept this for multiple
+ *      objects.
  *
  *      We react to the "Process content" item we have
  *      inserted for the startup folder.
- *
- *      Note that the WPS invokes this method upon every
- *      object which has been selected in the container.
- *      That is, if three objects have been selected and
- *      a menu item has been selected for all three of
- *      them, all three objects will receive this method
- *      call. This is true even if FALSE is returned from
- *      this method.
  */
 
 SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,

@@ -156,7 +156,22 @@ static BOOL        G_fDrivesInitialized = FALSE;
  *      this new instance method takes any WPS object and
  *      "deletes" it into the trash can (somSelf).
  *
- *      See trshDeleteIntoTrashCan, which has the implementation.
+ *      Call this method to move any WPS object into the
+ *      trash can. This can be called in any context, but
+ *      is mostly called from the XWP file operations
+ *      engine (fops_bottom.c) when WPS "delete" operations
+ *      are intercepted in XFolder::xwpProcessObjectCommand.
+ *
+ *      In other words, this gets called for every object
+ *      on which the "Del" key was pressed in a folder or
+ *      for which the "Delete" menu item has been selected.
+ *
+ *      See trshDeleteIntoTrashCan for details, which has the
+ *      implementation.
+ *
+ *      To quickly delete an object into the trash can, use
+ *      cmnDeleteIntoTrashCan, which automatically determines
+ *      the default trash can on the system.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpDeleteIntoTrashCan(XWPTrashCan *somSelf,
@@ -506,7 +521,9 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
  *      IDL doesn't know that XWPTrashCan is in fact
  *      derived from XFolder, we have to do it this way.
  *
- *      This replaces trash can subclassing now.
+ *      This replaces trash can subclassing now, which was
+ *      used before V0.9.7. See trshProcessObjectCommand for
+ *      the implementation.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
@@ -854,16 +871,11 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      information and how to intercept this for multiple
+ *      objects.
  *
- *      We need to react to the trash can items.
- *
- *      Note that the WPS invokes this method upon every
- *      object which has been selected in the container.
- *      That is, if three objects have been selected and
- *      a menu item has been selected for all three of
- *      them, all three objects will receive this method
- *      call. This is true even if FALSE is returned from
- *      this method.
+ *      We need to react to "Empty trash can" here.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
@@ -1488,6 +1500,7 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsQueryDrivesSupport(M_XWPTrashCan *somSelf,
  *      the XWPTrashObject class gets initialized.
  *
  *@@changed V0.9.1 (2000-01-27) [umoeller]: finally fixed those strange crashes in some WPS background thread
+ *@@changed V0.9.7 (2001-01-15) [umoeller]: added more error checking
  */
 
 SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
@@ -1504,6 +1517,7 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
                                                      XWPTrashObject_MinorVersion);
 
     if (pTrashObjectClassObject)
+    {
         // now increment the class's usage count by one to
         // ensure that the class is never unloaded; if we
         // didn't do this, we'd get WPS CRASHES in some
@@ -1511,15 +1525,19 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
         // exist, the class would get unloaded automatically -- sigh...
         _wpclsIncUsage(pTrashObjectClassObject);
 
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
         {
-            pKernelGlobals->fXWPTrashCan = TRUE;
-            krnUnlockGlobals();
+            // store the class object in KERNELGLOBALS
+            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+            if (pKernelGlobals)
+            {
+                pKernelGlobals->fXWPTrashCan = TRUE;
+                krnUnlockGlobals();
+            }
         }
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot initialize XWPTrashObject class. Is it installed?!?");
 
     // initialize supported drives
     if (!G_fDrivesInitialized)

@@ -269,6 +269,9 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      information and how to intercept this for multiple
+ *      objects.
  */
 
 SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,

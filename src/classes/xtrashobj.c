@@ -363,7 +363,7 @@ SOM_Scope ULONG  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
 }
 
 /*
- *@@ xwpDestroyTrashObject:
+ * xwpDestroyTrashObject:
  *      this deletes the object which this trash
  *      object represents from the "\Trash" directories
  *      by calling wpFree upon it.
@@ -387,19 +387,8 @@ SOM_Scope ULONG  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
  *      subclassed trashcan frame window procedure
  *      (trsh_fnwpSubclassedTrashCanFrame).
  *
- *@@changed V0.9.3 (2000-04-28) [umoeller]: removed completely
+ *          changed V0.9.3 (2000-04-28) [umoeller]: removed completely
  */
-
-/* SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
-{
-    BOOL brc = FALSE;
-    // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
-    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpDestroyTrashObject");
-
-    brc = trshDestroyTrashObject(somSelf);
-
-    return (brc);
-} */
 
 /*
  *@@ xwpRestoreFromTrashCan:
@@ -675,21 +664,16 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      information and how to intercept this for multiple
+ *      objects.
  *
  *      We need to to support the trash object items.
  *
- *      Note that the WPS invokes this method upon every
- *      object which has been selected in the container.
- *      That is, if three objects have been selected and
- *      a menu item has been selected for all three of
- *      them, all three objects will receive this method
- *      call. This is true even if FALSE is returned from
- *      this method.
- *
  *      Actually, this method doesn't get called any longer
  *      for the operations which are checked for here
- *      because the subclassed trash can frame procedure
- *      (trsh_fnwpSubclassedTrashCanFrame) already handles this.
+ *      because XWPTrashCan::xwpProcessObjectCommand already
+ *      handles those commands.
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,

@@ -751,13 +751,6 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *@@ trshDeleteIntoTrashCan:
  *      implementation for XWPTrashCan::xwpDeleteIntoTrashCan.
  *
- *      That method gets called in two situations:
- *      1)  from XWPTrashCan::wpDrop;
- *      2)  from fopsFileThreadProcessing, when our file-list
- *          processing is doing a "delete into trashcan" job.
- *          This happens if "Del" is pressed in a folder or if
- *          the "Delete" menu item has been selected.
- *
  *      When an object is thus "deleted" into the trashcan,
  *      this function does the following:
  *
@@ -1339,7 +1332,10 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
  *@@ trshProcessObjectCommand:
  *      implementation for XWPTrashCan::xwpProcessObjectCommand.
  *
- *      This replaces trash can subclassing now.
+ *      This replaces trash can subclassing now, which
+ *      was used before V0.9.7. Here we intercept the
+ *      "restore" and "destroy" commands for trash objects
+ *      and process them all at once.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
@@ -1573,11 +1569,23 @@ BOOL trshIsOnSupportedDrive(WPObject *pObject)
  *                                                                  *
  ********************************************************************/
 
-LINKLIST    llSubclassedTrashCans;
-HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
+// LINKLIST    llSubclassedTrashCans;
+// HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
 
 /*
- *@@ trshSubclassTrashCanFrame:
+ *  THIS ENTIRE CODE HAS BEEN DISABLED WITH V0.9.7.
+ *
+ *  All the processing that used to be in here is now processed
+ *  by the subclassed folder frame procedure. We don't really
+ *  need the overhead of subclassing trash can frames again.
+ *
+ *  Instead, we have now introduced XFolder::xwpProcessObjectCommand,
+ *  which is overridden for XWPTrashCan.
+ */
+
+
+/*
+ * trshSubclassTrashCanFrame:
  *      this subclasses the given trash can folder
  *      frame with trsh_fnwpSubclassedTrashCanFrame.
  *
@@ -1585,8 +1593,8 @@ HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
  *      again. We cannot use fdr_fnwpSubclassedFolderFrame
  *      because XFolder might not be installed.
  *
- *@@added V0.9.1 (2000-01-31) [umoeller]
- *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
+ *added V0.9.1 (2000-01-31) [umoeller]
+ *changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
  */
 
 /* BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
@@ -1659,11 +1667,11 @@ HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
 } */
 
 /*
- *@@ trshQueryPSTF:
+ * trshQueryPSTF:
  *      finds the corresponding PSUBCLASSEDTRASHFRAME
  *      for the given trash can frame window.
  *
- *@@added V0.9.1 (2000-01-31) [umoeller]
+ *added V0.9.1 (2000-01-31) [umoeller]
  */
 
 /* PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame to find
@@ -1721,11 +1729,11 @@ HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
 } */
 
 /*
- *@@ trshRemovePSTF:
+ * trshRemovePSTF:
  *      removes a PSUBCLASSEDTRASHFRAME from the
  *      internal list of subclassed trash can frames.
  *
- *@@added V0.9.1 (2000-01-31) [umoeller]
+ *added V0.9.1 (2000-01-31) [umoeller]
  */
 
 /* VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
@@ -1757,7 +1765,7 @@ HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
 } */
 
 /*
- *@@ trsh_fnwpSubclassedTrashCanFrame:
+ * trsh_fnwpSubclassedTrashCanFrame:
  *      window procedure for subclassed trash can
  *      frames. We cannot use fdr_fnwpSubclassedFolderFrame
  *      because XFolder might not be installed.
@@ -1765,8 +1773,8 @@ HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
  *      This intercepts WM_INITMENU and WM_COMMAND to
  *      implement trash can file processing properly.
  *
- *@@added V0.9.1 (2000-01-31) [umoeller]
- *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
+ *added V0.9.1 (2000-01-31) [umoeller]
+ *changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
  */
 
 /* MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,

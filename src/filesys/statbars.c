@@ -521,7 +521,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *
  *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
  *@@changed V0.9.5 (2000-09-20) [pr]: WPSharedDir has WPDisk status bar
- *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrrpl
+ *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrFindReplace
  *@@changed V0.9.6 (2000-11-12) [umoeller]: removed cThousands param, now using cached country settings
  *@@changed V0.9.6 (2000-11-12) [pr]: new status bar mnemonics
  */
@@ -569,16 +569,16 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 PSZ pszURL = NULL;
                 ULONG ulOfs = 0;
                 if (pszFilename)
-                    doshReadTextFile(pszFilename, &pszURL);
+                    doshLoadTextFile(pszFilename, &pszURL);
                     if (pszURL)
                     {
                         if (strlen(pszURL) > 100)
                             strcpy(pszURL+97, "...");
-                        xstrcrpl(pstrText, &ulOfs, "\tU", pszURL);
+                        xstrFindReplaceC(pstrText, &ulOfs, "\tU", pszURL);
                         free(pszURL);
                     }
                 if (!pszURL)
-                    xstrcrpl(pstrText, &ulOfs, "\tU", "?");
+                    xstrFindReplaceC(pstrText, &ulOfs, "\tU", "?");
                 ulrc++;
             }
         }
@@ -632,7 +632,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             else
                 strhThousandsDouble(szTemp, dbl,
                                     pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfb", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfb", szTemp);
             ulrc++;
         }
 
@@ -654,7 +654,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strhThousandsDouble(szTemp,
                                     ((dbl + 500) / 1000),
                                     pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfk", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfk", szTemp);
             ulrc++;
         }
 
@@ -677,7 +677,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strhThousandsDouble(szTemp,
                                     ((dbl + 512) / 1024),
                                     pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfK", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfK", szTemp);
             ulrc++;
         }
 
@@ -699,7 +699,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 strhThousandsDouble(szTemp,
                                     ((dbl +500000) / 1000000),
                                     pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfm", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfm", szTemp);
             ulrc++;
         }
 
@@ -721,7 +721,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                strhThousandsDouble(szTemp,
                                    ((dbl + (1024*1024/2)) / (1024*1024)),
                                    pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfM", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfM", szTemp);
             ulrc++;
         }
 
@@ -746,7 +746,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                                  dbl,
                                  pNLSStrings,
                                  pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfa", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfa", szTemp);
             ulrc++;
         }
 
@@ -769,7 +769,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                                  dbl,
                                  pNLSStrings,
                                  pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tfA", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tfA", szTemp);
             ulrc++;
         }
         // end V0.9.6
@@ -790,9 +790,9 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                                     szBuffer,
                                     sizeof(szBuffer))
                          == NO_ERROR)
-                xstrcrpl(pstrText, &ulOfs, "\tF", szBuffer);
+                xstrFindReplaceC(pstrText, &ulOfs, "\tF", szBuffer);
             else
-                xstrcrpl(pstrText, &ulOfs, "\tF", "?");
+                xstrFindReplaceC(pstrText, &ulOfs, "\tF", "?");
             ulrc++;
         }
     }
@@ -830,7 +830,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             PSZ p2 = NULL;
             ULONG ulOfs = 0;
             p2 = _wpQueryType(pObject);
-            xstrcrpl(pstrText, &ulOfs, "\ty", (p2) ? p2 : "?");
+            xstrFindReplaceC(pstrText, &ulOfs, "\ty", (p2) ? p2 : "?");
             ulrc++;
         }
 
@@ -841,7 +841,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             _wpQueryDateInfo(pObject, &ffbuf4);
             fBufLoaded = TRUE;
             strhFileDate(szTemp, &(ffbuf4.fdateLastWrite), pcs->ulDateFormat, pcs->cDateSep);
-            xstrcrpl(pstrText, &ulOfs, "\tD", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tD", szTemp);
             ulrc++;
         }
 
@@ -852,7 +852,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             if (!fBufLoaded)
                 _wpQueryDateInfo(pObject, &ffbuf4);
             strhFileTime(szTemp, &(ffbuf4.ftimeLastWrite), pcs->ulTimeFormat, pcs->cTimeSep);
-            xstrcrpl(pstrText, &ulOfs, "\tT", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tT", szTemp);
             ulrc++;
         }
 
@@ -865,7 +865,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             szTemp[2] = (fAttr & FILE_READONLY) ? 'R' : 'r';
             szTemp[3] = (fAttr & FILE_SYSTEM  ) ? 'S' : 's';
             szTemp[4] = '\0';
-            xstrcrpl(pstrText, &ulOfs, "\ta", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\ta", szTemp);
             ulrc++;
         }
 
@@ -874,7 +874,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
             strhThousandsDouble(szTemp, ulEASize, pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tEb", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tEb", szTemp);
             ulrc++;
         }
 
@@ -883,7 +883,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
             strhThousandsDouble(szTemp, ((ulEASize+500)/1000), pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tEk", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tEk", szTemp);
             ulrc++;
         }
 
@@ -892,7 +892,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
             strhThousandsDouble(szTemp, ((ulEASize+512)/1024), pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tEK", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tEK", szTemp);
             ulrc++;
         }
 
@@ -902,7 +902,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
             stbVar1000Double(szTemp, ulEASize, pNLSStrings, pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tEa", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tEa", szTemp);
             ulrc++;
         }
 
@@ -911,7 +911,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             ULONG ulEASize = _wpQueryEASize(pObject);
             ULONG ulOfs = 0;
             stbVar1024Double(szTemp, ulEASize, pNLSStrings, pcs->cThousands);
-            xstrcrpl(pstrText, &ulOfs, "\tEA", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tEA", szTemp);
             ulrc++;
         }
         // end V0.9.6
@@ -921,7 +921,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             _wpQueryFilename(pObject, szTemp, FALSE);
-            xstrcrpl(pstrText, &ulOfs, "\tr", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tr", szTemp);
             ulrc++;
         }
     }
@@ -958,7 +958,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszExecutable);
                 else strcpy(szTemp, "");
 
-            xstrcrpl(pstrText, &ulOfs, "\tp", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tp", szTemp);
             ulrc++;
         }
 
@@ -976,7 +976,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszParameters);
                 else strcpy(szTemp, "");
 
-            xstrcrpl(pstrText, &ulOfs, "\tP", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tP", szTemp);
             ulrc++;
         }
 
@@ -994,7 +994,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszStartupDir);
                 else strcpy(szTemp, "");
 
-            xstrcrpl(pstrText, &ulOfs, "\td", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\td", szTemp);
             ulrc++;
         }
 
@@ -1020,9 +1020,9 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             SOMClass *pClassObject = _somGetClass(pObject);
             ULONG ulOfs = 0;
             if (pClassObject)
-                xstrcrpl(pstrText, &ulOfs, "\tw", _wpclsQueryTitle(pClassObject));
+                xstrFindReplaceC(pstrText, &ulOfs, "\tw", _wpclsQueryTitle(pClassObject));
             else
-                xstrcrpl(pstrText, &ulOfs, "\tw", "?");
+                xstrFindReplaceC(pstrText, &ulOfs, "\tw", "?");
             ulrc++;
         }
 
@@ -1030,7 +1030,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         {
             ULONG ulOfs = 0;
             strcpy(szTemp, "?");
-            xstrcrpl(pstrText, &ulOfs, "\tW", _somGetClassName(pObject));
+            xstrFindReplaceC(pstrText, &ulOfs, "\tW", _somGetClassName(pObject));
             ulrc++;
         }
 
@@ -1040,7 +1040,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
             strcpy(szTemp, "?");
             strcpy(szTemp, _wpQueryTitle(pObject));
             strhBeautifyTitle(szTemp);
-            xstrcrpl(pstrText, &ulOfs, "\tt", szTemp);
+            xstrFindReplaceC(pstrText, &ulOfs, "\tt", szTemp);
             ulrc++;
         }
     }
@@ -1083,7 +1083,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
  *@@changed V0.9.0 [umoeller]: added shadow dereferencing
  *@@changed V0.9.3 (2000-04-08) [umoeller]: added cnr error return code check
  *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
- *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrrpl
+ *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrFindReplace
  *@@changed V0.9.6 (2000-10-30) [pr]: fixed container item counts
  *@@changed V0.9.6 (2000-11-12) [pr]: new status bar mnemonics
  */
@@ -1195,7 +1195,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // objects are selected
     if ( (ulSelectedCount == 0) || (pObject == NULL) )
         // "no object" mode
-        xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
+        xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTNONESEL), 0);
     else if (ulSelectedCount == 1)
     {
         // "single-object" mode: query the text to translate
@@ -1210,12 +1210,12 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         if (pObject == NULL)
             return(strdup(""));
 
-        xstrcpy(&strText, stbQueryClassMnemonics(_somGetClass(pObject)));
+        xstrcpy(&strText, stbQueryClassMnemonics(_somGetClass(pObject)), 0);
                                                   // object's class object
     }
     else
         // "multiple objects" mode
-        xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
+        xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTMULTISEL), 0);
 
     // before actually translating any "$" keys, all the
     // '$' characters in the mnemonic string are changed to
@@ -1302,14 +1302,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     {
         ULONG ulOfs = 0;
         sprintf(szTemp, "%u", ulSelectedCount);
-        xstrcrpl(&strText, &ulOfs, "\tc", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tc", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tC")) // total obj count
     {
         ULONG ulOfs = 0;
         sprintf(szTemp, "%u", ulCount);
-        xstrcrpl(&strText, &ulOfs, "\tC", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tC", szTemp);
     }
 
     // the following are for free space on drive
@@ -1320,7 +1320,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         strhThousandsDouble(szTemp,
                             wpshQueryDiskFreeFromFolder(somSelf),
                             cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfb", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfb", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tfk"))
@@ -1329,7 +1329,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) + 500) / 1000),
                             cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfk", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfk", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tfK"))
@@ -1338,7 +1338,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) + 512) / 1024),
                             cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfK", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfK", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tfm"))
@@ -1347,7 +1347,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) +500000) / 1000000),
                             cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfm", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfm", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tfM"))
@@ -1356,7 +1356,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         strhThousandsDouble(szTemp,
                             ((wpshQueryDiskFreeFromFolder(somSelf) + (1024*1024/2)) / (1024*1024)),
                             cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfM", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfM", szTemp);
     }
 
     // V0.9.6
@@ -1367,7 +1367,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                          wpshQueryDiskFreeFromFolder(somSelf),
                          pNLSStrings,
                          cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfa", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfa", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tfA"))
@@ -1377,7 +1377,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                          wpshQueryDiskFreeFromFolder(somSelf),
                          pNLSStrings,
                          cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tfA", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tfA", szTemp);
     }
     // end V0.9.6
 
@@ -1386,35 +1386,35 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ulSizeSelected, cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsb", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsb", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tsk"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeSelected+500) / 1000), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsk", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsk", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tsK"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeSelected+512) / 1024), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsK", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsK", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tsm"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeSelected+500000) / 1000000), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsm", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsm", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tsM"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeSelected+(1024*1024/2)) / (1024*1024)), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsM", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsM", szTemp);
     }
 
     // V0.9.6
@@ -1422,14 +1422,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     {
         ULONG ulOfs = 0;
         stbVar1000Double(szTemp, (double) ulSizeSelected, pNLSStrings, cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsa", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsa", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tsA"))
     {
         ULONG ulOfs = 0;
         stbVar1024Double(szTemp, (double) ulSizeSelected, pNLSStrings, cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tsA", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tsA", szTemp);
     }
     // end V0.9.6
 
@@ -1438,35 +1438,35 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ulSizeTotal, cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSb", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSb", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tSk"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeTotal+500) / 1000), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSk", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSk", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tSK"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeTotal+512) / 1024), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSK", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSK", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tSm"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeTotal+500000) / 1000000), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSm", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSm", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tSM"))
     {
         ULONG ulOfs = 0;
         strhThousandsULong(szTemp, ((ulSizeTotal+(1024*1024/2)) / (1024*1024)), cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSM", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSM", szTemp);
     }
 
     // V0.9.6
@@ -1474,14 +1474,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     {
         ULONG ulOfs = 0;
         stbVar1000Double(szTemp, (double) ulSizeTotal, pNLSStrings, cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSa", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSa", szTemp);
     }
 
     if (p = strstr(strText.psz, "\tSA"))
     {
         ULONG ulOfs = 0;
         stbVar1024Double(szTemp, (double) ulSizeTotal, pNLSStrings, cThousands);
-        xstrcrpl(&strText, &ulOfs, "\tSA", szTemp);
+        xstrFindReplaceC(&strText, &ulOfs, "\tSA", szTemp);
     }
     // end V0.9.6
 

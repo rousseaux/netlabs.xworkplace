@@ -172,16 +172,16 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // WORKAREA
         if (_wpQueryFldrFlags(somSelf) & FOI_WORKAREA)
-            xstrcat(&strTemp, "WORKAREA=YES;");
+            xstrcat(&strTemp, "WORKAREA=YES;", 0);
 
         // MENUBAR
         ulValue = _xwpQueryMenuBarVisibility(somSelf);
         if (ulValue != _xwpclsQueryMenuBarVisibility(_XFolder))
             // non-default value:
             if (ulValue)
-                xstrcat(&strTemp, "MENUBAR=YES;");
+                xstrcat(&strTemp, "MENUBAR=YES;", 0);
             else
-                xstrcat(&strTemp, "MENUBAR=NO;");
+                xstrcat(&strTemp, "MENUBAR=NO;", 0);
 
         /*
          * folder sort settings
@@ -198,7 +198,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (pClassObject != _WPFileSystem)
         {
             sprintf(szTemp, "SORTCLASS=%s;", _somGetName(pClassObject));
-            xstrcat(&strTemp, szTemp);
+            xstrcat(&strTemp, szTemp, 0);
         }
 
         /*
@@ -237,7 +237,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                             ? 'I'
                             : 'C', // I = image, C = color only
                         *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
-                xstrcat(&strTemp, szTemp);
+                xstrcat(&strTemp, szTemp, 0);
 
                 free(pszBitmapFile);
             }
@@ -259,7 +259,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             if (strcmp(pszValue, pszDefaultValue) != 0)
             {
                 sprintf(szTemp, "ICONFONT=%s;", pszValue);
-                xstrcat(&strTemp, szTemp);
+                xstrcat(&strTemp, szTemp, 0);
             }
             free(pszDefaultValue);
         }
@@ -279,31 +279,31 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (ulValue & (CV_NAME | CV_FLOW | CV_ICON | CV_TEXT))
         {
             case (CV_NAME | CV_FLOW): // but not CV_ICON or CV_TEXT
-                xstrcat(&strView, "FLOWED");
+                xstrcat(&strView, "FLOWED", 0);
                 fIconViewColumns = TRUE;        // needed for colors below
             break;
 
             case (CV_NAME): // but not CV_ICON | CV_FLOW or CV_TEXT
-                xstrcat(&strView, "NONFLOWED");
+                xstrcat(&strView, "NONFLOWED", 0);
                 fIconViewColumns = TRUE;        // needed for colors below
             break;
 
             case (CV_TEXT): // but not CV_ICON
-                xstrcat(&strView, "INVISIBLE");
+                xstrcat(&strView, "INVISIBLE", 0);
             break;
         }
 
         if (ulValue & CV_MINI)
             // ICONVIEW=MINI
             if (strView.ulLength)
-                xstrcat(&strView, ",MINI");
+                xstrcat(&strView, ",MINI", 0);
             else
-                xstrcat(&strView, "MINI");
+                xstrcat(&strView, "MINI", 0);
 
         if (strView.ulLength)
         {
             sprintf(szTemp, "ICONVIEW=%s;", strView.psz);
-            xstrcat(&strTemp, szTemp);
+            xstrcat(&strTemp, szTemp, 0);
         }
 
         xstrClear(&strView);
@@ -328,7 +328,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     BYTE bBlue  = *(pbArrayField );
 
                     sprintf(szTemp, "ICONTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(&strTemp, szTemp);
+                    xstrcat(&strTemp, szTemp, 0);
                 }
             }
 
@@ -348,7 +348,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bBlue  = *(pbArrayField );
 
                         sprintf(szTemp, "ICONSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(&strTemp, szTemp);
+                        xstrcat(&strTemp, szTemp, 0);
                     }
                 }
 
@@ -367,7 +367,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             if (strcmp(pszValue, pszDefaultValue) != 0)
             {
                 sprintf(szTemp, "TREEFONT=%s;", pszValue);
-                xstrcat(&strTemp, szTemp);
+                xstrcat(&strTemp, szTemp, 0);
             }
             free(pszDefaultValue);
         }
@@ -387,7 +387,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             // CV_TREE | CV_NAME is apparently not used by the WPS
 
             case (CV_TREE | CV_TEXT):
-                xstrcat(&strView, "INVISIBLE");
+                xstrcat(&strView, "INVISIBLE", 0);
                 fTreeIconsInvisible = TRUE;         // needed for tree text colors below
             break;
         }
@@ -398,30 +398,30 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             if ((ulValue & CV_MINI) == 0)
                 // TREEVIEW=MINI
                 if (strView.ulLength)
-                    xstrcat(&strView, ",NORMAL");
+                    xstrcat(&strView, ",NORMAL", 0);
                 else
-                    xstrcat(&strView, "NORMAL");
+                    xstrcat(&strView, "NORMAL", 0);
         }
         else
             // Warp 3:
             if ((ulValue & CV_MINI) != 0)
                 // TREEVIEW=MINI
                 if (strView.ulLength)
-                    xstrcat(&strView, ",MINI");
+                    xstrcat(&strView, ",MINI", 0);
                 else
-                    xstrcat(&strView, "MINI");
+                    xstrcat(&strView, "MINI", 0);
 
         if ((ulValue & CA_TREELINE) == 0)
             // TREEVIEW=NOLINES
             if (strView.ulLength)
-                xstrcat(&strView, ",NOLINES");
+                xstrcat(&strView, ",NOLINES", 0);
             else
-                xstrcat(&strView, "NOLINES");
+                xstrcat(&strView, "NOLINES", 0);
 
         if (strView.ulLength)
         {
             sprintf(szTemp, "TREEVIEW=%s;", strView);
-            xstrcat(&strTemp, szTemp);
+            xstrcat(&strTemp, szTemp, 0);
         }
 
         xstrClear(&strView);
@@ -444,7 +444,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     BYTE bBlue  = *(pbArrayField );
 
                     sprintf(szTemp, "TREETEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(&strTemp, szTemp);
+                    xstrcat(&strTemp, szTemp, 0);
                 }
 
                 // TREESHADOWCOLOR
@@ -461,7 +461,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bBlue  = *(pbArrayField );
 
                         sprintf(szTemp, "TREESHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(&strTemp, szTemp);
+                        xstrcat(&strTemp, szTemp, 0);
                     }
                 }
             }
@@ -470,7 +470,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
             if (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
                 if (*_pulFolderShowAllInTreeView)
-                    xstrcat(&strTemp, "SHOWALLINTREEVIEW=YES;");
+                    xstrcat(&strTemp, "SHOWALLINTREEVIEW=YES;", 0);
 
         /*
          * Details view
@@ -482,7 +482,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         if (pClassObject != _WPFileSystem)
         {
             sprintf(szTemp, "DETAILSCLASS=%s;", _somGetName(pClassObject));
-            xstrcat(&strTemp, szTemp);
+            xstrcat(&strTemp, szTemp, 0);
         }
 
         // DETAILSFONT
@@ -495,7 +495,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
             if (strcmp(pszValue, pszDefaultValue) != 0)
             {
                 sprintf(szTemp, "DETAILSFONT=%s;", pszValue);
-                xstrcat(&strTemp, szTemp);
+                xstrcat(&strTemp, szTemp, 0);
             }
             free(pszDefaultValue);
         }
@@ -519,7 +519,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                     BYTE bBlue  = *(pbArrayField );
 
                     sprintf(szTemp, "DETAILSTEXTCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                    xstrcat(&strTemp, szTemp);
+                    xstrcat(&strTemp, szTemp, 0);
                 }
 
                 // DETAILSSHADOWCOLOR
@@ -536,7 +536,7 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                         BYTE bBlue  = *(pbArrayField );
 
                         sprintf(szTemp, "DETAILSSHADOWCOLOR=%d %d %d;", bRed, bGreen, bBlue);
-                        xstrcat(&strTemp, szTemp);
+                        xstrcat(&strTemp, szTemp, 0);
                     }
                 }
             }
@@ -549,11 +549,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bFolderHotkeysInstance)
         {
             case 0:
-                xstrcat(&strTemp, "ACCELERATORS=NO;");
+                xstrcat(&strTemp, "ACCELERATORS=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "ACCELERATORS=YES;");
+                xstrcat(&strTemp, "ACCELERATORS=YES;", 0);
             break;
 
             // 2 means default
@@ -562,11 +562,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bSnapToGridInstance)
         {
             case 0:
-                xstrcat(&strTemp, "SNAPTOGRID=NO;");
+                xstrcat(&strTemp, "SNAPTOGRID=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "SNAPTOGRID=YES;");
+                xstrcat(&strTemp, "SNAPTOGRID=YES;", 0);
             break;
 
             // 2 means default
@@ -575,11 +575,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bFullPathInstance)
         {
             case 0:
-                xstrcat(&strTemp, "FULLPATH=NO;");
+                xstrcat(&strTemp, "FULLPATH=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "FULLPATH=YES;");
+                xstrcat(&strTemp, "FULLPATH=YES;", 0);
             break;
 
             // 2 means default
@@ -588,18 +588,18 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         switch (_bStatusBarInstance)
         {
             case 0:
-                xstrcat(&strTemp, "STATUSBAR=NO;");
+                xstrcat(&strTemp, "STATUSBAR=NO;", 0);
             break;
 
             case 1:
-                xstrcat(&strTemp, "STATUSBAR=YES;");
+                xstrcat(&strTemp, "STATUSBAR=YES;", 0);
             break;
 
             // 2 means default
         }
 
         if (_xwpIsFavoriteFolder(somSelf))
-            xstrcat(&strTemp, "FAVORITEFOLDER=YES;");
+            xstrcat(&strTemp, "FAVORITEFOLDER=YES;", 0);
 
         /*
          * append string

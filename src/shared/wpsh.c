@@ -97,6 +97,12 @@
 #include "shared\common.h"
 #include "shared\wpsh.h"
 
+/* ******************************************************************
+ *
+ *   SOM method helpers
+ *
+ ********************************************************************/
+
 /*
  *@@ wpshResolveFor:
  *      this resolves a method pointer as implemented by
@@ -263,7 +269,157 @@ PVOID wpshParentNumResolve(SOMClass *pClass,    // in: class whose parent we sho
 }
 
 /*
+ *@@ wpshOverrideStaticMethod:
+ *      this function manually patches a class's method
+ *      table to override a method at runtime.
+ *
+ *      This is a wrapper around SOMClass::somOverrideSMethod,
+ *      which is half-documented in somcls.idl in the toolkit
+ *      headers. There we find:
+ *
+ *          "This method can be used instead of somAddStaticMethod or
+ *          somAddDynamicMethod when it is known that the class'
+ *          parent class already supports this method.  This call
+ *          does not require the method descriptor and stub methods
+ *          that the others do."
+ *
+ *      Even though SOMREF says that use of that method is
+ *      deprecated, it still works from my testing. Since
+ *      SOM is never going to change any more (because IBM
+ *      has stopped development), I think we can safely use
+ *      this.
+ *
+ *      Now, this function is especially useful if you want
+ *      to
+ *
+ *      --  override a method which only exists on Warp 4.
+ *          It is an XWorkplace development policy that
+ *          XWorkplace should compile with the Warp 3
+ *          toolkit headers, so we can't override those
+ *          methods directly.
+ *
+ *      --  override an undocumented WPS method.
+ *
+ *      To override such a method, pass in the class object
+ *      (e.g. _XFldDataFile if you want to override a
+ *      method for instances of XFldDataFile), the method
+ *      name (without the underscore), and the address
+ *      of the function which implements the override.
+ *
+ *      However, great care must be taken if you patch the
+ *      method tables manually, most notably:
+ *
+ *      --  The method must exist in a parent class of
+ *          somSelf. You can't add a new method this way.
+ *
+ *      --  The method must be a static SOM method. As
+ *          far as I know, this is the case for all WPS
+ *          methods (the WPS doesn't use dynamic methods).
+ *
+ *      --  Only patch the method tables when the class
+ *          is initialized (best in the class's wpclsInitData).
+ *          If you do it later, you're asking for problems.
+ *
+ *      --  Check the class object for whether it's really
+ *          the class object you want... and not that of
+ *          a descendant class. Descendant classes will
+ *          inherit your method override anyway (tested).
+ *
+ *      --  The function passed in here must have the
+ *          _System calling convention.
+ *
+ *      --  The function must have EXACTLY the same
+ *          arguments as the method you override. SOM
+ *          passes the arguments on the stack, and if
+ *          they don't match -- boom.
+ *
+ *      --  You have no C binding for calling the parent
+ *          method that you overrode. Use wpshParentNumResolve
+ *          to resolve the parent function, which you then
+ *          can call.
+ *
+ *      --  Presently, this has only been tested for
+ *          overriding instance methods.
+ *
+ *      If you don't follow these rules, you get crashes.
+ *      Period. So this isn't exactly trivial, but it works.
+ *      XWorkplace uses this in M_XFldDataFile::wpclsInitData
+ *      to patch in XFldDataFile::wpModifyMenu, for example.
+ *
+ *      <B>Example:</B>
+ *
+ +          // prototype of method override; must have
+ +          // _System and same arguments as method that
+ +          // is overridden
+ +
+ +          BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
+ +                                         HWND hwndMenu,
+ +                                         HWND hwndCnr,
+ +                                         ULONG iPosition,
+ +                                         ULONG ulMenuType,
+ +                                         ULONG ulView,
+ +                                         ULONG ulReserved);
+ +
+ +          // in wpclsInitData, call this:
+ +          SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
+ +          {
+ +              ....
+ +
+ +              if (somSelf == _XFldDataFile)
+ +                  wpshOverrideStaticMethod(somSelf,
+ +                                           "wpModifyMenu",
+ +                                           (somMethodPtr)xfdf_wpModifyMenu);
+ +          }
+ +
+ *
+ *@@added V0.9.7 (2001-01-15) [umoeller]
+ */
+
+BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object (e.g. _XFldDataFile)
+                              const char *pcszMethodName,   // in: method name (without underscore)
+                              somMethodPtr pMethodPtr)      // in: new method override implementation
+{
+    BOOL brc = FALSE;
+    somId somidMethod = somIdFromString("wpModifyMenu");
+    if (!somidMethod)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot get id for \"%s\".", pcszMethodName);
+    else
+    {
+        // check if the method exists
+        somMToken tok = _somGetMethodToken(somSelf,
+                                           somidMethod);
+                // somMToken is typedef'd from somToken,
+                // which in turn is typedef'd from void*
+                // see sombtype.h
+        if (!tok)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot get method token for \"%s\".", pcszMethodName);
+        else
+        {
+            _somOverrideSMethod(somSelf,
+                                somidMethod,
+                                pMethodPtr);
+                    // duh, no return code here
+            brc = TRUE;
+        }
+
+        SOMFree(somidMethod);
+    }
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   WPObject helpers
+ *
+ ********************************************************************/
+
+/*
  *@@ wpshCheckObject:
+ *      checks pObject for validity.
+ *
  *      since somIsObj doesn't seem to be working right,
  *      here is a new function which checks if pObject
  *      points to a valid WPS object. This is done by
@@ -369,6 +525,668 @@ WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
 
     return (pObject);
 }
+
+/*
+ *@@ wpshQueryView:
+ *      kinda reverse to wpshQueryFrameFromView, this
+ *      returns the OPEN_* flag which represents the
+ *      specified view.
+ *
+ *      For example, pass the hwndFrame of a folder's
+ *      Details view to this func, and you'll get
+ *      OPEN_DETAILS back.
+ *
+ *      Returns 0 upon errors.
+ *
+ *@@changed V0.9.2 (2000-03-06) [umoeller]: added object mutex protection
+ */
+
+ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
+                    HWND hwndFrame)         // in: frame window of open view of somSelf
+{
+    ULONG   ulView = 0;
+
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        PUSEITEM    pUseItem = NULL;
+        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+        {
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (pViewItem->handle == hwndFrame)
+            {
+                ulView = pViewItem->view;
+                break;
+            }
+        }
+    }
+    wpshUnlockObject(&Lock);
+
+    return (ulView);
+}
+
+/*
+ *@@ wpshIsViewCnr:
+ *      returns TRUE if hwndCnr belongs to an
+ *      open view of somSelf.
+ *
+ *      Naturally, this can only return TRUE
+ *      if somSelf is a folder. If it is, we
+ *      enumerate the open folder views and
+ *      check if the container is one of them.
+ *
+ *      This can be used in wpModifyPopupMenu
+ *      to check whether a popup menu has been
+ *      requested on the cnr whitespace; in that
+ *      case, TRUE should be returned for the
+ *      hwndCnr passed with wpModifyPopupMenu.
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+BOOL wpshIsViewCnr(WPObject *somSelf,
+                   HWND hwndCnr)
+{
+    BOOL    brc = FALSE;
+
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        PUSEITEM    pUseItem = NULL;
+        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+             pUseItem;
+             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+        {
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
+            {
+                brc = TRUE;
+                break;
+            }
+        }
+    }
+    wpshUnlockObject(&Lock);
+
+    return (brc);
+}
+
+/*
+ *@@ wpshQuerySourceObject:
+ *      this helper function evaluates a given container
+ *      to find out which objects have been selected while
+ *      a context menu is open. The WPS gives the items on
+ *      which the menu action should be performed upon
+ *      container "source" emphasis, so this is what we
+ *      evaluate.
+ *
+ *      This is used from XWorkplace to collect objects from
+ *      a folder container when an operation is to be
+ *      executed and the typical WPS behavior must be imitated.
+ *      There are no WPS methods for this. By contrast, the
+ *      WPS normally instead calls wpMenuItemSelected for every
+ *      single selected object, which is not optimal in many
+ *      cases.
+ *
+ *      This function only works when a context menu is open,
+ *      because otherwise WPS cnr items don't have source emphasis.
+ *
+ *      However, if (fKeyboardMode == TRUE), this function
+ *      does not check for source emphasis, but selection
+ *      emphasis instead. Only in that case this function
+ *      can be used even when no context menu is open on
+ *      the container. This is useful for processing hotkeys
+ *      on objects, because the WPS makes those work on
+ *      selected objects only.
+ *
+ *      The result of this evaluation is stored in
+ *      *pulSelection, which can be:
+ *
+ *      --   SEL_WHITESPACE the context menu was opened on the
+ *                          whitespace of the container;
+ *                          this func then returns the folder itself.
+ *                          This is only possible if (fKeyboard ==
+ *                          FALSE) because keyboard operations
+ *                          never affect the currently open folder.
+ *
+ *      --   SEL_SINGLESEL  the context menu was opened for a
+ *                          single selected object (that is,
+ *                          exactly one object is selected and
+ *                          the menu was opened above that object):
+ *                          this func then returns that object.
+ *
+ *      --   SEL_MULTISEL   the context menu was opened on one
+ *                          of a multitude of selected objects;
+ *                          this func then returns the first of the
+ *                          selected objects. Only in that case,
+ *                          keep calling wpshQueryNextSourceObject
+ *                          to get the other selected objects.
+ *
+ *      --   SEL_SINGLEOTHER the context menu was opened for a
+ *                          single object _other_ than the selected
+ *                          objects:
+ *                          this func then returns that object.
+ *                          This is only possible if (fKeyboard ==
+ *                          FALSE).
+ *
+ *      --   SEL_NONEATALL: no object is selected. This is only
+ *                          possible if (fKeyboard == TRUE); only
+ *                          in that case, NULL is returned also.
+ *
+ *      Note that these flags are defined in include\helpers\cnrh.h,
+ *      which should be included.
+ *
+ *      Keep in mind that if this function returns something other
+ *      than the folder of the container (SEL_WHITESPACE), the
+ *      returned object might be a shadow, which you might need to
+ *      dereference before working on it.
+ *
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from fdrmenus.c; changed prefix
+ *@@changed V0.9.1 (2000-01-31) [umoeller]: added fKeyboardMode support
+ */
+
+WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open menu
+                                HWND hwndCnr,          // in: cnr
+                                BOOL fKeyboardMode,    // in: if TRUE, check selected instead of source only
+                                PULONG pulSelection)   // out: selection flags
+{
+    WPObject        *pObject = NULL;
+
+    do
+    {
+        PMINIRECORDCORE pmrcSource = 0,
+                        pmrcSelected = 0;
+        if (!fKeyboardMode)
+        {
+            // not keyboard, but mouse mode:
+            // get first object with source emphasis
+            pmrcSource = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                     CM_QUERYRECORDEMPHASIS,
+                                                     (MPARAM)CMA_FIRST,
+                                                     (MPARAM)CRA_SOURCE);
+
+            if (pmrcSource == NULL)
+            {
+                // if CM_QUERYRECORDEMPHASIS returns NULL
+                // for source emphasis (CRA_SOUCE),
+                // this means the whole container has source
+                // emphasis --> context menu on folder whitespace
+                pObject = somSelf;   // folder
+                *pulSelection = SEL_WHITESPACE;
+                // we're done
+                break;
+            }
+            else if (((LONG)pmrcSource) == -1)
+                // error:
+                break;
+            // else: we have at least one object with source emphasis
+        }
+
+        // get first _selected_ now
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)CMA_FIRST,
+                                                   (MPARAM)CRA_SELECTED);
+        if (((LONG)pmrcSelected) == -1)
+            // error:
+            break;
+
+        if (!fKeyboardMode)
+        {
+            // not keyboard, but mouse mode:
+            // get the object with source emphasis
+            // (this is != NULL at this point)
+            pObject = OBJECT_FROM_PREC(pmrcSource);
+
+            // check if first source object is equal to
+            // first selected object, i.e. the menu was
+            // opened on one or several selected objects
+            if (pmrcSelected != pmrcSource)
+            {
+                // no:
+                // only one object, but not one of
+                // the selected ones
+                *pulSelection = SEL_SINGLEOTHER;
+                // we're done
+                break;
+            }
+        }
+        else
+        {
+            // keyboard mode:
+            if (pmrcSelected)
+                pObject = OBJECT_FROM_PREC(pmrcSelected);
+            else
+            {
+                // no selected object: that's no object
+                // at all
+                *pulSelection = SEL_NONEATALL;
+                // we're done
+                break;
+            }
+        }
+
+        // we're still going if
+        // a)   we're in menu mode and the first
+        //      source object equals the first selected
+        //      object or
+        // b)   we're in keyboard mode and any
+        //      selected object was found.
+        // Now, are several objects selected?
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)pmrcSelected,
+                                                        // get second obj
+                                                   (MPARAM)CRA_SELECTED);
+        if (pmrcSelected)
+            // several objects:
+            *pulSelection = SEL_MULTISEL;
+        else
+            // only one object:
+            *pulSelection = SEL_SINGLESEL;
+    } while (FALSE);
+
+    // note that we have _not_ dereferenced shadows
+    // here, because this will lead to confusion for
+    // finding other selected objects in the same
+    // folder; dereferencing shadows is therefore
+    // the responsibility of the caller
+    return (pObject);       // can be NULL
+}
+
+/*
+ *@@ wpshQueryNextSourceObject:
+ *      if wpshQuerySourceObject above returns SEL_MULTISEL,
+ *      you can keep calling this helper func to get the
+ *      other objects with source emphasis until this function
+ *      returns NULL.
+ *
+ *      This will return the next object after pObject which
+ *      is selected or NULL if it's the last.
+ *
+ *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from fdrmenus.c; changed prefix
+ */
+
+WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
+                                    WPObject *pObject)
+{
+    WPObject *pObject2 = NULL;
+    PMINIRECORDCORE pmrcCurrent = _wpQueryCoreRecord(pObject);
+    if (pmrcCurrent)
+    {
+        PMINIRECORDCORE pmrcNext
+            = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                          CM_QUERYRECORDEMPHASIS,
+                                          (MPARAM)pmrcCurrent,
+                                          (MPARAM)CRA_SELECTED);
+        if (    (pmrcNext)
+             && ((LONG)pmrcNext != -1)
+           )
+            pObject2 = OBJECT_FROM_PREC(pmrcNext);
+    }
+
+    return (pObject2);
+}
+
+/*
+ *@@ wpshCloseAllViews:
+ *      closes all views of an object.
+ *
+ *      For non-folders, this behaves just like wpClose.
+ *      For folders however, this closes all views of
+ *      the folder itself plus any views of open subfolders
+ *      as well.
+ *
+ *      Returns FALSE on errors.
+ *
+ *@@added V0.9.4 (2000-06-17) [umoeller]
+ */
+
+BOOL wpshCloseAllViews(WPObject *pObject)
+{
+    BOOL brc = _wpClose(pObject);
+    if (brc)
+    {
+        if (_somIsA(pObject, _WPFolder))
+        {
+            // it's a folder:
+            PLINKLIST pllOpenFolders = lstCreate(FALSE);
+            if (pllOpenFolders)
+            {
+                WPFolder *pOpenFolder;
+                PLISTNODE pFolderNode = NULL;
+                for (pOpenFolder = _wpclsQueryOpenFolders(_WPFolder, NULL, QC_FIRST, FALSE); // no lock
+                     pOpenFolder;
+                     pOpenFolder = _wpclsQueryOpenFolders(_WPFolder, pOpenFolder, QC_NEXT, FALSE)) // no lock
+                {
+                    if (wpshResidesBelow(pOpenFolder, pObject))
+                        lstAppendItem(pllOpenFolders, pOpenFolder);
+                }
+
+                // OK, now we have a list of open folders:
+                pFolderNode = lstQueryFirstNode(pllOpenFolders);
+                while (pFolderNode)
+                {
+                    pOpenFolder = (WPFolder*)pFolderNode->pItemData;
+                    brc = _wpClose(pOpenFolder);
+                    if (!brc)
+                        // error:
+                        break;
+
+                    pFolderNode = pFolderNode->pNext;
+                }
+
+                lstFree(pllOpenFolders);
+            }
+            else
+                brc = FALSE;
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ wpshCopyObjectFileName:
+ *      copy object filename(s) to clipboard. This method is
+ *      called from several overrides of wpMenuItemSelected.
+ *
+ *      If somSelf does not have CRA_SELECTED emphasis in the
+ *      container, its filename is copied. If it does have
+ *      CRA_SELECTED emphasis, all filenames which have CRA_SELECTED
+ *      emphasis are copied, separated by spaces.
+ *
+ *      Note that somSelf might not neccessarily be a file-system
+ *      object. It can also be a shadow to one, so we might need
+ *      to dereference that.
+ *
+ *@@changed V0.9.0 [umoeller]: fixed a minor bug when memory allocation failed
+ */
+
+BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passed to
+                                // wpMenuItemSelected
+                            HWND hwndCnr, // in: the container of the hwmdFrame
+                                // of wpMenuItemSelected
+                            BOOL fFullPath) // in: if TRUE, the full path will be
+                                // copied; otherwise the filename only
+{
+    PSZ     pszDest = NULL;
+    BOOL    fSuccess = FALSE,
+            fSingleMode = TRUE;
+    CHAR    szToClipboard[3000] = "";
+    ULONG   ulLength;
+    HAB     hab = WinQueryAnchorBlock(hwndCnr);
+
+    // get the record core of somSelf
+    PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf);
+
+    // now we go through all the selected records in the container
+    // and check if pmrcSelf is among these selected records;
+    // if so, this means that we want to copy the filenames
+    // of all the selected records.
+    // However, if pmrcSelf is not among these, this means that
+    // either the context menu of the _folder_ has been selected
+    // or the menu of an object which is not selected; we will
+    // then only copy somSelf's filename.
+
+    PMINIRECORDCORE pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
+
+    do
+    {
+        // get the first or the next _selected_ item
+        pmrcSelected =
+            (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                    CM_QUERYRECORDEMPHASIS,
+                    (MPARAM)pmrcSelected,
+                    (MPARAM)CRA_SELECTED);
+
+        if ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1))
+        {
+            // first or next record core found:
+            CHAR       szRealName[CCHMAXPATH];
+
+            // get SOM object pointer
+            WPObject *pObject = (WPObject*)OBJECT_FROM_PREC(pmrcSelected);
+
+            // dereference shadows
+            if (pObject)
+                if (_somIsA(pObject, _WPShadow))
+                    pObject = _wpQueryShadowedObject(pObject, TRUE);
+
+            // check if it's a file-system object
+            if (pObject)
+                if (_somIsA(pObject, _WPFileSystem))
+                    if (_wpQueryFilename(pObject, szRealName, fFullPath))
+                        sprintf(szToClipboard+strlen(szToClipboard), "%s ", szRealName);
+
+            // compare the selection with pmrcSelf
+            if (pmrcSelected == pmrcSelf)
+                fSingleMode = FALSE;
+        }
+    } while ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1));
+
+    if (fSingleMode)
+    {
+        // if somSelf's record core does NOT have the "selected"
+        // emphasis: this means that the user has requested a
+        // context menu for an object other than the selected
+        // objects in the folder, or the folder's context menu has
+        // been opened: we will only copy somSelf then.
+
+        CHAR       szRealName[CCHMAXPATH];
+
+        WPObject *pObject = somSelf;
+        if (_somIsA(pObject, _WPShadow))
+            pObject = _wpQueryShadowedObject(pObject, TRUE);
+
+        if (pObject)
+            if (_somIsA(pObject, _WPFileSystem))
+                if (_wpQueryFilename(pObject, szRealName, fFullPath))
+                    sprintf(szToClipboard, "%s ", szRealName);
+    }
+
+    ulLength = strlen(szToClipboard);
+    if (ulLength)
+    {
+        // something was copied:
+        szToClipboard[ulLength-1] = '\0'; // remove last space
+
+        // copy to clipboard (stolen from PMREF)
+        if (WinOpenClipbrd(hab))
+        {
+            if (0 == DosAllocSharedMem((PVOID*)(&pszDest),       // pointer to shared memory object
+                                                NULL,            // use unnamed shared memory
+                                                ulLength,        // include 0 byte (used to be last space)
+                                                PAG_WRITE  |     // allow write access
+                                                PAG_COMMIT |     // commit the shared memory
+                                                OBJ_GIVEABLE))   // make pointer giveable
+            {
+                strcpy(pszDest, szToClipboard);
+                WinEmptyClipbrd(hab);
+                fSuccess = WinSetClipbrdData(hab,       // anchor-block handle
+                                             (ULONG)pszDest, // pointer to text data
+                                             CF_TEXT,        // data is in text format
+                                             CFI_POINTER);   // passing a pointer
+            }
+            WinCloseClipbrd(hab);   // moved V0.9.0
+        }
+    }
+
+    return (fSuccess);
+}
+
+/*
+ *@@ wpshQueryDraggedObject:
+ *      this helper function can be used with wpDragOver
+ *      and/or wpDrop to resolve a DRAGITEM to a WPS object.
+ *      This supports both DRM_OBJECT and DRM_OS2FILE
+ *      rendering mechanisms.
+ *
+ *      If (ppObject != NULL), the object is resolved and
+ *      written into that pointer as a SOM pointer to the
+ *      object.
+ *
+ *      This does NOT resolve shadows.
+ *
+ *      Returns:
+ *      -- 0: invalid object or mechanism not supported.
+ *      -- 1: DRM_OBJECT mechanism, *ppObject is valid.
+ *      -- 2: DRM_OS2FILE mechanism, *ppObject is valid.
+ *
+ *@@added V0.9.1 (2000-02-01) [umoeller]
+ */
+
+ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
+                             WPObject **ppObjectFound)
+{
+    ULONG   ulrc = 0;
+
+    // check DRM_OBJECT
+    if (DrgVerifyRMF(pdrgItem,
+                     "DRM_OBJECT",      // mechanism
+                     NULL))             // any format
+    {
+        // get the object pointer:
+        // the WPS stores the MINIRECORDCORE in drgItem.ulItemID
+        WPObject *pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID);
+        if (pObject)
+        {
+            ulrc = 1;
+            if (ppObjectFound)
+                *ppObjectFound = pObject;
+        }
+    }
+    // check DRM_FILE (used by other PM applications)
+    else if (DrgVerifyRMF(pdrgItem,
+                          "DRM_OS2FILE",       // mechanism
+                          NULL))            // any format
+    {
+        CHAR    szFullFile[2*CCHMAXPATH];
+        ULONG   cbFullFile;
+        // get source directory; this always ends in "\"
+        cbFullFile = DrgQueryStrName(pdrgItem->hstrContainerName, // source container
+                                     sizeof(szFullFile),
+                                     szFullFile);
+        if (cbFullFile)
+        {
+            // append file name to source directory
+            if (DrgQueryStrName(pdrgItem->hstrSourceName,
+                                sizeof(szFullFile) - cbFullFile,
+                                szFullFile + cbFullFile))
+            {
+                ulrc = 2;
+                if (ppObjectFound)
+                    *ppObjectFound = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                               szFullFile);
+            }
+        }
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ wpshQueryDraggedObjectCnr:
+ *      kinda similar to wpshQueryDraggedObject,
+ *      but this handles the CN_DRAGOVER container
+ *      notification code instead.
+ *
+ *      This can be used in any dialog procedure
+ *      for PM containers which should accept
+ *      objects via drag an drop. When you receive
+ *      WM_CONTROL with CN_DRAGOVER, call this
+ *      helper as follows:
+ *
+ +      case CN_DRAGOVER:
+ +          HOBJECT hobjBeingDragged = NULLHANDLE;
+ +          MRESULT mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)mp2,
+ +                                                  &hobjBeingDragged);
+ +          return (mrc);
+ *
+ *      If a valid object has been dragged over the cnr,
+ *      *phObject will be set to the object handle. Otherwise
+ *      it will always be set to NULLHANDLE.
+ *
+ *@@added V0.9.3 (2000-04-27) [umoeller]
+ */
+
+MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
+                                  HOBJECT *phObject)
+{
+    PDRAGITEM   pdrgItem;
+    USHORT      usIndicator = DOR_NODROP,
+                    // cannot be dropped, but send
+                    // DM_DRAGOVER again
+                usOp = DO_UNKNOWN;
+                    // target-defined drop operation:
+                    // user operation (we don't want
+                    // the WPS to copy anything)
+
+    // reset output variable
+    *phObject = NULLHANDLE;
+
+    // OK so far:
+    // get access to the drag'n'drop structures
+    if (DrgAccessDraginfo(pcdi->pDragInfo))
+    {
+        if (
+                // accept no more than one single item at a time;
+                // we cannot move more than one file type
+                (pcdi->pDragInfo->cditem != 1)
+            )
+        {
+            usIndicator = DOR_NEVERDROP;
+        }
+        else
+        {
+
+            // accept only default drop operation
+            if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
+               )
+            {
+                // get the item being dragged (PDRAGITEM)
+                if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
+                {
+                    // WPS object?
+                    if (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
+                    {
+                        // the WPS stores the MINIRECORDCORE of the
+                        // object in ulItemID of the DRAGITEM structure;
+                        // we use OBJECT_FROM_PREC to get the SOM pointer
+                        WPObject *pSourceObject
+                                    = OBJECT_FROM_PREC(pdrgItem->ulItemID);
+                        if (pSourceObject)
+                        {
+                            // dereference shadows
+                            while (     (pSourceObject)
+                                     && (_somIsA(pSourceObject, _WPShadow))
+                                  )
+                                pSourceObject = _wpQueryShadowedObject(pSourceObject,
+                                                    TRUE);  // lock
+
+                            // store object handle to output
+                            *phObject = _wpQueryHandle(pSourceObject);
+                            if (*phObject)
+                                usIndicator = DOR_DROP;
+                        }
+                    }
+                }
+            }
+        }
+
+        DrgFreeDraginfo(pcdi->pDragInfo);
+    }
+
+    // and return the drop flags
+    return (MRFROM2SHORT(usIndicator, usOp));
+}
+
+/* ******************************************************************
+ *
+ *   WPFolder helpers
+ *
+ ********************************************************************/
 
 /*
  *@@ wpshQueryRootFolder:
@@ -955,367 +1773,6 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
 }
 
 /*
- *@@ wpshQueryView:
- *      kinda reverse to wpshQueryFrameFromView, this
- *      returns the OPEN_* flag which represents the
- *      specified view.
- *
- *      For example, pass the hwndFrame of a folder's
- *      Details view to this func, and you'll get
- *      OPEN_DETAILS back.
- *
- *      Returns 0 upon errors.
- *
- *@@changed V0.9.2 (2000-03-06) [umoeller]: added object mutex protection
- */
-
-ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
-                    HWND hwndFrame)         // in: frame window of open view of somSelf
-{
-    ULONG   ulView = 0;
-
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
-    {
-        PUSEITEM    pUseItem = NULL;
-        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-             pUseItem;
-             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
-        {
-            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-            if (pViewItem->handle == hwndFrame)
-            {
-                ulView = pViewItem->view;
-                break;
-            }
-        }
-    }
-    wpshUnlockObject(&Lock);
-
-    return (ulView);
-}
-
-/*
- *@@ wpshIsViewCnr:
- *      returns TRUE if hwndCnr belongs to an
- *      open view of somSelf.
- *
- *      Naturally, this can only return TRUE
- *      if somSelf is a folder. If it is, we
- *      enumerate the open folder views and
- *      check if the container is one of them.
- *
- *      This can be used in wpModifyPopupMenu
- *      to check whether a popup menu has been
- *      requested on the cnr whitespace; in that
- *      case, TRUE should be returned for the
- *      hwndCnr passed with wpModifyPopupMenu.
- *
- *@@added V0.9.2 (2000-03-08) [umoeller]
- */
-
-BOOL wpshIsViewCnr(WPObject *somSelf,
-                   HWND hwndCnr)
-{
-    BOOL    brc = FALSE;
-
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock, somSelf))
-    {
-        PUSEITEM    pUseItem = NULL;
-        for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-             pUseItem;
-             pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
-        {
-            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-            if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
-            {
-                brc = TRUE;
-                break;
-            }
-        }
-    }
-    wpshUnlockObject(&Lock);
-
-    return (brc);
-}
-
-/*
- *@@ wpshQuerySourceObject:
- *      this helper function evaluates a given container
- *      to find out which objects have been selected while
- *      a context menu is open. The WPS gives the items on
- *      which the menu action should be performed upon
- *      container "source" emphasis, so this is what we
- *      evaluate.
- *
- *      This is used from XWorkplace to collect objects from
- *      a folder container when an operation is to be
- *      executed and the typical WPS behavior must be imitated.
- *      There are no WPS methods for this. By contrast, the
- *      WPS normally instead calls wpMenuItemSelected for every
- *      single selected object, which is not optimal in many
- *      cases.
- *
- *      This function only works when a context menu is open,
- *      because otherwise WPS cnr items don't have source emphasis.
- *
- *      However, if (fKeyboardMode == TRUE), this function
- *      does not check for source emphasis, but selection
- *      emphasis instead. Only in that case this function
- *      can be used even when no context menu is open on
- *      the container. This is useful for processing hotkeys
- *      on objects, because the WPS makes those work on
- *      selected objects only.
- *
- *      The result of this evaluation is stored in
- *      *pulSelection, which can be:
- *
- *      --   SEL_WHITESPACE the context menu was opened on the
- *                          whitespace of the container;
- *                          this func then returns the folder itself.
- *                          This is only possible if (fKeyboard ==
- *                          FALSE) because keyboard operations
- *                          never affect the currently open folder.
- *
- *      --   SEL_SINGLESEL  the context menu was opened for a
- *                          single selected object (that is,
- *                          exactly one object is selected and
- *                          the menu was opened above that object):
- *                          this func then returns that object.
- *
- *      --   SEL_MULTISEL   the context menu was opened on one
- *                          of a multitude of selected objects;
- *                          this func then returns the first of the
- *                          selected objects. Only in that case,
- *                          keep calling wpshQueryNextSourceObject
- *                          to get the other selected objects.
- *
- *      --   SEL_SINGLEOTHER the context menu was opened for a
- *                          single object _other_ than the selected
- *                          objects:
- *                          this func then returns that object.
- *                          This is only possible if (fKeyboard ==
- *                          FALSE).
- *
- *      --   SEL_NONEATALL: no object is selected. This is only
- *                          possible if (fKeyboard == TRUE); only
- *                          in that case, NULL is returned also.
- *
- *      Note that these flags are defined in include\helpers\cnrh.h,
- *      which should be included.
- *
- *      Keep in mind that if this function returns something other
- *      than the folder of the container (SEL_WHITESPACE), the
- *      returned object might be a shadow, which you might need to
- *      dereference before working on it.
- *
- *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from fdrmenus.c; changed prefix
- *@@changed V0.9.1 (2000-01-31) [umoeller]: added fKeyboardMode support
- */
-
-WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open menu
-                                HWND hwndCnr,          // in: cnr
-                                BOOL fKeyboardMode,    // in: if TRUE, check selected instead of source only
-                                PULONG pulSelection)   // out: selection flags
-{
-    WPObject        *pObject = NULL;
-
-    do
-    {
-        PMINIRECORDCORE pmrcSource = 0,
-                        pmrcSelected = 0;
-        if (!fKeyboardMode)
-        {
-            // not keyboard, but mouse mode:
-            // get first object with source emphasis
-            pmrcSource = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                     CM_QUERYRECORDEMPHASIS,
-                                                     (MPARAM)CMA_FIRST,
-                                                     (MPARAM)CRA_SOURCE);
-
-            if (pmrcSource == NULL)
-            {
-                // if CM_QUERYRECORDEMPHASIS returns NULL
-                // for source emphasis (CRA_SOUCE),
-                // this means the whole container has source
-                // emphasis --> context menu on folder whitespace
-                pObject = somSelf;   // folder
-                *pulSelection = SEL_WHITESPACE;
-                // we're done
-                break;
-            }
-            else if (((LONG)pmrcSource) == -1)
-                // error:
-                break;
-            // else: we have at least one object with source emphasis
-        }
-
-        // get first _selected_ now
-        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                   CM_QUERYRECORDEMPHASIS,
-                                                   (MPARAM)CMA_FIRST,
-                                                   (MPARAM)CRA_SELECTED);
-        if (((LONG)pmrcSelected) == -1)
-            // error:
-            break;
-
-        if (!fKeyboardMode)
-        {
-            // not keyboard, but mouse mode:
-            // get the object with source emphasis
-            // (this is != NULL at this point)
-            pObject = OBJECT_FROM_PREC(pmrcSource);
-
-            // check if first source object is equal to
-            // first selected object, i.e. the menu was
-            // opened on one or several selected objects
-            if (pmrcSelected != pmrcSource)
-            {
-                // no:
-                // only one object, but not one of
-                // the selected ones
-                *pulSelection = SEL_SINGLEOTHER;
-                // we're done
-                break;
-            }
-        }
-        else
-        {
-            // keyboard mode:
-            if (pmrcSelected)
-                pObject = OBJECT_FROM_PREC(pmrcSelected);
-            else
-            {
-                // no selected object: that's no object
-                // at all
-                *pulSelection = SEL_NONEATALL;
-                // we're done
-                break;
-            }
-        }
-
-        // we're still going if
-        // a)   we're in menu mode and the first
-        //      source object equals the first selected
-        //      object or
-        // b)   we're in keyboard mode and any
-        //      selected object was found.
-        // Now, are several objects selected?
-        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                   CM_QUERYRECORDEMPHASIS,
-                                                   (MPARAM)pmrcSelected,
-                                                        // get second obj
-                                                   (MPARAM)CRA_SELECTED);
-        if (pmrcSelected)
-            // several objects:
-            *pulSelection = SEL_MULTISEL;
-        else
-            // only one object:
-            *pulSelection = SEL_SINGLESEL;
-    } while (FALSE);
-
-    // note that we have _not_ dereferenced shadows
-    // here, because this will lead to confusion for
-    // finding other selected objects in the same
-    // folder; dereferencing shadows is therefore
-    // the responsibility of the caller
-    return (pObject);       // can be NULL
-}
-
-/*
- *@@ wpshQueryNextSourceObject:
- *      if wpshQuerySourceObject above returns SEL_MULTISEL,
- *      you can keep calling this helper func to get the
- *      other objects with source emphasis until this function
- *      returns NULL.
- *
- *      This will return the next object after pObject which
- *      is selected or NULL if it's the last.
- *
- *@@changed V0.9.1 (2000-01-29) [umoeller]: moved this here from fdrmenus.c; changed prefix
- */
-
-WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
-                                    WPObject *pObject)
-{
-    WPObject *pObject2 = NULL;
-    PMINIRECORDCORE pmrcCurrent = _wpQueryCoreRecord(pObject);
-    if (pmrcCurrent)
-    {
-        PMINIRECORDCORE pmrcNext
-            = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                          CM_QUERYRECORDEMPHASIS,
-                                          (MPARAM)pmrcCurrent,
-                                          (MPARAM)CRA_SELECTED);
-        if (    (pmrcNext)
-             && ((LONG)pmrcNext != -1)
-           )
-            pObject2 = OBJECT_FROM_PREC(pmrcNext);
-    }
-
-    return (pObject2);
-}
-
-/*
- *@@ wpshCloseAllViews:
- *      closes all views of an object.
- *
- *      For non-folders, this behaves just like wpClose.
- *      For folders however, this closes all views of
- *      the folder itself plus any views of open subfolders
- *      as well.
- *
- *      Returns FALSE on errors.
- *
- *@@added V0.9.4 (2000-06-17) [umoeller]
- */
-
-BOOL wpshCloseAllViews(WPObject *pObject)
-{
-    BOOL brc = _wpClose(pObject);
-    if (brc)
-    {
-        if (_somIsA(pObject, _WPFolder))
-        {
-            // it's a folder:
-            PLINKLIST pllOpenFolders = lstCreate(FALSE);
-            if (pllOpenFolders)
-            {
-                WPFolder *pOpenFolder;
-                PLISTNODE pFolderNode = NULL;
-                for (pOpenFolder = _wpclsQueryOpenFolders(_WPFolder, NULL, QC_FIRST, FALSE); // no lock
-                     pOpenFolder;
-                     pOpenFolder = _wpclsQueryOpenFolders(_WPFolder, pOpenFolder, QC_NEXT, FALSE)) // no lock
-                {
-                    if (wpshResidesBelow(pOpenFolder, pObject))
-                        lstAppendItem(pllOpenFolders, pOpenFolder);
-                }
-
-                // OK, now we have a list of open folders:
-                pFolderNode = lstQueryFirstNode(pllOpenFolders);
-                while (pFolderNode)
-                {
-                    pOpenFolder = (WPFolder*)pFolderNode->pItemData;
-                    brc = _wpClose(pOpenFolder);
-                    if (!brc)
-                        // error:
-                        break;
-
-                    pFolderNode = pFolderNode->pNext;
-                }
-
-                lstFree(pllOpenFolders);
-            }
-            else
-                brc = FALSE;
-        }
-    }
-
-    return (brc);
-}
-
-/*
  *@@ wpshQueryLogicalDriveNumber:
  *      as opposed to wpQueryDisk, of which I really don't
  *      know what it returns, this returns the logical drive
@@ -1347,300 +1804,11 @@ ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf)
     return (ulDrive);
 }
 
-/*
- *@@ wpshCopyObjectFileName:
- *      copy object filename(s) to clipboard. This method is
- *      called from several overrides of wpMenuItemSelected.
+/* ******************************************************************
  *
- *      If somSelf does not have CRA_SELECTED emphasis in the
- *      container, its filename is copied. If it does have
- *      CRA_SELECTED emphasis, all filenames which have CRA_SELECTED
- *      emphasis are copied, separated by spaces.
+ *   WPS debugging
  *
- *      Note that somSelf might not neccessarily be a file-system
- *      object. It can also be a shadow to one, so we might need
- *      to dereference that.
- *
- *@@changed V0.9.0 [umoeller]: fixed a minor bug when memory allocation failed
- */
-
-BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passed to
-                                // wpMenuItemSelected
-                            HWND hwndCnr, // in: the container of the hwmdFrame
-                                // of wpMenuItemSelected
-                            BOOL fFullPath) // in: if TRUE, the full path will be
-                                // copied; otherwise the filename only
-{
-    PSZ     pszDest = NULL;
-    BOOL    fSuccess = FALSE,
-            fSingleMode = TRUE;
-    CHAR    szToClipboard[3000] = "";
-    ULONG   ulLength;
-    HAB     hab = WinQueryAnchorBlock(hwndCnr);
-
-    // get the record core of somSelf
-    PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf);
-
-    // now we go through all the selected records in the container
-    // and check if pmrcSelf is among these selected records;
-    // if so, this means that we want to copy the filenames
-    // of all the selected records.
-    // However, if pmrcSelf is not among these, this means that
-    // either the context menu of the _folder_ has been selected
-    // or the menu of an object which is not selected; we will
-    // then only copy somSelf's filename.
-
-    PMINIRECORDCORE pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
-
-    do
-    {
-        // get the first or the next _selected_ item
-        pmrcSelected =
-            (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                    CM_QUERYRECORDEMPHASIS,
-                    (MPARAM)pmrcSelected,
-                    (MPARAM)CRA_SELECTED);
-
-        if ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1))
-        {
-            // first or next record core found:
-            CHAR       szRealName[CCHMAXPATH];
-
-            // get SOM object pointer
-            WPObject *pObject = (WPObject*)OBJECT_FROM_PREC(pmrcSelected);
-
-            // dereference shadows
-            if (pObject)
-                if (_somIsA(pObject, _WPShadow))
-                    pObject = _wpQueryShadowedObject(pObject, TRUE);
-
-            // check if it's a file-system object
-            if (pObject)
-                if (_somIsA(pObject, _WPFileSystem))
-                    if (_wpQueryFilename(pObject, szRealName, fFullPath))
-                        sprintf(szToClipboard+strlen(szToClipboard), "%s ", szRealName);
-
-            // compare the selection with pmrcSelf
-            if (pmrcSelected == pmrcSelf)
-                fSingleMode = FALSE;
-        }
-    } while ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1));
-
-    if (fSingleMode)
-    {
-        // if somSelf's record core does NOT have the "selected"
-        // emphasis: this means that the user has requested a
-        // context menu for an object other than the selected
-        // objects in the folder, or the folder's context menu has
-        // been opened: we will only copy somSelf then.
-
-        CHAR       szRealName[CCHMAXPATH];
-
-        WPObject *pObject = somSelf;
-        if (_somIsA(pObject, _WPShadow))
-            pObject = _wpQueryShadowedObject(pObject, TRUE);
-
-        if (pObject)
-            if (_somIsA(pObject, _WPFileSystem))
-                if (_wpQueryFilename(pObject, szRealName, fFullPath))
-                    sprintf(szToClipboard, "%s ", szRealName);
-    }
-
-    ulLength = strlen(szToClipboard);
-    if (ulLength)
-    {
-        // something was copied:
-        szToClipboard[ulLength-1] = '\0'; // remove last space
-
-        // copy to clipboard (stolen from PMREF)
-        if (WinOpenClipbrd(hab))
-        {
-            if (0 == DosAllocSharedMem((PVOID*)(&pszDest),       // pointer to shared memory object
-                                                NULL,            // use unnamed shared memory
-                                                ulLength,        // include 0 byte (used to be last space)
-                                                PAG_WRITE  |     // allow write access
-                                                PAG_COMMIT |     // commit the shared memory
-                                                OBJ_GIVEABLE))   // make pointer giveable
-            {
-                strcpy(pszDest, szToClipboard);
-                WinEmptyClipbrd(hab);
-                fSuccess = WinSetClipbrdData(hab,       // anchor-block handle
-                                             (ULONG)pszDest, // pointer to text data
-                                             CF_TEXT,        // data is in text format
-                                             CFI_POINTER);   // passing a pointer
-            }
-            WinCloseClipbrd(hab);   // moved V0.9.0
-        }
-    }
-
-    return (fSuccess);
-}
-
-/*
- *@@ wpshQueryDraggedObject:
- *      this helper function can be used with wpDragOver
- *      and/or wpDrop to resolve a DRAGITEM to a WPS object.
- *      This supports both DRM_OBJECT and DRM_OS2FILE
- *      rendering mechanisms.
- *
- *      If (ppObject != NULL), the object is resolved and
- *      written into that pointer as a SOM pointer to the
- *      object.
- *
- *      This does NOT resolve shadows.
- *
- *      Returns:
- *      -- 0: invalid object or mechanism not supported.
- *      -- 1: DRM_OBJECT mechanism, *ppObject is valid.
- *      -- 2: DRM_OS2FILE mechanism, *ppObject is valid.
- *
- *@@added V0.9.1 (2000-02-01) [umoeller]
- */
-
-ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
-                             WPObject **ppObjectFound)
-{
-    ULONG   ulrc = 0;
-
-    // check DRM_OBJECT
-    if (DrgVerifyRMF(pdrgItem,
-                     "DRM_OBJECT",      // mechanism
-                     NULL))             // any format
-    {
-        // get the object pointer:
-        // the WPS stores the MINIRECORDCORE in drgItem.ulItemID
-        WPObject *pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-        if (pObject)
-        {
-            ulrc = 1;
-            if (ppObjectFound)
-                *ppObjectFound = pObject;
-        }
-    }
-    // check DRM_FILE (used by other PM applications)
-    else if (DrgVerifyRMF(pdrgItem,
-                          "DRM_OS2FILE",       // mechanism
-                          NULL))            // any format
-    {
-        CHAR    szFullFile[2*CCHMAXPATH];
-        ULONG   cbFullFile;
-        // get source directory; this always ends in "\"
-        cbFullFile = DrgQueryStrName(pdrgItem->hstrContainerName, // source container
-                                     sizeof(szFullFile),
-                                     szFullFile);
-        if (cbFullFile)
-        {
-            // append file name to source directory
-            if (DrgQueryStrName(pdrgItem->hstrSourceName,
-                                sizeof(szFullFile) - cbFullFile,
-                                szFullFile + cbFullFile))
-            {
-                ulrc = 2;
-                if (ppObjectFound)
-                    *ppObjectFound = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                                               szFullFile);
-            }
-        }
-    }
-
-    return (ulrc);
-}
-
-/*
- *@@ wpshQueryDraggedObjectCnr:
- *      kinda similar to wpshQueryDraggedObject,
- *      but this handles the CN_DRAGOVER container
- *      notification code instead.
- *
- *      This can be used in any dialog procedure
- *      for PM containers which should accept
- *      objects via drag an drop. When you receive
- *      WM_CONTROL with CN_DRAGOVER, call this
- *      helper as follows:
- *
- +      case CN_DRAGOVER:
- +          HOBJECT hobjBeingDragged = NULLHANDLE;
- +          MRESULT mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)mp2,
- +                                                  &hobjBeingDragged);
- +          return (mrc);
- *
- *      If a valid object has been dragged over the cnr,
- *      *phObject will be set to the object handle. Otherwise
- *      it will always be set to NULLHANDLE.
- *
- *@@added V0.9.3 (2000-04-27) [umoeller]
- */
-
-MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
-                                  HOBJECT *phObject)
-{
-    PDRAGITEM   pdrgItem;
-    USHORT      usIndicator = DOR_NODROP,
-                    // cannot be dropped, but send
-                    // DM_DRAGOVER again
-                usOp = DO_UNKNOWN;
-                    // target-defined drop operation:
-                    // user operation (we don't want
-                    // the WPS to copy anything)
-
-    // reset output variable
-    *phObject = NULLHANDLE;
-
-    // OK so far:
-    // get access to the drag'n'drop structures
-    if (DrgAccessDraginfo(pcdi->pDragInfo))
-    {
-        if (
-                // accept no more than one single item at a time;
-                // we cannot move more than one file type
-                (pcdi->pDragInfo->cditem != 1)
-            )
-        {
-            usIndicator = DOR_NEVERDROP;
-        }
-        else
-        {
-
-            // accept only default drop operation
-            if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
-               )
-            {
-                // get the item being dragged (PDRAGITEM)
-                if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
-                {
-                    // WPS object?
-                    if (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
-                    {
-                        // the WPS stores the MINIRECORDCORE of the
-                        // object in ulItemID of the DRAGITEM structure;
-                        // we use OBJECT_FROM_PREC to get the SOM pointer
-                        WPObject *pSourceObject
-                                    = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-                        if (pSourceObject)
-                        {
-                            // dereference shadows
-                            while (     (pSourceObject)
-                                     && (_somIsA(pSourceObject, _WPShadow))
-                                  )
-                                pSourceObject = _wpQueryShadowedObject(pSourceObject,
-                                                    TRUE);  // lock
-
-                            // store object handle to output
-                            *phObject = _wpQueryHandle(pSourceObject);
-                            if (*phObject)
-                                usIndicator = DOR_DROP;
-                        }
-                    }
-                }
-            }
-        }
-
-        DrgFreeDraginfo(pcdi->pDragInfo);
-    }
-
-    // and return the drop flags
-    return (MRFROM2SHORT(usIndicator, usOp));
-}
+ ********************************************************************/
 
 #ifdef __DEBUG__
     /*

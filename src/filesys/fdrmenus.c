@@ -13,16 +13,44 @@
  *
  *      -- mnuModifyFolderPopupMenu, which gets called from
  *         XFolder::wpModifyPopupMenu and XFldDisk::wpModifyPopupMenu;
+ *         this modifies folder and disk context menu items.
  *
  *      -- mnuMenuItemSelected, which gets called from
- *         XFolder::wpMenuItemSelected and XFldDisk::wpMenuItemSelected.
+ *         XFolder::wpMenuItemSelected and XFldDisk::wpMenuItemSelected;
+ *         this reacts to folder and disk context menu items.
+ *
+ *      This code mainly does three things:
+ *
+ *      -- Recursively add the contents of the XFolder config
+ *         folder to a context menu (on modify) and react to
+ *         selections of these menu items.
+ *
+ *      -- Handle folder content menus, with the help of the
+ *         shared content menu functions in src\shared\contentmenus.c.
+ *
+ *      -- Hack the folder sort and folder view submenus and
+ *         allow the context menu to stay open when a menu
+ *         item was selected, with the help of the subclassed
+ *         folder frame winproc (fdr_fnwpSubclassedFolderFrame).
+ *
+ *      This code does NOT intercept the menu commands for the
+ *      new file operations engine (such as "delete" for deleting
+ *      objects into the trash can). See XFolder::xwpProcessObjectCommand
+ *      for that.
  *
  *      Function prefix for this file:
  *      --  mnu*
  *
- *      This file is new with V0.81. All these functions used to
- *      be in xfldr.c and have now been exported to make their
- *      use more lucid.
+ *      This file was new with XFolder V0.81. This probably
+ *      contains some of the oldest code that has been in XFolder
+ *      forever, since config folders was what XFolder really
+ *      started out with. So don't expect this code to be perfectly
+ *      well designed.
+ *
+ *      All these functions used to be in xfldr.c with early
+ *      XFolder versions and have been moved here later. This code
+ *      has been completely worked over several times, and parts
+ *      have been moved between other files.
  *
  *      With V0.9.7, all menu functions related to folder _content_
  *      menus have been moved to src\shared\contentmenus.c to

@@ -515,7 +515,7 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
                                sizeof(szNew),
                                szNew);
             // replace output buffer
-            xstrcpy(pstrPrompt, szNew);
+            xstrcpy(pstrPrompt, szNew, 0);
             // return "OK pressed"
             brc = TRUE;
         }
@@ -551,8 +551,8 @@ VOID FixSpacesInFilename(PSZ psz)
             xstrInit(&strTemp,
                      strlen(psz) + 3);  // preallocate: length of original
                                         // plus two quotes plus null terminator
-            xstrcpy(&strTemp, "\"");
-            xstrcat(&strTemp, psz);
+            xstrcpy(&strTemp, "\"", 0);
+            xstrcat(&strTemp, psz, 0);
             xstrcatc(&strTemp, '"');
 
             // copy back
@@ -745,7 +745,7 @@ BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting wit
 
             if (szTemp[0])
                 // something was copied to replace:
-                xstrcpy(pstrTemp, szTemp);
+                xstrcpy(pstrTemp, szTemp, 0);
             // else: pstrTemp has been zeroed by caller, leave it
 
         break; } // case '*': (second character)
@@ -862,7 +862,7 @@ BOOL progSetupArgs(const char *pcszParams,
                     {
                         // handled:
                         // append replacement
-                        xstrcat(&strParamsNew, strTemp.psz);
+                        xstrcat(&strParamsNew, strTemp.psz, strTemp.ulLength);
                         // skip placeholder (cReplace has been set by HandlePlaceholder)
                         p += cReplace;
                         // disable appending the full filename
@@ -896,7 +896,7 @@ BOOL progSetupArgs(const char *pcszParams,
                         if (DisplayParamsPrompt(&strPrompt))
                         {
                             // user pressed "OK":
-                            xstrcat(&strParamsNew, strPrompt.psz);
+                            xstrcat(&strParamsNew, strPrompt.psz, strPrompt.ulLength);
                             // next character to copy is
                             // character after closing bracket
                             p = pEnd + 1;
@@ -942,12 +942,10 @@ BOOL progSetupArgs(const char *pcszParams,
                 // space as last character?
                 if (    *(strParamsNew.psz + strParamsNew.ulLength - 1)
                      != ' ')
-                    xstrcat(&strParamsNew,
-                            " ");
+                    xstrcatc(&strParamsNew, ' ');
 
             FixSpacesInFilename(szDataFilename); // V0.9.7 (2000-12-10) [umoeller]
-            xstrcat(&strParamsNew,
-                    szDataFilename);
+            xstrcat(&strParamsNew, szDataFilename, 0);
         }
 
         // return new params to caller

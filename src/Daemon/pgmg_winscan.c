@@ -253,6 +253,7 @@ VOID pgmwWindowListDelete(HWND hwnd)
             == NO_ERROR)
     {
         for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+        {
             if (G_MainWindowList[usIdx].hwnd == hwnd)
             {
                 G_usWindowCount--;
@@ -262,10 +263,41 @@ VOID pgmwWindowListDelete(HWND hwnd)
                            sizeof(HWNDLIST));
                 break;
             }
+        }
+
         DosReleaseMutexSem(G_hmtxWindowList);
     }
 }
 
+/*
+ *@@ pgmwWindowListUpdate:
+ *      updates a window in our window list.
+ *      Called upon PGMG_WNDCHANGE in fnwpPageMageClient.
+ *
+ *@@added V0.9.7 (2001-01-15) [dk]
+ */
+
+VOID pgmwWindowListUpdate(HWND hwnd)
+{
+    USHORT usIdx;
+
+    if (DosRequestMutexSem(G_hmtxWindowList, TIMEOUT_PGMG_WINLIST)
+            == NO_ERROR)
+    {
+        // check if we have an entry for this window already
+        for (usIdx = 0; usIdx < G_usWindowCount; usIdx++)
+        {
+            if (G_MainWindowList[usIdx].hwnd == hwnd)
+                G_MainWindowList[usIdx].bWindowType = WINDOW_RESCAN;
+        }
+
+        pgmwWindowListRescan();
+
+        DosReleaseMutexSem(G_hmtxWindowList);
+    }
+}
+
+/*
 /*
  *@@ pgmwWindowListRescan:
  *      rescans all windows which have the WINDOW_RESCAN
@@ -286,7 +318,7 @@ BOOL pgmwWindowListRescan(VOID)
         for (usIdx = 0;
              usIdx < G_usWindowCount;
              usIdx++)
-
+        {
             if (G_MainWindowList[usIdx].bWindowType == WINDOW_RESCAN)
             {
                 // window needs rescan:
@@ -305,6 +337,7 @@ BOOL pgmwWindowListRescan(VOID)
                         brc = TRUE;
                 }
             }
+        }
 
         DosReleaseMutexSem(G_hmtxWindowList);
     }

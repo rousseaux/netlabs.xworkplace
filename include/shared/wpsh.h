@@ -33,6 +33,12 @@
 #ifndef XWPS_HEADER_INCLUDED
     #define XWPS_HEADER_INCLUDED
 
+    /* ******************************************************************
+     *
+     *   SOM method helpers
+     *
+     ********************************************************************/
+
     PVOID wpshResolveFor(SOMObject *somSelf,
                          SOMClass *pClass,
                          const char *pcszMethodName);
@@ -41,10 +47,50 @@
                                somMethodTabs parentMTab,
                                const char *pcszMethodName);
 
+    BOOL wpshOverrideStaticMethod(SOMClass *somSelf,
+                                  const char *pcszMethodName,
+                                  somMethodPtr pMethodPtr);
+
+    /* ******************************************************************
+     *
+     *   WPObject helpers
+     *
+     ********************************************************************/
+
     BOOL wpshCheckObject(WPObject *pObject);
 
     WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
                                     PULONG pulErrorCode);
+
+    ULONG wpshQueryView(WPObject* somSelf,
+                        HWND hwndFrame);
+
+    BOOL wpshIsViewCnr(WPObject *somSelf,
+                       HWND hwndCnr);
+
+    WPObject* wpshQuerySourceObject(WPFolder *somSelf,
+                                    HWND hwndCnr,
+                                    BOOL fKeyboardMode,
+                                    PULONG pulSelection);
+
+    WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
+                                        WPObject *pObject);
+
+    BOOL wpshCloseAllViews(WPObject *pObject);
+
+    BOOL wpshCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fFullPath);
+
+    ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
+                                 WPObject **ppObjectFound);
+
+    MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
+                                      HOBJECT *phObject);
+
+    /* ******************************************************************
+     *
+     *   WPFolder helpers
+     *
+     ********************************************************************/
 
     #ifdef SOM_WPDisk_h
         WPFolder* wpshQueryRootFolder(WPDisk* somSelf, BOOL bForceMap,
@@ -74,26 +120,6 @@
 
     #endif
 
-    ULONG wpshQueryView(WPObject* somSelf,
-                        HWND hwndFrame);
-
-    BOOL wpshIsViewCnr(WPObject *somSelf,
-                       HWND hwndCnr);
-
-    WPObject* wpshQuerySourceObject(WPFolder *somSelf,
-                                    HWND hwndCnr,
-                                    BOOL fKeyboardMode,
-                                    PULONG pulSelection);
-
-    WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
-                                        WPObject *pObject);
-
-    BOOL wpshCloseAllViews(WPObject *pObject);
-
-    ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf);
-
-    BOOL wpshCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fFullPath);
-
     /*
      * wpshQueryCnrFromFrame:
      *      this returns the window handle of the container in
@@ -104,11 +130,13 @@
     #define wpshQueryCnrFromFrame(hwndFrame) \
                 WinWindowFromID(hwndFrame, 0x8008)
 
-    ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
-                                 WPObject **ppObjectFound);
+    ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf);
 
-    MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
-                                      HOBJECT *phObject);
+    /* ******************************************************************
+     *
+     *   WPS debugging
+     *
+     ********************************************************************/
 
     #ifdef __DEBUG__
         PSZ wpshIdentifyRestoreID(PSZ pszClass,

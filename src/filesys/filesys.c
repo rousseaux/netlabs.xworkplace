@@ -807,57 +807,57 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                                 BOOL    fDumpBinary = TRUE;
 
                                 xstrInit(&strInfo, 200);
-                                xstrcpy(&strInfo, pszEAName);
+                                xstrcpy(&strInfo, pszEAName, 0);
 
                                 switch (usEAType)
                                 {
                                     case EAT_BINARY:
-                                        xstrcat(&strInfo, " (EAT_BINARY");
+                                        xstrcat(&strInfo, " (EAT_BINARY", 0);
                                     break;
 
                                     case EAT_ASCII:
-                                        xstrcat(&strInfo, " (EAT_ASCII");
+                                        xstrcat(&strInfo, " (EAT_ASCII", 0);
                                         pszContents = eaCreatePSZFromBinding(peab);
                                         fDumpBinary = FALSE;
                                     break;
 
                                     case EAT_BITMAP:
-                                        xstrcat(&strInfo, " (EAT_BITMAP");
+                                        xstrcat(&strInfo, " (EAT_BITMAP", 0);
                                     break;
 
                                     case EAT_METAFILE:
-                                        xstrcat(&strInfo, " (EAT_METAFILE");
+                                        xstrcat(&strInfo, " (EAT_METAFILE", 0);
                                     break;
 
                                     case EAT_ICON:
-                                        xstrcat(&strInfo, " (EAT_ICON");
+                                        xstrcat(&strInfo, " (EAT_ICON", 0);
                                     break;
 
                                     case EAT_EA:
-                                        xstrcat(&strInfo, " (EAT_EA");
+                                        xstrcat(&strInfo, " (EAT_EA", 0);
                                     break;
 
                                     case EAT_MVMT:
-                                        xstrcat(&strInfo, " (EAT_MVMT");
+                                        xstrcat(&strInfo, " (EAT_MVMT", 0);
                                     break;
 
                                     case EAT_MVST:
-                                        xstrcat(&strInfo, " (EAT_MVST");
+                                        xstrcat(&strInfo, " (EAT_MVST", 0);
                                     break;
 
                                     case EAT_ASN1:
-                                        xstrcat(&strInfo, " (EAT_ASN1");
+                                        xstrcat(&strInfo, " (EAT_ASN1", 0);
                                     break;
 
                                     default:
                                     {
                                         sprintf(szTemp, " (type 0x%lX", usEAType);
-                                        xstrcat(&strInfo, szTemp);
+                                        xstrcat(&strInfo, szTemp, 0);
                                     }
                                 }
 
                                 sprintf(szTemp, ", %d bytes)", peab->usValueLength);
-                                xstrcat(&strInfo, szTemp);
+                                xstrcat(&strInfo, szTemp, 0);
 
                                 if (fDumpBinary)
                                 {
@@ -1505,9 +1505,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                 {
                     if (pProgDetails->pszExecutable)
                     {
-                        xstrcat(pstrTemp, "EXENAME=");
-                        xstrcat(pstrTemp, pProgDetails->pszExecutable);
-                        xstrcat(pstrTemp, ";");
+                        xstrcat(pstrTemp, "EXENAME=", 0);
+                        xstrcat(pstrTemp, pProgDetails->pszExecutable, 0);
+                        xstrcatc(pstrTemp, ';');
 
                         switch (pProgDetails->progt.progc)
                         {
@@ -1584,7 +1584,7 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                         }
 
                         if (pszProgString)
-                            xstrcat(pstrTemp, pszProgString);
+                            xstrcat(pstrTemp, pszProgString, 0);
                     }
                 } // end if (_somIsA(somSelf, _WPProgram)
 
@@ -1592,18 +1592,18 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                 if (pProgDetails->pszParameters)
                     if (strlen(pProgDetails->pszParameters))
                     {
-                        xstrcat(pstrTemp, "PARAMETERS=");
-                        xstrcat(pstrTemp, pProgDetails->pszParameters);
-                        xstrcat(pstrTemp, ";");
+                        xstrcat(pstrTemp, "PARAMETERS=", 0);
+                        xstrcat(pstrTemp, pProgDetails->pszParameters, 0);
+                        xstrcatc(pstrTemp, ';');
                     }
 
                 // STARTUPDIR=
                 if (pProgDetails->pszStartupDir)
                     if (strlen(pProgDetails->pszStartupDir))
                     {
-                        xstrcat(pstrTemp, "STARTUPDIR=");
-                        xstrcat(pstrTemp, pProgDetails->pszStartupDir);
-                        xstrcat(pstrTemp, ";");
+                        xstrcat(pstrTemp, "STARTUPDIR=", 0);
+                        xstrcat(pstrTemp, pProgDetails->pszStartupDir, 0);
+                        xstrcatc(pstrTemp, ';');
                     }
 
                 // SET XXX=VVV
@@ -1627,9 +1627,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
                             {
                                 PSZ pszThis = *ppszThis;
 
-                                xstrcat(pstrTemp, "SET ");
-                                xstrcat(pstrTemp, pszThis);
-                                xstrcat(pstrTemp, ";");
+                                xstrcat(pstrTemp, "SET ", 0);
+                                xstrcat(pstrTemp, pszThis, 0);
+                                xstrcatc(pstrTemp, ';');
 
                                 // next environment string
                                 ppszThis++;
@@ -1655,9 +1655,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
             // wpQueryAssociationFilter:
             // supported by both WPProgram and WPProgramFile
     {
-        xstrcat(pstrTemp, "ASSOCFILTER=");
-        xstrcat(pstrTemp, pszValue);
-        xstrcat(pstrTemp, ";");
+        xstrcat(pstrTemp, "ASSOCFILTER=", 0);
+        xstrcat(pstrTemp, pszValue, 0);
+        xstrcatc(pstrTemp, ';');
     }
 
     // ASSOCTYPE
@@ -1665,9 +1665,9 @@ VOID fsysQueryProgramSetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
             // wpQueryAssociationType:
             // supported by both WPProgram and WPProgramFile
     {
-        xstrcat(pstrTemp, "ASSOCTYPE=");
-        xstrcat(pstrTemp, pszValue);
-        xstrcat(pstrTemp, ";");
+        xstrcat(pstrTemp, "ASSOCTYPE=", 0);
+        xstrcat(pstrTemp, pszValue, 0);
+        xstrcatc(pstrTemp, ';');
     }
 }
 

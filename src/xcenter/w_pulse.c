@@ -278,26 +278,26 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
     sprintf(szTemp, "WIDTH=%d;",
             pSetup->cx);
-    xstrcat(pstrSetup, szTemp);
+    xstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
-    xstrcat(pstrSetup, szTemp);
+    xstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "GRPHCOL=%06lX;",
             pSetup->lcolGraph);
-    xstrcat(pstrSetup, szTemp);
+    xstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolText);
-    xstrcat(pstrSetup, szTemp);
+    xstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
         sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
-        xstrcat(pstrSetup, szTemp);
+        xstrcat(pstrSetup, szTemp, 0);
     }
 }
 

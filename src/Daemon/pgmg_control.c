@@ -59,7 +59,6 @@
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\except.h"             // exception handling
-#include "helpers\gpih.h"               // GPI helper routines
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
@@ -702,7 +701,9 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 slMem.cx = 0;
                 slMem.cy = 0;
                 hpsMem = GpiCreatePS(G_habDaemon, hdcMem, &slMem, GPIA_ASSOC | PU_PELS);
-                gpihSwitchToRGB(hpsMem);        // V0.9.3 (2000-04-09) [umoeller]
+                // switch to RGB mode
+                GpiCreateLogColorTable(hpsMem, 0, LCOLF_RGB, 0, 0, NULL);
+                    // V0.9.3 (2000-04-09) [umoeller]
 
                 // prepare bitmap creation
                 GpiQueryDeviceBitmapFormats(hpsMem, (LONG) 2, lBitmapFormat);
@@ -729,7 +730,9 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             {
                 POINTL      ptlCopy[4];
                 HPS         hps = WinBeginPaint(hwnd, 0, 0);
-                gpihSwitchToRGB(hps);   // V0.9.3 (2000-04-09) [umoeller]
+                // switch to RGB mode
+                GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
+                    // V0.9.3 (2000-04-09) [umoeller]
                 if (G_ClientBitmapNeedsUpdate)
                 {
                     // bitmap has been marked as invalid:
@@ -1061,6 +1064,9 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                         break;
                     case WM_DESTROY:
                         pgmwWindowListDelete(hwndChanged);
+                        break;
+                    case WM_SETWINDOWPARAMS: // V0.9.7 (2001-01-15) [dk]
+                        pgmwWindowListUpdate(hwndChanged);
                         break;
                 }
                 // _Pmpf(("PGMG_WNDCHANGE, posting PGMG_REDRAW"));

@@ -90,6 +90,7 @@ Last updated January 8, 2001, Ulrich M”ller
 
         umoeller            Ulrich M”ller (ulrich.moeller@rz.hu-berlin.de)
 
+        dk                  Dmitry Kubov <Dmitry@north.cs.msu.su>
         jsmall              John Small (jsmall@lynxus.com)
         lafaix              Martin Lafaix (lafaix@ibm.net)
         pr                  Paul Ratcliffe (paul@orac.clara.co.uk)

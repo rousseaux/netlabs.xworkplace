@@ -241,32 +241,32 @@ VOID AddFolderView2Cnr(HWND hwndCnr,
 
     xstrInit(&strTemp, 200);
 
-    xstrcpy(&strTemp, pszView);
-    xstrcat(&strTemp, ": ");
+    xstrcpy(&strTemp, pszView, 0);
+    xstrcat(&strTemp, ": ", 0);
 
     if (ulViewAttrs & CV_ICON)
-        xstrcat(&strTemp, "CV_ICON ");
+        xstrcat(&strTemp, "CV_ICON ", 0);
     if (ulViewAttrs & CV_NAME)
-        xstrcat(&strTemp, "CV_NAME ");
+        xstrcat(&strTemp, "CV_NAME ", 0);
     if (ulViewAttrs & CV_TEXT)
-        xstrcat(&strTemp, "CV_TEXT ");
+        xstrcat(&strTemp, "CV_TEXT ", 0);
     if (ulViewAttrs & CV_TREE)
-        xstrcat(&strTemp, "CV_TREE ");
+        xstrcat(&strTemp, "CV_TREE ", 0);
     if (ulViewAttrs & CV_DETAIL)
-        xstrcat(&strTemp, "CV_DETAIL ");
+        xstrcat(&strTemp, "CV_DETAIL ", 0);
     if (ulViewAttrs & CA_DETAILSVIEWTITLES)
-        xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ");
+        xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ", 0);
 
     if (ulViewAttrs & CV_MINI)
-        xstrcat(&strTemp, "CV_MINI ");
+        xstrcat(&strTemp, "CV_MINI ", 0);
     if (ulViewAttrs & CV_FLOW)
-        xstrcat(&strTemp, "CV_FLOW ");
+        xstrcat(&strTemp, "CV_FLOW ", 0);
     if (ulViewAttrs & CA_DRAWICON)
-        xstrcat(&strTemp, "CA_DRAWICON ");
+        xstrcat(&strTemp, "CA_DRAWICON ", 0);
     if (ulViewAttrs & CA_DRAWBITMAP)
-        xstrcat(&strTemp, "CA_DRAWBITMAP ");
+        xstrcat(&strTemp, "CA_DRAWBITMAP ", 0);
     if (ulViewAttrs & CA_TREELINE)
-        xstrcat(&strTemp, "CA_TREELINE ");
+        xstrcat(&strTemp, "CA_TREELINE ", 0);
 
     // owner...
 
@@ -1735,11 +1735,11 @@ VOID CheckStyle(PXSTRING pxstr,       // in: string for xstrcat
 {
     if ((ul1 & ulMask) != (ul2 & ulMask))
     {
-        xstrcat(pxstr, pszName);
+        xstrcat(pxstr, pszName, 0);
         if (ul1 & ulMask)
-            xstrcat(pxstr, "YES;");
+            xstrcat(pxstr, "YES;", 0);
         else
-            xstrcat(pxstr, "NO;");
+            xstrcat(pxstr, "NO;", 0);
     }
 }
 
@@ -1832,11 +1832,11 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case CCVIEW_ON:
-            xstrcat(&strTemp, "CCVIEW=YES;");
+            xstrcat(&strTemp, "CCVIEW=YES;", 0);
         break;
 
         case CCVIEW_OFF:
-            xstrcat(&strTemp, "CCVIEW=NO;");
+            xstrcat(&strTemp, "CCVIEW=NO;", 0);
         break;
         // ignore CCVIEW_DEFAULT
     }
@@ -1855,23 +1855,23 @@ ULONG objQuerySetup(WPObject *somSelf,
             switch (_pWPObjectData->lDefaultView)
             {
                 case OPEN_SETTINGS:
-                    xstrcat(&strTemp, "DEFAULTVIEW=SETTINGS;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=SETTINGS;", 0);
                 break;
 
                 case OPEN_CONTENTS:
-                    xstrcat(&strTemp, "DEFAULTVIEW=ICON;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=ICON;", 0);
                 break;
 
                 case OPEN_TREE:
-                    xstrcat(&strTemp, "DEFAULTVIEW=TREE;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=TREE;", 0);
                 break;
 
                 case OPEN_DETAILS:
-                    xstrcat(&strTemp, "DEFAULTVIEW=DETAILS;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=DETAILS;", 0);
                 break;
 
                 case OPEN_RUNNING:
-                    xstrcat(&strTemp, "DEFAULTVIEW=RUNNING;");
+                    xstrcat(&strTemp, "DEFAULTVIEW=RUNNING;", 0);
                 break;
 
                 case OPEN_DEFAULT:
@@ -1883,7 +1883,7 @@ ULONG objQuerySetup(WPObject *somSelf,
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
                     sprintf(szTemp, "DEFAULTVIEW=%d;", _pWPObjectData->lDefaultView);
-                    xstrcat(&strTemp, szTemp);
+                    xstrcat(&strTemp, szTemp, 0);
                 break; }
             }
         }
@@ -1897,7 +1897,7 @@ ULONG objQuerySetup(WPObject *somSelf,
         {
             CHAR szTemp[40];
             sprintf(szTemp, "HELPPANEL=%d;", _pWPObjectData->ulHelpPanel);
-            xstrcat(&strTemp, szTemp);
+            xstrcat(&strTemp, szTemp, 0);
         }
 
     // HIDEBUTTON
@@ -1905,11 +1905,11 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case HIDEBUTTON:
-            xstrcat(&strTemp, "HIDEBUTTON=YES;");
+            xstrcat(&strTemp, "HIDEBUTTON=YES;", 0);
         break;
 
         case MINBUTTON:
-            xstrcat(&strTemp, "HIDEBUTTON=NO;");
+            xstrcat(&strTemp, "HIDEBUTTON=NO;", 0);
         break;
 
         // ignore DEFAULTBUTTON
@@ -1927,15 +1927,15 @@ ULONG objQuerySetup(WPObject *somSelf,
     switch (ulValue)
     {
         case MINWIN_HIDDEN:
-            xstrcat(&strTemp, "MINWIN=HIDE;");
+            xstrcat(&strTemp, "MINWIN=HIDE;", 0);
         break;
 
         case MINWIN_VIEWER:
-            xstrcat(&strTemp, "MINWIN=VIEWER;");
+            xstrcat(&strTemp, "MINWIN=VIEWER;", 0);
         break;
 
         case MINWIN_DESKTOP:
-            xstrcat(&strTemp, "MINWIN=DESKTOP;");
+            xstrcat(&strTemp, "MINWIN=DESKTOP;", 0);
         break;
 
         // ignore MINWIN_DEFAULT
@@ -1987,12 +1987,12 @@ ULONG objQuerySetup(WPObject *somSelf,
         // OBJSTYLE_NODROPON == CLSSTYLE_NEVERDROPON == 0x00002000; see wpobject.h
 
     if (ulStyle & OBJSTYLE_TEMPLATE)
-        xstrcat(&strTemp, "TEMPLATE=YES;");
+        xstrcat(&strTemp, "TEMPLATE=YES;", 0);
 
     // LOCKEDINPLACE: Warp 4 only
     if (doshIsWarp4())
         if (ulStyle & OBJSTYLE_LOCKEDINPLACE)
-            xstrcat(&strTemp, "LOCKEDINPLACE=YES;");
+            xstrcat(&strTemp, "LOCKEDINPLACE=YES;", 0);
 
     // TITLE
     /* pszValue = _wpQueryTitle(somSelf);
@@ -2007,9 +2007,9 @@ ULONG objQuerySetup(WPObject *somSelf,
     if (pszValue)
         if (strlen(pszValue))
         {
-            xstrcat(&strTemp, "OBJECTID=");
-            xstrcat(&strTemp, pszValue);
-            xstrcat(&strTemp, ";");
+            xstrcat(&strTemp, "OBJECTID=", 0);
+            xstrcat(&strTemp, pszValue, 0);
+            xstrcatc(&strTemp, ';');
         }
 
     /*

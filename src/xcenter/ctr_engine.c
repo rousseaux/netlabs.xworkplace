@@ -3265,24 +3265,24 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
              */
 
             if (_ulWindowStyle & WS_TOPMOST)
-                xstrcat(&strTemp, "ALWAYSONTOP=YES;");
+                xstrcat(&strTemp, "ALWAYSONTOP=YES;", 0);
             if ((_ulWindowStyle & WS_ANIMATE) != 0)
-                xstrcat(&strTemp, "ANIMATE=YES;");
+                xstrcat(&strTemp, "ANIMATE=YES;", 0);
             if (_ulAutoHide)
             {
                 CHAR szTemp[100];
-                xstrcat(&strTemp, "AUTOHIDE=");
+                xstrcat(&strTemp, "AUTOHIDE=", 0);
                 sprintf(szTemp, "%d;", _ulAutoHide);
-                xstrcat(&strTemp, szTemp);
+                xstrcat(&strTemp, szTemp, 0);
             }
             if (_ulPosition == XCENTER_TOP)
-                xstrcat(&strTemp, "POSITION=TOP;");
+                xstrcat(&strTemp, "POSITION=TOP;", 0);
 
             pNode = lstQueryFirstNode(pllSettings);
             if (pNode)
             {
                 BOOL    fFirstWidget = TRUE;
-                xstrcat(&strTemp, "WIDGETS=");
+                xstrcat(&strTemp, "WIDGETS=", 0);
 
                 // we have widgets:
                 // go thru all of them and list all widget classes and setup strings.
@@ -3293,12 +3293,12 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                     if (!fFirstWidget)
                         // not first run:
                         // add separator
-                        xstrcat(&strTemp, ",");
+                        xstrcatc(&strTemp, ',');
                     else
                         fFirstWidget = FALSE;
 
                     // add widget class
-                    xstrcat(&strTemp, pSetting->pszWidgetClass);
+                    xstrcat(&strTemp, pSetting->pszWidgetClass, 0);
 
                     if (    (pSetting->pszSetupString)
                          && (strlen(pSetting->pszSetupString))
@@ -3322,7 +3322,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                                      40);
 
                         // add first separator
-                        xstrcat(&strTemp, "(");
+                        xstrcatc(&strTemp, '(');
 
                         // now encode the widget setup string...
                         for (ul = 0;
@@ -3346,20 +3346,21 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                             xstrInitSet(&strReplace, szReplace);
 
                             // replace all occurences
-                            while (xstrrpl(&strSetup2,
-                                           &ulOfs,
-                                           &strFind,
-                                           &strReplace,
-                                           ShiftTable,
-                                           &fRepeat))
+                            while (xstrFindReplace(&strSetup2,
+                                                   &ulOfs,
+                                                   &strFind,
+                                                   &strReplace,
+                                                   ShiftTable,
+                                                   &fRepeat))
                                     ;
+
                         } // for ul; next encoding
 
                         // now append encoded widget setup string
-                        xstrcat(&strTemp, strSetup2.psz);
+                        xstrcat(&strTemp, strSetup2.psz, strSetup2.ulLength);
 
                         // add terminator
-                        xstrcat(&strTemp, ")");
+                        xstrcatc(&strTemp, ')');
 
                         xstrClear(&strSetup2);
                     } // end if (    (pSetting->pszSetupString)...
@@ -3367,7 +3368,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                     pNode = pNode->pNext;
                 } // end for widgets
 
-                xstrcat(&strTemp, ";");
+                xstrcatc(&strTemp, ';');
             }
 
             /*

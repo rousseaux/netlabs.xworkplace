@@ -230,7 +230,7 @@ VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     {
         sprintf(szTemp, "OBJECTHANDLE=%lX;",
                 pSetup->hobj);
-        xstrcat(pstrSetup, szTemp);
+        xstrcat(pstrSetup, szTemp, 0);
     }
 }
 

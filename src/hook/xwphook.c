@@ -850,6 +850,7 @@ POINTL  G_ptlMousePosDesktop = {0};
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
+ *@@changed V0.9.7 (2001-01-15) [dk]: WM_SETWINDOWPARAMS added
  */
 
 VOID ProcessMsgsForPageMage(HWND hwnd,
@@ -864,6 +865,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
          || (msg == WM_DESTROY)
          || (msg == WM_ACTIVATE)
          || (msg == WM_WINDOWPOSCHANGED)
+         || (msg == WM_SETWINDOWPARAMS)
        )
     {
         if (WinQueryWindow(hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
@@ -879,7 +881,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
 
                     if (    (msg == WM_CREATE)
                          || (msg == WM_DESTROY)
-                       )
+                         || (msg == WM_SETWINDOWPARAMS)                       )
                     {
                         WinPostMsg(G_HookData.hwndPageMageClient,
                                    PGMG_WNDCHANGE,

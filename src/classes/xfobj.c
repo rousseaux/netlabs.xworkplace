@@ -1246,7 +1246,26 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
  *      call. This is true even if FALSE is returned from
  *      this method.
  *
+ *      In order to be able to process all objects at
+ *      once, we now have XFolder::xwpProcessObjectCommand,
+ *      which can intercept the menu ID even before this
+ *      method is invoked on each object.
+ *
+ *      We override this to move objects into the
+ *      trash can instead, if necessary.
+ *
+ *      Note: This method normally doesn't get called
+ *      during the regular WPS file operations once
+ *      the trash can has been enabled because XFolder
+ *      intercepts all file operations commands and
+ *      performs the required actions directly without
+ *      calling this method. However, this method still
+ *      gets called by WinDestroyObject and the REXX
+ *      counterpart, SysDestroyObject.
+ *
+ *
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
+ *@@changed V0.9.7 (2001-01-15) [umoeller]: added WPMENUID_DELETE if trash can is enabled
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
@@ -1327,20 +1346,23 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
             break; }
         #endif
 
-        /* case WPMENUID_DELETE:
+        case WPMENUID_DELETE:
+        {
+            PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
             // this is never reached, because the subclassed folder
             // frame winproc already intercepts this
 
-            // ### wrong... for example, XCenter "delete" is not intercepted...
-            // or in any other container that is not a folder!!!
-
-            _Pmpf(("Deleting object %s, hwndFrame: 0x%lX",
-                   _wpQueryTitle(somSelf),
-                   hwndFrame ));
-            brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
-                                                                hwndFrame,
-                                                                ulMenuId);
-        break; */
+            if (pGlobalSettings->fTrashDelete)
+            {
+                DosBeep(5000, 1000);
+                cmnMove2DefTrashCan(somSelf);
+                brc = TRUE;     // processed
+            }
+            else
+                brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
+                                                                    hwndFrame,
+                                                                    ulMenuId);
+        break; }
 
         case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
         {
@@ -1573,22 +1595,6 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
  *      if desired, by calling wpConfirmDelete, and
  *      then calls wpFree.
  *
- *      We override this to move objects into the
- *      trash can instead, if necessary.
- *
- *      Note: This method normally doesn't get called
- *      during the regular WPS file operations once
- *      the trash can has been enabled because XFolder
- *      intercepts all file operations commands and
- *      performs the required actions directly without
- *      calling this method. However, this method still
- *      gets called by WinDestroyObject and the REXX
- *      counterpart, SysDestroyObject.
- *
- *      We also override XFolder::wpDelete to avoid
- *      having the WPS call this method for every object
- *      contained in a folder.
- *
  *      This must return:
  *
  *      --  NO_DELETE: Error occurred.
@@ -1604,6 +1610,10 @@ SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpDelete");
+
+    // we can't override this... apparently, when a folder
+    // is deleted in the WPS, the WPS goes thru all subobjects
+    // first and calls this method for every subobject... yuck!
 
     /* if (pGlobalSettings->fTrashDelete)
     {

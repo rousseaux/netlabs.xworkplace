@@ -189,6 +189,7 @@ PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
 PSTRHDATETIME pstrhDateTime = NULL;
 PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
@@ -213,6 +214,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "strhDateTime", (PFN*)&pstrhDateTime,
         "strhThousandsULong", (PFN*)&pstrhThousandsULong,
         "tmrStartTimer", (PFN*)&ptmrStartTimer,
@@ -386,18 +388,18 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
-    pxstrcat(pstrSetup, szTemp);
+    pxstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
-    pxstrcat(pstrSetup, szTemp);
+    pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
         sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
-        pxstrcat(pstrSetup, szTemp);
+        pxstrcat(pstrSetup, szTemp, 0);
     }
 }
 
@@ -553,7 +555,7 @@ VOID MwgtPaint(HWND hwnd,
 
     // now paint button frame
     WinQueryWindowRect(hwnd, &rclWin);
-    gpihSwitchToRGB(hps);
+    pgpihSwitchToRGB(hps);
 
     if (fDrawFrame)
     {

@@ -183,6 +183,7 @@ PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 PCTRSETSETUPSTRING pctrSetSetupString = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
 PWINHFREE pwinhFree = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
@@ -204,6 +205,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrSetSetupString", (PFN*)&pctrSetSetupString,
 
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
 
         "winhFree", (PFN*)&pwinhFree,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
@@ -309,7 +311,7 @@ VOID WgtClearSetup(PSAMPLESETUP pSetup)
  */
 
 VOID WgtScanSetup(const char *pcszSetupString,
-                   PSAMPLESETUP pSetup)
+                  PSAMPLESETUP pSetup)
 {
     PSZ p;
 
@@ -365,18 +367,18 @@ VOID WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
-    pxstrcat(pstrSetup, szTemp);
+    pxstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
-    pxstrcat(pstrSetup, szTemp);
+    pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
         sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
-        pxstrcat(pstrSetup, szTemp);
+        pxstrcat(pstrSetup, szTemp, 0);
     }
 }
 
@@ -416,7 +418,7 @@ VOID WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
  */
 
 MRESULT WgtCreate(HWND hwnd,
-                   PXCENTERWIDGET pWidget)
+                  PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;
     PSZ p;
@@ -546,7 +548,7 @@ VOID WgtPaint(HWND hwnd,
             // now paint frame
             WinQueryWindowRect(hwnd,
                                &rclWin);        // exclusive
-            gpihSwitchToRGB(hps);
+            pgpihSwitchToRGB(hps);
 
             // make this rectangle inclusive
             rclWin.xRight--;

@@ -43,6 +43,7 @@ EXPORTS
    ctrScanSetupString
    ctrSetSetupString
    gpihDraw3DFrame
+   gpihSwitchToRGB
    lstAppendItem
    lstClear
    lstCountItems

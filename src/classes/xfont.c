@@ -403,22 +403,26 @@ SOM_Scope void  SOMLINK fonM_wpclsInitData(M_XWPFontFolder *somSelf)
                                                     XWPFontObject_MinorVersion);
 
     if (pFontObjectClassObject)
+    {
         // now increment the class's usage count by one to
         // ensure that the class is never unloaded; if we
         // didn't do this, we'd get WPS CRASHES in some
         // background class because if no more trash objects
         // exist, the class would get unloaded automatically -- sigh...
         _wpclsIncUsage(pFontObjectClassObject);
-
-    {
-        // store the class object in KERNELGLOBALS
-        PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        if (pKernelGlobals)
         {
-            pKernelGlobals->fXWPFontFolder = TRUE;
-            krnUnlockGlobals();
+            // store the class object in KERNELGLOBALS
+            PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+            if (pKernelGlobals)
+            {
+                pKernelGlobals->fXWPFontFolder = TRUE;
+                krnUnlockGlobals();
+            }
         }
     }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot initialize XWPFontObject class. Is it installed?!?");
 }
 
 /*

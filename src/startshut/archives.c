@@ -579,7 +579,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
         if (fWasJustRestored)
         {
-            xstrcpy(&strMsg, "Archive was just restored.\n");
+            xstrcpy(&strMsg, "Archive was just restored.\n", 0); // ###
             fBackup = FALSE;
             fDisableArchiving = TRUE;
         }
@@ -642,11 +642,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     if (G_ArcSettings.fShowStatus)
                     {
                         sprintf(szTemp, "%d", lDaysPassed);
-                        xstrcpy(&strMsg, szTemp);
-                        xstrcat(&strMsg, " days passed since last backup\nLimit: ");
+                        xstrcpy(&strMsg, szTemp, 0);
+                        xstrcat(&strMsg, " days passed since last backup\nLimit: ", 0);
+                                    // ###
                         sprintf(szTemp, "%d", G_ArcSettings.ulEveryDays);
-                        xstrcat(&strMsg, szTemp);
-                        xstrcat(&strMsg, " days\n");
+                        xstrcat(&strMsg, szTemp, 0);
+                        xstrcat(&strMsg, " days\n", 0); // ###
                     }
                 }
 
@@ -672,12 +673,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     if (G_ArcSettings.fShowStatus)
                     {
                         sprintf(szTemp, "%f", dMaxDifferencePercent);
-                        xstrcpy(&strMsg, "INI files checked\nChanged: ");
-                        xstrcat(&strMsg, szTemp);
-                        xstrcat(&strMsg, " %\nLimit: ");
+                        xstrcpy(&strMsg, "INI files checked\nChanged: ", 0); // ###
+                        xstrcat(&strMsg, szTemp, 0);
+                        xstrcat(&strMsg, " %\nLimit: ", 0); // ###
                         sprintf(szTemp, "%f", G_ArcSettings.dIniFilesPercent);
-                        xstrcat(&strMsg, szTemp);
-                        xstrcat(&strMsg, " %\n");
+                        xstrcat(&strMsg, szTemp, 0);
+                        xstrcat(&strMsg, " %\n", 0); // ###
                     }
                 } // end if (fCheckINIs)
             } // end else if (G_ArcSettings.ulArcFlags & ARCF_ALWAYS)
@@ -692,10 +693,10 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     // archiving to be turned on:
                     // save "last app" etc. data so we won't get this twice
                     arcSaveSettings();
-                    xstrcat(&strMsg, "WPS archiving enabled");
+                    xstrcat(&strMsg, "WPS archiving enabled", 0); // ###
                 }
                 else
-                    xstrcat(&strMsg, "WPS archiving not necessary");
+                    xstrcat(&strMsg, "WPS archiving not necessary", 0); // ###
 
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, strMsg.psz);
                 WinShowWindow(hwndStatus, TRUE);

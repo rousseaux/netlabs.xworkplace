@@ -118,7 +118,7 @@ $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
 
 $(EXE_OUTPUTDIR)\pgmg_control.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h $(HLPINC)\gpih.h \
+        $(HLPINC)\except.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \

@@ -1761,7 +1761,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                     sprintf(szClassInfoFile+strlen(szClassInfoFile),
                             "\\help\\xfcls%s.txt",
                             cmnQueryLanguageCode());
-                    doshReadTextFile(szClassInfoFile, &pszClassInfo);
+                    doshLoadTextFile(szClassInfoFile, &pszClassInfo);
                 }
                 else
                     return (NULL);
@@ -2631,9 +2631,11 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                         {
                             if (strOverriddenBy.ulLength)
                                 // not first class: append comma
-                                xstrcat(&strOverriddenBy, ", ");
+                                xstrcat(&strOverriddenBy, ", ", 2);
 
-                            xstrcat(&strOverriddenBy, _somGetName(pClassObject));
+                            xstrcat(&strOverriddenBy,
+                                    _somGetName(pClassObject),
+                                    0);
                         }
 
                         pnodeOverride = pnodeOverride->pNext;

@@ -651,136 +651,136 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 if ((pxwpcOld->fXFldObject) && (!pxwpcNew->fXFldObject))
                 {
                     // deregister XFldObject
-                    xstrcat(&strDereg, "XFldObject\n");
+                    xstrcat(&strDereg, "XFldObject\n", 0);
                     // unreplace XFldObject
-                    xstrcat(&strUnreplace, "WPObject XFldObject\n");
+                    xstrcat(&strUnreplace, "WPObject XFldObject\n", 0);
                 }
                 else if ((pxwpcNew->fXFldObject) && (!pxwpcOld->fXFldObject))
                 {
                     // register
-                    xstrcat(&strReg, "XFldObject\n");
+                    xstrcat(&strReg, "XFldObject\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPObject XFldObject\n");
+                    xstrcat(&strReplace, "WPObject XFldObject\n", 0);
                 }
 
                 if ((pxwpcOld->fXFolder) && (!pxwpcNew->fXFolder))
                 {
                     // deregister XFolder
-                    xstrcat(&strDereg, "XFolder\n");
+                    xstrcat(&strDereg, "XFolder\n", 0);
                     // unreplace XFolder
-                    xstrcat(&strUnreplace, "WPFolder XFolder\n");
+                    xstrcat(&strUnreplace, "WPFolder XFolder\n", 0);
                 }
                 else if ((pxwpcNew->fXFolder) && (!pxwpcOld->fXFolder))
                 {
                     // register
-                    xstrcat(&strReg, "XFolder\n");
+                    xstrcat(&strReg, "XFolder\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPFolder XFolder\n");
+                    xstrcat(&strReplace, "WPFolder XFolder\n", 0);
                 }
 
                 if ((pxwpcOld->fXFldDisk) && (!pxwpcNew->fXFldDisk))
                 {
                     // deregister XFldDisk
-                    xstrcat(&strDereg, "XFldDisk\n");
+                    xstrcat(&strDereg, "XFldDisk\n", 0);
                     // unreplace XFldDisk
-                    xstrcat(&strUnreplace, "WPDisk XFldDisk\n");
+                    xstrcat(&strUnreplace, "WPDisk XFldDisk\n", 0);
                 }
                 else if ((pxwpcNew->fXFldDisk) && (!pxwpcOld->fXFldDisk))
                 {
                     // register
-                    xstrcat(&strReg, "XFldDisk\n");
+                    xstrcat(&strReg, "XFldDisk\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPDisk XFldDisk\n");
+                    xstrcat(&strReplace, "WPDisk XFldDisk\n", 0);
                 }
 
                 if ((pxwpcOld->fXFldDesktop) && (!pxwpcNew->fXFldDesktop))
                 {
                     // deregister XFldDesktop
-                    xstrcat(&strDereg, "XFldDesktop\n");
+                    xstrcat(&strDereg, "XFldDesktop\n", 0);
                     // unreplace XFldDesktop
-                    xstrcat(&strUnreplace, "WPDesktop XFldDesktop\n");
+                    xstrcat(&strUnreplace, "WPDesktop XFldDesktop\n", 0);
                 }
                 else if ((pxwpcNew->fXFldDesktop) && (!pxwpcOld->fXFldDesktop))
                 {
                     // register
-                    xstrcat(&strReg, "XFldDesktop\n");
+                    xstrcat(&strReg, "XFldDesktop\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPDesktop XFldDesktop\n");
+                    xstrcat(&strReplace, "WPDesktop XFldDesktop\n", 0);
                 }
 
                 if ((pxwpcOld->fXFldDataFile) && (!pxwpcNew->fXFldDataFile))
                 {
                     // deregister XFldDataFile
-                    xstrcat(&strDereg, "XFldDataFile\n");
+                    xstrcat(&strDereg, "XFldDataFile\n", 0);
                     // unreplace XFldDataFile
-                    xstrcat(&strUnreplace, "WPDataFile XFldDataFile\n");
+                    xstrcat(&strUnreplace, "WPDataFile XFldDataFile\n", 0);
                 }
                 else if ((pxwpcNew->fXFldDataFile) && (!pxwpcOld->fXFldDataFile))
                 {
                     // register
-                    xstrcat(&strReg, "XFldDataFile\n");
+                    xstrcat(&strReg, "XFldDataFile\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPDataFile XFldDataFile\n");
+                    xstrcat(&strReplace, "WPDataFile XFldDataFile\n", 0);
                 }
 
                 if ((pxwpcOld->fXFldProgramFile) && (!pxwpcNew->fXFldProgramFile))
                 {
                     // deregister XFldProgramFile
-                    xstrcat(&strDereg, "XFldProgramFile\n");
+                    xstrcat(&strDereg, "XFldProgramFile\n", 0);
                     // unreplace XFldProgramFile
-                    xstrcat(&strUnreplace, "WPProgramFile XFldProgramFile\n");
+                    xstrcat(&strUnreplace, "WPProgramFile XFldProgramFile\n", 0);
                 }
                 else if ((pxwpcNew->fXFldProgramFile) && (!pxwpcOld->fXFldProgramFile))
                 {
                     // register
-                    xstrcat(&strReg, "XFldProgramFile\n");
+                    xstrcat(&strReg, "XFldProgramFile\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPProgramFile XFldProgramFile\n");
+                    xstrcat(&strReplace, "WPProgramFile XFldProgramFile\n", 0);
                 }
 
                 if ((pxwpcOld->fXWPSound) && (!pxwpcNew->fXWPSound))
                 {
                     // deregister XWPSound
-                    xstrcat(&strDereg, "XWPSound\n");
+                    xstrcat(&strDereg, "XWPSound\n", 0);
                     // unreplace XWPSound
-                    xstrcat(&strUnreplace, "WPSound XWPSound\n");
+                    xstrcat(&strUnreplace, "WPSound XWPSound\n", 0);
                 }
                 else if ((pxwpcNew->fXWPSound) && (!pxwpcOld->fXWPSound))
                 {
                     // register
-                    xstrcat(&strReg, "XWPSound\n");
+                    xstrcat(&strReg, "XWPSound\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPSound XWPSound\n");
+                    xstrcat(&strReplace, "WPSound XWPSound\n", 0);
                 }
 
                 if ((pxwpcOld->fXWPMouse) && (!pxwpcNew->fXWPMouse))
                 {
                     // deregister XWPMouse
-                    xstrcat(&strDereg, "XWPMouse\n");
+                    xstrcat(&strDereg, "XWPMouse\n", 0);
                     // unreplace XWPMouse
-                    xstrcat(&strUnreplace, "WPMouse XWPMouse\n");
+                    xstrcat(&strUnreplace, "WPMouse XWPMouse\n", 0);
                 }
                 else if ((pxwpcNew->fXWPMouse) && (!pxwpcOld->fXWPMouse))
                 {
                     // register
-                    xstrcat(&strReg, "XWPMouse\n");
+                    xstrcat(&strReg, "XWPMouse\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPMouse XWPMouse\n");
+                    xstrcat(&strReplace, "WPMouse XWPMouse\n", 0);
                 }
 
                 if ((pxwpcOld->fXWPKeyboard) && (!pxwpcNew->fXWPKeyboard))
                 {
                     // deregister XWPKeyboard
-                    xstrcat(&strDereg, "XWPKeyboard\n");
+                    xstrcat(&strDereg, "XWPKeyboard\n", 0);
                     // unreplace XWPKeyboard
-                    xstrcat(&strUnreplace, "WPKeyboard XWPKeyboard\n");
+                    xstrcat(&strUnreplace, "WPKeyboard XWPKeyboard\n", 0);
                 }
                 else if ((pxwpcNew->fXWPKeyboard) && (!pxwpcOld->fXWPKeyboard))
                 {
                     // register
-                    xstrcat(&strReg, "XWPKeyboard\n");
+                    xstrcat(&strReg, "XWPKeyboard\n", 0);
                     // replace
-                    xstrcat(&strReplace, "WPKeyboard XWPKeyboard\n");
+                    xstrcat(&strReplace, "WPKeyboard XWPKeyboard\n", 0);
                 }
 
                 /*
@@ -790,86 +790,86 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
                 if ((pxwpcOld->fXWPSetup) && (!pxwpcNew->fXWPSetup))
                     // deregister XWPSetup
-                    xstrcat(&strDereg, "XWPSetup\n");
+                    xstrcat(&strDereg, "XWPSetup\n", 0);
                 else if ((pxwpcNew->fXWPSetup) && (!pxwpcOld->fXWPSetup))
                     // register
-                    xstrcat(&strReg, "XWPSetup\n");
+                    xstrcat(&strReg, "XWPSetup\n", 0);
 
                 if ((pxwpcOld->fXFldSystem) && (!pxwpcNew->fXFldSystem))
                     // deregister XFldSystem
-                    xstrcat(&strDereg, "XFldSystem\n");
+                    xstrcat(&strDereg, "XFldSystem\n", 0);
                 else if ((pxwpcNew->fXFldSystem) && (!pxwpcOld->fXFldSystem))
                     // register
-                    xstrcat(&strReg, "XFldSystem\n");
+                    xstrcat(&strReg, "XFldSystem\n", 0);
 
                 if ((pxwpcOld->fXFldWPS) && (!pxwpcNew->fXFldWPS))
                     // deregister XFldWPS
-                    xstrcat(&strDereg, "XFldWPS\n");
+                    xstrcat(&strDereg, "XFldWPS\n", 0);
                 else if ((pxwpcNew->fXFldWPS) && (!pxwpcOld->fXFldWPS))
                     // register
-                    xstrcat(&strReg, "XFldWPS\n");
+                    xstrcat(&strReg, "XFldWPS\n", 0);
 
                 if ((pxwpcOld->fXWPScreen) && (!pxwpcNew->fXWPScreen))
                     // deregister XWPScreen
-                    xstrcat(&strDereg, "XWPScreen\n");
+                    xstrcat(&strDereg, "XWPScreen\n", 0);
                 else if ((pxwpcNew->fXWPScreen) && (!pxwpcOld->fXWPScreen))
                     // register
-                    xstrcat(&strReg, "XWPScreen\n");
+                    xstrcat(&strReg, "XWPScreen\n", 0);
 
                 if ((pxwpcOld->fXWPMedia) && (!pxwpcNew->fXWPMedia))
                     // deregister XWPMedia
-                    xstrcat(&strDereg, "XWPMedia\n");
+                    xstrcat(&strDereg, "XWPMedia\n", 0);
                 else if ((pxwpcNew->fXWPMedia) && (!pxwpcOld->fXWPMedia))
                     // register
-                    xstrcat(&strReg, "XWPMedia\n");
+                    xstrcat(&strReg, "XWPMedia\n", 0);
 
                 if ((pxwpcOld->fXFldStartup) && (!pxwpcNew->fXFldStartup))
                     // deregister XFldStartup
-                    xstrcat(&strDereg, "XFldStartup\n");
+                    xstrcat(&strDereg, "XFldStartup\n", 0);
                 else if ((pxwpcNew->fXFldStartup) && (!pxwpcOld->fXFldStartup))
                     // register
-                    xstrcat(&strReg, "XFldStartup\n");
+                    xstrcat(&strReg, "XFldStartup\n", 0);
 
                 if ((pxwpcOld->fXFldShutdown) && (!pxwpcNew->fXFldShutdown))
                     // deregister XFldShutdown
-                    xstrcat(&strDereg, "XFldShutdown\n");
+                    xstrcat(&strDereg, "XFldShutdown\n", 0);
                 else if ((pxwpcNew->fXFldShutdown) && (!pxwpcOld->fXFldShutdown))
                     // register
-                    xstrcat(&strReg, "XFldShutdown\n");
+                    xstrcat(&strReg, "XFldShutdown\n", 0);
 
                 if ((pxwpcOld->fXWPClassList) && (!pxwpcNew->fXWPClassList))
                     // deregister XWPClassList
-                    xstrcat(&strDereg, "XWPClassList\n");
+                    xstrcat(&strDereg, "XWPClassList\n", 0);
                 else if ((pxwpcNew->fXWPClassList) && (!pxwpcOld->fXWPClassList))
                     // register
-                    xstrcat(&strReg, "XWPClassList\n");
+                    xstrcat(&strReg, "XWPClassList\n", 0);
 
                 if ((pxwpcOld->fXWPTrashCan) && (!pxwpcNew->fXWPTrashCan))
                 {
                     // deregister XWPTrashCan
-                    xstrcat(&strDereg, "XWPTrashCan\n");
+                    xstrcat(&strDereg, "XWPTrashCan\n", 0);
                     // deregister XWPTrashObject
-                    xstrcat(&strDereg, "XWPTrashObject\n");
+                    xstrcat(&strDereg, "XWPTrashObject\n", 0);
                 }
                 else if ((pxwpcNew->fXWPTrashCan) && (!pxwpcOld->fXWPTrashCan))
                 {
-                    xstrcat(&strReg, "XWPTrashCan\n");
-                    xstrcat(&strReg, "XWPTrashObject\n");
+                    xstrcat(&strReg, "XWPTrashCan\n", 0);
+                    xstrcat(&strReg, "XWPTrashObject\n", 0);
                 }
 
                 if ((pxwpcOld->fXWPString) && (!pxwpcNew->fXWPString))
                     // deregister XWPString
-                    xstrcat(&strDereg, "XWPString\n");
+                    xstrcat(&strDereg, "XWPString\n", 0);
                 else if ((pxwpcNew->fXWPString) && (!pxwpcOld->fXWPString))
                     // register
-                    xstrcat(&strReg, "XWPString\n");
+                    xstrcat(&strReg, "XWPString\n", 0);
 
                 if ((pxwpcOld->fXCenter) && (!pxwpcNew->fXCenter))
                     // deregister XCenter
-                    xstrcat(&strDereg, "XCenter\n");
+                    xstrcat(&strDereg, "XCenter\n", 0);
                 else if ((pxwpcNew->fXCenter) && (!pxwpcOld->fXCenter))
                     // register
-                    xstrcat(&strReg, "XCenter\n");
+                    xstrcat(&strReg, "XCenter\n", 0);
 
                 // check if we have anything to do
                 fReg = (strReg.ulLength != 0);
@@ -885,48 +885,48 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     // compose confirmation string
                     cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
                                   142); // "You have made the following changes to the XWorkplace class setup:"
-                    xstrcpy(&strMessage, szTemp);
-                    xstrcat(&strMessage, "\n");
+                    xstrcpy(&strMessage, szTemp, 0);
+                    xstrcatc(&strMessage, '\n');
                     if (fReg)
                     {
-                        xstrcat(&strMessage, "\n");
+                        xstrcat(&strMessage, "\n", 0);
                         cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
                                       143); // "Register the following classes:"
-                        xstrcat(&strMessage, szTemp);
-                        xstrcat(&strMessage, "\n\n");
-                        xstrcat(&strMessage, strReg.psz);
+                        xstrcat(&strMessage, szTemp, 0);
+                        xstrcat(&strMessage, "\n\n", 0);
+                        xstrcat(&strMessage, strReg.psz, strReg.ulLength);
                         if (strReplace.ulLength)
                         {
-                            xstrcat(&strMessage, "\n");
+                            xstrcatc(&strMessage, '\n');
                             cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
                                           144); // "Replace the following classes:"
-                            xstrcat(&strMessage, szTemp);
-                            xstrcat(&strMessage, "\n\n");
-                            xstrcat(&strMessage, strReplace.psz);
+                            xstrcat(&strMessage, szTemp, 0);
+                            xstrcat(&strMessage, "\n\n", 0);
+                            xstrcat(&strMessage, strReplace.psz, strReplace.ulLength);
                         }
                     }
                     if (fDereg)
                     {
-                        xstrcat(&strMessage, "\n");
+                        xstrcatc(&strMessage, '\n');
                         cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
                                       145); // "Deregister the following classes:"
-                        xstrcat(&strMessage, szTemp);
-                        xstrcat(&strMessage, "\n\n");
-                        xstrcat(&strMessage, strDereg.psz);
+                        xstrcat(&strMessage, szTemp, 0);
+                        xstrcat(&strMessage, "\n\n", 0);
+                        xstrcat(&strMessage, strDereg.psz, strDereg.ulLength);
                         if (strUnreplace.ulLength)
                         {
-                            xstrcat(&strMessage, "\n");
+                            xstrcatc(&strMessage, '\n');
                             cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
                                           146); // "Undo the following class replacements:"
-                            xstrcat(&strMessage, szTemp);
-                            xstrcat(&strMessage, "\n\n");
-                            xstrcat(&strMessage, strUnreplace.psz);
+                            xstrcat(&strMessage, szTemp, 0);
+                            xstrcat(&strMessage, "\n\n", 0);
+                            xstrcat(&strMessage, strUnreplace.psz, strUnreplace.ulLength);
                         }
                     }
-                    xstrcat(&strMessage, "\n");
+                    xstrcatc(&strMessage, '\n');
                     cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
                                   147); // "Are you sure you want to do this?"
-                    xstrcat(&strMessage, szTemp);
+                    xstrcat(&strMessage, szTemp, 0);
 
                     // confirm class list changes
                     if (cmnMessageBox(hwndDlg,
@@ -960,8 +960,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                                                    FALSE))  // unreplace!
                                         {
                                             // error: append to string list
-                                            xstrcat(&strFailing, pszReplacedClass);
-                                            xstrcat(&strFailing, "\n");
+                                            xstrcat(&strFailing, pszReplacedClass, 0);
+                                            xstrcatc(&strFailing, '\n');
                                         }
                                     }
                                     if (pszReplacedClass)
@@ -989,8 +989,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                         if (!WinDeregisterObjectClass(pszClass))
                                         {
                                             // error: append to string list
-                                            xstrcat(&strFailing, pszClass);
-                                            xstrcat(&strFailing, "\n");
+                                            xstrcat(&strFailing, pszClass, 0);
+                                            xstrcatc(&strFailing, '\n');
                                         }
                                         free(pszClass);
                                     }
@@ -1023,8 +1023,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                         if (arc != NO_ERROR)
                                         {
                                             // error: append to string list
-                                            xstrcat(&strFailing, pszClass);
-                                            xstrcat(&strFailing, "\n");
+                                            xstrcat(&strFailing, pszClass, 0);
+                                            xstrcatc(&strFailing, '\n');
                                         }
                                         free(pszClass);
                                     }
@@ -1054,8 +1054,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                                                    TRUE))  // replace!
                                         {
                                             // error: append to string list
-                                            xstrcat(&strFailing, pszReplacedClass);
-                                            xstrcat(&strFailing, "\n");
+                                            xstrcat(&strFailing, pszReplacedClass, 0);
+                                            xstrcatc(&strFailing, '\n');
                                         }
                                     }
                                     if (pszReplacedClass)
@@ -2610,8 +2610,8 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
         xstrInit(&strMenuItemText, 300);
         xstrset(&strMenuItemText, winhQueryMenuItemText(hwndMenu,
                                                         pso2->usMenuID));
-        xstrcat(&strMenuItemText, " (");
-        xstrcat(&strMenuItemText, pso2->pszObjectClass);
+        xstrcat(&strMenuItemText, " (", 0);
+        xstrcat(&strMenuItemText, pso2->pszObjectClass, 0);
 
         if (pso2->pExists)
         {
@@ -2620,17 +2620,17 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
             WPFolder    *pFolder = _wpQueryFolder(pso2->pExists);
             CHAR        szFolderPath[CCHMAXPATH] = "";
             _wpQueryFilename(pFolder, szFolderPath, TRUE);      // fully qualified
-            xstrcat(&strMenuItemText, ", ");
-            xstrcat(&strMenuItemText, szFolderPath);
+            xstrcat(&strMenuItemText, ", ", 0);
+            xstrcat(&strMenuItemText, szFolderPath, 0);
 
             // disable menu item
             WinEnableMenuItem(hwndMenu, pso2->usMenuID, FALSE);
         }
 
-        xstrcat(&strMenuItemText, ")");
+        xstrcatc(&strMenuItemText, ')');
         if (pso2->pExists == NULL)
             // append "...", because we'll have a message box then
-            xstrcat(&strMenuItemText, "...");
+            xstrcat(&strMenuItemText, "...", 0);
 
         // on Warp 3, disable WarpCenter also
         if (   (!doshIsWarp4())

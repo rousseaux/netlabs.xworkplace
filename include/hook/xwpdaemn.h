@@ -104,6 +104,7 @@
     VOID pgmwScanAllWindows(VOID);
     VOID pgmwWindowListAdd(HWND hwnd);
     VOID pgmwWindowListDelete(HWND hwnd);
+    VOID pgmwWindowListUpdate(HWND hwnd);
     BOOL pgmwWindowListRescan(VOID);
     BOOL pgmwStickyCheck(/* PCHAR, */ PCHAR);
     BOOL pgmwSticky2Check(HWND);

@@ -81,6 +81,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\level.h"              // SYSLEVEL helpers
@@ -561,7 +562,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // on the "HPFS" page:
         // if the system has any HPFS drives,
         // we disable the "HPFS installed" item
-        if (pcnbp->ulPageID == SP_HPFS)
+        /* if (pcnbp->ulPageID == SP_HPFS)
         {
             CHAR szHPFSDrives[30];
             doshEnumDrives(szHPFSDrives,
@@ -570,7 +571,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             if (strlen(szHPFSDrives) > 0)
                 WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_FSINSTALLED, FALSE);
         }
-        else if (pcnbp->ulPageID == SP_ERRORS)
+        else */
+        if (pcnbp->ulPageID == SP_ERRORS)
         {
             CHAR szAllDrives[30];
             PSZ p = szAllDrives;
@@ -607,7 +609,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         HPOINTER hptrOld = winhSetWaitPointer();
 
         // now read CONFIG.SYS file to initialize the dlg items
-        if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
+        if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
             winhDebugBox(pcnbp->hwndFrame,
                          (PSZ)pKernelGlobals->szConfigSys,
                          "XFolder was unable to open the CONFIG.SYS file.");
@@ -626,7 +628,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     PSZ     p = 0;
                     ULONG   ul = 0;
                     BOOL    bl = TRUE;
-                    if (p = strhGetParameter(pszConfigSys, "THREADS=", NULL, 0))
+                    if (p = csysGetParameter(pszConfigSys, "THREADS=", NULL, 0))
                         sscanf(p, "%d", &ul);
                     else // default
                         ul = 64;
@@ -634,7 +636,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                            64, 4096,
                                            ul);
 
-                    if (p = strhGetParameter(pszConfigSys, "MAXWAIT=", NULL, 0))
+                    if (p = csysGetParameter(pszConfigSys, "MAXWAIT=", NULL, 0))
                         sscanf(p, "%d", &ul);
                     else // default
                         ul = 3;
@@ -642,7 +644,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                            1, 10,
                                            ul);
 
-                    if (p = strhGetParameter(pszConfigSys, "PRIORITY_DISK_IO=", NULL, 0))
+                    if (p = csysGetParameter(pszConfigSys, "PRIORITY_DISK_IO=", NULL, 0))
                         bl = (strncmp(p, "YES", 3) == 0);
 
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage,
@@ -669,7 +671,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_PHYSICALMEMORY, szMemory);
 
                     // parse SWAPPATH command
-                    if (p = strhGetParameter(pszConfigSys, "SWAPPATH=", NULL, 0))
+                    if (p = csysGetParameter(pszConfigSys, "SWAPPATH=", NULL, 0))
                     {
                         CHAR    szSwapPath[CCHMAXPATH] = "Error";
                         ULONG   ulMinFree = 2048, ulMinSize = 2048;
@@ -700,7 +702,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                  *
                  */
 
-                case SP_HPFS:
+                /* case SP_HPFS:
                 {
                     PSZ     p = 0;
                     CHAR    szParameter[300] = "",
@@ -718,7 +720,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                     // evaluate IFS=...\HPFS.IFS
                     sprintf(szSearchKey, "IFS=%c:\\OS2\\HPFS.IFS ", doshQueryBootDrive());
-                    p = strhGetParameter(pszConfigSys, szSearchKey,
+                    p = csysGetParameter(pszConfigSys, szSearchKey,
                             szParameter, sizeof(szParameter));
 
                     if (p)
@@ -747,7 +749,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     // evaluate
                     // RUN=...\CACHE.EXE /MAXAGE:60000 /DISKIDLE:1000 /BUFFERIDLE:40000
                     sprintf(szSearchKey, "RUN=%c:\\OS2\\CACHE.EXE ", doshQueryBootDrive());
-                    p = strhGetParameter(pszConfigSys, szSearchKey,
+                    p = csysGetParameter(pszConfigSys, szSearchKey,
                                 szParameter, sizeof(szParameter));
 
                     if (p)
@@ -775,7 +777,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                            500, 100*1000,
                                            ulDiskIdle);
 
-                break; }
+                break; } */
 
                 /*
                  * SP_FAT:
@@ -791,7 +793,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     PSZ     p2 = 0;
 
                     // evaluate DISKCACHE
-                    p2 = strhGetParameter(pszConfigSys, "DISKCACHE=",
+                    p2 = csysGetParameter(pszConfigSys, "DISKCACHE=",
                                           szParameter, sizeof(szParameter));
 
                     // enable "Cache installed" item if DISKCACHE= found
@@ -851,7 +853,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 case SP_WPS:
                 {
                     CHAR    szParameter[300] = "";
-                    PSZ p = strhGetParameter(pszConfigSys, "SET AUTOSTART=",
+                    PSZ p = csysGetParameter(pszConfigSys, "SET AUTOSTART=",
                                              szParameter, sizeof(szParameter));
                     BOOL fAutoRefreshFolders = TRUE;
                     if (p)
@@ -868,7 +870,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             (strhistr(szParameter, "WARPCENTER") != NULL));
                     }
 
-                    p = strhGetParameter(pszConfigSys, "SET RESTARTOBJECTS=",
+                    p = csysGetParameter(pszConfigSys, "SET RESTARTOBJECTS=",
                             szParameter, sizeof(szParameter));
                     if ( (p == NULL) || (strhistr(szParameter, "YES")) )
                         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_RESTART_YES, TRUE);
@@ -881,7 +883,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_RESTART_REBOOT, TRUE);
 
                     // auto-refresh folders: cannot be disabled on Warp 3
-                    p = strhGetParameter(pszConfigSys, "SET AUTOREFRESHFOLDERS=",
+                    p = csysGetParameter(pszConfigSys, "SET AUTOREFRESHFOLDERS=",
                             szParameter, sizeof(szParameter));
                     if (p)
                         if (strhistr(szParameter, "NO"))
@@ -900,21 +902,21 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     CHAR    szParameter[300] = "";
                     BOOL fAutoFail = FALSE,
                          fReIPL = FALSE;
-                    PSZ p = strhGetParameter(pszConfigSys, "AUTOFAIL=",
+                    PSZ p = csysGetParameter(pszConfigSys, "AUTOFAIL=",
                             szParameter, sizeof(szParameter));
                     if (p)
                         if (strhistr(szParameter, "YES"))
                             fAutoFail = TRUE;
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_AUTOFAIL, fAutoFail);
 
-                    p = strhGetParameter(pszConfigSys, "REIPL=",
+                    p = csysGetParameter(pszConfigSys, "REIPL=",
                             szParameter, sizeof(szParameter));
                     if (p)
                         if (strhistr(szParameter, "ON"))
                             fReIPL = TRUE;
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_REIPL, fReIPL);
 
-                    p = strhGetParameter(pszConfigSys, "SUPPRESSPOPUPS=",
+                    p = csysGetParameter(pszConfigSys, "SUPPRESSPOPUPS=",
                             szParameter, sizeof(szParameter));
                     winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_SUPRESSPOPUPS,
                             (p != NULL));
@@ -960,7 +962,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         PSZ p;
 
                         memset(szPaths, 0, sizeof(szPaths));
-                        p = strhGetParameter(pszConfigSys,
+                        p = csysGetParameter(pszConfigSys,
                                              G_apszPathNames[ul],
                                              szPaths,
                                              sizeof(szPaths));
@@ -1034,7 +1036,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
             free(pszConfigSys);
             pszConfigSys = NULL;
-        } // end else if (doshReadTextFile(szConfigSys, &pszConfigSys))
+        } // end else if (csysLoadConfigSys(szConfigSys, &pszConfigSys))
 
         WinSetPointer(HWND_DESKTOP, hptrOld);
     }
@@ -1042,7 +1044,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
     if (flFlags & CBI_ENABLE)
     {
         // enable items
-        if (pcnbp->ulPageID == SP_HPFS)
+        /* if (pcnbp->ulPageID == SP_HPFS)
         {
             BOOL fLazyWrite = winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                    ID_OSDI_CACHE_LAZYWRITE);
@@ -1052,10 +1054,10 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                              ID_OSDI_CACHE_BUFFERIDLE, fLazyWrite);
             WinEnableControl(pcnbp->hwndDlgPage,
                              ID_OSDI_CACHE_DISKIDLE, fLazyWrite);
-        }
+        } */
 
-        if (    (pcnbp->ulPageID == SP_HPFS)
-            ||  (pcnbp->ulPageID == SP_FAT)
+        if (/*     (pcnbp->ulPageID == SP_HPFS)
+            || */  (pcnbp->ulPageID == SP_FAT)
            )
         {
             WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_CACHESIZE,
@@ -1219,9 +1221,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // enumerate all HPFS or FAT drives on the system
             CHAR szHPFSDrives[30];
             doshEnumDrives(szHPFSDrives,
-                           (pcnbp->ulPageID == SP_HPFS)
+                           /* (pcnbp->ulPageID == SP_HPFS)
                                 ? "HPFS"
-                                : "FAT",
+                                : */ "FAT",
                            TRUE); // skip removeable drives
             WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_AUTOCHECK, szHPFSDrives);
         break; }
@@ -1458,7 +1460,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 if (pszConfigSys == NULL)
                 {
-                    if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys))
+                    if (csysLoadConfigSys(NULL, &pszConfigSys))
                         winhDebugBox(pcnbp->hwndFrame,
                                  (PSZ)pKernelGlobals->szConfigSys,
                                  "XFolder was unable to open the CONFIG.SYS file.");
@@ -1487,8 +1489,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               MPFROM2SHORT(0,
                                                            SPBQ_UPDATEIFVALID));
                             sprintf(szTemp, "%d", ul);
-                            strhSetParameter(&pszConfigSys, "THREADS=", szTemp,
-                                        TRUE); // convert to upper case if necessary
+                            csysSetParameter(&pszConfigSys, "THREADS=", szTemp,
+                                             TRUE); // convert to upper case if necessary
 
                             WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_MAXWAIT,
                                               SPBM_QUERYVALUE,
@@ -1496,10 +1498,10 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               MPFROM2SHORT(0,
                                                            SPBQ_UPDATEIFVALID));
                             sprintf(szTemp, "%d", ul);
-                            strhSetParameter(&pszConfigSys, "MAXWAIT=", szTemp,
-                                        TRUE); // convert to upper case if necessary
+                            csysSetParameter(&pszConfigSys, "MAXWAIT=", szTemp,
+                                             TRUE); // convert to upper case if necessary
 
-                            strhSetParameter(&pszConfigSys, "PRIORITY_DISK_IO=",
+                            csysSetParameter(&pszConfigSys, "PRIORITY_DISK_IO=",
                                     (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_PRIORITYDISKIO)
                                             ? "yes" : "no"),
                                     TRUE); // convert to upper case if necessary
@@ -1526,8 +1528,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               MPFROM2SHORT(0,
                                                            SPBQ_UPDATEIFVALID));
                             sprintf(szTemp, "%s %d %d", szSwapPath, ulMinFree*1024, ulMinSize*1024);
-                            strhSetParameter(&pszConfigSys, "SWAPPATH=", szTemp,
-                                    TRUE); // convert to upper case if necessary
+                            csysSetParameter(&pszConfigSys, "SWAPPATH=", szTemp,
+                                             TRUE); // convert to upper case if necessary
 
                         break; }
 
@@ -1536,7 +1538,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          *      write HPFS settings back to CONFIG.SYS
                          */
 
-                        case SP_HPFS:
+                        /* case SP_HPFS:
                         {
                             CHAR    szTemp[300] = "",
                                     szAutoCheck[200] = "",
@@ -1583,7 +1585,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             }
                             sprintf(szSearchKey, "IFS=%c:\\OS2\\HPFS.IFS ",
                                         doshQueryBootDrive());
-                            strhSetParameter(&pszConfigSys, szSearchKey, szTemp,
+                            csysSetParameter(&pszConfigSys, szSearchKey, szTemp,
                                     TRUE); // convert to upper case if necessary
 
                             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_CACHE_LAZYWRITE))
@@ -1616,10 +1618,10 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // compose the key with CACHE;
                             sprintf(szSearchKey, "RUN=%c:\\OS2\\CACHE.EXE ",
                                         doshQueryBootDrive());
-                            strhSetParameter(&pszConfigSys, szSearchKey, szTemp,
+                            csysSetParameter(&pszConfigSys, szSearchKey, szTemp,
                                     TRUE); // convert to upper case if necessary
 
-                        break; }
+                        break; } */
 
                         /*
                          * SP_FAT:
@@ -1667,14 +1669,14 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 if (strlen(szAutoCheck))
                                     sprintf(szTemp+strlen(szTemp), ",ac:%s", szAutoCheck, TRUE);
 
-                                strhSetParameter(&pszConfigSys, "DISKCACHE=", szTemp,
+                                csysSetParameter(&pszConfigSys, "DISKCACHE=", szTemp,
                                     TRUE); // convert to upper case if necessary
 
                             }
                             else
                             {
                                 // no "Cache installed":
-                                strhDeleteLine(pszConfigSys, "DISKCACHE=");
+                                csysDeleteLine(pszConfigSys, "DISKCACHE=");
                             }
                         break; }
 
@@ -1714,7 +1716,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             {
                                 strcat(szTemp, ",warpcenter");
                             }
-                            strhSetParameter(&pszConfigSys, "SET AUTOSTART=", szTemp,
+                            csysSetParameter(&pszConfigSys, "SET AUTOSTART=", szTemp,
                                     TRUE); // convert to upper case if necessary
 
                             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_RESTART_FOLDERS))
@@ -1725,16 +1727,17 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 strcpy(szTemp, "yes");
                             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_RESTART_REBOOT))
                                 strcat(szTemp, ",rebootonly");
-                            strhSetParameter(&pszConfigSys, "SET RESTARTOBJECTS=", szTemp,
+                            csysSetParameter(&pszConfigSys, "SET RESTARTOBJECTS=", szTemp,
                                     TRUE); // convert to upper case if necessary
 
                             if (doshIsWarp4())
                                 if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS))
-                                    strhDeleteLine(pszConfigSys, "SET AUTOREFRESHFOLDERS=");
+                                    csysDeleteLine(pszConfigSys, "SET AUTOREFRESHFOLDERS=");
                                 else
-                                    strhSetParameter(&pszConfigSys, "SET AUTOREFRESHFOLDERS=",
-                                            "no",
-                                            TRUE); // convert to upper case if necessary
+                                    csysSetParameter(&pszConfigSys,
+                                                     "SET AUTOREFRESHFOLDERS=",
+                                                     "no",
+                                                     TRUE); // convert to upper case if necessary
                         break; }
 
                         /*
@@ -1745,16 +1748,16 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         case SP_ERRORS:
                         {
                             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_AUTOFAIL))
-                                strhSetParameter(&pszConfigSys, "AUTOFAIL=", "yes",
+                                csysSetParameter(&pszConfigSys, "AUTOFAIL=", "yes",
                                     TRUE); // convert to upper case if necessary
                             else
-                                strhDeleteLine(pszConfigSys, "AUTOFAIL=");
+                                csysDeleteLine(pszConfigSys, "AUTOFAIL=");
 
                             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_REIPL))
-                                strhSetParameter(&pszConfigSys, "REIPL=", "on",
+                                csysSetParameter(&pszConfigSys, "REIPL=", "on",
                                     TRUE); // convert to upper case if necessary
                             else
-                                strhDeleteLine(pszConfigSys, "REIPL=");
+                                csysDeleteLine(pszConfigSys, "REIPL=");
 
                             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_OSDI_SUPRESSPOPUPS)) {
                                 CHAR szSpinButtonValue[5];
@@ -1763,11 +1766,12 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                   (MPARAM)szSpinButtonValue,
                                                   MPFROM2SHORT(sizeof(szSpinButtonValue)-1,
                                                                SPBQ_UPDATEIFVALID));
-                                strhSetParameter(&pszConfigSys, "SUPPRESSPOPUPS=",
+                                csysSetParameter(&pszConfigSys, "SUPPRESSPOPUPS=",
                                         szSpinButtonValue,
                                         TRUE); // convert to upper case if necessary
-                            } else
-                                strhDeleteLine(pszConfigSys, "SUPPRESSPOPUPS=");
+                            }
+                            else
+                                csysDeleteLine(pszConfigSys, "SUPPRESSPOPUPS=");
 
 
                         break; }
@@ -1804,7 +1808,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     ulCount++;
                                 }
 
-                                strhSetParameter(&pszConfigSys, szPathType,
+                                csysSetParameter(&pszConfigSys, szPathType,
                                                  szPaths,
                                                  FALSE); // never convert to upper case
                                 // next path
@@ -1815,10 +1819,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     } // end switch
 
                     // write file!
-                    if (doshWriteTextFile((PSZ)pKernelGlobals->szConfigSys,
-                                          pszConfigSys, // contents
-                                          NULL,         // pulWritten
-                                          szBackup)     // backup
+                    if (csysWriteConfigSys(NULL,
+                                           pszConfigSys, // contents
+                                           szBackup)     // backup
                                 == NO_ERROR)
                         // "file written" msg
                         cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
@@ -1887,7 +1890,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            2);
                 break; }
 
-                case SP_HPFS:
+                /* case SP_HPFS:
                 {
                     ULONG   aulSysInfo[QSV_MAX] = {0},
                             ulInstalledMB;
@@ -1924,7 +1927,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            500, 100*1000,
                                            60*1000);
 
-                break; }
+                break; } */
 
                 case SP_FAT:
                 {
@@ -2014,7 +2017,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            2);
                 break; }
 
-                case SP_HPFS:
+                /* case SP_HPFS:
                 {
                     CHAR szHPFSDrives[30];
                     doshEnumDrives(szHPFSDrives,
@@ -2043,7 +2046,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            500, 100*1000,
                                            1000);
 
-                break; }
+                break; } */
 
                 case SP_FAT:
                 {

@@ -177,6 +177,7 @@ PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 PCTRSETSETUPSTRING pctrSetSetupString = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
 PLSTAPPENDITEM plstAppendItem = NULL;
 PLSTCLEAR plstClear = NULL;
@@ -214,6 +215,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "ctrSetSetupString", (PFN*)&pctrSetSetupString,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "lstAppendItem", (PFN*)&plstAppendItem,
         "lstClear", (PFN*)&plstClear,
         "lstCountItems", (PFN*)&plstCountItems,
@@ -467,18 +469,18 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
             pSetup->lcolBackground);
-    pxstrcat(pstrSetup, szTemp);
+    pxstrcat(pstrSetup, szTemp, 0);
 
     sprintf(szTemp, "TEXTCOL=%06lX;",
             pSetup->lcolForeground);
-    pxstrcat(pstrSetup, szTemp);
+    pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
         sprintf(szTemp, "FONT=%s;",
                 pSetup->pszFont);
-        pxstrcat(pstrSetup, szTemp);
+        pxstrcat(pstrSetup, szTemp, 0);
     }
 
     if (plstCountItems(&pSetup->llFilters))
@@ -487,24 +489,24 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
         PLISTNODE   pNode = plstQueryFirstNode(&pSetup->llFilters);
         BOOL        fFirst = TRUE;
         // add keyword first
-        pxstrcat(pstrSetup, "FILTERS=");
+        pxstrcat(pstrSetup, "FILTERS=", 0);
 
         while (pNode)
         {
             PSZ pszFilter = (PSZ)pNode->pItemData;
             if (!fFirst)
                 // not first loop: add separator first
-                pxstrcat(pstrSetup, G_pcszFilterSeparator);
+                pxstrcat(pstrSetup, G_pcszFilterSeparator, 0);
 
             // append this filter
-            pxstrcat(pstrSetup, pszFilter);
+            pxstrcat(pstrSetup, pszFilter, 0);
 
             pNode = pNode->pNext;
             fFirst = FALSE;
         }
 
         // add terminator
-        pxstrcat(pstrSetup, ";");
+        pxstrcat(pstrSetup, ";", 0);
     }
 }
 
@@ -1333,7 +1335,7 @@ VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
         if (hps)
         {
             RECTL rclSubclient;
-            gpihSwitchToRGB(hps);
+            pgpihSwitchToRGB(hps);
             GetPaintableRect(hwndWidget, &rclSubclient);
 
             if (pPrivate->pCtrlActive)
@@ -1498,7 +1500,7 @@ VOID UpdateSwitchList(HWND hwnd,
                 HWND        hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
                 GetPaintableRect(hwnd, &rclSubclient);
-                gpihSwitchToRGB(hps);
+                pgpihSwitchToRGB(hps);
                 if (hps)
                 {
                     while (pNode)
@@ -1552,7 +1554,7 @@ VOID UpdateSwitchList(HWND hwnd,
         {
             RECTL rclSubclient;
             GetPaintableRect(hwnd, &rclSubclient);
-            gpihSwitchToRGB(hps);
+            pgpihSwitchToRGB(hps);
             DrawAllCtrls(pPrivate,
                          hps,
                          &rclSubclient);
@@ -1775,7 +1777,7 @@ VOID WwgtPaint(HWND hwnd)
                 // now paint frame
                 WinQueryWindowRect(hwnd,
                                    &rclWin);        // exclusive
-                gpihSwitchToRGB(hps);
+                pgpihSwitchToRGB(hps);
 
                 rclWin.xRight--;
                 rclWin.yTop--;
@@ -2097,7 +2099,7 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     HPS hps = WinGetPS(hwnd);
                     if (hps)
                     {
-                        gpihSwitchToRGB(hps);
+                        pgpihSwitchToRGB(hps);
                         pPrivate->pCtrlSourceEmphasis = pCtlUnderMouse;
                         pPrivate->pCtrlMenu = pCtlUnderMouse;
                         DrawOneCtrl(pPrivate,

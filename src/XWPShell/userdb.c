@@ -271,7 +271,7 @@ APIRET LoadDatabase(PVOID pDatabase)
     }
     sprintf(szUserDB, "%s\\xwpusers.xml", pszDBPath);
 
-    arc = doshReadTextFile(szUserDB,
+    arc = doshLoadTextFile(szUserDB,
                            &pszUserDB);
     if (arc == NO_ERROR)
     {
