@@ -16,8 +16,15 @@
 <UL><LI>Common: Instead of adding the "Object" page, &xwp; now completely
 replaces the "Icon" page in every settings notebook.
 
-<P><LI>Common: WPS "Browse" buttons now use my new WPS file dialog routines.
+<P><LI>Common: Added "Replace file dialog" feature. This only replaces file
+dialogs within the WPS, not globally on the system. If enabled, XWorkplace
+code will use a replacement file dialog with full WPS support instead of
+the dull default OS/2 file dialog.
 Try the "Browse" button on the new "Icon" page.
+
+<P><LI>Folders: Added new "turbo folders" feature. Essentially, this is a
+rewrite of the folder populate code. For folders with many objects, this can
+be several times as fast as the old code.
 
 <P><LI>Folders: Finally documented that setup string objects can be put
 into the &xwp; Configuration Folder as well to have the setup string invoked
@@ -42,14 +49,16 @@ in-use emphasis (hatching).
 
 <P><LI>xfix: Added object IDs display and deletion.
 
+
 </UL>Miscellaneous changes:
 
 <UL><LI>Common: Moved more pages from the INF to the HLP file, such as
 <A HREF="xices_30wpsstrings.html">setup strings</A>.
 In addition, WPProgram setup strings are now documented also.
 
-<P><LI>Common: Reworked many settings pages to use my dialog formatter now. This makes
-changes much easier and saves everyone from using the stupid DLGEDIT any more.
+<P><LI>Common: Reworked many dialogs and settings pages to use my dialog formatter
+now. This makes changes much easier and saves everyone from using the stupid DLGEDIT
+any more (for those dialogs at least).
 
 <P><LI>Common: Rework of the query-setup-string interfaces to be less CPU-intensive.
 Also got rid of the danger of synchronization problems between the two calls
@@ -68,6 +77,13 @@ on crashes).
 <P><LI>Common: Per popular request, finally gave the status dialogs the usual
 thick dialog borders.
 
+<P><LI>Common: Per popular request, reworked folder content menu painting to always
+use at least the height of the system mini icon size to avoid overlapping icons.
+
+<P><LI>Folders: A private PMSHELL send-msg hook was registered on WPS startup but
+never released even though it was only used for the first folder that was ever
+opened. Fixed; now removing the hook after the first folder open.
+
 <P><LI>Archiving: Changed the settings format for the WPS extended archiving. Please
 reconfigure.
 
@@ -76,6 +92,12 @@ the smallest sizes on top.
 
 <P><LI>Status bars: are now respecting the default font setting on the "Paranoia" page
 and using WarpSans by default.
+
+<P><LI>&xcenter;: Window list widget now always ignores the Desktop and all open XCenters
+regardless of the filters that were set.
+
+<P><LI>&xcenter;: Tray icon is now displayed vertically to use up less space.
+
 
 </UL>Bugfixes:
 
@@ -88,10 +110,6 @@ the object ID for the thing for some reason. Fixed.
 <P><LI>Common: Run dialog would diplay the full path of directories too,
 e.g. if "install" was entered. Fixed; directories are now properly ignored.
 
-<P><LI>Common: Rewrote the routine that loaded objects lists from OS2.INI. This
-might fix the problem with endlessly looping startup folders that people were
-experiencing.
-
 <P><LI>Common: Fixed several small memory leaks in various places.
 
 <P><LI>Common: Fixed major/minor settings pages subtitles (for notebook context menus)
@@ -103,6 +121,12 @@ sometimes prevented PMSHELL from exiting on kill or crashes.
 <P><LI>Common: Fixed a build problem which caused XWP to fail on some Warp 3 systems
 since some of the Warp 4 SOM imports cannot be resolved there.
 
+<P><LI>Common: Paul Ratcliffe fixed a couple of cosmetic things with the
+exception trap logs.
+
+<P><LI>Common: Fixed a bunch of wrong default template settings for the XWP
+classes.
+
 <P><LI>Startup: Fixed endlessly looping startup folders.
 
 <P><LI>Programs: Added more error checking to progOpenProgram.
@@ -113,10 +137,25 @@ to avoid some more "drive not ready" popups. Note that context menus still show
 
 <P><LI>Folders: MENUBAR setup string had a wrong default value on Warp 4 and above.
 
+<P><LI>Folders: If the default folder view was set to something other than "inherit"
+in "Workplace Shell", changes in a folder's default view via the "Menu" page (or
+the context menu item) were never picked up until a Desktop restart. Fixed.
+
+<P><LI>Folders: Replacement refresh code never picked up RCNF_CHANGED notifications
+(which are quite rare though). Fixed.
+
+<P><LI>Folders: Added exception handling to an internal populate helper which tended
+to crash on certain WPS networking classes at times.
+
 <P><LI>Status bars: For remote disk objects (WPSharedDir), the status bars kept
 querying drive A: for the free space, which was kind of annoying. The reason was
 that WPShared::wpQueryLogicalDrive returns 1 always for some reason only IBM can
 explain. Added a special case check in a couple of places.
+
+<P><LI>Status bars: Fixed bad check for tree views which sometimes failed to
+update themselves.
+
+<P><LI>Status bars: Fixed a bad exception handler cleanup.
 
 <P><LI>&xcenter;: Removed all the special window actication handling for now
 as a temporary fix for the Mozilla problems. Note that the XCenter will now
@@ -128,6 +167,17 @@ a settings dialog was showing.
 <P><LI>&xcenter;: Battery widget didn't repaint its background properly when
 the power icon was changed. Fixed.
 
+<P><LI>&xcenter;: Fixed some bad clipping with object buttons.
+
+<P><LI>Trash can: Fixed wrong error message if "delete to trash" was still enabled
+internally but the trash can had disappeared for some reason. XWP is now offering
+to recreate the trash can instead.
+
+<P><LI>Trash can: Fixed problems with UNC files.
+
+<P><LI>Trash can / true delete: Paul Ratcliffe fixed a bunch of potential traps
+with NULL object titles.
+
 <P><LI>PageMage: &xcenter;s are now sticky always and do not have to be added manually
 to the "Stickies" list any more.
 
@@ -135,10 +185,14 @@ to the "Stickies" list any more.
 by Paul Ratcliffe.
 
 <P><LI>Hook: Object hotkeys stopped working after screen lockup, unless PageMage
-was enabled. Fixed.
+was enabled. Fixed. Also fixed the problem that it was possible to use hotkeys before
+the Desktop was ready and during shutdown.
 
 <P><LI>&xshutdown;: Paul Ratcliffe fixed bug trying to close the first switch list
 item twice.
+
+<P><LI>Treesize: Fixed a couple of long-standing cosmetic problems. Added a decent
+help panel.
 
 </UL>
 </BODY>

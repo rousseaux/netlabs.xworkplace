@@ -59,8 +59,8 @@ HelpLibrary = "HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;"
 /* create "XWorkplace Setup" (added V0.9.0) */
 rc = SysCreateObject("XWPSetup", XWPSetup, "<WP_CONFIG>", "OBJECTID=<XWORKPLACE_SETUP>;", "U");
 
-/* create XCenter (V0.9.7) */
-rc = SysCreateObject("XCenter", "XCenter", "<XWP_MAINFLDR>", "OBJECTID=<XWP_XCENTER>;", "U");
+/* create XCenter (V0.9.7) in eCS "Utilities" folder */
+rc = SysCreateObject("XCenter", "XCenter", "<WP_TOOLS>", "OBJECTID=<XWP_XCENTER>;", "U");
 
 /* "Font folder" ... added with V0.9.7 */
 rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_CONFIG>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");
@@ -81,7 +81,7 @@ rc = SysCreateObject("XWPScreen", Screen, "<WP_CONFIG>", "OBJECTID=<XWP_SCREEN>;
 /* rc = SysCreateObject("XWPClassList", XWPClassList, "<WP_CONFIG>", "OBJECTID=<XWP_CLASSLIST>;", "U"); */
 
 /* create "Setup String" template (added V0.9.5) */
-rc = SysCreateObject("XWPString", String, "<WP_CONFIG>", "TEMPLATE=YES;OBJECTID=<XWP_STRINGTPL>;", "U");
+/* rc = SysCreateObject("XWPString", String, "<WP_CONFIG>", "TEMPLATE=YES;OBJECTID=<XWP_STRINGTPL>;", "U"); */
 
 "@call "idir"crobj"LanguageCode
 

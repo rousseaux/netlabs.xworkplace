@@ -377,7 +377,8 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 
 <--XFL0215-->: File types were successfully imported from the file "%1".
 
-<--XFL0216-->: Error %2 occured importing file types from the file "%1".
+<--XFL0216-->: An error occured importing file types from the file "%1":
+%2
 
 <--XFL0217-->: The file "%1" exists already. Do you wish to overwrite it with the new data?
 

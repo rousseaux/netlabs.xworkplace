@@ -719,6 +719,8 @@ BEGIN
     ID_XCSI_REPLACEDELETE               "Replace true delete"
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
     ID_XCSI_REPLACEREFRESH              "Replace folder auto-refresh"
+/* the following has been added V0.9.16 (2001-12-02) [umoeller] */
+    ID_XCSI_NEWFILEDLG                  "Replace file dialog"
 END
 
 /* STILL more miscellaneous strings...
@@ -1095,7 +1097,7 @@ BEGIN
     MENUITEM "Collect e~xtended attributes", ID_TSMI_COLLECTEAS
     MENUITEM "Low-priority search", ID_TSMI_LOWPRTY
     MENUITEM "", 1, MIS_SEPARATOR
-    MENUITEM "Product info and ~help", ID_TSMI_PRODINFO
+    MENUITEM "~Help", ID_TSMI_HELP      /* changed V0.9.16 (2001-12-02) [umoeller] */
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Close", 1000
 END
