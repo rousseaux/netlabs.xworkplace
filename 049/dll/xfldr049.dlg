@@ -8,13 +8,13 @@ BEGIN
     DIALOG  "Diskfree Konfiguration", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6,
             100, 64, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        AUTORADIOBUTTON "Mehrfache Anzeige", ID_ICON2, 3, 53, 45, 11,
+        AUTORADIOBUTTON "Mehrfache Anzeige", ID_ICON2, 3, 53, 83, 11,
                         WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "Einfache Anzeige", ID_ICONDLG, 3, 43, 47, 11,
+        AUTORADIOBUTTON "Einfache Anzeige", ID_ICONDLG, 3, 43, 83, 11,
                         WS_TABSTOP
         GROUPBOX        "", ID_STARTICON1, 12, 26, 79, 19
-        LTEXT           "Laufwerk", ID_STARTICON2, 15, 29, 20, 8
-        ENTRYFIELD      "C", ID_SHUTICON1, 36, 31, 13, 6, ES_MARGIN
+        LTEXT           "Laufwerk", ID_STARTICON2, 15, 29, 42, 8
+        ENTRYFIELD      "C", ID_SHUTICON1, 68, 31, 13, 6, ES_MARGIN
         AUTOCHECKBOX    "Dateisystem anzeigen", ID_SHUTICON2, 3, 13, 82, 10,
                         WS_GROUP
         DEFPUSHBUTTON   "~OK", ID_ICONSDANIM1, 64, 2, 30, 10
@@ -26,9 +26,9 @@ BEGIN
     DIALOG  "Health Monitor Konfiguration", ID_CRD_HEALTHWGT_SETTINGS, 12, 8,
             380, 34, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        LTEXT           "Konfigurationsstring:", ID_ICON2, 9, 21, 55, 8,
+        LTEXT           "Konfigurationsstring:", ID_ICON2, 9, 21, 89, 8,
                         DT_MNEMONIC
-        ENTRYFIELD      "", ID_CRDI_SETUP_STRING, 71, 21, 301, 8, ES_MARGIN |
+        ENTRYFIELD      "", ID_CRDI_SETUP_STRING, 107, 21, 265, 8, ES_MARGIN |
                         WS_GROUP
         DEFPUSHBUTTON   "OK", DID_OK, 8, 6, 60, 12
         PUSHBUTTON      "Abbruch", DID_CANCEL, 76, 6, 60, 12
@@ -36,8 +36,8 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
+  DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
+  BEGIN
     DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 194, 158, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
@@ -45,14 +45,14 @@ BEGIN
         AUTOCHECKBOX    "Arbeitsbereich ~reduzieren",
                         ID_CRDI_VIEW_REDUCEWORKAREA, 12, 128, 135, 8,
                         WS_GROUP
-        AUTOCHECKBOX    "Immer im ~Vordergrund", ID_CRDI_VIEW_ALWAYSONTOP, 12, 120,
-                        135, 8, WS_GROUP
+        AUTOCHECKBOX    "Immer im ~Vordergrund", ID_CRDI_VIEW_ALWAYSONTOP,
+                        12, 120, 111, 8, WS_GROUP
         AUTOCHECKBOX    "A~nimieren", ID_CRDI_VIEW_ANIMATE, 12, 112, 135, 8
         AUTOCHECKBOX    "Automat~isches Verstecken", ID_CRDI_VIEW_AUTOHIDE,
-                        12, 104, 56, 8
+                        12, 104, 124, 8
         LTEXT           "V~erzîgerung:", ID_CRDI_VIEW_AUTOHIDE_TXT1, 24, 90,
-                        24, 14, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW_AUTOHIDE_SLIDER, 48, 90, 108, 14,
+                        38, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_CRDI_VIEW_AUTOHIDE_SLIDER, 61, 90, 95, 14,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
                         CTLDATA 12, 0, 60, 0, 1, 0
         LTEXT           "s", ID_CRDI_VIEW_AUTOHIDE_TXT2, 158, 90, 12, 14,
@@ -71,8 +71,8 @@ BEGIN
         AUTORADIOBUTTON "~Unten auf der Anzeige",
                         ID_CRDI_VIEW_BOTTOMOFSCREEN, 12, 26, 114, 8,
                         WS_TABSTOP
-        PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Standard", DID_DEFAULT, 65, 6, 55, 12
+          PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 55, 12, WS_GROUP
+          PUSHBUTTON      "~Standard", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Hilfe", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END
@@ -102,8 +102,8 @@ BEGIN
     DIALOG  "", ID_FND_SAMPLETEXT, 0, 0, 188, 172, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "~Text fÅr Schriftartenbeispiel", -1, 6, 22, 172,
-                        106, DT_MNEMONIC
+        GROUPBOX        "~Text fÅr Schriftartbeispiel", -1, 6, 22, 172, 106,
+                        DT_MNEMONIC
         MLE             "", ID_FNDI_SAMPLETEXT_MLE, 10, 26, 162, 92,
                         MLS_WORDWRAP | MLS_HSCROLL | MLS_VSCROLL |
                         MLS_IGNORETAB | WS_GROUP
@@ -146,8 +146,8 @@ BEGIN
     BEGIN
         AUTOCHECKBOX    "UnterstÅtzung fÅr Microsoft ~Joliet Erweiterungen ("
                         "/W)", ID_OSDI_CDFS_JOLIET, 5, 132, 225, 10
-        LTEXT           "Anmerkung: Erfordert einen aktuellen CDFS.IFS-Treib"
-                        "er.", -1, 25, 123, 205, 8, NOT WS_GROUP
+        LTEXT           "Hinweis: Erfordert einen aktuellen CDFS.IFS-Treiber",
+                        -1, 25, 123, 205, 8, NOT WS_GROUP
         AUTOCHECKBOX    "~KANJI-UnterstÅtzung (/K)", ID_OSDI_CDFS_KANJI, 5,
                         111, 225, 10
         GROUPBOX        "C~achegrî·e (/C:n)", -1, 5, 84, 245, 25,
@@ -201,9 +201,9 @@ BEGIN
                         CTLDATA 12, 0, 16, 0, 1, 0
         RTEXT           "KB", ID_OSDI_CACHE_THRESHOLD_TXT, 185, 50, 40, 12,
                         DT_VCENTER | NOT WS_GROUP
-        LTEXT           "Au~tomatisch prÅfen:", -1, 5, 29, 50, 8,
+        LTEXT           "Au~tomatisch prÅfen:", -1, 5, 29, 73, 8,
                         DT_MNEMONIC | NOT WS_GROUP
-        ENTRYFIELD      "", ID_OSDI_AUTOCHECK, 67, 29, 101, 8, ES_MARGIN
+        ENTRYFIELD      "", ID_OSDI_AUTOCHECK, 86, 29, 82, 8, ES_MARGIN
         PUSHBUTTON      "~Vorschlag", ID_OSDI_AUTOCHECK_PROPOSE, 175, 27, 55,
                         12
         DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 55, 12, WS_GROUP
@@ -236,7 +236,7 @@ END
 DLGTEMPLATE ID_OSD_DRIVER_IBM1S506 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "OS/2 Kernel: IBM1S506.ADD-Konfiguration",
-            ID_OSD_DRIVER_IBM1S506, -75, -46, 405, 226, , FCF_SYSMENU |
+            ID_OSD_DRIVER_IBM1S506, -45, -48, 405, 226, , FCF_SYSMENU |
             FCF_TITLEBAR
     BEGIN
         GROUPBOX        "Treiber~initialisierung (Systemstart)", -1, 5, 204,
@@ -335,7 +335,7 @@ BEGIN
         CTEXT           "1", ID_OSDI_S506_U_RECOVERY_TXT, 355, 148, 25, 10,
                         DT_VCENTER
         AUTOCHECKBOX    "Laufwerksgeometrie Åberschreiben (/GEO):",
-                        ID_OSDI_S506_U_GEO_CHECK, 200, 138, 120, 10,
+                        ID_OSDI_S506_U_GEO_CHECK, 200, 138, 157, 10,
                         WS_GROUP
         ENTRYFIELD      "", ID_OSDI_S506_U_GEO_ENTRY, 212, 132, 151, 6,
                         ES_MARGIN
@@ -407,8 +407,8 @@ BEGIN
     DIALOG  "Neuer Systempfad", ID_OSD_NEWSYSPATH, 15, 66, 200, 45,
             WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        LTEXT           "Geben Sie den neuen Systempfad hier ein:", -1, 5,
-                        30, 135, 11
+        LTEXT           "Geben Sie den neuen Systempfad ein:", -1, 5, 30,
+                        135, 11
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ENTRYFIELD      "", ID_XSDI_FT_ENTRYFIELD, 7, 20, 131, 8, ES_MARGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
@@ -497,7 +497,7 @@ BEGIN
         LTEXT           "KB", -1, 210, 64, 15, 8, NOT WS_GROUP
         AUTOCHECKBOX    "Ver~zîgertes Schreiben", ID_OSDI_CACHE_LAZYWRITE,
                         10, 49, 140, 10
-        LTEXT           "Au~tomatisch prÅfen:", -1, 5, 30, 50, 8,
+        LTEXT           "Au~tomatisch prÅfen:", -1, 5, 30, 58, 8,
                         DT_MNEMONIC | NOT WS_GROUP
         ENTRYFIELD      "", ID_OSDI_AUTOCHECK, 67, 29, 101, 8, ES_MARGIN
         PUSHBUTTON      "~Vorschlag", ID_OSDI_AUTOCHECK_PROPOSE, 175, 27, 55,
@@ -615,8 +615,8 @@ BEGIN
                         WS_DISABLED
         PUSHBUTTON      "Run~ter", ID_OSDI_PATHDOWN, 165, 75, 55, 12,
                         WS_GROUP | WS_DISABLED
-        PUSHBUTTON      "Un~gÅltige auswÑhlen", ID_OSDI_VALIDATE, 165, 39,
-                        55, 12
+        PUSHBUTTON      "Un~gÅltige wÑhlen", ID_OSDI_VALIDATE, 165, 39, 55,
+                        12
         PUSHBUTTON      "Du~plikate...", ID_OSDI_DOUBLEFILES, 165, 54, 55,
                         12
         PUSHBUTTON      "~Anwenden", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
@@ -665,12 +665,12 @@ BEGIN
     DIALOG  "", ID_SCD_PAGER_COLORS, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "XPager Farben", -1, 6, 24, 206, 98
+        GROUPBOX        "XPager-Farben", -1, 6, 24, 206, 98
         LTEXT           "Ziehen Sie eine beliebige Farbe aus einer Farbpalet"
                         "te auf die unteren Rechtecke. Um die Schriftart der"
-                        " XPager-Fenstertitel zu Ñndern, ziehen Sie eine S"
-                        "chriftart direkt auf das XPager-Fenster.",
-                        -1, 12, 92, 194, 22, DT_WORDBREAK
+                        " XPager-Fenstertitel zu Ñndern, ziehen Sie eine Sch"
+                        "riftart direkt auf das XPager-Fenster.", -1, 12, 92,
+                        194, 22, DT_WORDBREAK
         LTEXT           "Inaktiv", -1, 86, 82, 34, 8
         LTEXT           "Aktiv", -1, 126, 82, 32, 8, NOT WS_GROUP
         LTEXT           "RÑnder", -1, 166, 82, 36, 8, NOT WS_GROUP
@@ -732,10 +732,10 @@ END
 
 DLGTEMPLATE ID_SCD_PAGER_NEWSTICKY LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Haftfenster hinzufÅgen", ID_SCD_PAGER_NEWSTICKY, 12,
-            6, 228, 164, , FCF_SYSMENU | FCF_TITLEBAR
+    DIALOG  "Haftfenster hinzufÅgen", ID_SCD_PAGER_NEWSTICKY, 12, 6, 228,
+            164, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        LTEXT           "Geben Sie einen beliebiges Fenster- oder Fensterlis"
+        LTEXT           "Geben Sie einen beliebigen Fenster- oder Fensterlis"
                         "tennamen ein oder wÑhlen Sie einen aus der Liste:",
                         -1, 4, 150, 218, 8
         COMBOBOX        "", ID_SCD_PAGER_COMBO_STICKIES, 6, 20, 216, 125,
@@ -766,21 +766,21 @@ BEGIN
     DIALOG  "", ID_SCD_PAGER_WINDOW, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "XPager Kontrollfenster", -1, 4, 19, 192, 89
+        GROUPBOX        "XPager-Kontrollfenster", -1, 4, 19, 192, 89
         AUTOCHECKBOX    "T~itelleiste", ID_SCDI_PGMG1_TITLEBAR, 13, 88, 154,
                         8
         AUTOCHECKBOX    "Bildschirmpr~oportionen erzwingen",
                         ID_SCDI_PGMG1_PRESERVEPROPS, 13, 80, 154, 8
-        AUTOCHECKBOX    "Immer ~vorderstes Fenster", ID_SCDI_PGMG1_STAYONTOP,
-                        13, 72, 70, 8
+        AUTOCHECKBOX    "Immer im ~Vordergrund", ID_SCDI_PGMG1_STAYONTOP, 13,
+                        72, 110, 8
         AUTOCHECKBOX    "Kurz na~ch vorne holen", ID_SCDI_PGMG1_FLASHTOTOP,
-                        13, 64, 70, 8
-        LTEXT           "Verzîgerung:", ID_SCDI_PGMG1_FLASH_TXT1, 71, 64, 20,
+                        13, 64, 80, 8
+        LTEXT           "Verzîgerung:", ID_SCDI_PGMG1_FLASH_TXT1, 97, 64, 20,
                         8, DT_VCENTER
-        SPINBUTTON      ID_SCDI_PGMG1_FLASH_SPIN, 93, 62, 40, 12,
+        SPINBUTTON      ID_SCDI_PGMG1_FLASH_SPIN, 119, 62, 40, 12,
                         SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTLEFT |
                         SPBS_JUSTRIGHT | SPBS_JUSTCENTER | WS_GROUP
-        LTEXT           "s", ID_SCDI_PGMG1_FLASH_TXT2, 135, 64, 20, 8,
+        LTEXT           "s", ID_SCDI_PGMG1_FLASH_TXT2, 161, 64, 20, 8,
                         DT_VCENTER
         AUTOCHECKBOX    "~Mini-Fenster", ID_SCDI_PGMG1_SHOWWINDOWS, 13, 44,
                         158, 8
@@ -798,8 +798,8 @@ DLGTEMPLATE ID_SDD_CAD LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Dialog Title", ID_SDD_CAD, 10, 50, 220, 40,
     BEGIN
-        CTEXT           "Der Systemabschluss wird ausgefÅhrt. Bitte warten.."
-                        ".", ID_SDDI_PROGRESS1, 5, 25, 170, 8,
+        CTEXT           "Der Systemabschlu· ist noch nicht beendet. Bitte wa"
+                        "rten...", ID_SDDI_PROGRESS1, 5, 25, 170, 8,
                         DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
         CTEXT           "", ID_SDDI_PROGRESS2, 5, 5, 170, 18, DT_WORDBREAK
@@ -828,9 +828,9 @@ BEGIN
         AUTOCHECKBOX    "Diese Sitzung mit Details fÅr automatisches Schlie·"
                         "en merken", ID_XSDI_ACL_STORE, 8, 20, 194, 10
         DEFPUSHBUTTON   "~OK", DID_OK, 8, 4, 60, 12
-        PUSHBUTTON      "~Cancel shutdown", ID_SDDI_CANCELSHUTDOWN, 74, 4,
-                        80, 12
-        PUSHBUTTON      "~Help", DID_HELP, 162, 4, 52, 12, BS_HELP
+        PUSHBUTTON      "S~ystemabschlu· abbrechen", ID_SDDI_CANCELSHUTDOWN,
+                        74, 4, 80, 12
+        PUSHBUTTON      "~Hilfe", DID_HELP, 162, 4, 52, 12, BS_HELP
     END
 END
 
@@ -841,7 +841,7 @@ BEGIN
     BEGIN
         ICON            ID_SDICON, ID_SDDI_ICON, 10, 82, 20, 16, WS_GROUP
         LTEXT           "WÑhlen Sie, wie das System heruntergefahren werden "
-                        "soll.", -1, 35, 79, 150, 19, DT_WORDBREAK
+                        "soll.", -1, 37, 79, 147, 19, DT_WORDBREAK
         GROUPBOX        "Optionen fÅr Neustart", -1, 10, 40, 175, 39, NOT
                         WS_GROUP
         AUTORADIOBUTTON "Nur ~herunterfahren", ID_SDDI_SHUTDOWNONLY, 15, 61,
@@ -972,9 +972,9 @@ BEGIN
         GROUPBOX        "XWorkplace-Funktionen deaktivieren", -1, 5, 56, 205,
                         90
         LTEXT           "Hier kînnen Sie global bestimmte XWorkplace-Funktio"
-                        "nen deaktivieren, falls Probleme auftauchen. DrÅcken"
-                        " Sie ""Hilfe"", um mehr Åber die verschiedenen Eins"
-                        "tellungen zu erfahren.", -1, 10, 114, 190, 23,
+                        "nen deaktivieren, falls Probleme auftauchen. DrÅcke"
+                        "n Sie ""Hilfe"", um mehr Åber die verschiedenen Ein"
+                        "stellungen zu erfahren.", -1, 10, 114, 190, 23,
                         DT_WORDBREAK
         LTEXT           "XWorkplace MenÅeintrags-~ID-Ausgleich:", -1, 10,
                         100, 140, 12, DT_VCENTER | DT_MNEMONIC
@@ -993,8 +993,9 @@ BEGIN
                         ID_XCDI_NOEXCPTBEEPS, 10, 60, 190, 8, BS_AUTOSIZE
         GROUPBOX        "Arbeitsthread", -1, 5, 20, 205, 33, NOT WS_GROUP
         LTEXT           "Standard~prioritÑt des Arbeitsthreads:",
-                        ID_XCDI_WORKERPRTY_TEXT1, 10, 36, 90, 8, DT_MNEMONIC
-        SLIDER          ID_XCDI_WORKERPRTY_SLIDER, 115, 33, 50, 16,
+                        ID_XCDI_WORKERPRTY_TEXT1, 10, 36, 102, 8,
+                        DT_MNEMONIC
+        SLIDER          ID_XCDI_WORKERPRTY_SLIDER, 115, 32, 50, 16,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
                         CTLDATA 12, 0, 3, 0, 0, 0
         LTEXT           "Text", ID_XCDI_WORKERPRTY_TEXT2, 170, 36, 35, 8,
@@ -1035,7 +1036,7 @@ BEGIN
         LTEXT           "XWPHook-Status:", ID_XCDI_INFO_HOOKSTATUS_TXT, 14,
                         68, 72, 8
         RTEXT           "unbekannt", ID_XCDI_INFO_HOOKSTATUS, 96, 68, 100, 8
-        GROUPBOX        "National Language Support (NLS)",
+        GROUPBOX        "SprachenunterstÅtzung (NLS)",
                         ID_XCDI_INFO_LANGUAGE_GROUP, 10, 20, 190, 40
         LTEXT           "~Sprache:", ID_XCDI_INFO_LANGUAGE_TXT, 16, 40, 50,
                         10, DT_VCENTER | DT_MNEMONIC
@@ -1046,9 +1047,9 @@ BEGIN
                         24, 32, 80, 6, DT_VCENTER
         RTEXT           "unbekannt", ID_XCDI_INFO_NLS_RELEASE, 104, 32, 70,
                         6, DT_VCENTER
-        LTEXT           "öbersetzer:", ID_XCDI_INFO_NLS_AUTHOR_TXT, 24, 24,
+        LTEXT           "öbersetzer:", ID_XCDI_INFO_NLS_AUTHOR_TXT, 24, 23,
                         80, 6, DT_VCENTER
-        RTEXT           "unbekannt", ID_XCDI_INFO_NLS_AUTHOR, 104, 24, 70, 6,
+        RTEXT           "unbekannt", ID_XCDI_INFO_NLS_AUTHOR, 104, 23, 70, 6,
                         DT_VCENTER
         PUSHBUTTON      "~Hilfe", DID_HELP, 140, 6, 60, 12, BS_HELP
     END
@@ -1146,11 +1147,11 @@ BEGIN
     BEGIN
         PUSHBUTTON      "~Ja", DID_OK, 10, 6, 65, 12
         ICON            ID_ICONDLG, -1, 225, 46, 20, 16, WS_GROUP
-        LTEXT           "Der ausgewÑhlt MenÅeintrag soll Textdaten aus der Z"
-                        "wischenablage als Parameter weiterverwenden. In der"
-                        " Zwischenablage befinden sich jedoch keine Textdate"
-                        "n. Soll das Programm trotzdem gestartet werden?",
-                        -1, 10, 25, 205, 38, DT_WORDBREAK
+        LTEXT           "Der ausgewÑhlte MenÅpunkt soll Textdaten aus der Zw"
+                        "ischenablage als Parameter weiterverwenden. In der "
+                        "Zwischenablage befinden sich jedoch keine Textdaten"
+                        ". Soll das Programm trotzdem gestartet werden?", -1,
+                        10, 25, 205, 38, DT_WORDBREAK
         PUSHBUTTON      "~Hilfe", DID_HELP, 185, 6, 65, 12, BS_HELP |
                         BS_NOPOINTERFOCUS
         DEFPUSHBUTTON   "~Nein", DID_CANCEL, 85, 6, 65, 12
@@ -1196,7 +1197,7 @@ BEGIN
             WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Bitte geben Sie eine Auswahlmaske an (z.B. ""*.txt"""
-                        "):", -1, 5, 60, 135, 17, DT_WORDBREAK | NOT
+                        "):", -1, 5, 60, 153, 17, DT_WORDBREAK | NOT
                         WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         CONTROL         "", ID_XFDI_SOME_ENTRYFIELD, 5, 3, 155, 56,
@@ -1320,17 +1321,17 @@ BEGIN
     DIALOG  "Class Information", ID_XLD_CLASSINFO, 15, 54, 215, 135, NOT
             FS_DLGBORDER | WS_VISIBLE | NOT WS_SAVEBITS, FCF_NOBYTEALIGN
     BEGIN
-        LTEXT           "Klasse:", ID_XLDI_CLASSNAMETXT, 5, 123, 18, 8
+        LTEXT           "Klasse:", ID_XLDI_CLASSNAMETXT, 5, 123, 30, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "", ID_XLDI_CLASSNAME, 70, 123, 140, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Ersetzt durch:", ID_XLDI_REPLACEDBYTXT, 5, 114, 43,
+        LTEXT           "Ersetzt durch:", ID_XLDI_REPLACEDBYTXT, 5, 114, 49,
                         8, NOT WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "", ID_XLDI_REPLACEDBY, 70, 114, 140, 8, NOT
                         WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Standardtitel:", ID_XLDI_CLASSTITLETXT, 5, 105, 35,
+        LTEXT           "Standardtitel:", ID_XLDI_CLASSTITLETXT, 5, 105, 50,
                         8, NOT WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "", ID_XLDI_CLASSTITLE, 70, 105, 140, 8, NOT
@@ -1343,7 +1344,7 @@ BEGIN
                         WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "Standard-Klassensymbol:", ID_XLDI_ICONTXT, 5, 78,
-                        52, 8
+                        59, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ICON            ID_ICONDLG, ID_XLDI_ICON, 70, 78, 20, 16, WS_GROUP
         CONTROL         "Klassen werden gesammelt, bitte warten...",
@@ -2140,17 +2141,17 @@ BEGIN
     BEGIN
         GROUPBOX        "XWorkplace Systemstartordner", -1, 5, 24, 196, 102
         LTEXT           "AnfÑngl~iche Verzîgerung:",
-                        ID_SDDI_STARTUP_INITDELAY_TXT1, 10, 102, 54, 14,
+                        ID_SDDI_STARTUP_INITDELAY_TXT1, 10, 102, 64, 14,
                         DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_SDDI_STARTUP_INITDELAY_SLID, 64, 102, 96, 14,
+        SLIDER          ID_SDDI_STARTUP_INITDELAY_SLID, 75, 102, 85, 14,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
                         CTLDATA 12, 0, 20, 0, 1, 0
         LTEXT           "ms", ID_SDDI_STARTUP_INITDELAY_TXT2, 164, 102, 30,
                         14, DT_VCENTER | NOT WS_GROUP
         LTEXT           "Verzîgerung ~pro Objekt:",
-                        ID_SDDI_STARTUP_OBJDELAY_TXT1, 10, 86, 54, 14,
+                        ID_SDDI_STARTUP_OBJDELAY_TXT1, 10, 86, 65, 14,
                         DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_SDDI_STARTUP_OBJDELAY_SLID, 64, 86, 96, 14,
+        SLIDER          ID_SDDI_STARTUP_OBJDELAY_SLID, 76, 86, 84, 14,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
                         CTLDATA 12, 0, 20, 0, 1, 0
         LTEXT           "ms", ID_SDDI_STARTUP_OBJDELAY_TXT2, 164, 86, 30, 14,
@@ -2160,10 +2161,10 @@ BEGIN
                         WS_GROUP
         GROUPBOX        "Ordnerinhalt starten", -1, 10, 29, 186, 38
         AUTORADIOBUTTON "Nu~r bei Systemneustart",
-                        ID_SDDI_STARTUP_REBOOTSONLY, 15, 47, 80, 12,
+                        ID_SDDI_STARTUP_REBOOTSONLY, 15, 47, 111, 12,
                         BS_NOCURSORSELECT | WS_TABSTOP
         AUTORADIOBUTTON "B~ei jedem WPS-Neustart",
-                        ID_SDDI_STARTUP_EVERYWPSRESTART, 15, 33, 80, 12,
+                        ID_SDDI_STARTUP_EVERYWPSRESTART, 15, 33, 119, 12,
                         BS_NOCURSORSELECT | WS_TABSTOP
         PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 60, 12, WS_GROUP
         PUSHBUTTON      "~Standard", DID_DEFAULT, 73, 6, 60, 12, WS_GROUP
@@ -2222,7 +2223,7 @@ BEGIN
         AUTOCHECKBOX    "Aufruf bestÑtige~n", ID_XSD_XWPSTRING_CONFIRM, 8,
                         72, 176, 10, WS_GROUP
         LTEXT           "Ein Objekt hierhin ziehen, um es mit dem String abz"
-                        "uspeichern:", -1, 8, 52, 108, 16, DT_WORDBREAK
+                        "uspeichern:", -1, 8, 52, 154, 16, DT_WORDBREAK
         CONTAINER       ID_XSD_XWPSTRING_OBJ_CNR, 10, 26, 68, 22,
                         CCS_SINGLESEL
         CONTROL         "", -1, 8, 24, 72, 26, WC_STATIC, SS_FGNDFRAME |
