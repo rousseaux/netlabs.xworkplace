@@ -1,7 +1,7 @@
 #ifndef OS2_INCLUDED
    #include <os2.h>
 #endif
-DLGINCLUDE 1 "E:\develop\cvs\xworkplace\include\dlgids.h"
+DLGINCLUDE 1 "..\..\dlgids.h"
 
 DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN

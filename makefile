@@ -238,8 +238,8 @@ $(XWP_LANG_CODE):
     @cd ..
 
 046:
-    @echo $(MAKEDIR)\makefile [$@]: Going for subdir 046
-    @cd 046
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir 046_
+    @cd 046_
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
 
