@@ -92,6 +92,7 @@ callmainmake:
 # is running on the main makefile.
 dep:
     $(RUN_FASTDEP) *.c
+    @echo ----- Leaving $(MAKEDIR)
 
 .c.{$(OUTPUTDIR)}.obj:
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c

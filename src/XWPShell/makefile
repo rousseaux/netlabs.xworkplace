@@ -77,6 +77,7 @@ all: $(XWPRUNNING)\bin\xwpshell.exe
 # is running on the main makefile.
 dep:
     $(RUN_FASTDEP) *.c
+    @echo ----- Leaving $(MAKEDIR)
 
 # build targets
 xwpshell.def: ..\..\include\bldlevel.h

@@ -283,6 +283,12 @@ dep:
     @cd src
     $(MAKE) -nologo dep "SUBTARGET=dep" "RUNDEPONLY=1" "REALLYALL=1"
     @cd $(CURRENT_DIR)
+    @echo $(MAKEDIR)\makefile: Going for src\helpers (DLL version)
+    @cd $(HELPERS_BASE)\src\helpers
+    @nmake -nologo dep "NOINCLUDEDEPEND=1"
+    @cd $(CURRENT_DIR)
+    @echo ----- Leaving $(MAKEDIR)
+    @echo Yo, done!
 
 # "COMPILE" PSEUDOTARGETS
 # -----------------------

@@ -71,6 +71,7 @@ all: \
 # is running on the main makefile.
 dep:
     $(RUN_FASTDEP) *.c
+    @echo ----- Leaving $(MAKEDIR)
 
 # Now define inference rules for what to do with certain file
 # types, based on their file extension.

@@ -79,6 +79,7 @@ callmainmake:
 # is running on the main makefile.
 dep:
     $(RUN_FASTDEP) *.c
+    @echo ----- Leaving $(MAKEDIR)
 
 # build targets
 xshutdwn.def: ..\..\include\bldlevel.h
