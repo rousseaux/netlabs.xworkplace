@@ -244,9 +244,9 @@ BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,    // in: disk to be watched or
 
                     pNew->dFreeLast = 0;
 
-                    _Pmpf(("Added diskwatch for drive %d, hwnd 0x%lX",
-                            ulLogicalDrive,
-                            hwndNotify));
+                    // _Pmpf(("Added diskwatch for drive %d, hwnd 0x%lX",
+                       //      ulLogicalDrive,
+                          //   hwndNotify));
 
                     brc = (lstAppendItem(&G_llDrives,
                                          pNew) != 0);
@@ -268,9 +268,9 @@ BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,    // in: disk to be watched or
                         lstRemoveNode(&G_llDrives,
                                       pNode);
 
-                        _Pmpf(("Removed diskwatch for drive %d, hwnd 0x%lX",
-                                ulLogicalDrive,
-                                hwndNotify));
+                        // _Pmpf(("Removed diskwatch for drive %d, hwnd 0x%lX",
+                           //      ulLogicalDrive,
+                              //   hwndNotify));
 
                         if (ulLogicalDrive != -1)
                             // not remove all drives: stop here
@@ -304,7 +304,7 @@ VOID GetOneDiskInfo(ULONG ulLogicalDrive,
 {
     BOOL    fFixed = 0;
 
-    _Pmpf((__FUNCTION__ ": getting disk %d", ulLogicalDrive));
+    // _Pmpf((__FUNCTION__ ": getting disk %d", ulLogicalDrive));
 
     memset(pdi, 0, sizeof(XDISKINFO));
 
@@ -366,14 +366,14 @@ BOOL dmnQueryDisks(ULONG ulLogicalDrive,
         PXDISKINFO  paDiskInfos = (PXDISKINFO)mpDiskInfos;
         CHAR        cBootDrive = doshQueryBootDrive();
 
-        _Pmpf((__FUNCTION__ ": paDiskInfos is 0x%lX", paDiskInfos));
+        // _Pmpf((__FUNCTION__ ": paDiskInfos is 0x%lX", paDiskInfos));
 
         if (ulLogicalDrive == -1)
         {
             ULONG ul;
 
             // all disks:
-            _Pmpf((__FUNCTION__ ": ulLogicalDrive == -1, getting all disks"));
+            // _Pmpf((__FUNCTION__ ": ulLogicalDrive == -1, getting all disks"));
             for (ul = 0; ul < 26; ul++)
             {
                 GetOneDiskInfo(ul + 1,

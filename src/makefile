@@ -28,7 +28,7 @@ hook \
 Daemon
 
 !ifdef REALLYALL
-SUBDIRS = $(SUBDIRS) treesize NetscapeDDE xfix
+SUBDIRS = $(SUBDIRS) Drvchk Treesize NetscapeDDE Xfix
 !ifdef XWPSECURITY
 SUBDIRS = $(SUBDIRS) xwpsec_ring0 XWPShell
 !endif
@@ -53,92 +53,98 @@ SUBMAKESTRING = "NOINCLUDEDEPEND=1"
 !endif
 
 classes:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 config:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 filesys:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 media:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 shared:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 startshut:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 widgets:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 xcenter:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 Daemon:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 hook:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 # additional REALLYALL targets
-treesize:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+Drvchk:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
+Treesize:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 NetscapeDDE:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
-xfix:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+Xfix:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 xwpsec_ring0:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
 
 XWPShell:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\$@
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) $(SUBMAKESTRING) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
