@@ -2372,17 +2372,9 @@ static const CONTROLDEF
     APMDriverText2 = LOADDEF_TEXT(ID_SDDI_APMSYS),
 #ifndef __EASYSHUTDOWN__
     SaveINIFilesText = LOADDEF_TEXT(ID_SDDI_SAVEINIS_TXT),
-    SaveINIFilesCombo =
-        {
-            WC_COMBOBOX,
-            "",
-            CBS_DROPDOWNLIST | LS_HORZSCROLL | WS_TABSTOP | WS_VISIBLE,
-            ID_SDDI_SAVEINIS_LIST,
-            CTL_COMMON_FONT,
-            0,
-            {150, 40},     // size adjusted for new combo box support in dialog.c
-            COMMON_SPACING
-        },
+    SaveINIFilesCombo = CONTROLDEF_DROPDOWNLIST(
+                            ID_SDDI_SAVEINIS_LIST,
+                            150, 40),
 #endif
     SharedGroup = LOADDEF_GROUP(ID_SDDI_SHAREDGROUP, SZL_AUTOSIZE),
     EmptyTrashCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_EMPTYTRASHCAN),

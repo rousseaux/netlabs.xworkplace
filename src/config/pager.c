@@ -329,19 +329,11 @@ static const CONTROLDEF
                                     ID_SCDI_PGR1_X_TEXT2,
                                     SLIDER_WIDTH,
                                     SLIDER_WIDTH),
-    Pgr1YSlider =
-        {
-            WC_SLIDER,
-            NULL,
-            WS_VISIBLE | WS_TABSTOP | WS_GROUP | SLS_VERTICAL | SLS_PRIMARYSCALE1
-                | SLS_SNAPTOINCREMENT
-                | SLS_HOMETOP | SLS_BUTTONSBOTTOM,
-            ID_SCDI_PGR1_Y_SLIDER,
-            CTL_COMMON_FONT,
-            0,
-            {SLIDER_WIDTH, SLIDER_CY},
-            COMMON_SPACING, &Pgr1SliderCData
-        },
+    Pgr1YSlider = CONTROLDEF_VSLIDER(
+                                    ID_SCDI_PGR1_Y_SLIDER,
+                                    SLIDER_WIDTH,
+                                    SLIDER_CY,
+                                    &Pgr1SliderCData),
     Pgr1YSliderTxt = CONTROLDEF_TEXT_CENTER("",
                                     ID_SCDI_PGR1_Y_TEXT2,
                                     SLIDER_WIDTH,
@@ -2166,7 +2158,6 @@ static HWND CreateColorDlg(HWND hwndOwner,
                 WS_VISIBLE,
                 ID_COLORCTL,
                 CTL_COMMON_FONT,
-                0,
                 {200, 200 * 60 / 100},
                 COMMON_SPACING
             };

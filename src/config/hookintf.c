@@ -2091,22 +2091,11 @@ static const CONTROLDEF
     SlidingFocusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGFOCUS_GRP, SZL_AUTOSIZE),
     SlidingFocusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGFOCUS),
     SlidingFocusDelayTxt1 = LOADDEF_TEXT(ID_XSDI_MOUSE_FOCUSDELAY_TXT1),
-    SlidingFocusDelaySlider =
-        {
-                WC_SLIDER,
-                NULL,
-                WS_VISIBLE | WS_TABSTOP | WS_GROUP
-                    | SLS_HORIZONTAL
-                    | SLS_PRIMARYSCALE1
-                    | SLS_BUTTONSRIGHT
-                    | SLS_SNAPTOINCREMENT,
-                ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
-                CTL_COMMON_FONT,
-                0,
-                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                5,               // spacing
-                &SlidingFocusDelayCData
-        },
+    SlidingFocusDelaySlider = CONTROLDEF_SLIDER(
+                            ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
+                            STYLE_SLIDERS_WIDTH,
+                            STYLE_SLIDERS_HEIGHT,
+                            &SlidingFocusDelayCData),
     SlidingFocusDelayTxt2 = CONTROLDEF_TEXT(
                             "10000 ms",     // to be replaced
                             ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
@@ -2121,22 +2110,11 @@ static const CONTROLDEF
     SlidingMenusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGMENU_GRP, SZL_AUTOSIZE),
     SlidingMenusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGMENU),
     SlidingMenusDelayTxt1 = LOADDEF_TEXT(ID_XSDI_MOUSE_MENUDELAY_TXT1),
-    SlidingMenusDelaySlider =
-        {
-                WC_SLIDER,
-                NULL,
-                WS_VISIBLE | WS_TABSTOP | WS_GROUP
-                    | SLS_HORIZONTAL
-                    | SLS_PRIMARYSCALE1
-                    | SLS_BUTTONSRIGHT
-                    | SLS_SNAPTOINCREMENT,
-                ID_XSDI_MOUSE_MENUDELAY_SLIDER,
-                CTL_COMMON_FONT,
-                0,
-                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                5,               // spacing
-                &SlidingMenusDelayCData
-        },
+    SlidingMenusDelaySlider = CONTROLDEF_SLIDER(
+                            ID_XSDI_MOUSE_MENUDELAY_SLIDER,
+                            STYLE_SLIDERS_WIDTH,
+                            STYLE_SLIDERS_HEIGHT,
+                            &SlidingMenusDelayCData),
     SlidingMenusDelayTxt2 = CONTROLDEF_TEXT(
                             "10000 ms",     // to be replaced
                             ID_XSDI_MOUSE_MENUDELAY_TXT2,

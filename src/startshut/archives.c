@@ -173,7 +173,6 @@ static const CONTROLDEF
                 | SPBS_FASTSPIN,
             ID_XSDI_ARC_INI_SPIN,
             CTL_COMMON_FONT,
-            0,
             { SPIN_WIDTH, SPIN_HEIGHT },     // size
             COMMON_SPACING,
         },
@@ -188,7 +187,6 @@ static const CONTROLDEF
                 | SPBS_FASTSPIN,
             ID_XSDI_ARC_DAYS_SPIN,
             CTL_COMMON_FONT,
-            0,
             { SPIN_WIDTH, SPIN_HEIGHT },     // size
             COMMON_SPACING,
         },
@@ -204,7 +202,6 @@ static const CONTROLDEF
                 | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER,
             ID_XSDI_ARC_ARCHIVES_NO_SPIN,
             CTL_COMMON_FONT,
-            0,
             { SPIN_WIDTH, SPIN_HEIGHT },     // size
             COMMON_SPACING,
         },

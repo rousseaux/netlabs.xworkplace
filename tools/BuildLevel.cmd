@@ -16,7 +16,7 @@
  *                                                                     *
 \***********************************************************************/
 
-/* static char     _VERSION_[]="BuildLevel.cmd - V2.00"; */
+/* static char     _VERSION_[] = "BuildLevel.cmd - V2.00"; */
 
 
 Call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
@@ -25,32 +25,32 @@ Call SysLoadFuncs
 Signal On HALT NAME SignalHandler
 
                                         /* OS/2 returncode */
-ReturnCode=1
+ReturnCode = 1
                                         /* 1st commandline argument (1 *.DEF file) */
-DefinitionFile=""
+DefinitionFile = ""
                                         /* As the contents of the 1st commandline argument
                                            file get changed, we make a temporary copy to read
                                            from and write the new contents to the original file */
-DefinitionCopy="$Temp$"
+DefinitionCopy = "$Temp$"
                                         /* 2nd commandline argument (1 *.H* file) */
-HeaderFile=""
+HeaderFile = ""
                                         /* Name of the binary module which gets filled from
                                            the NAME (for *.EXE) or LIBRARY (for *.DLL) statement */
-ModuleName=""
+ModuleName = ""
                                         /* Description statement which gets constructed from the
                                            header (*.H*) file to replace/add the DESCRIPTION
                                            statement in the *.DEF file */
-Description=""
-Description_Header="Description '"
-Description_Trailer="'"
+Description = ""
+Description_Header = "Description '"
+Description_Trailer = "'"
                                         /* The build level part of the DESCRIPTION statement is built
                                            from the following substrings */
-BldLevel=""
-BldLevel_Header="@#"                    /* fixed (*UM) */
-BldLevel_Vendor=""
-BldLevel_Version=""
-BldLevel_Info=""
-BldLevel_Trailer="@#"
+BldLevel = ""
+BldLevel_Header = "@#"                    /* fixed (*UM) */
+BldLevel_Vendor = ""
+BldLevel_Version = ""
+BldLevel_Info = ""
+BldLevel_Trailer = "@#"
 
 /*--------------------------------------------------------------------------------------*\
  * Main entry point.                                                                    *
@@ -77,10 +77,10 @@ if ((DefinitionFile = "") | (HeaderFile = "")) then do  /* (*UM) */
     exit;
 end
 
-Do While (DefinitionFile\="" & HeaderFile\="")
+Do While (DefinitionFile \= "" & HeaderFile\="")
                                         /* We have valid commandline arguments, so first see
                                            if the Headerfile contents are ok for us */
-    ReturnCode=ParseHeaderFile()
+    ReturnCode = ParseHeaderFile()
     If ReturnCode\=0 then do
         Say "Error "||ReturnCode||" parsing header file";
         Leave
@@ -88,47 +88,47 @@ Do While (DefinitionFile\="" & HeaderFile\="")
 
     if (InfoOverride \= "") then do
         /* BLDLEVEL_INFO overridden: (*UM) */
-        if (substr(InfoOverride, 1, 1) = '"') then
-            InfoOverride = substr(InfoOverride, 2, length(InfoOverride)-2);
-        BldLevel_Info = InfoOverride;
+        if (substr(InfoOverride, 1, 1)  =  '"') then
+            InfoOverride  =  substr(InfoOverride, 2, length(InfoOverride)-2);
+        BldLevel_Info  =  InfoOverride;
     end
                                         /* Parse the definition file (*.DEF) for the module
                                            name, to see if we got a valid file */
-    ReturnCode=ParseDefinitionFile()
+    ReturnCode = ParseDefinitionFile()
     If ReturnCode\=0 then do
         Say "Error "||ReturnCode||" parsing DEF file";
         Leave
     end
                                         /* Copy the definition file, because we're going to
                                            change the original */
-    Command="@copy "||DefinitionFile||" "||DefinitionCopy||" /v >NUL"
+    Command = "@copy "||DefinitionFile||" "||DefinitionCopy||" /v >NUL"
     Command
-    Command="@del "||DefinitionFile||" >NUL 2>&1"
+    Command = "@del "||DefinitionFile||" >NUL 2>&1"
     Command
     If (rc\=0) Then Do
-        ReturnCode=2
+        ReturnCode = 2
         Leave
     End
                                         /* Build DESCRIPTION statement for *.DEF file */
-    BldLevel=BldLevel_Header||BldLevel_Vendor||":"||BldLevel_Version||"#@ "||BldLevel_Info
+    BldLevel = BldLevel_Header||BldLevel_Vendor||":"||BldLevel_Version||"#@ "||BldLevel_Info
                                         /* fixed (*UM) */
-    Description=Description_Header||BldLevel||Description_Trailer
+    Description = Description_Header||BldLevel||Description_Trailer
                                         /* Copy the module definition file to be able to change
                                            the contents of the original one. In case of an error
                                            copy back the original one */
-    ReturnCode=ModifyDefinitionFile()
+    ReturnCode = ModifyDefinitionFile()
     If ReturnCode\=0 Then Do
-        Command="@copy "||DefinitionCopy||" "||DefinitionFile||" /v >NUL"
+        Command = "@copy "||DefinitionCopy||" "||DefinitionFile||" /v >NUL"
         Command
-        Command="@del "||DefinitionCopy||" >NUL 2>&1"
+        Command = "@del "||DefinitionCopy||" >NUL 2>&1"
         Command
         Leave
     End
 
                                         /* Exit with success */
-    Command="@del "||DefinitionCopy||" >NUL 2>&1"
+    Command = "@del "||DefinitionCopy||" >NUL 2>&1"
     Command
-    ReturnCode=0
+    ReturnCode = 0
     Leave
 End
                                         /* Exit to commandline */
@@ -153,40 +153,40 @@ Return ReturnCode
  *      ReturnCode .... Error code (0 if no error)                                      *
 \*--------------------------------------------------------------------------------------*/
 ParseHeaderFile:
-    LinesLeft=2
+    LinesLeft = 2
                                         /* Read ahead 1st line */
-    CurrentLine=LineIn(HeaderFile, 1, 1)
+    CurrentLine = LineIn(HeaderFile, 1, 1)
                                         /* Do while there are lines in the file */
     Do While(LinesLeft>0)
                                         /* Parse for constructs of the form:
                                            #define BLDLEVEL_Macro "Value" Comment */
                                         /* Kill that ... tabs */
-        CurrentLine=Translate(CurrentLine, ' ', X2C(9))
+        CurrentLine = Translate(CurrentLine, ' ', X2C(9))
         Parse Var CurrentLine Define Macro '"' Value '"' .
         Parse Upper Var Define Define
-        Define=Space(Define, 0)
+        Define = Space(Define, 0)
         Parse Upper Var Macro Macro
-        Macro=Space(Macro, 0)
+        Macro = Space(Macro, 0)
                                         /* Test for the macros we expect */
-        If (Define="#DEFINE") Then Do
+        If (Define = "#DEFINE") Then Do
             Select
-            When (Macro="BLDLEVEL_VENDOR") Then Do
-                BldLevel_Vendor=Value
+            When (Macro = "BLDLEVEL_VENDOR") Then Do
+                BldLevel_Vendor = Value
             End
-            When (Macro="BLDLEVEL_VERSION") Then Do
-                BldLevel_Version=Value
+            When (Macro = "BLDLEVEL_VERSION") Then Do
+                BldLevel_Version = Value
             End
-            When (Macro="BLDLEVEL_INFO") Then Do
-                BldLevel_Info=Value
+            When (Macro = "BLDLEVEL_INFO") Then Do
+                BldLevel_Info = Value
             End
             Otherwise
             End
         End
-        CurrentLine=LineIn(HeaderFile)
+        CurrentLine = LineIn(HeaderFile)
                                         /* As Lines() returns 0 after having read the last line
                                            we have to ensure that this last line will be processed too */
-        If (Lines(HeaderFile)=0) Then
-            LinesLeft=LinesLeft-1
+        If (Lines(HeaderFile) = 0) Then
+            LinesLeft = LinesLeft-1
     End
     If (BldLevel_Vendor\="" & BldLevel_Version\="" & BldLevel_Info\="") Then
         Return 0
@@ -203,26 +203,26 @@ ParseHeaderFile:
 \*--------------------------------------------------------------------------------------*/
 ParseDefinitionFile:
                                         /* Read ahead 1st line */
-    Command=Stream(DefinitionFile, 'C', 'OPEN READ')
-    LinesLeft=2
-    CurrentLine=LineIn(DefinitionFile)
+    Command = Stream(DefinitionFile, 'C', 'OPEN READ')
+    LinesLeft = 2
+    CurrentLine = LineIn(DefinitionFile)
                                         /* Do while there are lines in the file */
     Do While(LinesLeft>0)
                                         /* Parse for constructs of the form:
                                            NAME/LIBRARY ModuleName Options */
                                         /* Kill that ... tabs */
-        CurrentLine=Translate(CurrentLine, ' ', X2C(9))
+        CurrentLine = Translate(CurrentLine, ' ', X2C(9))
         if (left(CurrentLine, 15) == "PHYSICAL DEVICE") then do
-            statement = "PHYSICAL DEVICE";
+            statement  =  "PHYSICAL DEVICE";
             Parse var CurrentLine x1 x2 Module Options
         end
         else do
             /* parse current line into "statement" and "module" */
             Parse Var CurrentLine Statement Module Options
             Parse Upper Var Statement Statement
-            Statement=Space(Statement, 0)
+            Statement = Space(Statement, 0)
         end
-        Module=Space(Module, 0)
+        Module = Space(Module, 0)
         If (Module\="") Then Do
             If (Statement="NAME") Then
                 ModuleName=Module||".exe"

@@ -715,7 +715,8 @@ release: really_all
     $(COPY) release\bin\showall.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xhelp.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xshutdwn.cmd $(XWPRELEASE_MAIN)\bin
-    $(COPY) release\bin\xshutdwn.ico
+#fixed wrong target path for xshutdwn.ico V0.9.21 (2002-08-18) [umoeller]
+    $(COPY) release\bin\xshutdwn.ico $(XWPRELEASE_MAIN)\bin
 !endif
 #    $(COPY) release\bin\icons.dll
 !ifndef XWPLITE

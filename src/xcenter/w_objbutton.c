@@ -464,48 +464,54 @@ static CONTROLDEF
             CheckShutdown
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOSHUTDOWN,
-                                                  -1, 8),
+                                                  SZL_AUTOSIZE,
+                                                  SZL_AUTOSIZE),
             CheckRestartWPS
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NORESTARTWPS,
-                                                  -1, 8),
+                                                  SZL_AUTOSIZE,
+                                                  SZL_AUTOSIZE),
             CheckLogoff
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOLOGOFF,
-                                                  -1, 8),
+                                                  SZL_AUTOSIZE,
+                                                  SZL_AUTOSIZE),
             CheckSuspend
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOSUSPEND,
-                                                  -1, 8),
+                                                  SZL_AUTOSIZE,
+                                                  SZL_AUTOSIZE),
             CheckLockup
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOLOCKUP,
-                                                  -1, 8),
+                                                  SZL_AUTOSIZE,
+                                                  SZL_AUTOSIZE),
             CheckRunDlg
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NORUNDLG,
-                                                  -1, 8),
+                                                  SZL_AUTOSIZE,
+                                                  SZL_AUTOSIZE),
             BitmapGroup = CONTROLDEF_GROUP(
                             NULL,
                             -1,
-                            -1,
-                            -1),
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
             BitmapEF = CONTROLDEF_ENTRYFIELD(
                             NULL,
                             ID_ENTRYFIELD,
-                            100,
-                            -1),
+                            SZL_REMAINDER, // 100,
+                            SZL_AUTOSIZE),
             BitmapBrowse = CONTROLDEF_PUSHBUTTON(
                             NULL,
                             DID_BROWSE,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT);
 
 static const DLGHITEM dlgXButtonSettings[] =
     {
         START_TABLE,
             START_ROW(0),
-                START_GROUP_TABLE(&ChecksGroup),
+                START_GROUP_TABLE_EXT(&ChecksGroup, TABLE_INHERIT_SIZE),
                     // fixed ordering V0.9.19 (2002-04-14) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&CheckLockup),
@@ -521,7 +527,7 @@ static const DLGHITEM dlgXButtonSettings[] =
                         CONTROL_DEF(&CheckShutdown),
                 END_TABLE,
                 START_ROW(0),
-                START_GROUP_TABLE(&BitmapGroup),
+                START_GROUP_TABLE_EXT(&BitmapGroup, TABLE_INHERIT_SIZE),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&BitmapEF),
                         CONTROL_DEF(&BitmapBrowse),
@@ -622,7 +628,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
             PSZ p;
             *(aItems[ul].ppcsz) = winhQueryMenuItemText(hmenuTemp, aItems[ul].ulItemID);
             if ((p = strstr(*(aItems[ul].ppcsz), "...")))
-                strcpy(p, p+3);
+                strcpy(p, p + 3);
         }
 
         ChecksGroup.pcszText = cmnGetString(ID_CRSI_OWGT_MENUITEMS);

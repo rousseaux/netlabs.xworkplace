@@ -999,7 +999,7 @@ static HWND PrepareFileExistsDlg(WPObject *somSelf,
                                  PSZ pszTitle,
                                  ULONG flOptions)
 {
-    HWND    hwndConfirm;
+    HWND        hwndConfirm = NULLHANDLE;       // V0.9.21 (2002-08-18) [umoeller]
 
     // load confirmation dialog
     // V0.9.20 (2002-08-08) [umoeller]
@@ -1012,9 +1012,10 @@ static HWND PrepareFileExistsDlg(WPObject *somSelf,
     // replace placeholders in introductory strings
     if (pszIntro = strdup(cmnGetString(ID_XFDI_CLASH_TXT1)))
     {
-        PCSZ pcszBytes = cmnGetString(ID_XSSI_BYTES);
+        PCSZ    pcszBytes = cmnGetString(ID_XSSI_BYTES);
 
-        ULONG   ulOfs = 0;
+        ULONG   ulOfs;
+        ulOfs = 0;
         strhFindReplace(&pszIntro, &ulOfs, "%1", _wpQueryTitle(pExisting));
         _wpQueryFilename(Folder, szTemp, TRUE);
         ulOfs = 0;

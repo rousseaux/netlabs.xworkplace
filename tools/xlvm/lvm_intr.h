@@ -239,125 +239,143 @@ CARDINAL32               Count;                    // The number of entries in t
 
 // The following information about a volume can (and often does) vary.
 typedef struct _Volume_Information_Record {
-CARDINAL32 Volume_Size;                           // The number of sectors comprising the volume.
-CARDINAL32 Partition_Count;                       // The number of partitions which comprise this volume.
-CARDINAL32 Drive_Letter_Conflict;                 /* 0 indicates that the drive letter preference for this volume is unique.
-1 indicates that the drive letter preference for this volume
-is not unique, but this volume got its preferred drive letter anyway.
-2 indicates that the drive letter preference for this volume
-is not unique, and this volume did NOT get its preferred drive letter.
-4 indicates that this volume is currently "hidden" - i.e. it has
-no drive letter preference at the current time.                        */
-BOOLEAN    Compatibility_Volume;                  // TRUE if this is for a compatibility volume, FALSE otherwise.
-BOOLEAN    Bootable;                              /* Set to TRUE if this volume appears on the Boot Manager menu, or if it is
-a compatibility volume and its corresponding partition is the first active
-primary partition on the first drive.                                         */
-char       Drive_Letter_Preference;               // The drive letter that this volume desires to be.
-char       Current_Drive_Letter;                  /* The drive letter currently used to access this volume.  May be different than
-Drive_Letter_Preference if there was a conflict ( i.e. Drive_Letter_Preference
-is already in use by another volume ).                                          */
-char       Initial_Drive_Letter;                  /* The drive letter assigned to this volume by the operating system when LVM was started.
-This may be different from the Drive_Letter_Preference if there were conflicts, and
-may be different from the Current_Drive_Letter.  This will be 0x0 if the Volume did
-not exist when the LVM Engine was opened (i.e. it was created during this LVM session). */
-BOOLEAN    New_Volume;                            /* Set to FALSE if this volume existed before the LVM Engine was opened.  Set to
-TRUE if this volume was created after the LVM Engine was opened.                */
-BYTE       Status;                                /* 0 = None.
-1 = Bootable
-2 = Startable
-3 = Installable.           */
-BYTE       Reserved_1;
-char       Volume_Name[VOLUME_NAME_SIZE];         // The user assigned name for this volume.
-char       File_System_Name[FILESYSTEM_NAME_SIZE];// The name of the filesystem in use on this partition, if it is known.
+    CARDINAL32 Volume_Size;
+            // The number of sectors comprising the volume.
+    CARDINAL32 Partition_Count;
+            // The number of partitions which comprise this volume.
+    CARDINAL32 Drive_Letter_Conflict;
+            // 0 indicates that the drive letter preference for this volume is unique.
+            // 1 indicates that the drive letter preference for this volume
+            // is not unique, but this volume got its preferred drive letter anyway.
+            // 2 indicates that the drive letter preference for this volume
+            // is not unique, and this volume did NOT get its preferred drive letter.
+            // 4 indicates that this volume is currently "hidden" - i.e. it has
+            // no drive letter preference at the current time.
+    BOOLEAN    Compatibility_Volume;
+            // TRUE if this is for a compatibility volume, FALSE otherwise.
+    BOOLEAN    Bootable;
+            // Set to TRUE if this volume appears on the Boot Manager menu, or if it is
+            // a compatibility volume and its corresponding partition is the first active
+            // primary partition on the first drive.
+    char       Drive_Letter_Preference;
+            // The drive letter that this volume desires to be.
+    char       Current_Drive_Letter;
+            // The drive letter currently used to access this volume.  May be different than
+            // Drive_Letter_Preference if there was a conflict ( i.e. Drive_Letter_Preference
+            // is already in use by another volume ).
+    char       Initial_Drive_Letter;
+            // The drive letter assigned to this volume by the operating system when LVM was started.
+            // This may be different from the Drive_Letter_Preference if there were conflicts, and
+            // may be different from the Current_Drive_Letter.  This will be 0x0 if the Volume did
+            // not exist when the LVM Engine was opened (i.e. it was created during this LVM session).
+    BOOLEAN    New_Volume;
+            // Set to FALSE if this volume existed before the LVM Engine was opened.  Set to
+            // TRUE if this volume was created after the LVM Engine was opened.
+    BYTE       Status;
+            // 0 = None.
+            // 1 = Bootable
+            // 2 = Startable
+            // 3 = Installable.
+    BYTE       Reserved_1;
+    char       Volume_Name[VOLUME_NAME_SIZE];
+            // The user assigned name for this volume.
+    char       File_System_Name[FILESYSTEM_NAME_SIZE];
+            // The name of the filesystem in use on this partition, if it is known.
 } Volume_Information_Record;
 
-// The following structure is used to return the feature information for the installed features, or the features on a volume.
+// The following structure is used to return the feature information for the installed
+// features, or the features on a volume.
 typedef struct _Feature_Information_Array {
-CARDINAL32        Count;
-Feature_ID_Data * Feature_Data;
+    CARDINAL32        Count;
+    Feature_ID_Data * Feature_Data;
 } Feature_Information_Array;
 
 // The following structure defines an item on the Boot Manager Menu.
 typedef struct _Boot_Manager_Menu_Item {
-ADDRESS     Handle;            // A Volume or Partition handle.
-BOOLEAN     Volume;            // If TRUE, then Handle is the handle of a Volume.  Otherwise, Handle is the handle of a partition.
+    ADDRESS     Handle;
+            // A Volume or Partition handle.
+    BOOLEAN     Volume;
+            // If TRUE, then Handle is the handle of a Volume.
+            // Otherwise, Handle is the handle of a partition.
 } Boot_Manager_Menu_Item;
 
 // The following structure is used to get a list of the items on the partition manager menu.
 typedef struct _Boot_Manager_Menu {
-Boot_Manager_Menu_Item *  Menu_Items;
-CARDINAL32                Count;
+    Boot_Manager_Menu_Item *  Menu_Items;
+    CARDINAL32                Count;
 } Boot_Manager_Menu;
 
 /* The following structure is used to specify an LVM Feature when creating a volume.  Since LVM Features may be part of
 more than one LVM Class, the specific class to be used with the feature must also be specified.                        */
 typedef struct _LVM_Feature_Specification_Record {
-CARDINAL32       Feature_ID;     // The feature ID of the feature to use.
-LVM_Classes      Actual_Class;   // The LVM Class (supported by the specified feature) to use.
-ADDRESS          Init_Data;      /* The address of a buffer containing initialization data for this feature.
-NULL if there is no initialization data being provided for this feature. */
+    CARDINAL32       Feature_ID;
+            // The feature ID of the feature to use.
+    LVM_Classes      Actual_Class;
+            // The LVM Class (supported by the specified feature) to use.
+    ADDRESS          Init_Data;
+            // The address of a buffer containing initialization data for this feature.
+            // NULL if there is no initialization data being provided for this feature.
 } LVM_Feature_Specification_Record;
 
 // The following structure is used with the Get_Child_Handles function.
 typedef struct {
-CARDINAL32   Count;
-ADDRESS *    Handles;
+    CARDINAL32   Count;
+    ADDRESS *    Handles;
 } LVM_Handle_Array_Record;
 
-/* The following preprocessor directives define the operations that can be performed on a partition, volume, or a block of free space.
-These definitions represent bits in a 32 bit value returned by the Get_Valid_Options function.                                         */
+// The following preprocessor directives define the operations that can
+// be performed on a partition, volume, or a block of free space.
+// These definitions represent bits in a 32 bit value returned by the
+// Get_Valid_Options function.
 
-#define CREATE_PRIMARY_PARTITION           1
-
-#define CREATE_LOGICAL_DRIVE               2
-
-#define DELETE_PARTITION                   4
-
-#define SET_ACTIVE_PRIMARY                 8
-
-#define SET_PARTITION_ACTIVE              0x10
-
-#define SET_PARTITION_INACTIVE            0x20
-
-#define SET_STARTABLE                     0x40
-
-#define INSTALL_BOOT_MANAGER              0x80
-
-#define REMOVE_BOOT_MANAGER               0x100
-
-#define SET_BOOT_MANAGER_DEFAULTS         0x200
-
-#define ADD_TO_BOOT_MANAGER_MENU          0x400
-
-#define REMOVE_FROM_BOOT_MANAGER_MENU     0x800
-
-#define DELETE_VOLUME                     0x1000
-
-#define HIDE_VOLUME                       0x2000
-
-#define EXPAND_VOLUME                     0x4000
-
-#define SET_VOLUME_INSTALLABLE            0x8000
-
-#define ASSIGN_DRIVE_LETTER               0x10000
-
-#define CAN_BOOT_PRIMARY                  0x20000      // If a primary is created from this block of free space, then it can be made bootable.
-
-#define CAN_BOOT_LOGICAL                  0x40000      // If a logical drive is created from this block of free space, then OS/2 can boot from it by adding it to the boot manager menu.
-
-#define CAN_SET_NAME                      0x80000
-
+#define CREATE_PRIMARY_PARTITION                 1
+#define CREATE_LOGICAL_DRIVE                     2
+#define DELETE_PARTITION                         4
+#define SET_ACTIVE_PRIMARY                       8
+#define SET_PARTITION_ACTIVE                  0x10
+#define SET_PARTITION_INACTIVE                0x20
+#define SET_STARTABLE                         0x40
+#define INSTALL_BOOT_MANAGER                  0x80
+#define REMOVE_BOOT_MANAGER                  0x100
+#define SET_BOOT_MANAGER_DEFAULTS            0x200
+#define ADD_TO_BOOT_MANAGER_MENU             0x400
+#define REMOVE_FROM_BOOT_MANAGER_MENU        0x800
+#define DELETE_VOLUME                       0x1000
+#define HIDE_VOLUME                         0x2000
+#define EXPAND_VOLUME                       0x4000
+#define SET_VOLUME_INSTALLABLE              0x8000
+#define ASSIGN_DRIVE_LETTER                0x10000
+#define CAN_BOOT_PRIMARY                   0x20000
+    // If a primary is created from this block of free space, then it can be made bootable.
+#define CAN_BOOT_LOGICAL                   0x40000
+    // If a logical drive is created from this block of free space, then OS/2 can
+    // boot from it by adding it to the boot manager menu.
+#define CAN_SET_NAME                       0x80000
 #define SET_BOOT_MANAGER_STARTABLE        0x100000
 
 // The following enumeration defines the allocation strategies used by the Create_Partition function.
 typedef enum _Allocation_Algorithm {
-Automatic,               // Let LVM decide which block of free space to use to create the partition.
-Best_Fit,                // Use the block of free space which is closest in size to the partition being created.
-First_Fit,               // Use the first block of free space on the disk which is large enough to hold a partition of the specified size.
-Last_Fit,                // Use the last block of free space on the disk which is large enough to hold a partition of the specified size.
-From_Largest,            // Find the largest block of free space and allocate the partition from that block of free space.
-From_Smallest,           // Find the smallest block of free space that can accommodate a partition of the size specified.
-All                      // Turn the specified drive or block of free space into a single partition.
+    Automatic,
+            // Let LVM decide which block of free space to use to
+            // create the partition.
+    Best_Fit,
+            // Use the block of free space which is closest in size
+            // to the partition being created.
+    First_Fit,
+            // Use the first block of free space on the disk which
+            // is large enough to hold a partition of the specified size.
+    Last_Fit,
+            // Use the last block of free space on the disk which is
+            // large enough to hold a partition of the specified size.
+    From_Largest,
+            // Find the largest block of free space and allocate the
+            // partition from that block of free space.
+    From_Smallest,
+            // Find the smallest block of free space that can accommodate
+            // a partition of the size specified.
+    All
+            // Turn the specified drive or block of free space into a
+            // single partition.
 } Allocation_Algorithm;
 
 // Error codes returned by the LVM Engine.

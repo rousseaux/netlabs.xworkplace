@@ -1328,7 +1328,7 @@ static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
             PCONTROLDEF pDef;
 
             (*ppDlgItemThis)->Type = TYPE_START_NEW_ROW;
-            (*ppDlgItemThis)->fl = ROW_VALIGN_CENTER;
+            (*ppDlgItemThis)->ul2 = ROW_VALIGN_CENTER;      // V0.9.21 (2002-08-18) [umoeller]
             (*ppDlgItemThis)++;
 
             // fill the controldef
@@ -1341,7 +1341,8 @@ static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
 
             // and append the controldef
             (*ppDlgItemThis)->Type = TYPE_CONTROL_DEF;
-            (*ppDlgItemThis)->pCtlDef = *ppControlDefThis;
+            // (*ppDlgItemThis)->pCtlDef = *ppControlDefThis;   V0.9.21 (2002-08-18) [umoeller]
+            (*ppDlgItemThis)->ul1 = (ULONG)*ppControlDefThis;
             (*ppDlgItemThis)++;
             (*ppControlDefThis)++;
         }
@@ -1349,67 +1350,29 @@ static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
 }
 
 static CONTROLDEF
-            OKButton = {
-                        WC_BUTTON,
-                        NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
-                        DID_OK,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     },
-            CancelButton = {
-                        WC_BUTTON,
-                        NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-                        DID_CANCEL,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     },
-            HelpButton = {
-                        WC_BUTTON,
-                        NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
-                        DID_HELP,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     },
-            ReplGroup = {
-                         WC_STATIC,
-                         LOAD_STRING,
-                         WS_VISIBLE | WS_TABSTOP | SS_GROUPBOX | DT_MNEMONIC,
-                         ID_XCD_CLASSES_REPLACEMENTS,
-                         CTL_COMMON_FONT,
-                         0,
-                         { -1, -1 },       // size
-                         COMMON_SPACING,
-                    },
-            NewGroup = {
-                         WC_STATIC,
-                         LOAD_STRING,
-                         WS_VISIBLE | WS_TABSTOP | SS_GROUPBOX | DT_MNEMONIC,
-                         ID_XCD_CLASSES_NEW,
-                         CTL_COMMON_FONT,
-                         0,
-                         { -1, -1 },       // size
-                         COMMON_SPACING,
-                    },
-            OneClass = {
-                        WC_BUTTON,
-                            NULL,      // text, to be replaced
-                            WS_VISIBLE | WS_TABSTOP
-                                | BS_AUTOCHECKBOX,
-                            0,              // ID, to be replaced
-                        CTL_COMMON_FONT,
-                        0,
-                        { -1, -1 },       // size
-                        COMMON_SPACING,
-                     };
+        OKButton = CONTROLDEF_DEFPUSHBUTTON(
+                    NULL,
+                    DID_OK,
+                    STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+        CancelButton = CONTROLDEF_PUSHBUTTON(
+                    NULL,
+                    DID_CANCEL,
+                    STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+        HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+                    NULL,
+                    DID_HELP,
+                    STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+        ReplGroup = LOADDEF_GROUP(
+                    ID_XCD_CLASSES_REPLACEMENTS,
+                    SZL_AUTOSIZE),
+        NewGroup = LOADDEF_GROUP(
+                    ID_XCD_CLASSES_NEW,
+                    SZL_AUTOSIZE),
+        OneClass = CONTROLDEF_AUTOCHECKBOX(
+                    NULL,       // text, to be replaced
+                    0,          // ID, to be replaced
+                    SZL_AUTOSIZE,
+                    SZL_AUTOSIZE);
 
 static const DLGHITEM
     dlgClassesFront[] =

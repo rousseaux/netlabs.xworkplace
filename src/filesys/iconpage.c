@@ -130,23 +130,31 @@
  ********************************************************************/
 
 #define ICON_WIDTH          40
-#define BUTTON_WIDTH        45
-#define GROUPS_WIDTH       175
+// #define GROUPS_WIDTH       175       V0.9.21 (2002-08-18) [umoeller]
 #define EF_HEIGHT           25
 #define HOTKEY_EF_WIDTH     50
+
+// #define NEW_TABLE_STUFF     1
+
+// V0.9.21 (2002-08-18) [umoeller]
+// With the new dialog formatter, we no longer need to calculate
+// the size of the group boxes with the size macros above. Instead
+// we just set the group table widths to SZL_AUTOSIZE and, for
+// each group, set the TABLE_INHERIT_SIZE table flag to make the
+// group as wide as the main table.
 
 static const CONTROLDEF
     TitleGroup = LOADDEF_GROUP(ID_XSDI_ICON_TITLE_TEXT, SZL_AUTOSIZE),
     TitleEF = CONTROLDEF_MLE(
                             NULL,
                             ID_XSDI_ICON_TITLE_EF,
-                            GROUPS_WIDTH - 2 * COMMON_SPACING,
+                            -100, // GROUPS_WIDTH - 2 * COMMON_SPACING, V0.9.21 (2002-08-18) [umoeller]
                             MAKE_SQUARE_CY(EF_HEIGHT)),
     IconGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_GROUP,
-                            GROUPS_WIDTH,
-                            -1),
+                            SZL_AUTOSIZE, // GROUPS_WIDTH, V0.9.21 (2002-08-18) [umoeller]
+                            SZL_AUTOSIZE),
     IconStatic =
         {
             WC_STATIC,
@@ -154,7 +162,6 @@ static const CONTROLDEF
             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER | DT_MNEMONIC,
             ID_XSDI_ICON_STATIC,
             CTL_COMMON_FONT,
-            0,
             {ICON_WIDTH, MAKE_SQUARE_CY(ICON_WIDTH)},
             COMMON_SPACING
         },
@@ -165,49 +172,49 @@ static const CONTROLDEF
     IconEditButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_EDIT_BUTTON,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT),
     IconBrowseButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             DID_BROWSE,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT),
     IconResetButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_RESET_BUTTON,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT),
     ExtrasGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_EXTRAS_GROUP,
-                            GROUPS_WIDTH,
-                            -1),
+                            SZL_AUTOSIZE, // GROUPS_WIDTH,  V0.9.21 (2002-08-18) [umoeller]
+                            SZL_AUTOSIZE),
     HotkeyText = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_ICON_HOTKEY_TEXT,
-                            -1,
-                            -1),
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
     HotkeyEF = CONTROLDEF_ENTRYFIELD(
                             NULL,
                             ID_XSDI_ICON_HOTKEY_EF,
                             HOTKEY_EF_WIDTH,
-                            -1),
+                            SZL_AUTOSIZE),
     HotkeyClearButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_HOTKEY_CLEAR,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT),
     HotkeySetButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_HOTKEY_SET,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT),
     LockPositionCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ICON_LOCKPOSITION_CB),
     TemplateCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ICON_TEMPLATE_CB),
     DetailsButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             DID_DETAILS,
-                            -1,
+                            SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT);
 
 static const DLGHITEM dlgObjIconFront[] =
@@ -217,10 +224,10 @@ static const DLGHITEM dlgObjIconFront[] =
 
 static const DLGHITEM dlgObjIconTitle[] =
     {
-             START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
+            // START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
             START_ROW(ROW_VALIGN_CENTER),
-                START_GROUP_TABLE(&TitleGroup),
-                // CONTROL_DEF(&TitleText),
+                START_GROUP_TABLE_EXT(&TitleGroup, TABLE_INHERIT_SIZE),
+                            // now using TABLE_INHERIT_SIZE V0.9.21 (2002-08-18) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&TitleEF),
                 END_TABLE,
@@ -229,7 +236,8 @@ static const DLGHITEM dlgObjIconTitle[] =
 static const DLGHITEM dlgObjIconIcon[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
-                START_GROUP_TABLE(&IconGroup),
+                START_GROUP_TABLE_EXT(&IconGroup, TABLE_INHERIT_SIZE),
+                            // now using TABLE_INHERIT_SIZE V0.9.21 (2002-08-18) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&IconStatic),
                     START_TABLE,
@@ -246,7 +254,8 @@ static const DLGHITEM dlgObjIconIcon[] =
 static const DLGHITEM dlgObjIconExtrasFront[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
-                START_GROUP_TABLE(&ExtrasGroup),
+                START_GROUP_TABLE_EXT(&ExtrasGroup, TABLE_INHERIT_SIZE),
+                            // now using TABLE_INHERIT_SIZE V0.9.21 (2002-08-18) [umoeller]
                     START_ROW(0)
     };
 
@@ -277,6 +286,7 @@ static const DLGHITEM dlgObjIconExtrasTail[] =
 
 static const DLGHITEM dlgObjIconDetails[] =
     {
+            START_ROW(0),
                 CONTROL_DEF(&DetailsButton)
     };
 
@@ -601,11 +611,12 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
                         HAPP happ;
                         ULONG ulExitCode;
                         pcszContext = "Context: starting ICONEDIT.EXE";
-                        if (happ = appQuickStartApp(szIconEdit,
-                                                    PROG_DEFAULT,
-                                                    szTempFile,
-                                                    NULL,
-                                                    &ulExitCode))
+                        if (!appQuickStartApp(szIconEdit,
+                                              PROG_DEFAULT,
+                                              szTempFile,
+                                              NULL,
+                                              &happ,
+                                              &ulExitCode))
                         {
                             pcszContext = "Context: setting new icon data";
                             // has the file changed?

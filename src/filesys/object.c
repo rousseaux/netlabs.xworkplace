@@ -1978,7 +1978,6 @@ static const CONTROLDEF
             WS_VISIBLE | /* CCS_READONLY | */ CCS_EXTENDSEL,
             ID_XSDI_DETAILS_CONTAINER,
             CTL_COMMON_FONT,
-            0,
             {DETAILS_WIDTH, 120},
             COMMON_SPACING
         },

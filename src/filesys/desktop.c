@@ -751,7 +751,6 @@ static const CONTROLDEF
             SS_FGNDFRAME | WS_VISIBLE,
             ID_XSDI_DTP_LOGOBITMAP,
             CTL_COMMON_FONT,
-            0,
             {66, 40},
             COMMON_SPACING
         },

@@ -94,6 +94,7 @@
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
@@ -1548,7 +1549,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
-             && (pDef = pThis->pCtlDef)
+             && (pDef = (const CONTROLDEF *)pThis->ul1) // pThis->pCtlDef) V0.9.21 (2002-08-18) [umoeller]
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
@@ -1584,7 +1585,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
-             && (pDef = pThis->pCtlDef)
+             && (pDef = (const CONTROLDEF *)pThis->ul1) // pCtlDef) V0.9.21 (2002-08-18) [umoeller]
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
@@ -1593,7 +1594,8 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
             // and replace the LOAD_STRING with the real string
             pDefTargetThis->pcszText = cmnGetString(pDef->usID);
             // and point DLGHITEM to this CONTROLDEF instead
-            paNew[ul].pCtlDef = pDefTargetThis;
+            // paNew[ul].pCtlDef = pDefTargetThis;  V0.9.21 (2002-08-18) [umoeller]
+            paNew[ul].ul1 = (ULONG)pDefTargetThis;
             ++pDefTargetThis;
         }
         // otherwise we use the const DLGHITEM that was
@@ -4652,18 +4654,16 @@ static CONTROLDEF
             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP | DT_WORDBREAK,
             -1,
             "9.WarpSans Bold",
-            0,
             {INFO_WIDTH, -1},
             COMMON_SPACING
         },
     ProductInfoSepLine1 =
         {
-            WC_STATIC,
+            WC_SEPARATORLINE,
             NULL,
-            WS_VISIBLE | SS_GROUPBOX,
+            WS_VISIBLE,
             9998,
             NULL,
-            0,
             {INFO_WIDTH, 4},
             COMMON_SPACING
         },
@@ -4686,17 +4686,7 @@ static CONTROLDEF
             NULL
         },
 #endif
-    ProductInfoSepLine2 =
-        {
-            WC_STATIC,
-            NULL,
-            WS_VISIBLE | SS_GROUPBOX,
-            9999,
-            NULL,
-            0,
-            {INFO_WIDTH, 4},
-            COMMON_SPACING
-        },
+    ProductInfoSepLine2 = CONTROLDEF_SEPARATORLINE(9999, INFO_WIDTH, 4),
     ProductInfoInstalledMemoryTxt = LOADDEF_TEXT(ID_XSDI_INFO_MAINMEM_TXT),
     ProductInfoInstalledMemoryValue = CONTROLDEF_TEXT_RIGHT(
                             NULL,
@@ -4720,6 +4710,7 @@ static CONTROLDEF
                             -1,
                             SZL_AUTOSIZE,
                             SZL_AUTOSIZE);
+
 static const DLGHITEM dlgProductInfo[] =
     {
         START_TABLE_ALIGN,            // root table, required
@@ -4754,59 +4745,6 @@ static const DLGHITEM dlgProductInfo[] =
                 CONTROL_DEF(&G_OKButton),
         END_TABLE
     };
-
-PFNWP   G_pfnwpStatic = NULL;
-
-/*
- *@@ fnwpSeparatorLine:
- *
- *@@added V0.9.20 (2002-08-10) [umoeller]
- */
-
-static MRESULT EXPENTRY fnwpSeparatorLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        case WM_PAINT:
-        {
-            RECTL rcl;
-            HPS hps;
-            WinQueryWindowRect(hwnd, &rcl);
-            if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
-            {
-                POINTL ptl;
-
-                gpihSwitchToRGB(hps);
-
-                GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0));
-
-                ptl.x = rcl.xLeft;
-                ptl.y = (rcl.yTop - rcl.yBottom) / 2 - 1;
-                GpiMove(hps, &ptl);
-                ptl.x = rcl.xRight;
-                GpiLine(hps, &ptl);
-
-                GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0));
-
-                ptl.x = rcl.xLeft;
-                ++ptl.y;
-                GpiMove(hps, &ptl);
-                ptl.x = rcl.xRight;
-                GpiLine(hps, &ptl);
-
-                WinEndPaint(hps);
-            }
-        }
-        break;
-
-        default:
-            mrc = G_pfnwpStatic(hwnd, msg, mp1, mp2);
-    }
-
-    return mrc;
-}
 
 /*
  *@@ fnwpProductInfo:
@@ -4897,6 +4835,7 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     cmnPlaySystemSound(ulSound);
 #endif
 
+    ctlRegisterSeparatorLine(G_habThread1);
     txvRegisterTextView(G_habThread1);
 
     // bitmap
@@ -4953,8 +4892,8 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                            NULL,
                            cmnQueryDefaultFont()))
         {
-            G_pfnwpStatic = WinSubclassWindow(WinWindowFromID(hwndInfo, 9998), fnwpSeparatorLine);
-            G_pfnwpStatic = WinSubclassWindow(WinWindowFromID(hwndInfo, 9999), fnwpSeparatorLine);
+            // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9998));
+            // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9999));
 
             winhCenterWindow(hwndInfo);
             WinProcessDlg(hwndInfo);

@@ -663,7 +663,8 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                         memcpy((char *)padlgPulsePerProcessor + sizeof(dlgPulsePerProcessor) * ul,
                                &dlgPulsePerProcessor[0],
                                sizeof(dlgPulsePerProcessor));
-                        padlgPulsePerProcessor[(ul * 2) + 1].pCtlDef = &paProcessorColor[ul];
+                        // padlgPulsePerProcessor[(ul * 2) + 1].pCtlDef = &paProcessorColor[ul]; V0.9.21 (2002-08-18) [umoeller]
+                        padlgPulsePerProcessor[(ul * 2) + 1].ul1 = (ULONG)&paProcessorColor[ul];
                     }
                 }
 

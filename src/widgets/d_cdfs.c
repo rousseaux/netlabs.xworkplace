@@ -244,9 +244,9 @@ MRESULT EXPENTRY fnwpConfigJFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                     // we could have used sscanf, but that
                                     // blows up the DLL by 10 KB, which we
                                     // can save here...
-                                    PSZ p2 = strchr(p + 1, ','),
+                                    PSZ p2,
                                         p3;
-                                    if (p2)
+                                    if (p2 = strchr(p + 1, ','))
                                     {
                                         CHAR c = *p2;
                                         *p2 = 0;
@@ -463,111 +463,52 @@ SLDCDATA    SliderCData = {
                 };
 
 static CONTROLDEF
-            Spacer = {
-                        WC_STATIC,
-                        "",
-                        0,          // invisible
-                        -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 15, 5 },     // size
-                        COMMON_SPACING
-                     },
-            SecondsTxt = {
-                        WC_STATIC,
+            Spacer = CONTROLDEF_SPACING(
+                        15,
+                        5),
+            SecondsTxt = CONTROLDEF_TEXT(
                         "s",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
                         -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { -1, -1 },     // size
-                        COMMON_SPACING
-                     },
-
+                        SZL_AUTOSIZE,
+                        SZL_AUTOSIZE),
     // cache size
-            CachesizeTxt = {
-                        WC_STATIC,
+            CachesizeTxt = CONTROLDEF_TEXT(
                         "Cach~e size:",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
                         -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 60, -1 },     // size
-                        COMMON_SPACING
-                     },
-            CachesizeSlider = {
-                        WC_SLIDER,
-                        "",
-                        WS_VISIBLE | WS_TABSTOP
-                            | SLS_HORIZONTAL
-                            | SLS_PRIMARYSCALE1
-                            | SLS_BUTTONSRIGHT
-                            | SLS_SNAPTOINCREMENT,
+                        60,
+                        SZL_AUTOSIZE),
+            CachesizeSlider = CONTROLDEF_SLIDER(
                         ID_OSDI_CDFS_CACHESLIDER,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 150, STD_BUTTON_HEIGHT },     // size
-                        COMMON_SPACING,
-                        &SliderCData
-                     },
-            CachesizeTxt2 = {
-                        WC_STATIC,
+                        150,
+                        STD_BUTTON_HEIGHT,
+                        &SliderCData),
+            CachesizeTxt2 = CONTROLDEF_TEXT_RIGHT(
                         "x KB",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_RIGHT | DT_VCENTER,
                         ID_OSDI_CDFS_CACHETXT,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 40, -1 },     // size
-                        COMMON_SPACING,
-                     },
+                        40,
+                        SZL_AUTOSIZE),
     // autocheck
-            AutocheckTxt = {
-                        WC_STATIC,
+            AutocheckTxt = CONTROLDEF_TEXT(
                         "~Autocheck:",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
                         -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 60, 5 },     // size
-                        COMMON_SPACING,
-                     },
-            AutocheckEntry = {
-                        WC_ENTRYFIELD,
+                        60,
+                        SZL_AUTOSIZE),
+            AutocheckEntry = CONTROLDEF_ENTRYFIELD(
                         NULL,
-                        WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_MARGIN | ES_AUTOSCROLL,
                         ID_OSDI_AUTOCHECK,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 150, -1 },     // size
-                        COMMON_SPACING,
-                     },
+                        SZL_REMAINDER,
+                        SZL_AUTOSIZE),
     // lazywrite
-            LazywriteCheckbox = {
-                        WC_BUTTON,
+            LazywriteCheckbox = CONTROLDEF_AUTOCHECKBOX(
                         "~Lazy write",
-                        WS_VISIBLE | WS_TABSTOP
-                            | BS_AUTOCHECKBOX,
                         ID_OSDI_CACHE_LAZYWRITE,
-                        CTL_COMMON_FONT,
-                        0,
-                        { -1, -1 },
-                        COMMON_SPACING,
-                     },
-            LWSyncText = {
-                        WC_STATIC,
+                        SZL_AUTOSIZE,
+                        SZL_AUTOSIZE),
+            LWSyncText = CONTROLDEF_TEXT(
                         "S~ynch time:",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
                         -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 40, -1 },     // size
-                        COMMON_SPACING,
-                     },
+                        SZL_AUTOSIZE,
+                        SZL_AUTOSIZE),
             LWSyncSpin = {
                         WC_SPINBUTTON,
                         NULL,
@@ -575,21 +516,14 @@ static CONTROLDEF
                             | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
                         ID_OSDI_CACHE_SYNCHTIME,
                         CTL_COMMON_FONT,
-                        0,
                         { 50, STD_SPIN_HEIGHT },     // size
                         COMMON_SPACING,
                      },
-            LWMaxageText = {
-                        WC_STATIC,
+            LWMaxageText = CONTROLDEF_TEXT(
                         "Ma~x age:",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
                         -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 40, 5 },     // size
-                        COMMON_SPACING,
-                     },
+                        SZL_AUTOSIZE,
+                        SZL_AUTOSIZE),
             LWMaxageSpin = {
                         WC_SPINBUTTON,
                         NULL,
@@ -597,21 +531,14 @@ static CONTROLDEF
                             | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
                         ID_OSDI_CACHE_MAXAGE,
                         CTL_COMMON_FONT,
-                        0,
                         { 50, STD_SPIN_HEIGHT },     // size
                         COMMON_SPACING,
                      },
-            LWBufferidleText = {
-                        WC_STATIC,
+            LWBufferidleText = CONTROLDEF_TEXT(
                         "~Buffer idle:",
-                        WS_VISIBLE
-                            | SS_TEXT | DT_LEFT | DT_VCENTER | DT_WORDBREAK | DT_MNEMONIC,
                         -1,
-                        CTL_COMMON_FONT,
-                        0,
-                        { 50, 5 },     // size
-                        COMMON_SPACING,
-                     },
+                        SZL_AUTOSIZE,
+                        SZL_AUTOSIZE),
             LWBufferidleSpin = {
                         WC_SPINBUTTON,
                         NULL,
@@ -619,79 +546,60 @@ static CONTROLDEF
                             | SPBS_MASTER | SPBS_NUMERICONLY | SPBS_JUSTCENTER,
                         ID_OSDI_CACHE_BUFFERIDLE,
                         CTL_COMMON_FONT,
-                        0,
                         { 50, STD_SPIN_HEIGHT },     // size
                         COMMON_SPACING,
                      },
     // buttons
-            OKButton = {
-                        WC_BUTTON,
+            OKButton = CONTROLDEF_DEFPUSHBUTTON(
                         NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
                         DID_OK,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     },
-            CancelButton = {
-                        WC_BUTTON,
+                        STD_BUTTON_WIDTH,
+                        STD_BUTTON_HEIGHT),
+            CancelButton = CONTROLDEF_PUSHBUTTON(
                         NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                         DID_CANCEL,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     },
-            DefaultButton = {
-                        WC_BUTTON,
+                        STD_BUTTON_WIDTH,
+                        STD_BUTTON_HEIGHT),
+            DefaultButton = CONTROLDEF_PUSHBUTTON(
                         NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                         DID_DEFAULT,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     },
-            HelpButton = {
-                        WC_BUTTON,
+                        STD_BUTTON_WIDTH,
+                        STD_BUTTON_HEIGHT),
+            HelpButton = CONTROLDEF_HELPPUSHBUTTON(
                         NULL,
-                        WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
                         DID_HELP,
-                        CTL_COMMON_FONT,
-                        0,
-                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
-                        COMMON_SPACING,
-                     };
+                        STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT);
 
 static const DLGHITEM dlgCDFS[] =
     {
         START_TABLE,
-            START_ROW(0),
+            START_ROW(ROW_VALIGN_CENTER),
                 CONTROL_DEF(&CachesizeTxt),
                 CONTROL_DEF(&CachesizeSlider),
                 CONTROL_DEF(&CachesizeTxt2),
-            START_ROW(0),
+            START_ROW(ROW_VALIGN_CENTER),
                 CONTROL_DEF(&AutocheckTxt),
                 CONTROL_DEF(&AutocheckEntry),
             START_ROW(0),
                 CONTROL_DEF(&LazywriteCheckbox),
             START_ROW(0),
-                CONTROL_DEF(&Spacer),
-                CONTROL_DEF(&LWSyncText),
-                CONTROL_DEF(&LWSyncSpin),
-                CONTROL_DEF(&SecondsTxt),
-            START_ROW(0),
-                CONTROL_DEF(&Spacer),
-                CONTROL_DEF(&LWMaxageText),
-                CONTROL_DEF(&LWMaxageSpin),
-                CONTROL_DEF(&SecondsTxt),
-            START_ROW(0),
-                CONTROL_DEF(&Spacer),
-                CONTROL_DEF(&LWBufferidleText),
-                CONTROL_DEF(&LWBufferidleSpin),
-                CONTROL_DEF(&SecondsTxt),
+                START_TABLE_ALIGN,
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&Spacer),
+                        CONTROL_DEF(&LWSyncText),
+                        CONTROL_DEF(&LWSyncSpin),
+                        CONTROL_DEF(&SecondsTxt),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&Spacer),
+                        CONTROL_DEF(&LWMaxageText),
+                        CONTROL_DEF(&LWMaxageSpin),
+                        CONTROL_DEF(&SecondsTxt),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&Spacer),
+                        CONTROL_DEF(&LWBufferidleText),
+                        CONTROL_DEF(&LWBufferidleSpin),
+                        CONTROL_DEF(&SecondsTxt),
+                END_TABLE,
             START_ROW(0),
                 CONTROL_DEF(&OKButton),
                 CONTROL_DEF(&CancelButton),
@@ -744,7 +652,6 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                                    pDlgData,
                                    pcmnQueryDefaultFont()))
     {
-        ULONG   idReturn;
         HWND    hwndCacheSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_CACHESLIDER);
         pwinhCenterWindow(hwndDlg);
         pcmnSetControlsFont(hwndDlg, 0, 5000);
@@ -753,8 +660,7 @@ BOOL EXPENTRY ShowJFSDlg(HWND hwndOwner,
                             (MPARAM)0, 4,
                             (MPARAM)-1, -1);
 
-        idReturn = WinProcessDlg(hwndDlg);
-        if (idReturn == DID_OK)
+        if (DID_OK == WinProcessDlg(hwndDlg))
         {
             brc = TRUE;
         }
@@ -1007,14 +913,16 @@ BOOL EXPENTRY ShowCDFSDlg(HWND hwndOwner,
         // successfully loaded:
         // set dialog title to driver name
         CHAR szTitle[500];
-        pdrv_sprintf(szTitle, "%s: %s",
+        pdrv_sprintf(szTitle,
+                     "%s: %s",
                      pDlgData->pcszKernelTitle,
                      pDlgData->pDriverSpec->pszFilename);
         WinSetWindowText(hwndDlg, szTitle);
         pwinhCenterWindow(hwndDlg);
         pcmnSetControlsFont(hwndDlg, 0, 5000);
+
         // go!!
-        if (WinProcessDlg(hwndDlg) == DID_OK)
+        if (DID_OK == WinProcessDlg(hwndDlg))
             brc = TRUE;
 
         WinDestroyWindow(hwndDlg);
@@ -1174,12 +1082,12 @@ ULONG EXPENTRY CheckDriverName(HMODULE hmodPlugin, // in: module handle of the w
                 strcat(pszErrorMsg, G_aImports[ul].pcszFunctionName);
                 strcat(pszErrorMsg, " failed.");
                 // report "error"
-                return (-1);
+                return -1;
             }
         }
 
         // report "yes, we can do this driver"
-        return (1);
+        return 1;
     }
 
     // report "no, we don't know this driver"

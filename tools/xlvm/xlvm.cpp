@@ -36,6 +36,7 @@
 #include "lvm_intr.h"
 
 #include "setup.h"
+#include "dlgids.h"                     // for buildlevel
 
 #include "helpers\cnrh.h"
 #include "helpers\comctl.h"
@@ -167,6 +168,8 @@ typedef struct _LVMDATA
 
 FILE        *G_LogFile = NULL;
 
+static const PCSZ G_pcszDefaultFont = "9.WarpSans";
+
 HWND        G_hwndStatusBar = NULLHANDLE;
 
 // context menus
@@ -196,6 +199,18 @@ const char  *APPTITLE            = "xlvm";
 #define XM_ENABLEITEMS      (WM_USER + 2)
 
 #define MB_FROM_SECTORS(ulSize) ((((ulSize) / 2) + 512) / 1024)
+
+static const CONTROLDEF
+        G_OKButton = CONTROLDEF_DEFPUSHBUTTON(
+                        "~OK",
+                        DID_OK,
+                        STD_BUTTON_WIDTH,
+                        STD_BUTTON_HEIGHT),
+        G_CancelButton = CONTROLDEF_PUSHBUTTON(
+                        "~Cancel",
+                        DID_CANCEL,
+                        STD_BUTTON_WIDTH,
+                        STD_BUTTON_HEIGHT);
 
 // LVM data
 
@@ -503,20 +518,29 @@ ULONG MessageBox(HWND hwndOwner,
             "Yes to ~all"
         };
 
-    return (dlghMessageBox(hwndOwner,
-                           G_hptrDrive,
-                           APPTITLE,
-                           pstr->psz,
-                           NULL,
-                           fl,
-                           "9.WarpSans",
-                           &MsgBoxStrings));
+    return dlghMessageBox(hwndOwner,
+                          G_hptrDrive,
+                          APPTITLE,
+                          pstr->psz,
+                          NULL,
+                          fl,
+                          G_pcszDefaultFont,
+                          &MsgBoxStrings);
+
     /* return (WinMessageBox(HWND_DESKTOP,
                           G_hwndMain,
                           pcszText,
                           APPTITLE,
                           0,
                           fl | MB_MOVEABLE)); */
+}
+
+VOID NotImplemented(HWND hwndOwner)
+{
+    XSTRING str;
+    xstrInitCopy(&str, "Not implemented yet.", 0);
+    MessageBox(hwndOwner, &str, MB_CANCEL);
+    xstrClear(&str);
 }
 
 /*
@@ -577,26 +601,22 @@ VOID RefreshViewMenu(HWND hwndMain)
  *
  ********************************************************************/
 
-#define IDDI_CREATE_PARTITION_CHBX              1101
-#define IDDI_CREATE_PARTITION_MAINGRP           1102
-#define IDDI_CREATE_PARTITIONSIZE_TXT           1103
-#define IDDI_CREATE_PARTITIONSIZE_SPIN          1104
-#define IDDI_CREATE_PARTITIONSIZE_MB            1105
-#define IDDI_CREATE_PARTITIONNAME_TXT           1106
-#define IDDI_CREATE_PARTITIONNAME_EF            1107
-#define IDDI_CREATE_PARTITIONTYPE_GRP           1108
-#define IDDI_CREATE_PARTITION_PRIMARY_CHBX      1109
-#define IDDI_CREATE_PARTITION_LOGICAL_CHBX      1110
-#define IDDI_CREATE_PARTITIONALLOC_GRP          1111
-#define IDDI_CREATE_PARTITION_ALLOCSTART_CHBX   1112
-#define IDDI_CREATE_PARTITION_ALLOCEND_CHBX     1113
-#define IDDI_CREATE_VOLUME_MAINGRP              1114
-#define IDDI_CREATE_VOLUME_CHBX                 1115
-#define IDDI_CREATE_VOLUMENAME_TXT              1116
-#define IDDI_CREATE_VOLUMENAME_EF               1117
+#define ID_CREATE_TYPEGROUP                 1100
+#define ID_CREATE_PRIMARY_RADIO             1101
+#define ID_CREATE_LOGICALBOOTABLE_RADIO     1102
+#define ID_CREATE_LVM_RADIO                 1103
+#define ID_CREATE_COMPAT_RADIO              1104
 
-/* #define IDDI_DELETE_VOLUME_CHBX                 1201
-#define IDDI_DELETE_PARTITION_CHBX              1202 */
+#define ID_CREATE_SIZETXT                   1111
+#define ID_CREATE_SIZESLIDER                1112
+#define ID_CREATE_SIZEENTRYFIELD            1113
+#define ID_CREATE_SIZEMB                    1114
+
+#define ID_CREATE_NAMETXT                   1121
+#define ID_CREATE_NAMEEF                    1122
+
+#define ID_CREATE_LETTERTXT                 1131
+#define ID_CREATE_LETTERDROP                1132
 
 /*
  *@@ fnwpConfirmCreateDlg:
@@ -616,6 +636,34 @@ MRESULT EXPENTRY fnwpConfirmCreateDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             WinSetWindowPtr(hwndDlg, QWL_USER, mp2);
         break;
 
+#if 1
+        case WM_CONTROL:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case ID_CREATE_SIZESLIDER:
+                {
+                    LONG lSliderIndex = winhQuerySliderArmPosition(WinWindowFromID(hwndDlg, ID_CREATE_SIZESLIDER),
+                                                                   SMA_INCREMENTVALUE);
+                            // 0 - 99
+                    LONG    lPercent = lSliderIndex + 1;
+
+                    CHAR    szMaxSize[100],
+                            szMaxTxt[100];
+
+                    LONG    lMBCurrent =   (double)MB_FROM_SECTORS(pData->pPartitionSource->Usable_Partition_Size)
+                                         * lPercent
+                                         / 100;
+
+                    sprintf(szMaxTxt,
+                            "%d",
+                            lMBCurrent);
+                    WinSetDlgItemText(hwndDlg, ID_CREATE_SIZEENTRYFIELD, szMaxTxt);
+                }
+                break;
+            }
+        break;
+
+#else
         case WM_CONTROL:
         {
             SHORT usid = SHORT1FROMMP(mp1),
@@ -711,6 +759,7 @@ MRESULT EXPENTRY fnwpConfirmCreateDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                              ));
         }
         break;
+#endif
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -720,7 +769,7 @@ MRESULT EXPENTRY fnwpConfirmCreateDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 }
 
 /*
- *@@ ConfirmCreate:
+ *@@ ConfirmCreateVolumeFromFreespace:
  *
  *      pData->pPartitionSource _must_ contain the
  *      current partition on which to work.
@@ -728,212 +777,240 @@ MRESULT EXPENTRY fnwpConfirmCreateDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
  *      Returns TRUE if the partition was created and
  *      the given LVMDATA must be refreshed.
  *
+ *      Dialog design:
+ *
+ *      1)  Select partition and volume type:
+ *
+ *          --  Create a volume with a primary partition. That is
+ *              bootable by definition.
+ *
+ *          --  Create a volume with a logical drive partition. In
+ *              that case, the volume can be LVM or compatibility.
+ *
+ *      2)  Select partition size and whether to allocate the
+ *          partition from the start or the end of the free space.
+ *
+ *      3)  Enter the partition and volume names. For simplicity,
+ *          we'll set the same for the two.
+ *
+ *      4)  Select the drive letter or none.
+ *
  *@@added V0.9.12 (2001-05-10) [umoeller]
  */
 
-VOID ConfirmCreate(PLVMDATA pData)
+VOID ConfirmCreateVolumeFromFreespace(PLVMDATA pData)
 {
-    CHAR    szPartitionName[100],
-            szVolumeName[100];
+    CHAR    szPartitionAndVolumeName[100];
 
-    CONTROLDEF
-            Partition = CONTROLDEF_AUTOCHECKBOX(
-                                            "Create ~partition",
-                                            IDDI_CREATE_PARTITION_CHBX,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            PartitionMainGroup = CONTROLDEF_GROUP(
-                                            "Partition data",
-                                            IDDI_CREATE_PARTITION_MAINGRP,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            PartitionSizeText = CONTROLDEF_TEXT(
-                                            "Partition si~ze (sectors):",
-                                            IDDI_CREATE_PARTITIONSIZE_TXT,
-                                            170,
-                                            SZL_AUTOSIZE),
-            PartitionSizeSpin = CONTROLDEF_SPINBUTTON(
-                                            IDDI_CREATE_PARTITIONSIZE_SPIN,
-                                            150,
-                                            SZL_AUTOSIZE),
-            PartitionSizeText2 = CONTROLDEF_TEXT(
-                                            "xxx MB",
-                                            IDDI_CREATE_PARTITIONSIZE_MB,
-                                            80,
-                                            SZL_AUTOSIZE),    // size
-            PartitionNameText = CONTROLDEF_TEXT(
-                                            "Partition ~name:",
-                                            IDDI_CREATE_PARTITIONNAME_TXT,
-                                            170,
-                                            SZL_AUTOSIZE),      // size
-            PartitionNameEF = CONTROLDEF_ENTRYFIELD(
-                                            szPartitionName,
-                                            IDDI_CREATE_PARTITIONNAME_EF,
-                                            150,
-                                            SZL_AUTOSIZE),
-
-            PartitionTypeGroup = CONTROLDEF_GROUP(
-                                            "Partition type",
-                                            IDDI_CREATE_PARTITIONTYPE_GRP,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            PartitionTypePrimary = CONTROLDEF_FIRST_AUTORADIO(
-                                            "P~rimary partition",
-                                            IDDI_CREATE_PARTITION_PRIMARY_CHBX,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            PartitionTypeLogical = CONTROLDEF_NEXT_AUTORADIO(
-                                            "~Logical drive",
-                                            IDDI_CREATE_PARTITION_LOGICAL_CHBX,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-
-            PartitionAlloc = CONTROLDEF_GROUP(
-                                            "~Allocation",
-                                            IDDI_CREATE_PARTITIONALLOC_GRP,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            PartitionAllocStart = CONTROLDEF_FIRST_AUTORADIO(
-                                            "Allocate from ~start of free space",
-                                            IDDI_CREATE_PARTITION_ALLOCSTART_CHBX,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            PartitionAllocEnd = CONTROLDEF_NEXT_AUTORADIO(
-                                            "Allocate from ~end of free space",
-                                            IDDI_CREATE_PARTITION_ALLOCEND_CHBX,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-
-            VolumeMainGroup = CONTROLDEF_GROUP(
-                                            "Volume data",
-                                            IDDI_CREATE_VOLUME_MAINGRP,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            Volume = CONTROLDEF_AUTOCHECKBOX(
-                                            "Create ~volume",
-                                            IDDI_CREATE_VOLUME_CHBX,
-                                            SZL_AUTOSIZE,
-                                            SZL_AUTOSIZE),
-            VolumeNameText = CONTROLDEF_TEXT(
-                                            "Volume na~me:",
-                                            IDDI_CREATE_VOLUMENAME_TXT,
-                                            170,
-                                            SZL_AUTOSIZE),      // size
-            VolumeNameEF = CONTROLDEF_ENTRYFIELD(
-                                            szVolumeName,
-                                            IDDI_CREATE_VOLUMENAME_EF,
-                                            150,
-                                            SZL_AUTOSIZE),
-
-            OkButton = CONTROLDEF_DEFPUSHBUTTON(
-                                            "~OK",
-                                            DID_OK,
-                                            100, 30),
-            CancelButton = CONTROLDEF_PUSHBUTTON(
-                                            "~Cancel",
-                                            DID_CANCEL,
-                                            100, 30);
-
-    DLGHITEM dlgTemplate[] =
-                    {
-                        START_TABLE,
-                            START_ROW(ROW_VALIGN_TOP),
-                                START_GROUP_TABLE(&PartitionMainGroup),
-                                    START_ROW(ROW_VALIGN_CENTER),
-                                        CONTROL_DEF(&Partition),
-                                    START_ROW(ROW_VALIGN_CENTER),
-                                        CONTROL_DEF(&PartitionSizeText),
-                                        CONTROL_DEF(&PartitionSizeSpin),
-                                        CONTROL_DEF(&PartitionSizeText2),
-                                    START_ROW(ROW_VALIGN_CENTER),
-                                        CONTROL_DEF(&PartitionNameText),
-                                        CONTROL_DEF(&PartitionNameEF),
-                                    START_ROW(0),
-                                        START_GROUP_TABLE(&PartitionTypeGroup),
-                                            START_ROW(0),
-                                                CONTROL_DEF(&PartitionTypePrimary),
-                                            START_ROW(0),
-                                                CONTROL_DEF(&PartitionTypeLogical),
-                                        END_TABLE,
-                                        START_GROUP_TABLE(&PartitionAlloc),
-                                            START_ROW(0),
-                                                CONTROL_DEF(&PartitionAllocStart),
-                                            START_ROW(0),
-                                                CONTROL_DEF(&PartitionAllocEnd),
-                                        END_TABLE,
-                                END_TABLE,
-                            START_ROW(0),
-                                START_GROUP_TABLE(&VolumeMainGroup),
-                                    START_ROW(0),
-                                        CONTROL_DEF(&Volume),
-                                    START_ROW(ROW_VALIGN_CENTER),
-                                        CONTROL_DEF(&VolumeNameText),
-                                        CONTROL_DEF(&VolumeNameEF),
-                                END_TABLE,
-                            START_ROW(0),
-                                CONTROL_DEF(&OkButton),
-                                CONTROL_DEF(&CancelButton),
-                        END_TABLE
-                    };
-
-    if (pData->pPartitionSource)
+    if (    // we must have a partition to start with
+            (pData->pPartitionSource)
+            // the partition must be freespace
+         && (pData->pPartitionSource->Partition_Type == 0)
+       )
     {
         HWND hwndDlg;
 
-        // if this is free space, enable "create partition"
-        if (pData->pPartitionSource->Partition_Type == 0)
-        {
-        }
+        #define CX_EXPL         250
 
-        strcpy(szPartitionName,
+        static CONTROLDEF
+            TypeGroup = CONTROLDEF_GROUP(
+                            "1) Select partition and volume type",
+                            ID_CREATE_TYPEGROUP,
+                            -100,
+                            SZL_AUTOSIZE),
+            Spacing = CONTROLDEF_TEXT(
+                            " ",
+                            10,
+                            10,
+                            SZL_AUTOSIZE),
+            PrimaryRadio = CONTROLDEF_FIRST_AUTORADIO(
+                            "Bootable primary partition",
+                            ID_CREATE_PRIMARY_RADIO,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            PrimaryExpl = CONTROLDEF_TEXT_WORDBREAK(
+                            "Some operating systems other than OS/2 may have to be installed on a primary partition. "
+                            "Note that there can be no more than four primary partitions on a disk.",
+                            -1,
+                            CX_EXPL),
+            LogicalBootableRadio = CONTROLDEF_NEXT_AUTORADIO(
+                            "Bootable volume on logical drive",
+                            ID_CREATE_LOGICALBOOTABLE_RADIO,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            LogicalBootableExpl = CONTROLDEF_TEXT_WORDBREAK(
+                            "This type must be used for OS/2 boot volumes.",
+                            -1,
+                            CX_EXPL),
+            LogicalCompatRadio = CONTROLDEF_NEXT_AUTORADIO(
+                            "Non-bootable compatibility volume on logical drive",
+                            ID_CREATE_COMPAT_RADIO,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            LogicalCompatExpl = CONTROLDEF_TEXT_WORDBREAK(
+                            "Use this type if you do not boot from this volume, but want the volume to "
+                            "be accessible from other operating systems. Note that you cannot use JFS "
+                            "on a compatibility volume.",
+                            -1,
+                            CX_EXPL),
+            LogicalLVMRadio = CONTROLDEF_NEXT_AUTORADIO(
+                            "Non-bootable LVM volume on logical drive",
+                            ID_CREATE_LVM_RADIO,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            LogicalLVMExpl = CONTROLDEF_TEXT_WORDBREAK(
+                            "Use this type if you want to use JFS on this volume. Note that other operating "
+                            "systems will not be able to see this volume.",
+                            -1,
+                            CX_EXPL),
+            SizeTxt = CONTROLDEF_TEXT(
+                            "2) Set the partition size:",
+                            ID_CREATE_SIZETXT,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE);
+        SLDCDATA SizeSliderCData =
+             {
+                 sizeof(SLDCDATA),
+                 100,       // scale 1 increments
+                 0,         // scale 1 spacing
+                 1,         // scale 2 increments
+                 0          // scale 2 spacing
+             };
+
+        static CONTROLDEF
+            SizeSlider = CONTROLDEF_SLIDER(
+                            ID_CREATE_SIZESLIDER,
+                            100,
+                            20,
+                            &SizeSliderCData),
+            SizeEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,       // set explicitly
+                            ID_CREATE_SIZEENTRYFIELD,
+                            40,
+                            SZL_AUTOSIZE),
+            SizeMB = CONTROLDEF_TEXT(
+                            "MB",
+                            ID_CREATE_SIZEMB,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            NameTxt = CONTROLDEF_TEXT(
+                            "3) Enter the volume name:",
+                            ID_CREATE_NAMETXT,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            NameEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,
+                            ID_CREATE_NAMEEF,
+                            SZL_REMAINDER,
+                            SZL_AUTOSIZE),
+            DriveLetterTxt = CONTROLDEF_TEXT(
+                            "4) Select a drive letter for this volume:",
+                            ID_CREATE_LETTERTXT,
+                            SZL_AUTOSIZE,
+                            SZL_AUTOSIZE),
+            DriveLetterDrop = CONTROLDEF_DROPDOWNLIST(
+                            ID_CREATE_LETTERDROP,
+                            30,
+                            100);
+        static DLGHITEM dlgCreateVolumeFromFreespace[] =
+            {
+                START_TABLE,
+                    START_ROW(0),
+                        START_TABLE_EXT(TABLE_ALIGN_COLUMNS | TABLE_INHERIT_SIZE),
+                            // 1) partition and volume type
+                            START_ROW(ROW_VALIGN_CENTER),
+                                START_GROUP_TABLE_EXT(&TypeGroup, TABLE_INHERIT_SIZE),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&PrimaryRadio),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&Spacing),
+                                        CONTROL_DEF(&PrimaryExpl),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&LogicalBootableRadio),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&Spacing),
+                                        CONTROL_DEF(&LogicalBootableExpl),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&LogicalCompatRadio),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&Spacing),
+                                        CONTROL_DEF(&LogicalCompatExpl),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&LogicalLVMRadio),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&Spacing),
+                                        CONTROL_DEF(&LogicalLVMExpl),
+                                END_TABLE,
+                            START_ROW(0),
+                                START_TABLE_EXT(TABLE_ALIGN_COLUMNS | TABLE_INHERIT_SIZE),
+                                    // 2) partition size
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&SizeTxt),
+                                        CONTROL_DEF(&SizeSlider),
+                                        CONTROL_DEF(&SizeEF),
+                                        CONTROL_DEF(&SizeMB),
+                                    // 3) partition and volume names
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&NameTxt),
+                                        CONTROL_DEF(&NameEF),
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&DriveLetterTxt),
+                                        CONTROL_DEF(&DriveLetterDrop),
+                                END_TABLE,
+                            START_ROW(0),
+                                START_TABLE,
+                                    START_ROW(ROW_VALIGN_CENTER),
+                                        CONTROL_DEF(&G_OKButton),
+                                        CONTROL_DEF(&G_CancelButton),
+                                END_TABLE,
+                        END_TABLE,
+                END_TABLE
+            };
+
+        strcpy(szPartitionAndVolumeName,
                pData->pPartitionSource->Partition_Name);
                         // this is preset by LVM
-        sprintf(szVolumeName,
-                "[ Volume %d ]",
-                lstIndexFromItem(&pData->llPartitions,
-                                 pData->pPartitionSource));
-
-               // pData->pPartitionSource->Volume_Name);
 
         if (!dlghCreateDlg(&hwndDlg,
                            pData->hwndClient,
-                           FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                           FCF_FIXED_DLG,
                            fnwpConfirmCreateDlg,
                            "Create partition/volume",
-                           dlgTemplate,
-                           ARRAYITEMCOUNT(dlgTemplate),
+                           dlgCreateVolumeFromFreespace,
+                           ARRAYITEMCOUNT(dlgCreateVolumeFromFreespace),
                            pData,
-                           "9.WarpSans"))
+                           G_pcszDefaultFont))
         {
-            if (pData->pPartitionSource->Partition_Type == 0)
-                // no partition yet: check "partition"
-                winhSetDlgItemChecked(hwndDlg, IDDI_CREATE_PARTITION_CHBX, TRUE);
-            else
+            CARDINAL32 Error;
+            ULONG ulOptions = Get_Valid_Options(pData->pPartitionSource->Partition_Handle,
+                                                &Error);
+            ULONG idSelect = ID_CREATE_COMPAT_RADIO;
+
+            // enable the items that are available
+            if (!(ulOptions & CREATE_PRIMARY_PARTITION))
+                WinEnableControl(hwndDlg, ID_CREATE_PRIMARY_RADIO, FALSE);
+            // enable the items that are available
+            if (!(ulOptions & CREATE_LOGICAL_DRIVE))
             {
-                // we have a partition already: check "volume"
-                winhSetDlgItemChecked(hwndDlg, IDDI_CREATE_VOLUME_CHBX, TRUE);
-                // and disable "Partition"
-                winhSetDlgItemChecked(hwndDlg, IDDI_CREATE_PARTITION_CHBX, FALSE);
-                WinEnableControl(hwndDlg, IDDI_CREATE_PARTITION_CHBX, FALSE);
+                WinEnableControl(hwndDlg, ID_CREATE_LOGICALBOOTABLE_RADIO, FALSE);
+                WinEnableControl(hwndDlg, ID_CREATE_LVM_RADIO, FALSE);
+                WinEnableControl(hwndDlg, ID_CREATE_COMPAT_RADIO, FALSE);
             }
 
-            winhSetDlgItemChecked(hwndDlg, IDDI_CREATE_PARTITION_LOGICAL_CHBX, TRUE);
-            winhSetDlgItemChecked(hwndDlg, IDDI_CREATE_PARTITION_ALLOCSTART_CHBX, TRUE);
+            WinCheckButton(hwndDlg, idSelect, TRUE);
+            WinSetFocus(HWND_DESKTOP, WinWindowFromID(hwndDlg, idSelect));
 
-            winhSetDlgItemSpinData(hwndDlg,
-                                   IDDI_CREATE_PARTITIONSIZE_SPIN,
-                                   10,     // min sectors =
-                                   pData->pPartitionSource->Usable_Partition_Size,
-                                   pData->pPartitionSource->Usable_Partition_Size);
+            HWND hwndSlider = WinWindowFromID(hwndDlg, ID_CREATE_SIZESLIDER);
+            winhSetSliderTicks(hwndSlider,
+                               MPFROM2SHORT(4, 5), 3,
+                               MPFROM2SHORT(9, 10), 6);
 
-            // enable the items
-            WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+            winhSetSliderArmPosition(hwndSlider, SMA_INCREMENTVALUE, 99);       // 100%
+
+            // WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
 
             winhCenterWindow(hwndDlg);
             WinProcessDlg(hwndDlg);
-
-
-
 
             WinDestroyWindow(hwndDlg);
         }
@@ -1213,6 +1290,74 @@ VOID ConfirmRemoveFromBootMgr(PLVMDATA pData)
 }
 
 /*
+ *@@ ShowProductInfo:
+ *
+ *@@added V0.9.21 (2002-08-12) [umoeller]
+ */
+
+VOID ShowProductInfo(HWND hwndClient)
+{
+    #define PI_WIDTH 100
+
+    static const CONTROLDEF
+        PIIcon = CONTROLDEF_ICON(
+                        G_hptrDrive,
+                        1),
+        PINull = CONTROLDEF_TEXT("", 999, 1, 1),
+        PITopText = CONTROLDEF_TEXT_WORDBREAK(
+                        "xlvm " XFOLDER_VERSION "\n"
+                        "Built " __DATE__,
+                        2,
+                        PI_WIDTH),
+        PISep = CONTROLDEF_SEPARATORLINE(
+                        3,
+                        PI_WIDTH,
+                        4),
+        PIBottomText = CONTROLDEF_TEXT_WORDBREAK(
+                        "(C) 2001-2002 Ulrich M”ller",
+                        5,
+                        PI_WIDTH);
+
+    static const DLGHITEM aDlg[] =
+        {
+            START_TABLE_ALIGN,
+                START_ROW(ROW_VALIGN_CENTER),
+                    START_TABLE,
+                        START_ROW(0),
+                            CONTROL_DEF(&PIIcon),
+                    END_TABLE,
+                    START_TABLE,
+                        START_ROW(0),
+                            CONTROL_DEF(&PITopText),
+                        START_ROW(0),
+                            CONTROL_DEF(&PISep),
+                        START_ROW(0),
+                            CONTROL_DEF(&PIBottomText),
+                    END_TABLE,
+                START_ROW(ROW_VALIGN_CENTER),
+                    CONTROL_DEF(&PINull),
+                    CONTROL_DEF(&G_OKButton),
+            END_TABLE,
+        };
+
+    HWND hwndDlg;
+    if (!dlghCreateDlg(&hwndDlg,
+                       hwndClient,
+                       FCF_FIXED_DLG,
+                       fnwpConfirmCreateDlg,
+                       "xlvm Product Info",
+                       aDlg,
+                       ARRAYITEMCOUNT(aDlg),
+                       NULL,
+                       G_pcszDefaultFont))
+    {
+        winhCenterWindow(hwndDlg);
+        WinProcessDlg(hwndDlg);
+        WinDestroyWindow(hwndDlg);
+    }
+}
+
+/*
  *@@ ClientCommand:
  *      command dispatcher for WM_COMMAND in fnwpClient.
  *
@@ -1266,25 +1411,29 @@ VOID ClientCommand(HWND hwndClient,
 
         // whitespace context menu
         case IDMI_INSTALLBMGR:
+            NotImplemented(hwndClient);
         break;
 
         case IDMI_REMOVEBMGR:
+            NotImplemented(hwndClient);
         break;
 
         case IDMI_SETMGRVALUES:
+            NotImplemented(hwndClient);
         break;
 
         /*
-         * IDMI_CREATE:
-         *      can come from
-         *
-         *      --  free space
-         *
-         *      --  partition (no volume assigned)
+         * IDMI_FREESPACE_CREATEVOLUME:
+         *      "create volume" item from freespace
+         *      context menu.
          */
 
-        case IDMI_CREATE:
-            ConfirmCreate(pData);
+        case IDMI_FREESPACE_CREATEVOLUME:
+            ConfirmCreateVolumeFromFreespace(pData);
+        break;
+
+        case IDMI_PARTITION_CREATEVOLUME:
+            NotImplemented(hwndClient);
         break;
 
         /*
@@ -1301,10 +1450,12 @@ VOID ClientCommand(HWND hwndClient,
         break;
 
         case IDMI_RENAME:
+            NotImplemented(hwndClient);
         break;
 
         // volume context menu
         case IDMI_EXPANDVOLUME:
+            NotImplemented(hwndClient);
         break;
 
         case IDMI_HIDEVOLUME:
@@ -1312,12 +1463,15 @@ VOID ClientCommand(HWND hwndClient,
         break;
 
         case IDMI_CHANGELETTER:
+            NotImplemented(hwndClient);
         break;
 
         case IDMI_RENAMEPARTITION_VOLUME:
+            NotImplemented(hwndClient);
         break;
 
         case IDMI_SETSTARTABLE:
+            NotImplemented(hwndClient);
         break;
 
         case IDMI_ADDTOBMGR:
@@ -1326,6 +1480,10 @@ VOID ClientCommand(HWND hwndClient,
 
         case IDMI_REMOVEFROMBMGR:
             ConfirmRemoveFromBootMgr(pData);
+        break;
+
+        case IDMI_HELP_PRODINFO:
+            ShowProductInfo(hwndClient);
         break;
     }
 }
@@ -1724,7 +1882,12 @@ VOID ShowContextMenu(PLVMDATA pData,
                                                 &Error);
 
             WinEnableMenuItem(hwndMenu,
-                              IDMI_CREATE,
+                              IDMI_PARTITION_CREATEVOLUME,
+                              (    ulOptions
+                                   & (CREATE_PRIMARY_PARTITION | CREATE_LOGICAL_DRIVE))
+                              != 0);
+            WinEnableMenuItem(hwndMenu,
+                              IDMI_FREESPACE_CREATEVOLUME,
                               (    ulOptions
                                    & (CREATE_PRIMARY_PARTITION | CREATE_LOGICAL_DRIVE))
                               != 0);
@@ -2322,6 +2485,8 @@ int main(int argc, char* argv[])
             fprintf(G_LogFile, "WinRegisterClass failed.\n");
         else
         {
+            ctlRegisterSeparatorLine(hab);
+
             // create frame and container
             HWND    hwndClient = NULLHANDLE,
                     hwndMain = winhCreateStdWindow(HWND_DESKTOP,
@@ -2351,7 +2516,7 @@ int main(int argc, char* argv[])
                 G_hwndStatusBar = winhCreateStatusBar(hwndMain,
                                                       hwndClient,
                                                       0,
-                                                      "9.WarpSans",
+                                                      G_pcszDefaultFont,
                                                       CLR_BLACK);
                 fprintf(G_LogFile, "G_hwndStatusBar is 0x%lX\n",
                             G_hwndStatusBar);
@@ -2363,7 +2528,7 @@ int main(int argc, char* argv[])
                 fprintf(G_LogFile, "G_fnwpFrameOrig is 0x%lX\n",
                             G_fnwpFrameOrig);
 
-                winhSetWindowFont(hwndClient, "9.WarpSans");
+                winhSetWindowFont(hwndClient, G_pcszDefaultFont);
 
                 RefreshViewMenu(hwndMain);
 

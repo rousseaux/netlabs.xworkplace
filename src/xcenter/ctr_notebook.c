@@ -129,19 +129,19 @@ static SLDCDATA
              {
                      sizeof(SLDCDATA),
             // usScale1Increments:
-                     60,          // scale 1 increments
+                     60,        // scale 1 increments
                      0,         // scale 1 spacing
-                     1,          // scale 2 increments
-                     0           // scale 2 spacing
+                     1,         // scale 2 increments
+                     0          // scale 2 spacing
              },
         PrioritySliderCData =
              {
                      sizeof(SLDCDATA),
             // usScale1Increments:
-                     32,          // scale 1 increments
+                     32,        // scale 1 increments
                      0,         // scale 1 spacing
-                     1,          // scale 2 increments
-                     0           // scale 2 spacing
+                     1,         // scale 2 increments
+                     0          // scale 2 spacing
              };
 
 #define VIEW_TABLE_WIDTH    200
@@ -546,22 +546,11 @@ static SLDCDATA
 
 static const CONTROLDEF
     BorderWidthGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_3DBORDER_GROUP, HALF_TABLE_WIDTH),
-    BorderWidthSlider =
-        {
-                WC_SLIDER,
-                NULL,
-                WS_VISIBLE | WS_TABSTOP | WS_GROUP
-                    | SLS_HORIZONTAL
-                    | SLS_PRIMARYSCALE1
-                    | SLS_BUTTONSRIGHT
-                    | SLS_SNAPTOINCREMENT,
-                ID_CRDI_VIEW2_3DBORDER_SLIDER,
-                CTL_COMMON_FONT,
-                0,
-                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                COMMON_SPACING,
-                &BorderWidthSliderCData
-        },
+    BorderWidthSlider = CONTROLDEF_SLIDER(
+                            ID_CRDI_VIEW2_3DBORDER_SLIDER,
+                            STYLE_SLIDERS_WIDTH,
+                            STYLE_SLIDERS_HEIGHT,
+                            &BorderWidthSliderCData),
     BorderWidthText = CONTROLDEF_TEXT_CENTER(
                             "M",           // to be replaced
                             ID_CRDI_VIEW2_3DBORDER_TEXT,
@@ -569,44 +558,22 @@ static const CONTROLDEF
                             -1),
     DrawAll3DBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_ALL3DBORDERS),
     BorderSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_BDRSPACE_GROUP, HALF_TABLE_WIDTH),
-    BorderSpacingSlider =
-        {
-                WC_SLIDER,
-                NULL,
-                WS_VISIBLE | WS_TABSTOP | WS_GROUP
-                    | SLS_HORIZONTAL
-                    | SLS_PRIMARYSCALE1
-                    | SLS_BUTTONSRIGHT
-                    | SLS_SNAPTOINCREMENT,
-                ID_CRDI_VIEW2_BDRSPACE_SLIDER,
-                CTL_COMMON_FONT,
-                0,
-                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                COMMON_SPACING,
-                &BorderSpacingSliderCData
-        },
+    BorderSpacingSlider = CONTROLDEF_SLIDER(
+                            ID_CRDI_VIEW2_BDRSPACE_SLIDER,
+                            STYLE_SLIDERS_WIDTH,
+                            STYLE_SLIDERS_HEIGHT,
+                            &BorderSpacingSliderCData),
     BorderSpacingText = CONTROLDEF_TEXT_CENTER(
                             "M",           // to be replaced
                             ID_CRDI_VIEW2_BDRSPACE_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
     WidgetSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_WGTSPACE_GROUP, HALF_TABLE_WIDTH),
-    WidgetSpacingSlider =
-        {
-                WC_SLIDER,
-                NULL,
-                WS_VISIBLE | WS_TABSTOP | WS_GROUP
-                    | SLS_HORIZONTAL
-                    | SLS_PRIMARYSCALE1
-                    | SLS_BUTTONSRIGHT
-                    | SLS_SNAPTOINCREMENT,
-                ID_CRDI_VIEW2_WGTSPACE_SLIDER,
-                CTL_COMMON_FONT,
-                0,
-                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                COMMON_SPACING,
-                &WidgetSpacingSliderCData
-        },
+    WidgetSpacingSlider = CONTROLDEF_SLIDER(
+                            ID_CRDI_VIEW2_WGTSPACE_SLIDER,
+                            STYLE_SLIDERS_WIDTH,
+                            STYLE_SLIDERS_HEIGHT,
+                            &WidgetSpacingSliderCData),
     WidgetSpacingText = CONTROLDEF_TEXT_CENTER(
                             "M",           // to be replaced
                             ID_CRDI_VIEW2_WGTSPACE_TEXT,
