@@ -522,6 +522,66 @@ BOOL ctrpSetup(XCenter *somSelf,
                             pszWidgetClass = strhSubstr(pszToken, pBracket);
                             // extract setup
                             pszWidgetSetup = strhExtract(pszToken, '(', ')', NULL);
+
+                            // V0.9.9 (2001-03-03) [pr]
+                            if (pszWidgetSetup)
+                            {
+                                XSTRING strSetup2;
+
+                                // characters that must be decoded
+                                /* CHAR    achEncode[] = "%,();=";
+
+                                ULONG   ul = 0; */
+
+                                // copy widget setup string to temporary
+                                // buffer for decoding...
+                                xstrInitCopy(&strSetup2,
+                                             pszWidgetSetup,
+                                             40);
+
+                                xstrDecode(&strSetup2);
+
+                                // now decode the widget setup string...
+                                /* for (ul = 0;
+                                     ul < strlen(achEncode);
+                                     ul++)
+                                {
+                                    CHAR        szFind[10] = "%xx",
+                                                szReplace[3] = "?";
+                                    XSTRING     strFind,
+                                                strReplace;
+                                    size_t  ShiftTable[256];
+                                    BOOL    fRepeat = FALSE;
+                                    ULONG ulOfs = 0;
+
+                                    // search string: ASCII encoding
+                                    sprintf(szFind, "%c%02X", '%', achEncode[ul]);
+                                    xstrInitSet(&strFind, szFind);
+
+                                    // replace string: original character
+                                    szReplace[0] = achEncode[ul];
+                                    xstrInitSet(&strReplace, szReplace);
+
+                                    // replace all occurences
+                                    while (xstrFindReplace(&strSetup2,
+                                                           &ulOfs,
+                                                           &strFind,
+                                                           &strReplace,
+                                                           ShiftTable,
+                                                           &fRepeat))
+                                            ;
+
+                                } // for ul; next encoding
+                                */
+
+                                free(pszWidgetSetup);
+                                // pszWidgetSetup = strdup(strSetup2.psz);
+                                // xstrClear(&strSetup2);
+                                // -> we can avoid that, Paul... xstr* use malloc()
+                                // internally
+                                //  V0.9.9 (2001-03-05) [umoeller]
+                                pszWidgetSetup = strSetup2.psz;
+                            } // end // V0.9.9 (2001-03-03) [pr]
                         }
                         else
                             // no setup string:
@@ -533,11 +593,16 @@ BOOL ctrpSetup(XCenter *somSelf,
                                               -1,            // to the right
                                               pszWidgetClass,
                                               pszWidgetSetup))
-                        {
                             brc = FALSE;
-                            break;
-                        }
-                    } while (pszToken = strtok(NULL, ","));
+
+                        // V0.9.9 (2001-03-03) [pr]: fix memory leak
+                        if (pszWidgetClass)
+                            free(pszWidgetClass);
+
+                        if (pszWidgetSetup)
+                            free(pszWidgetSetup);
+
+                    } while (brc && (pszToken = strtok(NULL, ",")));
 
                 } // if (pszToken)
 

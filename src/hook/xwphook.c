@@ -3015,6 +3015,7 @@ BOOL WMChar_FunctionKeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
  *@@changed V0.9.3 (2000-04-10) [umoeller]: moved debug code to hook
  *@@changed V0.9.3 (2000-04-10) [umoeller]: removed usch and usvk params
  *@@changed V0.9.3 (2000-04-19) [umoeller]: added XWP function keys support
+ *@@changed V0.9.9 (2001-03-05) [umoeller]: removed break for multiple hotkey assignments
  */
 
 BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
@@ -3080,7 +3081,10 @@ BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
                 // (both key-down and key-up)
                 brc = TRUE;
                 // get outta here
-                break; // for
+                // break; // for
+                        // removed this V0.9.9 (2001-03-05) [umoeller]
+                        // to allow for multiple hotkey assignments...
+                        // whoever wants to use this!
             }
 
             // not found: go for next key to check

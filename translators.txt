@@ -16,6 +16,11 @@ Jean-Marc SPAGGIARI <jmspaggi@caramail.com>
 "Philippe Guerreiro" <guerfyld@yahoo.fr>
     (new with V0.9.0)
 
+German (new V0.9.9 (2001-02-28) [umoeller])
+Klaus Fuchs <Klaus@os2.org>
+Christoph Vogt <ch.vogt@gmx.net>
+Christoph Wingender <christoph.wingender@gmx.net>
+
 Italian (updated V0.9.3 (2000-04-08) [umoeller])
 Obelix <nbrion@box.seven.it>
 Gabriele Gamba <ggamba@tiscalinet.it>
