@@ -274,6 +274,9 @@ CATEGORY "SCSI"
         DRIVER ( "BASEDEV=", "SYM8XX.ADD",
                  "Symbios/LSI Logic generic adapter",
                  0),
+        DRIVER ( "BASEDEV=", "DC2980.ADD",
+                 "DawiControl DC2980 adapter",
+                 0),
 
         DRIVER ( "BASEDEV=", "OS2SCSI.DMD",
                  "OS/2 SCSI manager",

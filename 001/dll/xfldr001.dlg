@@ -491,70 +491,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_OSD_SETTINGS_KERNEL1 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_OSD_SETTINGS_KERNEL1, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Scheduler", -1, 5, 24, 225, 58
-        LTEXT           "Current thread count:", -1, 10, 63, 150, 8
-        RTEXT           "wait...", ID_OSDI_CURRENTTHREADS, 155, 63, 50, 8,
-                        NOT WS_GROUP
-        LTEXT           "Maximum thread count:", -1, 10, 51, 140, 8, NOT
-                        WS_GROUP
-        SPINBUTTON      ID_OSDI_MAXTHREADS, 155, 51, 50, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
-                        SPBS_FASTSPIN
-        LTEXT           "Allow priority boost every", -1, 10, 39, 140, 8,
-                        NOT WS_GROUP
-        SPINBUTTON      ID_OSDI_MAXWAIT, 155, 39, 50, 12, SPBS_NUMERICONLY |
-                        SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN
-        LTEXT           "s", -1, 210, 39, 15, 8, NOT WS_GROUP
-        AUTOCHECKBOX    "Privilege foreground disk I/O",
-                        ID_OSDI_PRIORITYDISKIO, 10, 27, 205, 10
-        PUSHBUTTON      "~Apply", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
-                        WS_DISABLED
-        PUSHBUTTON      "~Optimize", DID_OPTIMIZE, 65, 6, 55, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 125, 6, 50, 12
-        PUSHBUTTON      "~Help", DID_HELP, 180, 6, 50, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_OSD_SETTINGS_KERNEL2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_OSD_SETTINGS_KERNEL2, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Swap file (SWAPPER.DAT)", -1, 5, 24, 225, 69
-        LTEXT           "Current size: ", -1, 10, 75, 145, 8
-        RTEXT           "Hold on...", ID_OSDI_CURRENTSWAPSIZE, 155, 75, 50,
-                        8, NOT WS_GROUP
-        LTEXT           "MB", -1, 210, 75, 15, 8, NOT WS_GROUP
-        LTEXT           "Main memory size:", -1, 10, 66, 145, 8, NOT
-                        WS_GROUP
-        RTEXT           "Hold on...", ID_OSDI_PHYSICALMEMORY, 155, 66, 50, 8,
-                        NOT WS_GROUP
-        LTEXT           "MB", -1, 210, 66, 15, 8, NOT WS_GROUP
-        LTEXT           "Minimum size:", -1, 10, 54, 75, 8, NOT WS_GROUP
-        SPINBUTTON      ID_OSDI_MINSWAPSIZE, 155, 54, 50, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
-                        SPBS_FASTSPIN
-        LTEXT           "MB", -1, 210, 54, 15, 8, NOT WS_GROUP
-        LTEXT           "Warn threshold:", -1, 10, 42, 75, 8, NOT WS_GROUP
-        SPINBUTTON      ID_OSDI_MINSWAPFREE, 155, 42, 50, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
-                        SPBS_FASTSPIN
-        LTEXT           "MB", -1, 210, 42, 15, 8, NOT WS_GROUP
-        LTEXT           "Path:", -1, 10, 30, 50, 8, NOT WS_GROUP
-        ENTRYFIELD      "", ID_OSDI_SWAPPATH, 67, 30, 136, 8, ES_MARGIN
-        PUSHBUTTON      "~Apply", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
-                        WS_DISABLED
-        PUSHBUTTON      "~Optimize", DID_OPTIMIZE, 65, 6, 55, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 125, 6, 50, 12
-        PUSHBUTTON      "~Help", DID_HELP, 180, 6, 50, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_OSD_SETTINGS_SYSPATHS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_OSD_SETTINGS_SYSPATHS, 0, 0, 275, 180, NOT FS_DLGBORDER |
@@ -2948,7 +2884,8 @@ BEGIN
         LTEXT           "Text", ID_CRDI_VIEW2_WGTSPACE_TEXT, 128, 68, 44, 8
         AUTOCHECKBOX    "Draw si~zing bars", ID_CRDI_VIEW2_SIZINGBARS, 10,
                         58, 148, 8
-        AUTOCHECKBOX    "Draw spa~cing lines", ID_CRDI_VIEW2_SPACINGLINES, 10, 50, 148, 8
+        AUTOCHECKBOX    "Draw spa~cing lines", ID_CRDI_VIEW2_SPACINGLINES,
+                        10, 50, 148, 8
         GROUPBOX        "Default widget styles", -1, 6, 20, 172, 26
         AUTOCHECKBOX    "~Flat buttons", ID_CRDI_VIEW2_FLATBUTTONS, 10, 30,
                         154, 8
@@ -2957,5 +2894,85 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_OSD_SETTINGS_KERNEL1 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_OSD_SETTINGS_KERNEL1, 0, 0, 275, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Scheduler", -1, 5, 24, 225, 58
+        LTEXT           "Current thread count:", -1, 10, 63, 150, 8
+        RTEXT           "wait...", ID_OSDI_CURRENTTHREADS, 155, 63, 50, 8,
+                        NOT WS_GROUP
+        LTEXT           "Maximum thread count:", -1, 10, 51, 140, 8, NOT
+                        WS_GROUP
+        SPINBUTTON      ID_OSDI_MAXTHREADS, 155, 51, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
+        LTEXT           "Allow priority boost every", -1, 10, 39, 140, 8,
+                        NOT WS_GROUP
+        SPINBUTTON      ID_OSDI_MAXWAIT, 155, 39, 50, 12, SPBS_NUMERICONLY |
+                        SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN
+        LTEXT           "s", -1, 210, 39, 15, 8, NOT WS_GROUP
+        AUTOCHECKBOX    "Privilege foreground disk I/O",
+                        ID_OSDI_PRIORITYDISKIO, 10, 27, 205, 10
+        PUSHBUTTON      "~Apply", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
+                        WS_DISABLED
+        PUSHBUTTON      "~Optimize", DID_OPTIMIZE, 65, 6, 55, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 125, 6, 50, 12
+        PUSHBUTTON      "~Help", DID_HELP, 180, 6, 50, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_OSD_SETTINGS_KERNEL2 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_OSD_SETTINGS_KERNEL2, 0, 0, 275, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Swap file (SWAPPER.DAT)", -1, 6, 74, 225, 66
+        LTEXT           "Current size: ", -1, 12, 124, 145, 8
+        RTEXT           "Hold on...", ID_OSDI_CURRENTSWAPSIZE, 154, 124, 50,
+                        8, NOT WS_GROUP
+        LTEXT           "MB", -1, 210, 124, 15, 8, NOT WS_GROUP
+        LTEXT           "Main memory size:", -1, 12, 116, 145, 8, NOT
+                        WS_GROUP
+        RTEXT           "Hold on...", ID_OSDI_PHYSICALMEMORY, 154, 116, 50,
+                        8, NOT WS_GROUP
+        LTEXT           "MB", -1, 210, 116, 15, 8, NOT WS_GROUP
+        LTEXT           "~Minimum size:", -1, 12, 104, 75, 8, DT_MNEMONIC |
+                        NOT WS_GROUP
+        SPINBUTTON      ID_OSDI_MINSWAPSIZE, 154, 104, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
+        LTEXT           "MB", -1, 210, 104, 15, 8, NOT WS_GROUP
+        LTEXT           "~Warn threshold:", -1, 12, 92, 75, 8, DT_MNEMONIC |
+                        NOT WS_GROUP
+        SPINBUTTON      ID_OSDI_MINSWAPFREE, 154, 92, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
+        LTEXT           "MB", -1, 210, 92, 15, 8, NOT WS_GROUP
+        LTEXT           "~Path:", -1, 12, 80, 50, 8, DT_MNEMONIC | NOT
+                        WS_GROUP
+        ENTRYFIELD      "", ID_OSDI_SWAPPATH, 66, 80, 136, 8, ES_MARGIN
+        GROUPBOX        "Advanced", ID_OSDI_HIMEM_GROUP, 6, 22, 224, 48
+        LTEXT           "~Virtual address limit:",
+                        ID_OSDI_HIMEM_VALIMIT_TXT1, 12, 48, 90, 14,
+                        DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_OSDI_HIMEM_VALIMIT_SLIDER, 118, 48, 64, 14,
+                        SLS_SNAPTOINCREMENT | WS_GROUP
+                        CTLDATA 12, 0, 6, 0, 1, 0
+        RTEXT           "tbr", ID_OSDI_HIMEM_VALIMIT_TXT2, 188, 48, 36, 14,
+                        DT_VCENTER | DT_MNEMONIC
+        AUTOCHECKBOX    "Disable D~LL basing", ID_OSDI_HIMEM_DLLBASINGOFF,
+                        10, 38, 212, 8
+        AUTOCHECKBOX    "High memory for ~Java", ID_OSDI_HIMEM_JAVAHIMEM, 10,
+                        28, 212, 8
+        PUSHBUTTON      "~Apply", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
+                        WS_DISABLED
+        PUSHBUTTON      "~Optimize", DID_OPTIMIZE, 65, 6, 55, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 125, 6, 50, 12
+        PUSHBUTTON      "~Help", DID_HELP, 180, 6, 50, 12, BS_HELP
     END
 END
