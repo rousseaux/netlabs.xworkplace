@@ -326,12 +326,10 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                         szRestOfLine);
 
                 // get BLDLEVEL
-                if ((arc = doshExecOpen(precc->szDriverNameFull,
-                                        &pExec))
-                            == NO_ERROR)
+                if (!(arc = doshExecOpen(precc->szDriverNameFull,
+                                         &pExec)))
                 {
-                    if ((arc = doshExecQueryBldLevel(pExec))
-                                    == NO_ERROR)
+                    if (!(arc = doshExecQueryBldLevel(pExec)))
                     {
                         if (pExec->pszVersion)
                         {

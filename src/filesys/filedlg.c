@@ -3550,7 +3550,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                             // pllToExpand receives records to
                             // add first children to
 
-                    DosBeep(1000, 100);
+                    // DosBeep(1000, 100);
 
                     WinData.fFileDlgReady = TRUE;
 

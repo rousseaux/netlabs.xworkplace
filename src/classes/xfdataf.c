@@ -112,6 +112,8 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
+#include <wpicon.h>
+#include <wpptr.h>
 
 /* ******************************************************************
  *
@@ -965,19 +967,37 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
     {
         if (!prec->hptrIcon)
         {
+            ULONG flNewStyle = 0;
             // first call, and icon wasn't set in wpRestoreState:
             // be smart now...
 
-            // 1) try if we find an association
-            HPOINTER hptr2;
-            if (!(hptr2 = _wpQueryAssociatedFileIcon(somSelf)))
-                // use class icon then
+            // 1) if we're an icon or pointer file, load the
+            // icon
+            HPOINTER hptr2 = NULLHANDLE;
+
+            if (    (_somIsA(somSelf, _WPIcon))
+                 || (_somIsA(somSelf, _WPPointer))
+               )
+            {
+                CHAR szFilename[CCHMAXPATH];
+                _wpQueryFilename(somSelf, szFilename, TRUE);
+                if (!icoLoadICOFile(szFilename, &hptr2))
+                    flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+
+                    // @@todo this disappears on refresh
+            }
+            // 2) try if we find an association
+            else
+                hptr2 = _wpQueryAssociatedFileIcon(somSelf);
+
+            if (!hptr2)
+                // 3) use class icon then
                 hptr2 = _wpclsQueryIcon(_somGetClass(somSelf));
 
             _wpSetIcon(somSelf, hptr2);
             _wpModifyStyle(somSelf,
                            OBJSTYLE_NOTDEFAULTICON,
-                           0);
+                           flNewStyle);
         }
         else
             // we have an icon already: use that

@@ -106,11 +106,13 @@
      *@@added V0.9.16 (2001-10-28) [umoeller]
      */
 
+    #pragma pack(2)
     typedef struct _FDATETIME
     {
         FDATE       Date;
         FTIME       Time;
     } FDATETIME, *PFDATETIME;
+    #pragma pack()
 
     /*
      *@@ MAKEAWAKEFS:
@@ -189,7 +191,9 @@
      *
      ********************************************************************/
 
-    PCSZ fsysGetResourceTypeName(ULONG ulResourceType);
+    PCSZ fsysGetWinResourceTypeName(ULONG ulTypeThis);
+
+    PCSZ fsysGetOS2ResourceTypeName(ULONG ulResourceType);
 
 #ifndef __NOMODULEPAGES__
         VOID XWPENTRY fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,

@@ -4930,9 +4930,10 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
  *@@changed V0.9.13 (2001-06-14) [umoeller]: reduced stack consumption
  *@@changed V0.9.16 (2001-12-08) [umoeller]: added pcszPrefix/Suffix
+ *@@changed V0.9.16 (2001-12-18) [umoeller]: fixed bad owner window
  */
 
-ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
+ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
                         CHAR cDrive,        // in: drive letter
                         PCSZ pcszTitle,     // in: msgbox title
                         PCSZ pcszPrefix,    // in: string before error or NULL
@@ -5002,7 +5003,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
         xstrcat(&strError, pcszSuffix, 0);
     }
 
-    mbrc = cmnMessageBox(HWND_DESKTOP,
+    mbrc = cmnMessageBox(hwndOwner,     // fixed V0.9.16 (2001-12-18) [umoeller]
                          pcszTitle,
                          strError.psz,
                          ulFlags);

@@ -1530,7 +1530,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                               szFilename);
             WinSetWindowText(hwndTextView, "\n");
 
-            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            if (!(doshExecOpen(szFilename, &pExec)))
             {
                 PSZ     pszExeFormat = NULL,
                         pszOS = NULL;
@@ -1734,7 +1734,7 @@ void _Optlink fntInsertModules(PTHREADINFO pti)
         {
             PEXECUTABLE     pExec = NULL;
 
-            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            if (!(doshExecOpen(szFilename, &pExec)))
             {
                 if (    (!doshExecQueryImportedModules(pExec,
                                                        &paModules,
@@ -1951,7 +1951,7 @@ void _Optlink fntInsertFunctions(PTHREADINFO pti)
         {
             PEXECUTABLE     pExec = NULL;
 
-            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            if (!(doshExecOpen(szFilename, &pExec)))
             {
                 if (    (!doshExecQueryExportedFunctions(pExec, &paFunctions, &cFunctions))
                      && (paFunctions)
@@ -2161,14 +2161,42 @@ const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
 }
 
 /*
- *@@fsysGetResourceTypeName:
- *      returns a human-readable name from a resource type.
+ *@@ fsysGetWinResourceTypeName:
+ *      returns a human-readable name for a Win
+ *      resource type.
+ *
+ *@@added V0.9.16 (2001-12-18) [umoeller]
+ */
+
+PCSZ fsysGetWinResourceTypeName(ULONG ulTypeThis)
+{
+    switch (ulTypeThis)
+    {
+        case WINRT_ACCELERATOR: return "WINRT_ACCELERATOR";
+        case WINRT_BITMAP: return "WINRT_BITMAP";
+        case WINRT_CURSOR: return "WINRT_CURSOR";
+        case WINRT_DIALOG: return "WINRT_DIALOG";
+        case WINRT_FONT: return "WINRT_FONT";
+        case WINRT_FONTDIR: return "WINRT_FONTDIR";
+        case WINRT_ICON: return "WINRT_ICON";
+        case WINRT_MENU: return "WINRT_MENU";
+        case WINRT_RCDATA: return "WINRT_RCDATA";
+        case WINRT_STRING: return "WINRT_STRING";
+    }
+
+    return ("unknown");
+}
+
+/*
+ fsysGetOS2ResourceTypeName:
+ *      returns a human-readable name for an OS/2
+ *      resource type.
  *
  *@@added V0.9.7 (2000-12-20) [lafaix]
  *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
  */
 
-PCSZ fsysGetResourceTypeName(ULONG ulResourceType)
+PCSZ fsysGetOS2ResourceTypeName(ULONG ulResourceType)
 {
     switch (ulResourceType)
     {
@@ -2256,7 +2284,7 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
         {
             PEXECUTABLE     pExec = NULL;
 
-            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            if (!(doshExecOpen(szFilename, &pExec)))
             {
                 ULONG         cResources = 0;
                 PFSYSRESOURCE paResources = NULL;
@@ -2301,11 +2329,22 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                             if (preccThis)
                             {
                                 preccThis->ulResourceID = paResources[ul].ulID;
-                                preccThis->pcszResourceType
-                                       = fsysGetResourceTypeName(paResources[ul].ulType);
                                 preccThis->ulResourceSize = paResources[ul].ulSize;
-                                preccThis->pcszResourceFlag
-                                       = fsysGetResourceFlagName(paResources[ul].ulFlag);
+
+                                // fixed bad resource naming for Windows resources
+                                if (pExec->ulOS == EXEOS_WIN16)
+                                {
+                                    preccThis->pcszResourceType
+                                           = fsysGetWinResourceTypeName(paResources[ul].ulType);
+                                }
+                                else
+                                {
+                                    // V0.9.16 (2001-12-18) [umoeller]
+                                    preccThis->pcszResourceType
+                                           = fsysGetOS2ResourceTypeName(paResources[ul].ulType);
+                                    preccThis->pcszResourceFlag
+                                           = fsysGetResourceFlagName(paResources[ul].ulFlag);
+                                }
 
                                 preccThis = (PRESOURCERECORD)preccThis->recc.preccNextRecord;
                                 cRecords++;

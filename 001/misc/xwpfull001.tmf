@@ -167,6 +167,12 @@ Enabling or disabling this replacement requires a WPS restart. However, once the
 Please see the &xwp; User Guide for an introduction of this feature.
 This was added with &xwp; 0.9.9.
 
+;
+; the following was added with V0.9.16
+;
+<--FEATURES_6049-->: If "Replace file dialog" is enabled, &xwp; will use its own replacement for the standard OS/2 file dialog.
+Note that this only affects file dialogs in the WPS processes. At this point, &xwp; cannot replace all the file dialogs in your system yet.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
@@ -194,7 +200,8 @@ This replacements offers enhancements to the Desktop, such as extended startup (
 <--XWPCLS_1255-->: "XFldDataFile" is the &xwp; replacement for the WPDataFile class, which is used for all physical files on your system.
 This replacement offers enhancements to the WPS association mechanisms, replacement default icons, and the "Copy filename to clipboard" feature.
 
-<--XWPCLS_1256-->: "XFldProgramFile" is the &xwp; replacement for the WPProgramFile class, which is used for all physical executable files (.EXE, .COM, etc.).
+; V0.9.16: changed the following one
+<--XWPCLS_1256-->: "XWPProgramFile" is the &xwp; replacement for the WPProgramFile class, which is used for all physical executable files (.EXE, .COM, etc.).
 This class adds a new "Module" page to the executable's settings notebook and offers default icon replacements.
 
 <--XWPCLS_1257-->: "XWPSound" is the &xwp; replacement for the WPSound class, which implements the "Sound" object found in your "System setup" folder.

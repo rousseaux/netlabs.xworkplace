@@ -42,7 +42,7 @@ if yn = 'Y' then do
   call deletefiles '001\inf.001\xfldr001.ipf'
   call deletefiles '001\inf.001\*.bmp'
   call deletefiles '001\xwphelp\xfldr001.ipf'
-  call deletefiles '001\xwphelp\000img\*.bmp'
+  call deletefiles '001\xwphelp\*.bmp'
   call deletefiles '049_de\inf.049\xfldr049.ipf'
   call deletefiles '049_de\inf.049\*.bmp'
 end

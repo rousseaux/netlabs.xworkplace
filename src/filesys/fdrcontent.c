@@ -2046,10 +2046,12 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
     if (pAwake = fdrFindFSFromName(pFolder,
                                    pszRealName))
     {
-        FDATE   fdateLastWrite,
+        /* FDATE   fdateLastWrite,
                 fdateLastAccess;
         FTIME   ftimeLastWrite,
                 ftimeLastAccess;
+           */
+        FILEFINDBUF4        ffb4;
 
         _wpLockObject(pAwake);
 
@@ -2080,13 +2082,24 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                                 & ~DIRTYBIT)
                                 | FOUNDBIT);
 
-        _wpQueryLastWrite(pAwake, &fdateLastWrite, &ftimeLastWrite);
+        /* _wpQueryLastWrite(pAwake, &fdateLastWrite, &ftimeLastWrite);
         _wpQueryLastAccess(pAwake, &fdateLastAccess, &ftimeLastAccess);
         if (    (memcmp(&fdateLastWrite, &pfb3->fdateLastWrite, sizeof(FDATE)))
              || (memcmp(&ftimeLastWrite, &pfb3->ftimeLastWrite, sizeof(FTIME)))
              || (memcmp(&fdateLastAccess, &pfb3->fdateLastAccess, sizeof(FDATE)))
              || (memcmp(&ftimeLastAccess, &pfb3->ftimeLastAccess, sizeof(FTIME)))
            )
+        */
+
+        // this is way faster, I believe V0.9.16 (2001-12-18) [umoeller]
+        _wpQueryDateInfo(pAwake, &ffb4);
+
+        // in both ffb3 and ffb4, fdateCreation is the first date/time field;
+        // FDATE and FTIME are a USHORT each, and the decl in the toolkit
+        // has #pragma pack(2), so this should work
+        if (memcmp(&pfb3->fdateCreation,
+                   &ffb4.fdateCreation,
+                   3 * (sizeof(FDATE) + sizeof(FTIME))))
         {
             // object changed: go refresh it
             if (_somIsA(pAwake, _WPFolder))
@@ -2100,8 +2113,7 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
     }
     else
     {
-        // no: wake it up then... this is terribly
-        // complicated as well...
+        // no: wake it up then... this is terribly complicated:
         POBJDATA        pObjData = NULL;
 
         CHAR            szLongname[CCHMAXPATH];
@@ -2167,7 +2179,9 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         if (!pcszClassName)
         {
             // still NULL: this means we have no .CLASSINFO,
-            // or the .CLASSINFO specified "WPDataFile"...
+            // or the .CLASSINFO specified "WPDataFile"
+            // (folders were ruled out before, so we do have
+            // a data file now)...
             // for WPDataFile, we must run through the
             // wpclsQueryInstanceType/Filter methods to
             // find if any WPDataFile subclass wants this
@@ -2219,9 +2233,11 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
 
             // alright, now go make the thing AWAKE
             awfs.pszRealName        = pszRealName;
+
             memcpy(&awfs.Creation, &pfb3->fdateCreation, sizeof(FDATETIME));
             memcpy(&awfs.LastAccess, &pfb3->fdateLastAccess, sizeof(FDATETIME));
             memcpy(&awfs.LastWrite, &pfb3->fdateLastWrite, sizeof(FDATETIME));
+
             awfs.attrFile           = pfb3->attrFile;
             awfs.cbFile             = pfb3->cbFile;
             awfs.cbList             = pFEA2List2->cbList;
@@ -2932,9 +2948,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
                 if (!fFoldersOnly)
                 {
                     // if we have something other than folders,
-                    // we need to populate with abstracts too;
-                    // this hasn't been rewritten yet, so use
-                    // wpclsFindFirst etc.
+                    // we need to populate with abstracts too
                     if (fSuccess = PopulateWithAbstracts(somSelf,
                                                          hwndReserved,
                                                          pMyRecord,

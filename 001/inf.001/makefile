@@ -65,7 +65,7 @@ COPYTO = $(XWPRUNNING)
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
 # defining file extensions that NMAKE will recognize.
-.SUFFIXES: .html .ipf .hlp .inf
+.SUFFIXES: .html .ipf .hlp .inf .gif
 
 # main target
 all: $(COPYTO)\xfldr$(LANGUAGE).inf
@@ -78,6 +78,52 @@ all: $(COPYTO)\xfldr$(LANGUAGE).inf
 # So whenever NMAKE encounters a .toext file, it
 # executes what we specify here.
 #
+.gif.bmp:
+    -gbmsize $< $@,1.1
+
+# The BMPS macro contains all the .BMP files which need to be
+# created from the files in this directory.
+# If you add a new .GIF, add the corresponding .BMP file here.
+BMPS = \
+    065icons.bmp \
+    config_8sounds.bmp \
+    copyfilename.bmp \
+    ctr_drag.bmp \
+    ctr_mem.bmp \
+    ctr_obj.bmp \
+    ctr_winlist.bmp \
+    ctr_x.bmp \
+    favorite.bmp \
+    filetypes.bmp \
+    file_2trashcan.bmp \
+    intro_4statusbars.bmp \
+    intro_4treeviews1.bmp \
+    intro_4treeviews2.bmp \
+    menu1.bmp \
+    menu2.bmp \
+    netscdde.bmp \
+    notrunc.bmp \
+    pagemage.bmp \
+    shutdown.bmp \
+    shutdown2.bmp \
+    snap1.bmp \
+    snap2.bmp \
+    sort.bmp \
+    titleedit.bmp \
+    trashcan.bmp \
+    trunc.bmp \
+    wpsystem3.bmp \
+    wpsystem4.bmp \
+    xclslist.bmp \
+    xfolder.bmp \
+    xfsys.bmp \
+    xfwps.bmp \
+    xwpscreen.bmp \
+    xwsetup.bmp
+
+# main target
+all: $(BMPS) $(COPYTO)\xfldr$(LANGUAGE).inf
+    @echo ----- Leaving $(MAKEDIR)
 
 #
 # Now define inference rules for the different file types.
@@ -88,11 +134,11 @@ IPFFILE = $(OUTPUTDIR)\inf$(LANGUAGE).ipf
 $(COPYTO)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
         cmd.exe /c copy $(OUTPUTDIR)\$(@B).inf $(COPYTO)
 
-$(IPFFILE): *.html *.gif makefile ..\$(ENTITYDEFS)
+$(IPFFILE): *.html makefile ..\$(ENTITYDEFS)
         $(HTML2IPF) xfldr$(LANGUAGE).html
         $(COPY) xfldr$(LANGUAGE).ipf $(IPFFILE)
 
-$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: $(IPFFILE)
+$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: $(IPFFILE) *.bmp
         ipfc $(IPFFILE) $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
 
 

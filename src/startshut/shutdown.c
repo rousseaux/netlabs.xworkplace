@@ -2234,12 +2234,10 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
                           "Error");
 
-        if ((arc = doshExecOpen(szAPMSysFile,
-                                &pExec))
-                    == NO_ERROR)
+        if (!(arc = doshExecOpen(szAPMSysFile,
+                                &pExec)))
         {
-            if ((arc = doshExecQueryBldLevel(pExec))
-                            == NO_ERROR)
+            if (!(arc = doshExecQueryBldLevel(pExec)))
             {
                 if (pExec->pszVersion)
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,

@@ -17,6 +17,9 @@
  *      i.e. the methods themselves.
  *      The implementation for this class is in filesys\filesys.c.
  *
+ *      With V0.9.16, the class name has been changed from
+ *      XFldProgramFile to XWPProgramFile.
+ *
  *@@somclass XWPProgramFile xpgf_
  *@@somclass M_XWPProgramFile xpgfM_
  */
@@ -394,6 +397,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
                     APIRET arc = NO_ERROR;
 
                     if (pvExec)
+                        // caller gave us PEXECUTABLE:
                         pExec = (PEXECUTABLE)pvExec;
                     else
                     {
@@ -457,6 +461,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
                                     break;
 
                                     case EXEFORMAT_NE:
+
 #define NENOTP          0x8000          // Not a process
 #define NENOTMPSAFE     0x4000          // Process is not multi-processor safe
 #define NEIERR          0x2000          // Errors in image
@@ -530,7 +535,6 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
                             case PROG_31_STD              :
 
                             case PROG_WIN32:       // added V0.9.16 (2001-12-08) [umoeller]
-                            {
                                 // for all the Windows app types, we check
                                 // for whether the extension of the file is
                                 // DLL or 386; if so, we change the type to
@@ -541,7 +545,6 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
                                    )
                                     // DLL found:
                                     _ulAppType = PROG_DLL;
-                            }
                             break;
 
                             // the other values are OK, leave them as is
@@ -1018,13 +1021,6 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
 
                     doshExecClose(&pExec);
                 } // end if (!(arc = doshExecOpen(szProgramFile, &pExec)))
-#ifdef __DEBUG__
-                else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "doshExecOpen returned %d for \"%s\"",
-                           arc,
-                           szProgramFile);
-#endif
 
                 if (ulStdIcon)
                     hptr = cmnGetStandardIcon(ulStdIcon);
