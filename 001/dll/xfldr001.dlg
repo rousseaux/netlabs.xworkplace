@@ -353,34 +353,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_SDD_CONFIRMWPS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Restart WPS", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, , FCF_SYSMENU |
-            FCF_TITLEBAR
-    BEGIN
-        ICON            ID_SDICON, ID_SDDI_ICON, 10, 53, 20, 16, WS_GROUP
-        LTEXT           "Are you sure you wish to restart the Workplace Shel"
-                        "l?", ID_XFDI_GENERICDLGICON, 35, 47, 105, 20,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~Yes", DID_OK, 10, 33, 50, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~No", DID_CANCEL, 65, 33, 50, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Help", ID_SDD_BOOTMGR, 120, 33, 50, 12, BS_HELP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTOCHECKBOX    "~Close all sessions", ID_SDDI_WPS_CLOSEWINDOWS, 10,
-                        21, 160, 10
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTOCHECKBOX    "~Process XWorkplace Startup folder",
-                        ID_SDDI_WPS_STARTUPFOLDER, 10, 12, 155, 10
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTOCHECKBOX    "~Show this message next time", ID_SDDI_MESSAGEAGAIN,
-                        10, 3, 160, 10
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
 DLGTEMPLATE ID_XFD_WELCOME LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Welcome to XWorkplace!", ID_XFD_WELCOME, 12, 12, 293, 156, ,
@@ -2780,3 +2752,33 @@ BEGIN
         PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
     END
 END
+
+DLGTEMPLATE ID_SDD_CONFIRMWPS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Restart WPS", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, , FCF_SYSMENU |
+            FCF_TITLEBAR
+    BEGIN
+        ICON            ID_SDICON, ID_SDDI_ICON, 10, 53, 20, 16, WS_GROUP
+        LTEXT           "Are you sure you wish to restart the Workplace Shel"
+                        "l?", ID_SDDI_CONFIRM_TEXT, 35, 47, 105, 20,
+                        DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        DEFPUSHBUTTON   "~Yes", DID_OK, 10, 33, 50, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        PUSHBUTTON      "~No", DID_CANCEL, 65, 33, 50, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        PUSHBUTTON      "~Help", -1, 120, 33, 50, 12, BS_HELP
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        AUTOCHECKBOX    "~Close all sessions", ID_SDDI_WPS_CLOSEWINDOWS, 10,
+                        21, 160, 10
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        AUTOCHECKBOX    "~Process XWorkplace Startup folder",
+                        ID_SDDI_WPS_STARTUPFOLDER, 10, 12, 155, 10
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        AUTOCHECKBOX    "~Show this message next time", ID_SDDI_MESSAGEAGAIN,
+                        10, 3, 160, 10
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+    END
+END
+
+

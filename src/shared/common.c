@@ -1217,6 +1217,12 @@ VOID LoadNLSData(HAB habDesktop,
             &(pNLSStrings->pszXSDSaveInisOld));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_SAVEINIS_NONE,
             &(pNLSStrings->pszXSDSaveInisNone));
+
+    // logoff V0.9.5 (2000-09-28) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_LOGOFF,
+            &(pNLSStrings->pszXSDLogoff));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_CONFIRMLOGOFFMSG,
+            &(pNLSStrings->pszXSDConfirmLogoffMsg));
 }
 
 /*

@@ -112,6 +112,8 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
+#include "security\xwpsecty.h"          // XWorkplace Security
+
 #include "startshut\archives.h"         // WPSArcO declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
@@ -1959,6 +1961,7 @@ VOID krnShowStartupDlgs(VOID)
  *@@changed V0.9.0 [umoeller]: added WPS archiving
  *@@changed V0.9.1 (99-12-19) [umoeller]: added NumLock at startup
  *@@changed V0.9.3 (2000-04-27) [umoeller]: added PM error windows
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL interface
  */
 
 VOID krnInitializeXWorkplace(VOID)
@@ -2188,6 +2191,31 @@ VOID krnInitializeXWorkplace(VOID)
         }
 
         G_KernelGlobals.pDaemonShared = pDaemonShared;
+    }
+
+    /*
+     *  interface XWPSHELL.EXE
+     *
+     */
+
+    {
+        PXWPSHELLSHARED pXWPShellShared = 0;
+        APIRET arc = DosGetNamedSharedMem((PVOID*)&pXWPShellShared,
+                                          SHMEM_XWPSHELL,
+                                          PAG_READ | PAG_WRITE);
+        if (arc == NO_ERROR)
+        {
+            // shared memory exists:
+            // this means that XWPSHELL.EXE is running...
+            // store this in KERNELGLOBALS
+            G_KernelGlobals.pXWPShellShared = pXWPShellShared;
+
+            // set flag that WPS termination will not provoke
+            // logon; this is in case WPS crashes or user
+            // restarts WPS. "Logoff" desktop menu item will
+            // change that flag.
+            pXWPShellShared->fNoLogonButRestart = TRUE;
+        }
     }
 
     /*

@@ -37,16 +37,25 @@
 
     /*
      *@@ SHUTDOWNPARAMS:
-     *      shutdown structure for external calls
+     *      shutdown structure for external calls.
+     *      This is also used internally in shutdown.c.
+     *
+     *@@changed V0.9.5 (2000-08-10) [umoeller]: changed ulRestartWPS
      */
 
     typedef struct _SHUTDOWNPARAMS
     {
         BOOL        optReboot,
                     optConfirm,
-                    optDebug,
-                    optRestartWPS,
-                    optWPSCloseWindows,
+                    optDebug;
+        ULONG       ulRestartWPS;
+            // changed V0.9.5 (2000-08-10) [umoeller]:
+            // restart WPS flag, meaning:
+            // -- 0: no, do shutdown
+            // -- 1: yes, restart WPS
+            // -- 2: yes, restart WPS, but logoff also
+            //          (only if XWPSHELL is running)
+        BOOL        optWPSCloseWindows,
                     optAutoCloseVIO,
                     optLog,
                     optAnimate,
@@ -147,7 +156,7 @@
 
     BOOL xsdInitiateShutdown(VOID);
 
-    BOOL xsdInitiateRestartWPS(VOID);
+    BOOL xsdInitiateRestartWPS(BOOL fLogoff);
 
     BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdp);
 
@@ -177,7 +186,8 @@
 
     VOID xsdFreeAnimation(PSHUTDOWNANIM psda);
 
-    VOID xsdRestartWPS(HAB hab);
+    VOID xsdRestartWPS(HAB hab,
+                       BOOL fLogoff);
 
     APIRET xsdFlushWPS2INI(VOID);
 

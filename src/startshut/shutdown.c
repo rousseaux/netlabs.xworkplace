@@ -5,12 +5,22 @@
  *      was in xfdesk.c before V0.84.
  *
  *      XShutdown is a (hopefully) complete rewrite of what
- *      WinShutdownSystem does.
+ *      WinShutdownSystem does. This code is also used for
+ *      "Restart WPS", since it does in part the same thing.
  *
- *      XShutdown is started from XFldDesktop::wpMenuItemSelected
- *      simply by creating the Shutdown thread in this file, which
- *      will then take over.
- *      See fntShutdownThread for a detailed description.
+ *      This file implements:
+ *
+ *      -- Shutdown settings notebook pages. See xsdShutdownInitPage
+ *         and below.
+ *
+ *      -- Shutdown confirmation dialogs. See xsdConfirmShutdown and
+ *         xsdConfirmRestartWPS.
+ *
+ *      -- Shutdown interface. See xsdInitiateShutdown,
+ *         xsdInitiateRestartWPS, and xsdInitiateShutdownExt.
+ *
+ *      -- The Shutdown thread itself, which does the grunt
+ *         work of shutting down the system. See fntShutdownThread.
  *
  *      All the functions in this file have the xsd* prefix.
  *
@@ -86,6 +96,8 @@
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
+
+#include "security\xwpsecty.h"          // XWorkplace Security
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -218,7 +230,7 @@ BOOL xsdInitiateShutdown(VOID)
     if (fStartShutdown)
     {
         psdp->optReboot = ((pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
-        psdp->optRestartWPS = FALSE;
+        psdp->ulRestartWPS = 0;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
         psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
@@ -305,9 +317,10 @@ BOOL xsdInitiateShutdown(VOID)
  *@@changed V0.9.0 [umoeller]: this used to be an XFldDesktop instance method
  *@@changed V0.9.1 (99-12-10) [umoeller]: fixed KERNELGLOBALS locks
  *@@changed V0.9.1 (99-12-12) [umoeller]: fixed memory leak when shutdown was cancelled
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added logoff support
  */
 
-BOOL xsdInitiateRestartWPS(VOID)
+BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff also
 {
     BOOL                fStartShutdown = TRUE;
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
@@ -331,7 +344,7 @@ BOOL xsdInitiateRestartWPS(VOID)
     if (fStartShutdown)
     {
         psdp->optReboot =  FALSE;
-        psdp->optRestartWPS = TRUE;
+        psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
         psdp->optWPSCloseWindows = ((pGlobalSettings->ulXShutdownFlags & XSD_WPS_CLOSEWINDOWS) != 0);
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
         psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
@@ -416,7 +429,8 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
     if (fStartShutdown)
     {
         psdpNew->optReboot = psdpShared->optReboot;
-        psdpNew->optRestartWPS = psdpShared->optRestartWPS;
+        psdpNew->ulRestartWPS = psdpShared->ulRestartWPS;
+                    // supports logoff as well
         psdpNew->optWPSCloseWindows = psdpShared->optWPSCloseWindows;
         psdpNew->optConfirm = psdpShared->optConfirm;
         psdpNew->optAutoCloseVIO = psdpShared->optAutoCloseVIO;
@@ -430,7 +444,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
         if (psdpNew->optConfirm)
         {
             ULONG ulReturn;
-            if (psdpNew->optRestartWPS)
+            if (psdpNew->ulRestartWPS)
                 ulReturn = xsdConfirmRestartWPS(psdpNew);
             else
                 ulReturn = xsdConfirmShutdown(psdpNew);
@@ -979,12 +993,21 @@ VOID xsdFreeAnimation(PSHUTDOWNANIM psda)
  *      terminated the WPS process, which will lead
  *      to a WPS restart.
  *
+ *      If (fLogoff == TRUE), this will perform a logoff
+ *      as well. If XWPShell is not running, this flag
+ *      has no effect.
+ *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
  */
 
-VOID xsdRestartWPS(HAB hab)
+VOID xsdRestartWPS(HAB hab,
+                   BOOL fLogoff)    // in: if TRUE, perform logoff as well.
 {
     ULONG ul;
+
+    PCKERNELGLOBALS pcKernelGlobals = krnQueryGlobals();
 
     // wait a maximum of 2 seconds while there's still
     // a system sound playing
@@ -996,6 +1019,16 @@ VOID xsdRestartWPS(HAB hab)
 
     // close leftover open devices
     xmmCleanup();
+
+    if (pcKernelGlobals->pXWPShellShared)
+    {
+        // XWPSHELL.EXE running:
+        PXWPSHELLSHARED pXWPShellShared
+            = (PXWPSHELLSHARED)pcKernelGlobals->pXWPShellShared;
+        // set flag in shared memory; XWPSHELL
+        // will check this once the WPS has terminated
+        pXWPShellShared->fNoLogonButRestart = !fLogoff;
+    }
 
     // terminate the current process,
     // which is PMSHELL.EXE. We cannot use DosExit()
@@ -1340,6 +1373,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
  *@@ xsdConfirmRestartWPS:
  *      this displays the WPS restart
  *      confirmation box. Returns MBID_YES/NO.
+ *
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
  */
 
 ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
@@ -1362,6 +1397,20 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                WM_SETICON,
                (MPARAM)hptrShutdown,
                 NULL);
+
+    if (psdParms->ulRestartWPS == 2)
+    {
+        // logoff:
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        psdParms->optWPSCloseWindows = TRUE;
+        psdParms->optWPSReuseStartupFolder = TRUE;
+        WinEnableControl(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
+        WinEnableControl(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
+
+        // replace confirmation text
+        WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
+                          pNLSStrings->pszXSDConfirmLogoffMsg);
+    }
 
     winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
     winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
@@ -1389,12 +1438,17 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
         GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
         psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                             ID_SDDI_WPS_CLOSEWINDOWS);
-        if (psdParms->optWPSCloseWindows)
-            pGlobalSettings->ulXShutdownFlags |= XSD_WPS_CLOSEWINDOWS;
-        else
-            pGlobalSettings->ulXShutdownFlags &= ~XSD_WPS_CLOSEWINDOWS;
-        psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
-                                                                  ID_SDDI_WPS_STARTUPFOLDER);
+        if (psdParms->ulRestartWPS != 2)
+        {
+            // regular restart WPS:
+            // save close windows/startup folder settings
+            if (psdParms->optWPSCloseWindows)
+                pGlobalSettings->ulXShutdownFlags |= XSD_WPS_CLOSEWINDOWS;
+            else
+                pGlobalSettings->ulXShutdownFlags &= ~XSD_WPS_CLOSEWINDOWS;
+            psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
+                                                                      ID_SDDI_WPS_STARTUPFOLDER);
+        }
         if (!(winhIsDlgItemChecked(hwndConfirm,
                                    ID_SDDI_MESSAGEAGAIN)))
             pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
@@ -3012,7 +3066,7 @@ BOOL            G_fAwakeObjectsSemOwned = FALSE,
 /*
  *@@ fntShutdownThread:
  *      this is the main shutdown thread which is created by
- *      xfInitiateShutdown / xsdInitiateRestartWPS when shutdown is about
+ *      xsdInitiateShutdown / xsdInitiateRestartWPS when shutdown is about
  *      to begin.
  *
  *      Parameters: this thread must be created using thrCreate
@@ -3120,7 +3174,10 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
     BOOL fExceptionOccured = FALSE;
 
     // flag for whether restarting the WPS after all this
-    BOOL fRestartWPS = FALSE;
+    ULONG ulRestartWPS = 0;         // as in SHUTDOWNPARAMS.ulRestartWPS:
+                                    // 0 = no;
+                                    // 1 = yes;
+                                    // 2 = yes, do logoff also
 
     // set the global XFolder threads structure pointer
     PCKERNELGLOBALS  pcKernelGlobals = krnQueryGlobals();
@@ -3166,8 +3223,8 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                 fprintf(G_fileShutdownLog, "\nXWorkplace version: %s\n", XFOLDER_VERSION);
                 fprintf(G_fileShutdownLog, "\nShutdown thread started, TID: 0x%lX\n",
                         thrQueryID(pti));
-                fprintf(G_fileShutdownLog, "Settings: RestartWPS %s, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, APMPowerOff %s\n\n",
-                        (G_psdParams->optRestartWPS) ? "ON" : "OFF",
+                fprintf(G_fileShutdownLog, "Settings: RestartWPS %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, APMPowerOff %s\n\n",
+                        G_psdParams->ulRestartWPS,
                         (G_psdParams->optConfirm) ? "ON" : "OFF",
                         (G_psdParams->optReboot) ? "ON" : "OFF",
                         (G_psdParams->optWPSCloseWindows) ? "ON" : "OFF",
@@ -3456,7 +3513,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                 // been successfully closed and we can actually shut
                 // down the system
 
-                if (G_psdParams->optRestartWPS)
+                if (G_psdParams->ulRestartWPS)
                 {
                     // here we will actually restart the WPS
                     xsdLog("Preparing WPS restart...\n");
@@ -3466,7 +3523,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                     xsdFreeAnimation(&G_sdAnim);
 
                     // set flag for restarting the WPS after cleanup (V0.9.0)
-                    fRestartWPS = TRUE;
+                    ulRestartWPS = G_psdParams->ulRestartWPS;  // restart WPS (1) or logoff (2)
                 }
                 else
                 {
@@ -3479,7 +3536,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
 
                     if (G_psdParams->optDebug)
                         // in debug mode, restart WPS
-                        fRestartWPS = TRUE;     // V0.9.0
+                        ulRestartWPS = 1;     // V0.9.0
                 }
             } // end if (fAllWindowsClosed)
 
@@ -3494,7 +3551,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                 G_psdParams = NULL;
             }
 
-            if (fRestartWPS)
+            if (ulRestartWPS)
             {
                 if (G_fileShutdownLog)
                 {
@@ -3502,7 +3559,8 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                     fclose(G_fileShutdownLog);
                     G_fileShutdownLog = NULL;
                 }
-                xsdRestartWPS(G_habShutdownThread);
+                xsdRestartWPS(G_habShutdownThread,
+                              (ulRestartWPS == 2) ? TRUE : FALSE);  // fLogoff
                 // this will not return, I think
             }
 
@@ -4377,7 +4435,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // desktop", which is just an empty window w/out
                         // title bar which takes up the whole screen and
                         // has the color of the PM desktop
-                        if (    (!(G_psdParams->optRestartWPS))
+                        if (    (!(G_psdParams->ulRestartWPS))
                              && (!(G_psdParams->optDebug))
                            )
                             winhCreateFakeDesktop(G_hwndShutdownStatus);
@@ -4516,7 +4574,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         xsdLog("    xsd_fnwpShutdown: Update thread closed.\n");
                     }
 
-                    if (G_psdParams->optRestartWPS)
+                    if (G_psdParams->ulRestartWPS)
                     {
                         // "Restart WPS" mode
 
@@ -4714,7 +4772,8 @@ VOID xsdFinishShutdown(HAB hab)
                     == MBID_YES)
         {
             xsdLog("User requested to restart WPS.\n");
-            xsdRestartWPS(G_habShutdownThread);
+            xsdRestartWPS(G_habShutdownThread,
+                          FALSE);
                     // doesn't return
         }
     }
@@ -4944,7 +5003,8 @@ VOID xsdFinishUserReboot(HAB hab,
         DebugBox(HWND_DESKTOP, "XShutdown",
                  "The user-defined restart command failed. "
                  "We will now restart the WPS.");
-        xsdRestartWPS(hab);
+        xsdRestartWPS(hab,
+                      FALSE);
     }
     else
         // no error:
@@ -4994,7 +5054,8 @@ VOID xsdFinishAPMPowerOff(HAB hab,
         cmnMessageBox(HWND_DESKTOP, "APM Error", szAPMError,
                 MB_CANCEL | MB_SYSTEMMODAL);
         // restart WPS
-        xsdRestartWPS(hab);
+        xsdRestartWPS(hab,
+                      FALSE);
         // this does not return
     }
     // else: APM_OK means preparing went alright
@@ -5121,8 +5182,8 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
 
     DosSetPriority(PRTYS_THREAD,
                    PRTYC_REGULAR,
-                    -31,          // priority delta
-                    0);           // this thread
+                   -31,          // priority delta
+                   0);           // this thread
 
     if (habUpdateThread = WinInitialize(0))
     {

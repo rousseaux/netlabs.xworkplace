@@ -987,6 +987,7 @@
 #define ID_SDDI_STANDARDREBOOT          4317
 #define ID_SDDI_REBOOTTO                4318
 #define ID_SDDI_EMPTYTRASHCAN           4319
+#define ID_SDDI_CONFIRM_TEXT            4320  // V0.9.5 (2000-08-10) [umoeller]
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400
@@ -1093,6 +1094,7 @@
                                                     // removed V0.9.3 (2000-04-26) [umoeller]
 #define ID_XFMI_OFS_OS2_SHUTDOWN        (WPMENUID_USER+10)      // new with V0.9.3 (2000-04-26) [umoeller]
 #define ID_XFMI_OFS_RESTARTWPS          (WPMENUID_USER+11)
+
 #define ID_XFMI_OFS_FLDRCONTENT         (WPMENUID_USER+12)
 #define ID_XFMI_OFS_DUMMY               (WPMENUID_USER+13)
 #define ID_XFMI_OFS_COPYFILENAME_MENU   (WPMENUID_USER+14)      // menu item
@@ -1140,6 +1142,9 @@
 
 // "XCenter" item in XCenter "Open" submenu
 #define ID_XFMI_OFS_XCENTER             (WPMENUID_USER+49)
+
+// "Logoff" menu item in XFldDesktop V0.9.5 (2000-08-10) [umoeller]
+#define ID_XFMI_OFS_LOGOFF              (WPMENUID_USER+50)
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
@@ -1536,9 +1541,14 @@
 
 #define ID_XSSI_ICONPAGE                5943
 
+// XShutdown INI save strings V0.9.5 (2000-08-16) [umoeller]
 #define ID_XSSI_XSD_SAVEINIS_NEW        5944
 #define ID_XSSI_XSD_SAVEINIS_OLD        5945
 #define ID_XSSI_XSD_SAVEINIS_NONE       5946
+
+// logoff V0.9.5 (2000-09-28) [umoeller]
+#define ID_XSSI_XSD_LOGOFF              5947
+#define ID_XSSI_XSD_CONFIRMLOGOFFMSG    5948
 
 /******************************************
  *  Features on XWPSetup "Features" page  *

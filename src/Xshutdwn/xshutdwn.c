@@ -109,12 +109,12 @@ int main(int argc, char *argv[])
                             break;
 
                             case 'w':
-                                psdp->optRestartWPS = TRUE;
+                                psdp->ulRestartWPS = 1;
                                 psdp->optWPSCloseWindows = FALSE;
                             break;
 
                             case 'W':
-                                psdp->optRestartWPS = TRUE;
+                                psdp->ulRestartWPS = 1;
                                 psdp->optWPSCloseWindows = TRUE;
                             break;
 

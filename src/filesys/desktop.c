@@ -233,6 +233,8 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                 // remove original shutdown item
                 winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
+                // create "Shutdown" submenu and use this for
+                // subsequent menu items
                 hwndMenuInsert
                     = winhInsertSubmenu(hwndMenu,
                                         // position: after existing "Shutdown" item
@@ -302,6 +304,29 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Restart WPS" entry
+            winhMenuRemoveEllipse(hwndMenuInsert,
+                                  pGlobalSettings->VarMenuOffset
+                                        + ID_XFMI_OFS_RESTARTWPS);
+    }
+
+    if (pKernelGlobals->pXWPShellShared)
+    {
+        // XWPShell running:
+        // insert "logoff"
+        winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
+                           sOrigShutdownPos,  // either MIT_END or position of "Shutdown" item
+                           pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_LOGOFF,
+                           pNLSStrings->pszXSDLogoff,
+                           MIS_TEXT,
+                           // disable if Shutdown is currently running
+                           (   (thrQueryID(&pKernelGlobals->tiShutdownThread)
+                            || (pKernelGlobals->fShutdownRunning)
+                           )
+                               ? MIA_DISABLED
+                               : 0));
+        if ((pGlobalSettings->ulXShutdownFlags & ID_XFMI_OFS_LOGOFF) == 0)
+            // if XShutdown confirmations have been disabled,
+            // remove "..." from "Logoff" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
                                   pGlobalSettings->VarMenuOffset
                                         + ID_XFMI_OFS_RESTARTWPS);
@@ -386,6 +411,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
  *
  *@@added V0.9.1 (99-12-04) [umoeller]
  *@@changed V0.9.3 (2000-04-26) [umoeller]: changed shutdown menu item IDs; changed prototype
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added logoff support
  */
 
 BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
@@ -399,7 +425,12 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
     {
         if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_RESTARTWPS)
         {
-            xsdInitiateRestartWPS();
+            xsdInitiateRestartWPS(FALSE);        // restart WPS
+            return (TRUE);
+        }
+        else if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_LOGOFF)
+        {
+            xsdInitiateRestartWPS(TRUE);    // logoff
             return (TRUE);
         }
         else if (    (pGlobalSettings->fXShutdown)

@@ -167,6 +167,7 @@ $(OUTPUTDIR)\kernel.obj: \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\xthreads.h \
      $(INC)\media\media.h \
+     $(INC)\security\xwpsecty.h \
      $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 

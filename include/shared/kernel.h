@@ -159,9 +159,9 @@
             PVOID               pDaemonShared;
                     // ptr to DAEMONSHARED structure
 
-            // HWND                hwndActiveDesktop;
-                    // currently active Desktop HWND; this is != NULLHANDLE
-                    // after the Desktop has been populated
+            PVOID               pXWPShellShared;
+                    // ptr to XWPSHELLSHARED structure
+                    // (if XWPSHELL.EXE is running; NULL otherwise)
 
             /*
              * Thread-1 object window:

@@ -610,6 +610,10 @@ BEGIN
     ID_XSSI_XSD_SAVEINIS_NEW            "New method: use XWorkplace INI routines"
     ID_XSSI_XSD_SAVEINIS_OLD            "Old method: use OS/2 INI routines"
     ID_XSSI_XSD_SAVEINIS_NONE           "Do not save INIs at all"
+
+    /* logoff V0.9.5 (2000-09-28) [umoeller] */
+    ID_XSSI_XSD_LOGOFF                  "Logoff..."
+    ID_XSSI_XSD_CONFIRMLOGOFFMSG        "Are you sure you want to log off?"
 END
 
 /* Strings for XWPSetup "Features" page

@@ -1110,7 +1110,11 @@
                 // XShutdown INI save strings V0.9.5 (2000-08-16) [umoeller]
                 pszXSDSaveInisNew,
                 pszXSDSaveInisOld,
-                pszXSDSaveInisNone;
+                pszXSDSaveInisNone,
+
+                // logoff V0.9.5 (2000-09-28) [umoeller]
+                pszXSDLogoff,
+                pszXSDConfirmLogoffMsg;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
