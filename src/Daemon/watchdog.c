@@ -42,6 +42,8 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#define __DEFINE_PMSEMS
+#include "helpers\pmsems.h"
 #include "helpers\procstat.h"
 #include "helpers\standards.h"
 #include "helpers\threads.h"
@@ -57,6 +59,16 @@
 
 #pragma hdrstop
 
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// threadinfos for the two extra threads
+THREADINFO  G_tiWatchdog,
+            G_tiTeaser;
+
 #define OP_IDLE                     0
 #define OP_BEGINENUMWINDOWS         1
 #define OP_GETNEXTWINDOW            2
@@ -64,18 +76,28 @@
 #define OP_SENDMSG                  4
 #define OP_ENDENUMWINDOWS           5
 
-ULONG       G_ulOperation = OP_IDLE;
+HMTX        G_hmtxWatchdog = NULLHANDLE;
 
-ULONG       G_ulOperationTime = 0;           // system uptime when operation was performed
+// the following are protected by G_hmtxWatchdog:
+
+ULONG       G_ulOperation = OP_IDLE;    // current operation being performed
+
+ULONG       G_ulOperationTime = 0;      // system uptime when operation was performed
 
 ULONG       G_pidBeingSent = 0,         // PID of window that msg is being sent to
             G_tidBeingSent = 0;         // TID of window that msg is being sent to
 
-HMTX        G_hmtxWatchdog = NULLHANDLE,
-            G_hmtxHungs = NULLHANDLE;
+// end G_hmtxWatchdog
 
-THREADINFO  G_tiWatchdog,
-            G_tiTeaser;
+HMTX        G_hmtxHungs = NULLHANDLE;
+
+// the following are protected by G_hmtxHungs:
+
+/* ******************************************************************
+ *
+ *   Teaser
+ *
+ ********************************************************************/
 
 #ifndef WM_QUERYCTLTYPE
 #define WM_QUERYCTLTYPE            0x0130
@@ -84,7 +106,6 @@ THREADINFO  G_tiWatchdog,
 /*
  *@@ LockWatchdog:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 BOOL LockWatchdog(VOID)
@@ -102,7 +123,6 @@ BOOL LockWatchdog(VOID)
 /*
  *@@ UnlockWatchdog:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 VOID UnlockWatchdog(VOID)
@@ -114,8 +134,10 @@ VOID UnlockWatchdog(VOID)
 
 /*
  *@@ SetOperation:
+ *      atomically sets G_ulOperation to op
+ *      and G_ulOperationTime to the current
+ *      system uptime.
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 void SetOperation(ULONG op,
@@ -150,7 +172,6 @@ void SetOperation(ULONG op,
  *
  *      This loops forever.
  *
- *@@added V [umoeller]
  */
 
 void _Optlink fntTeaser(PTHREADINFO ptiMyself)
@@ -228,111 +249,15 @@ void _Optlink fntTeaser(PTHREADINFO ptiMyself)
         UnlockWatchdog();
 }
 
-#pragma pack(1)
-
-/*
- *@@ PMSEM:
- *      PM semaphore definition, according to
- *      the OS/2 debugging handbook.
+/* ******************************************************************
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
- */
-
-typedef struct _PMSEM
-{
-    CHAR        szMagic[7];
-    BYTE        bSemaphore;         // 386 semaphore byte
-    ULONG       ulOwnerPidTid;
-    ULONG       cNesting;           // owner nested use count
-    ULONG       cWaiters;           // number of waiters
-    ULONG       ulDebug1;           // number of times sem used (debug only)
-    HEV         hev;                // OS/2 event semaphore
-    ULONG       ulDebug2;           // address of caller (debug only)
-} PMSEM, *PPMSEM;
-
-#pragma pack()
-
-#define PMSEM_ATOM          0
-#define PMSEM_USER          1
-#define PMSEM_VISLOCK       2
-#define PMSEM_DEBUG         3
-#define PMSEM_HOOK          4
-#define PMSEM_HEAP          5
-#define PMSEM_DLL           6
-#define PMSEM_THUNK         7
-#define PMSEM_XLCE          8
-#define PMSEM_UPDATE        9
-#define PMSEM_CLIP          10
-#define PMSEM_INPUT         11
-#define PMSEM_DESKTOP       12
-#define PMSEM_HANDLE        13
-#define PMSEM_ALARM         14
-#define PMSEM_STRRES        15
-#define PMSEM_TIMER         16
-#define PMSEM_CONTROLS      17
-#define GRESEM_GreInit      18
-#define GRESEM_AutoHeap     19
-#define GRESEM_PDEV         20
-#define GRESEM_LDEV         21
-#define GRESEM_CodePage     22
-#define GRESEM_HFont        23
-#define GRESEM_FontCntxt    24
-#define GRESEM_FntDrvr      25
-#define GRESEM_ShMalloc     26
-#define GRESEM_GlobalData   27
-#define GRESEM_DbcsEnv      28
-#define GRESEM_SrvLock      29
-#define GRESEM_SelLock      30
-#define GRESEM_ProcLock     31
-#define GRESEM_DriverSem    32
-#define GRESEM_semIfiCache  33
-#define GRESEM_semFontTable 34
-
-#define LASTSEM             34
-
-static const PCSZ G_papcszSems[] =
-    {
-        "PMSEM_ATOM", // 0
-        "PMSEM_USER", // 1
-        "PMSEM_VISLOCK", // 2
-        "PMSEM_DEBUG", // 3
-        "PMSEM_HOOK", // 4
-        "PMSEM_HEAP", // 5
-        "PMSEM_DLL", // 6
-        "PMSEM_THUNK", // 7
-        "PMSEM_XLCE", // 8
-        "PMSEM_UPDATE", // 9
-        "PMSEM_CLIP", // 10
-        "PMSEM_INPUT", // 11
-        "PMSEM_DESKTOP", // 12
-        "PMSEM_HANDLE", // 13
-        "PMSEM_ALARM", // 14
-        "PMSEM_STRRES", // 15
-        "PMSEM_TIMER", // 16
-        "PMSEM_CONTROLS", // 17
-        "GRESEM_GreInit", // 18
-        "GRESEM_AutoHeap", // 19
-        "GRESEM_PDEV", // 20
-        "GRESEM_LDEV", // 21
-        "GRESEM_CodePage", // 22
-        "GRESEM_HFont", // 23
-        "GRESEM_FontCntxt", // 24
-        "GRESEM_FntDrvr", // 25
-        "GRESEM_ShMalloc", // 26
-        "GRESEM_GlobalData", // 27
-        "GRESEM_DbcsEnv", // 28
-        "GRESEM_SrvLock", // 29
-        "GRESEM_SelLock", // 30
-        "GRESEM_ProcLock", // 31
-        "GRESEM_DriverSem", // 32
-        "GRESEM_semIfiCache", // 33
-        "GRESEM_semFontTable", // 34
-    };
+ *   Watchdog
+ *
+ ********************************************************************/
 
 /*
  *@@ LockHungs:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 BOOL LockHungs(VOID)
@@ -350,7 +275,6 @@ BOOL LockHungs(VOID)
 /*
  *@@ UnlockHungs:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 VOID UnlockHungs(VOID)
@@ -361,6 +285,7 @@ VOID UnlockHungs(VOID)
 typedef struct _HUNG
 {
     USHORT  pid;
+    USHORT  tid;
     ULONG   op;
     ULONG   sem;
 } HUNG, *PHUNG;
@@ -375,14 +300,15 @@ ULONG       G_cHungs = 0;
  *
  *      Caller must hold the hungs sem.
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 VOID AppendHung(USHORT pid,
+                USHORT tid,
                 ULONG op,
                 ULONG sem)
 {
     G_aHungs[G_cHungs].pid = pid;
+    G_aHungs[G_cHungs].tid = tid;
     G_aHungs[G_cHungs].op = op;
     G_aHungs[G_cHungs++].sem = sem;
 }
@@ -390,7 +316,6 @@ VOID AppendHung(USHORT pid,
 /*
  *@@ GetOpName:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 PCSZ GetOpName(ULONG opHung)
@@ -415,7 +340,6 @@ PCSZ GetOpName(ULONG opHung)
 /*
  *@@ fntWatchdog:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
@@ -439,7 +363,7 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                   THRF_PMMSGQUEUE | THRF_WAIT,
                   0);
 
-        // PMSEMAPHORES PMMERGE.6203
+        // the array of PM semaphores is at PMMERGE.6203
         if (arc = doshQueryProcAddr("PMMERGE",
                                     6203,
                                     (PFN*)&paPMSems))
@@ -458,7 +382,8 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
         while (!ptiMyself->fExit)
         {
             ULONG   opHung = OP_IDLE,
-                    pidBeingSent = 0;
+                    pidBeingSent = 0,
+                    tidBeingSent = 0;
             ULONG   ulTimeNow;
             PCSZ    pcszOp = NULL;
 
@@ -479,6 +404,7 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                 {
                     opHung = G_ulOperation;
                     pidBeingSent = G_pidBeingSent;
+                    tidBeingSent = G_tidBeingSent;
                 }
 
                 UnlockWatchdog();
@@ -511,13 +437,17 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                     // 1) If the teaser thread was stuck in WinSendMsg,
                     //    that's the simple case where the target window
                     //    is not currently processing its message queue.
+                    //    Typical candidates are VIEW.EXE searching the
+                    //    LIBPATH and Netscape formatting complex tables.
+                    //
                     //    It is most probable that the hung process is
                     //    thus the process of the target window of
                     //    the WinSendMsg call, which was stored in
-                    //    G_pidBeingSent (and has been copied to pidHung).
+                    //    G_pidBeingSent.
                     //
                     //    From my testing, in the simple case, all the
-                    //    PMSEMS are unowned.
+                    //    PMSEMS are unowned, unless other things have
+                    //    gone wrong too.
                     //
                     // 2) If the teaser thread got stuck in another PM
                     //    function however, it is quite probable that
@@ -532,6 +462,7 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                        )
                     {
                         AppendHung(pidBeingSent,
+                                   tidBeingSent,
                                    opHung,      // OP_SENDMSG
                                    -1);         // no sem yet
                     }
@@ -554,6 +485,7 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                                 // this sem is OWNED:
                                 // consider the owner a hung app!
                                 AppendHung(LOUSHORT(pidtid),
+                                           HIUSHORT(pidtid),
                                            opHung,      // OP_SENDMSG
                                            ulSemThis);         // semid
                             }
@@ -594,52 +526,61 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
                         // now describe the hung processes
                         if (t = prc32GetInfo(NULL))
                         {
-                            ULONG ulHung;
+                            ULONG   ulHung;
+                            PCSZ    pcszSem;
+                            ULONG   sem;
+
                             for (ulHung = 0;
                                  ulHung < G_cHungs;
                                  ++ulHung)
                             {
-                                ULONG pid = G_aHungs[ulHung].pid;
+                                ULONG   pid = G_aHungs[ulHung].pid,
+                                        tid = G_aHungs[ulHung].tid,
+                                        ulLength = 0;
+
                                 if (p = prc32FindProcessFromPID(t, pid))
                                 {
                                     if (m = prc32FindModule(t, p->usHModule))
                                     {
-                                        ULONG   sem = G_aHungs[ulHung].sem;
-                                        PCSZ    pcszSem;
-
-                                        if (sem < ARRAYITEMCOUNT(G_papcszSems))
-                                            pcszSem = G_papcszSems[sem];
-                                        else
-                                            pcszSem = "no sem";
-
-                                        sprintf(szTemp,
-                                                "PID 0x%lX (%d) (%s) is hung (op %s, %s)",
+                                        ulLength = sprintf(szTemp,
+                                                "PID 0x%lX (%d) (%s)",
                                                 pid,
                                                 pid,
-                                                m->pcName,      // module name
-                                                GetOpName(G_aHungs[ulHung].op),
-                                                pcszSem
+                                                m->pcName      // module name
                                               );
-
-                                        if (LogFile)
-                                            fprintf(LogFile,
-                                                    "hung process [%d]: %s\n",
-                                                    ulHung,
-                                                    szTemp);
                                     }
                                     else
-                                        sprintf(szTemp,
-                                                "Cannot find HMODULE 0x%lX for PID 0x%lX (%d) in sysstate buffer",
-                                                p->usHModule,
+                                        ulLength = sprintf(szTemp,
+                                                "PID 0x%lX (%d) (unknown hmod 0x%lX)",
                                                 pid,
-                                                pid);
+                                                pid,
+                                                p->usHModule);
                                 }
                                 else
-                                    sprintf(szTemp,
-                                            "Cannot find PID 0x%lX (%d) in sysstate buffer",
+                                    ulLength = sprintf(szTemp,
+                                            "unknown PID 0x%lX (%d)",
                                             pid,
                                             pid);
 
+                                sem = G_aHungs[ulHung].sem;
+
+                                if (sem < ARRAYITEMCOUNT(G_papcszSems))
+                                    pcszSem = G_papcszSems[sem];
+                                else
+                                    pcszSem = "no sem";
+
+                                sprintf(szTemp + ulLength,
+                                        " , TID %d, op %s, %s",
+                                        tid,
+                                        GetOpName(G_aHungs[ulHung].op),
+                                        pcszSem);
+
+
+                                if (LogFile)
+                                    fprintf(LogFile,
+                                            "hung process [%d]: %s\n",
+                                            ulHung,
+                                            szTemp);
 
                                 apsz[ulHung] = strdup(szTemp);
                             }
@@ -745,7 +686,6 @@ void _Optlink fntWatchdog(PTHREADINFO ptiMyself)
 /*
  *@@ dmnStartWatchdog:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
  */
 
 VOID dmnStartWatchdog(VOID)

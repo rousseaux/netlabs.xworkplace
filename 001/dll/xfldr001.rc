@@ -670,7 +670,8 @@ BEGIN
     ID_XSSI_XWPSTRING_OPENMENU          "~Invoke setup string"
 
     ID_XSSI_COLMN_SYSL_COMPONENT        "Component"
-    ID_XSSI_COLMN_SYSL_FILE             "SYLEVEL File"
+    ID_XSSI_COLMN_SYSL_FILE             "SYSLEVEL File"
+            /* corrected SYLEVEL typo V0.9.21 (2002-08-12) [umoeller] */
     ID_XSSI_COLMN_SYSL_VERSION          "Version"
     ID_XSSI_COLMN_SYSL_LEVEL            "Syslevel"
     ID_XSSI_COLMN_SYSL_PREVIOUS         "Previous"

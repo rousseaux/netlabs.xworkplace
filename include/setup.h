@@ -337,7 +337,7 @@
 
 /* program objects */
         // debug program startup data
-            // #define DEBUG_PROGRAMSTART
+            #define DEBUG_PROGRAMSTART
 
 /* daemon and hook */
 
