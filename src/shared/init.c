@@ -145,12 +145,14 @@ extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 static THREADINFO       G_tiSentinel = {0};
 
 #define DESKTOP_VALID               0
-#define NO_DESKTOP_ID               1
-#define DESKTOP_HANDLE_NOT_FOUND    2
-#define DESKTOP_DIR_DOESNT_EXIST    3
-#define DESKTOP_IS_NO_DIRECTORY     4
+#define HANDLES_BROKEN              1       // V0.9.20 (2002-08-04) [umoeller]
+#define NO_DESKTOP_ID               2
+#define DESKTOP_HANDLE_NOT_FOUND    3
+#define DESKTOP_DIR_DOESNT_EXIST    4
+#define DESKTOP_IS_NO_DIRECTORY     5
 
 static ULONG            G_ulDesktopValid = -1;      // unknown at this point
+static APIRET           G_arcHandles = 0;               // V0.9.20 (2002-08-04) [umoeller]
 
 static HOBJECT          G_hobjDesktop;
 static CHAR             G_szDesktopPath[CCHMAXPATH];
@@ -930,6 +932,8 @@ static VOID ReplaceWheelWatcher(VOID)
  *
  *      --  DESKTOP_VALID
  *
+ *      --  HANDLES_BROKEN: cannot load handles.
+ *
  *      --  NO_DESKTOP_ID: <WP_DESKTOP> doesn't exist in OS2.INI.
  *
  *      --  DESKTOP_HANDLE_NOT_FOUND: <WP_DESKTOP> exists, but points
@@ -1121,6 +1125,10 @@ VOID initMain(VOID)
     // initialize global vars V0.9.19 (2002-04-24) [umoeller]
     G_fIsWarp4 = doshIsWarp4();
 
+    // V0.9.20 (2002-08-04) [umoeller]
+    G_cxIconSys = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
+    G_cyIconSys = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
+
     // force loading of the global settings
     cmnLoadGlobalSettings();
 
@@ -1251,6 +1259,8 @@ VOID initMain(VOID)
                                      &hHandles))
             {
                 initLog("WARNING: wphLoadHandles returned %d", arc);
+                G_ulDesktopValid = HANDLES_BROKEN;
+                G_arcHandles = arc;
             }
             else
             {
@@ -1563,6 +1573,21 @@ BOOL initRepairDesktopIfBroken(VOID)
             brc = TRUE;
         break;
 
+        case HANDLES_BROKEN:        // V0.9.20 (2002-08-04) [umoeller]
+        {
+            XSTRING str;
+            xstrInit(&str, 0);
+            cmnDescribeError(&str,
+                             G_arcHandles,
+                             NULL,
+                             TRUE);
+            sprintf(szMsg,
+                    "Error description: %s",
+                    str.psz);
+            xstrClear(&str);
+        }
+        break;
+
         case NO_DESKTOP_ID:
             sprintf(szMsg,
                     "The object ID <WP_DESKTOP> was not found in the user profile.");
@@ -1625,7 +1650,7 @@ BOOL initRepairDesktopIfBroken(VOID)
             fRepeat = FALSE;
 
             xstrInitCopy(&str,
-                         "Your desktop could not be found in the system's INI files. ",
+                         "Your desktop could not be found in the system's INI files.\n",
                          0);
             xstrcat(&str, szMsg, 0);
             xstrcat(&str,

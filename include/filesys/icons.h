@@ -83,7 +83,7 @@
      ********************************************************************/
 
     #ifdef SOM_WPDataFile_h
-        BOOL icomAddLazyIcon(WPDataFile *somSelf);
+        BOOL icomQueueLazyIcon(WPDataFile *somSelf);
     #endif
 
     /* ******************************************************************

@@ -315,6 +315,8 @@ static MPARAM ampClassInfoCtls[] =
         MPFROM2SHORT(ID_XLDI_CLASSMODULE, XAC_MOVEY | XAC_SIZEX),
         MPFROM2SHORT(ID_XLDI_ICONTXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XLDI_ICON, XAC_MOVEY),
+        MPFROM2SHORT(ID_XLDI_BYTESPERINSTANCETXT, XAC_MOVEY),
+        MPFROM2SHORT(ID_XLDI_BYTESPERINSTANCE, XAC_MOVEY | XAC_SIZEX),
         MPFROM2SHORT(ID_XLDI_TEXT2, XAC_SIZEX | XAC_SIZEY)
     };
 
@@ -722,7 +724,15 @@ static VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         }
         else
             strcpy(szInfo2, cmnGetString(ID_XSSI_WPSCLASSLOADINGFAILED)) ; // pszWpsClassLoadingFailed
+
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, szInfo2);
+
+        // instance size V0.9.20 (2002-08-04) [umoeller]
+        sprintf(szInfo2,
+                "%d / %d",
+                _somGetInstanceSize(pwps->pClassObject),
+                _somGetInstancePartSize(pwps->pClassObject));
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_BYTESPERINSTANCE, szInfo2);
 
         // class information
         if (pszClassInfo)

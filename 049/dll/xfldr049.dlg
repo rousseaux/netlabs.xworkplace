@@ -1193,32 +1193,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_FILETYPES LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FILETYPES, 0, 0, 265, 162, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_XSDI_FT_CONTAINER, 10, 27, 110, 123,
-                        CCS_SINGLESEL | CCS_VERIFYPOINTERS
-                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
-        LTEXT           "Filter", ID_XSDI_FT_FILTERS_TXT, 125, 144, 105, 8,
-                        NOT WS_GROUP
-        CONTAINER       ID_XSDI_FT_FILTERSCNR, 125, 102, 105, 39,
-                        CCS_EXTENDSEL
-                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
-        LTEXT           "VerknÅpfungen", ID_XSDI_FT_ASSOCS_TXT, 125, 90, 105,
-                        8, NOT WS_GROUP
-        CONTAINER       ID_XSDI_FT_ASSOCSCNR, 125, 27, 105, 61,
-                        CCS_EXTENDSEL
-                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
-        GROUPBOX        "Dateitypen", ID_XSDI_FT_GROUP, 5, 24, 230, 135,
-                        DT_MNEMONIC
-        PUSHBUTTON      "~Widerrufen", DID_UNDO, 5, 6, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Standard", DID_DEFAULT, 85, 6, 70, 12
-        PUSHBUTTON      "~Hilfe", DID_HELP, 165, 6, 70, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_IMPORTWPS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "WPS-Filter importieren", ID_XSD_IMPORTWPS, 12, 6, 242, 172,

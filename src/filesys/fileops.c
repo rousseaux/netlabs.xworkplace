@@ -281,7 +281,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                 // -- if we have a "folders only" populate, we add
                 //    all objects we have (which is at least all the
                 //    folders, but can contain additional objects)
-                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                 for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                      pObject;
                      pObject = *__get_pobjNext(pObject))
@@ -555,7 +555,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
                     // -- if we have a "folders only" populate, we add
                     //    all objects we have (which is at least all the
                     //    folders, but can contain additional objects)
-                    // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                    // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                     for (pSubObject = _wpQueryContent(pObject, NULL, QC_FIRST);
                          pSubObject;
                          pSubObject = *__get_pobjNext(pSubObject))

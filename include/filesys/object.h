@@ -103,7 +103,7 @@
                                 // next object in folder content chain;
                                 // this is a SOM attribute, so we can safely
                                 // get this using the SOM _get_pobjNext method
-        PMINIRECORDCORE     pRecord;
+        PMINIRECORDCORE     pmrc;
                                 // pointer to the object record; size is variable
                                 // depending on object data
         ULONG               ulUnknown1;
@@ -156,13 +156,15 @@
 
     #define OBJFL_WPFILESYSTEM              0x00000001
     #define OBJFL_WPFOLDER                  0x00000002
-    #define OBJFL_WPABSTRACT                0x00000004  // V0.9.19 (2002-04-24) [umoeller]
-    #define OBJFL_WPSHADOW                  0x00000008
+    #define OBJFL_WPDATAFILE                0x00000004  // V0.9.20 (2002-07-31) [umoeller]
+    #define OBJFL_WPABSTRACT                0x00000010  // V0.9.19 (2002-04-24) [umoeller]
+    #define OBJFL_WPSHADOW                  0x00000020
+    #define OBJFL_WPPROGRAM                 0x00000040
 
     #define OBJFL_INITIALIZED               0x00001000
 
     #define OBJFL_GLOBALICON                0x00002000  // V0.9.20 (2002-07-25) [umoeller]
-    #define OBJFL_NOLAZYICON                0x00004000  // V0.9.20 (2002-07-25) [umoeller]
+    #define OBJFL_LAZYLOADINGICON           0x00004000  // V0.9.20 (2002-07-25) [umoeller]
 
     #define OBJLIST_RUNNINGSTORED           0x00010000
     #define OBJLIST_CONFIGFOLDER            0x00020000
@@ -176,11 +178,15 @@
     #define OBJLIST_DIRTYLIST               0x00200000 // V0.9.11 (2001-04-18) [umoeller]
     #define OBJLIST_QUERYAWAKEFSOBJECT      0x00400000 // V0.9.16 (2001-10-25) [umoeller]
 
+    BOOL objIsAShadow(WPObject *somSelf);
+
     WPObject* objResolveIfShadow(WPObject *somSelf);
 
     ULONG objQueryFlags(WPObject *somSelf);
 
     BOOL objIsAnAbstract(WPObject *somSelf);
+
+    BOOL objIsADataFile(WPObject *somSelf);
 
     BOOL objIsAFolder(WPObject *somSelf);
 
@@ -236,7 +242,8 @@
                   WPObject* refObject);
 
     VOID objRefreshUseItems(WPObject *somSelf,
-                            PSZ pszNewTitleCopy);
+                            PSZ pszNewTitleCopy,
+                            HPOINTER hptrNewIcon);
 
     /* ******************************************************************
      *

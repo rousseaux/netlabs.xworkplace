@@ -139,7 +139,6 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\folder.h"             // XFolder implementation
@@ -1608,7 +1607,7 @@ SOM_Scope XWPTrashCan*  SOMLINK xtrcM_xwpclsQueryDefaultTrashCan(M_XWPTrashCan *
     else
         // not awake yet: try object ID
         // V0.9.9 (2001-02-06) [umoeller]
-        pDefaultTrashCan = wpshQueryObjectFromID(XFOLDER_TRASHCANID, NULL);
+        pDefaultTrashCan = cmnQueryObjectFromID(XFOLDER_TRASHCANID);
 
     return (pDefaultTrashCan);
 }

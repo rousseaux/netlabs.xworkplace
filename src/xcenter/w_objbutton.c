@@ -113,7 +113,6 @@
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wppower.h>
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
  *
@@ -1019,8 +1018,7 @@ static VOID OwgtPaintButton(HWND hwnd)
                 {
                     PMINIRECORDCORE pmrc;
 
-                    xbd.hptr = _xwpQueryIconNow(pPrivate->pobjButton);
-                                // adjusted V0.9.20 (2002-07-25) [umoeller]
+                    xbd.hptr = _wpQueryIcon(pPrivate->pobjButton);
 
                     if (    (!(pGlobals->flDisplayStyle & XCS_NOHATCHINUSE))
                          && (pmrc = _wpQueryCoreRecord(pPrivate->pobjButton))
@@ -1135,26 +1133,17 @@ static VOID BuildXButtonMenu(HWND hwnd,
     if (pPrivate->Setup.flMenuItems & MENUFL_NOLOCKUP)
         winhDeleteMenuItem(hMenu, ID_CRMI_LOCKUPNOW);
 
-    if (pPrivate->Setup.flMenuItems & MENUFL_NOSUSPEND)
-        // power has been disabled:
+    if (    // has suspend been disabled?
+            (pPrivate->Setup.flMenuItems & MENUFL_NOSUSPEND)
+         || (!(pPrivate->pPower = cmnQueryObjectFromID("<WP_POWER>")))
+         || (!(_somIsA(pPrivate->pPower, _WPPower)))
+            // is power management enabled?
+         || (!(_wpQueryPowerManagement(pPrivate->pPower)))
+       )
+    {
         pPrivate->pPower = NULL;
-    else
-        // check if we can find the "Power" object
-        if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
-        {
-            if (_somIsA(pPrivate->pPower, _WPPower))
-            {
-                // is power management enabled?
-                if (!_wpQueryPowerManagement(pPrivate->pPower))
-                    // no:
-                    pPrivate->pPower = NULL;
-            }
-            else
-                pPrivate->pPower = NULL;
-        }
-
-    if (!pPrivate->pPower)
         winhDeleteMenuItem(hMenu, ID_CRMI_SUSPEND);
+    }
     else
         // power exists:
         if (!_wpQueryPowerConfirmation(pPrivate->pPower))

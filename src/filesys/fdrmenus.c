@@ -36,7 +36,7 @@
  *      --  Hack the folder sort and folder view submenus and
  *          allow the context menu to stay open when a menu
  *          item was selected, with the help of the subclassed
- *          folder frame winproc (fdr_fnwpSubclassedFolderFrame).
+ *          folder frame winproc (fnwpSubclassedFolderFrame).
  *
  *      This code does NOT intercept the menu commands for the
  *      new file operations engine (such as "delete" for deleting
@@ -793,7 +793,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *      -- mnuModifyFolderPopupMenu for regular popup
  *         menus;
  *
- *      -- fdr_fnwpSubclassedFolderFrame upon WM_INITMENU
+ *      -- fnwpSubclassedFolderFrame upon WM_INITMENU
  *         for the "View" pulldown in folder menu bars.
  *
  *      hwndViewSubmenu contains the submenu to add
@@ -809,7 +809,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *
  *@@changed V0.9.0 [umoeller]: added "menu bar" item under Warp 4
  *@@changed V0.9.0 [umoeller]: fixed wrong separators
- *@@changed V0.9.0 [umoeller]: now using wpshQueryObjectFromID to get the config folder
+ *@@changed V0.9.0 [umoeller]: now using cmnQueryObjectFromID to get the config folder
  *@@changed V0.9.0 [umoeller]: fixed broken "View" item in menu bar
  */
 
@@ -1082,7 +1082,7 @@ static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
                               pcli);
 
                 // mark this object as being in the config folder
-                _xwpModifyListNotify(pObject2Insert,
+                _xwpModifyFlags(pObject2Insert,
                                      OBJLIST_CONFIGFOLDER,
                                      OBJLIST_CONFIGFOLDER);
             } // end if (pObject2Insert)
@@ -2155,7 +2155,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
  *
  *      This call is the result of a WM_MENUSELECT intercept
  *      of the subclassed frame window procedure of an open folder
- *      (fdr_fnwpSubclassedFolderFrame, xfldr.c).
+ *      (fnwpSubclassedFolderFrame).
  *
  *      We can intercept certain menu item selections here so
  *      that they are not passed to wpMenuItemSelected. This is

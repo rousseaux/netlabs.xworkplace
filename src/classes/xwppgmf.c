@@ -501,7 +501,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpDestroyObject(XWPProgramFile *somSelf)
         // @@todo once we get the file handles engine
         // running, make sure we won't call wpQueryHandle
         // here!!
-        ftypAssocObjectDeleted(_wpQueryHandle(somSelf));
+        ftypAssocObjectDeleted(somSelf);        // V0.9.20 (2002-07-31) [umoeller]
 
         // call WPAbstract::wpDestroyObject explicitly,
         // skipping WPProgram
@@ -786,61 +786,6 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
         _wpReleaseObjectMutexSem(somSelf);
 
     return brc;
-}
-
-/*
- *@@ wpQueryIcon:
- *      this WPObject instance method returns the HPOINTER
- *      with the current icon of the object. For some WPS
- *      classes, icon loading is deferred until the first
- *      call to this method.
- *      See icons.c for an introduction.
- *
- *      Program files are a special case of data files.
- *      Normally, there'd be no need to override this method
- *      again because WPProgramFile::wpQueryIcon apparently
- *      calls WPProgramFile::wpSetProgIcon, which we have
- *      overridden. However, in order to support lazy icons
- *      for program files as well, this method has been
- *      overridden too with V0.9.20 because the lazy icon
- *      code in WPDataFile::wpQueryIcon was never called.
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-SOM_Scope HPOINTER  SOMLINK xpgf_wpQueryIcon(XWPProgramFile *somSelf)
-{
-    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryIcon");
-
-    // support lazy icons if the global setting is
-    // enabled and we do not have a forced icon query
-    // V0.9.20 (2002-07-25) [umoeller]
-    if (    (cmnQuerySetting(sfLazyIcons))
-         && (!(objQueryFlags(somSelf) & OBJFL_NOLAZYICON))
-       )
-    {
-        HPOINTER hptrReturn;
-        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
-
-        // do we have an icon yet?
-        // this is set if either
-        // -- the icon was already set from an .ICON EA in wpRestoreState or
-        // -- this is not the first call to wpQueryIcon
-        if (!(hptrReturn = prec->hptrIcon))
-        {
-            icomAddLazyIcon(somSelf);
-
-            // use class default for now
-            hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
-
-            _wpSetIcon(somSelf, hptrReturn);
-        }
-
-        return hptrReturn;
-    }
-
-    return XWPProgramFile_parent_WPProgramFile_wpQueryIcon(somSelf);
 }
 
 /*

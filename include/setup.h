@@ -420,8 +420,10 @@
     #endif
 
     #ifdef __XWPLITE__
-        // no trap logs with eWorkplace
-        #define __NO_LOUD_EXCEPTION_HANDLERS__
+        #ifndef __DEBUG__
+            // no trap logs with eWorkplace
+            #define __NO_LOUD_EXCEPTION_HANDLERS__
+        #endif
     #endif
 
     #ifdef __DEBUG__

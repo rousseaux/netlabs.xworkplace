@@ -488,6 +488,28 @@ static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                         break;
                     else
                     {
+                        HPOINTER hptr;
+
+                        #ifdef __DEBUG__
+                        {
+                            PMINIRECORDCORE pmrc = _wpQueryCoreRecord(pDataFile);
+                            _PmpfF(("[%s] calling _wpQueryIcon, hptrIcon is 0x%lX",
+                                    _wpQueryTitle(pDataFile),
+                                    pmrc->hptrIcon
+                                  ));
+                        }
+                        #endif
+
+                        if (hptr = _wpQueryIcon(pDataFile))
+                        {
+                            _wpSetIconHandle(pDataFile, hptr);
+                            _wpSetIcon(pDataFile, hptr);
+                        }
+
+                        _Pmpf(("    loaded hptr 0x%lX", hptr));
+
+                        /*
+
                         // for program files, call wpSetProgIcon
                         // for other data files, call wpQueryAssociatedFileIcon
                         if (_somIsA(pDataFile, _WPProgramFile))
@@ -506,6 +528,8 @@ static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                             if (hptr)
                                 _wpSetIcon(pDataFile, hptr);
                         }
+
+                        */
                     }
 
                     // grab the next item on the list; only if
@@ -526,12 +550,14 @@ static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 }
 
 /*
- *@@ icomAddLazyIcon:
+ *@@ icomQueueLazyIcon:
+ *      adds the given data file to the queue of
+ *      icons to be loaded lazily.
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-BOOL icomAddLazyIcon(WPDataFile *somSelf)
+BOOL icomQueueLazyIcon(WPDataFile *somSelf)
 {
     BOOL fLocked = FALSE,
          brc = FALSE;
@@ -543,6 +569,12 @@ BOOL icomAddLazyIcon(WPDataFile *somSelf)
         if (lstAppendItem(&G_llLazyIcons,
                           somSelf))
         {
+            // set a flag so that XFldObject::wpSetIconHandle knows
+            // that the new icon that will come in soon comes from us
+            _xwpModifyFlags(somSelf,
+                            OBJFL_LAZYLOADINGICON,
+                            OBJFL_LAZYLOADINGICON);
+
             DosPostEventSem(G_hevLazyIcons);
             brc = TRUE;
         }

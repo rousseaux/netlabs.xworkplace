@@ -64,9 +64,6 @@
 
     BOOL wpshCheckObject(WPObject *pObject);
 
-    WPObject* wpshQueryObjectFromID(PCSZ pcszObjectID,
-                                    PULONG pulErrorCode);
-
     ULONG wpshQueryView(WPObject* somSelf,
                         HWND hwndFrame);
 

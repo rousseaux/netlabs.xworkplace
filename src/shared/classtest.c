@@ -63,18 +63,51 @@
 // XWorkplace implementation headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpshadow.h>                   // WPShadow
+#include <wppgm.h>                      // WPProgram
 #include <wptrans.h>                    // WPTransient
 #include <wpicon.h>                     // WPIcon
 #include <wpptr.h>                      // WPPointer
 #include <wpcmdf.h>                     // WPCommandFile
 #include <wprootf.h>                    // WPRootFolder
+#include <wpserver.h>                   // WPServer
 #include <wpshdir.h>                    // WPSharedDir
 
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
+#include "filesys\object.h"             // XFldObject implementation
+
+/*
+ *@@ ctsSetClassFlags:
+ *      called from XFldObject::wpObjectReady to set
+ *      flags in the object instance data for speedier
+ *      testing later.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+VOID ctsSetClassFlags(WPObject *somSelf,
+                      PULONG pfl)
+{
+    if (_somIsA(somSelf, _WPFileSystem))
+    {
+        *pfl = OBJFL_WPFILESYSTEM;
+        if (_somIsA(somSelf, _WPFolder))
+            *pfl |= OBJFL_WPFOLDER;
+        else if (_somIsA(somSelf, _WPDataFile))
+            *pfl |= OBJFL_WPDATAFILE;
+    }
+    else if (_somIsA(somSelf, _WPAbstract))
+    {
+        *pfl = OBJFL_WPABSTRACT;
+        if (ctsIsShadow(somSelf))
+            *pfl |= OBJFL_WPSHADOW;
+        else if (_somIsA(somSelf, _WPProgram))
+            *pfl |= OBJFL_WPPROGRAM;
+    }
+}
 
 /*
  *@@ ctsIsAbstract:
- *
+ *      returns TRUE if somSelf is abstract.
  */
 
 BOOL ctsIsAbstract(WPObject *somSelf)
@@ -84,7 +117,8 @@ BOOL ctsIsAbstract(WPObject *somSelf)
 
 /*
  *@@ ctsIsShadow:
- *
+ *      returns TRUE if somSelf is a shadow
+ *      (of the WPShadow class).
  */
 
 BOOL ctsIsShadow(WPObject *somSelf)
@@ -94,7 +128,8 @@ BOOL ctsIsShadow(WPObject *somSelf)
 
 /*
  *@@ ctsIsTransient:
- *      returns TRUE if somSelf is a WPTransient.
+ *      returns TRUE if somSelf is transient
+ *      (of the WPTransient class).
  */
 
 BOOL ctsIsTransient(WPObject *somSelf)
@@ -119,7 +154,8 @@ BOOL ctsIsMinWin(WPObject *somSelf)
 
 /*
  *@@ ctsIsIcon:
- *
+ *      returns TRUE if somSelf is an icon data
+ *      file (of the WPIcon class).
  */
 
 BOOL ctsIsIcon(WPObject *somSelf)
@@ -129,7 +165,8 @@ BOOL ctsIsIcon(WPObject *somSelf)
 
 /*
  *@@ ctsIsPointer:
- *
+ *      returns TRUE if somSelf is an pointer data
+ *      file (of the WPPointer class).
  */
 
 BOOL ctsIsPointer(WPObject *somSelf)
@@ -139,7 +176,9 @@ BOOL ctsIsPointer(WPObject *somSelf)
 
 /*
  *@@ ctsIsCommandFile:
- *
+ *      returns TRUE if somSelf is a command file
+ *      (of the WPCommandFile class, which in turn
+ *      descends from WPProgramFile).
  */
 
 BOOL ctsIsCommandFile(WPObject *somSelf)
@@ -149,7 +188,8 @@ BOOL ctsIsCommandFile(WPObject *somSelf)
 
 /*
  *@@ ctsIsRootFolder:
- *
+ *      returns TRUE if somSelf is a root folder
+ *      (of the WPRootFolder class).
  */
 
 BOOL ctsIsRootFolder(WPObject *somSelf)
@@ -159,12 +199,32 @@ BOOL ctsIsRootFolder(WPObject *somSelf)
 
 /*
  *@@ ctsIsSharedDir:
+ *      returns TRUE if somSelf is a "shared directory"
+ *      (of the WPSharedDir class).
  *
+ *      WPSharedDir objects function as root folders for
+ *      remote folders and appear below WPServer objects.
  */
 
 BOOL ctsIsSharedDir(WPObject *somSelf)
 {
     return _somIsA(somSelf, _WPSharedDir);
+}
+
+/*
+ *@@ ctsIsServer:
+ *      returns TRUE if somSelf is a server object
+ *      (of the WPServer class).
+ *
+ *      WPServer objects function like WPDisks for
+ *      remote objects and appear only in WPNetGroup.
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+BOOL ctsIsServer(WPObject *somSelf)
+{
+    return _somIsA(somSelf, _WPServer);
 }
 
 /*

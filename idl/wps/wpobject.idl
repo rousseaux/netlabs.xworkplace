@@ -251,7 +251,7 @@ interface WPObject : SOMObject
 
     USHORT wpQueryScreenGroupID( in USHORT usPrevSgId );
 
-    BOOL   wpSetupOnce (in PSZ pszSetupString);
+    BOOL wpSetupOnce (in PSZ pszSetupString);
 
     BOOL wpSetIcon(in HPOINTER hptrNewIcon);
 
@@ -337,6 +337,8 @@ interface WPObject : SOMObject
 
     BOOL wpModifyState(in ULONG flFlags,
                        in ULONG flMask);
+
+    BOOL wpIdentify(in PSZ pszIdentity);
 
 //# The WPS class list shows __get_XXX methods for this class, so
 //# there must be SOM attributes here. Since however there is no
@@ -498,6 +500,7 @@ interface WPObject : SOMObject
                   wpAddObjectGeneralPage2,
                   wpFindTaskRec2,
                   wpModifyState;
+
     externalstem = wpobj;
     local;
     externalprefix = obj_;
@@ -506,7 +509,7 @@ interface WPObject : SOMObject
     filestem = wpobject;
     metaclass = M_WPObject;
     callstyle = oidl;
-    dllname = "pmwp.dll";               //sahsom2
+    dllname = "pmwp.dll";
     passthru C_h =      ""
 "   #define INCL_WINSTDCNR"
 "   #include <pmstddlg.h>"

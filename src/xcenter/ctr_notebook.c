@@ -973,7 +973,7 @@ static ULONG AppendObjects(PXSTRING pstr,
          ul < c;
          ++ul)
     {
-        if (wpshQueryObjectFromID(apcsz[ul], NULL))
+        if (cmnQueryObjectFromID(apcsz[ul]))
         {
             if (cAdded)
                 xstrcatc(pstr, ',');

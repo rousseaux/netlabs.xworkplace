@@ -13,7 +13,7 @@
  *      More status bar code can be found with the following:
  *
  *      --  When selections change in a folder view (i.e.
- *          fdr_fnwpSubclassedFolderFrame receives CN_EMPHASIS
+ *          fnwpSubclassedFolderFrame receives CN_EMPHASIS
  *          notification), fdr_fnwpStatusBar is posted an STBM_UPDATESTATUSBAR
  *          message, which in turn calls XFolder::xwpUpdateStatusBar,
  *          which normally calls stbComposeText in turn (the main entry

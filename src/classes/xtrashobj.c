@@ -157,18 +157,27 @@
 
 typedef struct _XTRO_DETAILS
 {
-    PSZ     pszDeletedFrom;      // where object was deleted from
-    ULONG   ulSize;              // ULONG size of related object
-                                 // (this is for sorting only and not displayed)
-    PSZ     pszSize;             // formatted size of related object; this points
-                                 // to the _szTotalSize instance data
-    PSZ     pszOriginalClass;    // class of related object
-    CDATE   cdateDeleted;        // deletion date (copied from related object)
-    CTIME   ctimeDeleted;        // deletion date (copied from related object)
+    PSZ     pszDeletedFrom;     // where object was deleted from
+    ULONG   ulSize;             // ULONG size of related object
+                                // (this is for sorting only and not displayed)
+    PSZ     pszSize;            // formatted size of related object; this points
+                                // to the _szTotalSize instance data
+    PSZ     pszOriginalClass;   // class of related object
+    CDATE   cdateDeleted;       // deletion date (copied from related object)
+    CTIME   ctimeDeleted;       // deletion date (copied from related object)
+
+#ifdef __DEBUG__
+    PSZ     pszMapping;         // for debugging, show us the mapping for this object
+#endif
+
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
 // extra data fields for XWPTrashObject object details:
-#define XTRO_EXTRAFIELDS 6
+#ifdef __DEBUG__
+#define XTRO_EXTRAFIELDS    7
+#else
+#define XTRO_EXTRAFIELDS    6
+#endif
         // raised V0.9.12 (2001-05-18) [umoeller]
 
 static CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
@@ -536,8 +545,7 @@ SOM_Scope HPOINTER  SOMLINK xtro_wpQueryIcon(XWPTrashObject *somSelf)
         // on the first call, copy icon from related object
         if (!pmrc->hptrIcon)
             _wpSetIcon(somSelf,
-                       _xwpQueryIconNow(_pRelatedObject));
-                            // adjusted V0.9.20 (2002-07-25) [umoeller]
+                       _wpQueryIcon(_pRelatedObject));
         return pmrc->hptrIcon;
     }
 
@@ -585,9 +593,14 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
                               &pDetails->cdateDeleted,
                               &pDetails->ctimeDeleted);
             pDetails->pszOriginalClass = _somGetName(_somGetClass(_pRelatedObject));
+
+#ifdef __DEBUG__
+            pDetails->pszMapping = _wpQueryTitle(_wpQueryFolder(_pRelatedObject));
+#endif
         }
+
         // move the pointer past our details structure
-        *ppDetailsData = ((PBYTE) (*ppDetailsData)) + sizeof(XTRO_DETAILS);
+        *ppDetailsData = ((PBYTE)(*ppDetailsData)) + sizeof(XTRO_DETAILS);
     }
     else
     {
@@ -997,7 +1010,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->flData            |= CFA_STRING | CFA_RIGHT;
                 pcfi->pTitleData        = cmnGetString(ID_XTSI_SIZE);  // pszSize
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszSize));
-                pcfi->ulLenFieldData    = sizeof(ULONG);
+                pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 
@@ -1032,6 +1045,19 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->ulLenFieldData    = sizeof(CTIME);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
+
+#ifdef __DEBUG__
+            // seventh item in debug mode: trash mapping belong to us
+            case 6:
+                pcfi->flCompare   = 0; // COMPARE_SUPPORTED | SORTBY_SUPPORTED;
+                pcfi->flData            |= CFA_STRING | CFA_LEFT;
+                pcfi->pTitleData        = "Mapping";
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszMapping));
+                pcfi->ulLenFieldData    = sizeof(PSZ);
+                pcfi->DefaultComparison = CMP_GREATER;
+            break;
+#endif
+
         }   // end for
     } // end for
 

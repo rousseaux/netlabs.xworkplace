@@ -23,6 +23,9 @@
 #ifndef CLASSTEST_HEADER_INCLUDED
     #define CLASSTEST_HEADER_INCLUDED
 
+    VOID ctsSetClassFlags(WPObject *somSelf,
+                          PULONG pfl);
+
     BOOL ctsIsAbstract(WPObject *somSelf);
 
     BOOL ctsIsShadow(WPObject *somSelf);
@@ -40,6 +43,8 @@
     BOOL ctsIsRootFolder(WPObject *somSelf);
 
     BOOL ctsIsSharedDir(WPObject *somSelf);
+
+    BOOL ctsIsServer(WPObject *somSelf);
 
     BOOL ctsDescendedFromSharedDir(SOMClass *pClassObject);
 

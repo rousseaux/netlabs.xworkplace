@@ -351,11 +351,6 @@
                                  PSUBCLFOLDERVIEW psfv,
                                  PFNWP pfnwpOriginal);
 
-    MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd,
-                                                   ULONG msg,
-                                                   MPARAM mp1,
-                                                   MPARAM mp2);
-
     // Supplementary object window msgs (for each
     // subclassed folder frame, xfldr.c)
     #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)

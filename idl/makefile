@@ -38,6 +38,7 @@ SOMTEMP = $(TEMP)
     [set SMNOTC=1] || \
 #     [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 #   hacked up SMINCLUDE to make sure idl\wps is before toolkit idl\
+#   V0.9.20 (2002-07-25) [umoeller]
     [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
 !endif
 
@@ -53,9 +54,21 @@ SOMTEMP = $(TEMP)
 # Specify the main target.
 
 all: \
+# added all the following from wps\ to avoid problems with warp 4 toolkit
+# V0.9.20 (2002-07-31) [umoeller]
+    $(OUTPUTDIR)\wps\wpdataf.h \
+    $(OUTPUTDIR)\wps\wpdesk.h \
+    $(OUTPUTDIR)\wps\wpdisk.h \
     $(OUTPUTDIR)\wps\wpfolder.h \
     $(OUTPUTDIR)\wps\wpfsys.h \
+    $(OUTPUTDIR)\wps\wpkeybd.h \
+    $(OUTPUTDIR)\wps\wpmouse.h \
     $(OUTPUTDIR)\wps\wpobject.h \
+    $(OUTPUTDIR)\wps\wppgm.h \
+    $(OUTPUTDIR)\wps\wppgmf.h \
+    $(OUTPUTDIR)\wps\wpshadow.h \
+    $(OUTPUTDIR)\wps\wpsound.h \
+    $(OUTPUTDIR)\wps\wpsystem.h \
     $(OUTPUTDIR)\xcenter.h \
     $(OUTPUTDIR)\xclslist.h \
     $(OUTPUTDIR)\xdebug.h \
@@ -139,31 +152,29 @@ $(OUTPUTDIR)\xdebug.h:           $(@B).idl
 
 $(OUTPUTDIR)\xdebug_folder.h:    $(@B).idl
 
-$(OUTPUTDIR)\xfdataf.h:          $(@B).idl
+$(OUTPUTDIR)\xfdataf.h:          $(@B).idl wps\wpdataf.idl
 
-$(OUTPUTDIR)\xfdesk.h:           $(@B).idl
+$(OUTPUTDIR)\xfdesk.h:           $(@B).idl wps\wpdesk.idl
 
-$(OUTPUTDIR)\xfdisk.h:           $(@B).idl
+$(OUTPUTDIR)\xfdisk.h:           $(@B).idl wps\wpdisk.idl
 
 $(OUTPUTDIR)\xfldr.h:            $(@B).idl wps\wpfolder.idl
 
 $(OUTPUTDIR)\xfobj.h:            $(@B).idl wps\wpobject.idl
 
-$(OUTPUTDIR)\xfont.h:            $(@B).idl
+$(OUTPUTDIR)\xfont.h:            $(@B).idl wps\wpfolder.idl
 
-$(OUTPUTDIR)\xfontfile.h:        $(@B).idl
+$(OUTPUTDIR)\xfontfile.h:        $(@B).idl wps\wpdataf.idl
 
 $(OUTPUTDIR)\xfontobj.h:         $(@B).idl
 
-$(OUTPUTDIR)\xwppgmf.h:          $(@B).idl
+$(OUTPUTDIR)\xfstart.h:          $(@B).idl xfldr.idl
 
-$(OUTPUTDIR)\xfstart.h:          $(@B).idl
+$(OUTPUTDIR)\xfsys.h:            $(@B).idl wps\wpsystem.idl
 
-$(OUTPUTDIR)\xfsys.h:            $(@B).idl
+$(OUTPUTDIR)\xfwps.h:            $(@B).idl wps\wpsystem.idl
 
-$(OUTPUTDIR)\xfwps.h:            $(@B).idl
-
-$(OUTPUTDIR)\xtrash.h:           $(@B).idl
+$(OUTPUTDIR)\xtrash.h:           $(@B).idl wps\wpfolder.idl
 
 $(OUTPUTDIR)\xtrashobj.h:        $(@B).idl
 
@@ -175,25 +186,27 @@ $(OUTPUTDIR)\xwpfsys.h:          $(@B).idl wps\wpfsys.idl
 
 $(OUTPUTDIR)\xwpadmin.h:         $(@B).idl
 
-$(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
+$(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl wps\wpkeybd.idl
 
 $(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
 
-$(OUTPUTDIR)\xwpmouse.h:         $(@B).idl
+$(OUTPUTDIR)\xwpmouse.h:         $(@B).idl wps\wpmouse.idl
 
 $(OUTPUTDIR)\xwpnetwork.h:       $(@B).idl
 
-$(OUTPUTDIR)\xwpnetsrv.h:       $(@B).idl
+$(OUTPUTDIR)\xwpnetsrv.h:        $(@B).idl
 
-$(OUTPUTDIR)\xwppgm.h:           $(@B).idl
+$(OUTPUTDIR)\xwppgm.h:           $(@B).idl wps\wppgm.idl
+
+$(OUTPUTDIR)\xwppgmf.h:          $(@B).idl wps\wppgmf.idl
 
 $(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpsetup.h:         $(@B).idl
 
-$(OUTPUTDIR)\xwpshadow.h:        $(@B).idl
+$(OUTPUTDIR)\xwpshadow.h:        $(@B).idl wps\wpshadow.idl
 
-$(OUTPUTDIR)\xwpsound.h:         $(@B).idl
+$(OUTPUTDIR)\xwpsound.h:         $(@B).idl wps\wpsound.idl
 
 $(OUTPUTDIR)\xwpstring.h:        $(@B).idl
 

@@ -979,7 +979,7 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
 
 /*
  *@@ fopsStartDeleteFromCnr:
- *      this gets called from fdr_fnwpSubclassedFolderFrame
+ *      this gets called from fnwpSubclassedFolderFrame
  *      in two situations:
  *
  *      --  if trash can "delete" support is on and a "delete"

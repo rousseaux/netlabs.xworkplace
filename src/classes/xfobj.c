@@ -5,13 +5,23 @@
  *
  *      --  XFldObject (WPObject replacement)
  *
- *      XFldObject gives the other classes access to WPS
- *      internals that cannot be reached otherwise. It
- *      also initializes the whole XWorkplace environment
- *      at Desktop startup by overriding M_XFldObject::wpclsInitData.
+ *      XFldObject replaces WPObject and becomes thus part of any
+ *      WPS object on the system. As a result, extreme care must
+ *      be taken with whatever this code does.
  *
- *      Also this class is needed for storing some extra data
- *      when objects have been deleted into the trash can.
+ *      XFldObject is needed for the following:
+ *
+ *      --  Initializes the whole XWorkplace environment at WPS startup
+ *          by overriding M_XFldObject::wpclsInitData. This goes into
+ *          initMain then.
+ *
+ *      --  Give the other classes access to WPS internals that cannot
+ *          be reached otherwise. We drill into the WPObject instance
+ *          data for some nasty hacks here.
+ *
+ *      --  Getting icon replacements to work.
+ *
+ *      --  Cooperation of all WPS objects with the trash can.
  *
  *      This class must always be installed.
  *
@@ -125,6 +135,8 @@
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
+#include <wpdataf.h>
+
 /* ******************************************************************
  *
  *   Global variables
@@ -197,24 +209,6 @@ static VOID UnlockAwakeObjectsList(VOID)
  ********************************************************************/
 
 /*
- *@@ xwpQueryIconNow:
- *      returns the icon of the given object while making sure
- *      that icon loading is not deferred (lazy icon loading).
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-SOM_Scope HPOINTER  SOMLINK xo_xwpQueryIconNow(XFldObject *somSelf)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_xwpQueryIconNow");
-
-    _flObject |= OBJFL_NOLAZYICON;
-
-    return _wpQueryIcon(somSelf);
-}
-
-/*
  *@@ xwpAddReplacementIconPage:
  *      calls ntbInsertPage for a replacement "Icon" page with
  *      the given page ID and default help panel.
@@ -257,7 +251,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
     inbp.hwndNotebook = hwndNotebook;
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
     inbp.ulDlgID = ID_XFD_EMPTYDLG;
-    inbp.ulPageID = ulPageID; // SP_OBJECT_ICONPAGE1;
+    inbp.ulPageID = ulPageID;
 
     if (ulPageID == SP_OBJECT_ICONPAGE2)
     {
@@ -287,8 +281,8 @@ SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
  *
  *      Thing is, several classes override the wpQueryDefaultView
  *      method to implement a different behavior. The most
- *      annoying example is the WPFolder class which implements
- *      the folder default view inheritance from the parent
+ *      annoying example is the WPFolder class which forces
+ *      the folder default view to be inherited from the parent
  *      folder.
  *
  *      The WPObject class has an instance variable which
@@ -428,6 +422,10 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
 
 /*
  *@@ GetTrashData:
+ *      little helper func that returns a pointer to
+ *      the TRASHDATA in the object's instance data.
+ *
+ *      This allocates the struct on the first call.
  *
  *      Preconditions:
  *
@@ -573,20 +571,20 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
 }
 
 /*
- *@@ xwpQueryListNotify:
+ *@@ xwpQueryFlags:
  *      returns the current list notification flags for this
- *      object. See XFldObject::xwpModifyListNotify for details.
+ *      object. See XFldObject::xwpModifyFlags for details.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
+SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
 {
     ULONG   ulrc = 0;
     WPObject *pobjLock = NULL;
-    XFldObjectMethodDebug("XFldObject","xo_xwpQueryListNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryFlags");
 
-    // we need the lock here because xwpModifyListNotify
+    // we need the lock here because xwpModifyFlags
     // reads and writes holding the lock too
     TRY_LOUD(excpt1)
     {
@@ -606,7 +604,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
 }
 
 /*
- *@@ xwpModifyListNotify:
+ *@@ xwpModifyFlags:
  *      this modifies the current list-notify flags for the
  *      current object in an atomic operation.
  *
@@ -663,20 +661,20 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
  *
  *      For example, to set FLAG1 and clear FLAG2, call:
  +
- +          _xwpModifyListNotify(...,
- +                               FLAG1 | FLAG2,     // affected flags
- +                               FLAG1);            // flags to set (i.e. clear FLAG2)
+ +          _xwpModifyFlags(...,
+ +                          FLAG1 | FLAG2,     // affected flags
+ +                          FLAG1);            // flags to set (i.e. clear FLAG2)
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
-                                               ULONG flNotifyFlags,
-                                               ULONG flNotifyMask)
+SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
+                                          ULONG flFlags,
+                                          ULONG flMask)
 {
     BOOL    brc = FALSE;
     WPObject *pobjLock = NULL;
-    XFldObjectMethodDebug("XFldObject","xo_xwpModifyListNotify");
+    XFldObjectMethodDebug("XFldObject","xo_xwpModifyFlags");
 
     TRY_LOUD(excpt1)
     {
@@ -686,9 +684,9 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
         {
             _flObject     = (
                                 // copy all unaffected
-                                (_flObject & ~flNotifyFlags)
+                                (_flObject & ~flFlags)
                                 // OR with masked new ones
-                              | (flNotifyFlags & flNotifyMask)
+                              | (flFlags & flMask)
                             );
             brc = TRUE;
         }
@@ -1298,18 +1296,7 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 
     // set the class flags
     _flObject = 0;
-    if (_somIsA(somSelf, _WPFileSystem))
-    {
-        _flObject = OBJFL_WPFILESYSTEM;
-        if (_somIsA(somSelf, _WPFolder))
-            _flObject |= OBJFL_WPFOLDER;
-    }
-    else if (ctsIsAbstract(somSelf))
-    {
-        _flObject = OBJFL_WPABSTRACT;
-        if (ctsIsShadow(somSelf))
-            _flObject |= OBJFL_WPSHADOW;
-    }
+    ctsSetClassFlags(somSelf, &_flObject);
 
     _pvTrashData = NULL;            // V0.9.20 (2002-07-25) [umoeller]
 
@@ -1977,7 +1964,9 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                         // note: fLocked is TRUE only if the object _was_ intialized,
                         // see above
                         if (fLocked)
-                            objRefreshUseItems(somSelf, pRecord->pszIcon);
+                            objRefreshUseItems(somSelf,
+                                               pRecord->pszIcon,
+                                               NULLHANDLE);     // no new icon V0.9.20 (2002-07-31) [umoeller]
 
                         if (    (ulStyle & OBJSTYLE_TEMPLATE)
                              && (fIsInitialized)
@@ -2038,33 +2027,58 @@ SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
 
 /*
  *@@ wpSetIcon:
- *      this WPObject method sets the new icon for the object
- *      and updates all views where the icon is currently
- *      visible.
  *
- *      We override this icon to FINALLY be able to refresh
- *      data file icons when a program object's icon changes.
- *      To be precise, this works for any client/server icon
- *      relationship; see icomShareIcon.
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
+ *@@added V0.9.20 (2002-07-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
 {
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    BOOL            brc = FALSE;
+    BOOL            fSharedLocked = FALSE,
+                    fSelfLocked = FALSE;
+    XFldObjectData  *somThis = XFldObjectGetData(somSelf);
+
     XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
 
-    // call parent first to have the default processing done
-    if (XFldObject_parent_WPObject_wpSetIcon(somSelf, hptrNewIcon))
+    TRY_LOUD(excpt1)
     {
-#if 1
-        BOOL fLocked = FALSE;
+        PIBMOBJECTDATA  pData;
+        PMINIRECORDCORE pmrc;
 
-        // now check if we have any icon clients
-        TRY_LOUD(excpt1)
+        // nasty hack for lazy icons: wpSetIcon will not update
+        // the records of the object in all open views if the
+        // current MINIRECORDCORE.hptrIcon is NULLHANDLE. However
+        // we can't preset the hptrIcon thing to the class default
+        // icon in our cnr owner draw proc because then the
+        // _wpQueryIcon call in fntLazyIcons would fail
+        // because it would think there was already an icon.
+        // So we have to use another object flag (OBJFL_LAZYLOADINGICON)
+        // which is set by icomQueueLazyIcon when the object gets added
+        // to the lazy load queue and is reset again here on the first
+        // wpSetIcon that comes in afterwards, which (hopefully) is
+        // from fntLazyIcons.
+        if (    (pData = (PIBMOBJECTDATA)_pvWPObjectData)
+             && (pmrc = pData->pmrc)
+             && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+             && (_flObject & OBJFL_LAZYLOADINGICON)
+           )
         {
-            if (fLocked = icomLockIconShares())
+            pmrc->hptrIcon = _wpclsQueryIcon(_somGetClass(somSelf));
+
+            _flObject &= ~OBJFL_LAZYLOADINGICON;
+
+            _wpReleaseObjectMutexSem(somSelf);
+            fSelfLocked = FALSE;
+        }
+
+        // now go call the parent, which updates the object in all
+        // open views
+        if (XFldObject_parent_WPObject_wpSetIcon(somSelf, hptrNewIcon))
+        {
+
+            // now update client icons, if we're an icon server
+
+            if (fSharedLocked = icomLockIconShares())
             {
                 WPObject *pobjClient = _pFirstIconClient;
 
@@ -2076,16 +2090,148 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
                 }
             }
         }
-        CATCH(excpt1) {} END_CATCH();
-
-        if (fLocked)
-            icomUnlockIconShares();
-#endif
-        return TRUE;
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 
-    return FALSE;
+    if (fSharedLocked)
+        icomUnlockIconShares();
+
+    if (fSelfLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
 }
+
+#if 0
+
+/*
+ *@@ wpSetIconHandle:
+ *      this half-documented WPObject method does the actual
+ *      work for WPObject::wpSetIcon.
+ *
+ *      wpSetIcon _is_ prototyped in Warp 3's wpobject.idl,
+ *      but not documented. I have no idea _why_ IBM uses
+ *      this method instead of doing this work in WPObject::wpSetIcon,
+ *      but from my testing, WPObject::wpSetIcon does _nothing_
+ *      except calling WPObject::wpSetIconHandle.
+ *
+ *      We replace this completely, never calling the parent
+ *      method. This allows us to
+ *
+ *      --  get icon sharing right;
+ *
+ *      --  get lazy icon loading right because the default
+ *          method doesn't update the views if there was
+ *          no icon previously, which is the case with the
+ *          way we are handling lazy icons in
+ *          fnwpSubclassedFolderFrame.
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSetIconHandle(XFldObject *somSelf,
+                                           HPOINTER hptrNewIcon)
+{
+    PMINIRECORDCORE pmrc;
+    BOOL            brc = FALSE;
+    BOOL            fSelfLocked = FALSE,
+                    fSharedLocked = FALSE;
+
+    XFldObjectMethodDebug("XFldObject","xo_wpSetIconHandle");
+
+#if 0
+
+    TRY_LOUD(excpt1)
+    {
+        XFldObjectData  *somThis = XFldObjectGetData(somSelf);
+        PIBMOBJECTDATA  pData;
+
+        if (    (pData = (PIBMOBJECTDATA)_pvWPObjectData)
+             && (pmrc = pData->pmrc)
+             && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+           )
+        {
+            brc = TRUE;
+
+             // ignore the call if the icon isn't changing
+            if (hptrNewIcon != pmrc->hptrIcon)
+            {
+                HPOINTER hptrOld = pmrc->hptrIcon;
+
+                // make the change
+                pmrc->hptrIcon = hptrNewIcon;
+
+                // update views only if we have a new icon
+                if (    (hptrNewIcon)
+                     // no need to update if there was no previous icon
+                     && (    (hptrOld)
+                          // unless the NULLHANDLE old icon is because we
+                          // were doing a lazy icon request
+                          || (_flObject & OBJFL_LAZYLOADINGICON)
+                        )
+                   )
+                {
+                    PUSEITEM pUseItem;
+                    // alright unset the flag then
+                    _flObject &= ~OBJFL_LAZYLOADINGICON;
+
+                    // now go refresh views
+                    objRefreshUseItems(somSelf,
+                                       NULL,        // no new title
+                                       hptrNewIcon);
+                }
+
+                if (fSelfLocked)
+                {
+                    _wpReleaseObjectMutexSem(somSelf);
+                    fSelfLocked = FALSE;
+                }
+
+                // FREE the old icon if it was a non-default icon
+                if (    (hptrOld)
+                     && (pData->flStyle & OBJSTYLE_NOTDEFAULTICON)
+                   )
+                    WinFreeFileIcon(hptrOld);
+
+                if (fSharedLocked = icomLockIconShares())
+                {
+                    WPObject *pobjClient = _pFirstIconClient;
+
+                    while (pobjClient)
+                    {
+                        XFldObjectData *somThat = XFldObjectGetData(pobjClient);
+                        _wpSetIcon(pobjClient, hptrNewIcon);
+                        pobjClient = somThat->pNextClient;
+                    }
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fSelfLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    if (fSharedLocked)
+        icomUnlockIconShares();
+
+    return brc;
+
+#else
+
+    return XFldObject_parent_WPObject_wpSetIconHandle(somSelf,
+                                                      hptrNewIcon);
+
+#endif
+
+}
+
+#endif
 
 /*
  *@@ wpSaveDeferred:
@@ -3054,7 +3200,9 @@ SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
 #endif
                  // but do this trick only for certain classes, we
                  // better make sure we don't mess with user classes
-                 && (ctsIsSharedDir(somSelf))
+                 && (    (ctsIsSharedDir(somSelf))
+                      || (ctsIsServer(somSelf))         // added V0.9.20 (2002-07-31) [umoeller]
+                    )
                )
             {
                 _PmpfF(("[%s]{%s} got SETTINGS_PAGE_REMOVED",

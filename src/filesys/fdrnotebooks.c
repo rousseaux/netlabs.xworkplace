@@ -118,6 +118,8 @@ static const CONTROLDEF
     FdrDefaultDocViewCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRDEFAULTDOCVIEW),
 #endif
     FdrAutoRefreshCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRAUTOREFRESH),
+    FdrLazyIconsCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRVIEW_LAZYICONS), // V0.9.20 (2002-07-31) [umoeller]
+    FdrShadowOverlayCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRVIEW_SHADOWOVERLAY),   // V0.9.20 (2002-08-04) [umoeller]
     FdrDefaultViewGroup = LOADDEF_GROUP(ID_XSDI_FDRVIEWDEFAULT_GROUP, DEFAULT_TABLE_WIDTH),
     FdrViewInheritCB = LOADDEF_FIRST_AUTORADIO(ID_XSDI_FDRVIEW_INHERIT),
     FdrViewIconCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_ICON),
@@ -152,6 +154,10 @@ static const DLGHITEM dlgView[] =
                         CONTROL_DEF(&MaxPathCharsText1),
                         CONTROL_DEF(&MaxPathCharsSpin),
                         CONTROL_DEF(&MaxPathCharsText2),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrLazyIconsCB),       // V0.9.20 (2002-07-31) [umoeller]
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrShadowOverlayCB),   // V0.9.20 (2002-07-31) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&TreeViewAutoScrollCB),
 #ifndef __NOFDRDEFAULTDOCS__
@@ -223,7 +229,8 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        ULONG ulid;
+        ULONG   ulid,
+                flOwnerDraw;
 
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FULLPATH,
                               cmnQuerySetting(sfFullPath));
@@ -246,6 +253,13 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         if (pKernelGlobals->fAutoRefreshReplaced)
             winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
                                   !cmnQuerySetting(sfFdrAutoRefreshDisabled));
+
+        // V0.9.20 (2002-08-04) [umoeller]
+        flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_LAZYICONS,
+                              !!(flOwnerDraw & OWDRFL_LAZYICONS));
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_SHADOWOVERLAY,
+                              !!(flOwnerDraw & OWDRFL_SHADOWOVERLAY));
 
         // folder default views V0.9.12 (2001-04-30) [umoeller]
         switch (cmnQuerySetting(sulDefaultFolderView))
@@ -334,6 +348,28 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSDI_FDRAUTOREFRESH:
             cmnSetSetting(sfFdrAutoRefreshDisabled, (ulExtra == 0));
+        break;
+
+        // V0.9.20 (2002-08-04) [umoeller]
+        case ID_XSDI_FDRVIEW_LAZYICONS:
+        {
+            ULONG flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
+            if (ulExtra)
+                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw | OWDRFL_LAZYICONS);
+            else
+                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw & ~OWDRFL_LAZYICONS);
+        }
+        break;
+
+        // V0.9.20 (2002-08-04) [umoeller]
+        case ID_XSDI_FDRVIEW_SHADOWOVERLAY:
+        {
+            ULONG flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons);
+            if (ulExtra)
+                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw | OWDRFL_SHADOWOVERLAY);
+            else
+                cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw & ~OWDRFL_SHADOWOVERLAY);
+        }
         break;
 
         case ID_XSDI_FDRVIEW_ICON:

@@ -138,7 +138,9 @@ BOOL MoveCurrentDesktop(HAB hab,
         }
     }
 
-    if (dx || dy)
+    if (    (dx)
+         || (dy)
+       )
     {
         BOOL    fAnythingMoved = TRUE;
 
@@ -402,7 +404,6 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case PGRM_MOVEBYDELTA:
-            {
                 if (mp1 || mp2)
                 {
                     // we got something to do:
@@ -413,7 +414,6 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     // mouse switching is now possible again
                     G_pHookData->fProcessingWraparound = FALSE;
                 }
-            }
             break;
 
             default:

@@ -165,6 +165,8 @@
 #define ID_ICONXWPFONTFILE     153          // added V0.9.16 (2001-11-25) [umoeller]
 #define ID_ICONXWPVCARD        154          // added V0.9.16 (2002-01-05) [umoeller]
 
+#define ID_ICONXWPSHADOWOVERLAY 155         // added V0.9.20 (2002-07-31) [umoeller]
+
 // icons used by "diskfree" widget
 #define ID_ICON_DRIVE          160
 #define ID_POINTER_HAND        161
@@ -512,14 +514,15 @@
 
 // 595-597 used above
 
-// "File types" page (new with V0.9.0)
-#define ID_XSD_FILETYPES                600     // "File types" page in XFldWPS (V0.9.0)
+// "File types" page in "Workplace Shell" (new with V0.9.0)
+// #define ID_XSD_FILETYPES                600     // removed V0.9.20 (2002-08-04) [umoeller]
 #define ID_XSDI_FT_GROUP                601
 #define ID_XSDI_FT_CONTAINER            602
 #define ID_XSDI_FT_FILTERS_TXT          603
 #define ID_XSDI_FT_FILTERSCNR           604
 #define ID_XSDI_FT_ASSOCS_TXT           605
 #define ID_XSDI_FT_ASSOCSCNR            606
+#define ID_XSDI_FT_CREATEDATAFILEHANDLE 607     // added V0.9.20 (2002-08-04) [umoeller]
 
 // "Import WPS Filters" dialog (V0.9.0
 #define ID_XSD_IMPORTWPS                610     // "Import WPS filter" dlg (V0.9.0)
@@ -558,6 +561,8 @@
 #define ID_XSDI_FDRVIEW_ICON            662
 #define ID_XSDI_FDRVIEW_TREE            663
 #define ID_XSDI_FDRVIEW_DETAILS         664
+#define ID_XSDI_FDRVIEW_LAZYICONS       665     // added V0.9.20 (2002-08-04) [umoeller]
+#define ID_XSDI_FDRVIEW_SHADOWOVERLAY   666     // added V0.9.20 (2002-08-04) [umoeller]
 
 /* ******************************************************************
  *
@@ -1018,6 +1023,8 @@
 #define ID_XLD_REGISTERCLASS            2004
 
 // class list dlg items
+#define ID_XLDI_BYTESPERINSTANCETXT     2008            // V0.9.20 (2002-08-04) [umoeller]
+#define ID_XLDI_BYTESPERINSTANCE        2009            // V0.9.20 (2002-08-04) [umoeller]
 #define ID_XLDI_INTROTEXT               2010
 #define ID_XLDI_CNR                     2011
 #define ID_XLDI_TEXT2                   2012
@@ -2031,7 +2038,6 @@
 #define ID_XCSI_FILEOPERATIONS          6040
 #ifndef __NEVEREXTASSOCS__
 #define ID_XCSI_EXTASSOCS               6041
-#define ID_XCSI_LAZYICONS               6042        // added V0.9.20 (2002-07-25) [umoeller]
 #endif
 // #define ID_XCSI_CLEANUPINIS             6042
             // disabled for now

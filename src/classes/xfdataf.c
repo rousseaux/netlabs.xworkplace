@@ -1280,7 +1280,6 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *      What a mess.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
- *@@changed V0.9.20 (2002-07-25) [umoeller]: added lazy icons
  */
 
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
@@ -1328,29 +1327,16 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
                 // because it overrides wpQueryIcon to call wpSetProgIcon
                 // instead
 
-                if (!hptrReturn)
-                {
-                    // support lazy icons if the global setting is
-                    // enabled and we do not have a forced icon query
-                    // V0.9.20 (2002-07-25) [umoeller]
-                    if (    (cmnQuerySetting(sfLazyIcons))
-                         && (!(objQueryFlags(somSelf) & OBJFL_NOLAZYICON))
-                       )
-                    {
-                        icomAddLazyIcon(somSelf);
-                    }
-                    else
-                        // lazy icons not allowed:
-                        hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
-                            // this makes the icon global,
-                            // but does not set the icon or the
-                            // NOTDEFAULTICON flag
-                }
-
-                if (!hptrReturn)
-                    // lazy icons, or no association found:
+                if (    (!hptrReturn)
+                     && (!(hptrReturn = _wpQueryAssociatedFileIcon(somSelf)))
+                                 // this makes the icon global,
+                                 // but does not set the icon or the
+                                 // NOTDEFAULTICON flag
+                   )
+                    // no association found:
                     hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
 
+                _wpSetIconHandle(somSelf, hptrReturn);
                 _wpSetIcon(somSelf, hptrReturn);
                 _wpModifyStyle(somSelf,
                                OBJSTYLE_NOTDEFAULTICON,
@@ -1363,8 +1349,10 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 
         return (hptrReturn);
     }
+
 #endif
-    return (XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf));
+
+    return XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
 }
 
 /*

@@ -132,6 +132,7 @@
 #define INCL_WINFRAMEMGR
 #define INCL_WININPUT
 #define INCL_WINRECTANGLES
+#define INCL_WINPOINTERS
 #define INCL_WINSYS             // needed for presparams
 #define INCL_WINMENUS
 #define INCL_WINTIMER
@@ -144,6 +145,9 @@
 #define INCL_WINSCROLLBARS
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINHOOKS
+
+#define INCL_GPIPRIMITIVES
+#define INCL_GPILOGCOLORTABLE
 #include <os2.h>
 
 // C library headers
@@ -163,6 +167,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+#include "xfdataf.ih"
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
@@ -176,6 +181,7 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -196,6 +202,11 @@ static BOOL                G_WPFolderWinClassExtended = FALSE;
 static CLASSINFO           G_WPFolderWinClassInfo;
 
 static ULONG               G_SFVOffset = 0;
+
+static MRESULT EXPENTRY fnwpSubclassedFolderFrame(HWND hwndFrame,
+                                                  ULONG msg,
+                                                  MPARAM mp1,
+                                                  MPARAM mp2);
 
 /* ******************************************************************
  *
@@ -310,7 +321,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
  *      a standard frame, specify QWL_USER (0) in those cases.
  *
  *      This no longer actually subclasses the frame because
- *      fdr_fnwpSubclassedFolderFrame requires the
+ *      fnwpSubclassedFolderFrame requires the
  *      SFV to be at a fixed position. After calling this,
  *      subclass the folder frame yourself.
  *
@@ -409,7 +420,7 @@ PSUBCLFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                             pRealObject))
     {
         psfv->pfnwpOriginal = WinSubclassWindow(hwndFrame,
-                                                fdr_fnwpSubclassedFolderFrame);
+                                                fnwpSubclassedFolderFrame);
     }
 
     return (psfv);
@@ -563,7 +574,7 @@ static VOID PostWMChar(HWND hwnd,
 
 /*
  * FormatFrame:
- *      implementation WM_FORMATFRAME in fdr_fnwpSubclassedFolderFrame.
+ *      implementation WM_FORMATFRAME in fnwpSubclassedFolderFrame.
  *
  *      Part of the needed frame hacks for folder status bars.
  *
@@ -683,7 +694,7 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
 
 /*
  * CalcFrameRect:
- *      implementation for WM_CALCFRAMERECT in fdr_fnwpSubclassedFolderFrame.
+ *      implementation for WM_CALCFRAMERECT in fnwpSubclassedFolderFrame.
  *
  *      Part of the needed frame hacks for folder status bars.
  *
@@ -733,7 +744,7 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
 
 /*
  * InitMenu:
- *      implementation for WM_INITMENU in fdr_fnwpSubclassedFolderFrame.
+ *      implementation for WM_INITMENU in fnwpSubclassedFolderFrame.
  *      Note that the parent winproc was called first.
  *
  *      WM_INITMENU is sent to a menu owner right before a
@@ -975,7 +986,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
 
 /*
  * MenuSelect:
- *      this gets called from fdr_fnwpSubclassedFolderFrame
+ *      this gets called from fnwpSubclassedFolderFrame
  *      when WM_MENUSELECT is received.
  *      We need this for three reasons:
  *
@@ -1298,15 +1309,467 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
     return brc;
 }
 
+    /*
+        typedef struct _OWNERITEM {
+          HWND      hwnd;            //  Window handle.
+          HPS       hps;             //  Presentation-space handle.
+          ULONG     fsState;         //  State.
+          ULONG     fsAttribute;     //  Attribute.
+          ULONG     fsStateOld;      //  Old state.
+          ULONG     fsAttributeOld;  //  Old attribute.
+          RECTL     rclItem;         //  Item rectangle.
+          LONG      idItem;          //  Item identity.
+          ULONG     hItem;           //  Item.
+        } OWNERITEM;
+
+        The following list defines the OWNERITEM data structure fields as they apply to the
+        container control. See OWNERITEM for the default field values.
+
+        hwnd (HWND)
+                 Handle of the window in which ownerdraw will occur. The following is a list
+                 of the window handles that can be specified for ownerdraw:
+
+                     The container window handle of the icon, name, text, and tree views
+                     The container title window handle
+                     The left or right window handles of the details view
+                     The left or right column heading windows of the details view.
+
+        hps (HPS)
+                 Handle of the presentation space of the container window. For the details
+                 view that uses a split bar, the presentation space handle is either for the
+                 left or right window, depending upon the position of the column. If the
+                 details view does not have a split bar, the presentation space handle is for
+                 the left window.
+
+        fsState (ULONG)
+                 Specifies emphasis flags. This state is not used by the container control
+                 because the application is responsible for drawing the emphasis states
+                 during ownerdraw.
+
+        fsAttribute (ULONG)
+                 Attributes of the record as given in the flRecordAttr field in the
+                 RECORDCORE data structure.
+
+                 Note:  If the CCS_MINIRECORDCORE style bit is specified when a container is
+                        created, then MINIRECORDCORE should be used instead of
+                        RECORDCORE and PMINIRECORDCORE should be used instead of
+                        PRECORDCORE in all applicable data structures and messages.
+
+        fsStateOld (ULONG)
+                 Previous emphasis. This state is not used by the container control because
+                 the application is responsible for drawing the emphasis states during
+                 ownerdraw.
+
+        fsAttributeOld (ULONG)
+                 Previous attribute. This state is not used by the container control because
+                 the application is responsible for drawing the emphasis states during
+                 ownerdraw.
+
+        rclItem (RECTL)
+                 This is the bounding rectangle into which the container item is drawn.
+
+                 If the container item is an icon/text or bit-map/text pair, two
+                 WM_DRAWITEM messages are sent to the application. The first
+                 WM_DRAWITEM message contains the rectangle bounding the icon or bit map
+                 and the second contains the rectangle bounding the text.
+
+                 If the container item contains only text, or only an icon or bit map, only
+                 one WM_DRAWITEM message is sent. However, if the current view is the
+                 tree icon or tree text view and if the item is a parent item, the application
+                 will receive an additional WM_DRAWITEM (in Container Controls) message.
+                 The additional message is for the icon or bit map that indicates whether the
+                 parent item is expanded or collapsed.
+
+                 If the current view is the details view and the CFA_OWNER attribute is set,
+                 the rectangle's size is equal to the width of the column and the height of
+                 the tallest field in the container item. CFA_OWNER is an attribute of the
+                 FIELDINFO data structure's flData field.
+
+        idItem (ULONG)
+                 Identifies the item being drawn. It can be one of the following:
+
+                     CMA_CNRTITLE
+                     CMA_ICON
+                     CMA_TEXT
+                     CMA_TREEICON.
+
+                 This field is not used for the details view and is set to 0.
+
+        hItem (CNRDRAWITEMINFO)
+                 Pointer to a CNRDRAWITEMINFO structure.
+
+                 typedef struct _CNRDRAWITEMINFO {
+                   PRECORDCORE     pRecord;     //  RECORDCORE structure for the record being drawn.
+                   PFIELDINFO      pFieldInfo;  //  FIELDINFO structure for the container column
+                                                // being drawn in the details view. This is only
+                                                // != NULL if we're in details view.
+                 } CNRDRAWITEMINFO;
+    */
+
+/*
+ *@@ CnrDrawIcon:
+ *      helper called from to owner-draw an icon.
+ *
+ *      flOwnerDraw has the flags that determine what
+ *      owner draw we replace. If the top bit
+ *      (0x80000000) is also set, we always draw the
+ *      mini-icon, no matter what the size of the
+ *      paint rectangle is (for Details view).
+ *
+ *      If we've drawn, we return TRUE.
+ *
+ *      Yes, this func is slightly complex because we
+ *      have to imitate the container's behavior for
+ *      in-use, selected, and cursored emphasis,
+ *      including all the bugs with wrong coordinates
+ *      passed in and other special cases.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
+                        ULONG flOwnerDraw,          // in: OWDRFL_* flags plus maybe 0x80000000 for "force mini icon"
+                        POWNERITEM poi)             // in: mp2 of WM_DRAWITEM
+{
+    PMINIRECORDCORE     pmrc;
+    WPObject            *pobjDraw;
+
+        // get the object from the record that is to be drawn
+    if (    (pmrc = (PMINIRECORDCORE)((PCNRDRAWITEMINFO)poi->hItem)->pRecord)
+         && (pobjDraw = OBJECT_FROM_PREC(pmrc))
+       )
+    {
+        HPOINTER            hptrPaint;
+        ULONG               flDraw = DP_NORMAL;
+                       // #define DP_NORMAL                  0x0000
+                       // #define DP_HALFTONED               0x0001
+                       // #define DP_INVERTED                0x0002
+                       // #define DP_MINI                    0x0004
+        LONG                x,
+                            y,
+                            cx,
+                            cy;
+        BOOL                fSwitched = FALSE;
+        RECTL               rclBack;
+        LONG                lCursorOffset = 2;
+                                // offset to move outwards from "selected" rectangle
+                                // to dotted "cursored" rectangle; negative moves inwards
+                                // (for Details view)
+
+        // check if we have an icon already or if this
+        // is the first call for this object... in that
+        // case hptrIcon might be NULLHANDLE still
+        if (!(hptrPaint = pmrc->hptrIcon))
+        {
+            _Pmpf(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
+
+            // this object does not have an icon yet:
+            // lazy icons enabled?
+            if (    (flOwnerDraw & OWDRFL_LAZYICONS)
+                 && (objQueryFlags(pobjDraw) & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
+               )
+            {
+                // lazy icon drawing:
+                // use default class icon for now and
+                // queue object for lazy icon processing
+                icomQueueLazyIcon(pobjDraw);
+                hptrPaint = _wpclsQueryIcon(_somGetClass(pobjDraw));
+
+                // this object can't be a shadow, so skip the
+                // check below
+                flOwnerDraw &= ~OWDRFL_SHADOWOVERLAY;
+            }
+            else
+            {
+                // no data file, or lazy icons disabled:
+                // get the icon synchronously
+                hptrPaint = _wpQueryIcon(pobjDraw);
+                        // this should set MINIRECORDCORE.hptrIcon
+            }
+        }
+
+        // determine whether to draw mini icon and set
+        // up x and y for the icon to be centered in
+        // the rectangle
+        cx = poi->rclItem.xRight - poi->rclItem.xLeft;
+        cy = poi->rclItem.yTop - poi->rclItem.yBottom;
+
+        _Pmpf(("    cx = %d, cy = %d", cx, cy));
+
+        if (    (flOwnerDraw & 0x80000000)      // force mini-icon (Details view)?
+             || (cx < G_cxIconSys)
+           )
+        {
+            flDraw |= DP_MINI;
+
+            x =   poi->rclItem.xLeft
+                + (cx - G_cxIconSys / 2) / 2;
+            y =   poi->rclItem.yBottom
+                + (cy - G_cyIconSys / 2) / 2;
+
+            // in Details view, the "selected" rectangle is the
+            // same size as the poi rectangle, but the cursor
+            // is painted INSIDE
+            if (flOwnerDraw & 0x80000000)
+            {
+                memcpy(&rclBack, &poi->rclItem, sizeof(RECTL));
+
+                lCursorOffset = -2;
+            }
+            else
+            {
+                rclBack.xLeft = poi->rclItem.xLeft + 2;
+                rclBack.yBottom = poi->rclItem.yBottom + 2;
+                rclBack.xRight = poi->rclItem.xRight - 2;
+                rclBack.yTop = poi->rclItem.yTop - 2;
+            }
+        }
+        else
+        {
+            x =   poi->rclItem.xLeft
+                + (cx - G_cxIconSys) / 2
+                + 1;
+            y =   poi->rclItem.yBottom
+                + (cy - G_cyIconSys) / 2
+                + 1;
+
+            rclBack.xLeft = poi->rclItem.xLeft + 2;
+            rclBack.yBottom = poi->rclItem.yBottom + 2;
+            rclBack.xRight = poi->rclItem.xRight - 1;
+            rclBack.yTop = poi->rclItem.yTop - 1;
+        }
+
+        // now, with owner draw, the container doesn't do emphasis
+        // for us EXCEPT source and target emphasis... so we need
+        // to draw a background rectangle if the object is selected
+        if (poi->fsAttribute & (CRA_INUSE | CRA_SELECTED | CRA_CURSORED))
+        {
+            LONG    lcolHiliteBgnd;
+            POINTL  ptl;
+
+            _PmpfF(("[%s] CRA_SELECTED", pmrc->pszIcon));
+
+            // switch the HPS to RGB mode, or the below won't work
+            fSwitched = GpiCreateLogColorTable(poi->hps,
+                                               0,
+                                               LCOLF_RGB,
+                                               0,
+                                               0,
+                                               0);
+
+            lcolHiliteBgnd = winhQueryPresColor2(hwndCnr,
+                                                 PP_SHADOWHILITEBGNDCOLOR,
+                                                 PP_SHADOWHILITEBGNDCOLORINDEX,
+                                                 TRUE,      // inherit
+                                                 SYSCLR_SHADOWHILITEBGND);
+
+            if (poi->fsAttribute & CRA_SELECTED)
+                WinFillRect(poi->hps,
+                            &rclBack,
+                            lcolHiliteBgnd);
+
+            if (poi->fsAttribute & CRA_INUSE)
+            {
+                LONG    lcolHiliteFgnd;
+
+                if (poi->fsAttribute & CRA_SELECTED)
+                    // if we're in-use AND selected,
+                    // use the highlite foreground color
+                    lcolHiliteFgnd = winhQueryPresColor2(hwndCnr,
+                                                         PP_HILITEFOREGROUNDCOLOR,
+                                                         PP_HILITEFOREGROUNDCOLORINDEX,
+                                                         TRUE,     // inherit
+                                                         SYSCLR_HILITEFOREGROUND);
+                else
+                    // if we're in-use and NOT selected,
+                    // use plain-text (NOT SHADOW) foreground color
+                    lcolHiliteFgnd = winhQueryPresColor2(hwndCnr,
+                                                         PP_FOREGROUNDCOLOR,
+                                                         PP_FOREGROUNDCOLORINDEX,
+                                                         TRUE,     // inherit
+                                                         SYSCLR_WINDOWTEXT);
+
+                GpiSetColor(poi->hps,
+                            lcolHiliteFgnd);
+                GpiSetPattern(poi->hps, PATSYM_DIAG1);
+
+                ptl.x = rclBack.xLeft;
+                ptl.y = rclBack.yBottom;
+                GpiMove(poi->hps, &ptl);
+                // yes, the following two SHOULD be inclusive, but the cnr
+                // is buggy too and will draw one pixel too much to the top
+                // and right for in-use as well. This can easily be checked
+                // by selecting an icon with in-use emphasis... I think we
+                // should imitate this.
+                ptl.x  = rclBack.xRight;
+                ptl.y  = rclBack.yTop;
+                GpiBox(poi->hps, DRO_FILL, &ptl, 0L, 0L);
+
+                GpiSetPattern(poi->hps, PATSYM_DEFAULT);
+            }
+
+            if (poi->fsAttribute & CRA_CURSORED)
+            {
+                GpiSetColor(poi->hps, lcolHiliteBgnd);
+                GpiSetLineType(poi->hps, LINETYPE_ALTERNATE);
+
+                ptl.x = rclBack.xLeft - lCursorOffset;
+                ptl.y = rclBack.yBottom - lCursorOffset;
+                GpiMove(poi->hps, &ptl);
+                ptl.x = rclBack.xRight + lCursorOffset - 1;     // inclusive!
+                ptl.y = rclBack.yTop + lCursorOffset - 1;       // inclusive!
+                GpiBox(poi->hps, DRO_OUTLINE, &ptl, 0, 0);
+            }
+        }
+
+        // the template icons are always drawn via ownerdraw,
+        // so we have to do that too
+        if (!(_wpQueryStyle(pobjDraw) & OBJSTYLE_TEMPLATE))
+            WinDrawPointer(poi->hps,
+                           x,
+                           y,
+                           hptrPaint,
+                           flDraw);
+        else
+        {
+            // template:
+            HPOINTER hptrTemplate;
+            if (!cmnGetStandardIcon(STDICON_TEMPLATE,
+                                    &hptrTemplate,
+                                    NULL,
+                                    NULL))
+            {
+                WinDrawPointer(poi->hps,
+                               x,
+                               y,
+                               hptrTemplate,
+                               flDraw);
+
+                // we can't do a mini-mini icon over a
+                // mini template icon, so paint the real
+                // icon only if we weren't mini yet
+                if (!(flDraw & DP_MINI))
+                    WinDrawPointer(poi->hps,
+                                   x + G_cxIconSys / 8,
+                                   y + G_cyIconSys * 5 / 16,
+                                   hptrPaint,
+                                   flDraw | DP_MINI);
+            }
+        }
+
+        // overpaint with shadow overlay icon, if allowed
+        if (    (flOwnerDraw & OWDRFL_SHADOWOVERLAY)
+             && (objIsAShadow(pobjDraw))
+             && (!cmnGetStandardIcon(STDICON_SHADOWOVERLAY,
+                                     &hptrPaint,
+                                     NULL,
+                                     NULL))
+           )
+        {
+            WinDrawPointer(poi->hps,
+                           x,
+                           y,
+                           hptrPaint,
+                           flDraw);
+        }
+
+        if (fSwitched)
+            GpiCreateLogColorTable(poi->hps,
+                                   LCOL_RESET,
+                                   LCOLF_CONSECRGB,
+                                   0,
+                                   0,
+                                   0);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ CnrDrawItem:
+ *      processor for WM_DRAWITEM in fdrProcessFolderMsgs.
+ *
+ *      This allows us to support lazy icons in subclassed
+ *      folder views without affecting the behavior of
+ *      _wpQueryIcon in general, because that might be
+ *      called from places that will need an icon
+ *      _immediately_.
+ *
+ *      If this returns TRUE, we do NOT call the parent
+ *      WPS window proc and return TRUE from WM_DRAWITEM,
+ *      meaning that we've drawn the item ourselves.
+ *
+ *      @@todo templates
+ *      @@todo background rectangle if CRA_SELECTED
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+static BOOL CnrDrawItem(PSUBCLFOLDERVIEW psfv,      // in: folder view data
+                        POWNERITEM poi)             // in: mp2 of WM_DRAWITEM
+{
+    ULONG               flOwnerDraw;
+    BOOL                fWeveDrawn = FALSE;
+    PCNRDRAWITEMINFO    pcdi;
+
+    // if none of the owner-draw settings are enabled,
+    // get outta here and call the WPS
+    if (!(flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons)))
+        return FALSE;
+
+    if (pcdi = (PCNRDRAWITEMINFO)poi->hItem)
+    {
+        PFIELDINFO pfi;
+
+        // for Details view, pFieldInfo is != NULL always
+        // and represents the column to be drawn.... we'll
+        // let the WPS handle everything EXCEPT the icon column
+        if (pfi = pcdi->pFieldInfo)
+        {
+            if (pfi->offStruct == FIELDOFFSET(MINIRECORDCORE, hptrIcon))
+            {
+                fWeveDrawn = CnrDrawIcon(psfv->hwndCnr,
+                                         flOwnerDraw | 0x80000000,      // force mini icon
+                                         poi);
+            }
+            // other column: let WPS do the work
+        }
+        else
+        {
+            // not Details view: check what needs to be drawn
+
+            // poi->idItem is one of
+            // -- CMA_CNRTITLE
+            // -- CMA_ICON
+            // -- CMA_TEXT
+            // -- CMA_TREEICON
+
+            switch (poi->idItem)
+            {
+                case CMA_ICON:
+                    fWeveDrawn = CnrDrawIcon(psfv->hwndCnr,
+                                             flOwnerDraw,
+                                             poi);
+                break;  // CMA_ICON
+            } // end switch (poi->idItem)
+        }
+    }
+
+    return fWeveDrawn;
+}
+
 /*
  *@@ ProcessFolderMsgs:
  *      actual folder view message processing. Called
- *      from fdr_fnwpSubclassedFolderFrame. See remarks
+ *      from fnwpSubclassedFolderFrame. See remarks
  *      there.
  *
  *@@added V0.9.3 (2000-04-08) [umoeller]
  *@@changed V0.9.7 (2001-01-13) [umoeller]: introduced xwpProcessObjectCommand for WM_COMMAND
  *@@changed V0.9.9 (2001-03-11) [umoeller]: renamed from ProcessFolderMsgs, exported now
+ *@@changed V0.9.20 (2002-07-31) [umoeller]: added support for lazy icons in WM_DRAWITEM
  */
 
 MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
@@ -1324,9 +1787,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
         switch(msg)
         {
             /* *************************
-             *                         *
-             * Status bar:             *
-             *                         *
+             *
+             * Status bar
+             *
              **************************/
 
             /*
@@ -1390,7 +1853,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             case WM_FORMATFRAME:
             {
                 //  query the number of standard frame controls
-                ULONG ulCount = (ULONG)(pfnwpOriginal(hwndFrame, msg, mp1, mp2));
+                ULONG ulCount = (ULONG)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
                 #ifdef DEBUG_STATUSBARS
                     _Pmpf(( "WM_FORMATFRAME ulCount = %d", ulCount ));
@@ -1432,9 +1895,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             break;
 
             /* *************************
-             *                         *
-             * Menu items:             *
-             *                         *
+             *
+             * Menu items:
+             *
              **************************/
 
             /*
@@ -1570,17 +2033,50 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
             break;
 
+            /* *************************
+             *
+             * Owner draw
+             *
+             **************************/
+
             /*
              * WM_DRAWITEM:
-             *      this msg is sent for each item every time it
-             *      needs to be redrawn. This gets sent to us for
-             *      items in folder content menus (if icons are on).
+             *      comes in for every owner-draw request.
+             *      The WPS does a _lot_ of owner draw painting in
+             *      containers. This is what we hack up here to support
+             *      lazy icons and a bunch of other nice things.
+             *
+             *      We hack this up for two purposes:
+             *
+             *      --  owner-drawing folder content menu items;
+             *
+             *      --  owner-drawing WPS object records to support
+             *          lazy icon loading (new with V0.9.20).
+             *
+             *      Parameters:
+             *
+             *      --  USHORT mp1: ID of the item to be drawn. If it's
+             *          FID_CLIENT, it's the container.
+             *
+             *      --  POWNERITEM mp2: owner draw information.
+             *
+             *      If this returns FALSE, the request has not been
+             *      handled, and the container should draw the item
+             *      instead.
              */
 
             case WM_DRAWITEM:
-                if (    ((SHORT)mp1 > cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)
-                     && ((ULONG)mp1 != FID_CLIENT)      // rule out container V0.9.16 (2002-01-13) [umoeller]
-                   )
+                if ((USHORT)mp1 == FID_CLIENT)
+                {
+                    // WPS container draw:
+                    // intercept this for lazy icons
+                    // V0.9.20 (2002-07-31) [umoeller]
+                    if (!(mrc = (MRESULT)CnrDrawItem(psfv,
+                                                     (POWNERITEM)mp2)))
+                        // item not drawn:
+                        fCallDefault = TRUE;
+                }
+                else if ((SHORT)mp1 > cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)
                 {
                     // variable menu item: this must be a folder-content
                     // menu item, because for others no WM_DRAWITEM is sent
@@ -1597,9 +2093,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             break;
 
             /* *************************
-             *                         *
-             * Miscellaneae:           *
-             *                         *
+             *
+             * Miscellaneae:
+             *
              **************************/
 
             /*
@@ -1901,7 +2397,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 }
 
 /*
- *@@ fdr_fnwpSubclassedFolderFrame:
+ *@@ fnwpSubclassedFolderFrame:
  *      new window proc for subclassed folder frame windows.
  *      Folder frame windows are subclassed in fdrSubclassFolderView
  *      (which gets called from XFolder::wpOpen or XFldDisk::wpOpen
@@ -1960,12 +2456,13 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
  *@@changed V0.9.2 (2000-02-22) [umoeller]: moved default winproc out of exception handler
  *@@changed V0.9.3 (2000-03-28) [umoeller]: added freaky menus setting
  *@@changed V0.9.3 (2000-04-08) [umoeller]: extracted ProcessFolderMsgs
+ *@@changed V0.9.20 (2002-07-31) [umoeller]: made this static
  */
 
-MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
-                                               ULONG msg,
-                                               MPARAM mp1,
-                                               MPARAM mp2)
+static MRESULT EXPENTRY fnwpSubclassedFolderFrame(HWND hwndFrame,
+                                                  ULONG msg,
+                                                  MPARAM mp1,
+                                                  MPARAM mp2)
 {
     PSUBCLFOLDERVIEW psfv;
 
@@ -1993,12 +2490,12 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
  *      which is created for each folder frame window when it's
  *      subclassed. We need this window to handle additional
  *      messages which are not part of the normal message set,
- *      which is handled by fdr_fnwpSubclassedFolderFrame.
+ *      which is handled by fnwpSubclassedFolderFrame.
  *
  *      This window gets created in fdrSubclassFolderView, when
  *      the folder frame is also subclassed.
  *
- *      If we processed additional messages in fdr_fnwpSubclassedFolderFrame,
+ *      If we processed additional messages in fnwpSubclassedFolderFrame,
  *      we'd probably ruin other WPS enhancers which might use the same
  *      message in a different context (ObjectDesktop?), so we use a
  *      different window, which we own all alone.

@@ -17,7 +17,7 @@
  *
  *      -- XFolder::wpOpen calls fdrManipulateNewView, which
  *         subclasses a newly opened folder view frame window
- *         with fdr_fnwpSubclassedFolderFrame -- one of the most
+ *         with fnwpSubclassedFolderFrame -- one of the most
  *         complex parts of XWorkplace.
  *         This window procedure intercepts lots of messages
  *         which are needed for the more advanced features.
@@ -500,7 +500,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 // b)   then all abstract objects in the order they were
                 //      placed in this folder.
 
-                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                 for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                      pObj;
                      pObj = *__get_pobjNext(pObj))
@@ -1051,7 +1051,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *@@ xwpProcessObjectCommand:
  *      this new XFolder instance method gets called when
  *      XFolder's subclassed window procedure
- *      (fdr_fnwpSubclassedFolderFrame) intercepts a WM_COMMAND
+ *      (fnwpSubclassedFolderFrame) intercepts a WM_COMMAND
  *      message. This gets called before the WPS gets a
  *      chance to process that command, which will probably
  *      result in a call to wpMenuItemSelected for each of
@@ -2305,7 +2305,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
         // on container whitespace, hwndCnr is passed as
         // NULLHANDLE; we therefore use this ugly
         // workaround
-        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fdr_fnwpSubclassedFolderFrame
+        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclassedFolderFrame
     }
 
     // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
@@ -2606,7 +2606,7 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
  *      We call the parent method first (which will create
  *      the folder window) and then subclass the
  *      resulting frame window with the new
- *      fdr_fnwpSubclassedFolderFrame window procedure.
+ *      fnwpSubclassedFolderFrame window procedure.
  *
  *@@changed V0.9.2 (2000-03-04) [umoeller]: fixed work-area hangs
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
@@ -3650,9 +3650,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
     if (G_pConfigFolder == NULL)
         // config folder not queried yet:
         // do it now
-        G_pConfigFolder = wpshQueryObjectFromID(XFOLDER_CONFIGID, NULL);
-                    // changed V0.9.0: the class method doesn't seem to
-                    // be working on the new Warp Server
+        G_pConfigFolder = cmnQueryObjectFromID(XFOLDER_CONFIGID);
 
     // in any case, check that object
     if (!wpshCheckObject(G_pConfigFolder))

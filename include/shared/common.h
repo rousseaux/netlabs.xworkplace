@@ -506,7 +506,7 @@
 
     // Groups of settings pages:
     // 1) in "Workplace Shell"
-    #define SP_1GENERIC             1
+    #define SP_WPS_FOLDERVIEWS      1       // renamed from SP_1GENERIC V0.9.20 (2002-07-31) [umoeller]
     // #define SP_2REMOVEITEMS         2    // removed V0.9.19 (2002-04-17) [umoeller]
     // #define SP_25ADDITEMS           3    // removed V0.9.19 (2002-04-17) [umoeller]
     #define SP_MENUSETTINGS         2       // added V0.9.19 (2002-04-17) [umoeller]
@@ -646,7 +646,10 @@
 
     // this variable is FALSE only if Warp 3 is running
     // (set from shared\init.c)
-    extern BOOL G_fIsWarp4;
+    extern BOOL     G_fIsWarp4;
+
+    extern ULONG    G_cxIconSys;            // V0.9.20 (2002-08-04) [umoeller]
+    extern ULONG    G_cyIconSys;            // V0.9.20 (2002-08-04) [umoeller]
 
     /********************************************************************
      *
@@ -814,8 +817,17 @@
 #endif
 #ifndef __NEVEREXTASSOCS__
         sfExtAssocs,
-        sfLazyIcons,            // V0.9.20 (2002-07-25) [umoeller]
+        sfDatafileOBJHANDLE,        // added V0.9.20 (2002-08-04) [umoeller]
 #endif
+
+        // replacement owner-draw flags; if any are set, we
+        // run our own code in the subclassed folder winproc
+        // to paint icons
+        // V0.9.20 (2002-07-25) [umoeller]
+        sflOwnerDrawIcons,
+                #define OWDRFL_LAZYICONS            0x0001
+                #define OWDRFL_SHADOWOVERLAY        0x0002
+
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         sfReplaceDriveNotReady,
 #endif
@@ -1142,23 +1154,25 @@
 
     PCSZ cmnQueryThemeDirectory(VOID);
 
-    #define STDICON_PM                  1
-    #define STDICON_WIN16               2
-    #define STDICON_WIN32               3
-    #define STDICON_OS2WIN              4
-    #define STDICON_OS2FULLSCREEN       5
-    #define STDICON_DOSWIN              6
-    #define STDICON_DOSFULLSCREEN       7
-    #define STDICON_DLL                 8
-    #define STDICON_DRIVER              9
-    #define STDICON_PROG_UNKNOWN        10
-    #define STDICON_DATAFILE            11
-    #define STDICON_TRASH_EMPTY         12
-    #define STDICON_TRASH_FULL          13
-    #define STDICON_DESKTOP_CLOSED      14
-    #define STDICON_DESKTOP_OPEN        15
-    #define STDICON_FOLDER_CLOSED       16
-    #define STDICON_FOLDER_OPEN         17
+    #define STDICON_SHADOWOVERLAY        1      // V0.9.20 (2002-07-31) [umoeller]
+    #define STDICON_TEMPLATE             2      // V0.9.20 (2002-08-04) [umoeller]
+    #define STDICON_PM                   3
+    #define STDICON_WIN16                4
+    #define STDICON_WIN32                5
+    #define STDICON_OS2WIN               6
+    #define STDICON_OS2FULLSCREEN        7
+    #define STDICON_DOSWIN               8
+    #define STDICON_DOSFULLSCREEN        9
+    #define STDICON_DLL                 10
+    #define STDICON_DRIVER              11
+    #define STDICON_PROG_UNKNOWN        12
+    #define STDICON_DATAFILE            13
+    #define STDICON_TRASH_EMPTY         14
+    #define STDICON_TRASH_FULL          15
+    #define STDICON_DESKTOP_CLOSED      16
+    #define STDICON_DESKTOP_OPEN        17
+    #define STDICON_FOLDER_CLOSED       18
+    #define STDICON_FOLDER_OPEN         19
 
     APIRET cmnGetStandardIcon(ULONG ulStdIcon,
                               HPOINTER *phptr,
@@ -1474,6 +1488,16 @@
     HWND XWPENTRY cmnQueryActiveDesktopHWND(VOID);
     typedef HWND XWPENTRY CMNQUERYACTIVEDESKTOPHWND(VOID);
     typedef CMNQUERYACTIVEDESKTOPHWND *PCMNQUERYACTIVEDESKTOPHWND;
+
+    #ifdef SOM_WPObject_h
+        WPObject* cmnQueryObjectFromID(PCSZ pcszObjectID);
+    #endif
+
+    /* ******************************************************************
+     *
+     *   "Run" dialog
+     *
+     ********************************************************************/
 
     #define RUN_MAXITEMS 20
 

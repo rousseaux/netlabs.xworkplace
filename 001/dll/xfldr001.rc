@@ -766,9 +766,6 @@ BEGIN
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
 
-/* ID_XCSI_LAZYICONS added with V0.9.20 (2002-07-25) [umoeller] */
-    ID_XCSI_LAZYICONS                   "Lazy icons"
-
 /*     this item removed with V0.9.16
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries" */
 /* the following item added with V0.9.5 (2000-08-14) [umoeller] */
@@ -1233,6 +1230,9 @@ BEGIN
     ID_XSDI_FDRVIEW_ICON                "~Icon"
     ID_XSDI_FDRVIEW_TREE                "T~ree"
     ID_XSDI_FDRVIEW_DETAILS             "Detail~s"
+    /* the following two added V0.9.20 (2002-07-31) [umoeller] */
+    ID_XSDI_FDRVIEW_LAZYICONS           "La~zy-load data file icons"
+    ID_XSDI_FDRVIEW_SHADOWOVERLAY       "Mark shado~w icons"
 
     /* string formerly in ID_CRD_SETTINGS_VIEW2 */
     ID_CRDI_VIEW2_3DBORDER_GROUP        "~3D border width"
@@ -1574,6 +1574,12 @@ BEGIN
     ID_XSDI_MOUSE_MB3AMPLIFIED          "~Amplified mode"
     ID_XSDI_MOUSE_MB3AMP_TXT1           "Am~plification:"
     ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Reverse scrolling"
+
+    /* strings formerly in ID_XSD_FILETYPES V0.9.20 (2002-08-04) [umoeller] */
+    ID_XSDI_FT_GROUP                    "File types"
+    ID_XSDI_FT_FILTERS_TXT              "Filters"
+    ID_XSDI_FT_ASSOCS_TXT               "Associations"
+    ID_XSDI_FT_CREATEDATAFILEHANDLE     "~Pass data file object handle in environment"
 
 END
 

@@ -1947,7 +1947,7 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         /*
          *@@ QM_TREEVIEWAUTOSCROLL:
-         *     this msg is posted mainly by fdr_fnwpSubclassedFolderFrame
+         *     this msg is posted mainly by fnwpSubclassedFolderFrame
          *     (subclassed folder windows) after the "plus" sign has
          *     been clicked on (WM_CONTROL for containers with
          *     CN_EXPANDTREE notification).

@@ -200,6 +200,9 @@ static PTMFMSGFILE      G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [um
 
 extern BOOL             G_fIsWarp4 = FALSE;     // V0.9.19 (2002-04-24) [umoeller]
 
+extern ULONG            G_cxIconSys = 0;        // V0.9.20 (2002-08-04) [umoeller]
+extern ULONG            G_cyIconSys = 0;        // V0.9.20 (2002-08-04) [umoeller]
+
 // Declare C runtime prototypes, because there are no headers
 // for these:
 
@@ -1663,26 +1666,27 @@ LONG        G_cIconsInCache = 0;
  *@@ LockIcons:
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.20 (2002-07-31) [umoeller]: renamed, returning APIRET now
  */
 
-static BOOL LockIcons(VOID)
+static APIRET LockIconsCache(VOID)
 {
+    APIRET arc;
+
     if (G_hmtxIconsCache)
-        return !DosRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT);
+        return DosRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT);
 
     // first call:
-    if (!DosCreateMutexSem(NULL,
-                           &G_hmtxIconsCache,
-                           0,
-                           TRUE))       // request
+    if (!(arc = DosCreateMutexSem(NULL,
+                                  &G_hmtxIconsCache,
+                                  0,
+                                  TRUE)))       // request
     {
         treeInit(&G_IconsCache,
                  &G_cIconsInCache);
-
-        return TRUE;
     }
 
-    return FALSE;
+    return arc;
 }
 
 /*
@@ -1691,7 +1695,7 @@ static BOOL LockIcons(VOID)
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-static VOID UnlockIcons(VOID)
+static VOID UnlockIconsCache(VOID)
 {
     DosReleaseMutexSem(G_hmtxIconsCache);
 }
@@ -1714,9 +1718,19 @@ typedef const struct _STDICON *PCSTDICON;
 static const STDICON aStdIcons[] =
     {
         {
+            STDICON_SHADOWOVERLAY,  // added V0.9.20 (2002-07-31) [umoeller]
+            "shadow.ico",
+            XWP_MODULE_BIT | ID_ICONXWPSHADOWOVERLAY,
+        },
+        {
+            STDICON_TEMPLATE,       // added V0.9.20 (2002-08-04) [umoeller]
+            "template.ico",
+            20,                     // standard template icon in pmwp.dll
+        },
+        {
             STDICON_PM,
             "prgpm.ico",            // no icon in icons.dll yet
-            3,                      // standard icon in pmwp.dll
+            3,                      // standard default program icon in pmwp.dll
                 // or this one? 25
         },
         {
@@ -1926,6 +1940,37 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
     return pNode;
 }
 
+static PICONTREENODE G_pLastIconTreeNode = NULL;
+static ULONG         G_ulLastStdIconId = NULLHANDLE;
+
+/*
+ *@@ FindIconTreeNode:
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+static PICONTREENODE FindIconTreeNode(ULONG ulStdIconId)
+{
+    PICONTREENODE pNode;
+
+    // use a cache if we have the same icon twice
+    if (    (ulStdIconId == G_ulLastStdIconId)
+         && (G_pLastIconTreeNode)
+       )
+        return G_pLastIconTreeNode;
+
+    if (pNode = (PICONTREENODE)treeFind(G_IconsCache,
+                                        ulStdIconId,
+                                        treeCompareKeys))
+    {
+        // found: cache it for next time
+        G_ulLastStdIconId = ulStdIconId;
+        G_pLastIconTreeNode = pNode;
+    }
+
+    return pNode;
+}
+
 /*
  *@@ cmnGetStandardIcon:
  *      returns a HPOINTER for the given STDICON_* id.
@@ -2023,15 +2068,13 @@ APIRET cmnGetStandardIcon(ULONG ulStdIcon,
 
     TRY_LOUD(excpt1)
     {
-        if (!(fLocked = LockIcons()))
+        if (!(fLocked = !LockIconsCache()))
             arc = ERROR_TIMEOUT;        // V0.9.18 (2002-03-16) [umoeller]
         else
         {
             // icon loaded yet?
             PICONTREENODE pNode;
-            if (!(pNode = (PICONTREENODE)treeFind(G_IconsCache,
-                                                  ulStdIcon,
-                                                  treeCompareKeys)))
+            if (!(pNode = FindIconTreeNode(ulStdIcon)))         // V0.9.20 (2002-07-31) [umoeller]
                 // no: create a new node
                 if (!(pNode = LoadNewIcon(ulStdIcon)))
                     arc = ERROR_NOT_ENOUGH_MEMORY;
@@ -2085,7 +2128,7 @@ APIRET cmnGetStandardIcon(ULONG ulStdIcon,
     } END_CATCH();
 
     if (fLocked)
-        UnlockIcons();
+        UnlockIconsCache();
 
     return arc;
 }
@@ -2107,7 +2150,7 @@ BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = LockIcons())
+        if (fLocked = !LockIconsCache())
         {
             TREE *t = treeFirst(G_IconsCache);
             while (t)
@@ -2125,7 +2168,7 @@ BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
     CATCH(excpt1) {} END_CATCH();
 
     if (fLocked)
-        UnlockIcons();
+        UnlockIconsCache();
 
     return brc;
 }
@@ -2768,10 +2811,10 @@ static const SETTINGINFO G_aSettingInfos[] =
 
 #ifndef __NOFDRDEFAULTDOCS__
         sfFdrDefaultDoc, FIELDOFFSET(OLDGLOBALSETTINGS, _fFdrDefaultDoc), 1,
-            SP_1GENERIC, 0,
+            SP_WPS_FOLDERVIEWS, 0,
             "fFdrDefaultDoc",
         sfFdrDefaultDocView, FIELDOFFSET(OLDGLOBALSETTINGS, _fFdrDefaultDocView), 1,
-            SP_1GENERIC, 0,
+            SP_WPS_FOLDERVIEWS, 0,
             "fFdrDefaultDocView",
 #endif
 
@@ -2910,11 +2953,20 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_SETUP_FEATURES, 0,
             "fExtAssocs",
 
-        // added lazy icons V0.9.20 (2002-07-25) [umoeller]
-        sfLazyIcons, -1, 0,
-            SP_SETUP_FEATURES, 0,
-            "fLazyIcons",
+        // sfDatafileOBJHANDLE added with V0.9.20 (2002-08-04) [umoeller]
+        // if this is FALSE, we do not pass data files with the
+        // WP_OBJHANDLE environment variable to avoid creating handles
+        // all the time
+        sfDatafileOBJHANDLE, -1, 0,
+            SP_FILETYPES, TRUE,
+            "fDatafileOBJHANDLE",
 #endif
+
+        // added lazy icons V0.9.20 (2002-07-25) [umoeller]
+        sflOwnerDrawIcons, -1, 0,
+            SP_WPS_FOLDERVIEWS, OWDRFL_LAZYICONS | OWDRFL_SHADOWOVERLAY,
+            "sflOwnerDrawIcons",
+
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         sfReplaceDriveNotReady, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplDriveNotReady), 1,
             SP_SETUP_FEATURES, 0,
@@ -2955,13 +3007,13 @@ static const SETTINGINFO G_aSettingInfos[] =
 
         // folder view settings
         sfFullPath, FIELDOFFSET(OLDGLOBALSETTINGS, FullPath), 4,
-            SP_1GENERIC, 0,     // default changed V0.9.19 (2002-04-25) [umoeller]
+            SP_WPS_FOLDERVIEWS, 0,     // default changed V0.9.19 (2002-04-25) [umoeller]
             "fFullPath",
         sfKeepTitle, FIELDOFFSET(OLDGLOBALSETTINGS, KeepTitle), 4,
-            SP_1GENERIC, 1,
+            SP_WPS_FOLDERVIEWS, 1,
             "fKeepTitle",
         sulMaxPathChars, FIELDOFFSET(OLDGLOBALSETTINGS, MaxPathChars), 4,
-            SP_1GENERIC, 25,
+            SP_WPS_FOLDERVIEWS, 25,
             "ulMaxPathChars",
         sfRemoveX, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveX), 4,
             SP_26CONFIGITEMS, 1,
@@ -2976,7 +3028,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_26CONFIGITEMS, 1,
             "fTemplatesReposition",
         sfTreeViewAutoScroll, FIELDOFFSET(OLDGLOBALSETTINGS, TreeViewAutoScroll), 4,
-            SP_1GENERIC, 1,
+            SP_WPS_FOLDERVIEWS, 1,
             "fTreeViewAutoScroll",
 
         // status bar settings
@@ -3069,11 +3121,11 @@ static const SETTINGINFO G_aSettingInfos[] =
             0, 0,
             "flIntroHelpShown",
         sfFdrAutoRefreshDisabled, FIELDOFFSET(OLDGLOBALSETTINGS, fFdrAutoRefreshDisabled), 1,
-            SP_1GENERIC, 0,
+            SP_WPS_FOLDERVIEWS, 0,
             "fFdrAutoRefreshDisabled",
 
         sulDefaultFolderView, FIELDOFFSET(OLDGLOBALSETTINGS, bDefaultFolderView), 1,
-            SP_1GENERIC, 0,
+            SP_WPS_FOLDERVIEWS, 0,
             "ulDefaultFolderView",
 
         // the following are new with V0.9.19
@@ -5064,6 +5116,39 @@ BOOL cmnIsObjectFromForeignDesktop(WPObject *somSelf)
     return fForeign;
 }
 
+/*
+ *@@ cmnQueryObjectFromID:
+ *      this returns an object for an object ID
+ *      (those things in angle brackets) or NULL
+ *      if not found.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+WPObject* cmnQueryObjectFromID(PCSZ pcszObjectID)   // in: object ID (e.g. "<WP_DESKTOP>")
+{
+    ULONG       ulHandle,
+                cbHandle;
+
+    // the WPS stores all the handles as plain ULONGs
+    // (four bytes)
+    cbHandle = sizeof(ulHandle);
+    if (PrfQueryProfileData(HINI_USER,
+                            (PSZ)WPINIAPP_LOCATION, // "PM_Workplace:Location",
+                            (PSZ)pcszObjectID,                  // key
+                            &ulHandle,
+                            &cbHandle))
+        return _wpclsQueryObject(_WPObject, ulHandle);
+
+    return NULL;
+}
+
+/* ******************************************************************
+ *
+ *   "Run" dialog
+ *
+ ********************************************************************/
+
 static PCSZ G_apcszExtensions[]
     = {
                 "EXE",
@@ -6107,6 +6192,71 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
     else if (IS_IN_RANGE(arc, ERROR_WPH_FIRST, ERROR_WPH_LAST))
     {
         pcszErrorClass = "Handles engine error";
+
+        switch (arc)
+        {
+            case ERROR_WPH_NO_BASECLASS_DATA:
+                pcszErrorDescription = "Cannot find WPS base class data in OS2.INI, PM_Workplace:BaseClass";
+            break;
+
+            case ERROR_WPH_NO_ACTIVEHANDLES_DATA:
+                pcszErrorDescription = "Cannot find active handles in OS2SYS.INI, PM_Workplace:ActiveHandles";
+            break;
+
+            case ERROR_WPH_INCOMPLETE_BASECLASS_DATA:
+                pcszErrorDescription = "Incomplete baseclass data in OS2SYS.INI, PM_Workplace:ActiveHandles";
+            break;
+
+            case ERROR_WPH_NO_HANDLES_DATA:
+                pcszErrorDescription = "No handle blocks in OS2SYS.INI";
+            break;
+
+            case ERROR_WPH_CORRUPT_HANDLES_DATA:
+                pcszErrorDescription = "Corrupt handles data, format not understood";
+            break;
+
+                // cannot determine format (invalid keywords)
+            case ERROR_WPH_INVALID_PARENT_HANDLE:
+                pcszErrorDescription = "Invalid parent handle found";
+            break;
+
+            case ERROR_WPH_CANNOT_FIND_HANDLE:
+                pcszErrorDescription = "Cannot find handle";
+            break;
+
+            case ERROR_WPH_DRIV_TREEINSERT_FAILED:
+                pcszErrorDescription = "treeInsert failed for DRIV node (probably duplicate)";
+            break;
+
+            case ERROR_WPH_NODE_TREEINSERT_FAILED:
+                pcszErrorDescription = "treeInsert failed for NODE node (probably duplicate)";
+            break;
+
+            case ERROR_WPH_NODE_BEFORE_DRIV:
+                pcszErrorDescription = "Corrupt handles data (NODE node before DRIV node)";
+            break;
+
+            case ERROR_WPH_NO_MATCHING_DRIVE_BLOCK:
+                pcszErrorDescription = "Cannot find matching drive block";
+            break;
+
+            case ERROR_WPH_NO_MATCHING_ROOT_DIR:
+                pcszErrorDescription = "Cannot find matching root directory";
+            break;
+
+            case ERROR_WPH_NOT_FILESYSTEM_HANDLE:
+                pcszErrorDescription = "Given handle is not a file-system handle";
+            break;
+
+            case ERROR_WPH_PRFQUERYPROFILESIZE_BLOCK:
+                pcszErrorDescription = "PrfQueryProfileSize failed on handles data block from OS2SYS.INI";
+            break;
+
+            case ERROR_WPH_PRFQUERYPROFILEDATA_BLOCK:
+                pcszErrorDescription = "PrfQueryProfileData failed on handles data block from OS2SYS.INI";
+            break;
+
+        }
     }
     else if (IS_IN_RANGE(arc, ERROR_PRF_FIRST, ERROR_PRF_LAST))
     {

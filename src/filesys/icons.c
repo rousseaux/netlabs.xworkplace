@@ -870,8 +870,8 @@ static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
              */
 
             // target icon size == system icon size (32 or 40)
-            ULONG cxDest = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
-            ULONG cyRealDest = cxDest;
+            ULONG cxDest = G_cxIconSys; // WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
+            ULONG cyRealDest = G_cyIconSys; // cxDest;
 
             // size of one color scan line: with 16 colors,
             // that's two pixels per byte

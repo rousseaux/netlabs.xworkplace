@@ -67,6 +67,18 @@
         {
             RECORDCORE      recc;
 
+            PSZ             pszHWND;
+            CHAR            szHWND[20];
+
+            PSZ             pszHWNDParent;
+            CHAR            szHWNDParent[20];
+
+            PSZ             pszFlags;
+            CHAR            szFlags[100];
+
+            PSZ             pszPos;
+            CHAR            szPos[30];
+
             PSZ             pszSwtitle;
 
             PSZ             pszWindowType;
@@ -77,8 +89,8 @@
             PSZ             pszPID;
             CHAR            szPID[20];
 
-            PSZ             pszFlags;
-            CHAR            szFlags[100];
+            PSZ             pszStyle;
+            CHAR            szStyle[300];
 
             PVOID           pWinInfo;       // reverse linkage
 

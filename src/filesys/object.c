@@ -329,6 +329,19 @@ static LONG        G_lDirtyListItemsCount = 0;
  ********************************************************************/
 
 /*
+ *@@ objIsAShadow:
+ *      returns TRUE if somSelf is a shadow.
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+BOOL objIsAShadow(WPObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    return (0 != (_flObject & OBJFL_WPSHADOW));
+}
+
+/*
  *@@ objResolveIfShadow:
  *      resolves a shadow if somSelf is one.
  *
@@ -389,6 +402,19 @@ BOOL objIsAFolder(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     return (0 != (_flObject & OBJFL_WPFOLDER));
+}
+
+/*
+ *@@ objIsADataFile:
+ *      returns TRUE if somSelf is a data file.
+ *
+ *@@added V0.9.20 (2002-07-31) [umoeller]
+ */
+
+BOOL objIsADataFile(WPObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    return (0 != (_flObject & OBJFL_WPDATAFILE));
 }
 
 /*
@@ -823,7 +849,7 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
                         if (fFolderLocked = !_wpRequestFolderMutexSem(pobj, 5000))
                         {
                             WPObject *pSubObj = 0;
-                            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                            // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                             for (   pSubObj = _wpQueryContent(pobj, NULL, QC_FIRST);
                                     pSubObj;
                                     pSubObj = *__get_pobjNext(pSubObj)
@@ -1417,7 +1443,7 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 // dump the file-system objects
                 TRY_LOUD(excpt1)
                 {
-                    if (fLocked = !fdrRequestFolderMutexSem(pObject, SEM_INDEFINITE_WAIT))
+                    if (fLocked = !_wpRequestFolderMutexSem(pObject, SEM_INDEFINITE_WAIT))
                     {
                         sprintf(szTemp1,
                                 "Folder contents (%d fs objects)",
@@ -1463,7 +1489,7 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 CATCH(excpt1) {} END_CATCH();
 
                 if (fLocked)
-                    fdrReleaseFolderMutexSem(pObject);
+                    _wpReleaseFolderMutexSem(pObject);
             }
             #endif
         } // end WPFolder
@@ -2167,19 +2193,39 @@ VOID objReady(WPObject *somSelf,
  *@@ objRefreshUseItems:
  *      refresh all views of the object with a new
  *      title. Part of the implementation for
- *      XFldObject::wpSetTitle.
+ *      XFldObject::wpSetTitle and XFldObject::wpSetIconHandle.
+ *
+ *      This operates in two modes:
+ *
+ *      --  If pszNewTitleCopy != NULL, this refreshes the
+ *          _titles_ of the object views.
+ *
+ *      --  If hptrNewIcon != NULL, this refreshes the
+ *          _icons_ of the object views.
  *
  *      Preconditions:
  *
  *      --  Caller must hold the object semaphore.
  *
  *@@added V0.9.16 (2002-01-04) [umoeller]
+ *@@changed V0.9.20 (2002-07-31) [umoeller]: added icon support
  */
 
 VOID objRefreshUseItems(WPObject *somSelf,
-                        PSZ pszNewTitleCopy)        // in: new title
+                        PSZ pszNewTitleCopy,        // in: new title or NULL
+                        HPOINTER hptrNewIcon)       // in: new icon or NULLHANDLE
 {
     PUSEITEM    pUseItem;
+
+    USHORT      flInvalidate;
+
+    if (pszNewTitleCopy)
+        // if we are refreshing titles, invalidate those
+        flInvalidate  = CMA_TEXTCHANGED;
+    else if (hptrNewIcon)
+        flInvalidate =    CMA_ERASE             // repaint icon background
+                        | CMA_NOREPOSITION      // CMA_REPOSITION is not needed for icons
+                        | CMA_NOTEXTCHANGED;
 
     for (pUseItem = _wpFindUseItem(somSelf, USAGE_RECORD, NULL);
          pUseItem;
@@ -2201,7 +2247,7 @@ VOID objRefreshUseItems(WPObject *somSelf,
                    CM_INVALIDATERECORD,
                    (MPARAM)&pRecordItem->pRecord,
                    MPFROM2SHORT(1,
-                                CMA_TEXTCHANGED));
+                                flInvalidate));     // set above V0.9.20 (2002-07-31) [umoeller]
 
         // @@todo resort the folder
     }
@@ -2211,28 +2257,45 @@ VOID objRefreshUseItems(WPObject *somSelf,
          pUseItem;
          pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
     {
-        PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem + 1);
-        HWND hwndTitleBar;
+        PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem + 1);
+        HWND        hwndView;
         // this can also be a HAPP, so check if this really
-        // is a window; if so, change its title bar
-        if (    (WinIsWindow(0, // G_habThread1,
-                             pViewItem->handle))
-             && (hwndTitleBar = WinWindowFromID(pViewItem->handle,
-                                                FID_TITLEBAR))
+        // is a window
+        if (    (hwndView = pViewItem->handle)
+             && (WinIsWindow(0, // G_habThread1,
+                             hwndView))
            )
         {
-            HSWITCH hsw;
-            WinSetWindowText(hwndTitleBar,
-                             pszNewTitleCopy);
-
-            if (hsw = WinQuerySwitchHandle(pViewItem->handle, 0))
+            if (pszNewTitleCopy)
             {
-                SWCNTRL swc;
-                WinQuerySwitchEntry(hsw, &swc);
-                strhncpy0(swc.szSwtitle,
-                          pszNewTitleCopy,
-                          sizeof(swc.szSwtitle));
-                WinChangeSwitchEntry(hsw, &swc);
+                HWND hwndTitleBar;
+                HSWITCH hsw;
+                // in "text changed" mode, refresh the title bar
+                if (    (hwndTitleBar = WinWindowFromID(hwndView,
+                                                        FID_TITLEBAR))
+                     && (WinSetWindowText(hwndTitleBar,
+                                          pszNewTitleCopy))
+                        // update the switch handle also, if we have one
+                     && (hsw = WinQuerySwitchHandle(hwndView, 0))
+                   )
+                {
+                    SWCNTRL swc;
+                    WinQuerySwitchEntry(hsw, &swc);
+                    strhncpy0(swc.szSwtitle,
+                              pszNewTitleCopy,
+                              sizeof(swc.szSwtitle));
+                    WinChangeSwitchEntry(hsw, &swc);
+                }
+            } // end if (pszNewTitleCopy)
+            else if (hptrNewIcon)
+            {
+                HWND hwndSysMenu;
+                if (hwndSysMenu = WinWindowFromID(hwndView,
+                                                  FID_SYSMENU))
+                    WinSendMsg(hwndView,
+                               WM_SETICON,
+                               (MPARAM)hptrNewIcon,
+                               0);
             }
         }
     }
@@ -2243,8 +2306,17 @@ VOID objRefreshUseItems(WPObject *somSelf,
          pUseItem = _wpFindUseItem(somSelf, USAGE_LINK, pUseItem))
     {
         PLINKITEM pLinkItem = (PLINKITEM)(pUseItem + 1);
-        _wpSetShadowTitle(pLinkItem->LinkObj,
-                          pszNewTitleCopy);
+        WPShadow *pShadow;
+
+        if (pShadow = pLinkItem->LinkObj)
+        {
+            if (pszNewTitleCopy)
+                _wpSetShadowTitle(pShadow,
+                                  pszNewTitleCopy);
+            else if (hptrNewIcon)
+                _wpSetIcon(pShadow,
+                           hptrNewIcon);
+        }
     }
 }
 
@@ -2351,7 +2423,7 @@ static BOOL WriteObjectsList(POBJECTLIST pll,
  *      specified INI key.
  *
  *      If (ulListFlag != 0), this invokes
- *      WPObject::xwpModifyListNotify to set that flag
+ *      WPObject::xwpModifyFlags to set that flag
  *      on each object that was added to the list.
  *
  *      Preconditions: caller must lock the list.
@@ -2364,7 +2436,7 @@ static BOOL WriteObjectsList(POBJECTLIST pll,
  */
 
 static BOOL LoadObjectsList(POBJECTLIST pll,
-                            ULONG ulListFlag,          // in: list flag for xwpModifyListNotify
+                            ULONG ulListFlag,          // in: list flag for xwpModifyFlags
                             PCSZ pcszIniKey)
 {
     BOOL        brc = FALSE;
@@ -2416,7 +2488,7 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
                                           pobj);
                             if (ulListFlag)
                                 // set list notify flag
-                                _xwpModifyListNotify(pobj,
+                                _xwpModifyFlags(pobj,
                                                      ulListFlag,        // set
                                                      ulListFlag);       // mask
                         }
@@ -2511,7 +2583,7 @@ BOOL objAddToList(WPObject *somSelf,    // in: object to add or remove
                   POBJECTLIST pll,      // in: linked list of WPObject* pointers
                   BOOL fInsert,         // in: add or remove?
                   PCSZ pcszIniKey,      // in: INI key for saving the list
-                  ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
+                  ULONG ulListFlag)     // in: list flag for xwpModifyFlags
 {
     BOOL    brc = FALSE,
             fLocked = FALSE;
@@ -2559,7 +2631,7 @@ BOOL objAddToList(WPObject *somSelf,    // in: object to add or remove
 
                     if (ulListFlag)
                         // set list notify flag
-                        _xwpModifyListNotify(somSelf, // V0.9.9 (2001-01-29) [lafaix]
+                        _xwpModifyFlags(somSelf, // V0.9.9 (2001-01-29) [lafaix]
                                              ulListFlag,        // set
                                              ulListFlag);       // mask
 
@@ -2578,7 +2650,7 @@ BOOL objAddToList(WPObject *somSelf,    // in: object to add or remove
 
                     if (ulListFlag)
                         // unset list notify flag
-                        _xwpModifyListNotify(somSelf,
+                        _xwpModifyFlags(somSelf,
                                              0,                 // clear
                                              ulListFlag);       // mask
 
@@ -2689,7 +2761,7 @@ BOOL objIsOnList(WPObject *somSelf,
 WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* pointers
                       WPObject *pObjectFind,
                       PCSZ pcszIniKey,
-                      ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
+                      ULONG ulListFlag)     // in: list flag for xwpModifyFlags
 {
     WPObject    *pObjectFound = NULL;
     BOOL        fLocked = FALSE;
@@ -2852,7 +2924,7 @@ static ULONG CheckShrinkCache(VOID)
                            &G_lHandlesCacheItemsCount,
                            (TREE*)pOldest); // fixed pNode); V0.9.20 (2002-07-25) [umoeller]
                 // unset list notify flag
-                _xwpModifyListNotify(pOldest->pObject,      // V0.9.20 (2002-07-25) [umoeller]
+                _xwpModifyFlags(pOldest->pObject,      // V0.9.20 (2002-07-25) [umoeller]
                                      OBJLIST_HANDLESCACHE,
                                      0);
                 free(pOldest);
@@ -2962,7 +3034,7 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
                     // set list-notify flag so we can
                     // kill this node, should the obj get deleted
                     // (objRemoveFromHandlesCache)
-                    _xwpModifyListNotify(pobjReturn,
+                    _xwpModifyFlags(pobjReturn,
                                          OBJLIST_HANDLESCACHE,
                                          OBJLIST_HANDLESCACHE);
                 }
@@ -3127,7 +3199,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
                         // then. V0.9.11 (2001-04-18) [umoeller]
                         // so set list-notify flag so we can
                         // kill this node, should the obj get deleted
-                        _xwpModifyListNotify(pobj,
+                        _xwpModifyFlags(pobj,
                                              OBJLIST_DIRTYLIST,
                                              OBJLIST_DIRTYLIST);
                     }
@@ -3200,7 +3272,7 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
                    */
 
                 // unset object's "dirty" list flag
-                _xwpModifyListNotify(pobj,
+                _xwpModifyFlags(pobj,
                                      OBJLIST_DIRTYLIST,
                                      0);
 

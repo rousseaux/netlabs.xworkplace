@@ -833,10 +833,9 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
                                    TRUE);   // hide that directory
 
                 // 2) awake the \trash subdir now
-                pFolderInTrash = _wpclsQueryFolder(_WPFolder,
-                                                   szSubdirOfTrash,
-                                                   TRUE);       // lock object
-                if (pFolderInTrash)
+                if (pFolderInTrash = _wpclsQueryFolder(_WPFolder,
+                                                       szSubdirOfTrash,
+                                                       TRUE))       // lock object
                 {
                     // 3) create a mapping
                     pMapping = CreateMapping(ulDecimal,
@@ -893,7 +892,7 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
     if (pllTrashObjects)
     {
         XWPTrashObject* pTrashObject = 0;
-        // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+        // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
         for (   pTrashObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pTrashObject);
                 pTrashObject = *__get_pobjNext(pTrashObject)
@@ -1038,6 +1037,7 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
         {
             // store related object in trash object
             _xwpSetRelatedObject(somSelf, pRelatedObject);
+
             // store trash object in related object;
             // this will cause the trash object to be freed
             // when the related object gets destroyed
@@ -1146,9 +1146,9 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
             XWPTrashCan *pTrashCan = _wpQueryFolder(somSelf);
 
             // find the mapping for this
-            PTRASHMAPPINGTREENODE pMapping = trshGetMappingFromTrashDir(pTrashCan,
-                                                                        pTrashDir);
-            if (pMapping)
+            PTRASHMAPPINGTREENODE pMapping;
+            if (pMapping = trshGetMappingFromTrashDir(pTrashCan,
+                                                      pTrashDir))
             {
                 // we have a mapping: use that
                 _pszSourcePath = strdup((PSZ)pMapping->Tree.ulKey); // pszSourceRealName);
@@ -1254,7 +1254,7 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
             // to protect the contents list
             if (fTrashDirFolderLocked = !_wpRequestFolderMutexSem(pTrashDir, 4000))
             {
-                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                 for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
                         (pObject);
                         pObject = *__get_pobjNext(pObject)
@@ -1656,89 +1656,85 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
 BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to create trash object
                             WPObject *pObject)      // in: object to delete
 {
-    BOOL    fNeedSave = FALSE;
-    BOOL    brc = FALSE;
+    BOOL        fNeedSave = FALSE;
+    BOOL        brc = FALSE;
+    WPFolder    *pSourceFolder,
+                *pFolderInTrash;
+    CHAR        szSourceFolder[CCHMAXPATH];
 
-    if (pObject)
+    if (    (pObject)
+         && (pSourceFolder = _wpQueryFolder(pObject))
+         && (_wpQueryFilename(pSourceFolder, szSourceFolder, TRUE))
+       )
     {
-        WPFolder *pSourceFolder = _wpQueryFolder(pObject),
-                 *pFolderInTrash;
-        if (pSourceFolder)
+        #ifdef DEBUG_TRASHCAN
+            _Pmpf(("xwpDeleteIntoTrashCan: Source folder: %s", szSourceFolder));
+        #endif
+
+        // get the \trash subdir corresponding to pSourceFolder;
+        // this function either creates one or gets an existing
+        // one if things have been deleted from pSourceFolder
+        // already
+        if (    (pFolderInTrash = trshGetOrCreateTrashDir(pTrashCan,
+                                                          szSourceFolder,
+                                                          &fNeedSave))
+                // close all open views
+             && (wpshCloseAllViews(pObject))
+           )
         {
-            CHAR    szSourceFolder[CCHMAXPATH];
-            if (_wpQueryFilename(pSourceFolder, szSourceFolder, TRUE))
+            // MOVE the object now
+            if (fopsMoveObjectConfirmed(pObject,
+                                        pFolderInTrash))
             {
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("xwpDeleteIntoTrashCan: Source folder: %s", szSourceFolder));
-                #endif
+                // successfully moved:
+                XWPTrashCanData *somThis = XWPTrashCanGetData(pTrashCan);
 
-                // get the \trash subdir corresponding to pSourceFolder;
-                // this function either creates one or gets an existing
-                // one if things have been deleted from pSourceFolder
-                // already
-                if (pFolderInTrash = trshGetOrCreateTrashDir(pTrashCan,
-                                                             szSourceFolder,
-                                                             &fNeedSave))
+                // set original object's deletion data
+                // to current date/time
+                _xwpSetDeletion(pObject, TRUE);
+
+                // return TRUE
+                brc = TRUE;
+
+                // if the trash can has been populated
+                // already, add a matching trash object;
+                // otherwise wpPopulate will do this
+                // later
+                if (_fAlreadyPopulated)
                 {
-                    // close all open views
-                    if (wpshCloseAllViews(pObject))
+                    SOMClass *pTrashObjectClass = _XWPTrashObject;
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("xwpDeleteIntoTrashCan: Trash can is populated: creating trash object"));
+                        _Pmpf(("  pTrashObjectClass: 0x%lX", pTrashObjectClass));
+                    #endif
+                    if (pTrashObjectClass)
                     {
-                        // MOVE the object now
-                        if (fopsMoveObjectConfirmed(pObject,
-                                                    pFolderInTrash))
-                        {
-                            // successfully moved:
-                            XWPTrashCanData *somThis = XWPTrashCanGetData(pTrashCan);
+                        if (trshCreateTrashObject(pTrashObjectClass,
+                                                  pTrashCan,    // trash can
+                                                  pObject))
+                            #ifdef DEBUG_TRASHCAN
+                                _Pmpf(("xwpDeleteIntoTrashCan: Created trash object successfully"))
+                            #endif
+                            ;
+                    }
+                }
+                else
+                {
+                    // not populated yet:
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("xwpDeleteIntoTrashCan: Trash can not populated, skipping trash object"));
+                    #endif
 
-                            // set original object's deletion data
-                            // to current date/time
-                            _xwpSetDeletion(pObject, TRUE);
+                    // just raise the number of trash items
+                    // and change the icon, wpPopulate will
+                    // later correct this number
+                    _ulTrashObjectCount++;
+                    _xwpSetCorrectTrashIcon(pTrashCan, FALSE);
 
-                            // return TRUE
-                            brc = TRUE;
-
-                            // if the trash can has been populated
-                            // already, add a matching trash object;
-                            // otherwise wpPopulate will do this
-                            // later
-                            if (_fAlreadyPopulated)
-                            {
-                                SOMClass *pTrashObjectClass = _XWPTrashObject;
-                                #ifdef DEBUG_TRASHCAN
-                                    _Pmpf(("xwpDeleteIntoTrashCan: Trash can is populated: creating trash object"));
-                                    _Pmpf(("  pTrashObjectClass: 0x%lX", pTrashObjectClass));
-                                #endif
-                                if (pTrashObjectClass)
-                                {
-                                    if (trshCreateTrashObject(pTrashObjectClass,
-                                                              pTrashCan,    // trash can
-                                                              pObject))
-                                        #ifdef DEBUG_TRASHCAN
-                                            _Pmpf(("xwpDeleteIntoTrashCan: Created trash object successfully"))
-                                        #endif
-                                        ;
-                                }
-                            }
-                            else
-                            {
-                                // not populated yet:
-                                #ifdef DEBUG_TRASHCAN
-                                    _Pmpf(("xwpDeleteIntoTrashCan: Trash can not populated, skipping trash object"));
-                                #endif
-
-                                // just raise the number of trash items
-                                // and change the icon, wpPopulate will
-                                // later correct this number
-                                _ulTrashObjectCount++;
-                                _xwpSetCorrectTrashIcon(pTrashCan, FALSE);
-
-                            }
-                        } // end if (fopsMoveObject(pObject, ...
-                    } // end if (wpshCloseAllViews(pObject))
-                } // end if (pFolderInTrash)
-            } // end if (_wpQueryFilename(pFolder, szFolder, TRUE))
-        } // end if (pFolder)
-    } // end if (pObject)
+                }
+            } // end if (fopsMoveObject(pObject, ...
+        } // end if (wpshCloseAllViews(pObject))
+    } // end if (_wpQueryFilename(pFolder, szFolder, TRUE))
 
     if (fNeedSave)
         _wpSaveDeferred(pTrashCan);

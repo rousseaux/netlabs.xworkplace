@@ -1188,7 +1188,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *      This is needed for processing messages which must be
  *      processed on thread 1. We cannot however process these
  *      messages in the subclassed folder frame wnd proc
- *      (fdr_fnwpSubclassedFolderFrame in folder.c),
+ *      (fnwpSubclassedFolderFrame in folder.c),
  *      because adding user messages to that wnd proc could
  *      conflict with default WPFolder messages or those of
  *      some other WPS enhancer, and we can also never be
@@ -1226,6 +1226,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.4 (2000-06-05) [umoeller]: added exception handling
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added WM_APPTERMINATENOTIFY
  *@@changed V0.9.14 (2001-08-07) [pr]: added T1M_OPENRUNDIALOG
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: "properties" in pager context menu opens pager page directly now
  */
 
 static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1702,14 +1703,19 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
             switch ((USHORT)mp1)
             {
                 case ID_CRMI_PROPERTIES:
-                {
+                    // changed this to open the proper page directly
+                    // V0.9.20 (2002-08-04) [umoeller]
+                    ntbOpenSettingsPage(XFOLDER_SCREENID,
+                                        SP_PAGER_MAIN);
+
+                    /*
                     // open "Screen" object
                     HOBJECT hobj;
                     if (hobj = WinQueryObject((PSZ)XFOLDER_SCREENID))
                         T1M_OpenObjectFromHandle(hwndObject,
                                                  (MPARAM)hobj,
                                                  (MPARAM)0);   // no screen corner
-                }
+                    */
                 break;
 
                 case ID_CRMI_HELP:

@@ -48,7 +48,7 @@
     APIRET ftypRenameFileType(PCSZ pcszOld,
                               PCSZ pcszNew);
 
-    ULONG ftypAssocObjectDeleted(HOBJECT hobj);
+    ULONG ftypAssocObjectDeleted(WPObject *somSelf);
 
 #ifndef __NEVEREXTASSOCS__
     #ifdef SOM_XFldDataFile_h

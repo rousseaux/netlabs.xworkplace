@@ -282,33 +282,49 @@ MRESULT EXPENTRY fnwpSubclDebugFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
 static VOID FillRec(PXWININFO pWinInfo)
 {
-    ULONG pid, tid;
-    if (!pWinInfo->prec)
+    ULONG       pid, tid, flStyle;
+    PWINLISTRECORD prec;
+    HWND        hwnd = pWinInfo->data.swctl.hwnd;
+    SWP         swp;
+
+    if (!(prec = pWinInfo->prec))
         return;
 
-    pWinInfo->prec->recc.flRecordAttr = CRA_OWNERFREE | CRA_RECORDREADONLY;
+    prec->recc.flRecordAttr = CRA_OWNERFREE | CRA_RECORDREADONLY;
 
-    pWinInfo->prec->recc.hptrIcon = pWinInfo->hptrFrame;
+    prec->recc.hptrIcon = pWinInfo->hptrFrame;
 
-    pWinInfo->prec->szFlags[0] = '\0';
+    sprintf(prec->szHWND, "%lX", hwnd);
+    prec->pszHWND = prec->szHWND;
+
+    sprintf(prec->szHWNDParent, "%lX", WinQueryWindow(hwnd, QW_PARENT));
+    prec->pszHWNDParent = prec->szHWNDParent;
+
+    prec->szFlags[0] = '\0';
     if (pWinInfo->data.swctl.uchVisibility & SWL_VISIBLE)       // 0x04
-        strcat(pWinInfo->prec->szFlags, "vis ");
+        strcat(prec->szFlags, "vis ");
     if (pWinInfo->data.swctl.uchVisibility & SWL_INVISIBLE)     // 0x01
-        strcat(pWinInfo->prec->szFlags, "!vis ");
+        strcat(prec->szFlags, "!vis ");
     if (pWinInfo->data.swctl.uchVisibility & SWL_GRAYED)        // 0x02
-        strcat(pWinInfo->prec->szFlags, "gray ");
+        strcat(prec->szFlags, "gray ");
 
     if (pWinInfo->data.swctl.fbJump & SWL_JUMPABLE)             // 0x02
-        strcat(pWinInfo->prec->szFlags, "jmp ");
+        strcat(prec->szFlags, "jmp ");
     if (pWinInfo->data.swctl.fbJump & SWL_NOTJUMPABLE)          // 0x01
-        strcat(pWinInfo->prec->szFlags, "!jmp ");
-    pWinInfo->prec->pszFlags = pWinInfo->prec->szFlags;
+        strcat(prec->szFlags, "!jmp ");
+    prec->pszFlags = prec->szFlags;
 
-    pWinInfo->prec->pszSwtitle = pWinInfo->data.swctl.szSwtitle;
+    WinQueryWindowPos(hwnd, &swp);
+    sprintf(prec->szPos,
+            "x %d, cx %d, y %d, cy %d",
+            swp.x, swp.cx, swp.y, swp.cy);
+    prec->pszPos = prec->szPos;
+
+    prec->pszSwtitle = pWinInfo->data.swctl.szSwtitle;
 
     switch (pWinInfo->data.bWindowType)
     {
-        #define PRINTTYPE(t) case WINDOW_ ## t: pWinInfo->prec->pszWindowType = # t; break
+        #define PRINTTYPE(t) case WINDOW_ ## t: prec->pszWindowType = # t; break
         PRINTTYPE(NORMAL);
         PRINTTYPE(MAXIMIZE);
         PRINTTYPE(MINIMIZE);
@@ -319,14 +335,49 @@ static VOID FillRec(PXWININFO pWinInfo)
         PRINTTYPE(HIDDEN);
     }
 
-    WinQueryClassName(pWinInfo->data.swctl.hwnd, sizeof(pWinInfo->prec->szClass), pWinInfo->prec->szClass);
-    pWinInfo->prec->pszClass = pWinInfo->prec->szClass;
+    WinQueryClassName(pWinInfo->data.swctl.hwnd, sizeof(prec->szClass), prec->szClass);
+    prec->pszClass = prec->szClass;
 
     WinQueryWindowProcess(pWinInfo->data.swctl.hwnd, &pid, &tid);
-    sprintf(pWinInfo->prec->szPID, "%04lX", pid);
-    pWinInfo->prec->pszPID = pWinInfo->prec->szPID;
+    sprintf(prec->szPID, "%04lX", pid);
+    prec->pszPID = prec->szPID;
 
-    pWinInfo->prec->pWinInfo = pWinInfo;
+    prec->szStyle[0] = '\0';
+    prec->pszStyle = prec->szStyle;
+    if (flStyle = WinQueryWindowULong(pWinInfo->data.swctl.hwnd, QWL_STYLE))
+    {
+        #define PRINTSTYLE(s) if (flStyle & s) strcat(prec->szStyle, # s " ")
+        PRINTSTYLE(WS_VISIBLE);
+        PRINTSTYLE(WS_DISABLED);
+        PRINTSTYLE(WS_CLIPCHILDREN);
+        PRINTSTYLE(WS_CLIPSIBLINGS);
+        PRINTSTYLE(WS_PARENTCLIP);
+        PRINTSTYLE(WS_SAVEBITS);
+        PRINTSTYLE(WS_SYNCPAINT);
+        PRINTSTYLE(WS_MINIMIZED);
+        PRINTSTYLE(WS_MAXIMIZED);
+        PRINTSTYLE(WS_ANIMATE);
+
+        if (!strcmp(prec->szClass, "#1"))
+        {
+            PRINTSTYLE(FS_ICON);
+            PRINTSTYLE(FS_ACCELTABLE);
+            PRINTSTYLE(FS_SHELLPOSITION);
+            PRINTSTYLE(FS_TASKLIST);
+            PRINTSTYLE(FS_NOBYTEALIGN);
+            PRINTSTYLE(FS_NOMOVEWITHOWNER);
+            PRINTSTYLE(FS_SYSMODAL);
+            PRINTSTYLE(FS_DLGBORDER);
+            PRINTSTYLE(FS_BORDER);
+            PRINTSTYLE(FS_SCREENALIGN);
+            PRINTSTYLE(FS_MOUSEALIGN);
+            PRINTSTYLE(FS_SIZEBORDER);
+            PRINTSTYLE(FS_AUTOICON);
+            // PRINTSTYLE(FS_DBE_APPSTAT);
+        }
+    }
+
+    prec->pWinInfo = pWinInfo;
 }
 
 static VOID CreateDebugFrame(VOID)
@@ -359,7 +410,7 @@ static VOID CreateDebugFrame(VOID)
                         SWP_SHOW | SWP_ZORDER | SWP_MOVE | SWP_SIZE);
 
         {
-            XFIELDINFO      xfi[8];
+            XFIELDINFO      xfi[10];
             PFIELDINFO      pfi = NULL;
             int             i = 0;
 
@@ -371,12 +422,27 @@ static VOID CreateDebugFrame(VOID)
 
             // set up cnr details view
             xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, recc.hptrIcon);
-            xfi[i].pszColumnTitle = "Icon";
+            xfi[i].pszColumnTitle = "";
             xfi[i].ulDataType = CFA_BITMAPORICON;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszHWND);
+            xfi[i].pszColumnTitle = "hwnd";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszHWNDParent);
+            xfi[i].pszColumnTitle = "pWnd";
+            xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszFlags);
             xfi[i].pszColumnTitle = "fl";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszPos);
+            xfi[i].pszColumnTitle = "pos";
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
@@ -400,11 +466,16 @@ static VOID CreateDebugFrame(VOID)
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszStyle);
+            xfi[i].pszColumnTitle = "style";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
             pfi = cnrhSetFieldInfos(G_hwndDebugCnr,
                                     xfi,
                                     i,             // array item count
                                     TRUE,          // draw lines
-                                    2);            // return third column
+                                    4);
 
             BEGIN_CNRINFO()
             {
@@ -701,6 +772,7 @@ static VOID RemoveInfo(PLISTNODE pNode)
  *@@changed V0.9.4 (2000-08-08) [umoeller]: removed "special" windows; now ignoring ShapeWin windows
  *@@changed V0.9.15 (2001-09-14) [umoeller]: now always checking for visibility; this fixes VX-REXX apps hanging XPager
  *@@changed V0.9.18 (2002-02-21) [lafaix]: minimized and maximized windows titles were not queryied and maximized windows couldn't be sticky
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: while Embellish was running, pager was broken; fixed
  */
 
 BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
@@ -739,7 +811,13 @@ BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
                     // make sure this is a desktop child;
                     // we use WinSetMultWindowPos, which requires
                     // that all windows have the same parent
-                    (!WinIsChild(hwnd, HWND_DESKTOP))
+                    // (!WinIsChild(hwnd, HWND_DESKTOP))
+                    (WinQueryWindow(hwnd, QW_PARENT) != G_pHookData->hwndPMDesktop)
+                            // fixed V0.9.20 (2002-08-04) [umoeller]
+                            // stupid Embellish creates its toolbar window as a standard PM frame,
+                            // which has the main Embellish window as its parent... for some reason,
+                            // the above code caused this to be added in the window list, breaking
+                            // the pager while Embellish is running
                     // ignore PM "Icon title" class:
                  || (!strcmp(pcszClassName, "#32765"))
                     // ignore Warp 4 "Alt tab" window; this always exists,

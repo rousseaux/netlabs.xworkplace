@@ -307,4 +307,10 @@
 
     ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID);
 
+    BOOL ntbTurnToPage(HWND hwndNotebook,
+                       ULONG ulPageID);
+
+    BOOL ntbOpenSettingsPage(PCSZ pcszObjectID,
+                             ULONG ulPageID);
+
 #endif

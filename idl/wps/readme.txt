@@ -1,4 +1,6 @@
 
+V0.9.20 (2002-07-29) [umoeller]
+
 The idl\wps\ directory contains slightly tuned default WPS IDL files
 to allow us to override methods that IBM didn't care to make public.
 
@@ -12,7 +14,8 @@ As a result, with V0.9.20, I have found the following to work:
     of those from the toolkit IDL dir, if present.
 
     This allows us to override undocumented methods simply by
-    tagging them with "override" in our replacement class IDL files.
+    tagging them with "override" in IDL files of the XWorkplace
+    classes (in the parent directory).
 
 2)  idl\makefile now produces headers from the files in idl\wps\ as
     well and puts them into include\classes\wps\.
@@ -23,7 +26,8 @@ As a result, with V0.9.20, I have found the following to work:
     used instead of the default ones.
 
 When changing default WPS IDL files, be very careful... you better
-get the releaseorder right. Fortunately, many of the undocumented
-methods are in the releaseorder and only the prototypes are missing.
+get the releaseorder right. Fortunately, IBM _has_ listed most of
+the undocumented methods are in the releaseorders and only the
+prototypes are missing.
 
 

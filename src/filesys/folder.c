@@ -1224,7 +1224,7 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
         if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, 5000))
         {
             // count objects
-            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+            // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
             for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                     (pObject);
                     pObject = *__get_pobjNext(pObject)
@@ -1234,15 +1234,14 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
             }
 
             // collect icons for all objects
-            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+            // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
             for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                     (pObject);
                     pObject = *__get_pobjNext(pObject)
                 )
             {
                 // get the icon
-                _xwpQueryIconNow(pObject);
-                        // adjusted V0.9.20 (2002-07-25) [umoeller]
+                _wpQueryIcon(pObject);
 
                 if (pfnCallback)
                 {
@@ -2187,8 +2186,7 @@ ULONG ConfirmRename(HWND hwndOwner,
         // set controls
         Icon1.pcszText = (PCSZ)cmnQueryDlgIcon();
         RenameTxt.pcszText = pstrMsg->psz;
-        IconObject.pcszText = (PCSZ)_xwpQueryIconNow(pobj);
-                            // adjusted V0.9.20 (2002-07-25) [umoeller]
+        IconObject.pcszText = (PCSZ)_wpQueryIcon(pobj);
         IconTitle.pcszText = apcsz[0];
 
         if (!cmnLoadDialogStrings(dlgConfirm,

@@ -515,6 +515,164 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
 
 /* ******************************************************************
  *
+ *   Associations cleanup
+ *
+ ********************************************************************/
+
+/*
+ *@@ RemoveAssocReferences:
+ *      called twice from ftypAssocObjectDeleted,
+ *      with the PMWP_ASSOC_TYPES and PMWP_ASSOC_FILTERS
+ *      strings, respectively.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
+                                   PCSZ pcszIniApp)     // in: OS2.INI app to search
+{
+    APIRET arc;
+    ULONG ulrc = 0;
+    PSZ pszKeys = NULL;
+
+    // loop 1: go thru all types/filters
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    pcszIniApp,
+                                    &pszKeys)))
+    {
+        PCSZ pKey = pszKeys;
+        while (*pKey != 0)
+        {
+            // loop 2: go thru all assocs for this type/filter
+            ULONG cbAssocData;
+            PSZ pszAssocData = prfhQueryProfileData(HINI_USER,
+                                                    pcszIniApp, // "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
+                                                    pKey,       // current type or filter
+                                                    &cbAssocData);
+            if (pszAssocData)
+            {
+                PSZ     pAssoc = pszAssocData;
+                ULONG   ulOfsAssoc = 0;
+                LONG    cbCopy = cbAssocData;
+                while (*pAssoc)
+                {
+                    // pAssoc now has the decimal handle of
+                    // the associated object
+                    ULONG cbAssocThis = strlen(pAssoc) + 1; // include null byte
+                    cbCopy -= cbAssocThis;
+
+                    // check if this assoc is to be removed
+                    if (!strcmp(pAssoc, pcszHandle))
+                    {
+                        #ifdef DEBUG_ASSOCS
+                            _PmpfF(("removing handle %s from %s",
+                                        pcszHandle,
+                                        pKey));
+                        #endif
+
+                        // yes: well then...
+                        // is this the last entry?
+                        if (cbCopy > 0)
+                        {
+                            // no: move other entries up front
+                            memmove(pAssoc,
+                                    pAssoc + cbAssocThis,
+                                    // remaining bytes:
+                                    cbCopy);
+                        }
+                        // else: just truncate the chunk
+
+                        cbAssocData -= cbAssocThis;
+
+                        // now rewrite the assocs list...
+                        // note, we do not remove the key,
+                        // this is the types list of the WPS.
+                        // If no assocs are left, we write a
+                        // single null byte.
+                        PrfWriteProfileData(HINI_USER,
+                                            (PSZ)pcszIniApp,
+                                            (PSZ)pKey,
+                                            (cbAssocData)
+                                                ? pszAssocData
+                                                : "\0",
+                                            (cbAssocData)
+                                                ? cbAssocData
+                                                : 1);           // null byte only
+                        ulrc++;
+                        break;
+                    }
+
+                    // go for next object handle (after the 0 byte)
+                    pAssoc += cbAssocThis;
+                    ulOfsAssoc += cbAssocThis;
+                    if (pAssoc >= pszAssocData + cbAssocData)
+                        break; // while (*pAssoc)
+                } // end while (*pAssoc)
+
+                free(pszAssocData);
+            }
+
+            // go for next key
+            pKey += strlen(pKey)+1;
+        }
+
+        free(pszKeys);
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ ftypAssocObjectDeleted:
+ *      runs through all association entries and
+ *      removes somSelf from all associations, if
+ *      present.
+ *
+ *      Gets called from XWPProgram::wpDestroyObject,
+ *      i.e. when a WPProgram is physically destroyed.
+ *
+ *      Returns the no. of associations removed.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@changed V0.9.20 (2002-07-31) [umoeller]: changed prototype to have WPObject* instead of HOBJECT
+ */
+
+ULONG ftypAssocObjectDeleted(WPObject *somSelf)
+{
+    ULONG ulrc = 0;
+
+    TRY_LOUD(excpt1)
+    {
+        HOBJECT hobj = _wpQueryHandle(somSelf);
+
+        CHAR szHandle[20];
+
+        // run through OS2.INI assocs...
+        // NOTE: we run through both the WPS types and
+        // WPS filters sections here, even though XWP
+        // extended assocs don't use the WPS filters.
+        // But the object got deleted, so we shouldn't
+        // leave the old entries in there.
+        sprintf(szHandle, "%d", hobj);
+
+        #ifdef DEBUG_ASSOCS
+            _PmpfF(("running with %s", szHandle));
+        #endif
+
+        ulrc += RemoveAssocReferences(szHandle,
+                                      WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
+        ulrc += RemoveAssocReferences(szHandle,
+                                      WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    return (ulrc);
+}
+
+#ifndef __NEVEREXTASSOCS__
+
+/* ******************************************************************
+ *
  *   Extended associations helper funcs
  *
  ********************************************************************/
@@ -1527,153 +1685,6 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
     return arc;
 }
 
-/*
- *@@ RemoveAssocReferences:
- *      called twice from ftypAssocObjectDeleted,
- *      with the PMWP_ASSOC_TYPES and PMWP_ASSOC_FILTERS
- *      strings, respectively.
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- */
-
-static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
-                                   PCSZ pcszIniApp)     // in: OS2.INI app to search
-{
-    APIRET arc;
-    ULONG ulrc = 0;
-    PSZ pszKeys = NULL;
-
-    // loop 1: go thru all types/filters
-    if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                    pcszIniApp,
-                                    &pszKeys)))
-    {
-        PCSZ pKey = pszKeys;
-        while (*pKey != 0)
-        {
-            // loop 2: go thru all assocs for this type/filter
-            ULONG cbAssocData;
-            PSZ pszAssocData = prfhQueryProfileData(HINI_USER,
-                                                    pcszIniApp, // "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
-                                                    pKey,       // current type or filter
-                                                    &cbAssocData);
-            if (pszAssocData)
-            {
-                PSZ     pAssoc = pszAssocData;
-                ULONG   ulOfsAssoc = 0;
-                LONG    cbCopy = cbAssocData;
-                while (*pAssoc)
-                {
-                    // pAssoc now has the decimal handle of
-                    // the associated object
-                    ULONG cbAssocThis = strlen(pAssoc) + 1; // include null byte
-                    cbCopy -= cbAssocThis;
-
-                    // check if this assoc is to be removed
-                    if (!strcmp(pAssoc, pcszHandle))
-                    {
-                        #ifdef DEBUG_ASSOCS
-                            _PmpfF(("removing handle %s from %s",
-                                        pcszHandle,
-                                        pKey));
-                        #endif
-
-                        // yes: well then...
-                        // is this the last entry?
-                        if (cbCopy > 0)
-                        {
-                            // no: move other entries up front
-                            memmove(pAssoc,
-                                    pAssoc + cbAssocThis,
-                                    // remaining bytes:
-                                    cbCopy);
-                        }
-                        // else: just truncate the chunk
-
-                        cbAssocData -= cbAssocThis;
-
-                        // now rewrite the assocs list...
-                        // note, we do not remove the key,
-                        // this is the types list of the WPS.
-                        // If no assocs are left, we write a
-                        // single null byte.
-                        PrfWriteProfileData(HINI_USER,
-                                            (PSZ)pcszIniApp,
-                                            (PSZ)pKey,
-                                            (cbAssocData)
-                                                ? pszAssocData
-                                                : "\0",
-                                            (cbAssocData)
-                                                ? cbAssocData
-                                                : 1);           // null byte only
-                        ulrc++;
-                        break;
-                    }
-
-                    // go for next object handle (after the 0 byte)
-                    pAssoc += cbAssocThis;
-                    ulOfsAssoc += cbAssocThis;
-                    if (pAssoc >= pszAssocData + cbAssocData)
-                        break; // while (*pAssoc)
-                } // end while (*pAssoc)
-
-                free(pszAssocData);
-            }
-
-            // go for next key
-            pKey += strlen(pKey)+1;
-        }
-
-        free(pszKeys);
-    }
-
-    return (ulrc);
-}
-
-/*
- *@@ ftypAssocObjectDeleted:
- *      runs through all association entries and
- *      removes somSelf from all associations, if
- *      present.
- *
- *      Gets called from XWPProgram::wpDestroyObject,
- *      i.e. when a WPProgram is physically destroyed.
- *
- *      Returns the no. of associations removed.
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- */
-
-ULONG ftypAssocObjectDeleted(HOBJECT hobj)
-{
-    ULONG ulrc = 0;
-
-    TRY_LOUD(excpt1)
-    {
-        CHAR szHandle[20];
-
-        // run through OS2.INI assocs...
-        // NOTE: we run through both the WPS types and
-        // WPS filters sections here, even though XWP
-        // extended assocs don't use the WPS filters.
-        // But the object got deleted, so we shouldn't
-        // leave the old entries in there.
-        sprintf(szHandle, "%d", hobj);
-
-        #ifdef DEBUG_ASSOCS
-            _PmpfF(("running with %s", szHandle));
-        #endif
-
-        ulrc += RemoveAssocReferences(szHandle,
-                                      WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
-        ulrc += RemoveAssocReferences(szHandle,
-                                      WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
-    }
-    CATCH(excpt1) {} END_CATCH();
-
-    return (ulrc);
-}
-
 /* ******************************************************************
  *
  *   Import facility
@@ -2447,4 +2458,4 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
     return arc;
 }
 
-
+#endif // #ifndef __NEVEREXTASSOCS__

@@ -473,7 +473,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpDestroyObject(XWPProgram *somSelf)
         // the entire handles cache, unfortunately...
         // _wpQueryHandle is safe, since each WPProgram
         // must have one per definition
-        ftypAssocObjectDeleted(_wpQueryHandle(somSelf));
+        ftypAssocObjectDeleted(somSelf);        // V0.9.20 (2002-07-31) [umoeller]
 
         // call WPAbstract::wpDestroyObject explicitly,
         // skipping WPProgram

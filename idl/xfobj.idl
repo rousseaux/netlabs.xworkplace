@@ -99,8 +99,6 @@ interface XFldObject : WPObject
      *
      */
 
-    HPOINTER xwpQueryIconNow();
-
     ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
                                     in ULONG ulPageID,
                                     in ULONG ulDefaultHelpPanel);
@@ -113,9 +111,9 @@ interface XFldObject : WPObject
 
     BOOL xwpSetTrashObject(in WPObject pTrashObject);
 
-    ULONG xwpQueryListNotify();
-    BOOL xwpModifyListNotify(in ULONG flNotifyFlags,
-                             in ULONG flNotifyMask);
+    ULONG xwpQueryFlags();
+    BOOL xwpModifyFlags(in ULONG flFlags,
+                        in ULONG flMask);
 
     BOOL xwpAddWidgetNotify(in HWND hwnd);
     BOOL xwpRemoveDestroyNotify(in HWND hwnd);
@@ -140,16 +138,15 @@ interface XFldObject : WPObject
                   xwpSetObjectHotkey,
                   xwpQuerySetup,
                   xwpQuerySetup2,
-                  xwpQueryListNotify,
-                  xwpModifyListNotify,
+                  xwpQueryFlags,
+                  xwpModifyFlags,
                   xwpAddWidgetNotify,
                   xwpRemoveDestroyNotify,
                   xwpQueryRealDefaultView,
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,
                   xwpHotkeyOrBorderAction,
-                  xwpAddReplacementIconPage,
-                  xwpQueryIconNow;
+                  xwpAddReplacementIconPage;
 
     /*
      * Class Modifiers:
@@ -256,6 +253,7 @@ interface XFldObject : WPObject
     wpSetObjectID: override;
 
     wpSetIcon: override;
+//# wpSetIconHandle: override;
 
     wpSaveDeferred: override;
     wpSaveImmediate: override;

@@ -4,11 +4,11 @@
  *      implementation file for the XFolder folder hotkeys.
  *
  *      This code gets interfaced from method overrides in
- *      xfldr.c, from fdr_fnwpSubclassedFolderFrame, and from
+ *      xfldr.c, from fnwpSubclassedFolderFrame, and from
  *      XFldWPS (xfwps.c).
  *
  *      This is for _folder_ hotkeys only, which are implemented
- *      thru folder subclassing (fdr_fnwpSubclassedFolderFrame),
+ *      thru folder subclassing (fnwpSubclassedFolderFrame),
  *      which in turn calls fdrProcessFldrHotkey.
  *      The global object hotkeys are instead implemented using
  *      the XWorkplace hook (xwphook.c).
@@ -294,7 +294,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
 
 /*
  *@@ fdrProcessFldrHotkey:
- *      this is called by fdr_fnwpSubclassedFolderFrame to
+ *      this is called by fnwpSubclassedFolderFrame to
  *      check for whether a given WM_CHAR message matches
  *      one of the folder hotkeys.
  *

@@ -1559,6 +1559,11 @@ BEGIN
     ID_XSDI_MOUSE_MB3AMP_TXT1           "Ve~rstÑrkung:"
     ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Umgekehrtes Scrollen"
 
+    /* strings formerly in ID_XSD_FILETYPES V0.9.20 (2002-08-04) [umoeller] */
+    ID_XSDI_FT_GROUP                    "Dateitypen"
+    ID_XSDI_FT_FILTERS_TXT              "Filter"
+    ID_XSDI_FT_ASSOCS_TXT               "VerknÅpfungen"
+
 END
 
 

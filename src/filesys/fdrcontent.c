@@ -1059,7 +1059,7 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
                 WPObject *pObject;
 
                 ULONG ul = 0;
-                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                 for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         pObject;
                         pObject = *__get_pobjNext(pObject))
@@ -1251,7 +1251,7 @@ BOOL fdrRegisterAwakeRootFolder(WPFolder *somSelf)
             lstAppendItem(&G_llRootFolders,
                           somSelf);
 
-            _xwpModifyListNotify(somSelf,
+            _xwpModifyFlags(somSelf,
                                  OBJLIST_QUERYAWAKEFSOBJECT,
                                  OBJLIST_QUERYAWAKEFSOBJECT);
 
@@ -1391,7 +1391,7 @@ static WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
                         // set the flag in the instance data
                         // so the cache ptr is invalidated
                         // once this thing goes dormant
-                        _xwpModifyListNotify(pCurrentFolder,
+                        _xwpModifyFlags(pCurrentFolder,
                                              OBJLIST_QUERYAWAKEFSOBJECT,
                                              OBJLIST_QUERYAWAKEFSOBJECT);
                     }

@@ -1959,6 +1959,109 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf,
 }
 
 /*
+ *@@ ntbTurnToPage:
+ *      switches to the page specified by the given
+ *      XWorkplace SP_* page ID.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+BOOL ntbTurnToPage(HWND hwndNotebook,       // in: notebook control (FID_CLIENT of settings view frame)
+                   ULONG ulPageID)          // in: XWorkplace SP_* page ID
+{
+    PNOTEBOOKPAGE pnbp = NULL;
+
+    _PmpfF(("entering, hwndNotebook 0x%lX, page %d", hwndNotebook, ulPageID));
+
+    while (pnbp = ntbQueryOpenPages(pnbp))
+    {
+        _Pmpf(("   got hwndNotebook 0x%lX, page %d [%s]",
+                pnbp->inbp.hwndNotebook,
+                pnbp->inbp.ulPageID,
+                pnbp->inbp.pcszName));
+
+        if (    (hwndNotebook == pnbp->inbp.hwndNotebook)
+             && (pnbp->inbp.ulPageID == ulPageID)
+           )
+        {
+            _Pmpf(("    MATCH: pnbp->ulNotebookPageID is 0x%lX (%d)",
+                        pnbp->ulNotebookPageID,
+                        pnbp->ulNotebookPageID));
+            return (BOOL)WinSendMsg(hwndNotebook,
+                                    BKM_TURNTOPAGE,
+                                    (MPARAM)pnbp->ulNotebookPageID,
+                                    0);
+        }
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ ntbOpenSettingsPage:
+ *      little helper func to open the settings notebook
+ *      of an object specified by object ID and to then
+ *      switch to the page specified by the given SP_*
+ *      page ID.
+ *
+ *      Naturally, this will only work for pages inserted
+ *      by XWorkplace.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+BOOL ntbOpenSettingsPage(PCSZ pcszObjectID,         // in: object ID
+                         ULONG ulPageID)            // in: SP_* page ID
+{
+    WPObject *pobj;
+    HWND    hwndFrame,
+            hwndNotebook;
+
+    if (pobj = cmnQueryObjectFromID(pcszObjectID))
+    {
+        PVIEWITEM pvi;
+
+        // Wow. I thought this would be a quick'n'easy hack to
+        // implement, but here's another bunch of entries for
+        // the IBM weirdo programming hall of fame.
+
+        // What I wanted is to use wpViewObject to get the frame
+        // of the settings notebook, either a new one or the
+        // existing view, if any. PMTREE tells me that the notebook
+        // control is the FID_CLIENT of the notebook frame.
+
+        // What I found out is this however:
+
+        // 1) We can't simply use wpViewObject to give us back the handle
+        //    of an open view if it called wpSwitchTo, because
+        //    the dumbass then returns NULLHANDLE.
+
+        // 2) If wpViewObject _does_ create a new OPEN_SETTINGS,
+        //    it does not return the frame, but the notebook
+        //    control. WHAT?
+
+        // Hence the code below.
+
+        if (    (    (pvi = _wpFindViewItem(pobj, VIEW_SETTINGS, NULL))
+                  && (hwndFrame = pvi->handle)
+                  && (hwndNotebook = WinWindowFromID(hwndFrame, FID_CLIENT))
+                )
+             || (hwndNotebook = _wpViewObject(pobj,
+                                              NULLHANDLE,
+                                              OPEN_SETTINGS,
+                                              0))
+           )
+        {
+            _PmpfF(("got hwndNotebook 0x%lX", hwndNotebook));
+            return ntbTurnToPage(hwndNotebook,
+                                 ulPageID);
+        }
+    }
+
+    return FALSE;
+}
+
+/*
  * ntbDisplayFocusHelp:
  *      this is used from all kinds of settings dlg procs to
  *      display help panels.

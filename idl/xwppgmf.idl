@@ -111,7 +111,6 @@ interface XWPProgramFile : WPProgramFile
     wpRestoreState: override;
     wpRestoreData: override;
 
-    wpQueryIcon: override;
     wpSetProgIcon: override;
 
     wpQueryIconData: override;

@@ -96,7 +96,6 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "config\hookintf.h"            // daemon/hook interface
 #include "config\sound.h"               // XWPSound implementation
@@ -233,7 +232,6 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
 #ifndef __NEVEREXTASSOCS__
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_LAZYICONS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             // ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
@@ -2038,8 +2036,6 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #ifndef __NEVEREXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 cmnQuerySetting(sfExtAssocs));
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_LAZYICONS,
-                cmnQuerySetting(sfLazyIcons));
 #endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
            //      cmnQuerySetting(sCleanupINIs));
@@ -2145,9 +2141,6 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #ifndef __NEVEREXTASSOCS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 (fXFldDataFile));
-        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_LAZYICONS,
-                (fXFldDataFile) && (cmnQuerySetting(sfExtAssocs))
-                );
 #endif
         /* ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 !(cmnQuerySetting(sNoWorkerThread))); */
@@ -2399,10 +2392,6 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
 
                 if (precc->usCheckState)
                     ulNotifyMsg = 208;
-            break;
-
-            case ID_XCSI_LAZYICONS:
-                cmnSetSetting(sfLazyIcons, precc->usCheckState);
             break;
 #endif
 
@@ -3229,8 +3218,7 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
          ul < ulMax;
          ul++)
     {
-        pso2->pExists = wpshQueryObjectFromID(*(pso2->ppcszDefaultID),
-                                              NULL);        // pulErrorCode
+        pso2->pExists = cmnQueryObjectFromID(*(pso2->ppcszDefaultID));
 
         // next item
         pso2++;
@@ -3332,10 +3320,10 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                 pcszLocation = pso2->pcszLocation;
                 strcpy(szLocationPath, pcszLocation);
 
-                if (!(pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL)))
+                if (!(pObjLocation = cmnQueryObjectFromID(pcszLocation)))
                 {
                     pcszLocation = WPOBJID_DESKTOP;
-                    pObjLocation = wpshQueryObjectFromID(pcszLocation, NULL);
+                    pObjLocation = cmnQueryObjectFromID(pcszLocation);
                 }
 
                 if (pObjLocation && _somIsA(pObjLocation, _WPFileSystem))
@@ -3416,9 +3404,6 @@ static VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu ha
          ul < ulMax;
          ul++)
     {
-        /* WPObject* pObject = wpshQueryObjectFromID(*pso2->ppcszDefaultID,
-                                                  NULL);        // pulErrorCode
-                */
         XSTRING strMenuItemText;
         xstrInit(&strMenuItemText, 300);
         xstrset(&strMenuItemText, winhQueryMenuItemText(hwndMenu,

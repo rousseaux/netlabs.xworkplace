@@ -5576,7 +5576,7 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
             pXCenterData->cxFrame = winhQueryScreenCX();
 
-            pGlobals->cxMiniIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
+            pGlobals->cxMiniIcon = G_cxIconSys /* WinQuerySysValue(HWND_DESKTOP, SV_CXICON) */ / 2;
 
             pGlobals->lcol3DDark = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
             pGlobals->lcol3DLight = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0);

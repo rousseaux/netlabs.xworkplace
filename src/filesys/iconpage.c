@@ -472,7 +472,6 @@ static VOID PaintIcon(POBJICONPAGEDATA pData,
                       HPS hps)
 {
     RECTL       rclStatic;
-    LONG        cxIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
     LONG        lcolBackground = winhQueryPresColor(hwndStatic,
                                                     PP_BACKGROUNDCOLOR,
                                                     TRUE,
@@ -487,8 +486,8 @@ static VOID PaintIcon(POBJICONPAGEDATA pData,
                 lcolBackground);
 
     WinDrawPointer(hps,
-                   (rclStatic.xRight - rclStatic.xLeft - cxIcon) / 2,
-                   (rclStatic.yTop - rclStatic.yBottom - cxIcon) / 2,
+                   (rclStatic.xRight - rclStatic.xLeft - G_cxIconSys) / 2,
+                   (rclStatic.yTop - rclStatic.yBottom - G_cyIconSys) / 2,
                    hptr,
                    DP_NORMAL);
 }

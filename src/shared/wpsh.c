@@ -12,8 +12,7 @@
  *          resolution. See wpshResolveFor and others.
  *
  *      --  Miscellaneous Desktop object helpers. See
- *          wpshCheckObject, wpshQueryObjectFromID, and
- *          others.
+ *          wpshCheckObject and others.
  *
  *      --  Miscellaneous object view helpers. See
  *          wpshCloseAllViews, wpshQuerySourceObject, and
@@ -555,57 +554,6 @@ BOOL wpshCheckObject(WPObject *pObject)
     }
 
     return brc;
-}
-
-/*
- *@@ wpshQueryObjectFromID:
- *      this returns an object for an object ID
- *      (those things in angle brackets) or NULL
- *      if not found.
- *
- *      If NULL is returned and (pulErrorCode != NULL),
- *      *pulErrorCode will be set to the following:
- *      --  1:  ID does not even exist.
- *      --  2:  ID does exist, but cannot be resolved
- *              (because object handle is invalid).
- *
- *      This method was added because apparently, IBM
- *      is unable to keep object ID resolution working
- *      with all OS/2 versions, and WinQueryObject causes
- *      a process switch. At least I was reported
- *      that this keeps failing with certain fixpak
- *      levels, so we resolve these things directly
- *      from OS2.INI now.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-WPObject* wpshQueryObjectFromID(const char *pcszObjectID,   // in: object ID (e.g. "<WP_DESKTOP>")
-                                PULONG pulErrorCode)        // out: error (ptr can be NULL)
-{
-    ULONG       ulHandle,
-                cbHandle;
-    WPObject*   pObject = NULL;
-
-    // the WPS stores all the handles as plain ULONGs
-    // (four bytes)
-    cbHandle = sizeof(ulHandle);
-    if (PrfQueryProfileData(HINI_USER,
-                            (PSZ)WPINIAPP_LOCATION, // "PM_Workplace:Location",
-                            (PSZ)pcszObjectID,                  // key
-                            &ulHandle,
-                            &cbHandle))
-    {
-        // cool, handle found: resolve object
-        if (!(pObject = _wpclsQueryObject(_WPObject, ulHandle)))
-            if (pulErrorCode)
-                *pulErrorCode = 2;
-    }
-    else
-        if (pulErrorCode)
-            *pulErrorCode = 1;      // ID not found
-
-    return pObject;
 }
 
 /*

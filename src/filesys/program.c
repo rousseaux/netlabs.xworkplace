@@ -1080,7 +1080,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         // so that XFldObject will call
                         // progRunningAppDestroyed if
                         // the object is destroyed
-                        _xwpModifyListNotify(pobjEmph,
+                        _xwpModifyFlags(pobjEmph,
                                              OBJLIST_RUNNINGSTORED,
                                              OBJLIST_RUNNINGSTORED);
                     }
@@ -1843,11 +1843,12 @@ VOID progSetupStartupDir(PPROGDETAILS pProgDetails,
  *@@added V0.9.7 (2000-12-17) [umoeller]
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed invalid pointer return
  *@@changed V0.9.18 (2002-02-27) [umoeller]: added two codepage variables
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: user can now disable datafile handle creation
  */
 
-PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
-                 PCSZ pcszEnv,          // in: its environment string (or NULL)
-                 WPFileSystem *pFile)          // in: file or NULL
+PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
+                 PCSZ pcszEnv,              // in: its environment string (or NULL)
+                 WPFileSystem *pFile)       // in: file or NULL
 {
     PSZ             pszNewEnv = NULL;
     APIRET          arc = NO_ERROR;
@@ -1885,7 +1886,9 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 
         // 2) set WP_OBJHANDLE
 
-        if (pFile)
+        if (    (pFile)
+             && (cmnQuerySetting(sfDatafileOBJHANDLE))  // V0.9.20 (2002-08-04) [umoeller]
+           )
             // file as argument: use WP_OBJHANDLE=xxx,yyy with
             // the handle of the file _and_ the program
             sprintf(szTemp,
@@ -1895,7 +1898,9 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
         else
             // no file specified: use WP_OBJHANDLE=xxx with
             // the handle of the program only
-            sprintf(szTemp, "WP_OBJHANDLE=%d", hobjProgram);
+            sprintf(szTemp,
+                    "WP_OBJHANDLE=%d",
+                    hobjProgram);
 
         if (!(arc = appSetEnvironmentVar(&Env,
                                          szTemp,

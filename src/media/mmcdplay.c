@@ -206,7 +206,7 @@ static MRESULT ButtonCreate(HWND hwnd)
         pfbd->hwnd = hwnd;
         WinSetWindowPtr(hwnd, QWL_USER, pfbd);
 
-        pfbd->cxMiniIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
+        pfbd->cxMiniIcon = G_cxIconSys; // WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2;
 
         pfbd->lcolBackground
             = winhQueryPresColor(WinQueryWindow(hwnd, QW_OWNER),
@@ -600,7 +600,7 @@ static MRESULT CDCreate(HWND hwnd,
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)mp1;
     HMODULE         hmod = cmnQueryMainResModuleHandle();
     ULONG           ul = 0,
-                    cxMiniIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON) / 2,
+                    cxMiniIcon = G_cxIconSys /* WinQuerySysValue(HWND_DESKTOP, SV_CXICON) */ / 2,
                     cxButton = 2 * BUTTON_BORDER
                              + 2 * BUTTON_ICONSPACING
                              + cxMiniIcon;

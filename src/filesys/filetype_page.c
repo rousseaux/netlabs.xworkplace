@@ -73,6 +73,7 @@
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINMENUS
+#define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
 #define INCL_WINLISTBOXES
@@ -92,6 +93,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -620,8 +622,7 @@ static PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
         {
             preccNew->recc.hptrIcon
             = preccNew->recc.hptrMiniIcon
-            = _xwpQueryIconNow(pobj);
-                        // adjusted V0.9.20 (2002-07-25) [umoeller]#
+            = _wpQueryIcon(pobj);
         }
 
         cnrhInsertRecordAfter(hwndAssocsCnr,
@@ -1125,6 +1126,75 @@ static BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
     return brc;
 }
 
+/* DLGTEMPLATE ID_XSD_FILETYPES LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FILETYPES, 0, 0, 265, 162, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_XSDI_FT_CONTAINER, 10, 27, 110, 123,
+                        CCS_SINGLESEL | CCS_VERIFYPOINTERS
+                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
+        LTEXT           "Filters", ID_XSDI_FT_FILTERS_TXT, 125, 144, 105, 8,
+                        NOT WS_GROUP
+        CONTAINER       ID_XSDI_FT_FILTERSCNR, 125, 102, 105, 39,
+                        CCS_EXTENDSEL
+                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
+        LTEXT           "Associations", ID_XSDI_FT_ASSOCS_TXT, 125, 90, 105,
+                        8, NOT WS_GROUP
+        CONTAINER       ID_XSDI_FT_ASSOCSCNR, 125, 27, 105, 61,
+                        CCS_EXTENDSEL
+                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
+        GROUPBOX        "File types", ID_XSDI_FT_GROUP, 5, 24, 230, 135,
+                        DT_MNEMONIC
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 85, 6, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END */
+
+#define FT_TEXT_HEIGHT          10
+#define FT_CNR_HEIGHT           40
+
+static const CONTROLDEF
+    FTGroup = LOADDEF_GROUP(ID_XSDI_FT_GROUP, SZL_AUTOSIZE),
+    FTCnr = CONTROLDEF_CONTAINER(ID_XSDI_FT_CONTAINER,
+                                 100,
+                                   2 * FT_TEXT_HEIGHT
+                                 + 2 * FT_CNR_HEIGHT
+                                 + 6 * COMMON_SPACING),
+    FTFiltersTxt = CONTROLDEF_TEXT(LOAD_STRING, ID_XSDI_FT_FILTERS_TXT, 100, FT_TEXT_HEIGHT),
+    FTFiltersCnr = CONTROLDEF_CONTAINER_EXTSEL(ID_XSDI_FT_FILTERSCNR, 100, FT_CNR_HEIGHT),
+    FTAssocsTxt = CONTROLDEF_TEXT(LOAD_STRING, ID_XSDI_FT_ASSOCS_TXT, 100, FT_TEXT_HEIGHT),
+    FTAssocsCnr = CONTROLDEF_CONTAINER_EXTSEL(ID_XSDI_FT_ASSOCSCNR, 100, FT_CNR_HEIGHT),
+    FTCreateDatafileHandleCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FT_CREATEDATAFILEHANDLE);
+
+static const DLGHITEM G_dlgFileTypes[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&FTGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&FTCnr),
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&FTFiltersTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&FTFiltersCnr),
+                            START_ROW(0),
+                                CONTROL_DEF(&FTAssocsTxt),
+                            START_ROW(0),
+                                CONTROL_DEF(&FTAssocsCnr),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&FTCreateDatafileHandleCB),
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE,
+    };
+
 /*
  *@@ G_ampFileTypesPage:
  *      resizing information for "File types" page.
@@ -1187,13 +1257,13 @@ extern ULONG G_cFileTypesPage = sizeof(G_ampFileTypesPage) / sizeof(G_ampFileTyp
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: now using dialog formatter
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: added setting for data file handles
  */
 
 VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                            ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_CONTAINER);
-
     /*
      * CBI_INIT:
      *      initialize page (called only once)
@@ -1223,8 +1293,14 @@ VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // keep track of where we allocated what.
         lstInit(&pftpd->llCleanup, TRUE);
 
+        // insert the controls using the dialog formatter
+        // V0.9.20 (2002-08-04) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgFileTypes,
+                      ARRAYITEMCOUNT(G_dlgFileTypes));
+
         // store container hwnd's
-        pftpd->hwndTypesCnr = hwndCnr;
+        pftpd->hwndTypesCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_CONTAINER);
         pftpd->hwndFiltersCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
         pftpd->hwndAssocsCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
 
@@ -1234,7 +1310,7 @@ VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT);
             cnrhSetTreeIndent(15);
             cnrhSetSortFunc(fnCompareName);
-        } END_CNRINFO(hwndCnr);
+        } END_CNRINFO(pftpd->hwndTypesCnr);
 
         // set up filters container
         BEGIN_CNRINFO()
@@ -1293,6 +1369,11 @@ VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                   &pftpd->llFileTypes,
                                   NULL,         // check list
                                   NULL);        // disable list
+
+        // V0.9.20 (2002-08-04) [umoeller]
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
+                              ID_XSDI_FT_CREATEDATAFILEHANDLE,
+                              cmnQuerySetting(sfDatafileOBJHANDLE));
     }
 
     /*
@@ -1422,6 +1503,11 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
     switch (ulItemID)
     {
+        // V0.9.20 (2002-08-04) [umoeller]
+        case ID_XSDI_FT_CREATEDATAFILEHANDLE:
+            cmnSetSetting(sfDatafileOBJHANDLE, ulExtra);
+        break;
+
         /*
          * ID_XSDI_FT_CONTAINER:
          *      "File types" container;

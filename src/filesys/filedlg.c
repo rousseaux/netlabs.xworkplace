@@ -1015,7 +1015,7 @@ static VOID BuildDisksList(WPFolder *pDrivesFolder,
             {
                 WPObject *pObject;
                 // 1) count objects
-                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+                // V0.9.20 (2002-07-31) [umoeller]: now using get_pobjNext SOM attribute
                 for (   pObject = _wpQueryContent(pDrivesFolder, NULL, QC_FIRST);
                         (pObject);
                         pObject = *__get_pobjNext(pObject)

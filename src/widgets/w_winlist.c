@@ -218,6 +218,7 @@ PDRV_SPRINTF pdrv_sprintf = NULL;
 PDRV_STRSTR pdrv_strstr = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHDRAWPOINTER pgpihDrawPointer = NULL;
 PGPIHMANIPULATERGB pgpihManipulateRGB = NULL;
 PGPIHMEDIUMRGB pgpihMediumRGB = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
@@ -272,6 +273,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "drv_sprintf", (PFN*)&pdrv_sprintf,
         "drv_strstr", (PFN*)&pdrv_strstr,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihDrawPointer", (PFN*)&pgpihDrawPointer,
         "gpihManipulateRGB", (PFN*)&pgpihManipulateRGB,
         "gpihMediumRGB", (PFN*)&pgpihMediumRGB,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
@@ -390,6 +392,9 @@ typedef struct _WINLISTPRIVATE
             // reverse ptr to general widget data ptr; we need
             // that all the time and don't want to pass it on
             // the stack with each function call
+
+    SIZEL       szlSysIcon;
+            // system icon size V0.9.20 (2002-07-31) [umoeller]
 
     WINLISTSETUP Setup;
             // widget settings that correspond to a setup string
@@ -1342,10 +1347,8 @@ static VOID ScanSwitchList(HWND hwndWidget,
              ul < pswBlock->cswentry;
              ++ul)
         {
-            PSWCNTRL pswCtl = &pswBlock->aswentry[ul].swctl;
-
             AddEntry(pPrivate,
-                     pswCtl);
+                     &pswBlock->aswentry[ul].swctl);
         }
 
         DosFreeMem(pswBlock);
@@ -1521,13 +1524,29 @@ static VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
             LONG    y = rclButtonArea.yBottom + (cy - pGlobals->cxMiniIcon) / 2;
             if (y < rclButtonArea.yBottom + 1)
                 y = rclButtonArea.yBottom + 1;
-            WinDrawPointer(hps,
+
+            /* WinDrawPointer(hps,
                            rclButtonArea.xLeft + 1,
                            y,
                            pCtrlThis->hptr,
                            (fHalftone)
                             ? DP_MINI | DP_HALFTONED
                             : DP_MINI);
+                    V0.9.20 (2002-07-31) [umoeller]
+                    replaced with
+            */
+
+            pgpihDrawPointer(hps,
+                             rclButtonArea.xLeft + 1,
+                             y,
+                             pCtrlThis->hptr,
+                             &pPrivate->szlSysIcon,
+                             &rclButtonArea,            // clip rectangle
+                             (fHalftone)
+                              ? DP_MINI | DP_HALFTONED
+                              : DP_MINI);
+
+
             rclButtonArea.xLeft += pGlobals->cxMiniIcon;
         }
 
@@ -1711,6 +1730,10 @@ static MRESULT WwgtCreate(HWND hwnd,
 
     plstInit(&pPrivate->llWinList,
              TRUE);         // auto-free
+
+    // system mini icon size V0.9.20 (2002-07-31) [umoeller]
+    pPrivate->szlSysIcon.cx = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
+    pPrivate->szlSysIcon.cy = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
 
     // initialize binary setup structure from setup string
     WwgtScanSetup(pWidget->pcszSetupString,

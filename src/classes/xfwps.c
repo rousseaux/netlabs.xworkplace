@@ -144,7 +144,7 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrViewsPage(XFldWPS *somSelf,
     inbp.pcszName = cmnGetString(ID_XSSI_WPSFDRVIEWPAGE);  // V0.9.16(2001-11-04) [umoeller]
     inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
-    inbp.ulPageID = SP_1GENERIC;
+    inbp.ulPageID = SP_WPS_FOLDERVIEWS;
     inbp.pfncbInitPage    = fdrViewInitPage;
     inbp.pfncbItemChanged = fdrViewItemChanged;
     return ntbInsertPage(&inbp);
@@ -404,7 +404,7 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFileTypesPage(XFldWPS *somSelf,
         inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
-        inbp.ulDlgID = ID_XSD_FILETYPES;
+        inbp.ulDlgID = ID_XFD_EMPTYDLG;       // ID_XSD_FILETYPES;  V0.9.20 (2002-08-04) [umoeller]
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES;
         inbp.ulPageID = SP_FILETYPES;
         inbp.pampControlFlags = G_pampFileTypesPage;
