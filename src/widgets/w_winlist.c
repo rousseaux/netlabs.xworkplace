@@ -826,7 +826,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         case DID_HELP:
                             pctrDisplayHelp(pData->pGlobals,
                                             pcmnQueryHelpLibrary(),
-                                            ID_XSH_WIDGET_HEALTH_SETTINGS);
+                                            ID_XSH_WIDGET_WINLIST_SETTINGS);
                         break;
                     } // end switch (usCmd)
                 } // end if (pSetup)

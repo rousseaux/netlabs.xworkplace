@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -167,6 +167,9 @@ static ULONG                G_ulWidgetClassesRefCount = 0;
 // global array of plugin modules which were loaded
 static LINKLIST             G_llModules;      // this contains plain HMODULEs as data
 static BOOL                 G_fModulesInitialized = FALSE;
+
+// widget being dragged
+static PWIDGETVIEWSTATE     G_pWidgetBeingDragged = NULL;
 
 /*
  * G_aBuiltInWidgets:
@@ -847,12 +850,33 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
 
 /*
  *@@ ctrpDrawEmphasis:
- *      draws source emphasis on the XCenter client for
- *      hwnd, which should either be the client itself
- *      or a widget window.
+ *      draws emphasis on the XCenter client.
  *
- *      To remove the source emphasis, you must invalidate
- *      the client. Yeah, I know, not optimal.
+ *      This operates in several modes...
+ *
+ *      If (fRemove == TRUE), emphasis is removed.
+ *      In that case, all other parameters except hps
+ *      are ignored. This simply repaints the client
+ *      synchronously using hps.
+ *
+ *      Otherwise source emphasis is added....:
+ *
+ *      --  If (pWidget != NULL), a vertical line is
+ *          painted AFTER that widget. This is to signal
+ *          target emphasis between widgets.
+ *
+ *      --  If (pWidget == NULL && hwnd == pGlobals->hwndClient),
+ *          emphasis is added to the entire XCenter client
+ *          by painting a black rectangle around it. This is
+ *          used for target emphasis for the entire client and
+ *          for source emphasis for the main context menu.
+ *
+ *      --  If (pWidget == NULL) and (hwnd != pGlobals->hwndClient),
+ *          hwnd is assumed to be a widget window. This then
+ *          paints emphasis AROUND a widget. This is used for
+ *          widget source emphasis for a widget context menu.
+ *
+ *      In all cases (even for remove), hpsPre _may_ be specified.
  *
  *      If (hpsPre == NULLHANDLE), we request a presentation
  *      space from the client and release it. If you specify
@@ -860,18 +884,17 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
  *      you must request it for the client, and it must be
  *      in RGB mode.
  *
- *      If (fRemove == TRUE), we remove emphasis instead of
- *      painting it.
- *
  *      May only run on the XCenter GUI thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed wrong emphasis with new view settings
+ *@@changed V0.9.9 (2001-03-10) [umoeller]: mostly rewritten for widget target emphasis
  */
 
 VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
-                      HWND hwnd,        // in: client or widget
                       BOOL fRemove,     // in: if TRUE, invalidate.
+                      PWIDGETVIEWSTATE pWidget, // in: widget or NULL
+                      HWND hwnd,        // in: client or widget
                       HPS hpsPre)       // in: presentation space; if NULLHANDLE,
                                         // we use WinGetPS in here
 {
@@ -891,22 +914,11 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
 
     if (hps)
     {
-        RECTL   rcl;
-        ULONG   ulEmphasisWidth;
-
-        // get window's rectangle
-        WinQueryWindowRect(hwnd,
-                           &rcl);
-        if (hwnd != pGlobals->hwndClient)
-            // widget window specified: convert to client coords
-            WinMapWindowPoints(hwnd,
-                               pGlobals->hwndClient,
-                               (PPOINTL)&rcl,
-                               2);
         if (fRemove)
         {
             // remove emphasis:
             ClientPaint2(pGlobals->hwndClient, hps);
+            pXCenterData->fHasEmphasis = FALSE;
         }
         else
         {
@@ -919,43 +931,87 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                 // then we can also draw on the 3D border
                 ulClientSpacing += pGlobals->ul3DBorderWidth;
 
-            GpiSetColor(hps, RGBCOL_BLACK);
-            GpiSetLineType(hps, LINETYPE_DOT);
+            if (pXCenterData->fHasEmphasis)
+                // client has emphasis already:
+                // remove that first
+                ctrpDrawEmphasis(pXCenterData,
+                                 TRUE,              // remove
+                                 NULL,
+                                 NULLHANDLE,
+                                 hps);
 
-            if (hwnd != pGlobals->hwndClient)
+            GpiSetColor(hps, RGBCOL_BLACK);
+
+            if (pWidget)
             {
-                // widget window given:
-                // we draw emphasis _around_ the widget window
-                // on the client, so add the border spacing or
-                // the widget spacing, whichever is smaller,
-                // to the widget rect
-                ulEmphasisWidth = pGlobals->ulSpacing;
-                if (ulEmphasisWidth > ulClientSpacing)
+                // widget specified: draw vertical line before
+                // that widget
+                ULONG ul;
+
+                POINTL ptl;
+                ptl.x = pWidget->xCurrent + pWidget->szlCurrent.cx;
+                ptl.y = ulClientSpacing;
+                GpiMove(hps, &ptl);
+                ptl.x += pGlobals->ulSpacing - 1; // inclusive!
+                ptl.y = pXCenterData->cyFrame - ulClientSpacing - 1; // inclusive!
+
+                GpiSetPattern(hps, PATSYM_HALFTONE);
+                GpiBox(hps,
+                       DRO_FILL,
+                       &ptl,
+                       0,
+                       0);
+
+                pXCenterData->fHasEmphasis = TRUE;
+            } // end if (pWidget)
+            else
+            {
+                RECTL   rcl;
+                ULONG   ulEmphasisWidth;
+
+                GpiSetLineType(hps, LINETYPE_DOT);
+                // get window's rectangle
+                WinQueryWindowRect(hwnd,
+                                   &rcl);
+                if (hwnd != pGlobals->hwndClient)
+                    // widget window specified: convert to client coords
+                    WinMapWindowPoints(hwnd,
+                                       pGlobals->hwndClient,
+                                       (PPOINTL)&rcl,
+                                       2);
+
+                if (hwnd != pGlobals->hwndClient)
+                {
+                    // widget window given:
+                    // we draw emphasis _around_ the widget window
+                    // on the client, so add the border spacing or
+                    // the widget spacing, whichever is smaller,
+                    // to the widget rect
+                    ulEmphasisWidth = pGlobals->ulSpacing;
+                    if (ulEmphasisWidth > ulClientSpacing)
+                        ulEmphasisWidth = ulClientSpacing;
+
+                    rcl.xLeft -= ulEmphasisWidth;
+                    rcl.yBottom -= ulEmphasisWidth;
+                    rcl.xRight += ulEmphasisWidth;
+                    rcl.yTop += ulEmphasisWidth;
+                }
+                else
+                    // client window given: we just use that
                     ulEmphasisWidth = ulClientSpacing;
 
-                rcl.xLeft -= ulEmphasisWidth;
-                rcl.yBottom -= ulEmphasisWidth;
-                rcl.xRight += ulEmphasisWidth;
-                rcl.yTop += ulEmphasisWidth;
-            }
-            else
-                // client window given: we just use that
-                ulEmphasisWidth = ulClientSpacing;
-
-            if (ulEmphasisWidth)
-            {
-                // WinQueryWindowRect returns an inclusive-exclusive
-                // rectangle; since GpiBox uses inclusive-inclusive
-                // rectangles, fix the top right
-                rcl.xRight--;
-                rcl.yTop--;
-                gpihDrawThickFrame(hps,
-                                   &rcl,
-                                   ulEmphasisWidth);
-
-                if (hpsPre == NULLHANDLE)
-                    // we acquired a PS ourselves:
-                    WinReleasePS(hps);
+                if (ulEmphasisWidth)
+                {
+                    // WinQueryWindowRect returns an inclusive-exclusive
+                    // rectangle; since GpiBox uses inclusive-inclusive
+                    // rectangles, fix the top right
+                    rcl.xRight--;
+                    rcl.yTop--;
+                    gpihDrawThickFrame(hps,
+                                       &rcl,
+                                       ulEmphasisWidth);
+                    pXCenterData->fHasEmphasis = TRUE;
+                }
             }
         }
 
@@ -982,11 +1038,112 @@ VOID RemoveDragoverEmphasis(HWND hwndClient)
     {
         gpihSwitchToRGB(hps);
         ctrpDrawEmphasis(pXCenterData,
-                         hwndClient,
                          TRUE,     // remove emphasis
+                         NULL,
+                         NULLHANDLE,
                          hps);
         DrgReleasePS(hps);
     }
+}
+
+/*
+ *@@ ctrpDragWidget:
+ *
+ *@@added V0.9.9 (2001-03-09) [umoeller]
+ */
+
+HWND ctrpDragWidget(HWND hwnd,
+                    PXCENTERWIDGET pWidget)
+{
+    HWND hwndDrop = NULLHANDLE;
+    HWND hwndClient = pWidget->pGlobals->hwndClient;
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
+    if (pWidget)
+    {
+        HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+        if (hpsScreen)
+        {
+            SWP swpWidget;
+            RECTL rclWidget;
+            HBITMAP hbmWidget;
+            WinQueryWindowPos(hwnd, &swpWidget);
+            rclWidget.xLeft = swpWidget.x;
+            rclWidget.xRight = swpWidget.x + swpWidget.cx;
+            rclWidget.yBottom = swpWidget.y;
+            rclWidget.yTop = swpWidget.y + swpWidget.cy;
+
+            WinMapWindowPoints(pXCenterData->Globals.hwndClient,
+                               HWND_DESKTOP,
+                               (PPOINTL)&rclWidget,
+                               2);
+            hbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
+                                            hpsScreen,
+                                            &rclWidget);
+
+            WinReleasePS(hpsScreen);
+
+            if (hbmWidget)
+            {
+                PDRAGINFO pdrgInfo = DrgAllocDraginfo(1);
+                if (pdrgInfo)
+                {
+                    DRAGITEM  drgItem = {0};
+
+                    drgItem.hwndItem = hwnd;       // Conversation partner
+                    drgItem.ulItemID = (ULONG)pWidget;
+                    drgItem.hstrType = DrgAddStrHandle(DRT_UNKNOWN);
+                    // as the RMF, use our private mechanism and format
+                    drgItem.hstrRMF = DrgAddStrHandle(WIDGET_DRAG_RMF);
+                    drgItem.hstrContainerName = 0;
+                    drgItem.hstrSourceName = 0;
+                    drgItem.hstrTargetName = 0;
+                    drgItem.cxOffset = 0;          // X-offset of the origin of
+                                                 // the image from the pointer
+                                                 // hotspot
+                    drgItem.cyOffset = 0;          // Y-offset of the origin of
+                                                 // the image from the pointer
+                                                 // hotspot
+                    drgItem.fsControl = 0;         // Source item control flags
+                                                 // object is open
+                    drgItem.fsSupportedOps = DO_MOVEABLE;
+
+                    if (DrgSetDragitem(pdrgInfo,
+                                       &drgItem,
+                                       sizeof(drgItem),
+                                       0))
+                    {
+                        DRAGIMAGE drgImage;             // DRAGIMAGE structure
+                        drgImage.cb = sizeof(DRAGIMAGE);
+                        drgImage.cptl = 0;
+                        drgImage.hImage = hbmWidget;
+                        drgImage.fl = DRG_BITMAP;
+                        drgImage.cxOffset = 0;           // Offset of the origin of
+                        drgImage.cyOffset = 0;           // the image from the pointer
+
+                        // source is always XCenter client
+                        pdrgInfo->hwndSource = pXCenterData->Globals.hwndClient;
+
+                        hwndDrop = DrgDrag(pdrgInfo->hwndSource,
+                                           pdrgInfo,        // Pointer to DRAGINFO structure
+                                           &drgImage, // Drag image
+                                           1,             // Size of the pdimg array
+                                           VK_ENDDRAG,    // Release of direct-manipulation
+                                                          // button ends the drag
+                                           NULL);         // Reserved
+                                // this func is modal and does not return
+                                // until things have been dropped or drag
+                                // has been cancelled
+                    }
+
+                    DrgFreeDraginfo(pdrgInfo);
+                }
+
+                GpiDeleteBitmap(hbmWidget);
+            }
+        }
+    }
+
+    return (hwndDrop);
 }
 
 /*
@@ -2179,9 +2336,11 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
  *
  *      --  Returns 1 if sx and sy specify client window
  *          coordinates which are on the right border of a
- *          widget. In that case, *ppViewOver is set to
- *          that widget. *pulIndexOver receives that
- *          widget's index.
+ *          widget.
+ *
+ *          In that case, *ppViewOver is set to that widget.
+ *          *pulIndexOver receives that widget's index.
+ *
  *          If that widget is sizeable, *pfIsSizable is set
  *          to TRUE, FALSE otherwise.
  *
@@ -2288,10 +2447,6 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
     {
         // go thru dragitems
         ULONG ul = 0;
-        if (pusIndicator)
-            *pusIndicator = DOR_DROP;
-        if (pusOp)
-            *pusOp = DO_LINK;
         for (;
              ul < pdrgInfo->cditem;
              ul++)
@@ -2304,8 +2459,6 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
                 // invalid object:
                 if (pusIndicator)
                     *pusIndicator = DOR_NEVERDROP;
-                if (pusOp)
-                    *pusOp = DO_UNKNOWN;
                 // and stop
                 break; // for
             }
@@ -2325,6 +2478,11 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
 
                 if (pReal)
                     lstAppendItem(pllObjects, pReal);
+
+                if (pusIndicator)
+                    *pusIndicator = DOR_DROP;
+                if (pusOp)
+                    *pusOp = DO_LINK;
             }
         }
     }
@@ -2752,8 +2910,9 @@ MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
 
     // draw source emphasis
     ctrpDrawEmphasis(pXCenterData,
-                     hwnd,      // the client
                      FALSE,     // draw, not remove emphasis
+                     NULL,
+                     hwnd,      // the client
                      NULLHANDLE);
 
     pXCenterData->hwndContextMenu
@@ -2795,6 +2954,9 @@ VOID ClientMenuEnd(HWND hwnd, MPARAM mp2)
  *      implementation for DM_DRAGOVER in fnwpXCenterMainClient.
  *
  *      Handles WPS objects being dragged over the client.
+ *
+ *@@changed V0.9.9 (2001-03-10) [umoeller]: target emphasis was never drawn
+ *@@changed V0.9.9 (2001-03-10) [umoeller]: made target emphasis clearer
  */
 
 MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
@@ -2802,6 +2964,8 @@ MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     PDRAGINFO       pdrgInfo = (PDRAGINFO)mp1;
+    // draw target emph?
+    BOOL            fDrawTargetEmph = FALSE;
     // default return values
     USHORT          usIndicator = DOR_NEVERDROP,
                         // cannot be dropped, and don't send
@@ -2811,30 +2975,107 @@ MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
                         // user operation (we don't want
                         // the WPS to copy anything)
 
-    HPS hps = DrgGetPS(pGlobals->hwndFrame);
-    if (hps)
-    {
-        gpihSwitchToRGB(hps);
-        ctrpDrawEmphasis(pXCenterData,
-                         hwnd,
-                         FALSE,     // draw, not remove emphasis
-                         hps);
-    }
+    G_pWidgetBeingDragged = NULL;
 
     // go!
     if (DrgAccessDraginfo(pdrgInfo))
     {
-        PLINKLIST pll = GetDragoverObjects(pdrgInfo,
-                                           &usIndicator,
-                                           &usOp);
+        // is this a widget being dragged within the XCenter?
+        // make sure the source is the SAME XCenter;
+        // we cannot allow dragging widgets BETWEEN
+        // XCenters
+        if (pdrgInfo->hwndSource == pGlobals->hwndClient)
+        {
+            if (    (    (pdrgInfo->usOperation == DO_DEFAULT)
+                      || (pdrgInfo->usOperation == DO_MOVE)
+                    )
+                 && (pdrgInfo->cditem == 1)
+                 && (pdrgInfo->cditem == 1)
+               )
+            {
+                // source is same XCenter:
+                PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, 0);
+                if (DrgVerifyRMF(pdrgItem,
+                                 WIDGET_DRAG_MECH, // mechanism
+                                 NULL))            // any format
+                {
+                    G_pWidgetBeingDragged
+                        = (PWIDGETVIEWSTATE)pdrgItem->ulItemID;
+                    fDrawTargetEmph = TRUE;
+                    usIndicator = DOR_DROP;
+                    usOp = DO_MOVE;
+                }
+            }
+        }
+        else
+        {
+            PLINKLIST pll = GetDragoverObjects(pdrgInfo,
+                                               &usIndicator,
+                                               &usOp);
 
-        // clean up
-        lstFree(pll);
+            if (pll)
+            {
+                // WPS object(s) being dragged over client:
+                fDrawTargetEmph = TRUE;
+                lstFree(pll);
+            }
+        }
+
         DrgFreeDraginfo(pdrgInfo);
     }
 
-    if (hps)
-        DrgReleasePS(hps);
+    if (fDrawTargetEmph)
+    {
+        HPS hps = DrgGetPS(pGlobals->hwndClient);       // V0.9.9 (2001-03-09) [umoeller]
+        if (hps)
+        {
+            PWIDGETVIEWSTATE pViewOver = NULL;
+
+            // convert coordinates to client
+            POINTL ptlDrop;
+            ptlDrop.x = pdrgInfo->xDrop;
+            ptlDrop.y = pdrgInfo->yDrop;     // dtp coords
+            WinMapWindowPoints(HWND_DESKTOP,
+                               hwnd,            // to client
+                               &ptlDrop,
+                               1);
+
+            gpihSwitchToRGB(hps);
+            // find the widget this is being dragged over
+            if (    (!FindWidgetFromClientXY(pXCenterData,
+                                             ptlDrop.x,
+                                             ptlDrop.y,
+                                             NULL,
+                                             &pViewOver,
+                                             NULL))
+                 || (!pViewOver)
+               )
+            {
+                // not over any specified widget:
+                // widget will be added to the right then...
+                // draw emphasis over entire client then
+                ctrpDrawEmphasis(pXCenterData,
+                                 FALSE,     // draw, not remove emphasis
+                                 NULL,      // no widget
+                                 hwnd,      // around client
+                                 hps);
+            }
+            else
+            {
+                // draw a line between widgets to mark insertion...
+                // FindWidgetFromClientXY has returned the
+                // widget whose _right_ border matched the
+                // coordinates...
+                ctrpDrawEmphasis(pXCenterData,
+                                 FALSE,     // draw, not remove emphasis
+                                 pViewOver, // no widget
+                                 NULLHANDLE,
+                                 hps);
+            }
+
+            DrgReleasePS(hps);
+        }
+    }
 
     // and return the drop flags
     return (MRFROM2SHORT(usIndicator, usOp));
@@ -2858,15 +3099,11 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
     if (DrgAccessDraginfo(pdrgInfo))
     {
-        PLINKLIST pll = GetDragoverObjects(pdrgInfo,
-                                           NULL,
-                                           NULL);
-        PLISTNODE pNode = lstQueryFirstNode(pll);
-        POINTL ptlDrop;
         PWIDGETVIEWSTATE pViewOver = NULL;
         ULONG ulIndex = 0;
 
         // convert coordinates to client
+        POINTL ptlDrop;
         ptlDrop.x = pdrgInfo->xDrop;
         ptlDrop.y = pdrgInfo->yDrop;     // dtp coords
         WinMapWindowPoints(HWND_DESKTOP,
@@ -2892,32 +3129,53 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 // the index _before_ which we want to insert
                 ulIndex++;
 
-        while (pNode)
+        if (G_pWidgetBeingDragged)
         {
-            WPObject *pObjDragged = (WPObject*)pNode->pItemData;
-            if (pObjDragged)
+            // ClientDragover found a widget being dragged:
+            // we must then move the widget...
+            ULONG ulOldIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                            G_pWidgetBeingDragged->Widget.hwndWidget);
+
+            _xwpMoveWidget(pXCenterData->somSelf,
+                           ulOldIndex,
+                           ulIndex);
+        }
+        else
+        {
+            PLINKLIST pll = GetDragoverObjects(pdrgInfo,
+                                               NULL,
+                                               NULL);
+            PLISTNODE pNode = lstQueryFirstNode(pll);
+
+            while (pNode)
             {
-                HOBJECT hobjDragged = _wpQueryHandle(pObjDragged);
-                if (hobjDragged)
+                WPObject *pObjDragged = (WPObject*)pNode->pItemData;
+                if (pObjDragged)
                 {
-                    CHAR szSetup[100];
-                    sprintf(szSetup, "OBJECTHANDLE=%lX;", hobjDragged);
-                    // insert object button widgets for the objects
-                    // being dropped; this sets up the object further
-                    _xwpInsertWidget(pXCenterData->somSelf,
-                                     ulIndex,
-                                     "ObjButton",    // widget class
-                                     szSetup);
+                    HOBJECT hobjDragged = _wpQueryHandle(pObjDragged);
+                    if (hobjDragged)
+                    {
+                        CHAR szSetup[100];
+                        sprintf(szSetup, "OBJECTHANDLE=%lX;", hobjDragged);
+                        // insert object button widgets for the objects
+                        // being dropped; this sets up the object further
+                        _xwpInsertWidget(pXCenterData->somSelf,
+                                         ulIndex,
+                                         "ObjButton",    // widget class
+                                         szSetup);
+                    }
                 }
+                // next object
+                pNode = pNode->pNext;
             }
-            // next object
-            pNode = pNode->pNext;
+
+            lstFree(pll);
         }
 
-        lstFree(pll);
         DrgFreeDraginfo(pdrgInfo);
     }
-    WinInvalidateRect(pGlobals->hwndFrame, NULL, FALSE);
+
+    WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
 }
 
 /*
@@ -3495,6 +3753,11 @@ VOID ctrpLoadClasses(VOID)
                                 memcpy(&pClass->Public,
                                        &paClasses[ul],
                                        sizeof(XCENTERWIDGETCLASS));
+                                // store version
+                                pClass->ulVersionMajor = ulMajor;
+                                pClass->ulVersionMinor = ulMinor;
+                                pClass->ulVersionRevision = ulRevision;
+
                                 // store module
                                 pClass->hmod = hmod;
                                 lstAppendItem(&G_llWidgetClasses,
@@ -3546,6 +3809,27 @@ VOID ctrpLoadClasses(VOID)
     }
 
     G_ulWidgetClassesRefCount++;
+}
+
+/*
+ *@@ ctrpQueryClasses:
+ *      returns the global array of currently loaded
+ *      widget classes. The linked list contains
+ *      pointers to PRIVATEWIDGETCLASS structures.
+ *
+ *      For this to work, you must only use this
+ *      function in a block between ctrpLoadClasses
+ *      and ctrpFreeClasses. Do not modify the items
+ *      on the list. Do not work on the list after
+ *      you have called ctrpFreeClasses because
+ *      the list might then have been freed.
+ *
+ *@@added V0.9.9 (2001-03-09) [umoeller]
+ */
+
+PLINKLIST ctrpQueryClasses(VOID)
+{
+    return (&G_llWidgetClasses);
 }
 
 /*
@@ -4044,6 +4328,7 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
  *      implementation for XCenter::xwpMoveWidget.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
+ *@@changed V0.9.9 (2001-03-10) [umoeller]: this confused the settings with ulBeforeIndex, fixed
  */
 
 BOOL ctrpMoveWidget(XCenter *somSelf,
@@ -4100,12 +4385,14 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
             // so we have to create a new one first
             pNewSetting = (PXCENTERWIDGETSETTING)malloc(sizeof(XCENTERWIDGETSETTING));
             memcpy(pNewSetting, pSetting, sizeof(*pNewSetting));
+            // fixed order of calls here V0.9.9 (2001-03-10) [umoeller]...
+            // above, we did "insert" and then "remove"; this used to be reverse,
+            // which got the items badly confused...
+            lstInsertItemBefore(pllWidgetSettings,
+                                pNewSetting,
+                                ulBeforeIndex);
             brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
                     // this frees pSetting, but not the member pointers
-            if (brc)
-                lstInsertItemBefore(pllWidgetSettings,
-                                    pNewSetting,
-                                    ulBeforeIndex);
 
             if (brc)
                 // save instance data (with that linked list)

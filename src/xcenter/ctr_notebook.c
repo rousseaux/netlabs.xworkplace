@@ -39,6 +39,7 @@
 
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+#define INCL_DOSMODULEMGR
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINDIALOGS
@@ -1602,9 +1603,12 @@ typedef struct _XCLASSRECORD
 {
     RECORDCORE      recc;
 
-    PSZ             pszDLL;
+    PSZ             pszDLL;         // points to szDLL
+    CHAR            szDLL[CCHMAXPATH];
     PSZ             pszClass;
-
+    PSZ             pszClassTitle;
+    PSZ             pszVersion;     // points to szVersion
+    CHAR            szVersion[40];
 } XCLASSRECORD, *PXCLASSRECORD;
 
 /*
@@ -1645,23 +1649,99 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
+        xfi[i].ulFieldOffset = FIELDOFFSET(XCLASSRECORD, pszClassTitle);
+        xfi[i].pszColumnTitle = "Class title"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(XCLASSRECORD, pszVersion);
+        xfi[i].pszColumnTitle = "Version"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
         pfi = cnrhSetFieldInfos(hwndCnr,
                                 xfi,
                                 i,             // array item count
                                 TRUE,          // draw lines
-                                0);            // return second column
+                                1);            // return second column
 
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
             cnrhSetSplitBarAfter(pfi);
-            cnrhSetSplitBarPos(100);
+            cnrhSetSplitBarPos(200);
         } END_CNRINFO(hwndCnr);
 
+        ctrpLoadClasses();
     }
 
     if (flFlags & CBI_SET)
     {
+        PLINKLIST pllClasses = ctrpQueryClasses();
+        ULONG cClasses = lstCountItems(pllClasses);
+
+        if (cClasses)
+        {
+            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+            PXCLASSRECORD precFirst
+                = (PXCLASSRECORD)cnrhAllocRecords(hwndCnr,
+                                                  sizeof(XCLASSRECORD),
+                                                  cClasses);
+
+            if (precFirst)
+            {
+                PXCLASSRECORD precThis = precFirst;
+                PLISTNODE pNode = lstQueryFirstNode(pllClasses);
+                while (pNode)
+                {
+                    PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)pNode->pItemData;
+
+                    if (pClass->hmod)
+                    {
+                        PSZ p = NULL;
+                        CHAR sz[CCHMAXPATH];
+                        if (!DosQueryModuleName(pClass->hmod,
+                                                sizeof(sz),
+                                                sz))
+                        {
+                            p = strrchr(sz, '\\');
+                            if (p)
+                            {
+                                strcpy(precThis->szDLL, p + 1);
+                                precThis->pszDLL = precThis->szDLL;
+                            }
+                        }
+
+                        if (!p)
+                            precThis->pszDLL = "Error";
+
+                        sprintf(precThis->szVersion,
+                                "%d.%d.%d",
+                                pClass->ulVersionMajor,
+                                pClass->ulVersionMinor,
+                                pClass->ulVersionRevision);
+                        precThis->pszVersion = precThis->szVersion;
+                    }
+                    else
+                        precThis->pszDLL = "Built-in";
+
+                    precThis->pszClass = (PSZ)pClass->Public.pcszWidgetClass;
+
+                    precThis->pszClassTitle = (PSZ)pClass->Public.pcszClassTitle;
+
+                    precThis = (PXCLASSRECORD)precThis->recc.preccNextRecord;
+                    pNode = pNode->pNext;
+                }
+            }
+
+            cnrhInsertRecords(hwndCnr,
+                              NULL,         // parent
+                              (PRECORDCORE)precFirst,
+                              TRUE,         // invalidate
+                              NULL,
+                              CRA_RECORDREADONLY,
+                              cClasses);
+        }
     }
 
     if (flFlags & CBI_ENABLE)
@@ -1670,6 +1750,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
+        ctrpFreeClasses();
     }
 }
 

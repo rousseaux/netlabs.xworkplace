@@ -25,6 +25,8 @@ plus the "toolkit" directory with the binary release.
 <P><LI>Added replacement <A HREF="file_8autorefresh.html">folder auto-refresh</A>.
 <P><LI>XCenter remembers fonts and colors for main XCenter painting also.
 <P><LI>XCenters can be enlarged vertically now with the mouse.
+<P><LI>Widgets can now be dragged within their XCenter to allow reordering them.
+<P><LI>Added delay setting for XCenter auto-hide.
 <P><LI>Added "Sentinel" widget.
 <P><LI>fonz contributed the "Disk Usage" widget.
 <P><LI>Stefan Mielcke contributed the "Health" widget.
@@ -81,8 +83,14 @@ they are now properly added to the right.
 wasn't such a good idea. This is now redirected to thread 1.
 <P><LI>Some XCenter default values were reported wrong in its setup string. Fixed by
 Paul Ratcliffe.
+<P><LI>Widgets drag'n'drop on "Widgets" settings page got badly confused with the widget
+order at times. Fixed.
 <P><LI>Object count on "Status" page in XWPSetup went below zero sometimes. Fixed by
 Paul Ratcliffe.
+<P><LI>Sliding menus sometimes caused a flickering focus if delay was enabled and
+user clicked on menu item before delay elapsed. Fixed.
+<P><LI>Fixed "conditional cascade sensitivity" for sliding menus to always hilite
+the menu item but only open the submenu if mouse is over the menu button.
 <P><LI>"Shutdown" etc. menu items weren't disabled on XCenter X-button if shutdown
 was already running. Desktop "Shutdown" menu item wasn't either if submenu was disabled.
 

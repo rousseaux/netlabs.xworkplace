@@ -71,10 +71,14 @@
                 // NOTE: THIS MUST BE THE FIRST FIELD
                 // or our private typecasts won't work
 
+        ULONG               ulVersionMajor,
+                            ulVersionMinor,
+                            ulVersionRevision;
+
         ULONG               ulInstancesGlobal;
                 // global count of widget instances which
                 // exist across all XCenters. This allows
-                // us to keep track of WGTF_UNIQUEGLOBAL.
+                // us to keep track of WGTF_UNIQUEGLOBAL. ###
 
         HMODULE             hmod;
                 // plugin DLL this widget comes from or
@@ -189,6 +193,8 @@
 
             HWND                hwndTooltip;        // tooltip control (comctl.c)
 
+            BOOL                fHasEmphasis;       // TRUE if emphasis has been added and client
+                                                    // needs repaint V0.9.9 (2001-03-10) [umoeller]
         } XCENTERWINDATA, *PXCENTERWINDATA;
 
         /*
@@ -245,14 +251,25 @@
      *
      ********************************************************************/
 
+    // define a new rendering mechanism, which only
+    // our own container supports (this will make
+    // sure that we can only do d'n'd within this
+    // one container)
+    #define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"
+    #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ")x(DRF_UNKNOWN)"
+
     #ifdef LINKLIST_HEADER_INCLUDED
         VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                                  PXCENTERWIDGET pWidget);
 
         VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
-                              HWND hwnd,
                               BOOL fRemove,
+                              PWIDGETVIEWSTATE pWidget,
+                              HWND hwnd,
                               HPS hpsPre);
+
+        HWND ctrpDragWidget(HWND hwnd,
+                            PXCENTERWIDGET pWidget);
 
         VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
                           ULONG ulFlags);
@@ -266,6 +283,10 @@
      ********************************************************************/
 
     VOID ctrpLoadClasses(VOID);
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+        PLINKLIST ctrpQueryClasses(VOID);
+    #endif
 
     VOID ctrpFreeClasses(VOID);
 

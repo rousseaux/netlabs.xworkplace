@@ -101,8 +101,6 @@ fonts:
     -- try install?
 
 XCenter:
-    -- move widgets doesn't work right.
-
     -- put menus on object buttons on top of the bar, not on top of the button.
 
     -- add option for tooltip shadows.
@@ -112,8 +110,6 @@ XCenter:
     -- winlist: maximized VIO windows/FS sessions
 
     -- make object buttons droppable
-
-    -- object buttons: given them WPS context menu
 
 extended assocs:
 

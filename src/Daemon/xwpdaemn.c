@@ -1279,7 +1279,6 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             case XDM_SLIDINGFOCUS:
                 S_hwndUnderMouse = (HWND)mp1;
                 S_hwnd2Activate = (HWND)mp2;
-                // DosBeep(10000, 10);
                 if (G_pHookData->HookConfig.ulSlidingFocusDelay)
                 {
                     // delayed sliding focus:
@@ -1314,9 +1313,12 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *
              *      Parameters:
              *      -- mp1: mp1 of WM_MOUSEMOVE which was processed.
+             *         If this is -1, the hook is telling us to
+             *         stop any timer that might be running.
              *      -- mp2: unused.
              *
              *@@added V0.9.2 (2000-02-26) [umoeller]
+             *@@changed V0.9.9 (2001-03-10) [umoeller]: added -1 checking
              */
 
             case XDM_SLIDINGMENU:
@@ -1327,10 +1329,11 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     WinStopTimer(G_habDaemon,
                                  hwndObject,
                                  TIMERID_SLIDINGMENU);
-                G_ulSlidingMenuTimer = WinStartTimer(G_habDaemon,
-                                                     hwndObject,
-                                                     TIMERID_SLIDINGMENU,
-                                                     G_pHookData->HookConfig.ulSubmenuDelay);
+                if ((LONG)G_SlidingMenuMp1Saved != -1) // V0.9.9 (2001-03-10) [umoeller]
+                    G_ulSlidingMenuTimer = WinStartTimer(G_habDaemon,
+                                                         hwndObject,
+                                                         TIMERID_SLIDINGMENU,
+                                                         G_pHookData->HookConfig.ulSubmenuDelay);
             break;
 
             /*

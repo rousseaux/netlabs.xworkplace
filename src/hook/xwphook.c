@@ -1005,6 +1005,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
  *          } SMHSTRUCT;
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.9 (2001-03-10) [umoeller]: fixed errant sliding menu behavior
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1049,6 +1050,33 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                 // G_HookData.fDisableSwitching = FALSE;
             }
         }
+    }
+
+    // special case check... if a menu control has been hidden
+    // and it is the menu for which we have a sliding menu
+    // timer running in the daemon, stop that timer NOW
+    // V0.9.9 (2001-03-10) [umoeller]
+    // this happens if the user quickly selects a menu item
+    // by clicking on it before the delayed-select timer has
+    // elapsed
+    if (    (psmh->msg == WM_WINDOWPOSCHANGED)          // comes in for menu hide
+            // sliding menus enabled?
+         && (G_HookData.HookConfig.fSlidingMenus)
+            // delay enabled?
+         && (G_HookData.HookConfig.ulSubmenuDelay)
+            // changing window is the menu control that we
+            // previously started a timer for?
+         && (psmh->hwnd == G_HookData.hwndMenuUnderMouse)
+            // menu control is hiding?
+         && ((PSWP)(psmh->mp1))
+         && (((PSWP)(psmh->mp1))->fl & SWP_HIDE)
+       )
+    {
+        // yes: stop the delayed-select timer NOW
+        WinPostMsg(G_HookData.hwndDaemonObject,
+                   XDM_SLIDINGMENU,
+                   (MPARAM)-1,          // stop timer
+                   0);
     }
 }
 
@@ -1713,7 +1741,7 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
  *      Frame activation is then not done from the hook, but
  *      from the daemon instead.
  *
- *      Initially based on code from ProgramCommander (C) Roman Stangl.
+ *      Inspired by code from ProgramCommander (W) Roman Stangl.
  *      Fixed a few problems with MDI frames.
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed combobox problems
@@ -1916,19 +1944,22 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
  *
  *      We return TRUE if the msg is to be swallowed.
  *
- *      Based on code from ProgramCommander (C) Roman Stangl.
+ *      Inspired by code from ProgramCommander (W) Roman Stangl.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
  *@@changed V0.9.6 (2000-10-27) [pr]: fixed un-hilite problems
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
+ *@@changed V0.9.9 (2001-03-10) [umoeller]: fixed cc sensitivity and various selection issues
  */
 
 BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse, from hookInputHook
                               MPARAM mp1,
                               MPARAM mp2)
 {
-    static SHORT sLastItemIdentity = MIT_NONE;
-    BOOL        brc = FALSE;        // per default, don't swallow msg
+    static SHORT    sLastHiliteID = MIT_NONE,
+                    sLastSelectID = MIT_NONE;
+
+    BOOL            brc = FALSE;        // per default, don't swallow msg
 
     // check for special message which was posted from
     // the daemon when the "delayed sliding menu" timer
@@ -1978,18 +2009,22 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
 
         if (brc)
         {
-            // select menu item under the mouse
-            SelectMenuItem(hwndCurrentMenu,
-                           G_HookData.sMenuItemUnderMouse);
-                           // stored from last run
-                           // when timer was started...
+            if (sLastSelectID != G_HookData.sMenuItemUnderMouse)
+            {
+                // select menu item under the mouse
+                SelectMenuItem(hwndCurrentMenu,
+                               G_HookData.sMenuItemUnderMouse);
+                               // stored from last run
+                               // when timer was started...
+                sLastSelectID = G_HookData.sMenuItemUnderMouse;
+            }
         }
         else
         {
             if (G_HookData.hwndMenuUnderMouse)
             {
-                // Remove previously hilited but not selected entry, as it is
-                // unknown to PM
+                // remove previously hilited but not selected entry,
+                // as it is unknown to PM
                 SHORT   sItemCount
                     = (SHORT)WinSendMsg(G_HookData.hwndMenuUnderMouse,
                                         MM_QUERYITEMCOUNT,
@@ -1999,35 +2034,44 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                                G_HookData.sMenuItemUnderMouse,
                                FALSE);
                 G_HookData.hwndMenuUnderMouse = 0;
-                sLastItemIdentity = MIT_NONE;
+                sLastHiliteID = MIT_NONE;
             }
         }
     }
     else
     {
         // no, regular WM_MOUSEMOVE:
+
+        // check if anything is currently selected in the menu
+        // (this rules out main menu bars if user hasn't clicked
+        // into them yet)
         SHORT   sCurrentlySelectedItem
             = (SHORT)WinSendMsg(hwndCurrentMenu,
                                 MM_QUERYSELITEMID,
                                 MPFROMLONG(FALSE),
                                 NULL);
 
-        if (sCurrentlySelectedItem != MIT_NONE)
+        if (sCurrentlySelectedItem == MIT_NONE)
         {
-            // loop through all items in the current menu
-            // and query the item's rectangle
+            sLastHiliteID = MIT_NONE;
+            sLastSelectID = MIT_NONE;
+        }
+        else
+        {
+            // we have a selection:
+
             SHORT   sItemCount = (SHORT)WinSendMsg(hwndCurrentMenu,
                                                    MM_QUERYITEMCOUNT,
                                                    0, 0),
                     sItemIndex = 0;
 
-            // go thru all menu items
+            // loop through all items in the current menu
+            // and query each item's rectangle
             for (sItemIndex = 0;
                  sItemIndex < sItemCount;
                  sItemIndex++)
             {
                 RECTL       rectlItem;
-                MENUITEM    menuitemCurrent;
                 LONG        rectLimit;
 
                 SHORT sCurrentItemIdentity = (SHORT)WinSendMsg(hwndCurrentMenu,
@@ -2050,33 +2094,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                 // standard sensitivity area: entire menu item from the left
                 rectLimit = rectlItem.xLeft;
 
-                // if "conditional cascade sensitivity" is enabled:
-                // V0.9.6 (2000-10-27) [umoeller]
-                if (G_HookData.HookConfig.fConditionalCascadeSensitive)
-                {
-                    // check if the pointer position is within the item's
-                    // rectangle or just the right hand half if it is a popup
-                    // menu and has conditional cascade submenus
-                    if (WinSendMsg(hwndCurrentMenu,
-                                   MM_QUERYITEM,
-                                   MPFROM2SHORT(sCurrentItemIdentity, FALSE),
-                                   MPFROMP(&menuitemCurrent)))
-                    {
-                        if (   (menuitemCurrent.afStyle & MIS_SUBMENU)
-                            && (WinQueryWindow(hwndCurrentMenu, QW_PARENT) ==
-                                        G_HookData.hwndPMDesktop)
-                           )
-                        {
-                            ULONG ulStyle =
-                                WinQueryWindowULong(menuitemCurrent.hwndSubMenu,
-                                                    QWL_STYLE);
-                            if (ulStyle & MS_CONDITIONALCASCADE)
-                                // OK: only respect right half of menu
-                                rectLimit =
-                                    ((rectlItem.xLeft + rectlItem.xRight) / 2);
-                        }
-                    }
-                }
+                // V0.9.9 (2001-03-10) [umoeller]: moved "conditional casc." stuff down
 
                 if (    (G_ptsMousePosWin.x > rectLimit)
                      && (G_ptsMousePosWin.x <= rectlItem.xRight)
@@ -2084,35 +2102,79 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                      && (G_ptsMousePosWin.y <= rectlItem.yTop)
                    )
                 {
-                    // has item changed since last time?
-                    if (sLastItemIdentity != sCurrentItemIdentity)
-                    {
-                        // yes:
+                    BOOL    fSelect = TRUE;
 
-                        // do we have a submenu delay?
-                        if (G_HookData.HookConfig.ulSubmenuDelay)
+                    // do extra checks if "cc sensitivity" on;
+                    // moved this here V0.9.9 (2001-03-10) [umoeller]
+                    // so that we can always hilite, but we do not always
+                    // select
+                    if (G_HookData.HookConfig.fConditionalCascadeSensitive)
+                    {
+                        // check if the pointer position is within the item's
+                        // rectangle or just the right hand half if it is a popup
+                        // menu and has conditional cascade submenus
+                        MENUITEM    menuitemCurrent;
+                        if (WinSendMsg(hwndCurrentMenu,
+                                       MM_QUERYITEM,
+                                       MPFROM2SHORT(sCurrentItemIdentity, FALSE),
+                                       MPFROMP(&menuitemCurrent)))
                         {
-                            // delayed:
-                            // this is a three-step process:
-                            // 1)  If we used MM_SELECTITEM on the item, this
-                            //     would immediately open the subwindow (if the
-                            //     item represents a submenu).
-                            //     So instead, we first need to manually change
-                            //     the hilite attribute of the menu item under
-                            //     the mouse so that the item under the mouse is
-                            //     always immediately hilited (without being
-                            //     "selected"; PM doesn't know what we're doing here!)
+                            if (   (menuitemCurrent.afStyle & MIS_SUBMENU)
+                                && (WinQueryWindow(hwndCurrentMenu, QW_PARENT)
+                                        == G_HookData.hwndPMDesktop)
+                               )
+                            {
+                                ULONG ulStyle =
+                                    WinQueryWindowULong(menuitemCurrent.hwndSubMenu,
+                                                        QWL_STYLE);
+                                if (ulStyle & MS_CONDITIONALCASCADE)
+                                    // is "cc" menu:
+                                    // select only if mouse is on the right
+                                    // (approximately above the cc button)
+                                    if (G_ptsMousePosWin.x < rectlItem.xRight - 20)
+                                        // not over button: do not select then
+                                        fSelect = FALSE;
+                            }
+                        }
+                    }
+
+                    // do we have a submenu delay?
+                    if (G_HookData.HookConfig.ulSubmenuDelay)
+                    {
+                        // delayed:
+                        // this is a three-step process:
+                        // 1)  If we used MM_SELECTITEM on the item, this
+                        //     would immediately open the subwindow (if the
+                        //     item represents a submenu).
+                        //     So instead, we first need to manually change
+                        //     the hilite attribute of the menu item under
+                        //     the mouse so that the item under the mouse is
+                        //     always immediately hilited (without being
+                        //     "selected"; PM doesn't know what we're doing here!)
+
+                        // V0.9.9 (2001-03-10) [umoeller]
+                        // Note that we even hilite the menu item for
+                        // conditional cascade submenus if "cc sensitivity"
+                        // is on. We only differentiate for _selection_ below now.
+
+                        // has item changed since last time?
+                        if (sLastHiliteID != sCurrentItemIdentity)
                             if (G_HookData.HookConfig.fMenuImmediateHilite)
+                            {
                                 HiliteMenuItem(hwndCurrentMenu,
                                                sItemCount,
                                                sCurrentItemIdentity,
                                                TRUE);
+                                sLastHiliteID = sCurrentItemIdentity;
+                            }
 
-                            // 2)  We then post the daemon a message to start
-                            //     a timer. Before that, we store the menu item
-                            //     data in HOOKDATA so we can re-use it when
-                            //     the timer elapses.
+                        // 2)  We then post the daemon a message to start
+                        //     a timer. Before that, we store the menu item
+                        //     data in HOOKDATA so we can re-use it when
+                        //     the timer elapses.
 
+                        if (fSelect) // V0.9.9 (2001-03-10) [umoeller]
+                        {
                             // prepare data for delayed selection:
                             // when the special WM_MOUSEMOVE comes in,
                             // we check against all these.
@@ -2135,27 +2197,30 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                             //     the timer was started. See the "special message"
                             //     processing on top. We then immediately select
                             //     the menu item.
-
-                        } // end if (HookData.HookConfig.ulSubmenuDelay)
+                        }
                         else
-                            // no delay, but immediately:
-                            SelectMenuItem(hwndCurrentMenu,
-                                           sCurrentItemIdentity);
-                        // save our the menuentry that is selected within the current
-                        // menu now, and break out of the loop (because we've found what
-                        // we have been looking for)
-                        sLastItemIdentity = sCurrentItemIdentity;
-                        break;
-                    }
+                            // do not select: we must stop the
+                            // timer then in case it is still running
+                            // V0.9.9 (2001-03-10) [umoeller]
+                            WinPostMsg(G_HookData.hwndDaemonObject,
+                                       XDM_SLIDINGMENU,
+                                       (MPARAM)-1, // stop timer
+                                       0);
+                    } // end if (HookData.HookConfig.ulSubmenuDelay)
                     else
-                        // same as last time: do nothing
-                        break;
+                        // no delay, but immediately:
+                        if (sLastSelectID != sCurrentItemIdentity)
+                            if (fSelect)
+                            {
+                                SelectMenuItem(hwndCurrentMenu,
+                                               sCurrentItemIdentity);
+                                sLastSelectID = sCurrentItemIdentity;
+                            }
+
+                    break;
                 }
             } // end for (sItemIndex = 0; ...
-        } // end WinSendMsg(hwndCurrentMenu, MM_QUERYSELITEMID, ...
-        else
-            // reset static storage for the next time we will be using it
-            sLastItemIdentity = MIT_NONE;
+        }
     }
 
     return (brc);
@@ -2736,6 +2801,11 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     // OK:
                     goto BEGIN_MB3_SCROLL;
         break;
+
+        /*
+         * WM_BUTTON3DOWN:
+         *      start MB3-scrolling.
+         */
 
         case WM_BUTTON3DOWN:
         {

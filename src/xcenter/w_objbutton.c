@@ -989,6 +989,8 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *@@ OwgtCommand:
  *      implementation for WM_COMMAND.
  *
+ *      If this returns FALSE, the parent winproc is called.
+ *
  *@@changed V0.9.9 (2001-03-07) [umoeller]: added "run" to X-button
  */
 
@@ -1088,8 +1090,10 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                         pObject = pItem->pObject;
 
                     if (pObject)    // defaults to NULL
+                    {
                         _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-                    fProcessed = TRUE;
+                        fProcessed = TRUE;
+                    }
                 } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
                 else
                     // other:
@@ -1101,9 +1105,9 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                     {
                         // invoke the command on the object...
                         // this is probably "open" or "help"
-                        _wpMenuItemSelected(pPrivate->pobjButton,
-                                            NULLHANDLE,     // hwndFrame
-                                            ulMenuId);
+                        fProcessed = _wpMenuItemSelected(pPrivate->pobjButton,
+                                                         NULLHANDLE,     // hwndFrame
+                                                         ulMenuId);
                     }
 
             }

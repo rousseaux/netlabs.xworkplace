@@ -221,7 +221,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -555,8 +555,9 @@ VOID ctrShowContextMenu(PXCENTERWIDGET pWidget,
 
         // draw source emphasis around widget
         ctrpDrawEmphasis(pXCenterData,
-                         pWidget->hwndWidget,
                          FALSE,     // draw, not remove emphasis
+                         NULL,
+                         pWidget->hwndWidget,
                          NULLHANDLE);   // standard PS
 
         // show menu!!
@@ -686,6 +687,25 @@ VOID DwgtCommand(HWND hwnd,
             }
         }
     }
+}
+
+/*
+ *@@ DwgtBeginDrag:
+ *      implementation for WM_BEGINDRAG in ctrDefWidgetProc.
+ *
+ *@@added V0.9.9 (2001-03-09) [umoeller]
+ */
+
+MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
+{
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        HWND hwndDrop = ctrpDragWidget(hwnd,
+                                       pWidget);
+    }
+
+    return ((MPARAM)TRUE);
 }
 
 /*
@@ -838,6 +858,29 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_COMMAND:
             DwgtCommand(hwnd, (USHORT)mp1);
         break;
+
+        /*
+         * WM_BEGINDRAG:
+         *
+         */
+
+        case WM_BEGINDRAG:
+            DwgtBeginDrag(hwnd, mp1);
+        break;
+
+        /*
+         * DM_DRAGOVER:
+         *      forward this to the XCenter client
+         */
+
+/*         case DM_DRAGOVER:
+        case DM_DRAGLEAVE:
+        case DM_DROP:
+            mrc = WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
+                             msg,
+                             mp1,
+                             mp2);
+        break; */
 
         /*
          * WM_DESTROY:
