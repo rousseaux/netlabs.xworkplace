@@ -2772,44 +2772,14 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_CRD_SETTINGS_VIEW2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_CRD_SETTINGS_VIEW2, 0, 0, 188, 136, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "~3D border width", -1, 6, 98, 172, 26, DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW2_3DBORDER_SLIDER, 14, 100, 96, 16,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 11, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW2_3DBORDER_TEXT, 128, 104, 44, 8
-        GROUPBOX        "~Border spacing", -1, 6, 70, 172, 26, DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW2_BDRSPACE_SLIDER, 14, 72, 96, 16,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 11, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW2_BDRSPACE_TEXT, 128, 76, 44, 8
-        GROUPBOX        "~Widget spacing", -1, 6, 42, 172, 26, DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW2_WGTSPACE_SLIDER, 14, 44, 96, 16,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 10, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW2_WGTSPACE_TEXT, 128, 48, 44, 8
-        GROUPBOX        "Button style", -1, 6, 22, 172, 18
-        AUTORADIOBUTTON "~Raised", ID_CRDI_VIEW2_BUTTONSTYLE, 12, 24, 54, 8,
-                        WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~Flat", ID_CRDI_VIEW2_FLATSTYLE, 94, 24, 64, 8,
-                        WS_TABSTOP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 188, 136, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
         GROUPBOX        "XCenter frame", -1, 6, 80, 172, 42
-        AUTOCHECKBOX    "~Reduce desktop workarea", ID_CRDI_VIEW_REDUCEWORKAREA, 12, 106, 135, 8,
+        AUTOCHECKBOX    "~Reduce desktop workarea",
+                        ID_CRDI_VIEW_REDUCEWORKAREA, 12, 106, 135, 8,
                         WS_GROUP
         AUTOCHECKBOX    "~Always on top", ID_CRDI_VIEW_ALWAYSONTOP, 12, 98,
                         135, 8, WS_GROUP
@@ -2826,6 +2796,39 @@ BEGIN
                         114, 8, WS_GROUP | WS_TABSTOP
         AUTORADIOBUTTON "~Bottom of screen", ID_CRDI_VIEW_BOTTOMOFSCREEN, 12,
                         26, 114, 8, WS_TABSTOP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_CRD_SETTINGS_VIEW2 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_CRD_SETTINGS_VIEW2, 0, 0, 188, 172, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "~3D border width", -1, 6, 120, 172, 36, DT_MNEMONIC
+        SLIDER          ID_CRDI_VIEW2_3DBORDER_SLIDER, 14, 132, 96, 16,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 11, 0, 1, 0
+        LTEXT           "Text", ID_CRDI_VIEW2_3DBORDER_TEXT, 128, 136, 44, 8
+        AUTOCHECKBOX    "Dr~aw all four 3D borders",
+                        ID_CRDI_VIEW2_ALL3DBORDERS, 14, 124, 148, 8
+        GROUPBOX        "~Border spacing", -1, 6, 92, 172, 26, DT_MNEMONIC
+        SLIDER          ID_CRDI_VIEW2_BDRSPACE_SLIDER, 14, 94, 96, 16,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 11, 0, 1, 0
+        LTEXT           "Text", ID_CRDI_VIEW2_BDRSPACE_TEXT, 128, 98, 44, 8
+        GROUPBOX        "~Widget spacing", -1, 6, 54, 172, 36, DT_MNEMONIC
+        SLIDER          ID_CRDI_VIEW2_WGTSPACE_SLIDER, 14, 66, 96, 16,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 10, 0, 1, 0
+        LTEXT           "Text", ID_CRDI_VIEW2_WGTSPACE_TEXT, 128, 70, 44, 8
+        AUTOCHECKBOX    "Draw spa~cing bars", ID_CRDI_VIEW2_SIZINGBARS, 14,
+                        58, 148, 8
+        GROUPBOX        "Default widget styles", -1, 6, 22, 172, 30
+        AUTOCHECKBOX    "~Flat buttons", ID_CRDI_VIEW2_FLATBUTTONS, 10, 34, 154, 8
+        AUTOCHECKBOX    "Fra~me around statics", ID_CRDI_VIEW2_SUNKBORDERS, 10, 26, 154, 8
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP

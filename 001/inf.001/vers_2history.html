@@ -38,6 +38,8 @@ leave the WarpCenter alone, if this lead to scroll bars on the desktop. Hope thi
 <P><LI>Added more error checking to "Empty trash" on shutdown.
 <P><LI>Reworked WPS command interception for file engines command to avoid
 duplicate code... hope I didn't break anything.
+<P><LI>Optimized PageMage window procedure to use less PM resources. Also improved
+cache locality.
 
 </UL>Bugfixes:
 <UL><LI>Reworked mutex semaphore protection all over the place. Maybe the WPS
@@ -87,8 +89,12 @@ folder. Preventing template creation now.
 <P><LI>Pages in "Multimedia" hung the system if the object was closed while the
 data was still being inserted by the background threads. Fixed.
 <P><LI>Dmitry Kubov fixed bugs in PageMage, most notably that switch list titles were
-never updated and windows would frequently be made sticky even if they weren't supposed
-to be. Thanks very much, Dmitry.
+never updated. Thanks very much, Dmitry.
+<P><LI>PageMage would always make Odin windows sticky. Fixed.
+<P><LI>PageMage would sometimes not recognize new windows and make them sticky when
+switching desktops. Fixed.
+<P><LI>PageMage would sometimes hide maximized windows forever. Maximized windows handling
+has been completely rewritten and should work now.
 <P><LI>XShutdown would sometimes crash if "Empty trash" was enabled. Fixed.
 
 </UL></H6><B>XWorkplace 0.9.6 (November 25, 2000)</B>
