@@ -705,7 +705,7 @@ release: really_all
     $(COPY) release\bin\xshutdwn.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xshutdwn.ico
 !endif
-    $(COPY) release\bin\icons.dll
+#    $(COPY) release\bin\icons.dll
 !ifndef XWPLITE
     $(COPY) release\bin\files.txt
 !endif
@@ -749,10 +749,19 @@ release: really_all
 !endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
 !ifndef XWPLITE
-# 5) icons
-!if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
+# 5) themes
+#!if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
+#!endif
+#    $(COPY) release\icons\* $(XWPRELEASE_MAIN)\icons
+#!endif
+!if [@md $(XWPRELEASE_MAIN)\themes 2> NUL]
 !endif
-    $(COPY) release\icons\* $(XWPRELEASE_MAIN)\icons
+!if [@md $(XWPRELEASE_MAIN)\themes\warp3 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_MAIN)\themes\warp4 2> NUL]
+!endif
+    $(COPY) release\themes\warp3\* $(XWPRELEASE_MAIN)\themes\warp3
+    $(COPY) release\themes\warp4\* $(XWPRELEASE_MAIN)\themes\warp4
 !endif
 # 6) install
 !if [@md $(XWPRELEASE_MAIN)\install 2> NUL]

@@ -152,6 +152,7 @@ rc = DeRegisterClass("XWPFontFolder");
 rc = DeRegisterClass("XWPFontFile");
 rc = DeRegisterClass("XWPFontObject");
 
+rc = UnReplaceClass("WPFileSystem", "XWPFileSystem"); /* V0.9.16 */
 rc = UnReplaceClass("WPProgram", "XWPProgram");       /* V0.9.9 */
 rc = UnReplaceClass("WPFolder", "XFolder");
 rc = UnReplaceClass("WPObject", "XFldObject");
@@ -165,6 +166,7 @@ rc = UnReplaceClass("WPSound", "XWPSound");
 rc = UnReplaceClass("WPMouse", "XWPMouse");
 rc = UnReplaceClass("WPKeyboard", "XWPKeyboard");
 
+rc = DeRegisterClass("XWPFileSystem");        /* V0.9.16 */
 rc = DeRegisterClass("XWPProgram");           /* V0.9.9 */
 rc = DeRegisterClass("XFolder");
 rc = DeRegisterClass("XFldObject");

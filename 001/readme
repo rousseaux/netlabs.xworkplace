@@ -3,7 +3,7 @@ XWorkplace 0.9.16 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated November 3, 2001
+Last updated February 4, 2002
 
 
 0. CONTENTS OF THIS FILE
@@ -46,8 +46,11 @@ Last updated November 3, 2001
     About this release
     ------------------
 
-    This release fixes more bugs and (again) adds new features
-    which I wrote when I got tired of bugfixing.
+    It's been a long while since the last public release
+    (V0.9.14 was released in August 2001), so naturally
+    lots of things have changed. This release fixes _many_
+    bugs and adds quite a few more features which I wrote
+    when I got tired of bugfixing.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
@@ -169,7 +172,7 @@ Last updated November 3, 2001
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2001 Ulrich M”ller,
+    Copyright (C) 1997-2002 Ulrich M”ller,
                             Martin Lafaix,
                             Paul Ratcliffe,
                             and others.

@@ -1,7 +1,7 @@
 
 XWorkplace Source README
 (W) Ulrich M”ller, July 2, 1999
-Last updated June 3, 2001, Ulrich M”ller
+Last updated February 4, 2002, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -16,7 +16,7 @@ Last updated June 3, 2001, Ulrich M”ller
 1. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2001 Ulrich M”ller
+    Copyright (C) 1997-2002 Ulrich M”ller
                             and others (see the individual source files).
 
     This program is free software; you can redistribute it and/or modify

@@ -1479,8 +1479,23 @@ PCSZ cmnQueryThemeDirectory(VOID)
             if (!G_szXWPThemeDir[0])
             {
                 // first call: V0.9.16 (2002-01-13) [umoeller]
-                if (cmnQueryXWPBasePath(G_szXWPThemeDir))
-                    strcat(G_szXWPThemeDir, "\\themes\\os2");
+                ULONG cb = sizeof(G_szXWPThemeDir);
+                if (    (PrfQueryProfileData(HINI_USER,
+                                            (PSZ)INIAPP_XWORKPLACE,
+                                            (PSZ)INIKEY_THEMESDIR,
+                                            G_szXWPThemeDir,
+                                            &cb))
+                     && (cb > 4)
+                   )
+                    // OK, use that one
+                    ;
+                else if (cmnQueryXWPBasePath(G_szXWPThemeDir))
+                {
+                    if (doshIsWarp4())
+                        strcat(G_szXWPThemeDir, "\\themes\\warp4");
+                    else
+                        strcat(G_szXWPThemeDir, "\\themes\\warp3");
+                }
             }
 
             pReturn = G_szXWPThemeDir;

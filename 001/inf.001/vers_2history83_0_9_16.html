@@ -9,7 +9,7 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<B>&xwp; 0.9.16 (September 19, 2001)</B>
+<B>&xwp; 0.9.16 (February 4, 2002)</B>
 
 <P>New features:
 
@@ -42,6 +42,9 @@ side effect, this will give you more detailed error messages if the program
 could not be started.
 
 <P><LI>Trash can: Added EMPTYTRASH=IMMEDIATE setup string.
+
+<P><LI>&xcenter;: "Add widget" menu is now sorted alphabetically. This was
+confusing.
 
 <P><LI>&xcenter;: Pulse widget now supports more than one CPU on SMP systems,
 thanks to Bart van Leeuwen. As a result the display is painting lines instead
@@ -119,6 +122,8 @@ the smallest sizes on top.
 <P><LI>Status bars: are now respecting the default font setting on the "Paranoia" page
 and using WarpSans by default.
 
+<P><LI>&xcenter;: Stopped monitor widgets from shrinking all the time.
+
 <P><LI>&xcenter;: Window list widget now always ignores the Desktop and all open XCenters
 regardless of the filters that were set.
 
@@ -160,6 +165,7 @@ classes.
 
 <P><LI>Common: Fixed wrong owner windows for dialogs created by the new dialog
 formatter, which, among other things, affected the &xwp; message boxes.
+Fixed many misaligments and other cosmetic issues too.
 
 <P><LI>Common: Paul Ratcliffe fixed bad AM/PM display for 12:00 noon in a library
 routine which, among other things, affected the "Time" widget.
@@ -194,7 +200,7 @@ in "Workplace Shell", changes in a folder's default view via the "Menu" page (or
 the context menu item) were never picked up until a Desktop restart. Fixed.
 
 <P><LI>Folders: Replacement refresh code never picked up RCNF_CHANGED notifications
-(which are quite rare though). Fixed.
+(which are quite rare though). Fixed, as well as some other missing notifications.
 
 <P><LI>Folders: Added exception handling to an internal populate helper which tended
 to crash on certain WPS networking classes at times.
@@ -226,6 +232,8 @@ a settings dialog was showing.
 the power icon was changed. Fixed.
 
 <P><LI>&xcenter;: Fixed some bad clipping with object buttons.
+
+<P><LI>&xcenter;: Source emphasis for menus wasn't always removed from client. Fixed.
 
 <P><LI>&xcenter;: Fixed crashes with objects from other processes being dragged over
 &xcenter;.
