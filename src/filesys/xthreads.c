@@ -1465,7 +1465,7 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             if (wpshCheckObject(pFolder))
             {
-                if (pFolder = objResolveIfShadow(pFolder))  // V0.9.9 (2001-03-11) [umoeller]
+                if (pFolder = _xwpResolveIfLink(pFolder))  // V0.9.9 (2001-03-11) [umoeller]
                 {
                     if (!_somIsA(pFolder, _WPFolder)) // check only folders, avoid disks
                         break;

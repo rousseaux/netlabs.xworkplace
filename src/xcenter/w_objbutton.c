@@ -757,10 +757,7 @@ STATIC WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
        )
     {
         // dereference shadows
-        /* while ((pobj) && (_somIsA(pobj, _WPShadow)))
-            pobj = _wpQueryShadowedObject(pobj, TRUE); */
-
-        if (pobj = objResolveIfShadow(pobj))
+        if (pobj = _xwpResolveIfLink(pobj))
         {
             // now, if pObj is a disk object: get root folder
             if (_somIsA(pobj, _WPDisk))

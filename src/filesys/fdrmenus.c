@@ -952,7 +952,7 @@ STATIC BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
             // if it's a template
             // and also now if it's pointing to a program object
             // V0.9.19 (2002-06-08) [umoeller]
-            if (    (pObject2Insert = objResolveIfShadow(pObject))
+            if (    (pObject2Insert = _xwpResolveIfLink(pObject))
                  && (!(_wpQueryStyle(pObject2Insert) & OBJSTYLE_TEMPLATE))
                  && (!(_somIsA(pObject2Insert, _WPProgram)))
                )

@@ -358,6 +358,8 @@
 
     DECLARE_CMN_STRING(G_pcszXWPProgram, "XWPProgram");
 
+    DECLARE_CMN_STRING(G_pcszXWPLink, "XWPLink");               // V1.0.2 (2003-02-07) [umoeller]
+
     DECLARE_CMN_STRING(G_pcszWPObject, "WPObject");
     DECLARE_CMN_STRING(G_pcszWPFileSystem, "WPFileSystem");
     DECLARE_CMN_STRING(G_pcszWPFolder, "WPFolder");
@@ -1154,33 +1156,34 @@
 
     PCSZ cmnQueryThemeDirectory(VOID);
 
-    #define STDICON_SHADOWOVERLAY        1      // V0.9.20 (2002-07-31) [umoeller]
-    #define STDICON_TEMPLATE             2      // V0.9.20 (2002-08-04) [umoeller]
-    #define STDICON_PM                   3
-    #define STDICON_WIN16                4
-    #define STDICON_WIN32                5
-    #define STDICON_OS2WIN               6
-    #define STDICON_OS2FULLSCREEN        7
-    #define STDICON_DOSWIN               8
-    #define STDICON_DOSFULLSCREEN        9
-    #define STDICON_DLL                 10
-    #define STDICON_DRIVER              11
-    #define STDICON_PROG_UNKNOWN        12
-    #define STDICON_DATAFILE            13
-    #define STDICON_TRASH_EMPTY         14
-    #define STDICON_TRASH_FULL          15
-    #define STDICON_DESKTOP_CLOSED      16
-    #define STDICON_DESKTOP_OPEN        17
-    #define STDICON_FOLDER_CLOSED       18
-    #define STDICON_FOLDER_OPEN         19
+    #define STDICON_SHADOWBROKEN         1      // V1.0.2 (2003-02-07) [umoeller]
+    #define STDICON_SHADOWOVERLAY        2      // V0.9.20 (2002-07-31) [umoeller]
+    #define STDICON_TEMPLATE             3      // V0.9.20 (2002-08-04) [umoeller]
+    #define STDICON_PM                   4
+    #define STDICON_WIN16                5
+    #define STDICON_WIN32                6
+    #define STDICON_OS2WIN               7
+    #define STDICON_OS2FULLSCREEN        8
+    #define STDICON_DOSWIN               9
+    #define STDICON_DOSFULLSCREEN       10
+    #define STDICON_DLL                 11
+    #define STDICON_DRIVER              12
+    #define STDICON_PROG_UNKNOWN        13
+    #define STDICON_DATAFILE            14
+    #define STDICON_TRASH_EMPTY         15
+    #define STDICON_TRASH_FULL          16
+    #define STDICON_DESKTOP_CLOSED      17
+    #define STDICON_DESKTOP_OPEN        18
+    #define STDICON_FOLDER_CLOSED       19
+    #define STDICON_FOLDER_OPEN         20
 
     // tool bar icons V1.0.1 (2002-11-30) [umoeller]
-    #define STDICON_TB_REFRESH          20
-    #define STDICON_TB_FIND             21
-    #define STDICON_TB_HELP             22
-    #define STDICON_TB_MULTIPLECOLUMNS  23
-    #define STDICON_TB_DETAILS          24
-    #define STDICON_TB_SMALLICONS       25
+    #define STDICON_TB_REFRESH          21
+    #define STDICON_TB_FIND             22
+    #define STDICON_TB_HELP             23
+    #define STDICON_TB_MULTIPLECOLUMNS  24
+    #define STDICON_TB_DETAILS          25
+    #define STDICON_TB_SMALLICONS       26
 
     APIRET cmnGetStandardIcon(ULONG ulStdIcon,
                               HPOINTER *phptr,

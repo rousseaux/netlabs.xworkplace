@@ -1086,7 +1086,7 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
                 // we use OBJECT_FROM_PREC to get the SOM pointer
                 WPObject *pSourceObject
                             = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-                if (pSourceObject = objResolveIfShadow(pSourceObject))
+                if (pSourceObject = _xwpResolveIfLink(pSourceObject))
                 {
                     // store object handle to output
                     if (*phObject = _wpQueryHandle(pSourceObject))

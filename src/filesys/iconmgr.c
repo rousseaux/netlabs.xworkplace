@@ -1004,7 +1004,7 @@ APIRET icomCopyIconFromObject(WPObject *somSelf,       // in: target
 {
     APIRET arc = NO_ERROR;
 
-    if (pobjSource = objResolveIfShadow(pobjSource))
+    if (pobjSource = _xwpResolveIfLink(pobjSource))
     {
         PICONINFO pData;
         if (arc = icomLoadIconData(pobjSource, ulIndex, &pData))

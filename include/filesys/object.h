@@ -220,9 +220,6 @@
      *
      ********************************************************************/
 
-    BOOL objSetup(WPObject *somSelf,
-                  PSZ pszSetupString);
-
     BOOL objQuerySetup(WPObject *somSelf,
                         PVOID pstrSetup);
 

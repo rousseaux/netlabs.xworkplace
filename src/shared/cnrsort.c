@@ -173,8 +173,8 @@ SHORT EXPENTRY fnCompareExtFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE p
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
-    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
+    WPObject *pobjDeref1 = _xwpResolveIfLink(pobj1);
+    WPObject *pobjDeref2 = _xwpResolveIfLink(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -233,8 +233,8 @@ SHORT EXPENTRY fnCompareNameFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
-    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
+    WPObject *pobjDeref1 = _xwpResolveIfLink(pobj1);
+    WPObject *pobjDeref2 = _xwpResolveIfLink(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -316,8 +316,8 @@ SHORT EXPENTRY fnCompareTypeFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
-    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
+    WPObject *pobjDeref1 = _xwpResolveIfLink(pobj1);
+    WPObject *pobjDeref2 = _xwpResolveIfLink(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders
@@ -384,8 +384,8 @@ SHORT EXPENTRY fnCompareClassFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE
     WPObject *pobj1 = OBJECT_FROM_PREC(pmrc1);
     WPObject *pobj2 = OBJECT_FROM_PREC(pmrc2);
 
-    WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
-    WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
+    WPObject *pobjDeref1 = _xwpResolveIfLink(pobj1);
+    WPObject *pobjDeref2 = _xwpResolveIfLink(pobj2);
     BOOL IsFldr1 = (pobjDeref1)
                       ? _somIsA(pobjDeref1, _WPFolder)
                       : FALSE;      // treat broken shadows as non-folders

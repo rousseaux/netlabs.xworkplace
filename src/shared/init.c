@@ -1950,8 +1950,9 @@ BOOL initRepairDesktopIfBroken(VOID)
     // having to blow up the whole WPS. I have checked,
     // FsQueryDriveData("A:") gives us the same address as the
     // G_paDriveData above.
-    G_paDriveData = FsQueryDriveData("A:");
-    initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
+    // V1.0.2 (2003-02-09) [pr] Moved to XFldDisk::wpclsInitData
+    // G_paDriveData = FsQueryDriveData("A:");
+    // initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
 #endif
 
     // now check if the desktop was considered valid

@@ -1549,7 +1549,7 @@ WPFileSystem* fdrvGetFSFromRecord(PMINIRECORDCORE precc,
     WPObject *pobj = NULL;
     if (    (precc)
          && (pobj = OBJECT_FROM_PREC(precc))
-         && (pobj = objResolveIfShadow(pobj))
+         && (pobj = _xwpResolveIfLink(pobj))
        )
     {
         if (_somIsA(pobj, _WPDisk))
@@ -1641,7 +1641,7 @@ BOOL fdrvIsInsertable(WPObject *pObject,
         // allow disks with INSERT_FOLDERSANDDISKS only
         if (    (ulFoldersOnly == INSERT_FOLDERSANDDISKS)
              && (    (_somIsA(pObject, _WPDisk))
-                  || (    (pobj2 = objResolveIfShadow(pObject))
+                  || (    (pobj2 = _xwpResolveIfLink(pObject))
                        && (ctsIsSharedDir(pobj2))
                      )
                 )
@@ -1666,7 +1666,7 @@ BOOL fdrvIsInsertable(WPObject *pObject,
     // INSERT_ALL or INSERT_FILESYSTEMS:
 
     // resolve shadows
-    if (!(pObject = objResolveIfShadow(pObject)))
+    if (!(pObject = _xwpResolveIfLink(pObject)))
         // broken shadow:
         // disallow with INSERT_FILESYSTEMS
         return (ulFoldersOnly == INSERT_ALL);

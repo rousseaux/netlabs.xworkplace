@@ -1544,6 +1544,11 @@ typedef const struct _STDICON *PCSTDICON;
 static const STDICON aStdIcons[] =
     {
         {
+            STDICON_SHADOWBROKEN,   // added V1.0.2 (2003-02-07) [umoeller]
+            "shadow2.ico",
+            44,                     // standard broken shadow icon in pmwp.dll
+        },
+        {
             STDICON_SHADOWOVERLAY,  // added V0.9.20 (2002-07-31) [umoeller]
             "shadow.ico",
             XWP_MODULE_BIT | ID_ICONXWPSHADOWOVERLAY,

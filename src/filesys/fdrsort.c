@@ -905,8 +905,8 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
         // yes:
         // resolve shadows
         // (watch out, _wpQueryShadowedObject can return NULL)
-        WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
-        WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
+        WPObject *pobjDeref1 = _xwpResolveIfLink(pobj1);
+        WPObject *pobjDeref2 = _xwpResolveIfLink(pobj2);
         BOOL fIsFldr1 = (pobjDeref1)
                           ? objIsAFolder(pobjDeref1)
                           : FALSE;      // treat broken shadows as non-folders

@@ -2269,7 +2269,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                 WPObject *pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID);
 
                                 // dereference shadows
-                                if (pObject = objResolveIfShadow(pObject))
+                                if (pObject = _xwpResolveIfLink(pObject))
                                 {
                                     if (    (_somIsA(pObject, _WPProgram))
                                          || (_somIsA(pObject, _WPProgramFile))

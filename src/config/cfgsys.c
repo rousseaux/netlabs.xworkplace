@@ -603,10 +603,11 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed max ID_OSDI_CACHE_THRESHOLD to 128
  *@@changed V1.0.1 (2002-12-08) [pr]: removed CLASSPATH again @@fixes 272
  *@@changed V1.0.1 (2002-12-11) [pr]: POPUPLOG drive was wrong @@fixes 37
+ *@@changed V1.0.2 (2003-03-03) [pr]: POPUPLOG drive was still wrong @@fixes 37
  */
 
 VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
-                        ULONG flFlags)  // notebook info struct
+                       ULONG flFlags)  // notebook info struct
 {
     PSZ     pszConfigSys = NULL;
     HWND    hwndDlgPage = pnbp->hwndDlgPage;
@@ -1032,7 +1033,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
                 case SP_ERRORS:
                 {
-                    CHAR    szParameter[300] = "";
+                    CHAR    szParameter[300] = "", c;
                     BOOL fAutoFail = FALSE,
                          fReIPL = FALSE;
                     LONG lIndex = 0;           // default for "0" param
@@ -1054,19 +1055,12 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                             szParameter, sizeof(szParameter));
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_SUPRESSPOPUPS,
                             (p != NULL));
-                    if (p)
-                    {
-                        if (*p != '0')
-                        {
-                            CHAR c = toupper(*p);
-                            lIndex = c-'C'; // 0 for C, 1 for D etc.
-                        } else
-                            // "0" character:
-                            lIndex = G_lDriveCount;
-                    }
-                    // V1.0.1 (2002-12-11) [pr]: @@fixes 37
-                    else
-                        lIndex = doshQueryBootDrive() - 'C';
+                    // V1.0.2 (2003-03-03) [pr]: @@fixes 379
+                    c = p ? toupper(*p) : doshQueryBootDrive();
+                    for (lIndex = 0;
+                         (lIndex < G_lDriveCount) &&
+                         (G_aszAllDrives[lIndex][0] != c);
+                         lIndex++);
 
                     WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
                                       SPBM_SETCURRENTVALUE,

@@ -3645,7 +3645,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 
                 // resolve shadows... this never worked for
                 // shadows V0.9.12 (2001-04-29) [umoeller]
-                ppf->pObject = objResolveIfShadow(ppf->pObject);
+                ppf->pObject = _xwpResolveIfLink(ppf->pObject);
 
                 if (wpshCheckObject(ppf->pObject))
                 {

@@ -9,6 +9,9 @@ parse upper linein yn .
 if yn = 'Y' then do
   call deletefiles 'bin\*.obj'
   call deletefiles 'bin\*.res'
+  call deletefiles 'bin\dll_mt\*.obj'
+  call deletefiles 'bin\dll_mt\*.res'
+  call deletefiles 'bin\dll_subs\*.obj'
   call deletefiles 'bin\exe_mt\*.obj'
   call deletefiles 'bin\exe_mt\*.res'
   call deletefiles 'bin\exe_st\*.obj'

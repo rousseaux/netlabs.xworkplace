@@ -2844,7 +2844,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
                 {
                     // deref multiple shadows
-                    pDeref = objResolveIfShadow(pDeref);
+                    pDeref = _xwpResolveIfLink(pDeref);
                 }
 #endif
 
@@ -2920,7 +2920,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 #ifndef __NOCFGSTATUSBARS__
         if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
 #endif
-            pobjSelected = objResolveIfShadow(pobjSelected);
+            pobjSelected = _xwpResolveIfLink(pobjSelected);
 
         if (pobjSelected == NULL)
             return strdup("");

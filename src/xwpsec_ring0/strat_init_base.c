@@ -172,6 +172,12 @@ PTR16   DevHelp2;
  *      called by sec32_init_base() to lock our data
  *      and code segments into physical memory.
  *
+ *      This is necessary because OS/2 locks only the
+ *      first code and the first data segment of a
+ *      driver, but these are the 16-bit segments, and
+ *      we need the 32-bit segments locked too. So we
+ *      have to do it explicitly here.
+ *
  *      Returns NO_ERROR or error code.
  *
  *      Context: "init" request, ring 0.
@@ -336,9 +342,8 @@ int sec32_init_base(PTR16 reqpkt)
                 }
             }
 
-            // now go lock 32-bit segments
+            // now go lock 32-bit segments (see remarks there)
             if (rc = FixMemory())
-                // couldn't lock 32 bits segments:
                 status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
 
             // interface SES (pass kernel hooks, get helpers)

@@ -168,7 +168,7 @@ STATIC VOID CopyOneObject(PXSTRING pstr,
                           const XSTRING *pstrSep)
 {
     CHAR szRealName[CCHMAXPATH];
-    if (    (pObject = objResolveIfShadow(pObject))
+    if (    (pObject = _xwpResolveIfLink(pObject))
          && (_somIsA(pObject, _WPFileSystem))
          && (_wpQueryFilename(pObject, szRealName, fFullPath))
        )
@@ -408,7 +408,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
     ULONG           ulMenuId2 = usItem - *G_pulVarMenuOfs;
     BOOL            fHandled = TRUE;
     WPObject        *pObject = somSelf;
-    WPFileSystem    *pFileSystem = objResolveIfShadow(pObject);
+    WPFileSystem    *pFileSystem = _xwpResolveIfLink(pObject);
 
     PMPF_MENUS(("entering"));
 
@@ -472,7 +472,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
                     pObject = NULL;
 
                 // dereference shadows again
-                pFileSystem = objResolveIfShadow(pObject);
+                pFileSystem = _xwpResolveIfLink(pObject);
             }
 
             WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -759,6 +759,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
  *@@changed V0.9.9 (2001-02-18) [pr]: fix delete folder from menu bar
  *@@changed V1.0.0 (2002-08-26) [umoeller]: func renamed
  *@@changed V1.0.0 (2002-08-26) [umoeller]: moved "select some" and "batch rename" here to fix duplicate popups
+ *@@changed V1.0.2 (2002-02-16) [pr]: "delete original" deleted wrong object, fixed @@fixes 8
  */
 
 BOOL fcmdProcessViewCommand(WPFolder *somSelf,
@@ -769,13 +770,14 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
 {
     BOOL brc = FALSE;       // default: not processed, call parent
 
-    PMPF_MENUS(("[%s] entering, usCommand 0x%lX, pFirstObject 0x%lX [%s]",
+    PMPF_MENUS(("[%s] entering, usCommand 0x%lX, pFirstObject 0x%lX [%s], ulSelectionFlags %u",
                 _wpQueryTitle(somSelf),
                 usCommand,
                 pFirstObject,
                 (pFirstObject)
                     ? _wpQueryTitle(pFirstObject)
-                    : NULL));
+                    : NULL,
+                ulSelectionFlags));
 
     switch (usCommand)
     {
@@ -798,12 +800,21 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
                 if (!(fTrueDelete = cmnQuerySetting(sfAlwaysTrueDelete)))
                     fTrueDelete = doshQueryShiftState();
 
-                // need this to handle deleting folder from menu bar as
-                // there is no source emphasis
-                if (!pFirstObject && !ulSelectionFlags)
+                // V1.0.2 (2002-02-16) [pr]: @@fixes 8
+                if (!pFirstObject)
                 {
-                    pFirstObject = somSelf;
-                    ulSelectionFlags = SEL_WHITESPACE;
+                    pFirstObject = wpshQuerySourceObject(somSelf,
+                                                         hwndCnr,
+                                                         TRUE, // selected mode
+                                                         &ulSelectionFlags);
+
+                    PMPF_MENUS(("[%s] modifying, pFirstObject 0x%lX [%s], ulSelectionFlags %u",
+                                _wpQueryTitle(somSelf),
+                                pFirstObject,
+                                (pFirstObject)
+                                    ? _wpQueryTitle(pFirstObject)
+                                    : NULL,
+                                ulSelectionFlags));
                 }
 
                 // collect objects from container and start deleting

@@ -35,6 +35,7 @@ $(OUTPUTDIR)\xwpadmin.obj \
 $(OUTPUTDIR)\xwpfsys.obj \
 $(OUTPUTDIR)\xwpimage.obj \
 $(OUTPUTDIR)\xwpkeybd.obj \
+$(OUTPUTDIR)\xwplink.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\xwpmedia.obj \
 !endif

@@ -245,6 +245,11 @@ interface XFldObject : WPObject
     VOID xwpHandleSelfClose(in HWND hwndFrame,
                             in ULONG ulMenuId);
 
+    WPObject xwpCreateShadow(in WPFolder pFolder,
+                             in BOOL fLock);
+
+    WPObject xwpResolveIfLink();
+
 #ifdef __SOMIDL__
     implementation
     {
@@ -275,7 +280,9 @@ interface XFldObject : WPObject
             xwpPrepareInsertRecord,
             xwpOwnerDrawIcon,
             xwpLazyLoadIcon,
-            xwpForceRepaint;
+            xwpForceRepaint,
+            xwpCreateShadow,
+            xwpResolveIfLink;
 
         /*
          * Class Modifiers:

@@ -800,16 +800,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                 {
                     // object not filtered:
                     // dereference shadows, if necessary
-                    /* pObject2 = pObject;
-                    while (pObject2)
-                    {
-                        if (_somIsA(pObject2, _WPShadow))
-                            pObject2 = _wpQueryShadowedObject(pObject2, TRUE);
-                        else
-                            break;
-                    } */
-
-                    if (pObject2 = objResolveIfShadow(pObject))
+                    if (pObject2 = _xwpResolveIfLink(pObject))
                     {
                         BOOL    fIsFolder;
 

@@ -1839,7 +1839,7 @@ SOM_Scope ULONG SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
         WPObject *pobjTest = somSelf;
 
         if (    (    (flObject & OBJFL_WPFOLDER)
-                  || (    (pobjTest = objResolveIfShadow(somSelf))
+                  || (    (pobjTest = _xwpResolveIfLink(somSelf))
                        && (objIsAFolder(pobjTest))
                      )
                 )
@@ -2673,6 +2673,55 @@ SOM_Scope void  SOMLINK xo_xwpHandleSelfClose(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpCreateShadow:
+ *      this new XFldObject method creates either a WPShadow or
+ *      an XWPLink object for somSelf in the given folder.
+ *
+ *      The point of this new method is that if somSelf is a
+ *      file-system object, it should have XWPLink's created
+ *      instead of shadows.
+ *
+ *@@added V1.0.2 (2003-02-07) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xo_xwpCreateShadow(XFldObject *somSelf,
+                                                WPFolder* pFolder,
+                                                BOOL fLock)
+{
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpCreateShadow");
+
+    return _wpCreateShadowObject(somSelf, pFolder, fLock);
+}
+
+/*
+ *@@ xwpResolveIfLink:
+ *      this new XFldObject method returns the object that
+ *      somSelf points to.
+ *
+ *      If somSelf is not of the WPShadow or the XWPLink
+ *      class, this returns somSelf. We only implement the
+ *      WPShadow case here since XWPLink overrides this
+ *      method.
+ *
+ *      Otherwise it can return NULL if the link is broken.
+ *
+ *@@added V1.0.2 (2003-02-07) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xo_xwpResolveIfLink(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpResolveIfLink");
+
+    if (_flObject & OBJFL_WPSHADOW)
+        // call the WPShadow method
+        return _wpQueryShadowedObject(somSelf, FALSE);
+
+    return somSelf;
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -2859,9 +2908,8 @@ SOM_Scope void  SOMLINK xo_wpObjectReady(XFldObject *somSelf,
  *      As opposed to wpSetupOnce, this gets called any time
  *      a setup string is invoked.
  *
- *      We support the WRITEREXXSETUP string here.
- *
  *@@added V0.9.9 (2001-04-06) [umoeller]
+ *@@changed V1.0.2 (2003-02-07) [umoeller]: removed rexx setup string
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
@@ -2869,10 +2917,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSetup");
 
-    return (    (XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
-             && (objSetup(somSelf,
-                          pszSetupString))
-           );
+    return XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString);
 }
 
 /*

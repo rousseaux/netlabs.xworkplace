@@ -88,6 +88,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
@@ -97,7 +98,6 @@
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\fdrsplit.h"           // folder split views
-// #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
@@ -936,6 +936,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
  *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
+ *@@changed V1.0.2 (2003-02-09) [pr]: moved query drive data to here from initRepairDesktopIfBroken()
  */
 
 SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
@@ -944,6 +945,9 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
     M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_wpclsInitData");
 
     M_XFldDisk_parent_M_WPDisk_wpclsInitData(somSelf);
+
+    G_paDriveData = FsQueryDriveData("A:");
+    initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
 
     krnClassInitialized(G_pcszXFldDisk);
 }

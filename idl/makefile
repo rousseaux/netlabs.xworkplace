@@ -93,6 +93,7 @@ $(OUTPUTDIR)\xwpadmin.h \
 $(OUTPUTDIR)\xwpfsys.h \
 $(OUTPUTDIR)\xwpimage.h \
 $(OUTPUTDIR)\xwpkeybd.h \
+$(OUTPUTDIR)\xwplink.h \
 $(OUTPUTDIR)\xwpmedia.h \
 $(OUTPUTDIR)\xwpmouse.h \
 $(OUTPUTDIR)\xwpnetwork.h \
@@ -230,6 +231,8 @@ $(OUTPUTDIR)\wps\wpimage.h:      wps\$(@B).idl $(OUTPUTDIR)\xfdataf.h
 $(OUTPUTDIR)\xwpimage.h:         $(@B).idl $(OUTPUTDIR)\wps\wpimage.h
 
 $(OUTPUTDIR)\xfontfile.h:        $(@B).idl $(OUTPUTDIR)\xfdataf.h
+
+$(OUTPUTDIR)\xwplink.h:          $(@B).idl $(OUTPUTDIR)\xfdataf.h
 
 $(OUTPUTDIR)\xwppgmf.h:          $(@B).idl $(OUTPUTDIR)\xfdataf.h
 

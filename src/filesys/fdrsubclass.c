@@ -800,6 +800,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
  *@@ fdrManipulatePulldown:
  *
  *@@added V1.0.0 (2002-08-28) [umoeller]
+ *@@changed V1.0.2 (2002-02-16) [pr]: "Edit"->"Delete" deleted wrong object @@fixes 324
  */
 
 VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -818,14 +819,15 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
                     // V1.0.0 (2002-08-24) [umoeller]
         break;
 
+        // V1.0.2 (2002-02-16) [pr]: @@fixes 324
         case 0x2D0: // "Edit" submenu
         case ID_XFM_BAR_EDIT:       // in split view V1.0.0 (2002-08-28) [umoeller]
         {
-            // set the "source" object for menu item
-            // selections to the folder
-            psfv->pSourceObject = psfv->somSelf;
-                    // V0.9.12 (2001-05-29) [umoeller]
-
+            PMPF_MENUS(("  'Edit' pulldown found"));
+            psfv->pSourceObject = wpshQuerySourceObject(psfv->somSelf,
+                                                        psfv->hwndCnr,
+                                                        TRUE,      // selected mode
+                                                        &psfv->ulSelection);
         }
         break;
 
@@ -1086,7 +1088,7 @@ BOOL fdrMenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
 
         PMPF_MENUS(("  Object selections: %d", psfv->ulSelection));
 
-        if (pObject = objResolveIfShadow(pObject))
+        if (pObject = _xwpResolveIfLink(pObject))
         {
             if (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)
             {

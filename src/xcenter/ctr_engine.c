@@ -2146,7 +2146,7 @@ STATIC PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
                     pllObjects = lstCreate(FALSE);
 
                 // dereference shadows
-                if (pReal = objResolveIfShadow(pReal))
+                if (pReal = _xwpResolveIfLink(pReal))
                     lstAppendItem(pllObjects, pReal);
 
                 if (pusIndicator)

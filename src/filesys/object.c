@@ -379,31 +379,6 @@ BOOL objIsAShadow(WPObject *somSelf)
 }
 
 /*
- *@@ objResolveIfShadow:
- *      resolves a shadow if somSelf is one.
- *
- *      If somSelf is a WPShadow object, this returns
- *      the target object or NULL if the shadow is
- *      broken.
- *
- *      Otherwise it returns somSelf.
- *
- *@@added V0.9.18 (2002-03-23) [umoeller]
- */
-
-WPObject* objResolveIfShadow(WPObject *somSelf)
-{
-    if (somSelf)
-    {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        if (_flObject & OBJFL_WPSHADOW)
-            return _wpQueryShadowedObject(somSelf, TRUE);
-    }
-
-    return somSelf;
-}
-
-/*
  *@@ objQueryFlags:
  *
  *@@added V0.9.19 (2002-04-24) [umoeller]
