@@ -3797,8 +3797,10 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                         {
                             PSZ p;
 
-                            for (p = szExecutable; *p == ' '; p++);
-                                WinSetWindowText(hwndCommand, p);
+                            for (p = szExecutable; *p == ' '; p++)
+                                ;
+
+                            WinSetWindowText(hwndCommand, p);
                             WinSendMsg(hwndCommand,
                                        WM_CHAR,
                                        MPFROM2SHORT(KC_VIRTUALKEY, 0),
@@ -3823,7 +3825,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
                         WinSetWindowULong(hwnd,
                                           QWL_DEFBUTTON,
-                                          WinQueryWindowUShort(hwndOK, QWS_ID));
+                                          hwndOK); // V0.9.15
                         WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
                         WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
                         WinInvalidateRect(hwndOK, NULL, FALSE);

@@ -1453,6 +1453,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed trap if hook data was NULL
  *@@changed V0.9.14 (2001-08-01) [umoeller]: added drive monitor
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
+ *@@changed V0.9.15 (2001-08-26) [umoeller]: move-ptr-to-button animation left circles on screen, fixed
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2268,6 +2269,11 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // we can calculate the offset based
                     // on the time that has elapsed
                     G_ulMSMovingPtrStart = doshQuerySysUptime();
+
+                    // reset last radius, in case animation is on
+                    // and was stopped before done last time
+                    // V0.9.15 (2001-08-26) [umoeller]
+                    G_lLastRadius = 0;
 
                     // go (re)start the timer for moving
                     G_ulMovingPtrTimer = WinStartTimer(G_habDaemon,

@@ -348,6 +348,8 @@ void _System fntCollect(ULONG ulDummy)
  *      deallocates all memory and cleans up record cores.
  *      Also recurses; for initial call, preccParent
  *      must be NULL.
+ *
+ *@@changed V0.9.15 (2001-08-26) [rbri] free for file entries added
  */
 
 VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
@@ -377,6 +379,10 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
             // _Pmpf(("Removing %s", precc2->pdi->szRecordText));
             if (precc2->pdi)
                 free(precc2->pdi);
+
+/*             if (precc2->pFileEntry) {
+                free(precc2->pFileEntry);
+            } */
             WinSendMsg(hwndCnr,
                        CM_REMOVERECORD,
                        &precc2,
@@ -416,17 +422,25 @@ SHORT EXPENTRY fnCompareName(PRECORDCORE pmrc1, PRECORDCORE pmrc2, PVOID pStorag
 /*
  * fnCompareSize:
  *      comparison func for container sort by file size
+ *
+ *@@changed V0.9.15 (2001-08-25) [rbri] also compare the file entries
  */
 
 SHORT EXPENTRY fnCompareSize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
 {
     // pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pdi) && (pmrc2->pdi))
+    {
+        if (    ((pmrc1->pdi) && (pmrc2->pdi))
+             || ((pmrc1->pFileEntry) && (pmrc2->pFileEntry))
+           )
+        {
             if (pmrc1->dTotalSize > pmrc2->dTotalSize)
                 return (-1);
             else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
                 return (1);
+        }
+    }
 
     return (0);
 }
@@ -436,6 +450,7 @@ SHORT EXPENTRY fnCompareSize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorag
  *      comparison func for container sort by files count
  *
  *@@added V0.9.1 [umoeller]
+ *@@changed V0.9.15 (2001-08-25) [rbri] sort the file entries by size
  */
 
 SHORT EXPENTRY fnCompareFilesCount(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
@@ -443,10 +458,20 @@ SHORT EXPENTRY fnCompareFilesCount(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID p
     pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
         if ((pmrc1->pdi) && (pmrc2->pdi))
+        {
             if (pmrc1->pdi->ulFiles > pmrc2->pdi->ulFiles)
                 return (-1);
             else if (pmrc1->pdi->ulFiles < pmrc2->pdi->ulFiles)
                 return (1);
+        }
+        else if ((pmrc1->pFileEntry) && (pmrc2->pFileEntry))
+        {
+            // sort the file entries by size
+            if (pmrc1->dTotalSize > pmrc2->dTotalSize)
+                return (-1);
+            else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
+                return (1);
+        }
 
     return (0);
 }
@@ -454,6 +479,8 @@ SHORT EXPENTRY fnCompareFilesCount(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID p
 /*
  * fnCompareEASize:
  *      comparison func for container sort by ea size
+ *
+ *@@changed V0.9.15 (2001-08-25) [rbri] sort the file entries by size
  */
 
 SHORT EXPENTRY fnCompareEASize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
@@ -461,10 +488,20 @@ SHORT EXPENTRY fnCompareEASize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStor
     pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
         if ((pmrc1->pdi) && (pmrc2->pdi))
+        {
             if (pmrc1->pdi->dTotalEASize > pmrc2->pdi->dTotalEASize)
                 return (-1);
             else if (pmrc1->pdi->dTotalEASize < pmrc2->pdi->dTotalEASize)
                 return (1);
+        }
+        else if ((pmrc1->pFileEntry) && (pmrc2->pFileEntry))
+        {
+            // sort the file entries by size
+            if (pmrc1->dTotalSize > pmrc2->dTotalSize)
+                return (-1);
+            else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
+                return (1);
+        }
 
     return (0);
 }
@@ -485,6 +522,11 @@ CHAR        szFile[CCHMAXPATH];
 
 // is window minimized?
 BOOL        fMinimized = FALSE;
+
+// the parent tree entry of the 100 largest files
+// V0.9.15 (2001-08-25) [rbri] sort the file entries by size
+PRECORDCORE precParentOf100Largest = NULL;
+
 
 /*
  *@@ ComposeFilename:
@@ -507,6 +549,7 @@ PSZ ComposeFilename(PSZ pszBuf,
  *@@ Insert100LargestFiles:
  *
  *@@added V0.9.14 (2001-07-28) [umoeller]
+ *@@changed V0.9.15 (2001-08-25) [rbri] the 100 largest entries are available only once after D&D
  */
 
 VOID Insert100LargestFiles(VOID)
@@ -520,10 +563,8 @@ VOID Insert100LargestFiles(VOID)
                                                   sizeof(SIZERECORD),
                                                   cFiles))
     {
-        PSIZERECORD precThis = precFirst,
-                    precParent = (PSIZERECORD)cnrhAllocRecords(hwndCnr,
-                                                               sizeof(SIZERECORD),
-                                                               1);
+        PSIZERECORD precThis = precFirst;
+
         PFILEENTRY pEntry = (PFILEENTRY)treeLast(G_LargestFilesTree);
 
         CHAR szSize[200];
@@ -532,14 +573,46 @@ VOID Insert100LargestFiles(VOID)
 
         sprintf(szSize, "%d largest files", cFiles);
 
-        cnrhInsertRecords(hwndCnr,
-                          NULL,      // parent
-                          (PRECORDCORE)precParent,
-                          TRUE,
-                          strdup(szSize),
-                          CRA_RECORDREADONLY | CRA_COLLAPSED,
-                          1);
+        // create the entry only if it is not alredy there
+        if (precParentOf100Largest == NULL)
+        {
+            precParentOf100Largest = cnrhAllocRecords(hwndCnr,
+                                                      sizeof(SIZERECORD),
+                                                      1);
+            cnrhInsertRecords(hwndCnr,
+                              NULL,      // parent
+                              precParentOf100Largest,
+                              TRUE,
+                              strdup(szSize),
+                              CRA_RECORDREADONLY | CRA_COLLAPSED,
+                              1);
+        }
+        else
+        {
+            // remove the #old subnodes
+            Cleanup(hwndCnr, (PSIZERECORD)precParentOf100Largest);
 
+            WinSendMsg(hwndCnr,
+                       CM_INVALIDATERECORD,
+                       NULL,
+                       MPFROM2SHORT(0, CMA_REPOSITION));
+
+            // rename
+            precParentOf100Largest->pszIcon
+            = precParentOf100Largest->pszName
+            = precParentOf100Largest->pszText
+            = precParentOf100Largest->pszTree
+                = strdup(szSize);
+
+            // (ToDo) only redraw the changed record
+            WinSendMsg(hwndCnr,
+                       CM_INVALIDATERECORD,
+                       NULL,
+                       MPFROM2SHORT(0, CMA_TEXTCHANGED));
+
+        }
+
+        // build & insert the new subnodes
         while (pEntry && precThis)
         {
             precThis->dTotalSize = pEntry->Tree.ulKey;
@@ -576,7 +649,7 @@ VOID Insert100LargestFiles(VOID)
         }
 
         cnrhInsertRecords(hwndCnr,
-                          (PRECORDCORE)precParent,
+                          precParentOf100Largest,
                           (PRECORDCORE)precFirst,
                           TRUE,
                           NULL,
@@ -1544,7 +1617,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     // load GPL info message into prodinfo MLE
                     strcpy(szGPLInfo,
                         "Treesize is part of the XFolder package. XFolder is free software. "
-                       "The full source code is now available. You are welcome to "
+                        "The full source code is now available. You are welcome to "
                         "redistribute and/or modify XFolder under the conditions of the "
                         "GNU General Public License (GPL). XFolder comes with absolutely "
                         "NO WARRANTY. For details, refer to the \"Notices\" section of "
