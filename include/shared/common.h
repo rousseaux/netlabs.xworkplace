@@ -1720,6 +1720,14 @@
      *
      ********************************************************************/
 
+    #ifdef SOM_WPObject_h
+        BOOL cmnRegisterView(WPObject *somSelf,
+                             PUSEITEM pUseItem,
+                             ULONG ulViewID,
+                             HWND hwndFrame,
+                             const char *pcszViewTitle);
+    #endif
+
     BOOL cmnPlaySystemSound(USHORT usIndex);
 
     #ifdef SOM_WPObject_h

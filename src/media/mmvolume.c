@@ -201,8 +201,8 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                 {
                     // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
-                    PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_VOLUMEVIEW)),
-                                    p = NULL;
+                    /* PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_VOLUMEVIEW)),
+                                    p = NULL; */
 
                     // now position the frame and the client:
                     // 1) frame
@@ -222,7 +222,13 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                     WinShowWindow(hwndFrame, TRUE);
 
                     // add the use list item to the object's use list
-                    pWinData->UseItem.type    = USAGE_OPENVIEW;
+                    cmnRegisterView(somSelf,
+                                    &pWinData->UseItem,
+                                    ulView,
+                                    hwndFrame,
+                                    cmnGetString(ID_XSSI_VOLUMEVIEW));
+
+                    /* pWinData->UseItem.type    = USAGE_OPENVIEW;
                     pWinData->UseItem.pNext   = NULL;
                     pWinData->ViewItem.view   = ulView;
                     pWinData->ViewItem.handle = hwndFrame;
@@ -242,7 +248,7 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                     _wpRegisterView(somSelf,
                                     hwndFrame,
                                     pszViewTitle); // view title
-                    free(pszViewTitle);
+                    free(pszViewTitle); */
                 }
             }
         }

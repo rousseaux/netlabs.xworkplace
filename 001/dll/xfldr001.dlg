@@ -2937,3 +2937,23 @@ BEGIN
                         BS_NOPOINTERFOCUS
     END
 END
+
+DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Diskfree Setup", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6, 100, 64, NOT WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        AUTORADIOBUTTON   "Multi-view",      101,  3, 53,  45, 11, WS_TABSTOP|WS_GROUP
+        AUTORADIOBUTTON   "Single-view",     102,  3, 43,  47, 11, WS_TABSTOP
+
+        GROUPBOX          "",                104, 12, 26,  79, 19
+
+
+          LTEXT           "Drive",           105, 15, 29,  20,  8  WS_GROUP
+          ENTRYFIELD      "C",               106, 36, 31,  13,  6, ES_MARGIN
+          AUTOCHECKBOX    "Show file system", 107,  3, 13,  82, 10, WS_TABSTOP|WS_GROUP
+
+
+        DEFPUSHBUTTON     "~OK",              110, 64,  2,  30, 10
+    END
+END
+

@@ -3205,8 +3205,8 @@ HWND cllCreateClassListView(WPObject *somSelf,
         {
             // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             // view title: we remove "~" later
-            PSZ             pszViewTitle = strdup(cmnGetString(ID_XFSI_OPENCLASSLIST)) , // pszOpenClassList
-                            p = NULL;
+            /* PSZ             pszViewTitle = strdup(cmnGetString(ID_XFSI_OPENCLASSLIST)) , // pszOpenClassList
+                            p = NULL; */
 
             // get client data window pointer; this has been allocated
             // by WM_CREATE in fnwpClassListClient
@@ -3216,10 +3216,10 @@ HWND cllCreateClassListView(WPObject *somSelf,
             // now position the frame and the client:
             // 1) frame
             if (!winhRestoreWindowPos(hwndFrame,
-                              HINI_USER,
-                              INIAPP_XWORKPLACE,
-                              INIKEY_WNDPOSCLASSINFO,
-                              SWP_MOVE | SWP_SIZE))
+                                      HINI_USER,
+                                      INIAPP_XWORKPLACE,
+                                      INIKEY_WNDPOSCLASSINFO,
+                                      SWP_MOVE | SWP_SIZE))
                 // INI data not found:
                 WinSetWindowPos(hwndFrame,
                                 HWND_TOP,
@@ -3230,29 +3230,13 @@ HWND cllCreateClassListView(WPObject *somSelf,
             // finally, show window
             WinShowWindow(hwndFrame, TRUE);
 
-            // add the use list item to the object's use list
-            pClientData->clvi.UseItem.type    = USAGE_OPENVIEW;
-            pClientData->clvi.UseItem.pNext   = NULL;
-            memset(&pClientData->clvi.ViewItem.view, 0, sizeof(pClientData->clvi.ViewItem.view));
-            pClientData->clvi.ViewItem.view   = ulView;
-            pClientData->clvi.ViewItem.handle = hwndFrame;
-            if (!_wpAddToObjUseList(somSelf, &(pClientData->clvi.UseItem)))
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "_wpAddToObjUseList failed.");
-
-            // create view title: remove ~ char
-            p = strchr(pszViewTitle, '~');
-            if (p)
-                // found: remove that
-                strcpy(p, p+1);
-
-            // register this view; I've moved this here from WM_CREATE
-            // in cllCreateClassListView because apparently this doesn't
-            // work right if the window has not been fully created
-            _wpRegisterView(somSelf,
+            // add use list item and register view
+            cmnRegisterView(somSelf,
+                            &pClientData->clvi.UseItem,
+                            ulView,
                             hwndFrame,
-                            pszViewTitle); // view title
-            free(pszViewTitle);
+                            cmnGetString(ID_XFSI_OPENCLASSLIST));
+
         }
     }
     CATCH(excpt1) { } END_CATCH();

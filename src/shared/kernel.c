@@ -1584,6 +1584,32 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
             break;
 
             /*
+             *@@ T1M_MENUITEMSELECTED:
+             *      calls wpMenuItemSelected on thread 1.
+             *      This can be posted or sent, we don't care.
+             *      This is used from the XCenter to make sure
+             *      views won't get opened on the XCenter thread.
+             *
+             *      Parameters:
+             *
+             *      --  WPObject* mp1: object on which to
+             *          invoke wpMenuItemSelected.
+             *
+             *      --  ULONG mp2: menu item ID to pass to
+             *          wpMenuItemSelected.
+             *
+             *      Returns the BOOL rc of wpMenuItemSelected.
+             *
+             *@@added V0.9.11 (2001-04-18) [umoeller]
+             */
+
+            case T1M_MENUITEMSELECTED:
+                mrc = (MPARAM)_wpMenuItemSelected((WPObject*)mp1,
+                                                  NULLHANDLE,       // hwndFrame
+                                                  (ULONG)mp2);
+            break;
+
+            /*
              *@@ T1M_DAEMONREADY:
              *      posted by the XWorkplace daemon after it has
              *      successfully created its object window.

@@ -17,8 +17,6 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
---  "run" command from x-button doesn't want parameters
-
 --  Window list widget
     Sometimes 'Hide' -> Switch to another desktop -> 'Restore'
     won't move object, mainly folders are affected. But dragging
@@ -34,28 +32,6 @@ NOT-SO-SERIOUS PROBLEMS
 --  When I activate a VIO window that was maximized before and then minimized, it
     isn't maximized again. That's pretty annoying since I regularly use VIO windows
     that have been enlarged with MODE CON1.
---  Auto-hide
-    XCenter raises in the background if only 'Auto-hide' is
-    selected. Enabeling also 'Always on top' is not the best way:
-    it causes XCenter stay on top until it hides. Other windows
-    or menus can't overlap XCenter.
-
---  objects opened from XCenter folder content menus are running on
-    XCenter thread... reroute to thread 1 instead
-
---  same on my system (concerning the Sound object). It doesn't show any
-    events. It used to work unil I moved MMOS2 from C: to G:. XWPSound
-    still seems to search for MMOS2.INI in C:\MMOS2. I resolved by
-    disabling XWPSound (XWorkplaceSetup->Features->Setup XWorkplace
-    Classes). But of course this is something to be fixed (and I'm glad
-    I'm not the only one...). And yes, MMBASE is set to G:\MMOS2 in
-    CONFIG.SYS.
-
---  Extended System Sounds. Once enabled, if I open the Sound object
-    and select the Enable System Sounds checkbox, when I close and reopen
-    the object the checkbox is unchecked. Also, there are no Events listed
-    in the Define system sounds section. Finally, all my old systems
-    sounds still work the same as before.
 
 --  In the "keyboard" object, looking at the "hotkeys" page I see an object
     associated with "LeftWin" key. This is one of 3 key mappings I defined
@@ -95,10 +71,6 @@ XCenter:
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
-
-sounds:
-    -- "Enable system sounds" on "Sound" page has no immediate effect;
-       however, this didn't work for old WPS page either
 
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated

@@ -346,6 +346,8 @@
 
     #define T1M_OPENOBJECTFROMPTR       (WM_USER+287)    // added V0.9.9 (2001-02-06) [umoeller]
 
+    #define T1M_MENUITEMSELECTED        (WM_USER+288)    // added V0.9.11 (2001-04-18) [umoeller]
+
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);

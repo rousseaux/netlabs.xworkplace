@@ -141,6 +141,9 @@
 // icons used by "diskfree" widget
 #define ID_ICON_DRIVE          160
 #define ID_POINTER_HAND        161
+#define ID_ICON_DRIVE_CD       162
+#define ID_ICON_DRIVE_LAN      163
+#define ID_ICON_DRIVE_NORMAL   164
 
 /******************************************
  * generics                        < 100  *
@@ -1068,6 +1071,8 @@
 
 #define ID_CRD_HEALTHWGT_SETTINGS       3710
 #define ID_CRDI_SETUP_STRING            3711
+
+#define ID_CRD_DISKFREEWGT_SETTINGS     3720
 
 /******************************************
  * XWPString (V0.9.3)       >= 3800       *

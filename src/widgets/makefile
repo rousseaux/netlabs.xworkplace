@@ -5,9 +5,15 @@
 #       the Developer's Toolkit, and the DDK.
 #
 #       This compiles the widget source files into the bin\widgets
-#       object files directory. Note that we use the VAC subsystem
-#       libraries here to reduce DLL sizes. As a result, the
-#       widgets must be single-threaded.
+#       object files directory.
+#
+#       Notes:
+#
+#       1)  We use the VAC subsystem libraries here to reduce DLL
+#           sizes. As a result, the widgets must be single-threaded
+#           and import necessary functions from XFLDR.DLL.
+#
+#       2)
 #
 #       All the makefiles have been restructured with V0.9.0.
 #

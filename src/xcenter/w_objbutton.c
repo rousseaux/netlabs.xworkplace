@@ -994,6 +994,7 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *      If this returns FALSE, the parent winproc is called.
  *
  *@@changed V0.9.9 (2001-03-07) [umoeller]: added "run" to X-button
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: now opening objects on thread 1 always
  */
 
 BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
@@ -1093,7 +1094,17 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 
                     if (pObject)    // defaults to NULL
                     {
-                        _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
+                        // _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
+                        // no.... we're running on the XCenter thread here
+                        // and we don't want the objects to open on the XCenter
+                        // thread because if the XCenter is closed, all those
+                        // views will go away (because the thread's msgq is
+                        // destroyed)... redirect this to thread 1
+                        // V0.9.11 (2001-04-18) [umoeller]
+                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                               (MPARAM)pObject,
+                                               (MPARAM)OPEN_DEFAULT);
+
                         fProcessed = TRUE;
                     }
                 } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
@@ -1107,9 +1118,15 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                     {
                         // invoke the command on the object...
                         // this is probably "open" or "help"
-                        fProcessed = _wpMenuItemSelected(pPrivate->pobjButton,
+
+                        // but do this on thread 1 also V0.9.11 (2001-04-18) [umoeller]
+                        krnPostThread1ObjectMsg(T1M_MENUITEMSELECTED,
+                                                (MPARAM)pPrivate->pobjButton,
+                                                (MPARAM)ulMenuId);
+                        fProcessed = TRUE;
+                        /* fProcessed = _wpMenuItemSelected(pPrivate->pobjButton,
                                                          NULLHANDLE,     // hwndFrame
-                                                         ulMenuId);
+                                                         ulMenuId); */
                     }
 
             }
@@ -1213,7 +1230,7 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         hwndWidgetSubmenu
                             = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
                                                    MIT_END,
-                                                   "Object button widget",
+                                                   "Object button widget", // @@todo NLS
                                                    2000,
                                                    pPrivate->pWidget->hwndContextMenu);
                         if (hwndWidgetSubmenu)

@@ -5,6 +5,9 @@
     (C) 2001 Ulrich M”ller
  */
 
+call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
+call SysLoadFuncs
+
 parse arg inifile
 if inifile == "" then do
     Say "freshini.cmd (C) 2001 Ulrich M”ller"

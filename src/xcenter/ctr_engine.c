@@ -2731,6 +2731,7 @@ VOID ClientPresParamChanged(HWND hwnd,
  *      it's auto-hidden.
  *
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added sizing border
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: with auto-hide, now putting XCenter on z-order top
  */
 
 MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
@@ -2773,7 +2774,8 @@ MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
     if (pXCenterData->fFrameAutoHidden)
     {
         ctrpReformat(pXCenterData,
-                     0);        // just show
+                     XFMF_RESURFACE);        // show and put on top
+                                // V0.9.11 (2001-04-18) [umoeller]
     }
 
     return ((MPARAM)TRUE);      // message processed
@@ -4776,7 +4778,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
  *@@ ctrp_fntXCenter:
  *      the XCenter thread. One of these gets created
  *      by ctrpCreateXCenterView for each XCenter that
- *      is opened and keeps running while the XCenter
+ *      is opened and KEEPS RUNNING while the XCenter
  *      is open. The XCenter frame posts WM_QUIT when
  *      the XCenter is closed.
  *
@@ -4786,7 +4788,9 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
  *
  *      ctrpCreateXCenterView waits on XCENTERWINDATA.hevRunning
  *      and will then expect the XCenter's frame window in
- *      XCENTERWINDATA.Globals.hwndFrame.
+ *      XCENTERWINDATA.Globals.hwndFrame so it can return to
+ *      XCenter::wpOpen once the XCenter has been created
+ *      (while this thread keeps running after that).
  *
  *      All this is nicely complex.
  *
@@ -4820,6 +4824,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
             pXCenterData->tidXCenter = ptiMyself->tid;
             _tid = ptiMyself->tid;          // moved this here V0.9.9 (2001-04-04) [umoeller]
+
+            // initialize various data:
 
             ctrpLoadClasses();
                     // matching "unload" is in WM_DESTROY of the client
@@ -4931,7 +4937,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
                 // add the use list item to the object's use list;
                 // this struct has been zeroed above
-                pXCenterData->UseItem.type    = USAGE_OPENVIEW;
+                /* pXCenterData->UseItem.type    = USAGE_OPENVIEW;
                 // pXCenterData->ViewItem.view   = pXCenterData->ulView;
                 pXCenterData->ViewItem.handle = pGlobals->hwndFrame;
                 if (!_wpAddToObjUseList(pXCenterData->somSelf,
@@ -4942,6 +4948,14 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 _wpRegisterView(pXCenterData->somSelf,
                                 pGlobals->hwndFrame,
                                 "XCenter"); // view title
+                                */
+
+                cmnRegisterView(pXCenterData->somSelf,
+                                &pXCenterData->UseItem,
+                                pXCenterData->ViewItem.view,
+                                            // has been set already, so we pass this in
+                                pGlobals->hwndFrame,
+                                "XCenter");
 
                 // subclass the frame AGAIN (the WPS has subclassed it
                 // with wpRegisterView)
@@ -5080,7 +5094,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             //      so at this point, the XCenter might not have been
             //      destroyed.
             // 2)   By contrast, our WM_DESTROY in fnwpFrame explicitly
-            //      posts QM_QUIT too. At that point, the XCenter is
+            //      posts WM_QUIT too. At that point, the XCenter is
             //      already destroyed.
             // 3)   The XCenter crashed. At that point, the window still
             //      exists.

@@ -1249,8 +1249,8 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                     // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
                     CHAR            szIniKey[100];
-                    PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_CDPLAYERVIEW)) , // pszCDPlayerView
-                                    p = NULL;
+                    /* PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_CDPLAYERVIEW)) , // pszCDPlayerView
+                                    p = NULL; */
 
                     // subclass frame
                     WinSetWindowPtr(hwndFrame, QWL_USER, pWinData);
@@ -1258,7 +1258,13 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                                                                  fnwpCDPlayerFrame);
 
                     // add the use list item to the object's use list
-                    pWinData->UseItem.type    = USAGE_OPENVIEW;
+                    cmnRegisterView(somSelf,
+                                    &pWinData->UseItem,
+                                    ulView,
+                                    hwndFrame,
+                                    cmnGetString(ID_XSSI_CDPLAYERVIEW));
+
+                    /* pWinData->UseItem.type    = USAGE_OPENVIEW;
                     pWinData->UseItem.pNext   = NULL;
                     pWinData->ViewItem.view   = ulView;
                     pWinData->ViewItem.handle = hwndFrame;
@@ -1278,7 +1284,7 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                     _wpRegisterView(somSelf,
                                     hwndFrame,
                                     pszViewTitle); // view title
-                    free(pszViewTitle);
+                    free(pszViewTitle); */
 
                     _hwndOpenView = hwndClient;
 

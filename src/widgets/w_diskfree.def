@@ -17,17 +17,16 @@
 ;
 
 LIBRARY DISKFREE INITGLOBAL TERMGLOBAL
-Description 'XCenter diskfree plugin DLL'
+Description '@#Ulrich M”ller:0.9.11#@ XCenter diskfree plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
 
 CODE              LOADONCALL
 
-STACKSIZE         32000
-
 EXPORTS
-    WgtInitModule      @1
-    WgtUnInitModule    @2
+    WgtInitModule       @1
+    WgtUnInitModule     @2
+    WgtQueryVersion     @3
 
 

@@ -183,6 +183,7 @@ PMPRINTF_LIB =
 !endif
 
 # The following macros contains the .OBJ files for the XCenter plugins.
+DISKFREEOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_diskfree.obj $(PMPRINTF_LIB)
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
 MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
 SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_sentinel.obj $(PMPRINTF_LIB) src\widgets\win32k.lib
@@ -410,6 +411,7 @@ nls:
 
 link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
+      $(XWPRUNNING)\plugins\xcenter\diskfree.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
       $(XWPRUNNING)\plugins\xcenter\sentinel.dll \
@@ -511,6 +513,35 @@ src\widgets\winlist.def: include\bldlevel.h
 $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def $(WINLISTOBJS)
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
+
+#
+# Linking DISKFREE.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\diskfree.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+
+# update DEF file if buildlevel has changed
+src\widgets\w_diskfree.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter diskfree plugin DLL"
+
+$(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\w_diskfree.def @<<link.tmp
+$(DISKFREEOBJS)
+<<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif

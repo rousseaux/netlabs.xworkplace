@@ -3159,6 +3159,64 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
  ********************************************************************/
 
 /*
+ *@@ cmnRegisterView:
+ *      helper for the typical wpAddToObjUseList/wpRegisterView
+ *      sequence.
+ *
+ *      With pUseItem, pass in a USEITEM structure which must be
+ *      immediately followed by a VIEWITEM structure. The buffer
+ *      pointed to by pUseItem must be valid while the view exists,
+ *      so you best store this in the view's window words somewhere.
+ *
+ *      This function then calls wpRegisterView with the specified
+ *      frame window handle and view title. Tilde chars (~) are
+ *      removed from the view title so you can easily use the
+ *      menu item's text.
+ *
+ *@@added V0.9.11 (2001-04-18) [umoeller]
+ */
+
+BOOL cmnRegisterView(WPObject *somSelf,
+                     PUSEITEM pUseItem,     // in: USEITEM, immediately followed by VIEWITEM
+                     ULONG ulViewID,        // in: view ID == menu item ID
+                     HWND hwndFrame,        // in: frame window handle of new view (must be WC_FRAME)
+                     const char *pcszViewTitle) // in: view title for wpRegisterView (tilde chars are removed)
+{
+    BOOL        brc = FALSE;
+    PSZ         pszViewTitle = strdup(pcszViewTitle),
+                p = 0;
+
+    if (pszViewTitle)
+    {
+        PVIEWITEM   pViewItem = (PVIEWITEM)(((PBYTE)pUseItem) + sizeof(USEITEM));
+        // add the use list item to the object's use list
+        pUseItem->type    = USAGE_OPENVIEW;
+        pUseItem->pNext   = NULL;
+        memset(pViewItem, 0, sizeof(VIEWITEM));
+        pViewItem->view   = ulViewID;
+        pViewItem->handle = hwndFrame;
+        if (!_wpAddToObjUseList(somSelf, pUseItem))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_wpAddToObjUseList failed.");
+        else
+        {
+            // create view title: remove ~ char
+            p = strchr(pszViewTitle, '~');
+            if (p)
+                // found: remove that
+                strcpy(p, p+1);
+
+            brc = _wpRegisterView(somSelf,
+                                  hwndFrame,
+                                  pszViewTitle); // view title
+        }
+        free(pszViewTitle);
+    }
+
+    return (brc);
+}
+
+/*
  *@@ cmnPlaySystemSound:
  *      this posts a msg to the XFolder Media thread to
  *      have it play a system sound. This does sufficient
@@ -3408,10 +3466,65 @@ const char *G_apcszExtensions[]
       };
 
 /*
+ *@@ StripParams:
+ *      returns a new string with the executable
+ *      name only.
+ *
+ *      Examples:
+ *
+ *      --  e c:\config.sys will return "e".
+ *
+ *      --  "my program" param will return "my program"
+ *          (without quotes).
+ *
+ *@@added V0.9.11 (2001-04-18) [umoeller]
+ */
+
+PSZ StripParams(PSZ pcszCommand,
+                PSZ *ppParams)      // out: ptr to first char of params
+{
+    PSZ pszReturn = NULL;
+
+    if (pcszCommand && strlen(pcszCommand))
+    {
+        // parse the command line to check if we have
+        // parameters
+        if (*pcszCommand == '\"')
+        {
+            PSZ pSecondQuote = strchr(pcszCommand + 1, '\"');
+            if (pSecondQuote)
+            {
+                pszReturn = strhSubstr(pcszCommand + 1, pSecondQuote);
+                if (ppParams)
+                    *ppParams = pSecondQuote + 1;
+            }
+        }
+        else
+        {
+            // no quote first:
+            // find first space --> parameters
+            PSZ pSpace = strchr(pcszCommand, ' ');
+            if (pSpace)
+            {
+                pszReturn = strhSubstr(pcszCommand, pSpace);
+                if (ppParams)
+                    *ppParams = pSpace + 1;
+            }
+        }
+
+        if (!pszReturn)
+            pszReturn = strdup(pcszCommand);
+    }
+
+    return (pszReturn);
+}
+
+/*
  *@@ fnwpRunCommandLine:
  *      window proc for "run" dialog.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed parameters
  */
 
 MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3436,16 +3549,24 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                         CHAR szExecutable[CCHMAXPATH];
                         if (pszCommand)
                         {
-                            APIRET arc = doshFindExecutable(pszCommand,
-                                                            szExecutable,
-                                                            sizeof(szExecutable),
-                                                            G_apcszExtensions,
-                                                            ARRAYITEMCOUNT(G_apcszExtensions));
-                            if (!arc)
+                            // we got a command:
+                            PSZ pszExec = StripParams(pszCommand,
+                                                      NULL);
+                            if (pszExec)
                             {
-                                strupr(szExecutable);
-                                fOK = TRUE;
+                                // @@todo doesn't work with qualified execs
+                                if (!doshFindExecutable(pszExec,
+                                                        szExecutable,
+                                                        sizeof(szExecutable),
+                                                        G_apcszExtensions,
+                                                        ARRAYITEMCOUNT(G_apcszExtensions)))
+                                {
+                                    strupr(szExecutable);
+                                    fOK = TRUE;
+                                }
+                                free(pszExec);
                             }
+
                             free(pszCommand);
                         }
 
@@ -3476,6 +3597,8 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *      line using winhStartApp.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed parameters
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed entry field lengths
  */
 
 VOID cmnRunCommandLine(HWND hwndOwner,
@@ -3489,22 +3612,25 @@ VOID cmnRunCommandLine(HWND hwndOwner,
                               NULL);
     if (hwndDlg)
     {
+        HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
+                hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
+        winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
+        winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
+
         cmnSetControlsFont(hwndDlg, 1, 10000);
         WinEnableControl(hwndDlg, DID_OK, FALSE);
         winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
         if (WinProcessDlg(hwndDlg) == DID_OK)
         {
-            PSZ pszCommand = winhQueryWindowText(WinWindowFromID(hwndDlg,
-                                                                 ID_XFD_RUN_COMMAND));
-            PSZ pszStartup = winhQueryWindowText(WinWindowFromID(hwndDlg,
-                                                                 ID_XFD_RUN_STARTUPDIR));
+            PSZ pszCommand = winhQueryWindowText(hwndCommand);
+            PSZ pszStartup = winhQueryWindowText(hwndStartup);
 
             if (pszCommand)
             {
-                PSZ     p;
-                const char *pParams = 0;
                 APIRET  arc = NO_ERROR;
                 CHAR    szExecutable[CCHMAXPATH];
+                PSZ     pszExec,
+                        pParams = NULL;
 
                 if (!pszStartup)
                 {
@@ -3512,19 +3638,19 @@ VOID cmnRunCommandLine(HWND hwndOwner,
                     *pszStartup = doshQueryBootDrive();
                 }
 
-                p = strchr(pszCommand, ' ');
-                if (p)
+                pszExec = StripParams(pszCommand,
+                                      &pParams);
+                if (!pszExec)
+                    arc = ERROR_INVALID_PARAMETER;
+                else
                 {
-                    // we have arguments:
-                    *p = 0;             // terminate executable
-                    pParams = p + 1;
+                    arc = doshFindExecutable(pszExec,
+                                             szExecutable,
+                                             sizeof(szExecutable),
+                                             G_apcszExtensions,
+                                             ARRAYITEMCOUNT(G_apcszExtensions));
+                    free(pszExec);
                 }
-
-                arc = doshFindExecutable(pszCommand,
-                                         szExecutable,
-                                         sizeof(szExecutable),
-                                         G_apcszExtensions,
-                                         ARRAYITEMCOUNT(G_apcszExtensions));
 
                 if (arc != NO_ERROR)
                 {
@@ -3541,9 +3667,7 @@ VOID cmnRunCommandLine(HWND hwndOwner,
                 else
                 {
                     PROGDETAILS pd;
-
                     ULONG   ulDosAppType;
-
                     memset(&pd, 0, sizeof(pd));
 
                     winhQueryAppType(szExecutable,

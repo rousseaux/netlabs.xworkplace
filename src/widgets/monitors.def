@@ -17,7 +17,7 @@
 ;
 
 LIBRARY MONITORS INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.10#@ XCenter monitors plugin DLL'
+Description '@#Ulrich M”ller:0.9.11#@ XCenter monitors plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED

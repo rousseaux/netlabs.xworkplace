@@ -1809,7 +1809,7 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
                     // add the use list item to the object's use list;
                     // this struct has been zeroed above
-                    pData->UseItem.type    = USAGE_OPENVIEW;
+                    /* pData->UseItem.type    = USAGE_OPENVIEW;
                     pData->ViewItem.view   = ulView;
                     pData->ViewItem.handle = hwndNewView;
                     if (!_wpAddToObjUseList(somSelf,
@@ -1820,6 +1820,13 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                     _wpRegisterView(somSelf,
                                     hwndNewView,
                                     cmnGetString(ID_XSSI_FONTSAMPLEVIEW)) ; // @@todo // pszFontSampleView
+                       */
+
+                    cmnRegisterView(somSelf,
+                                    &pData->UseItem,
+                                    ulView,
+                                    hwndNewView,
+                                    cmnGetString(ID_XSSI_FONTSAMPLEVIEW));
 
                     winhRestoreWindowPos(hwndNewView,
                                          HINI_USER,
