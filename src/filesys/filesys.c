@@ -344,106 +344,6 @@ BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, PCSZ psz)
     return brc;
 }
 
-/*
- *@@ fsysQueryRefreshFlags:
- *
- *@@added V0.9.16 (2001-10-28) [umoeller]
- */
-
-ULONG fsysQueryRefreshFlags(WPFileSystem *somSelf)
-{
-    static xfTD_wpQueryRefreshFlags pwpQueryRefreshFlags = NULL;
-
-    if (!pwpQueryRefreshFlags)
-        pwpQueryRefreshFlags = (xfTD_wpQueryRefreshFlags)wpshResolveFor(
-                                                 somSelf,
-                                                 NULL, // use somSelf's class
-                                                 "wpQueryRefreshFlags");
-    if (pwpQueryRefreshFlags)
-        return (pwpQueryRefreshFlags(somSelf));
-
-    return 0;
-}
-
-/*
- *@@ fsysSetRefreshFlags:
- *
- *@@added V0.9.16 (2001-10-28) [umoeller]
- */
-
-BOOL fsysSetRefreshFlags(WPFileSystem *somSelf, ULONG ulRefreshFlags)
-{
-    static xfTD_wpSetRefreshFlags pwpSetRefreshFlags = NULL;
-
-    if (!pwpSetRefreshFlags)
-        pwpSetRefreshFlags = (xfTD_wpSetRefreshFlags)wpshResolveFor(
-                                                 somSelf,
-                                                 NULL, // use somSelf's class
-                                                 "wpSetRefreshFlags");
-    if (pwpSetRefreshFlags)
-        return (pwpSetRefreshFlags(somSelf, ulRefreshFlags));
-
-    return FALSE;
-}
-
-/*
- *@@ fsysRefreshFSInfo:
- *      calls the undocumented WPFileSystem::wpRefreshFSInfo
- *      method.
- *
- *      ONLY CALL THIS ON FOLDER OBJECTS. On data files, ONLY
- *      call _wpRefresh, which properly calls our override.
- *      THIS NUKES STANDARD ICONS ON DATA FILE OBJECTS.
- *
- *@@added V0.9.16 (2001-10-28) [umoeller]
- */
-
-BOOL fsysRefreshFSInfo(WPFileSystem *somSelf,
-                       PFILEFINDBUF3 pfb3)      // in: new file info or NULL
-{
-    BOOL brc = FALSE;
-
-    xfTD_wpRefreshFSInfo pwpRefreshFSInfo;
-
-    if (pwpRefreshFSInfo = (xfTD_wpRefreshFSInfo)wpshResolveFor(
-                                                 somSelf,
-                                                 NULL, // use somSelf's class
-                                                 "wpRefreshFSInfo"))
-        brc = pwpRefreshFSInfo(somSelf,
-                               NULLHANDLE,
-                               pfb3,
-                               TRUE);
-
-    return brc;
-}
-
-/* ******************************************************************
- *
- *   Drive data
- *
- ********************************************************************/
-
-/*
- *@@ fsysQueryDriveData:
- *
- *@@added V0.9.16 (2002-01-01) [umoeller]
- */
-
-PWPSDRIVEDATA fsysQueryDriveData(WPFileSystem *somSelf)
-{
-    PWPSDRIVEDATA pData = NULL;
-
-    xfTD_wpQueryDriveData pwpQueryDriveData;
-
-    if (pwpQueryDriveData = (xfTD_wpQueryDriveData)wpshResolveFor(
-                                                 somSelf,
-                                                 NULL, // use somSelf's class
-                                                 "wpQueryDriveData"))
-        pData = pwpQueryDriveData(somSelf);
-
-    return (pData);
-}
-
 /* ******************************************************************
  *
  *   Populate / refresh
@@ -1078,7 +978,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         // sem was missing, this produced "treeInsertFailed",
         // and duplicate awakes for the same object sometimes
         // V0.9.18 (2002-02-06) [umoeller]
-        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             // alright, apparently we got something:
             // check if it is already awake (using the
@@ -1109,11 +1009,16 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                 //       DIRTYBIT turned on, update the view with the current contents of the
                 //       object and turn its DIRTYBIT off.
 
+                // Note, these two wpSet/QueryRefreshFlags methods have always been in
+                // the toolkit headers, but are only documented with the Warp 4 toolkit.
+                // We used to have wrappers around them, but this wasn't necessary and
+                // has thus been removed V0.9.20 (2002-07-25) [umoeller].
+
                 // Now, since the objects disappear on refresh, I assume
                 // we need to set the FOUNDBIT to on; since we are refreshing
                 // here already, we can set DIRTYBIT to off as well.
-                fsysSetRefreshFlags(pAwake,
-                                    (fsysQueryRefreshFlags(pAwake)
+                _wpSetRefreshFlags(pAwake,
+                                   (_wpQueryRefreshFlags(pAwake)
                                         & ~DIRTYBIT)
                                         | FOUNDBIT);
 
@@ -1137,13 +1042,9 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                            3 * (sizeof(FDATE) + sizeof(FTIME))))
                 {
                     // object changed: go refresh it
-                    if (_somIsA(pAwake, _WPFolder))
-                        fsysRefreshFSInfo(pAwake, pfb3);
-                    else
-                        // regular fs object: call wpRefresh directly,
-                        // which we might have replaced if icon replacements
-                        // are on
-                        _wpRefresh(pAwake, NULLHANDLE, pfb3);
+                    _wpRefreshFSInfo(pAwake, NULLHANDLE, pfb3, TRUE);
+                            // safe to call this method now since we have managed
+                            // to override it V0.9.20 (2002-07-25) [umoeller]
                 }
             }
             else
@@ -1292,7 +1193,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                                                  (ULONG)&awfs))
                     {
                         #ifdef DEBUG_TURBOFOLDERS
-                            ULONG fl = fsysQueryRefreshFlags(pAwake);
+                            ULONG fl = _wpQueryRefreshFlags(pAwake);
                             _Pmpf(("refresh flags for new \"%s\": 0x%lX (%s%s)",
                                 pszRealName,
                                 fl,
@@ -1304,7 +1205,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                         // so turn on the FOUNDBIT but leave DIRTYBIT
                         // off
                         // V0.9.19 (2002-04-14) [umoeller]
-                        fsysSetRefreshFlags(pAwake, FOUNDBIT);
+                        _wpSetRefreshFlags(pAwake, FOUNDBIT);
                     }
                 }
 
@@ -1318,7 +1219,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     return (pAwake);
 }
@@ -1859,7 +1760,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
             {
                 XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
 
-                ULONG flRefresh = fsysQueryRefreshFlags(somSelf);
+                ULONG flRefresh = _wpQueryRefreshFlags(somSelf);
 
                 PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
                                                     + FIELDOFFSET(FILEFINDBUF3,
@@ -1875,7 +1776,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                 HPOINTER hptrNew = NULLHANDLE;
 
                 if (flRefresh & 0x20000000)
-                    fsysSetRefreshFlags(somSelf, flRefresh & ~0x20000000);
+                    _wpSetRefreshFlags(somSelf, flRefresh & ~0x20000000);
 
                 // set the instance variable for wpCnrRefreshDetails to
                 // 0 so that we can count pending changes... see

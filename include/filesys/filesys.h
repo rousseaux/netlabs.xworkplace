@@ -46,45 +46,6 @@
 
         BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, PCSZ psz);
 
-        /*
-         * xfTP_wpQueryRefreshFlags:
-         *      prototype for WPFileSystem::wpQueryRefreshFlags.
-         *
-         *      See the Warp 4 toolkit docs.
-         */
-
-        typedef ULONG _System xfTP_wpQueryRefreshFlags(WPFileSystem *somSelf);
-        typedef xfTP_wpQueryRefreshFlags *xfTD_wpQueryRefreshFlags;
-
-        ULONG fsysQueryRefreshFlags(WPFileSystem *somSelf);
-
-        /*
-         * xfTP_wpSetRefreshFlags:
-         *      prototype for WPFileSystem::wpSetRefreshFlags.
-         *
-         *      See the Warp 4 toolkit docs.
-         */
-
-        typedef BOOL _System xfTP_wpSetRefreshFlags(WPFileSystem *somSelf,
-                                                    ULONG ulRefreshFlags);
-        typedef xfTP_wpSetRefreshFlags *xfTD_wpSetRefreshFlags;
-
-        BOOL fsysSetRefreshFlags(WPFileSystem *somSelf, ULONG ulRefreshFlags);
-
-        /*
-         * xfTP_wpRefreshFSInfo:
-         *      prototype for WPFileSystem::wpRefreshFSInfo.
-         *
-         */
-
-        typedef BOOL _System xfTP_wpRefreshFSInfo(WPFileSystem *somSelf,
-                                                  ULONG ulUnknown,
-                                                  PVOID pvFileBuf,
-                                                  BOOL fRefreshIcon);
-        typedef xfTP_wpRefreshFSInfo *xfTD_wpRefreshFSInfo;
-
-        BOOL fsysRefreshFSInfo(WPFileSystem *somSelf, PFILEFINDBUF3 pfb3);
-
         #ifndef DIRTYBIT
             #define DIRTYBIT    0x80000000
         #endif
@@ -129,11 +90,6 @@
         } WPSDRIVEDATA, *PWPSDRIVEDATA;
 
         #pragma pack()
-
-        typedef PWPSDRIVEDATA _System xfTP_wpQueryDriveData(WPFileSystem *somSelf);
-        typedef xfTP_wpQueryDriveData *xfTD_wpQueryDriveData;
-
-        PWPSDRIVEDATA fsysQueryDriveData(WPFileSystem *somSelf);
 
     #endif
 

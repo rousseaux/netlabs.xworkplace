@@ -1636,7 +1636,7 @@ static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object ha
  *      removes somSelf from all associations, if
  *      present.
  *
- *      Gets called from XWPProgram::xwpDestroyStorage,
+ *      Gets called from XWPProgram::wpDestroyObject,
  *      i.e. when a WPProgram is physically destroyed.
  *
  *      Returns the no. of associations removed.

@@ -31,11 +31,50 @@
 
     /* ******************************************************************
      *
-     *   Global variables
+     *   IBM folder instance data
      *
      ********************************************************************/
 
-    // extern PFNWP        G_pfnwpFolderContentMenuOriginal;
+    #pragma pack(1)                 // SOM packs structures, apparently
+
+    /*
+     *@@ IBMFOLDERDATA:
+     *      WPFolder instance data structure, as far as I
+     *      have been able to decode it. See
+     *      XFldObject::wpInitData where we get a pointer
+     *      to this.
+     *
+     *      WARNING: This is the result of the testing done
+     *      on eComStation, i.e. the MCP1 code level of the
+     *      WPS. I have not tested whether the struct ordering
+     *      is the same on all older versions of OS/2, nor can
+     *      I guarantee that the ordering will stay the same
+     *      in the future (even though it is unlikely that
+     *      anyone at IBM is capable of changing this structure
+     *      any more in the first place).
+     *
+     *      There are many more fields coming after this, but
+     *      right now I only need those.
+     *
+     *@@added V0.9.20 (2002-07-25) [umoeller]
+     */
+
+    typedef struct _IBMFOLDERDATA
+    {
+        // all these are also SOM readonly attributes and appear
+        // as _get_XXX in the WPS class list method table
+        WPObject        *FirstObj,              // first object of contents linked list;
+                                                // each object has a pobjNext attribute
+                        *LastObj;               // last object of contents linked list
+        ULONG           hmtxOneFindAtATime;     // whatever this is
+        ULONG           retaddrFindSemOwner;    // whatever this is
+        ULONG           hevFillFolder;          // whatever this is
+
+        // many more fields following apparently, not decoded yet
+
+    } IBMFOLDERDATA, *PIBMFOLDERDATA;
+
+    #pragma pack()
 
     /* ******************************************************************
      *
@@ -364,79 +403,11 @@
 
     #ifdef SOM_WPFolder_h
 
-        /*
-         * xfTP_wpRequestFolderMutexSem:
-         *      prototype for WPFolder::wpRequestFolderMutexSem.
-         *
-         *      See fdrRequestFolderMutexSem.
-         *
-         *      This returns 0 if the semaphore was successfully obtained.
-         */
-
-        typedef ULONG _System xfTP_wpRequestFolderMutexSem(WPFolder *somSelf,
-                                                           ULONG ulTimeout);
-        typedef xfTP_wpRequestFolderMutexSem *xfTD_wpRequestFolderMutexSem;
-
-        /*
-         * xfTP_wpReleaseFolderMutexSem:
-         *      prototype for WPFolder::wpReleaseFolderMutexSem.
-         *
-         *      This is the reverse to WPFolder::wpRequestFolderMutexSem.
-         */
-
-        typedef ULONG _System xfTP_wpReleaseFolderMutexSem(WPFolder *somSelf);
-        typedef xfTP_wpReleaseFolderMutexSem *xfTD_wpReleaseFolderMutexSem;
-
-        typedef SOMAny* _System xfTP_wpQueryRWMonitorObject(WPFolder *somSelf);
-        typedef xfTP_wpQueryRWMonitorObject *xfTD_wpQueryRWMonitorObject;
-
         typedef ULONG _System xfTP_RequestWrite(SOMAny *somSelf);
         typedef xfTP_RequestWrite *xfTD_RequestWrite;
 
         typedef ULONG _System xfTP_ReleaseWrite(SOMAny *somSelf);
         typedef xfTP_ReleaseWrite *xfTD_ReleaseWrite;
-
-        /*
-         * xfTP_wpRequestFindMutexSem:
-         *      prototype for WPFolder::wpRequestFindMutexSem.
-         *
-         *      See fdrRequestFindMutexSem.
-         *
-         *      This returns 0 if the semaphore was successfully obtained.
-         */
-
-        typedef ULONG _System xfTP_wpRequestFindMutexSem(WPFolder *somSelf,
-                                                         ULONG ulTimeout);
-        typedef xfTP_wpRequestFindMutexSem *xfTD_wpRequestFindMutexSem;
-
-        /*
-         * xfTP_wpReleaseFindMutexSem:
-         *      prototype for WPFolder::wpReleaseFindMutexSem.
-         *
-         *      This is the reverse to WPFolder::wpRequestFindMutexSem.
-         */
-
-        typedef ULONG _System xfTP_wpReleaseFindMutexSem(WPFolder *somSelf);
-        typedef xfTP_wpReleaseFindMutexSem *xfTD_wpReleaseFindMutexSem;
-
-        /*
-         *@@ xfTP_wpFSNotifyFolder:
-         *      prototype for WPFolder::wpFSNotifyFolder.
-         *
-         *      This undocumented method normally gets
-         *      called when auto-refresh notifications are
-         *      processed. This method apparently stores
-         *      a new notification for the folder and
-         *      auto-ages it. This is probably where
-         *      the "Ager thread" comes in that is briefly
-         *      described in the WPS programming reference.
-         *
-         *@@added V0.9.9 (2001-01-31) [umoeller]
-         */
-
-        typedef VOID _System xfTP_wpFSNotifyFolder(WPFolder *somSelf,
-                                                   PVOID pvInfo);
-        typedef xfTP_wpFSNotifyFolder *xfTD_wpFSNotifyFolder;
 
         /*
          * xfTP_wpFlushNotifications:
@@ -476,19 +447,9 @@
     #endif
 
     // wrappers
-    ULONG fdrRequestFolderMutexSem(WPFolder *somSelf,
-                                   ULONG ulTimeout);
-
-    ULONG fdrReleaseFolderMutexSem(WPFolder *somSelf);
-
     ULONG fdrRequestFolderWriteMutexSem(WPFolder *somSelf);
 
     ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf);
-
-    ULONG fdrRequestFindMutexSem(WPFolder *somSelf,
-                                 ULONG ulTimeout);
-
-    ULONG fdrReleaseFindMutexSem(WPFolder *somSelf);
 
     ULONG fdrFlushNotifications(WPFolder *somSelf);
 
@@ -535,18 +496,6 @@
 
     BOOL fdrDeleteFromContent(WPFolder *somSelf,
                               WPObject *pObject);
-
-    /*
-     *@@ xfTP_wpQueryFldrFilter:
-     *      returns the WPFilter object for the given folder
-     *      or NULL if there's none (i.e. no filtering is
-     *      to be applied).
-     *
-     *@@added V0.9.16 (2002-01-05) [umoeller]
-     */
-
-    typedef WPObject* _System xfTP_wpQueryFldrFilter(WPFolder *somSelf);
-    typedef xfTP_wpQueryFldrFilter *xfTD_wpQueryFldrFilter;
 
     /*
      *@@ xfTP_wpMatchesFilter:

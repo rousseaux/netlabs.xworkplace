@@ -296,7 +296,7 @@ APIRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task li
 
         if (pSourceFolder)
         {
-            if (!(fSourceLocked = !fdrRequestFolderMutexSem(pSourceFolder, 5000)))
+            if (!(fSourceLocked = !_wpRequestFolderMutexSem(pSourceFolder, 5000)))
                 frc = FOPSERR_LOCK_FAILED;
         }
 
@@ -330,7 +330,7 @@ APIRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task li
         {
             // error
             if (fSourceLocked)
-                fdrReleaseFolderMutexSem(pSourceFolder);
+                _wpReleaseFolderMutexSem(pSourceFolder);
         }
     }
 
@@ -530,7 +530,7 @@ APIRET fopsStartTask(HFILETASKLIST hftl,
     // can start working
     if (pftl->fSourceLocked)
     {
-        fdrReleaseFolderMutexSem(pftl->pSourceFolder);
+        _wpReleaseFolderMutexSem(pftl->pSourceFolder);
         pftl->fSourceLocked = FALSE;
     }
 
@@ -782,7 +782,7 @@ APIRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
  *      in order not to pollute DELDIR.
  *
  *      Called directly from fopsFileThreadSneakyDeleteFolderContents,
- *      if the file is not awake, or by XFldDataFile::xwpDestroyStorage
+ *      if the file is not awake, or by XFldDataFile::wpDestroyObject
  *      if it is.
  *
  *@@added V0.9.20 (2002-07-16) [umoeller]
@@ -846,11 +846,11 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
     CHAR        szFullPath[2*CCHMAXPATH];
     HDIR        hdirFindHandle = HDIR_CREATE;
 
-    BOOL    fFolderSemOwned = FALSE;
+    BOOL        fFolderLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (!(fFolderSemOwned = !fdrRequestFolderMutexSem(pFolder, 5000)))
+        if (!(fFolderLocked = !_wpRequestFolderMutexSem(pFolder, 5000)))
             frc = FOPSERR_REQUESTFOLDERMUTEX_FAILED;
         else
         {
@@ -984,8 +984,8 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
     if (hdirFindHandle != HDIR_CREATE)
         DosFindClose(hdirFindHandle);
 
-    if (fFolderSemOwned)
-        fdrReleaseFolderMutexSem(pFolder);
+    if (fFolderLocked)
+        _wpReleaseFolderMutexSem(pFolder);
 
     return frc;
 }
@@ -1723,12 +1723,12 @@ BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl)
     {
         if (pftl->fTargetLocked)
         {
-            fdrReleaseFolderMutexSem(pftl->pTargetFolder);
+            _wpReleaseFolderMutexSem(pftl->pTargetFolder);
             pftl->fTargetLocked = FALSE;
         }
         if (pftl->fSourceLocked)
         {
-            fdrReleaseFolderMutexSem(pftl->pSourceFolder);
+            _wpReleaseFolderMutexSem(pftl->pSourceFolder);
             pftl->fSourceLocked = FALSE;
         }
         lstClear(&pftl->llObjects);       // frees items automatically

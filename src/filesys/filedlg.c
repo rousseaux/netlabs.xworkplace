@@ -1011,14 +1011,14 @@ static VOID BuildDisksList(WPFolder *pDrivesFolder,
 
         TRY_LOUD(excpt1)
         {
-            if (fFolderLocked = !fdrRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT))
+            if (fFolderLocked = !_wpRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT))
             {
                 WPObject *pObject;
                 // 1) count objects
                 // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (   pObject = _wpQueryContent(pDrivesFolder, NULL, QC_FIRST);
                         (pObject);
-                        pObject = *objGetNextObjPointer(pObject)
+                        pObject = *__get_pobjNext(pObject)
                     )
                 {
                     if (_somIsA(pObject, _WPDisk))
@@ -1029,7 +1029,7 @@ static VOID BuildDisksList(WPFolder *pDrivesFolder,
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
-            fdrReleaseFolderMutexSem(pDrivesFolder);
+            _wpReleaseFolderMutexSem(pDrivesFolder);
     }
 }
 
@@ -1071,8 +1071,8 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
         // we don't have a first child already:
 
         // check if we have a subfolder in the folder already
-        BOOL    fFolderSem = FALSE,
-                fFindSem = FALSE;
+        BOOL    fFolderLocked = FALSE,
+                fFindLocked = FALSE;
 
         _Pmpf(("  "__FUNCTION__": CM_QUERYRECORD returned NULL"));
 
@@ -1080,14 +1080,14 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
         {
             // request the find sem to make sure we won't have a populate
             // on the other thread; otherwise we get duplicate objects here
-            if (fFindSem = !fdrRequestFindMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+            if (fFindLocked = !_wpRequestFindMutexSem(pFolder, SEM_INDEFINITE_WAIT))
             {
-                if (fFolderSem = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+                if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
                 {
                     WPObject    *pObject;
                     for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                             pObject;
-                            pObject = *objGetNextObjPointer(pObject))
+                            pObject = *__get_pobjNext(pObject))
                     {
                         if (IsInsertable(pObject,
                                          TRUE,      // folders only
@@ -1098,8 +1098,8 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                         }
                     }
 
-                    fdrReleaseFolderMutexSem(pFolder);
-                    fFolderSem = FALSE;
+                    _wpReleaseFolderMutexSem(pFolder);
+                    fFolderLocked = FALSE;
                 }
 
                 _Pmpf(("  "__FUNCTION__": pFirstChildFolder pop is 0x%lX", pFirstChildFolder));
@@ -1168,10 +1168,10 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
         {
         } END_CATCH();
 
-        if (fFolderSem)
-            fdrReleaseFolderMutexSem(pFolder);
-        if (fFindSem)
-            fdrReleaseFindMutexSem(pFolder);
+        if (fFolderLocked)
+            _wpReleaseFolderMutexSem(pFolder);
+        if (fFindLocked)
+            _wpReleaseFindMutexSem(pFolder);
 
         if (pFirstChildFolder)
         {
@@ -1940,18 +1940,18 @@ static VOID InsertContents(WPFolder *pFolder,              // in: populated fold
                            PCSZ pcszFileMask,              // in: file mask filter or NULL
                            PLINKLIST pllObjects)           // in/out: linked list of objs that were inserted
 {
-    BOOL        fFolderSem = FALSE;
+    BOOL        fFolderLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fFolderSem = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             // count objects that should be inserted
             WPObject    *pObject;
             ULONG       cObjects = 0;
             for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                     pObject;
-                    pObject = *objGetNextObjPointer(pObject)
+                    pObject = *__get_pobjNext(pObject)
                 )
             {
                 if (IsInsertable(pObject,
@@ -1978,7 +1978,7 @@ static VOID InsertContents(WPFolder *pFolder,              // in: populated fold
 
                     for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                             pObject;
-                            pObject = *objGetNextObjPointer(pObject)
+                            pObject = *__get_pobjNext(pObject)
                         )
                     {
                         if (IsInsertable(pObject,
@@ -2060,8 +2060,8 @@ static VOID InsertContents(WPFolder *pFolder,              // in: populated fold
     {
     } END_CATCH();
 
-    if (fFolderSem)
-        fdrReleaseFolderMutexSem(pFolder);
+    if (fFolderLocked)
+        _wpReleaseFolderMutexSem(pFolder);
 }
 
 /*

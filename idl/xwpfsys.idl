@@ -8,7 +8,7 @@
  *
  *      See src\classes\xwpfsys.c for details.
  *
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -20,7 +20,15 @@
  *      GNU General Public License for more details.
  */
 
-#include <wpdataf.idl>          // this is SOM for WPFileSystem
+#include <wpfsys.idl>          // this is SOM for WPFileSystem
+            /*
+                NOTE:
+                Starting with V0.9.20, the above line no longer includes the
+                wpfsys.idl from the toolkit directory, but rather the one
+                from our own idl\wps directory, which is put BEFORE the toolkit's
+                idl directory in the SMINCLUDE path. This allows us to override
+                undocumented methods.
+            */
 
 /*
    CLASS: XWPFileSystem
@@ -102,7 +110,7 @@ interface XWPFileSystem : WPFileSystem
 
     wpSetIconData: override;
 
-    wpRefresh: override;
+    wpRefreshFSInfo: override;
 
     wpCnrRefreshDetails: override;
 

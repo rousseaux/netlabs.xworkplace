@@ -126,8 +126,9 @@
  *          Unfortunately, this one has a real nasty bug... it
  *          displays a message box if deleting the object fails.
  *          This is really annoying when calling wpFree in a loop
- *          on a bunch of objects. That's why we have
- *          XFldObject::xwpDestroyStorage now.
+ *          on a bunch of objects. That's why we override this
+ *          method in WPDataFile::wpDestroyObject and similar
+ *          methods (V0.9.20).
  *
  *      --  WPAbstract: this probably removes the INI entries
  *          associated with the abstract object.
@@ -141,7 +142,7 @@
  *      If folder auto-refresh is replaced by XWP, we must override
  *      wpFree in order to suppress calling this method. The message
  *      box bug is not acceptable for file-system objects, so we have
- *      introduced XFldObject::xwpDestroyStorage instead.
+ *      introduced WPDataFile::wpDestroyObject instead.
  *
  *      The destruction call sequence thus is:
  *
@@ -402,38 +403,6 @@ BOOL objIsObjectInitialized(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     return (0 != (_flObject & OBJFL_INITIALIZED));
-}
-
-/*
- *@@ objGetNextObjPointer:
- *      returns the pointer of the "next object" attribute
- *      in somSelf's instance data.
- *
- *      See xfTP_get_pobjNext for explanations.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- *@@changed V0.9.19 (2002-06-15) [umoeller]: moved here from wpsh.c
- */
-
-WPObject** objGetNextObjPointer(WPObject *somSelf)
-{
-    WPObject** ppObjNext = NULL;
-    static xfTD_get_pobjNext __get_pobjNext = NULL;
-
-    if (!__get_pobjNext)
-        // first call:
-        __get_pobjNext
-            = (xfTD_get_pobjNext)wpshResolveFor(somSelf,
-                                                NULL,        // use somSelf's class
-                                                "_get_pobjNext");
-    if (__get_pobjNext)
-    {
-        if (!(ppObjNext = __get_pobjNext(somSelf)))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "__get_pobjNext returned NULL.");
-    }
-
-    return (ppObjNext);
 }
 
 /* ******************************************************************
@@ -837,7 +806,7 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
              && (_somIsA(pobj, _WPFolder))
            )
         {
-            BOOL    fSem = FALSE;
+            BOOL    fFolderLocked = FALSE;
             TRY_LOUD(excpt1)
             {
                 // rule out certain stupid special folder classes
@@ -851,13 +820,13 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
                 {
                     if (fdrCheckIfPopulated(pobj, FALSE))
                     {
-                        if (fSem = !fdrRequestFolderMutexSem(pobj, 5000))
+                        if (fFolderLocked = !_wpRequestFolderMutexSem(pobj, 5000))
                         {
                             WPObject *pSubObj = 0;
                             // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                             for (   pSubObj = _wpQueryContent(pobj, NULL, QC_FIRST);
                                     pSubObj;
-                                    pSubObj = *objGetNextObjPointer(pSubObj)
+                                    pSubObj = *__get_pobjNext(pSubObj)
                                 )
                             {
                                 ulrc += WriteOutObjectSetup(RexxFile,
@@ -874,8 +843,8 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
             }
             END_CATCH();
 
-            if (fSem)
-                fdrReleaseFolderMutexSem(pobj);
+            if (fFolderLocked)
+                _wpReleaseFolderMutexSem(pobj);
         }
     }
 
@@ -2545,11 +2514,11 @@ BOOL objAddToList(WPObject *somSelf,    // in: object to add or remove
                   ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
 {
     BOOL    brc = FALSE,
-            fSemOwned = FALSE;
+            fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockObjectsList())
+        if (fLocked = LockObjectsList())
         {
             PLISTNODE   pNode = 0,
                         pNodeFound = 0;
@@ -2633,11 +2602,8 @@ BOOL objAddToList(WPObject *somSelf,    // in: object to add or remove
         brc = FALSE;
     } END_CATCH();
 
-    if (fSemOwned)
-    {
+    if (fLocked)
         UnlockObjectsList();
-        fSemOwned = FALSE;
-    }
 
     return brc;
 }
@@ -2664,11 +2630,11 @@ BOOL objIsOnList(WPObject *somSelf,
                  POBJECTLIST pll)     // in: linked list of WPObject* pointers
 {
     BOOL                 rc = FALSE,
-                         fSemOwned = FALSE;
+                         fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockObjectsList())
+        if (fLocked = LockObjectsList())
         {
             PLISTNODE pNode = lstQueryFirstNode(&pll->ll);
             while (pNode)
@@ -2692,11 +2658,8 @@ BOOL objIsOnList(WPObject *somSelf,
         rc = FALSE;
     } END_CATCH();
 
-    if (fSemOwned)
-    {
+    if (fLocked)
         UnlockObjectsList();
-        fSemOwned = FALSE;
-    }
 
     return (rc);
 }
@@ -2729,14 +2692,14 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
                       ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
 {
     WPObject    *pObjectFound = NULL;
-    BOOL        fSemOwned = FALSE;
+    BOOL        fLocked = FALSE;
 
     // _PmpfF(("entering, pObjectFind = %s",
        //          (pObjectFind) ? _wpQueryTitle(pObjectFind) : "NULL"));
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockObjectsList())
+        if (fLocked = LockObjectsList())
         {
             PLISTNODE       pNode = NULL;
 
@@ -2786,11 +2749,8 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
         pObjectFound = NULL;
     } END_CATCH();
 
-    if (fSemOwned)
-    {
+    if (fLocked)
         UnlockObjectsList();
-        fSemOwned = FALSE;
-    }
 
     return (pObjectFound);
 }

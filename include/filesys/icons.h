@@ -94,21 +94,12 @@
 
     BOOL icomRunReplacement(VOID);
 
-    ULONG icomClsQueryMaxAnimationIcons(M_WPObject *somSelf);
-
     HPOINTER icomQueryIconN(WPObject *pobj,
                             ULONG ulIndex);
-
-    ULONG icomQueryIconDataN(WPObject *pobj,
-                             ULONG ulIndex,
-                             PICONINFO pData);
 
     BOOL icomSetIconDataN(WPObject *pobj,
                           ULONG ulIndex,
                           PICONINFO pData);
-
-    HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
-                              ULONG ulIndex);
 
     APIRET icomLoadIconData(WPObject *pobj,
                             ULONG ulIndex,
@@ -149,81 +140,6 @@
                                              ULONG ulItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
     #endif
-
-    /* ******************************************************************
-     *
-     *   Additional WPObject method prototypes
-     *
-     ********************************************************************/
-
-    /*
-     *@@ xfTP_wpclsQueryMaxAnimationIcons:
-     *      prototype for M_WPObject::wpclsQueryMaxAnimationIcons.
-     *
-     *      That class method is undocumented and simply returns
-     *      the no. of animation icons supported by objects of
-     *      this class. From my testing, this returns 0 unless
-     *      somSelf is a folder class object, but who knows. We
-     *      should rather use that method instead of just checking
-     *      for whether an object is a folder to determine whether
-     *      animation icons are supported.
-     *
-     *@@added V0.9.19 (2002-06-15) [umoeller]
-     */
-
-    typedef ULONG _System xfTP_wpclsQueryMaxAnimationIcons(M_WPObject*);
-    typedef xfTP_wpclsQueryMaxAnimationIcons *xfTD_wpclsQueryMaxAnimationIcons;
-
-    /* ******************************************************************
-     *
-     *   Additional WPFolder method prototypes
-     *
-     ********************************************************************/
-
-    #ifdef SOM_WPFolder_h
-
-        /*
-         *@@ xfTP_wpQueryIconN:
-         *      prototype for WPFolder::wpQueryIconN.
-         *
-         *@@added V0.9.16 (2001-10-15) [umoeller]
-         */
-
-        typedef HPOINTER _System xfTP_wpQueryIconN(WPFolder *somSelf,
-                                                   ULONG ulIndex);
-        typedef xfTP_wpQueryIconN *xfTD_wpQueryIconN;
-
-        /*
-         *@@ xfTP_wpQueryIconDataN:
-         *      prototype for WPFolder::wpQueryIconDataN.
-         *
-         *@@added V0.9.16 (2001-10-15) [umoeller]
-         */
-
-        typedef ULONG _System xfTP_wpQueryIconDataN(WPFolder *somSelf,
-                                                    PICONINFO pData,
-                                                    ULONG ulIndex);
-        typedef xfTP_wpQueryIconDataN *xfTD_wpQueryIconDataN;
-
-
-        /*
-         *@@ xfTP_wpSetIconDataN:
-         *      prototype for WPFolder::wpSetIconDataN.
-         *
-         *@@added V0.9.16 (2001-10-15) [umoeller]
-         */
-
-        typedef BOOL _System xfTP_wpSetIconDataN(WPFolder *somSelf,
-                                                 PICONINFO pData,
-                                                 ULONG ulIndex);
-        typedef xfTP_wpSetIconDataN *xfTD_wpSetIconDataN;
-
-
-        typedef HPOINTER _System xfTP_wpclsQueryIconN(M_WPFolder *somSelf,
-                                                      ULONG ulIndex);
-        typedef xfTP_wpclsQueryIconN *xfTD_wpclsQueryIconN;
-
-    #endif // SOM_WPFolder_h
 
 #endif
 

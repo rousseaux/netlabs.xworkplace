@@ -1221,41 +1221,42 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     TRY_LOUD(excpt1)
     {
         // lock folder contents
-        fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000);
-
-        // count objects
-        // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
-        for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
-                (pObject);
-                pObject = *objGetNextObjPointer(pObject)
-            )
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, 5000))
         {
-            ulMax++;
-        }
-
-        // collect icons for all objects
-        // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
-        for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
-                (pObject);
-                pObject = *objGetNextObjPointer(pObject)
-            )
-        {
-            // get the icon
-            _xwpQueryIconNow(pObject);
-                    // adjusted V0.9.20 (2002-07-25) [umoeller]
-
-            if (pfnCallback)
+            // count objects
+            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+            for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                    (pObject);
+                    pObject = *__get_pobjNext(pObject)
+                )
             {
-                // callback
-                brc = pfnCallback(pFolder,
-                                  pObject,
-                                  ulNow,
-                                  ulMax,
-                                  ulCallbackParam);
-                if (!brc)
-                    break;
+                ulMax++;
             }
-            ulNow++;
+
+            // collect icons for all objects
+            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
+            for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                    (pObject);
+                    pObject = *__get_pobjNext(pObject)
+                )
+            {
+                // get the icon
+                _xwpQueryIconNow(pObject);
+                        // adjusted V0.9.20 (2002-07-25) [umoeller]
+
+                if (pfnCallback)
+                {
+                    // callback
+                    brc = pfnCallback(pFolder,
+                                      pObject,
+                                      ulNow,
+                                      ulMax,
+                                      ulCallbackParam);
+                    if (!brc)
+                        break;
+                }
+                ulNow++;
+            }
         }
     }
     CATCH(excpt1)
@@ -1264,7 +1265,7 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     return brc;
 }

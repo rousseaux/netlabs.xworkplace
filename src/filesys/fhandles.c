@@ -188,15 +188,15 @@ BOOL fhdlUnlockHandles(VOID)
 /* BOOL fhdlLoadHandles(VOID)
 {
     BOOL    brc = FALSE;
-    BOOL    fSemOwned = FALSE;
+    BOOL    fLocked = FALSE;
 
     ULONG   ulNesting = 0;
     DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
-        fSemOwned = fhdlLockHandles(SEM_INDEFINITE_WAIT);
-        if (fSemOwned)
+        fLocked = fhdlLockHandles(SEM_INDEFINITE_WAIT);
+        if (fLocked)
         {
             if (G_pHandlesBuffer)
             {
@@ -251,7 +251,7 @@ BOOL fhdlUnlockHandles(VOID)
     {
     } END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         fhdlUnlockHandles();
 
     DosExitMustComplete(&ulNesting);

@@ -272,7 +272,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
         if (fdrCheckIfPopulated(pFolder,
                                 fFoldersOnly))
         {
-            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
+            if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, 5000))
             {
                 WPObject *pObject;
                 // now collect all objects in folder;
@@ -284,7 +284,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                 // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                      pObject;
-                     pObject = *objGetNextObjPointer(pObject))
+                     pObject = *__get_pobjNext(pObject))
                 {
                     PEXPANDEDOBJECT fSOI = NULL;
 
@@ -316,10 +316,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
     CATCH(excpt1) {} END_CATCH();
 
     if (fFolderLocked)
-    {
-        fdrReleaseFolderMutexSem(pFolder);
-        fFolderLocked = FALSE;
-    }
+        _wpReleaseFolderMutexSem(pFolder);
 
     *pulSizeContents = ulSizeContents;
 
@@ -549,7 +546,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
                 frc = FOPSERR_POPULATE_FAILED;
             else
             {
-                if (fFolderLocked = !fdrRequestFolderMutexSem(pObject, 5000))
+                if (fFolderLocked = !_wpRequestFolderMutexSem(pObject, 5000))
                 {
                     WPObject *pSubObject;
                     // now collect all objects in folder;
@@ -561,7 +558,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
                     // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                     for (pSubObject = _wpQueryContent(pObject, NULL, QC_FIRST);
                          pSubObject;
-                         pSubObject = *objGetNextObjPointer(pSubObject))
+                         pSubObject = *__get_pobjNext(pSubObject))
                     {
                         // recurse!
                         // this will add pSubObject to pllObjects
@@ -597,10 +594,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
         } END_CATCH();
 
         if (fFolderLocked)
-        {
-            fdrReleaseFolderMutexSem(pObject);
-            fFolderLocked = FALSE;
-        }
+            _wpReleaseFolderMutexSem(pObject);
 
     } // end if (_somIsA(pObject, _WPFolder))
 
@@ -770,11 +764,11 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
 
         if (fdrCheckIfPopulated(pFolder, FALSE)) // V0.9.12 (2001-04-29) [umoeller]
         {
-            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
+            if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, 5000))
             {
                 for (   pobj = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pobj);
-                        pobj = *objGetNextObjPointer(pobj)
+                        pobj = *__get_pobjNext(pobj)
                     )
                 {
                     PSZ pszThis;
@@ -804,7 +798,7 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     return (pFSReturn);
 }

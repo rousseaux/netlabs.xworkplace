@@ -192,130 +192,12 @@
  ********************************************************************/
 
 /*
- *@@ fdrRequestFolderMutexSem:
- *      calls WPFolder::wpRequestFolderMutexSem.
- *
- *      The folder mutex semaphore is mentioned in the Warp 4
- *      toolkit docs for wpRequestObjectMutexSem, but never
- *      prototyped. This is a real pity because we'll always
- *      hang the WPS if we don't request this properly.
- *
- *      In addition to the regular object mutex, each folder
- *      has associated with it a second mutex to protect the
- *      folder contents. While this semaphore is held, one
- *      can be sure that no objects are removed from or added
- *      to a folder from some other WPS thread. For example,
- *      another populate will be blocked out from the folder.
- *      You should always request this semaphore before using
- *      wpQueryContent and such things because otherwise the
- *      folder contents can be changed behind your back.
- *
- *      Returns:
- *
- *      --  NO_ERROR: semaphore was successfully requested.
- *
- *      --  -1: error resolving method. A log entry should
- *          have been added also.
- *
- *      --  other: error codes from DosRequestMutexSem probably.
- *
- *      WARNINGS:
- *
- *      -- As usual, you better not forget to release the
- *         mutex again. Use fdrReleaseFolderMutexSem.
- *
- *      -- Also as usual, request this mutex only in a
- *         block which is protected by an exception handler.
- *
- *      -- In addition, if you also request the _object_
- *         mutex for the folder (WPObject::wpRequestObjectMutexSem),
- *         you must take great care that the two are released in
- *         exactly reverse order, or you can deadlock the system.
- *
- *         Guideline:
- *
- *         1)  Request the folder mutex.
- *
- *         2)  Request the object mutex.
- *
- *         3)  Do processing.
- *
- *         4)  Release object mutex.
- *
- *         5)  Release folder mutex.
- *
- *      -- See fdrRequestFindMutexSem for additional remarks.
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
- *@@changed V0.9.16 (2001-10-25) [umoeller]: now caching method pointer in folder instance data
- */
-
-ULONG fdrRequestFolderMutexSem(WPFolder *somSelf,
-                               ULONG ulTimeout)
-{
-    ULONG ulrc = -1;
-
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    if (!_pfn_wpRequestFolderMutexSem)
-        // first call for this folder:
-        _pfn_wpRequestFolderMutexSem
-            = (PVOID)wpshResolveFor(somSelf,
-                                    NULL, // use somSelf's class
-                                    "wpRequestFolderMutexSem");
-
-    if (_pfn_wpRequestFolderMutexSem)
-        ulrc = ((xfTD_wpRequestFolderMutexSem)_pfn_wpRequestFolderMutexSem)(somSelf,
-                                                                            ulTimeout);
-
-    return (ulrc);
-}
-
-/*
- *@@ fdrReleaseFolderMutexSem:
- *      calls WPFolder::wpReleaseFolderMutexSem. This is
- *      the reverse to fdrRequestFolderMutexSem.
- *
- *      Returns:
- *
- *      --  NO_ERROR: semaphore was successfully requested.
- *
- *      --  -1: error resolving method. A log entry should
- *          have been added also.
- *
- *      --  other: error codes from DosReleaseMutexSem probably.
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
- *@@changed V0.9.16 (2001-10-25) [umoeller]: now caching method pointer in folder instance data
- */
-
-ULONG fdrReleaseFolderMutexSem(WPFolder *somSelf)
-{
-    ULONG ulrc = -1;
-
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    if (!_pfn_wpReleaseFolderMutexSem)
-        // first call for this folder:
-        _pfn_wpReleaseFolderMutexSem
-            = (PVOID)wpshResolveFor(somSelf,
-                                    NULL, // use somSelf's class
-                                    "wpReleaseFolderMutexSem");
-
-    if (_pfn_wpReleaseFolderMutexSem)
-        ulrc = ((xfTD_wpReleaseFolderMutexSem)_pfn_wpReleaseFolderMutexSem)(somSelf);
-
-    return (ulrc);
-}
-
-/*
  *@@ GetMonitorObject:
  *      gets the RWMonitor object for the specified
  *      folder. See fdrRequestFolderWriteMutexSem.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized
  */
 
 static SOMAny* GetMonitorObject(WPFolder *somSelf)
@@ -329,16 +211,9 @@ static SOMAny* GetMonitorObject(WPFolder *somSelf)
         if (!_pMonitor)
         {
             // first call on this folder:
-            xfTD_wpQueryRWMonitorObject pwpQueryRWMonitorObject;
-
-            if (pwpQueryRWMonitorObject = (xfTD_wpQueryRWMonitorObject)wpshResolveFor(
-                                                         somSelf,
-                                                         NULL,
-                                                         "wpQueryRWMonitorObject"))
-            {
-                // get the object and store it in the instance data
-                _pMonitor = pwpQueryRWMonitorObject(somSelf);
-            }
+            // get the object and store it in the instance data
+            _pMonitor = _wpQueryRWMonitorObject(somSelf);
+                    // we can use the method now V0.9.20 (2002-07-25) [umoeller]
         }
 
         return (_pMonitor);
@@ -441,86 +316,6 @@ ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf)
 }
 
 /*
- *@@ fdrRequestFindMutexSem:
- *      mutex requested by the populate thread to prevent
- *      multiple populates, apparently. From my testing,
- *      this semaphore is requested any time an object is
- *      being made awake (created in memory).
- *
- *      Returns:
- *
- *      --  NO_ERROR: semaphore was successfully requested.
- *
- *      --  -1: error resolving method. A log entry should
- *          have been added also.
- *
- *      --  other: error codes from DosRequestMutexSem probably.
- *
- *      As with the folder mutex sem, proper serialization
- *      must be applied to avoid mutexes locking each other
- *      out.
- *
- *      Apparently, the WPS uses the following order when
- *      it requests this mutex:
- *
- *      1)  request find mutex
- *
- *      2)  request folder mutex,
- *          while (wpQueryContent, ...)
- *          release folder mutex
- *
- *      3)  awake/create object
- *
- *      4)  release find mutex
- *
- *      Whatever you do, never request the find AFTER the
- *      folder mutex.
- *
- *@@added V0.9.9 (2001-03-11) [umoeller]
- *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
- */
-
-ULONG fdrRequestFindMutexSem(WPFolder *somSelf,
-                             ULONG ulTimeout)
-{
-    ULONG ulrc = -1;
-
-    xfTD_wpRequestFindMutexSem _wpRequestFindMutexSem;
-
-    if (_wpRequestFindMutexSem
-            = (xfTD_wpRequestFindMutexSem)wpshResolveFor(somSelf,
-                                                         NULL, // use somSelf's class
-                                                         "wpRequestFindMutexSem"))
-        ulrc = _wpRequestFindMutexSem(somSelf, ulTimeout);
-
-    return (ulrc);
-}
-
-/*
- *@@ fdrReleaseFindMutexSem:
- *      calls WPFolder::wpReleaseFindMutexSem. This is
- *      the reverse to fdrRequestFindMutexSem.
- *
- *@@added V0.9.9 (2001-03-11) [umoeller]
- *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
- */
-
-ULONG fdrReleaseFindMutexSem(WPFolder *somSelf)
-{
-    ULONG ulrc = -1;
-
-    xfTD_wpReleaseFindMutexSem _wpReleaseFindMutexSem;
-
-    if (_wpReleaseFindMutexSem
-            = (xfTD_wpReleaseFindMutexSem)wpshResolveFor(somSelf,
-                                                         NULL, // use somSelf's class
-                                                         "wpReleaseFindMutexSem"))
-        ulrc = _wpReleaseFindMutexSem(somSelf);
-
-    return (ulrc);
-}
-
-/*
  *@@ fdrFlushNotifications:
  *      invokes WPFolder::wpFlushNotifications, which
  *      is only published with the Warp 4 toolkit.
@@ -557,8 +352,6 @@ ULONG fdrFlushNotifications(WPFolder *somSelf)
 
 BOOL fdrGetNotifySem(ULONG ulTimeout)
 {
-    BOOL brc = FALSE;
-
     static xfTD_wpclsGetNotifySem _wpclsGetNotifySem = NULL;
 
     M_WPFolder *pWPFolder = _WPFolder;
@@ -566,20 +359,17 @@ BOOL fdrGetNotifySem(ULONG ulTimeout)
 
     if (pWPFolder)
     {
-        if (!_wpclsGetNotifySem)
-        {
-            // first call: resolve...
-            _wpclsGetNotifySem = (xfTD_wpclsGetNotifySem)wpshResolveFor(
+        if (    (_wpclsGetNotifySem)
+                // first call: resolve...
+             || (_wpclsGetNotifySem = (xfTD_wpclsGetNotifySem)wpshResolveFor(
                                                 pWPFolder,
                                                 NULL,
-                                                "wpclsGetNotifySem");
-        }
-
-        if (_wpclsGetNotifySem)
-            brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
+                                                "wpclsGetNotifySem"))
+           )
+            return _wpclsGetNotifySem(pWPFolder, ulTimeout);
     }
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -598,16 +388,13 @@ VOID fdrReleaseNotifySem(VOID)
 
     if (pWPFolder)
     {
-        if (!_wpclsReleaseNotifySem)
-        {
-            // first call: resolve...
-            _wpclsReleaseNotifySem = (xfTD_wpclsReleaseNotifySem)wpshResolveFor(
+        if (    (_wpclsReleaseNotifySem)
+                // first call: resolve...
+             || (_wpclsReleaseNotifySem = (xfTD_wpclsReleaseNotifySem)wpshResolveFor(
                                                 pWPFolder,
                                                 NULL,
-                                                "wpclsReleaseNotifySem");
-        }
-
-        if (_wpclsReleaseNotifySem)
+                                                "wpclsReleaseNotifySem"))
+           )
             _wpclsReleaseNotifySem(pWPFolder);
     }
 }
@@ -617,68 +404,6 @@ VOID fdrReleaseNotifySem(VOID)
  *   Folder content management
  *
  ********************************************************************/
-
-/*
- *@@ fdrResolveContentPtrs:
- *      resolves the pointers to WPFolder's "first object"
- *      and "last object" pointers. IBM was nice enough
- *      to declare these instance variables as SOM attributes,
- *      so there are exported attribute methods (_getFirstObj
- *      and _getLastObj) which return exactly the addresses
- *      of these two variables.
- *
- *      In order to avoid having to resolve these functions
- *      for every access, we resolve them once and store
- *      the addresses of the two attributes directly in
- *      the XFolder instance variables (_ppFirstObj and
- *      _ppLastObj). They will never change.
- *
- *      Preconditions:
- *
- *      -- the caller must hold the folder mutex. Yes,
- *         this affects XFolder instance variables, so
- *         the object mutex would be the first to think
- *         of... but we put up this requirement instead.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-BOOL fdrResolveContentPtrs(WPFolder *somSelf)
-{
-    BOOL brc = FALSE;
-    XFolderData *somThis = XFolderGetData(somSelf);
-
-    if ((!_ppFirstObj) || (!_ppLastObj))
-    {
-        // method ptrs
-        xfTD_get_FirstObj __getFirstObj = NULL;
-        xfTD_get_LastObj __getLastObj = NULL;
-
-        // first obj
-        __getFirstObj
-            = (xfTD_get_FirstObj)wpshResolveFor(somSelf,
-                                                _somGetClass(somSelf),
-                                                "_get_FirstObj");
-        if (__getFirstObj)
-            _ppFirstObj = __getFirstObj(somSelf);
-
-        // last obj
-        __getLastObj
-            = (xfTD_get_LastObj)wpshResolveFor(somSelf,
-                                               _somGetClass(somSelf),
-                                               "_get_LastObj");
-        if (__getLastObj)
-            _ppLastObj = __getLastObj(somSelf);
-
-        if ((_ppFirstObj) && (_ppLastObj))
-            // both succeeded:
-            brc = TRUE;
-    }
-    else
-        brc = TRUE;
-
-    return brc;
-}
 
 /*
  *@@ FastFindFSFromUpperName:
@@ -724,7 +449,7 @@ static WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
 
     TRY_LOUD(excpt1)
     {
-        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             pobjReturn = FastFindFSFromUpperName(pFolder,
                                                  pcszUpperShortName);
@@ -736,7 +461,7 @@ static WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     return (pobjReturn);
 }
@@ -799,7 +524,7 @@ WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
 
     TRY_LOUD(excpt1)
     {
-        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             pobjReturn = fdrFastFindFSFromName(pFolder,
                                                pcszShortName);
@@ -811,7 +536,7 @@ WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     return (pobjReturn);
 }
@@ -824,6 +549,7 @@ WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
  *      --  The caller must hold the folder write mutex.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: rewritten to use SOM attributes now that we have them
  */
 
 static BOOL HackContentPointers(WPFolder *somSelf,
@@ -838,13 +564,19 @@ static BOOL HackContentPointers(WPFolder *somSelf,
 
         TRY_LOUD(excpt1)        // V0.9.9 (2001-04-01) [umoeller]
         {
-            if (fSubObjectLocked = !_wpRequestObjectMutexSem(pObject, SEM_INDEFINITE_WAIT))
+            PIBMFOLDERDATA pFdrData;
+
+            if (!(pFdrData = (PIBMFOLDERDATA)_pvWPFolderData))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot get IBM folder data");
+            else if (fSubObjectLocked = !_wpRequestObjectMutexSem(pObject, SEM_INDEFINITE_WAIT))
             {
                 // this strange thing gets called by the original
                 // wpAddToContent... it's a flag which shows whether
                 // the object is in any container at all. We want
                 // to set this to TRUE.
                 PULONG pulContainerFlag = _wpQueryContainerFlagPtr(pObject);
+
                 if (!*pulContainerFlag)
                    *pulContainerFlag = TRUE;
 
@@ -852,36 +584,32 @@ static BOOL HackContentPointers(WPFolder *somSelf,
                 //         _wpQueryTitle(pObject),
                 //         _wpQueryTitle(somSelf) ));
 
-                // set the new object's "next object" to NULL
-                _xwpSetNextObj(pObject, NULL);
-
-                if (fdrResolveContentPtrs(somSelf))
+                // now check our contents...
+                if (pFdrData->LastObj)
                 {
-                    // now check our contents...
-                    if (*_ppFirstObj)
-                    {
-                        // we had objects before:
-                        // store new object as next object for
-                        // previously last object
-                        WPObject **ppObjNext = objGetNextObjPointer(*_ppLastObj);
-                        if (ppObjNext)
-                            *ppObjNext = pObject;
-                        // store new object as new last object
-                        *_ppLastObj = pObject;
-                    }
-                    else
-                    {
-                        // no objects yet:
-                        *_ppFirstObj = pObject;
-                        *_ppLastObj = pObject;
-                    }
-
-                    // for each object that was added, lock
-                    // the folder...
-                    _wpLockObject(somSelf);
-
-                    brc = TRUE;
+                    // we had objects before:
+                    // store new object as next object for
+                    // previously last object
+                    _wpSetNextObj(pFdrData->LastObj, pObject);
+                    // store new object as new last object
+                    pFdrData->LastObj = pObject;
                 }
+                else
+                {
+                    // no objects yet:
+                    pFdrData->FirstObj = pObject;
+                    pFdrData->LastObj = pObject;
+                }
+
+                // in any case, set the new object's "next object" to NULL
+                // _xwpSetNextObj(pObject, NULL);   replaced V0.9.20 (2002-07-25) [umoeller]
+                _wpSetNextObj(pObject, NULL);
+
+                // for each object that was added, lock
+                // the folder...
+                _wpLockObject(somSelf);
+
+                brc = TRUE;
             }
         }
         CATCH(excpt1)
@@ -1198,6 +926,7 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
  *          from its include criteria.
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized to use wpQueryFldrFilter directly
  */
 
 BOOL fdrIsObjectFiltered(WPFolder *pFolder,
@@ -1208,42 +937,26 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
 
     WPObject *pFilter;
 
-    static xfTD_wpQueryFldrFilter pwpQueryFldrFilter = NULL;
     static xfTD_wpMatchesFilter pwpMatchesFilter = NULL;
 
     if (_wpQueryStyle(pObject) & OBJSTYLE_NOTVISIBLE)
         return TRUE;
 
-    if (!pwpQueryFldrFilter)
-        // first call: this method is never overridden,
-        // so we only resolve once for the system
-        pwpQueryFldrFilter = (xfTD_wpQueryFldrFilter)wpshResolveFor(
-                                             pFolder,
-                                             NULL, // use somSelf's class
-                                             "wpQueryFldrFilter");
-
-    if (    (pwpQueryFldrFilter)
-         && (pFilter = pwpQueryFldrFilter(pFolder))
+    if (    (pFilter = _wpQueryFldrFilter(pFolder))        // V0.9.20 (2002-07-25) [umoeller]
+            // now that we have the WPFilter object, we can try
+            // to resolve the wpMatchesFilter method
+         && (    (pwpMatchesFilter)
+                 // first call: this method is never overridden,
+                 // so we only resolve once for the system
+              || (pwpMatchesFilter = (xfTD_wpMatchesFilter)wpshResolveFor(
+                                                      pFilter,
+                                                      NULL, // use somSelf's class
+                                                      "wpMatchesFilter"))
+            )
        )
     {
-        ULONG rc = -1;
-
-        // now that we have the WPFilter object, we can try
-        // to resolve the wpMatchesFilter method
-        if (!pwpMatchesFilter)
-            // first call: this method is never overridden,
-            // so we only resolve once for the system
-            pwpMatchesFilter = (xfTD_wpMatchesFilter)wpshResolveFor(
-                                                 pFilter,
-                                                 NULL, // use somSelf's class
-                                                 "wpMatchesFilter");
-
-        if (    (pwpMatchesFilter)
-             && (pwpMatchesFilter(pFilter, pObject))
-           )
-        {
+        if (pwpMatchesFilter(pFilter, pObject))
             brc = FALSE;
-        }
     }
 
     return brc;
@@ -1264,6 +977,8 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
  *
  *      This code ONLY gets called if XFolder::xwpSetDisableCnrAdd
  *      was called.
+ *
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: rewritten to use SOM attributes now that we have them
  */
 
 WPObject* fdrQueryContent(WPFolder *somSelf,
@@ -1274,30 +989,21 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (fdrResolveContentPtrs(somSelf))
+        switch (ulOption)
         {
-            XFolderData *somThis = XFolderGetData(somSelf);
+            case QC_FIRST:
+                // that's easy
+                pobjReturn = *__get_FirstObj(somSelf);
+            break;
 
-            switch (ulOption)
-            {
-                case QC_FIRST:
-                    // that's easy
-                    pobjReturn = *_ppFirstObj;
-                break;
+            case QC_NEXT:
+                if (pobjFind)
+                    pobjReturn = *__get_pobjNext(pobjFind);
+            break;
 
-                case QC_NEXT:
-                    if (pobjFind)
-                    {
-                        WPObject **ppObjNext;
-                        if (ppObjNext = objGetNextObjPointer(pobjFind))
-                            pobjReturn = *ppObjNext;
-                    }
-                break;
-
-                case QC_LAST:
-                    pobjReturn = *_ppLastObj;
-                break;
-            }
+            case QC_LAST:
+                pobjReturn = *__get_LastObj(somSelf);
+            break;
         }
     }
     CATCH(excpt1)
@@ -1356,7 +1062,7 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
                 // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         pObject;
-                        pObject = *objGetNextObjPointer(pObject))
+                        pObject = *__get_pobjNext(pObject))
                 {
                     // add object if either filter is off,
                     // or if no RECORDITEM exists yet
@@ -1428,7 +1134,7 @@ BOOL fdrNukeContents(WPFolder *pFolder)
 
     TRY_LOUD(excpt1)
     {
-        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             ULONG   cObjects = 0,
                     ul;
@@ -1460,7 +1166,7 @@ BOOL fdrNukeContents(WPFolder *pFolder)
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     return brc;
 }
@@ -2140,7 +1846,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
                  PBOOL pfExit)          // in: exit flag
 {
     BOOL    fSuccess = FALSE;
-    BOOL    fFindSem = FALSE;
+    BOOL    fFindLocked = FALSE;
 
     ULONG   ulOldPrtyClass = -1,
             ulOldPrtyDelta = -1;
@@ -2156,7 +1862,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
         #endif
 
         // there can only be one populate at a time
-        if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        if (fFindLocked = !_wpRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
             PPIB ppib;
             PTIB ptib;
@@ -2253,8 +1959,8 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     fdrDebugDumpFolderFlags(somSelf);
 
-    if (fFindSem)
-        fdrReleaseFindMutexSem(somSelf);
+    if (fFindLocked)
+        _wpReleaseFindMutexSem(somSelf);
 
     #ifdef DEBUG_TURBOFOLDERS
     _PmpfF(("returning %d", fSuccess));
@@ -2306,7 +2012,7 @@ BOOL fdrCheckIfPopulated(WPFolder *somSelf,
             // for if the folder has the refresh bit set
          || (ulFlags & FOI_ASYNCREFRESHONOPEN)
             // or if we can't get the drive data
-         || (!(pDriveData = fsysQueryDriveData(somSelf)))
+         || (!(pDriveData = _wpQueryDriveData(somSelf)))
             // or the drive is remote or removable
          || (pDriveData->fNotLocal)
          || (!(pDriveData->fFixedDisk))

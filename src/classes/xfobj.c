@@ -215,40 +215,6 @@ SOM_Scope HPOINTER  SOMLINK xo_xwpQueryIconNow(XFldObject *somSelf)
 }
 
 /*
- *@@ xwpDestroyStorage:
- *      new XFldObject method to destroy the physical
- *      representation of an object.
- *
- *      See object.c for details about an object's lifecycle.
- *
- *      If folder auto-refresh has been enabled, we have to
- *      override wpFree in order to suppress the nasty message
- *      boxes which are apparently displayed by
- *      WPFileSystem::wpDestroyObject. Since we cannot override
- *      wpDestroyObject, we override wpFree which in turn calls
- *      this method (see XFldObject::wpFree, which calls objFree).
- *      In this method, we can then do the cleanup ourselves.
- *
- *@@added V0.9.9 (2001-02-04) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_xwpDestroyStorage(XFldObject *somSelf)
-{
-    BOOL    brc = FALSE;
-    xfTD_wpDestroyObject _wpDestroyObject = NULL;
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_xwpDestroyStorage");
-
-    if (_wpDestroyObject = (xfTD_wpDestroyObject)wpshResolveFor(
-                                             somSelf,
-                                             NULL,
-                                             "wpDestroyObject"))
-        brc = _wpDestroyObject(somSelf);
-
-    return brc;
-}
-
-/*
  *@@ xwpAddReplacementIconPage:
  *      calls ntbInsertPage for a replacement "Icon" page with
  *      the given page ID and default help panel.
@@ -1125,63 +1091,6 @@ SOM_Scope BOOL  SOMLINK xo_xwpQuerySetup2(XFldObject *somSelf,
 }
 
 /*
- *@@ xwpSetNextObj:
- *      wrapper around the undocumented WPObject method
- *      "wpSetNextObj".
- *
- *      From my testing, wpSetNextObj stores the "next object"
- *      in the object's internal instance data. This is either
- *      NULL if the object is the last object in a folder, or
- *      points to the next object (the one that comes after
- *      somSelf in the folder).
- *
- *      These pointers are apparently maintained by
- *      the WPFolder methods wpAddToContent and
- *      wpDeleteFromContent.
- *
- *      This wrapper resolves the method pointer and calls
- *      that method, since we have no access to WPObject's
- *      internal instance data (and better not touch it in
- *      the first place).
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xo_xwpSetNextObj(XFldObject *somSelf,
-                                          WPObject* pobjNext)
-{
-    ULONG ulrc = 0;     // seems to be a BOOL
-    WPObject **ppObjNext = NULL;
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_xwpSetNextObj");
-
-    if (ppObjNext = objGetNextObjPointer(somSelf))
-        *ppObjNext = pobjNext;
-
-    return ulrc;
-}
-
-/*
- *@@ xwpQueryNextObj:
- *      the reverse to XFldObject::xwpSetNextObj.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-SOM_Scope WPObject*  SOMLINK xo_xwpQueryNextObj(XFldObject *somSelf)
-{
-    WPObject *pobj = NULL;
-    WPObject **ppObjNext;
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_xwpQueryNextObj");
-
-    if (ppObjNext = objGetNextObjPointer(somSelf))
-        pobj = *ppObjNext;
-
-    return pobj;
-}
-
-/*
  *@@ xwpHotkeyOrBorderAction:
  *      this new XFldObject method gets called
  *      from the thread-1 object window whenever
@@ -1564,6 +1473,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
  *@@changed V0.9.20 (2002-07-16) [umoeller]: optimized
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed higly broken _wpSaveImmediate call
  *@@changed V0.9.20 (2002-07-16) [umoeller]: added exception handling
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized to use real method calls finally
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
@@ -1579,9 +1489,6 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
         {
             ULONG   ulStyle = _wpQueryStyle(somSelf);
             PSZ     pszID = _wpQueryObjectID(somSelf);
-            somTD_XFldObject_xwpDestroyStorage pxwpDestroyStorage = NULL;
-            xfTD_wpDeleteWindowPosKeys _wpDeleteWindowPosKeys = NULL;
-            xfTD_wpMakeDormant _wpMakeDormant = NULL;
 
             // if the object has an object ID assigned, remove this...
             // this should clean the INI entry
@@ -1605,10 +1512,17 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
             // We resolve the method by name because it is overridden
             // in some XWorkplace classes. If it is not overridden,
             // XFldObject::xwpDestroyStorage calls wpDestroyObject.
+
+            // no longer so, we can override wpDestroyObject now
+            // V0.9.20 (2002-07-25) [umoeller]
+            _wpDestroyObject(somSelf);
+
+            /*
             if (pxwpDestroyStorage = (somTD_XFldObject_xwpDestroyStorage)somResolveByName(
                                       somSelf,
                                       "xwpDestroyStorage"))
                 pxwpDestroyStorage(somSelf);
+            */
 
             // the WPS then calls wpSaveImmediate just in case the object
             // has called wpSaveDeferred. I'm not sure this is a good idea...
@@ -1629,20 +1543,13 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
                 // lots of objects already
 
             // then there's another undocumented method call... i'm unsure
-            // what this does, but what the heck. We need to resolve this
-            // manually.
-            if (_wpDeleteWindowPosKeys = (xfTD_wpDeleteWindowPosKeys)wpshResolveFor(
-                                                    somSelf,
-                                                    NULL,
-                                                    "wpDeleteWindowPosKeys"))
-                _wpDeleteWindowPosKeys(somSelf);
+            // what this does, but what the heck.
+            _wpDeleteWindowPosKeys(somSelf);
+                    // we can call the method now V0.9.20 (2002-07-25) [umoeller]
 
             // finally, this calls wpMakeDormant, which destroys the SOM object
-            if (_wpMakeDormant = (xfTD_wpMakeDormant)wpshResolveFor(
-                                                    somSelf,
-                                                    NULL,
-                                                    "wpMakeDormant"))
-                brc = _wpMakeDormant(somSelf, 0);
+            brc = _wpMakeDormant(somSelf, 0);
+                    // we can call the method now V0.9.20 (2002-07-25) [umoeller]
 
         } // if (pKernelGlobals->fAutoRefreshReplaced)
         else
@@ -3128,7 +3035,8 @@ SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
         {
             ULONG ul;
             // add the "Icon" page 2 on top if we have animation icons
-            if (icomClsQueryMaxAnimationIcons(_somGetClass(somSelf)))
+            if (_wpclsQueryMaxAnimationIcons(_somGetClass(somSelf)))
+                    // V0.9.20 (2002-07-25) [umoeller]: we can use the method now
                 _wpAddObjectGeneralPage2(somSelf, hwndNotebook);
 
             // add the "Icon" page on top

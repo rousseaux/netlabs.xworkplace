@@ -671,7 +671,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
                                      ULONG cNewFunctionKeys)         // in: count of items in array -- _not_ array size!!
 {
     BOOL    fSemOpened = FALSE,
-            fSemOwned = FALSE;
+            fLocked = FALSE;
     APIRET arc;
 
     // request access to the hotkeys mutex
@@ -687,7 +687,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 
     if (!arc)
     {
-        fSemOwned = TRUE;
+        fLocked = TRUE;
 
         // 1) hotkeys
 
@@ -734,7 +734,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
         }
     }
 
-    if (fSemOwned)
+    if (fLocked)
         DosReleaseMutexSem(G_hmtxGlobalHotkeys);
     if (fSemOpened)
         DosCloseMutexSem(G_hmtxGlobalHotkeys);

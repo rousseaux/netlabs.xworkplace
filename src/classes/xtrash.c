@@ -1146,7 +1146,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                                         BOOL fFoldersOnly)
 {
     BOOL    brc = TRUE;
-    BOOL    fFindSem = FALSE;
+    BOOL    fFindLocked = FALSE;
     ULONG   ulFldrFlags = _wpQueryFldrFlags(somSelf);
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
@@ -1161,7 +1161,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
         // request the find mutex to avoid weird behavior;
         // there can only be one populate at a time
         // V0.9.20 (2002-07-12) [umoeller]
-        if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        if (fFindLocked = !_wpRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
             // we must call the parent first;
             // otherwise, we'll get a "Wait" pointer all the time
@@ -1212,8 +1212,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
         brc = FALSE;
     } END_CATCH();
 
-    if (fFindSem)
-        fdrReleaseFindMutexSem(somSelf);
+    if (fFindLocked)
+        _wpReleaseFindMutexSem(somSelf);
 
     _xwpSetCorrectTrashIcon(somSelf,
                             TRUE);      // always set icon, because wpPopulate gets

@@ -12,6 +12,10 @@ Also, the .DEF files will be created in this directory. Note that
 these are not used, but only src\shared\xwp.def, which must be updated
 manually when new classes are introduced.
 
+NOTE: Starting with V0.9.20, the idl\wps subdirectory contains
+slightly tuned default WPS IDL files to allow us to override
+methods that IBM didn't care to make public. See the readme there.
+
 See PROGREF.INF for details.
 
 

@@ -584,7 +584,7 @@ SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
                                 FALSE);     // not folders only
             for (pobj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                  pobj;
-                 pobj = *objGetNextObjPointer(pobj))
+                 pobj = *__get_pobjNext(pobj))
             {
                 _xwpQueryIconNow(pobj);
                         // adjusted V0.9.20 (2002-07-25) [umoeller]

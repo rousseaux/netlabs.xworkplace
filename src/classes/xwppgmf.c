@@ -402,65 +402,6 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
 }
 
 /*
- *@@ xwpDestroyStorage:
- *      override of XFldObject::xwpDestroyStorage, which must
- *      remove the physical representation of an object
- *      when it gets physically deleted.
- *
- *      xwpDestroyStorage gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
- *      calls WPObject::wpDestroyObject.
- *
- *      We override this in order to prevent the original
- *      WPProgramFile::wpDestroyObject to be called, which
- *      messes wrongly with our association data. Instead,
- *      we destroy any association data in the OS2.INI
- *      file ourselves and them jump directly to
- *      WPDataFile::wpDestroyObject.
- *
- *@@added V0.9.12 (2001-05-22) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xpgf_xwpDestroyStorage(XWPProgramFile *somSelf)
-{
-    static somTD_XFldDataFile_xwpDestroyStorage pXFldDataFile_xwpDestroyStorage = NULL;
-
-    BOOL brc = FALSE;
-    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
-    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_xwpDestroyStorage");
-
-    if (!pXFldDataFile_xwpDestroyStorage)
-    {
-        // first call:
-        // resolve XFldDataFile::xwpDestroyStorage
-        pXFldDataFile_xwpDestroyStorage
-            = (somTD_XFldDataFile_xwpDestroyStorage)wpshResolveFor(somSelf,
-                                                    _XFldDataFile,
-                                                    "xwpDestroyStorage");
-    }
-
-    if (pXFldDataFile_xwpDestroyStorage)
-    {
-        // clean up program resources in INI file;
-        // there's no way to avoid running through
-        // the entire handles cache, unfortunately...
-        // @@todo once we get the file handles engine
-        // running, make sure we won't call wpQueryHandle
-        // here!!
-        ftypAssocObjectDeleted(_wpQueryHandle(somSelf));
-
-        // call WPAbstract::wpDestroyObject explicitly,
-        // skipping WPProgram
-        brc = pXFldDataFile_xwpDestroyStorage(somSelf);
-    }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Cannot resolve WPDataFile::wpDestroyObject.");
-
-    return brc;
-}
-
-/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -510,6 +451,69 @@ SOM_Scope void  SOMLINK xpgf_wpUnInitData(XWPProgramFile *somSelf)
               NULL);
 
     XWPProgramFile_parent_WPProgramFile_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpDestroyObject:
+ *      this undocumented WPObject method gets called during
+ *      wpFree processing to destroy the physical storage of
+ *      an object (for file-system objects, the file or folder,
+ *      for abstracts, the INI data).
+ *
+ *      Starting with V0.9.20, we are now able to override this
+ *      undocumented WPS method too, so the previous overhead
+ *      with xwpDestroyStorage has been removed.
+ *
+ *      We override this in order to prevent the original
+ *      WPProgramFile::wpDestroyObject to be called, which
+ *      messes wrongly with our association data. Instead,
+ *      we destroy any association data in the OS2.INI
+ *      file ourselves and them jump directly to
+ *      WPDataFile::wpDestroyObject.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgf_wpDestroyObject(XWPProgramFile *somSelf)
+{
+    static somTD_WPObject_wpDestroyObject pXFldDataFile_wpDestroyObject = NULL;
+
+    BOOL brc = FALSE;
+
+    // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpDestroyObject");
+
+    if (!pXFldDataFile_wpDestroyObject)
+    {
+        // first call:
+        // resolve XFldDataFile::xwpDestroyStorage
+        pXFldDataFile_wpDestroyObject
+            = (somTD_WPObject_wpDestroyObject)wpshResolveFor(somSelf,
+                                                    _XFldDataFile,
+                                                    "wpDestroyObject");
+    }
+
+    if (pXFldDataFile_wpDestroyObject)
+    {
+        // clean up program resources in INI file;
+        // there's no way to avoid running through
+        // the entire handles cache, unfortunately...
+        // @@todo once we get the file handles engine
+        // running, make sure we won't call wpQueryHandle
+        // here!!
+        ftypAssocObjectDeleted(_wpQueryHandle(somSelf));
+
+        // call WPAbstract::wpDestroyObject explicitly,
+        // skipping WPProgram
+        brc = pXFldDataFile_wpDestroyObject(somSelf);
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot resolve WPDataFile::wpDestroyObject.");
+
+    return brc;
+
+    // return (XWPProgramFile_parent_WPProgramFile_wpDestroyObject(somSelf));
 }
 
 /*

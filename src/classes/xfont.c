@@ -283,7 +283,7 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
                                        BOOL fFoldersOnly)
 {
     BOOL    brc = TRUE;
-    BOOL    fFindSem = FALSE;
+    BOOL    fFindLocked = FALSE;
 
     XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpPopulate");
@@ -293,7 +293,7 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
         // request the find mutex to avoid weird behavior;
         // there can only be one populate at a time
         // V0.9.20 (2002-07-12) [umoeller]
-        if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        if (fFindLocked = !_wpRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
             brc = XWPFontFolder_parent_WPFolder_wpPopulate(somSelf,
                                                            ulReserved,
@@ -323,8 +323,8 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
         brc = FALSE;
     } END_CATCH();
 
-    if (fFindSem)
-        fdrReleaseFindMutexSem(somSelf);
+    if (fFindLocked)
+        _wpReleaseFindMutexSem(somSelf);
 
     return brc;
 }

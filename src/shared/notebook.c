@@ -336,17 +336,17 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
         #endif
         if (pnbp->pnbli)
         {
-            BOOL fSemOwned = FALSE;
+            BOOL fLocked = FALSE;
             TRY_LOUD(excpt1)
             {
-                if (fSemOwned = LockNotebooks())
+                if (fLocked = LockNotebooks())
                     lstRemoveItem(&G_llOpenPages,
                                   pnbp->pnbli);  // this is auto-free!
                                 // this free's the pnbli
             }
             CATCH(excpt1) {} END_CATCH();
 
-            if (fSemOwned)
+            if (fLocked)
                 UnlockNotebooks();
         }
 
@@ -1139,7 +1139,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
 static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct from ntbInsertPage
 {
-    BOOL        fSemOwned = FALSE;
+    BOOL        fLocked = FALSE;
 
     // create NOTEBOOKPAGELISTITEM to be stored in list
     PNOTEBOOKPAGELISTITEM pnbliNew = NULL;
@@ -1166,7 +1166,7 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
             pnbp->hwndFrame = NULLHANDLE;
 
         // store new page in linked list
-        if (fSemOwned = LockNotebooks())
+        if (fLocked = LockNotebooks())
         {
             pnbliNew = malloc(sizeof(NOTEBOOKPAGELISTITEM));
 
@@ -1217,14 +1217,14 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
                                             fnwpSubclNotebook);
                 }
             }
-        } // end if (fSemOwned)
+        } // end if (fLocked)
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "hmtxNotebookLists mutex request failed");
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         UnlockNotebooks();
 
     return pnbliNew;
@@ -1244,11 +1244,11 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
 static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 {
     PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
-    BOOL fSemOwned = FALSE;
+    BOOL fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockNotebooks())
+        if (fLocked = LockNotebooks())
         {
             PLISTNODE   pNode = lstQueryFirstNode(&G_llSubclNotebooks);
             while (pNode)
@@ -1264,11 +1264,11 @@ static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 
                 pNode = pNode->pNext;
             }
-        } // end if (fSemOwned)
+        } // end if (fLocked)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         UnlockNotebooks();
 
     return (pSubclNBLI);
@@ -1289,11 +1289,11 @@ static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 static VOID DestroyNBLI(HWND hwndNotebook,
                         PSUBCLNOTEBOOKLISTITEM pSubclNBLI)
 {
-    BOOL fSemOwned = FALSE;
+    BOOL fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockNotebooks())
+        if (fLocked = LockNotebooks())
         {
             PLISTNODE pPageNode = lstQueryFirstNode(&G_llOpenPages);
 
@@ -1333,11 +1333,11 @@ static VOID DestroyNBLI(HWND hwndNotebook,
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("  removed pSubclNBLI"));
             #endif
-        } // end if (fSemOwned)
+        } // end if (fLocked)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         UnlockNotebooks();
 }
 
@@ -1851,11 +1851,11 @@ PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
 {
     PLISTNODE               pNode = 0;
     PNOTEBOOKPAGELISTITEM   pItemReturn = 0;
-    BOOL                    fSemOwned = FALSE;
+    BOOL                    fLocked = FALSE;
 
     TRY_QUIET(excpt1)
     {
-        if (fSemOwned = LockNotebooks())
+        if (fLocked = LockNotebooks())
         {
             pNode = lstQueryFirstNode(&G_llOpenPages);
 
@@ -1882,18 +1882,15 @@ PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
                     pNode = pNode->pNext;
                 }
             }
-        } // end if (fSemOwned)
+        } // end if (fLocked)
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "hmtxNotebookLists mutex request failed");
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fSemOwned)
-    {
+    if (fLocked)
         UnlockNotebooks();
-        fSemOwned = FALSE;
-    }
 
     if (pItemReturn)
         return (pItemReturn->pnbp);

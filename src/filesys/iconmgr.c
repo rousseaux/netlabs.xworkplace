@@ -609,14 +609,7 @@ BOOL icomRunReplacement(VOID)
 
 ULONG icomClsQueryMaxAnimationIcons(M_WPObject *somSelf)
 {
-    xfTD_wpclsQueryMaxAnimationIcons _wpclsQueryMaxAnimationIcons;
-    if (_wpclsQueryMaxAnimationIcons = (xfTD_wpclsQueryMaxAnimationIcons)
-                              wpshResolveFor(somSelf,
-                                             NULL,
-                                             "wpclsQueryMaxAnimationIcons"))
-        return _wpclsQueryMaxAnimationIcons(somSelf);
-
-    return 0;
+    return _wpclsQueryMaxAnimationIcons(somSelf);
 }
 
 /*
@@ -634,20 +627,14 @@ HPOINTER icomQueryIconN(WPObject *pobj,    // in: object
                         ULONG ulIndex)     // in: animation index or 0 for regular icon
 {
     if (!ulIndex)
-        return (_wpQueryIcon(pobj));
+        return _wpQueryIcon(pobj);
 
     // index specified: this better be a folder, and we better be Warp 4
     if (    (G_fIsWarp4)
          && (_somIsA(pobj, _WPFolder))
        )
     {
-        xfTD_wpQueryIconN pwpQueryIconN;
-
-        if (pwpQueryIconN
-            = (xfTD_wpQueryIconN)wpshResolveFor(pobj,
-                                                NULL, // use somSelf's class
-                                                "wpQueryIconN"))
-            return (pwpQueryIconN(pobj, ulIndex));
+        return _wpQueryIconN(pobj, ulIndex);
     }
 
     return 0;
@@ -693,20 +680,14 @@ ULONG icomQueryIconDataN(WPObject *pobj,    // in: object
                          PICONINFO pData)   // in: icon data buffer or NULL for "query size"
 {
     if (!ulIndex)
-        return (_wpQueryIconData(pobj, pData));
+        return _wpQueryIconData(pobj, pData);
 
     // index specified: this better be a folder, and we better be Warp 4
     if (    (G_fIsWarp4)
          && (_somIsA(pobj, _WPFolder))
        )
     {
-        xfTD_wpQueryIconDataN pwpQueryIconDataN;
-
-        if (pwpQueryIconDataN
-            = (xfTD_wpQueryIconDataN)wpshResolveFor(pobj,
-                                                    NULL, // use somSelf's class
-                                                    "wpQueryIconDataN"))
-            return (pwpQueryIconDataN(pobj, pData, ulIndex));
+        return _wpQueryIconDataN(pobj, pData, ulIndex);
     }
 
     return 0;
@@ -741,20 +722,14 @@ BOOL icomSetIconDataN(WPObject *pobj,    // in: object
                       PICONINFO pData)   // in: icon data to set (requried)
 {
     if (!ulIndex)
-        return (_wpSetIconData(pobj, pData));
+        return _wpSetIconData(pobj, pData);
 
     // index specified: this better be a folder, and we better be Warp 4
     if (    (G_fIsWarp4)
          && (_somIsA(pobj, _WPFolder))
        )
     {
-        xfTD_wpSetIconDataN pwpSetIconDataN;
-
-        if (pwpSetIconDataN
-            = (xfTD_wpSetIconDataN)wpshResolveFor(pobj,
-                                                  NULL, // use somSelf's class
-                                                  "wpSetIconDataN"))
-            return (pwpSetIconDataN(pobj, pData, ulIndex));
+        return _wpSetIconDataN(pobj, pData, ulIndex);
     }
 
     return 0;
@@ -777,20 +752,14 @@ HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
                           ULONG ulIndex)
 {
     if (!ulIndex)
-        return (_wpclsQueryIcon(pClassObject));
+        return _wpclsQueryIcon(pClassObject);
 
     // index specified: this better be a folder, and we better be Warp 4
     if (    (G_fIsWarp4)
          && (_somDescendedFrom(pClassObject, _WPFolder))
        )
     {
-        xfTD_wpclsQueryIconN pwpclsQueryIconN;
-
-        if (pwpclsQueryIconN
-            = (xfTD_wpclsQueryIconN)wpshResolveFor(pClassObject,
-                                                   NULL, // use somSelf's class
-                                                   "wpclsQueryIconN"))
-            return (pwpclsQueryIconN(pClassObject, ulIndex));
+        return _wpclsQueryIconN(pClassObject, ulIndex);
     }
 
     return 0;

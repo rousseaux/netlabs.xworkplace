@@ -3154,14 +3154,14 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
 {
     PSHUTLISTITEM   pItem = NULL;
     BOOL            fAccess = FALSE,
-                    fSemOwned = FALSE;
+                    fLocked = FALSE;
 
     TRY_QUIET(excpt1)
     {
         if (hmtx)
         {
-            fSemOwned = !DosRequestMutexSem(hmtx, SEM_INDEFINITE_WAIT);
-            fAccess = fSemOwned;
+            fLocked = !DosRequestMutexSem(hmtx, SEM_INDEFINITE_WAIT);
+            fAccess = fLocked;
         }
         else
             fAccess = TRUE;
@@ -3182,11 +3182,8 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fSemOwned)
-    {
+    if (fLocked)
         DosReleaseMutexSem(hmtx);
-        fSemOwned = FALSE;
-    }
 
     return (pItem);
 }
@@ -3206,14 +3203,14 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
 {
     PSHUTLISTITEM pItem = NULL;
     BOOL          fAccess = FALSE,
-                  fSemOwned = FALSE;
+                  fLocked = FALSE;
 
     TRY_QUIET(excpt1)
     {
         if (hmtx)
         {
-            fSemOwned = !DosRequestMutexSem(hmtx, ulTimeout);
-            fAccess = fSemOwned;
+            fLocked = !DosRequestMutexSem(hmtx, ulTimeout);
+            fAccess = fLocked;
         }
         else
             fAccess = TRUE;
@@ -3234,11 +3231,8 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fSemOwned)
-    {
+    if (fLocked)
         DosReleaseMutexSem(hmtx);
-        fSemOwned = FALSE;
-    }
 
     return (pItem);
 }
@@ -3766,11 +3760,11 @@ void xsdUpdateListBox(HAB hab,
     PSHUTLISTITEM   pItem;
     CHAR            szTitle[1024];
 
-    BOOL            fSemOwned = FALSE;
+    BOOL            fLocked = FALSE;
 
     TRY_QUIET(excpt1)
     {
-        if (fSemOwned = !DosRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
+        if (fLocked = !DosRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
         {
             PLISTNODE pNode = 0;
             lstClear(&pShutdownData->llShutdown);
@@ -3796,7 +3790,7 @@ void xsdUpdateListBox(HAB hab,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         DosReleaseMutexSem(pShutdownData->hmtxShutdown);
 }
 
@@ -6277,7 +6271,7 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 
     PSHUTDOWNDATA   pShutdownData = (PSHUTDOWNDATA)ptiMyself->ulData;
 
-    BOOL            fSemOwned = FALSE;
+    BOOL            fLocked = FALSE;
     LINKLIST        llTestList;
 
     DosSetPriority(PRTYS_THREAD,
@@ -6378,11 +6372,11 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                 // Shutdown thread might be working on this too
                 TRY_LOUD(excpt2)
                 {
-                    if (fSemOwned = !DosRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
+                    if (fLocked = !DosRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
                     {
                         ulShutItemCount = lstCountItems(&pShutdownData->llShutdown);
                         DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-                        fSemOwned = FALSE;
+                        fLocked = FALSE;
                     }
                 }
                 CATCH(excpt2) {} END_CATCH();
@@ -6403,10 +6397,10 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
         // complain to the user
         if (pszErrMsg == NULL)
         {
-            if (fSemOwned)
+            if (fLocked)
             {
                 DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-                fSemOwned = FALSE;
+                fLocked = FALSE;
             }
 
             // only report the first error, or otherwise we will
@@ -6433,11 +6427,11 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
         _Pmpf(( "UT: Exiting..." ));
     #endif
 
-    if (fSemOwned)
+    if (fLocked)
     {
         // release our mutex semaphore
         DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-        fSemOwned = FALSE;
+        fLocked = FALSE;
     }
 
     lstClear(&llTestList);

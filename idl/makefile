@@ -36,7 +36,9 @@ SOMTEMP = $(TEMP)
     [set SMEMIT=ih;h;c] || \
     [set SMADDSTAR=1] || \
     [set SMNOTC=1] || \
-    [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
+#     [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
+#   hacked up SMINCLUDE to make sure idl\wps is before toolkit idl\
+    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
 !endif
 
 !if [@echo    SMINCLUDE is $(SMINCLUDE)]
@@ -50,40 +52,44 @@ SOMTEMP = $(TEMP)
 
 # Specify the main target.
 
-all: $(OUTPUTDIR)\xcenter.h \
-     $(OUTPUTDIR)\xclslist.h \
-     $(OUTPUTDIR)\xdebug.h \
-     $(OUTPUTDIR)\xdebug_folder.h \
-     $(OUTPUTDIR)\xfdataf.h \
-     $(OUTPUTDIR)\xfdesk.h \
-     $(OUTPUTDIR)\xfdisk.h \
-     $(OUTPUTDIR)\xfldr.h \
-     $(OUTPUTDIR)\xfobj.h \
-     $(OUTPUTDIR)\xfont.h \
-     $(OUTPUTDIR)\xfontfile.h \
-     $(OUTPUTDIR)\xfontobj.h \
-     $(OUTPUTDIR)\xwppgmf.h \
-     $(OUTPUTDIR)\xfstart.h \
-     $(OUTPUTDIR)\xfsys.h \
-     $(OUTPUTDIR)\xfwps.h \
-     $(OUTPUTDIR)\xtrash.h \
-     $(OUTPUTDIR)\xtrashobj.h \
-     $(OUTPUTDIR)\xmmcdplay.h \
-     $(OUTPUTDIR)\xmmvolume.h \
-     $(OUTPUTDIR)\xwpadmin.h \
-     $(OUTPUTDIR)\xwpfsys.h \
-     $(OUTPUTDIR)\xwpkeybd.h \
-     $(OUTPUTDIR)\xwpmedia.h \
-     $(OUTPUTDIR)\xwpmouse.h \
-     $(OUTPUTDIR)\xwpnetwork.h \
-     $(OUTPUTDIR)\xwpnetsrv.h \
-     $(OUTPUTDIR)\xwppgm.h \
-     $(OUTPUTDIR)\xwpsetup.h \
-     $(OUTPUTDIR)\xwpscreen.h \
-     $(OUTPUTDIR)\xwpshadow.h \
-     $(OUTPUTDIR)\xwpsound.h \
-     $(OUTPUTDIR)\xwpstring.h \
-     $(OUTPUTDIR)\xwpvcard.h
+all: \
+    $(OUTPUTDIR)\wps\wpfolder.h \
+    $(OUTPUTDIR)\wps\wpfsys.h \
+    $(OUTPUTDIR)\wps\wpobject.h \
+    $(OUTPUTDIR)\xcenter.h \
+    $(OUTPUTDIR)\xclslist.h \
+    $(OUTPUTDIR)\xdebug.h \
+    $(OUTPUTDIR)\xdebug_folder.h \
+    $(OUTPUTDIR)\xfdataf.h \
+    $(OUTPUTDIR)\xfdesk.h \
+    $(OUTPUTDIR)\xfdisk.h \
+    $(OUTPUTDIR)\xfldr.h \
+    $(OUTPUTDIR)\xfobj.h \
+    $(OUTPUTDIR)\xfont.h \
+    $(OUTPUTDIR)\xfontfile.h \
+    $(OUTPUTDIR)\xfontobj.h \
+    $(OUTPUTDIR)\xwppgmf.h \
+    $(OUTPUTDIR)\xfstart.h \
+    $(OUTPUTDIR)\xfsys.h \
+    $(OUTPUTDIR)\xfwps.h \
+    $(OUTPUTDIR)\xtrash.h \
+    $(OUTPUTDIR)\xtrashobj.h \
+    $(OUTPUTDIR)\xmmcdplay.h \
+    $(OUTPUTDIR)\xmmvolume.h \
+    $(OUTPUTDIR)\xwpadmin.h \
+    $(OUTPUTDIR)\xwpfsys.h \
+    $(OUTPUTDIR)\xwpkeybd.h \
+    $(OUTPUTDIR)\xwpmedia.h \
+    $(OUTPUTDIR)\xwpmouse.h \
+    $(OUTPUTDIR)\xwpnetwork.h \
+    $(OUTPUTDIR)\xwpnetsrv.h \
+    $(OUTPUTDIR)\xwppgm.h \
+    $(OUTPUTDIR)\xwpsetup.h \
+    $(OUTPUTDIR)\xwpscreen.h \
+    $(OUTPUTDIR)\xwpshadow.h \
+    $(OUTPUTDIR)\xwpsound.h \
+    $(OUTPUTDIR)\xwpstring.h \
+    $(OUTPUTDIR)\xwpvcard.h
     @echo ----- Leaving $(MAKEDIR)
 
 # Now define inference rules for what to do with certain file
@@ -95,7 +101,18 @@ all: $(OUTPUTDIR)\xcenter.h \
 # files in other directories.
 
 RUNSC = sc -p -v -r -maddstar -mnoint -S128000 -C128000
-#-I $(TKBASE)\SOM\include -I . -I $(TKBASE)\idl -I $(TKBASE)\h
+
+# 1) inference rule for hacked-up IBM WPS classes
+
+# -- emit .IH, .DEF files when .IDL has changed
+{wps}.idl{$(OUTPUTDIR)\wps}.h:
+# emit H, IH (include\classes):
+        $(RUNSC) -d$(OUTPUTDIR)\wps -sh;ih wps\$(@B).idl
+# cleanup IH: this removes the ugly #pragma's for VAC++ 3.0
+        $(RUN_STRRPL) $(OUTPUTDIR)\wps\$(@B).ih "#pragma checkout(suspend)" " "
+        $(RUN_STRRPL) $(OUTPUTDIR)\wps\$(@B).ih "#pragma checkout(resume)" " "
+
+# 2) inference rule for XWP classes
 
 # -- emit .IH, .DEF files when .IDL has changed
 .idl{$(OUTPUTDIR)}.h:
@@ -128,9 +145,9 @@ $(OUTPUTDIR)\xfdesk.h:           $(@B).idl
 
 $(OUTPUTDIR)\xfdisk.h:           $(@B).idl
 
-$(OUTPUTDIR)\xfldr.h:            $(@B).idl
+$(OUTPUTDIR)\xfldr.h:            $(@B).idl wps\wpfolder.idl
 
-$(OUTPUTDIR)\xfobj.h:            $(@B).idl
+$(OUTPUTDIR)\xfobj.h:            $(@B).idl wps\wpobject.idl
 
 $(OUTPUTDIR)\xfont.h:            $(@B).idl
 
@@ -138,7 +155,7 @@ $(OUTPUTDIR)\xfontfile.h:        $(@B).idl
 
 $(OUTPUTDIR)\xfontobj.h:         $(@B).idl
 
-$(OUTPUTDIR)\xwppgmf.h:           $(@B).idl
+$(OUTPUTDIR)\xwppgmf.h:          $(@B).idl
 
 $(OUTPUTDIR)\xfstart.h:          $(@B).idl
 
@@ -154,7 +171,7 @@ $(OUTPUTDIR)\xmmcdplay.h:        $(@B).idl
 
 $(OUTPUTDIR)\xmmvolume.h:        $(@B).idl
 
-$(OUTPUTDIR)\xwpfsys.h:          $(@B).idl
+$(OUTPUTDIR)\xwpfsys.h:          $(@B).idl wps\wpfsys.idl
 
 $(OUTPUTDIR)\xwpadmin.h:         $(@B).idl
 

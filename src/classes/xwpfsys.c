@@ -603,8 +603,9 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
                 case ICON_CLEAR:
                     // WinSetFileIcon(ICON_CLEAR) clears the .ICON
                     // EA for us, so no need to worry...
-                    // note, this case is now overridden by XFldDataFile
-                    // and XWPProgramFile
+                    // note, this case is now also overridden by
+                    // XFldDataFile and XWPProgramFile, so effectively
+                    // this code only ever gets used by folders
                     if (WinSetFileIcon(szFilename, pIconInfo))
                     {
                         // use class default icon
@@ -631,35 +632,43 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
 }
 
 /*
- *@@ wpRefresh:
- *      this WPFileSystem method compares the internal
- *      object data with the data on disk and refreshes
- *      the object, if necessary.
+ *@@ wpRefreshFSInfo:
+ *      this unpublished WPFileSystem instance method is supposed
+ *      to refresh the object with new file-system information.
  *
- *      The original WPFileSystem implementation is truly
- *      evil. It keeps nuking icons behind our back, for
- *      example. As a result, this has now been rewritten
- *      with V0.9.16.
+ *      Note: This method is not in the public IBM wpfsys.idl file.
+ *      To override this, we have our special wpfsys.idl file in
+ *      our own idl\wps directory, which is put on SMINCLUDE first.
  *
- *@@added V0.9.16 (2001-12-08) [umoeller]
+ *      From my testing, WPFileSystem::wpRefresh does nothing but
+ *      calling this method.
+ *
+ *      Unfortunately, the WPFileSystem implementation keeps killing
+ *      our executable icons, so we need to override this behavior.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
-                                      ULONG ulView, PVOID pReserved)
+SOM_Scope BOOL  SOMLINK xfs_wpRefreshFSInfo(XWPFileSystem *somSelf,
+                                            ULONG ulView,
+                                            PVOID pReserved,
+                                            ULONG ulUnknown)
 {
-    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpRefresh");
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpRefreshFSInfo");
 
 #ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
     {
+        // DosBeep(4000, 10);
         return !fsysRefresh(somSelf, pReserved);
     }
 #endif
 
-    return (XWPFileSystem_parent_WPFileSystem_wpRefresh(somSelf,
-                                                        ulView,
-                                                        pReserved));
+    return XWPFileSystem_parent_WPFileSystem_wpRefreshFSInfo(somSelf,
+                                                             ulView,
+                                                             pReserved,
+                                                             ulUnknown);
 }
 
 /*
@@ -820,8 +829,8 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
                                            pszFilename))
         {
             if ((_wpQueryAttr(pAwake) & FILE_DIRECTORY) == (attrFile & FILE_DIRECTORY))
-                fsysSetRefreshFlags(pAwake,
-                                    (fsysQueryRefreshFlags(pAwake)
+                _wpSetRefreshFlags(pAwake,
+                                    (_wpQueryRefreshFlags(pAwake)
                                         & ~DIRTYBIT)
                                         | FOUNDBIT);
             else

@@ -126,59 +126,6 @@
  ********************************************************************/
 
 /*
- *@@ xwpDestroyStorage:
- *      override of XFldObject::xwpDestroyStorage, which must
- *      remove the physical representation of an object
- *      when it gets physically deleted.
- *
- *      xwpDestroyStorage gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
- *      calls WPObject::wpDestroyObject, which we must override
- *      for this class in order to suppress the stupid error
- *      message boxes if the file no longer exists.
- *
- *      This actually deletes the data file using DosDelete.
- *
- *      As opposed to the WPS, we are smart enough NOT to
- *      display a message box here if deletion failed. In
- *      addition, if the file is already gone, we return
- *      TRUE, since the file was obviously already deleted.
- *
- *@@added V0.9.9 (2001-02-04) [umoeller]
- *@@changed V0.9.20 (2002-07-16) [umoeller]: now using DosForceDelete if the file is in the trash can
- */
-
-SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
-{
-    BOOL    brc = FALSE;
-    CHAR    szFilename[CCHMAXPATH];
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpDestroyStorage");
-
-    if (_wpQueryFilename(somSelf, szFilename, TRUE))
-    {
-        // use DosForceDelete if the file is in \trash
-        // V0.9.20 (2002-07-12) [umoeller]
-        APIRET arc;
-        if (fopsUseForceDelete(szFilename))
-            arc = DosForceDelete(szFilename);
-        else
-            arc = DosDelete(szFilename);
-
-        switch (arc)
-        {
-            case NO_ERROR:
-            case ERROR_FILE_NOT_FOUND:
-            case ERROR_PATH_NOT_FOUND:
-                brc = TRUE;
-            break;
-        }
-    }
-
-    return brc;
-}
-
-/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -236,6 +183,61 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
     #endif
 
     XFldDataFile_parent_WPDataFile_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpDestroyObject:
+ *      this undocumented WPObject method gets called during
+ *      wpFree processing to destroy the physical storage of
+ *      an object (for file-system objects, the file or folder,
+ *      for abstracts, the INI data).
+ *
+ *      Starting with V0.9.20, we are now able to override this
+ *      undocumented WPS method too, so the previous overhead
+ *      with xwpDestroyStorage has been removed.
+ *
+ *      This implementation actually deletes the data file using
+ *      DosDelete.
+ *
+ *      As opposed to the WPS, we are smart enough NOT to
+ *      display a message box here if deletion failed. In
+ *      addition, if the file is already gone, we return
+ *      TRUE, since the file was obviously already deleted.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
+{
+    BOOL    brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpDestroyObject");
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        // use DosForceDelete if the file is in \trash
+        // V0.9.20 (2002-07-12) [umoeller]
+        APIRET arc;
+        if (fopsUseForceDelete(szFilename))
+            arc = DosForceDelete(szFilename);
+        else
+            arc = DosDelete(szFilename);
+
+        switch (arc)
+        {
+            case NO_ERROR:
+            case ERROR_FILE_NOT_FOUND:
+            case ERROR_PATH_NOT_FOUND:
+                brc = TRUE;
+            break;
+        }
+    }
+
+    return brc;
+
+    // return (XFldDataFile_parent_WPDataFile_wpDestroyObject(somSelf));
 }
 
 /*

@@ -795,14 +795,14 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         // start collecting stuff; lock the folder contents,
         // do this in a protected block (exception handler,
         // must-complete section)
-        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, 5000))
         {
             ULONG   ulTotalObjectsAdded = 0;
             // now collect all objects in folder
             // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
             for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                  pObject;
-                 pObject = *objGetNextObjPointer(pObject))
+                 pObject = *__get_pobjNext(pObject))
             {
                 // apply folder's "include" criteria
                 // V0.9.16 (2002-01-05) [umoeller]
@@ -869,7 +869,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     CATCH(excpt1) { } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 
     // now sort the lists alphabetically
     lstQuickSort(pllFolders,

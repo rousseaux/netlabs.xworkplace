@@ -48,8 +48,6 @@ interface XWPProgram : WPProgram
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
-    BOOL xwpDestroyStorage();
-
     BOOL xwpQueryExecutable(in PSZ pszBuffer);
 
 #ifdef __SOMIDL__
@@ -57,7 +55,6 @@ interface XWPProgram : WPProgram
 
     releaseorder: xwpAddAssociationsPage,
                   xwpQuerySetup2,
-                  xwpDestroyStorage,
                   xwpQueryExecutable;
 
     /*
@@ -102,7 +99,9 @@ interface XWPProgram : WPProgram
      */
 
     wpInitData: override;
+
     wpUnInitData: override;
+    wpDestroyObject: override;
 
     //# wpSetup: override;                  not needed, this properly calls the methods
 

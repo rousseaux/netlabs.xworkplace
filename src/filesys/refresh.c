@@ -344,25 +344,6 @@ static VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *
  ********************************************************************/
 
-/*
- *@@ Refresh:
- *
- *@@added V0.9.16 (2002-01-04) [umoeller]
- */
-
-static VOID Refresh(WPObject *pobj)
-{
-    if (_somIsA(pobj, _WPFolder))
-        // is folder: do not call _wpRefresh, this
-        // goes into the subfolders
-        fsysRefreshFSInfo(pobj, NULL);
-    else
-        // regular fs object: call wpRefresh directly,
-        // which we might have replaced if icon replacements
-        // are on
-        _wpRefresh(pobj, NULLHANDLE, NULL);
-}
-
 #define REMOVE_NOTHING  0
 #define REMOVE_NODE     1
 #define REMOVE_FOLDER   2
@@ -402,6 +383,7 @@ static VOID Refresh(WPObject *pobj)
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  *@@changed V0.9.16 (2002-01-09) [umoeller]: folder refresh wasn't always working, fixed
  *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed system deadlock if data file was made awake that needed a previously unused association icon
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized refresh
  */
 
 static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
@@ -454,7 +436,9 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
                                            // directory, or is it?
                                            0))
             {
-                Refresh(pobj);
+                _wpRefreshFSInfo(pobj, NULLHANDLE, NULL, TRUE);
+                            // safe to call this method now since we have managed
+                            // to override it V0.9.20 (2002-07-25) [umoeller]
             }
         }
         break;
@@ -515,7 +499,9 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
                         // valid file; instead, we refresh the
                         // FS object
                         // V0.9.16 (2001-12-06) [umoeller]
-                        Refresh(pobj);
+                        _wpRefreshFSInfo(pobj, NULLHANDLE, NULL, TRUE);
+                            // safe to call this method now since we have managed
+                            // to override it V0.9.20 (2002-07-25) [umoeller]
                 }
             }
             // else object not in folder: no problem there
@@ -708,7 +694,7 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
 
     while (!G_fExitAllRefreshThreads)
     {
-        BOOL    fSemOwned = FALSE;
+        BOOL    fLocked = FALSE;
         ULONG   ulPostCount = 0;
 
         // _PmpfF(("pump thread blocking on HEV."));
@@ -719,7 +705,7 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
 
         TRY_LOUD(excpt1)
         {
-            if (fSemOwned = fdrGetNotifySem(SEM_INDEFINITE_WAIT))
+            if (fLocked = fdrGetNotifySem(SEM_INDEFINITE_WAIT))
             {
                 // only if we got the mutex, reset the event
                 DosResetEventSem(G_hevNotificationPump, &ulPostCount);
@@ -741,11 +727,8 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
             WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
         } END_CATCH();
 
-        if (fSemOwned)
-        {
+        if (fLocked)
             fdrReleaseNotifySem();
-            fSemOwned = FALSE;
-        }
     }
 }
 
@@ -944,7 +927,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
     static M_WPFileSystem *pclsWPFileSystem = NULL;
 
     BOOL    fStored = FALSE;
-    BOOL    fSemOwned = FALSE;
+    BOOL    fLocked = FALSE;
 
     TRY_LOUD(excpt2)
     {
@@ -1075,7 +1058,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                             // we'll wait ten seconds for this -- if we can't
                             // get the mutex in that time, we'll just drop
                             // the notification
-                            if (fSemOwned = fdrGetNotifySem(10 * 1000))
+                            if (fLocked = fdrGetNotifySem(10 * 1000))
                             {
                                 // see if it's populated; we can safely
                                 // drop the notification if the folder
@@ -1112,7 +1095,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                                     // mark the folder for refresh on next open
                                     fRefreshFolderOnOpen = TRUE;
 
-                            } // end if (fSemOwned)
+                            } // end if (fLocked)
                             else
                                 // can't get the semaphore in time:
                                 // mark the folder for refresh
@@ -1152,7 +1135,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                                                       (PSZ)WPOBJID_DRIVES,
                                                       TRUE))
                 {
-                    if (fSemOwned = fdrGetNotifySem(10 * 1000))
+                    if (fLocked = fdrGetNotifySem(10 * 1000))
                     {
                         // change this notification into a
                         // full refresh of the drives folder,
@@ -1179,7 +1162,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
         WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
     } END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         fdrReleaseNotifySem();
 
     if (!fStored)
@@ -1201,7 +1184,7 @@ static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
     static WPFolder *pLastValidFolder = NULL;
 
-    BOOL fSemOwned = FALSE;
+    BOOL fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
@@ -1235,7 +1218,7 @@ static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             {
                 if (pLastValidFolder)
                 {
-                    if (fSemOwned = fdrGetNotifySem(10 * 1000))
+                    if (fLocked = fdrGetNotifySem(10 * 1000))
                     {
                         // create an XWPNOTIFY with the special "full refresh" flag
                         PXWPNOTIFY pNew = (PXWPNOTIFY)malloc(sizeof(XWPNOTIFY));
@@ -1271,7 +1254,7 @@ static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
     } END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         fdrReleaseNotifySem();
 
     return mrc;

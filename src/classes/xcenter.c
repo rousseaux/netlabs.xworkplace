@@ -815,10 +815,8 @@ SOM_Scope ULONG SOMLINK xctr_xwpDeleteWidget(XCenter *somSelf,
                     // to client or tray widget
                 }
 
-                if (!_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                 {
-                    fLocked = TRUE;
-
                     // now we can kill the widget setting
                     if (!(arc = ctrpRemoveWidgetSetting(somSelf,
                                                         &pSetting)))

@@ -1125,11 +1125,11 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
 {
     BOOL    brc = FALSE;
-    BOOL    fSemOwned = FALSE;
+    BOOL    fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockRunning())
+        if (fLocked = LockRunning())
         {
             // go thru list
             PLISTNODE pNode = lstQueryFirstNode(&G_llRunning);
@@ -1158,7 +1158,7 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
                             // auto-free
 
                     UnlockRunning();
-                    fSemOwned = FALSE;
+                    fLocked = FALSE;
 
                     // check if we also have a VIEWFILE item
                     if (pUseFile)
@@ -1192,7 +1192,7 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
         brc = FALSE;
     } END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         UnlockRunning();
 
     return brc;
@@ -1220,11 +1220,11 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
 BOOL progRunningAppDestroyed(WPObject *pobjEmphasis)    // in: destroyed object
 {
     BOOL    brc = FALSE;
-    BOOL    fSemOwned = FALSE;
+    BOOL    fLocked = FALSE;
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = LockRunning())
+        if (fLocked = LockRunning())
         {
             // go thru list
             PLISTNODE pNode = lstQueryFirstNode(&G_llRunning);
@@ -1255,7 +1255,7 @@ BOOL progRunningAppDestroyed(WPObject *pobjEmphasis)    // in: destroyed object
         brc = FALSE;
     } END_CATCH();
 
-    if (fSemOwned)
+    if (fLocked)
         UnlockRunning();
 
     return brc;

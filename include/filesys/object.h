@@ -72,21 +72,19 @@
 
     /*
      *@@ IBMOBJECTDATA:
-     *      WPObject instance data structure,
-     *      as far as I have been able to
-     *      decode it. See XFldObject::wpInitData
-     *      where we get a pointer to this.
+     *      WPObject instance data structure, as far as I
+     *      have been able to decode it. See
+     *      XFldObject::wpInitData where we get a pointer
+     *      to this.
      *
-     *      WARNING: This is the result of the
-     *      testing done on eComStation, i.e. the
-     *      MCP1 code level of the WPS. I have not
-     *      tested whether the struct ordering is
-     *      the same on all older versions of OS/2,
-     *      nor can I guarantee that the ordering will
-     *      stay the same in the future (even though
-     *      it is unlikely that anyone at IBM is
-     *      capable of changing this structure any
-     *      more in the first place).
+     *      WARNING: This is the result of the testing done
+     *      on eComStation, i.e. the MCP1 code level of the
+     *      WPS. I have not tested whether the struct ordering
+     *      is the same on all older versions of OS/2, nor can
+     *      I guarantee that the ordering will stay the same
+     *      in the future (even though it is unlikely that
+     *      anyone at IBM is capable of changing this structure
+     *      any more in the first place).
      *
      *      The size of this structure (sizeof(IBMOBJECTDATA))
      *      is 144 bytes, and _somGetInstanceSize(_WPObject)
@@ -104,8 +102,7 @@
         WPObject            *pobjNext;
                                 // next object in folder content chain;
                                 // this is a SOM attribute, so we can safely
-                                // get this using the som _get_pobjNext method
-                                // (see objGetNextObjPointer)
+                                // get this using the SOM _get_pobjNext method
         PMINIRECORDCORE     pRecord;
                                 // pointer to the object record; size is variable
                                 // depending on object data
@@ -188,21 +185,6 @@
     BOOL objIsAFolder(WPObject *somSelf);
 
     BOOL objIsObjectInitialized(WPObject *somSelf);
-
-    /*
-     *@@ xfTP_get_LastObj:
-     *      prototype for WPFolder::_get_LastObj (note the
-     *      extra underscore).
-     *
-     *      See xfTP_get_pobjNext for explanations.
-     *
-     *@@added V0.9.7 (2001-01-13) [umoeller]
-     */
-
-    typedef WPObject** _System xfTP_get_LastObj(WPFolder*);
-    typedef xfTP_get_LastObj *xfTD_get_LastObj;
-
-    WPObject** objGetNextObjPointer(WPObject *somSelf);
 
     /* ******************************************************************
      *
@@ -330,14 +312,6 @@
 
     ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,
                                 PVOID pvUserForCallback);
-
-    /* ******************************************************************
-     *
-     *   Object "Internals" page
-     *
-     ********************************************************************/
-
-    // MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
      *

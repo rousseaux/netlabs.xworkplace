@@ -177,56 +177,6 @@ extern OBJECTLIST           G_llQuickOpenFolders = {0};
  ********************************************************************/
 
 /*
- *@@ xwpDestroyStorage:
- *      override of XFldObject::xwpDestroyStorage, which must
- *      remove the physical representation of an object
- *      when it gets physically deleted.
- *
- *      xwpDestroyStorage gets called by name from
- *      XFldObject::wpFree. The default XFldObject::xwpDestroyStorage
- *      calls WPObject::wpDestroyObject, which we must override
- *      for this class in order to suppress the stupid error
- *      message boxes if the file no longer exists.
- *
- *      This actually deletes the folder using DosDeleteDir.
- *
- *      As opposed to the WPS, we are smart enough NOT to
- *      display a message box here if the folder no longer
- *      exists in the first place. In that case, we return
- *      TRUE, since the folder was obviously already deleted.
- *
- *@@added V0.9.9 (2001-02-04) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xf_xwpDestroyStorage(XFolder *somSelf)
-{
-    BOOL    brc = FALSE;
-    CHAR    szFilename[CCHMAXPATH];
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpDestroyStorage");
-
-    if (_wpQueryFilename(somSelf, szFilename, TRUE))
-    {
-        APIRET arc = DosDeleteDir(szFilename);
-
-        // _PmpfF(("DosDelete returned %d", arc));
-
-        switch (arc)
-        {
-            case NO_ERROR:
-                // if the fs object doesn't exist any more,
-                // simply return TRUE also
-            case ERROR_FILE_NOT_FOUND:
-            case ERROR_PATH_NOT_FOUND:
-                brc = TRUE;
-            break;
-        }
-    }
-
-    return brc;
-}
-
-/*
  *@@ xwpQueryFldrSort:
  *      this returns the folder's sort settings into the specified
  *      USHORT variables.
@@ -540,7 +490,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 
         TRY_LOUD(excpt1)
         {
-            if (fFolderLocked = !fdrRequestFolderMutexSem(somSelf, 5000))
+            if (fFolderLocked = !_wpRequestFolderMutexSem(somSelf, 5000))
             {
                 // get the folder's content as the WPS delivers it.
                 // This is unsorted. Apparently, the WPS returns items
@@ -553,7 +503,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                      pObj;
-                     pObj = *objGetNextObjPointer(pObj))
+                     pObj = *__get_pobjNext(pObj))
                 {
                     // create new list item
                     PORDEREDLISTITEM poliNew = malloc(sizeof(ORDEREDLISTITEM));
@@ -613,7 +563,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
-            fdrReleaseFolderMutexSem(somSelf);
+            _wpReleaseFolderMutexSem(somSelf);
 
         if (!fItemsFound)
         {
@@ -1336,10 +1286,48 @@ SOM_Scope void  SOMLINK xf_xwpSetDisableCnrAdd(XFolder *somSelf,
 
 SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 {
+    static SOMClass *s_pWPFolder = NULL;
+
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpInitData");
 
     XFolder_parent_WPFolder_wpInitData(somSelf);
+
+    // get pointer to IBM WPFolder instance data;
+    // see WPProgram::wpInitData for more about this hack
+    if (!s_pWPFolder)
+    {
+        // first call:
+        SOMClass *pClass = _somGetClass(somSelf);
+                        // XWPFolder class object now
+
+        while (pClass = _somGetParent(pClass))
+                    // either WPFolder class object or another
+                    // WPFolder replacement now
+        {
+            if (!strcmp(_somGetName(pClass), "WPFolder"))
+            {
+                // got it:
+                s_pWPFolder = pClass;
+
+                #ifdef DEBUG_RESTOREDATA
+                    _PmpfF(("somGetInstanceSize %d",
+                                _somGetInstanceSize(pClass)));
+                    _PmpfF(("somGetInstancePartSize %d",
+                                _somGetInstancePartSize(pClass)));
+                    _PmpfF(("sizeof(IBMOBJECTDATA) %d",
+                                sizeof(IBMOBJECTDATA)));
+                #endif
+
+                break;
+            }
+        }
+    }
+
+    if (s_pWPFolder)
+        _pvWPFolderData = somDataResolve(somSelf, _somGetInstanceToken(s_pWPFolder));
+    else
+        _pvWPFolderData = NULL; // shouldn't happen, but be safe
 
     // set all the instance variables to safe defaults
     _bSnapToGridInstance = 2;
@@ -1377,9 +1365,6 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _fDisableAutoCnrAdd = FALSE;
 
-    _ppFirstObj = NULL;
-    _ppLastObj = NULL;
-
     _cNotificationsPending = 0;
 
     _fInwpAddFolderView1Page = FALSE;
@@ -1390,9 +1375,6 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
              &_cAbstracts);
 
     _pMonitor = NULL;
-
-    _pfn_wpRequestFolderMutexSem = NULL;
-    _pfn_wpReleaseFolderMutexSem = NULL;
 }
 
 /*
@@ -1626,6 +1608,59 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
        */
 
     return brc;
+}
+
+/*
+ *@@ wpDestroyObject:
+ *      this undocumented WPObject method gets called during
+ *      wpFree processing to destroy the physical storage of
+ *      an object (for file-system objects, the file or folder,
+ *      for abstracts, the INI data).
+ *
+ *      Starting with V0.9.20, we are now able to override this
+ *      undocumented WPS method too, so the previous overhead
+ *      with xwpDestroyStorage has been removed.
+ *
+ *      This implementation actually deletes the folder using
+ *      DosDeleteDir.
+ *
+ *      As opposed to the WPS, we are smart enough NOT to
+ *      display a message box here if the folder no longer
+ *      exists in the first place. In that case, we return
+ *      TRUE, since the folder was obviously already deleted.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpDestroyObject(XFolder *somSelf)
+{
+    BOOL    brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpDestroyObject");
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        APIRET arc = DosDeleteDir(szFilename);
+
+        // _PmpfF(("DosDelete returned %d", arc));
+
+        switch (arc)
+        {
+            case NO_ERROR:
+                // if the fs object doesn't exist any more,
+                // simply return TRUE also
+            case ERROR_FILE_NOT_FOUND:
+            case ERROR_PATH_NOT_FOUND:
+                brc = TRUE;
+            break;
+        }
+    }
+
+    return brc;
+
+    // return (XFolder_parent_WPFolder_wpDestroyObject(somSelf));
 }
 
 /*

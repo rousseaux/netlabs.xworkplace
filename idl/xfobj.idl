@@ -101,8 +101,6 @@ interface XFldObject : WPObject
 
     HPOINTER xwpQueryIconNow();
 
-    BOOL xwpDestroyStorage();
-
     ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
                                     in ULONG ulPageID,
                                     in ULONG ulDefaultHelpPanel);
@@ -130,9 +128,6 @@ interface XFldObject : WPObject
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
-    ULONG xwpSetNextObj(in WPObject pobjNext);
-    WPObject xwpQueryNextObj();
-
     HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
 
 #ifdef __SOMIDL__
@@ -149,9 +144,6 @@ interface XFldObject : WPObject
                   xwpModifyListNotify,
                   xwpAddWidgetNotify,
                   xwpRemoveDestroyNotify,
-                  xwpSetNextObj,
-                  xwpQueryNextObj,
-                  xwpDestroyStorage,
                   xwpQueryRealDefaultView,
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,

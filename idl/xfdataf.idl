@@ -44,12 +44,8 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    BOOL xwpDestroyStorage();
-
 #ifdef __SOMIDL__
   implementation {
-
-    releaseorder: xwpDestroyStorage;
 
     /*
      * Class Modifiers:
@@ -87,6 +83,8 @@ interface XFldDataFile : WPDataFile
 
     wpInitData: override;
     wpUnInitData: override;
+
+    wpDestroyObject: override;
 
     wpRestoreState: override;
 

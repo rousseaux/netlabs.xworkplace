@@ -175,8 +175,6 @@ interface XFolder : WPFolder
      *
      */
 
-    BOOL xwpDestroyStorage();
-
     BOOL xwpQueryFldrSort(in PLONG plDefaultSort,
                           in PLONG plFoldersFirst,
                           in PLONG plAlwaysSort);
@@ -249,8 +247,7 @@ interface XFolder : WPFolder
         xwpSetDefaultDocument,
         xwpQueryDefaultDocument,
         xwpSetDisableCnrAdd,
-        xwpProcessObjectCommand,
-        xwpDestroyStorage;
+        xwpProcessObjectCommand;
 
     /*
      * Class Modifiers:
@@ -270,6 +267,8 @@ interface XFolder : WPFolder
      * Internal instance variables for XFolder:
      *
      */
+
+    PVOID           pvWPFolderData;     // V0.9.20 (2002-07-25) [umoeller]
 
     // the following four correspond to the "XFolder" instance
     // settings page. Each of these can have one of the following
@@ -353,11 +352,10 @@ interface XFolder : WPFolder
     // folder contents
     ULONG           cObjects;                   // folder's objects count, always valid
     BOOL            fDisableAutoCnrAdd;
-    // pointers to original WPFolder object pointers
-    WPObject        *ppFirstObj;
-    WPObject        *ppLastObj;
-            // note: in IDL, "WPObject" is a WPObject* already, so this
-            // translates into **ppFirstObj etc.
+
+    //# pointers to original WPFolder object pointers
+    //# WPObject        *ppFirstObj;        removed V0.9.20 (2002-07-25) [umoeller]
+    //# WPObject        *ppLastObj;         removed V0.9.20 (2002-07-25) [umoeller]
 
     // tree of WPFileSystem objects
     // V0.9.16 (2002-01-26) [umoeller]
@@ -404,11 +402,12 @@ interface XFolder : WPFolder
                 // ptr to read-write monitor (see fdrRequestFolderWriteMutexSem)
                 // V0.9.16 (2001-10-25) [umoeller]
 
-    PVOID       pfn_wpRequestFolderMutexSem;
-    PVOID       pfn_wpReleaseFolderMutexSem;
-                // cached method pointers (see fdrRequestFolderMutexSem and
-                // fdrReleaseFolderMutexSem)
-                // V0.9.16 (2001-10-25) [umoeller]
+    //# PVOID       pfn_wpRequestFolderMutexSem;
+    //# PVOID       pfn_wpReleaseFolderMutexSem;
+                //# cached method pointers (see fdrRequestFolderMutexSem and
+                //# fdrReleaseFolderMutexSem)
+                //# V0.9.16 (2001-10-25) [umoeller]
+                //# removed V0.9.20 (2002-07-25) [umoeller]
 
     /*
      * WPFolder methods overridden by XFolder:
@@ -421,6 +420,7 @@ interface XFolder : WPFolder
 
     wpUnInitData: override;
     wpFree: override;
+    wpDestroyObject: override;
 
     wpSaveState: override;
     wpRestoreState: override;

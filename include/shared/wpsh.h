@@ -158,88 +158,6 @@
      */
 
     /*
-     * xfTP_wpMakeDormant:
-     *      prototype for WPObject::wpMakeDormant.
-     *
-     *      _wpMakeDormant is undocumented. It destroys only
-     *      the SOM object which represents the persistent
-     *      form of a Desktop object. This gets called whenever
-     *      the WPS puts an object back to sleep (e.g. because
-     *      its folder was closed and the "sleepy time" has
-     *      elapsed on the object). This is described in the
-     *      WPSGUIDE, "WPS Processes and Threads", "Sleepy
-     *      Time Thread".
-     *
-     *      This also gets called in turn by _wpFree (which,
-     *      in addition, destroys the persistent form) after
-     *      the object has been deleted.
-     *
-     *      WPObject::wpMakeDormant apparently does the
-     *      following:
-     *
-     *      1)  changes the folder flags of the owning
-     *          folder, if that folder was populated
-     *          (apparently to force a re-populate at
-     *          the next open);
-     *
-     *      2)  closes all open views (by calling _wpClose);
-     *
-     *      3)  calls _wpSaveImmediate, if (fSaveState == TRUE);
-     *
-     *      4)  cleans up the object's useitems list (remove
-     *          the object from all containers, cleans up
-     *          memory, etc.);
-     *
-     *      5)  calls _somUninit, which in turn calls _wpUnInitData.
-     *
-     *      For example, _wpMakeDormant on a data file would
-     *      only destroy the SOM representation of the data
-     *      file, without deleting the file itself.
-     *
-     *      By contrast, _wpFree on a data file would first
-     *      delete the file and then call _wpMakeDormant in
-     *      turn to have the SOM object destroyed as well.
-     *
-     *      In other words, wpMakeDormant is the reverse to
-     *      wpclsMakeAwake. By contrast, wpFree is the reverse
-     *      to wpclsNew.
-     */
-
-    typedef BOOL32 _System xfTP_wpMakeDormant(WPObject *somSelf,
-                                              BOOL32 fSaveState);
-    typedef xfTP_wpMakeDormant *xfTD_wpMakeDormant;
-
-    /*
-     *@@ xfTP_wpDestroyObject:
-     *      prototype for WPObject::wpDestroyObject.
-     *
-     *      wpDestroyObject gets called in turn by wpFree
-     *      to destroy the physical representation of an
-     *      object, before the SOM object itself is
-     *      destroyed by calling wpMakeDormant.
-     *
-     *      For WPFileSystem objects, this deletes the
-     *      file/folder. For abstract objects, this
-     *      removes the INI data.
-     *
-     *@@added V0.9.9 (2001-02-01) [umoeller]
-     */
-
-    typedef BOOL _System xfTP_wpDestroyObject(WPObject *somSelf);
-    typedef xfTP_wpDestroyObject *xfTD_wpDestroyObject;
-
-    /*
-     *@@ wpDeleteWindowPosKeys:
-     *      some undocumented WPObject method which gets called during
-     *      object destruction. I'm unsure what this does exactly.
-     *
-     *@@added V0.9.9 (2001-02-04) [umoeller]
-     */
-
-    typedef BOOL _System xfTP_wpDeleteWindowPosKeys(WPObject *somSelf);
-    typedef xfTP_wpDeleteWindowPosKeys *xfTD_wpDeleteWindowPosKeys;
-
-    /*
      * xfTP_wpModifyMenu:
      *      prototype for WPObject::wpModifyMenu.
      *
@@ -273,6 +191,8 @@
     BOOL wpshParentQuerySetup2(WPObject *somSelf,
                                SOMClass *pClass,
                                PVOID pstrSetup);
+
+#if 0
 
     /*
      *@@ xfTP_get_pobjNext:
@@ -320,5 +240,7 @@
 
     typedef WPObject** _System xfTP_get_FirstObj(WPFolder*);
     typedef xfTP_get_FirstObj *xfTD_get_FirstObj;
+
+#endif
 
 #endif

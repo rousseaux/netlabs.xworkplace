@@ -896,7 +896,7 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
         // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
         for (   pTrashObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pTrashObject);
-                pTrashObject = *objGetNextObjPointer(pTrashObject)
+                pTrashObject = *__get_pobjNext(pTrashObject)
             )
         {
             // pTrashObject now has the XWPTrashObject to delete
@@ -1225,7 +1225,7 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                                        PULONG pulObjectCount)   // out: object count (req. ptr)
 {
     BOOL        brc = FALSE,
-                fTrashDirSemOwned = FALSE;
+                fTrashDirFolderLocked = FALSE;
     WPObject    *pObject;
 
     LINKLIST    llEmptyDirs;        // list of WPFolder's which are to be freed
@@ -1252,12 +1252,12 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
 
             // request semaphore for that trash dir
             // to protect the contents list
-            if (fTrashDirSemOwned = !fdrRequestFolderMutexSem(pTrashDir, 4000))
+            if (fTrashDirFolderLocked = !_wpRequestFolderMutexSem(pTrashDir, 4000))
             {
                 // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
                         (pObject);
-                        pObject = *objGetNextObjPointer(pObject)
+                        pObject = *__get_pobjNext(pObject)
                     )
                 {
                     BOOL    fAddTrashObject = TRUE;
@@ -1354,7 +1354,7 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                         #endif
                     }
                 } // end for (   pObject = _wpQueryContent(...
-            } // end if (fTrashDirSemOwned)
+            } // end if (fTrashDirFolderLocked)
             else
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "Couldn't request mutex semaphore for \\trash subdir.");
@@ -1369,11 +1369,8 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
         brc = FALSE;        // report error
     } END_CATCH();
 
-    if (fTrashDirSemOwned)
-    {
-        fdrReleaseFolderMutexSem(pTrashDir);
-        fTrashDirSemOwned = FALSE;
-    }
+    if (fTrashDirFolderLocked)
+        _wpReleaseFolderMutexSem(pTrashDir);
 
     *pulObjectCount += ulTrashObjectCountSub;
 

@@ -548,7 +548,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
         HAB hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
                             // how can we get the HAB of the populate thread?!?
 
-        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
             APIRET arc = NO_ERROR;
             PSZ pszFontKeys = NULL;
@@ -634,7 +634,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
     } END_CATCH();
 
     if (fFolderLocked)
-        fdrReleaseFolderMutexSem(pFolder);
+        _wpReleaseFolderMutexSem(pFolder);
 }
 
 /*
