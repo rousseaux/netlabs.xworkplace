@@ -1,0 +1,661 @@
+Log of copy-drag in flowed icon view;
+copying WPDataFile object "check.c" within same folder
+so that name clash pops up
+
+// start dragging with "Ctrl" pressed (copy)
+
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1523 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryType
+10:41:01am> P1843,T1 : xdebug.c,1526 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryType
+10:41:01am> P1843,T1 : xdebug.c,1773 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFilename
+10:41:01am> P1843,T1 : xdebug.c,1778 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFilename
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1310 : 0x9A9968 ++ DbgDataFile::ddf_wpFindUseItem
+10:41:01am> P1843,T1 : xdebug.c, 385 : 0x9A9968 ++     DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:01am> P1843,T1 : xdebug.c, 389 : 0x9A9968 --     End of DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:01am> P1843,T1 : xdebug.c, 410 : 0x9A9968 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:01am> P1843,T1 : xdebug.c, 414 : 0x9A9968 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:01am> P1843,T1 : xdebug.c, 397 : 0x9A9968 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:01am> P1843,T1 : xdebug.c, 401 : 0x9A9968 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:01am> P1843,T1 : xdebug.c,1315 : 0x9A9968 -- End of DbgDataFile::ddf_wpFindUseItem
+10:41:01am> P1843,T1 : xdebug.c, 877 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFolder
+10:41:01am> P1843,T1 : xdebug.c, 881 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFolder
+10:41:01am> P1843,T1 : xdebug.c,1392 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryIcon
+10:41:01am> P1843,T1 : xdebug.c,1396 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryIcon
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c, 877 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFolder
+10:41:01am> P1843,T1 : xdebug.c, 881 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFolder
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:01am> P1843,T1 : xdebug.c,1600 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFileSize
+10:41:01am> P1843,T1 : xdebug.c,1603 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFileSize
+10:41:01am> P1843,T1 : xdebug.c,1798 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryDateInfo
+10:41:01am> P1843,T1 : xdebug.c,1802 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryDateInfo
+10:41:01am> P1843,T1 : xdebug.c,1798 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryDateInfo
+10:41:01am> P1843,T1 : xdebug.c,1802 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryDateInfo
+10:41:01am> P1843,T1 : xdebug.c,1773 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFilename
+10:41:01am> P1843,T1 : xdebug.c,1778 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFilename
+10:41:01am> P1843,T1 : xdebug.c,1600 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFileSize
+10:41:01am> P1843,T1 : xdebug.c,1603 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFileSize
+
+// intentionally waiting a few seconds without moving the mouse;
+// now dropping object
+
+10:41:10am> P1843,T1 : xdebug.c,1546 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:10am> P1843,T1 : xdebug.c,1549 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryAttr
+10:41:10am> P1843,T1 : xdebug.c, 877 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFolder
+10:41:10am> P1843,T1 : xdebug.c, 881 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFolder
+10:41:10am> P1843,T1 : xdebug.c, 877 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFolder
+10:41:10am> P1843,T1 : xdebug.c, 881 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFolder
+        // the WPS (the folder?) now invokes wpSetTaskRec on the
+        // SOURCE object before copying. Apparently this prepares
+        // data for the tasker thread (comes up below).
+10:41:10am> P1843,T1 : xdebug.c, 733 : 0x9A9968 ++ DbgDataFile::ddf_wpSetTaskRec
+10:41:10am> P1843,T1 : xdebug.c, 737 :         pTaskRecNew pre:
+10:41:11am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A9968 (check.c)
+10:41:11am> P1843,T1 : wpsh.c,1533 : Index: 0
+10:41:11am> P1843,T1 : wpsh.c,1534 :     useCount: 0
+10:41:11am> P1843,T1 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:11am> P1843,T1 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:11am> P1843,T1 : wpsh.c,1537 :     xOrigin: 0 // not used, we're in flowed view
+10:41:11am> P1843,T1 : wpsh.c,1538 :     yOrigin: 0 // not used, we're in flowed view
+10:41:11am> P1843,T1 : wpsh.c,1541 :     pszTitle: 0x14BEEC4 (check.c)
+10:41:11am> P1843,T1 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:11am> P1843,T1 : wpsh.c,1543 :     keepAssocs: 0
+10:41:11am> P1843,T1 : wpsh.c,1544 :     pReserved: 0x0
+10:41:11am> P1843,T1 : xdebug.c, 739 :         pTaskRecOld pre:
+10:41:11am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A9968 (check.c)
+10:41:11am> P1843,T1 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:11am> P1843,T1 : xdebug.c, 741 :         ++ Now calling parent
+10:41:11am> P1843,T1 : xdebug.c, 410 : 0x9A9968 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:11am> P1843,T1 : xdebug.c, 414 : 0x9A9968 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:11am> P1843,T1 : xdebug.c, 397 : 0x9A9968 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:11am> P1843,T1 : xdebug.c, 401 : 0x9A9968 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:11am> P1843,T1 : xdebug.c, 749 :         -- parent is done;
+10:41:11am> P1843,T1 : xdebug.c, 751 :         pTaskRecNew post:
+10:41:11am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A9968 (check.c)
+10:41:11am> P1843,T1 : wpsh.c,1533 : Index: 0
+10:41:11am> P1843,T1 : wpsh.c,1534 :     useCount: 1        // increased!
+10:41:11am> P1843,T1 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:11am> P1843,T1 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:11am> P1843,T1 : wpsh.c,1537 :     xOrigin: 0
+10:41:11am> P1843,T1 : wpsh.c,1538 :     yOrigin: 0
+10:41:11am> P1843,T1 : wpsh.c,1541 :     pszTitle: 0x14BEEC4 (check.c)
+                                                    // title of source object;
+                                                    // is this the same address as
+                                                    // _wpQueryTitle(pSource)?
+                                                    // -- no, probably a temporary buffer;
+                                                    // see below
+10:41:11am> P1843,T1 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:11am> P1843,T1 : wpsh.c,1543 :     keepAssocs: 0
+10:41:11am> P1843,T1 : wpsh.c,1544 :     pReserved: 0x0
+10:41:11am> P1843,T1 : xdebug.c, 753 :         pTaskRecOld post:
+10:41:11am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A9968 (check.c)
+10:41:11am> P1843,T1 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:11am> P1843,T1 : xdebug.c, 757 : 0x9A9968 -- End of DbgDataFile::ddf_wpSetTaskRec
+10:41:11am> P1843,T1 : xdebug.c,1600 : 0x9A9968 ++ DbgDataFile::ddf_wpQueryFileSize
+10:41:11am> P1843,T1 : xdebug.c,1603 : 0x9A9968 -- End of DbgDataFile::ddf_wpQueryFileSize
+                // now we get wpMenuItemSelected... what is this?!?
+                // we are dragging!! And we're on TID 12 -- which thread is that?!?
+                // Is that the "Tasker thread" mentioned in the WPS Guide?
+10:41:11am> P1843,T12 : xdebug.c,1103 : 0x9A9968 ++ DbgDataFile::ddf_wpMenuItemSelected
+                // aha: the tasker thread queries the task rec which has been
+                // set by thread 1!
+10:41:11am> P1843,T12 : xdebug.c, 765 : 0x9A9968 ++     DbgDataFile::ddf_wpFindTaskRec
+10:41:11am> P1843,T12 : xdebug.c, 410 : 0x9A9968 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:11am> P1843,T12 : xdebug.c, 414 : 0x9A9968 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:11am> P1843,T12 : xdebug.c, 397 : 0x9A9968 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:11am> P1843,T12 : xdebug.c, 401 : 0x9A9968 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:11am> P1843,T12 : xdebug.c, 768 : 0x9A9968 --     End of DbgDataFile::ddf_wpFindTaskRec
+                // wpMenuItemSelected calls wpConfirmObjectTitle;
+                // this is probably my replacement, still on TID 12
+10:41:11am> P1843,T12 : xdebug.c, 556 : 0x9A9968 ++     DbgDataFile::ddf_wpConfirmObjectTitle
+10:41:11am> P1843,T12 : xdebug.c,1773 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:11am> P1843,T12 : xdebug.c,1778 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFilename
+10:41:11am> P1843,T1 : xdebug.c,1600 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFileSize
+10:41:11am> P1843,T1 : xdebug.c,1603 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFileSize
+10:41:11am> P1843,T1 : xdebug.c,1798 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryDateInfo
+10:41:11am> P1843,T1 : xdebug.c,1802 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryDateInfo
+10:41:11am> P1843,T1 : xdebug.c,1798 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryDateInfo
+10:41:11am> P1843,T1 : xdebug.c,1802 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryDateInfo
+10:41:11am> P1843,T1 : xdebug.c,1773 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:11am> P1843,T1 : xdebug.c,1778 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFilename
+10:41:11am> P1843,T1 : xdebug.c,1600 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFileSize
+10:41:11am> P1843,T1 : xdebug.c,1603 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFileSize
+10:41:11am> P1843,T12 : xdebug.c,1773 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:11am> P1843,T12 : xdebug.c, 877 : 0x9A9968 ++             DbgDataFile::ddf_wpQueryFolder
+10:41:11am> P1843,T12 : xdebug.c, 881 : 0x9A9968 --             End of DbgDataFile::ddf_wpQueryFolder
+10:41:11am> P1843,T12 : xdebug.c,1778 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFilename
+10:41:11am> P1843,T12 : xdebug.c, 877 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFolder
+10:41:11am> P1843,T12 : xdebug.c, 881 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFolder
+
+// "Name clash" dlg pops up; I pressed "Rename New" after a few seconds
+
+10:41:20am> P1843,T12 : xdebug.c, 564 : 0x9A9968 --     End of DbgDataFile::ddf_wpConfirmObjectTitle
+                // entering wpCopyObject!! still on TID 12
+10:41:20am> P1843,T12 : xdebug.c, 678 : 0x9A9968 ++     DbgDataFile::ddf_wpCopyObject
+10:41:20am> P1843,T12 : xdebug.c, 765 : 0x9A9968 ++         DbgDataFile::ddf_wpFindTaskRec
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A9968 ++             DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A9968 --             End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A9968 ++             DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A9968 --             End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 768 : 0x9A9968 --         End of DbgDataFile::ddf_wpFindTaskRec
+10:41:20am> P1843,T12 : xdebug.c,1546 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1549 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1611 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryEASize
+10:41:20am> P1843,T12 : xdebug.c,1773 : 0x9A9968 ++             DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A9968 ++                 DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A9968 --                 End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c,1778 : 0x9A9968 --             End of DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c,1614 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryEASize
+10:41:20am> P1843,T12 : xdebug.c,1546 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1549 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c, 765 : 0x9A9968 ++         DbgDataFile::ddf_wpFindTaskRec
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A9968 ++             DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A9968 --             End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A9968 ++             DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A9968 --             End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 768 : 0x9A9968 --         End of DbgDataFile::ddf_wpFindTaskRec
+
+                // Here comes the really interesting stuff:
+                // wpCopyObject(pSource) creates a new object somewhere;
+                // however, NEITHER wpclsNew NOR somNew get called!
+                // All we get from overriding all somNew etc. calls
+                // in the metaclass is this:
+
+10:41:20am> P3669,T12 : xdebug.c,2238 : ++ Entering somGetInstanceSize
+10:41:20am> P3669,T12 : xdebug.c,2245 : -- End of somGetInstanceSize; returning 0x12C
+10:41:20am> P1843,T12 : xdebug.c, 162 : ++ Entering somRenewNoInitNoZero for obj 0x9A6214
+10:41:20am> P1843,T12 : xdebug.c, 162 : -- End of somRenewNoInitNoZero; returning obj 0x9A6214
+                                // these four have been pasted from a later trace...
+
+                // And here's what I found in somcls.h (SOMClass header)
+                // about the somNew call:
+
+                /*
+                 *  Uses SOMMalloc to allocate storage for a new instance of the
+                 *  receiving class, and then calls somRenewNoInitNoZero to load the
+                 *  new object's method table pointer. Then somDefaultInit is called to
+                 *  initialize the new object.  Note: If the instance is a class object,
+                 *  somInitMIClass must then be invoked to declare parents and
+                 *  initialize the class's instance method table. Upon failure, NULL
+                 *  is returned.
+                 */
+
+                // So apparently the WPS allocates the memory itself (without
+                // calling somNew) and then calls somRenewNoInitNoZero on the
+                // memory buffer...
+
+                // ++ Then, methods calls for the new object being created:
+10:41:20am> P1843,T12 : xdebug.c, 162 : 0x9A6214 ++ DbgDataFile::somDefaultInit
+10:41:20am> P1843,T12 : xdebug.c, 162 : 0x9A6214 ++     DbgDataFile::ddf_wpInitData
+10:41:20am> P1843,T12 : xdebug.c, 894 : 0x9A6214 ++         DbgDataFile::ddf_wpSetDefaultView
+10:41:20am> P1843,T12 : xdebug.c, 898 : 0x9A6214 --         End of DbgDataFile::ddf_wpSetDefaultView
+10:41:20am> P1843,T12 : xdebug.c,1445 : 0x9A6214 ++         DbgDataFile::ddf_ wpSetDefaultIconPos
+10:41:20am> P1843,T12 : xdebug.c,1449 : 0x9A6214 --         End of DbgDataFile::ddf_wpSetDefaultIconPos
+10:41:20am> P1843,T12 : xdebug.c, 166 : 0x9A6214 --     End of DbgDataFile::ddf_wpInitData
+10:41:20am> P1843,T12 : xdebug.c, 166 : 0x9A6214 -- End of DbgDataFile::somDefaultInit
+                // object initialized:
+10:41:20am> P1843,T12 : xdebug.c,1534 : 0x9A6214 ++ DbgDataFile::ddf_wpSetAttr
+10:41:20am> P1843,T12 : xdebug.c,1538 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetAttr
+10:41:20am> P1843,T12 : xdebug.c,1496 : 0x9A6214 ++ DbgDataFile::ddf_wpSetRealName
+10:41:20am> P1843,T12 : xdebug.c, 515 : 0x9A6214 ++     DbgDataFile::ddf_wpCnrRefreshDetails
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 518 : 0x9A6214 --     End of DbgDataFile::ddf_wpCnrRefreshDetails
+10:41:20am> P1843,T12 : xdebug.c,1501 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetRealName
+10:41:20am> P1843,T12 : xdebug.c,1510 : 0x9A6214 ++ DbgDataFile::ddf_wpSetType
+10:41:20am> P1843,T12 : xdebug.c,1773 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c,1778 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c,1515 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetType
+10:41:20am> P1843,T12 : xdebug.c, 861 : 0x9A6214 ++ DbgDataFile::ddf_wpSetFolder
+10:41:20am> P1843,T12 : xdebug.c, 865 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetFolder
+10:41:20am> P1843,T12 : xdebug.c, 844 : 0x9A6214 ++ DbgDataFile::ddf_wpModifyStyle
+10:41:20am> P1843,T12 : xdebug.c, 849 : 0x9A6214 -- End of DbgDataFile::ddf_wpModifyStyle
+10:41:20am> P1843,T12 : xdebug.c, 261 : 0x9A6214 ++ DbgDataFile::ddf_wpLockObject
+10:41:20am> P1843,T12 : xdebug.c, 265 : 0x9A6214 -- End of DbgDataFile::ddf_wpLockObject
+10:41:20am> P1843,T12 : xdebug.c, 780 : 0x9A6214 ++ DbgDataFile::ddf_wpSetTitle
+10:41:20am> P1843,T12 : xdebug.c, 922 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryConfirmations
+10:41:20am> P1843,T12 : xdebug.c, 925 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryConfirmations
+10:41:20am> P1843,T12 : xdebug.c,1689 : 0x9A6214 ++     DbgDataFile::ddf_wpSetTitleAndRenameFile
+10:41:20am> P1843,T12 : xdebug.c,1773 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++             DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --             End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c,1778 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c,1496 : 0x9A6214 ++         DbgDataFile::ddf_wpSetRealName
+10:41:20am> P1843,T12 : xdebug.c, 515 : 0x9A6214 ++             DbgDataFile::ddf_wpCnrRefreshDetails
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++                 DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --                 End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++                 DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --                 End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 518 : 0x9A6214 --             End of DbgDataFile::ddf_wpCnrRefreshDetails
+10:41:20am> P1843,T12 : xdebug.c,1501 : 0x9A6214 --         End of DbgDataFile::ddf_wpSetRealName
+10:41:20am> P1843,T12 : xdebug.c,1546 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1549 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c,1694 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetTitleAndRenameFile
+10:41:20am> P1843,T12 : xdebug.c, 784 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetTitle
+10:41:20am> P1843,T12 : xdebug.c, 178 : 0x9A6214 ++ DbgDataFile::ddf_wpSetupOnce
+10:41:20am> P1843,T12 : xdebug.c, 372 : 0x9A6214 ++     DbgDataFile::ddf_wpSetup
+                // during wpSetup processing on the new object,
+                // the old task rec from the source object gets
+                // copied to the newly created object:
+                // calling wpSetTaskRec(pNew = 0x9A635C, pOld = NULL)
+                // 0x9A635C is the same task rec which has been set
+                // on the source object above
+10:41:20am> P1843,T12 : xdebug.c, 733 : 0x9A6214 ++         DbgDataFile::ddf_wpSetTaskRec
+10:41:20am> P1843,T12 : xdebug.c, 737 :         pTaskRecNew pre:
+10:41:20am> P1843,T12 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A6214 (check:12.c)
+10:41:20am> P1843,T12 : wpsh.c,1533 : Index: 0
+10:41:20am> P1843,T12 : wpsh.c,1534 :     useCount: 1
+10:41:20am> P1843,T12 : wpsh.c,1535 :     pStdDlg: 0x9A510C // as with source
+10:41:20am> P1843,T12 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp) // as with source
+10:41:20am> P1843,T12 : wpsh.c,1537 :     xOrigin: 0
+10:41:20am> P1843,T12 : wpsh.c,1538 :     yOrigin: 0
+10:41:20am> P1843,T12 : wpsh.c,1541 :     pszTitle: 0x1BBF9BC (check:12.c)
+                                              // previous PSZ was 0x14BEEC4,
+                                              // title has been changed by
+                                              // wpConfirmObjectTitle. So I guess
+                                              // wpConfirmObjectTitle gets a temporary
+                                              // buffer which exists only in the task
+                                              // rec; this cannot be the original
+                                              // object title, because the task rec is
+                                              // shared between the source and the new obj
+10:41:20am> P1843,T12 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:20am> P1843,T12 : wpsh.c,1543 :     keepAssocs: 0
+10:41:20am> P1843,T12 : wpsh.c,1544 :     pReserved: 0x0
+10:41:20am> P1843,T12 : xdebug.c, 739 :         pTaskRecOld pre:
+10:41:20am> P1843,T12 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A6214 (check:12.c)
+10:41:20am> P1843,T12 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:20am> P1843,T12 : xdebug.c, 741 :         ++ Now calling parent
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++             DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --             End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++             DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --             End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 749 :         -- parent is done;
+10:41:20am> P1843,T12 : xdebug.c, 751 :         pTaskRecNew post:
+10:41:20am> P1843,T12 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A6214 (check:12.c)
+10:41:20am> P1843,T12 : wpsh.c,1533 : Index: 0
+10:41:20am> P1843,T12 : wpsh.c,1534 :     useCount: 2
+                                        // so now we have a usage of 2 for the task rec:
+                                        // once for the source, once for the new object...
+10:41:20am> P1843,T12 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:20am> P1843,T12 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:20am> P1843,T12 : wpsh.c,1537 :     xOrigin: 0
+10:41:20am> P1843,T12 : wpsh.c,1538 :     yOrigin: 0
+10:41:20am> P1843,T12 : wpsh.c,1541 :     pszTitle: 0x1BBF9BC (check:12.c)
+10:41:20am> P1843,T12 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:20am> P1843,T12 : wpsh.c,1543 :     keepAssocs: 0
+10:41:20am> P1843,T12 : wpsh.c,1544 :     pReserved: 0x0
+10:41:20am> P1843,T12 : xdebug.c, 753 :         pTaskRecOld post:
+10:41:20am> P1843,T12 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A6214 (check:12.c)
+10:41:20am> P1843,T12 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:20am> P1843,T12 : xdebug.c, 757 : 0x9A6214 --         End of DbgDataFile::ddf_wpSetTaskRec
+10:41:20am> P1843,T12 : xdebug.c, 376 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetup
+10:41:20am> P1843,T12 : xdebug.c, 182 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetupOnce
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 525 : 0x9A6214 ++ DbgDataFile::ddf_wpQueryContainerFlagPtr
+10:41:20am> P1843,T12 : xdebug.c, 528 : 0x9A6214 -- End of DbgDataFile::ddf_wpQueryContainerFlagPtr
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 261 : 0x9A6214 ++ DbgDataFile::ddf_wpLockObject
+10:41:20am> P1843,T12 : xdebug.c, 265 : 0x9A6214 -- End of DbgDataFile::ddf_wpLockObject
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c,1482 : 0x9A6214 ++ DbgDataFile::ddf_wpQueryDefaultIconPos
+10:41:20am> P1843,T12 : xdebug.c,1486 : 0x9A6214 -- End of DbgDataFile::ddf_wpQueryDefaultIconPos
+10:41:20am> P1843,T12 : xdebug.c, 472 : 0x9A6214 ++ DbgDataFile::ddf_wpCnrInsertObject
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c,1310 : 0x9A6214 ++     DbgDataFile::ddf_wpFindUseItem
+10:41:20am> P1843,T12 : xdebug.c, 385 : 0x9A6214 ++         DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 389 : 0x9A6214 --         End of DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c,1315 : 0x9A6214 --     End of DbgDataFile::ddf_wpFindUseItem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c,1256 : 0x9A6214 ++     DbgDataFile::ddf_wpAddToObjUseList
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 261 : 0x9A6214 ++         DbgDataFile::ddf_wpLockObject
+10:41:20am> P1843,T12 : xdebug.c, 265 : 0x9A6214 --         End of DbgDataFile::ddf_wpLockObject
+10:41:20am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T12 : xdebug.c,1261 : 0x9A6214 --     End of DbgDataFile::ddf_wpAddToObjUseList
+10:41:20am> P1843,T1 : xdebug.c,1392 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryIcon
+10:41:20am> P1843,T1 : xdebug.c,1546 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c,1549 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c,1773 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T1 : xdebug.c, 877 : 0x9A6214 ++             DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T1 : xdebug.c, 881 : 0x9A6214 --             End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T1 : xdebug.c,1778 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T1 : xdebug.c,1546 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c,1549 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c,1376 : 0x9A6214 ++         DbgDataFile::ddf_wpSetIcon
+10:41:20am> P1843,T1 : xdebug.c,1380 : 0x9A6214 --         End of DbgDataFile::ddf_wpSetIcon
+10:41:20am> P1843,T1 : xdebug.c, 844 : 0x9A6214 ++         DbgDataFile::ddf_wpModifyStyle
+10:41:20am> P1843,T1 : xdebug.c, 849 : 0x9A6214 --         End of DbgDataFile::ddf_wpModifyStyle
+10:41:20am> P1843,T1 : xdebug.c,1546 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c,1549 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c,1846 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAssociatedFileIcon
+10:41:20am> P1843,T1 : xdebug.c, 910 : 0x9A6214 ++             DbgDataFile::ddf_wpQueryDefaultView
+10:41:20am> P1843,T1 : xdebug.c, 914 : 0x9A6214 --             End of DbgDataFile::ddf_wpQueryDefaultView
+10:41:20am> P1843,T1 : xdebug.c,1866 : 0x9A6214 ++             DbgDataFile::ddf_wpQueryAssociatedProgram
+10:41:20am> P1843,T1 : xdebug.c,1773 : 0x9A6214 ++                 DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T1 : xdebug.c, 877 : 0x9A6214 ++                     DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T1 : xdebug.c, 881 : 0x9A6214 --                     End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T1 : xdebug.c,1778 : 0x9A6214 --                 End of DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T1 : xdebug.c,1874 : 0x9A6214 --             End of DbgDataFile::ddf_wpQueryAssociatedProgram
+10:41:20am> P1843,T1 : xdebug.c,1849 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAssociatedFileIcon
+10:41:20am> P1843,T1 : xdebug.c, 844 : 0x9A6214 ++         DbgDataFile::ddf_wpModifyStyle
+10:41:20am> P1843,T1 : xdebug.c, 814 : 0x9A6214 ++             DbgDataFile::ddf_wpSetStyle
+10:41:20am> P1843,T1 : xdebug.c, 818 : 0x9A6214 --             End of DbgDataFile::ddf_wpSetStyle
+10:41:20am> P1843,T1 : xdebug.c, 849 : 0x9A6214 --         End of DbgDataFile::ddf_wpModifyStyle
+10:41:20am> P1843,T1 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:20am> P1843,T1 : xdebug.c,1376 : 0x9A6214 ++         DbgDataFile::ddf_wpSetIcon
+10:41:20am> P1843,T1 : xdebug.c,1380 : 0x9A6214 --         End of DbgDataFile::ddf_wpSetIcon
+10:41:20am> P1843,T1 : xdebug.c,1396 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryIcon
+10:41:20am> P1843,T1 : xdebug.c,1546 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T1 : xdebug.c,1549 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c, 479 : 0x9A6214 -- End of DbgDataFile::ddf_wpCnrInsertObject
+10:41:20am> P1843,T12 : xdebug.c, 276 : 0x9A6214 ++ DbgDataFile::ddf_wpUnlockObject
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 280 : 0x9A6214 -- End of DbgDataFile::ddf_wpUnlockObject
+10:41:20am> P1843,T12 : xdebug.c,1546 : 0x9A6214 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1549 : 0x9A6214 -- End of DbgDataFile::ddf_wpQueryAttr
+                // -- more method calls for the source object:
+10:41:20am> P1843,T12 : xdebug.c,1546 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1549 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:20am> P1843,T12 : xdebug.c,1773 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A9968 ++             DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A9968 --             End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c,1778 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryFilename
+                // ++ more methods calls for the new object being created: TID 12
+10:41:20am> P1843,T12 : xdebug.c,1773 : 0x9A6214 ++ DbgDataFile::ddf_wpQueryFilename
+10:41:20am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFolder
+10:41:20am> P1843,T12 : xdebug.c,1778 : 0x9A6214 -- End of DbgDataFile::ddf_wpQueryFilename
+                // wpSaveState on source object: TID 12
+10:41:21am> P1843,T12 : xdebug.c, 444 : 0x9A9968 ++         DbgDataFile::ddf_wpSaveState
+10:41:21am> P1843,T12 : xdebug.c, 447 : 0x9A9968 --         End of DbgDataFile::ddf_wpSaveState
+                // ++ more methods calls for the new object being created: TID 12
+10:41:21am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c, 414 : 0x9A6214 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c, 401 : 0x9A6214 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c,1773 : 0x9A6214 ++ DbgDataFile::ddf_wpQueryFilename
+10:41:21am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFolder
+10:41:21am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFolder
+10:41:21am> P1843,T12 : xdebug.c,1778 : 0x9A6214 -- End of DbgDataFile::ddf_wpQueryFilename
+                // wpRestoreState on new object: aha!!
+10:41:21am> P1843,T12 : xdebug.c, 456 : 0x9A6214 ++ DbgDataFile::ddf_wpRestoreState
+10:41:21am> P1843,T12 : xdebug.c,1534 : 0x9A6214 ++     DbgDataFile::ddf_wpSetAttr
+10:41:21am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFolder
+10:41:21am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFolder
+10:41:21am> P1843,T12 : xdebug.c,1546 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:21am> P1843,T12 : xdebug.c,1549 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:21am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++         DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --         End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c,1310 : 0x9A6214 ++         DbgDataFile::ddf_wpFindUseItem
+10:41:21am> P1843,T12 : xdebug.c, 385 : 0x9A6214 ++             DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c, 389 : 0x9A6214 --             End of DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:21am> P1843,T12 : xdebug.c,1315 : 0x9A6214 --         End of DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T12 : xdebug.c,1310 : 0x9A6214 ++         DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T12 : xdebug.c, 385 : 0x9A6214 ++             DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 389 : 0x9A6214 --             End of DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c,1315 : 0x9A6214 --         End of DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++         DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --         End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c,1538 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetAttr
+10:41:22am> P1843,T12 : xdebug.c,1510 : 0x9A6214 ++     DbgDataFile::ddf_wpSetType
+10:41:22am> P1843,T12 : xdebug.c,1773 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFilename
+10:41:22am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++             DbgDataFile::ddf_wpQueryFolder
+10:41:22am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --             End of DbgDataFile::ddf_wpQueryFolder
+10:41:22am> P1843,T12 : xdebug.c,1778 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFilename
+10:41:22am> P1843,T12 : xdebug.c,1515 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetType
+10:41:22am> P1843,T12 : xdebug.c,1623 : 0x9A6214 ++     DbgDataFile::ddf_wpSetDateInfo
+10:41:22am> P1843,T12 : xdebug.c,1627 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetDateInfo
+10:41:22am> P1843,T12 : xdebug.c,1637 : 0x9A6214 ++     DbgDataFile::ddf_wpSetFileSizeInfo
+10:41:22am> P1843,T12 : xdebug.c,1642 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetFileSizeInfo
+10:41:22am> P1843,T12 : xdebug.c,1496 : 0x9A6214 ++     DbgDataFile::ddf_wpSetRealName
+10:41:22am> P1843,T12 : xdebug.c,1546 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c,1549 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c, 515 : 0x9A6214 ++         DbgDataFile::ddf_wpCnrRefreshDetails
+10:41:22am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++             DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --             End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++             DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --             End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 518 : 0x9A6214 --         End of DbgDataFile::ddf_wpCnrRefreshDetails
+10:41:22am> P1843,T12 : xdebug.c,1501 : 0x9A6214 --     End of DbgDataFile::ddf_wpSetRealName
+10:41:22am> P1843,T12 : xdebug.c,1600 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFileSize
+10:41:22am> P1843,T12 : xdebug.c,1603 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFileSize
+10:41:22am> P1843,T12 : xdebug.c, 460 : 0x9A6214 -- End of DbgDataFile::ddf_wpRestoreState
+10:41:22am> P1843,T12 : xdebug.c, 844 : 0x9A6214 ++ DbgDataFile::ddf_wpModifyStyle
+10:41:22am> P1843,T12 : xdebug.c, 849 : 0x9A6214 -- End of DbgDataFile::ddf_wpModifyStyle
+10:41:22am> P1843,T12 : xdebug.c,1546 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c,1549 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c,1392 : 0x9A9968 ++         DbgDataFile::ddf_wpQueryIcon
+10:41:22am> P1843,T12 : xdebug.c,1396 : 0x9A9968 --         End of DbgDataFile::ddf_wpQueryIcon
+10:41:22am> P1843,T12 : xdebug.c,1376 : 0x9A6214 ++ DbgDataFile::ddf_wpSetIcon
+10:41:22am> P1843,T12 : xdebug.c, 410 : 0x9A6214 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 414 : 0x9A6214 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 397 : 0x9A6214 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c, 401 : 0x9A6214 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T12 : xdebug.c,1546 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c,1549 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c,1380 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetIcon
+10:41:22am> P1843,T12 : xdebug.c,1546 : 0x9A6214 ++ DbgDataFile::ddf_wpQueryAttr
+10:41:22am> P1843,T12 : xdebug.c,1549 : 0x9A6214 -- End of DbgDataFile::ddf_wpQueryAttr
+                // TID 12 calls wpSaveDeferred...
+                // actual saving comes up last.
+10:41:22am> P1843,T12 : xdebug.c, 433 : 0x9A6214 ++ DbgDataFile::ddf_wpSaveDeferred
+10:41:22am> P1843,T12 : xdebug.c,1773 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFilename
+10:41:22am> P1843,T12 : xdebug.c, 877 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFolder
+10:41:22am> P1843,T12 : xdebug.c, 881 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFolder
+10:41:22am> P1843,T12 : xdebug.c,1778 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFilename
+10:41:22am> P1843,T12 : xdebug.c, 436 : 0x9A6214 -- End of DbgDataFile::ddf_wpSaveDeferred
+                // !!!! new object is finally instantiated!! TID 12
+10:41:22am> P1843,T12 : xdebug.c, 204 : 0x9A6214 ++ DbgDataFile::ddf_wpObjectReady
+10:41:22am> P1843,T12 : xdebug.c, 206 :            OR_REFERENCE set
+10:41:22am> P1843,T12 : xdebug.c, 211 : 0x9A6214 -- End of DbgDataFile::ddf_wpObjectReady
+10:41:22am> P1843,T12 : xdebug.c, 687 : 0x9A9968 --                wpCopyObject returned 0x9A6214
+10:41:22am> P1843,T12 : xdebug.c, 692 : 0x9A9968 --     End of DbgDataFile::ddf_wpCopyObject
+                // !!!! end of wpCopyObject(pSource!!)
+                // then wpQueryError is called on the source object
+                // to check for errors:
+10:41:22am> P1843,T12 : xdebug.c, 247 : 0x9A9968 ++     DbgDataFile::ddf_wpQueryError
+10:41:22am> P1843,T12 : xdebug.c, 250 : 0x9A9968 --     End of DbgDataFile::ddf_wpQueryError
+10:41:22am> P1843,T12 : xdebug.c,1120 : 0x9A9968 -- End of DbgDataFile::ddf_wpMenuItemSelected
+                // end of wpMenuItemSelected, which called wpCopyObject;
+                // looks like TID 12 is terminated (or idle, blocked, whatever);
+                // somehow TID 1 seems to get a notification that the
+                // job is done, so who knows how this works...
+                // anyways, we are now back in the caller code, which is outside
+                // the source object (the folder?)
+10:41:22am> P1843,T1 : xdebug.c, 410 : 0x9A9968 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 414 : 0x9A9968 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 397 : 0x9A9968 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 401 : 0x9A9968 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+                // the caller then calls wpSetTaskRec on the source object again;
+                // in the first call, pNew was 0x14819EC, pOld was NULL;
+                // now the caller calls just the reverse
+                // (pNew == NULL, pOld == 0x14819EC); apparently, this cleans up
+10:41:22am> P1843,T1 : xdebug.c, 733 : 0x9A9968 ++ DbgDataFile::ddf_wpSetTaskRec
+10:41:22am> P1843,T1 : xdebug.c, 737 :         pTaskRecNew pre:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A9968 (check.c)
+10:41:22am> P1843,T1 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:22am> P1843,T1 : xdebug.c, 739 :         pTaskRecOld pre:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A9968 (check.c)
+10:41:22am> P1843,T1 : wpsh.c,1533 : Index: 0
+10:41:22am> P1843,T1 : wpsh.c,1534 :     useCount: 2
+10:41:22am> P1843,T1 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:22am> P1843,T1 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:22am> P1843,T1 : wpsh.c,1537 :     xOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1538 :     yOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1541 :     pszTitle: 0x1BBF9BC (¨ø»lX)
+10:41:22am> P1843,T1 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:22am> P1843,T1 : wpsh.c,1543 :     keepAssocs: 0
+10:41:22am> P1843,T1 : wpsh.c,1544 :     pReserved: 0x0
+10:41:22am> P1843,T1 : xdebug.c, 741 :         ++ Now calling parent
+10:41:22am> P1843,T1 : xdebug.c, 410 : 0x9A9968 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 414 : 0x9A9968 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c,1310 : 0x9A9968 ++     DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T1 : xdebug.c, 385 : 0x9A9968 ++         DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 389 : 0x9A9968 --         End of DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c,1315 : 0x9A9968 --     End of DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T1 : xdebug.c, 397 : 0x9A9968 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 401 : 0x9A9968 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 749 :         -- parent is done;
+10:41:22am> P1843,T1 : xdebug.c, 751 :         pTaskRecNew post:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A9968 (check.c)
+10:41:22am> P1843,T1 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:22am> P1843,T1 : xdebug.c, 753 :         pTaskRecOld post:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A9968 (check.c)
+10:41:22am> P1843,T1 : wpsh.c,1533 : Index: 0
+10:41:22am> P1843,T1 : wpsh.c,1534 :     useCount: 1
+                                   // aha: wpSetTaskRec has reduced the usage because
+                                   // pNew was NULL
+10:41:22am> P1843,T1 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:22am> P1843,T1 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:22am> P1843,T1 : wpsh.c,1537 :     xOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1538 :     yOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1541 :     pszTitle: 0x1BBF9BC (¨ø»lX)
+10:41:22am> P1843,T1 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:22am> P1843,T1 : wpsh.c,1543 :     keepAssocs: 0
+10:41:22am> P1843,T1 : wpsh.c,1544 :     pReserved: 0x0
+10:41:22am> P1843,T1 : xdebug.c, 757 : 0x9A9968 -- End of DbgDataFile::ddf_wpSetTaskRec
+10:41:22am> P1843,T1 : xdebug.c, 410 : 0x9A6214 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 414 : 0x9A6214 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 397 : 0x9A6214 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 401 : 0x9A6214 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+                // the caller then calls wpSetTaskRec a second time,
+                // but this time on the newly instantiated object;
+                // ("delete task rec" call, just like the previous);
+                // (pNew == NULL, pOld == 0x14819EC); apparently, this cleans up
+                // apparently, when an object is copied which has a task rec,
+                // that task rec's usage count is incremented,
+                // so wpSetTaskRec(pnew == NULL, pOld == pPrevious) needs
+                // to be called twice... Jesus!
+10:41:22am> P1843,T1 : xdebug.c, 733 : 0x9A6214 ++ DbgDataFile::ddf_wpSetTaskRec
+10:41:22am> P1843,T1 : xdebug.c, 737 :         pTaskRecNew pre:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A6214 (check:12.c)
+10:41:22am> P1843,T1 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:22am> P1843,T1 : xdebug.c, 739 :         pTaskRecOld pre:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A6214 (check:12.c)
+10:41:22am> P1843,T1 : wpsh.c,1533 : Index: 0
+10:41:22am> P1843,T1 : wpsh.c,1534 :     useCount: 1
+10:41:22am> P1843,T1 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:22am> P1843,T1 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:22am> P1843,T1 : wpsh.c,1537 :     xOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1538 :     yOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1541 :     pszTitle: 0x1BBF9BC (¨ø»lX)
+10:41:22am> P1843,T1 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:22am> P1843,T1 : wpsh.c,1543 :     keepAssocs: 0
+10:41:22am> P1843,T1 : wpsh.c,1544 :     pReserved: 0x0
+10:41:22am> P1843,T1 : xdebug.c, 741 :         ++ Now calling parent
+10:41:22am> P1843,T1 : xdebug.c, 410 : 0x9A6214 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 414 : 0x9A6214 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c,1310 : 0x9A6214 ++     DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T1 : xdebug.c, 385 : 0x9A6214 ++         DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 389 : 0x9A6214 --         End of DbgDataFile::ddf_wpAssertObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c,1315 : 0x9A6214 --     End of DbgDataFile::ddf_wpFindUseItem
+10:41:22am> P1843,T1 : xdebug.c, 397 : 0x9A6214 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 401 : 0x9A6214 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:22am> P1843,T1 : xdebug.c, 749 :         -- parent is done;
+10:41:22am> P1843,T1 : xdebug.c, 751 :         pTaskRecNew post:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x9A6214 (check:12.c)
+10:41:22am> P1843,T1 : wpsh.c,1551 :     pTaskRec is NULL
+10:41:22am> P1843,T1 : xdebug.c, 753 :         pTaskRecOld post:
+10:41:22am> P1843,T1 : wpsh.c,1520 : ddf_wpSetTaskRec: dumping task rec 0x9A635C for obj 0x9A6214 (check:12.c)
+10:41:22am> P1843,T1 : wpsh.c,1533 : Index: 0
+10:41:22am> P1843,T1 : wpsh.c,1534 :     useCount: 0
+                                            // so after the second call, we have a usage
+                                            // of 0 again
+10:41:22am> P1843,T1 : wpsh.c,1535 :     pStdDlg: 0x9A510C
+10:41:22am> P1843,T1 : wpsh.c,1536 :     folder: 0x14A8D10 (F:\Desktop\temp)
+10:41:22am> P1843,T1 : wpsh.c,1537 :     xOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1538 :     yOrigin: 0
+10:41:22am> P1843,T1 : wpsh.c,1541 :     pszTitle: 0x1BBF9BC (¨ø»lX)
+10:41:22am> P1843,T1 : wpsh.c,1542 :     posAfterRecord: 0x753788
+10:41:22am> P1843,T1 : wpsh.c,1543 :     keepAssocs: 0
+10:41:22am> P1843,T1 : wpsh.c,1544 :     pReserved: 0x0
+10:41:22am> P1843,T1 : xdebug.c, 757 : 0x9A6214 -- End of DbgDataFile::ddf_wpSetTaskRec
+                        // end of wpSetTaskRec(new object)
+10:41:23am> P1843,T1 : xdebug.c, 410 : 0x9A9968 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:23am> P1843,T1 : xdebug.c, 414 : 0x9A9968 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:23am> P1843,T1 : xdebug.c, 397 : 0x9A9968 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:23am> P1843,T1 : xdebug.c, 401 : 0x9A9968 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+
+// this comes up automatically after a few seconds without me doing anything;
+// interestingly, we are now on TID 10. Apparently, this is the "Lazy writer"
+// thread which loads off wpSaveDeferred calls and delays them.
+
+                // operations on new object:
+10:41:28am> P1843,T10 : xdebug.c, 410 : 0x9A6214 ++ DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:28am> P1843,T10 : xdebug.c, 414 : 0x9A6214 -- End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:28am> P1843,T10 : xdebug.c, 261 : 0x9A6214 ++ DbgDataFile::ddf_wpLockObject
+10:41:28am> P1843,T10 : xdebug.c, 265 : 0x9A6214 -- End of DbgDataFile::ddf_wpLockObject
+                // apparently, wpSaveDeferred only leads to wpSaveImmediate
+                // on TID 10. Interesting.
+10:41:28am> P1843,T10 : xdebug.c, 422 : 0x9A6214 ++ DbgDataFile::ddf_wpSaveImmediate
+10:41:28am> P1843,T10 : xdebug.c, 410 : 0x9A6214 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:28am> P1843,T10 : xdebug.c, 414 : 0x9A6214 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:28am> P1843,T10 : xdebug.c,1773 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFilename
+10:41:28am> P1843,T10 : xdebug.c, 877 : 0x9A6214 ++         DbgDataFile::ddf_wpQueryFolder
+10:41:28am> P1843,T10 : xdebug.c, 881 : 0x9A6214 --         End of DbgDataFile::ddf_wpQueryFolder
+10:41:28am> P1843,T10 : xdebug.c,1778 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFilename
+                // wpSaveImmediate calls wpSaveState;
+                // the exact wpSaveData etc. calls have not been logged...
+10:41:28am> P1843,T10 : xdebug.c, 444 : 0x9A6214 ++     DbgDataFile::ddf_wpSaveState
+10:41:28am> P1843,T10 : xdebug.c, 447 : 0x9A6214 --     End of DbgDataFile::ddf_wpSaveState
+                // done with wpSaveState
+10:41:28am> P1843,T10 : xdebug.c, 410 : 0x9A6214 ++     DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:28am> P1843,T10 : xdebug.c, 414 : 0x9A6214 --     End of DbgDataFile::ddf_wpRequestObjectMutexSem
+10:41:28am> P1843,T10 : xdebug.c, 397 : 0x9A6214 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:29am> P1843,T10 : xdebug.c, 401 : 0x9A6214 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:29am> P1843,T10 : xdebug.c, 397 : 0x9A6214 ++     DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:29am> P1843,T10 : xdebug.c, 401 : 0x9A6214 --     End of DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:29am> P1843,T10 : xdebug.c, 425 : 0x9A6214 -- End of DbgDataFile::ddf_wpSaveImmediate
+                // done saving new object.
+10:41:29am> P1843,T10 : xdebug.c, 276 : 0x9A6214 ++ DbgDataFile::ddf_wpUnlockObject
+10:41:29am> P1843,T10 : xdebug.c, 877 : 0x9A6214 ++     DbgDataFile::ddf_wpQueryFolder
+10:41:29am> P1843,T10 : xdebug.c, 881 : 0x9A6214 --     End of DbgDataFile::ddf_wpQueryFolder
+10:41:29am> P1843,T10 : xdebug.c, 280 : 0x9A6214 -- End of DbgDataFile::ddf_wpUnlockObject
+10:41:29am> P1843,T10 : xdebug.c, 397 : 0x9A6214 ++ DbgDataFile::ddf_wpReleaseObjectMutexSem
+10:41:29am> P1843,T10 : xdebug.c, 401 : 0x9A6214 -- End of DbgDataFile::ddf_wpReleaseObjectMutexSem

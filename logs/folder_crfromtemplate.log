@@ -1,0 +1,567 @@
+Log of dragging from a debug-folder template within the Desktop
+so that name clash pops up
+
+// start dragging
+
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1701 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFilename
+02:47:33pm> P044,T1 : xdebug_folder.c,1707 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFilename
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1256 : 0x12E421C ++ DbgFolder::dfdr_wpFindUseItem
+02:47:33pm> P044,T1 : xdebug_folder.c, 456 : 0x12E421C ++     DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:33pm> P044,T1 : xdebug_folder.c, 460 : 0x12E421C --     End of DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:33pm> P044,T1 : xdebug_folder.c, 481 : 0x12E421C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:33pm> P044,T1 : xdebug_folder.c, 486 : 0x12E421C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:33pm> P044,T1 : xdebug_folder.c, 468 : 0x12E421C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:33pm> P044,T1 : xdebug_folder.c, 472 : 0x12E421C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:33pm> P044,T1 : xdebug_folder.c,1261 : 0x12E421C -- End of DbgFolder::dfdr_wpFindUseItem
+02:47:33pm> P044,T1 : xdebug_folder.c, 923 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c, 927 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++ DbgFolder::dfdr_wpQueryTitle
+02:47:33pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryTitle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 923 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c, 927 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1701 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFilename
+02:47:33pm> P044,T1 : xdebug_folder.c, 923 : 0x12E421C ++     DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c, 927 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c,1707 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFilename
+02:47:33pm> P044,T1 : xdebug_folder.c,1701 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFilename
+02:47:33pm> P044,T1 : xdebug_folder.c, 923 : 0x12E421C ++     DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c, 927 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryFolder
+02:47:33pm> P044,T1 : xdebug_folder.c,1707 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFilename
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:33pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:33pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+
+// intentionally waiting a few seconds without moving the mouse;
+// now dropping object
+
+02:47:34pm> P044,T1 : xdebug_folder.c, 923 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T1 : xdebug_folder.c, 927 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T1 : xdebug_folder.c, 923 : 0x12E421C ++ DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T1 : xdebug_folder.c, 927 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++ DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryTitle
+        // the WPS (the folder?) now invokes wpSetTaskRec on the
+        // SOURCE object before copying. Apparently this prepares
+        // data for the tasker thread (comes up below).
+02:47:34pm> P044,T1 : xdebug_folder.c, 786 : 0x12E421C ++ DbgFolder::dfdr_wpSetTaskRec
+02:47:34pm> P044,T1 : xdebug_folder.c, 790 :         pTaskRecNew pre:
+02:47:34pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:34pm> P044,T1 : wpsh.c,1549 : Index: 0
+02:47:34pm> P044,T1 : wpsh.c,1550 :     useCount: 0
+02:47:34pm> P044,T1 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:34pm> P044,T1 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:34pm> P044,T1 : wpsh.c,1553 :     xOrigin: 167
+02:47:34pm> P044,T1 : wpsh.c,1554 :     yOrigin: 191
+02:47:34pm> P044,T1 : wpsh.c,1557 :     pszTitle: 0xA7162C (DebugFolder)
+02:47:34pm> P044,T1 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:34pm> P044,T1 : wpsh.c,1559 :     keepAssocs: 0
+02:47:34pm> P044,T1 : wpsh.c,1560 :     pReserved: 0x0
+02:47:34pm> P044,T1 : xdebug_folder.c, 792 :         pTaskRecOld pre:
+02:47:34pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x12E421C (DebugFolder)
+02:47:34pm> P044,T1 : wpsh.c,1567 :     pTaskRec is NULL
+02:47:34pm> P044,T1 : xdebug_folder.c, 794 :         ++ Now calling parent
+02:47:34pm> P044,T1 : xdebug_folder.c, 481 : 0x12E421C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T1 : xdebug_folder.c, 486 : 0x12E421C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T1 : xdebug_folder.c, 468 : 0x12E421C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T1 : xdebug_folder.c, 472 : 0x12E421C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T1 : xdebug_folder.c, 802 :         -- parent is done;
+02:47:34pm> P044,T1 : xdebug_folder.c, 804 :         pTaskRecNew post:
+02:47:34pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:34pm> P044,T1 : wpsh.c,1549 : Index: 0
+02:47:34pm> P044,T1 : wpsh.c,1550 :     useCount: 1
+02:47:34pm> P044,T1 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:34pm> P044,T1 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:34pm> P044,T1 : wpsh.c,1553 :     xOrigin: 167
+02:47:34pm> P044,T1 : wpsh.c,1554 :     yOrigin: 191
+02:47:34pm> P044,T1 : wpsh.c,1557 :     pszTitle: 0xA7162C (DebugFolder)
+02:47:34pm> P044,T1 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:34pm> P044,T1 : wpsh.c,1559 :     keepAssocs: 0
+02:47:34pm> P044,T1 : wpsh.c,1560 :     pReserved: 0x0
+02:47:34pm> P044,T1 : xdebug_folder.c, 806 :         pTaskRecOld post:
+02:47:34pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x12E421C (DebugFolder)
+02:47:34pm> P044,T1 : wpsh.c,1567 :     pTaskRec is NULL
+02:47:34pm> P044,T1 : xdebug_folder.c, 810 : 0x12E421C -- End of DbgFolder::dfdr_wpSetTaskRec
+02:47:34pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++ DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T1 : xdebug_folder.c, 877 : 0x12E421C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:34pm> P044,T1 : xdebug_folder.c,1454 : 0x12E421C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:34pm> P044,T1 : xdebug_folder.c,1458 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:34pm> P044,T1 : xdebug_folder.c, 881 : 0x12E421C -- End of DbgFolder::dfdr_wpQueryStyle
+                // now we get wpMenuItemSelected... what is this?!?
+                // we are dragging!! And we're on TID 12 -- which thread is that?!?
+                // Is that the "Tasker thread" mentioned in the WPS Guide?
+02:47:34pm> P044,T12 : xdebug_folder.c,1088 : 0x12E421C ++ DbgFolder::dfdr_wpMenuItemSelected
+02:47:34pm> P044,T12 : xdebug_folder.c,1102 :             wpMenuItemSelected ulmenuID: 0xB7
+02:47:34pm> P044,T12 : xdebug_folder.c,1271 : 0x12E421C ++     DbgFolder::dfdr_wpFindViewItem
+02:47:34pm> P044,T12 : xdebug_folder.c,1256 : 0x12E421C ++         DbgFolder::dfdr_wpFindUseItem
+02:47:34pm> P044,T12 : xdebug_folder.c, 456 : 0x12E421C ++             DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 460 : 0x12E421C --             End of DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 481 : 0x12E421C ++             DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 486 : 0x12E421C --             End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 468 : 0x12E421C ++             DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 472 : 0x12E421C --             End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c,1261 : 0x12E421C --         End of DbgFolder::dfdr_wpFindUseItem
+02:47:34pm> P044,T12 : xdebug_folder.c,1277 : 0x12E421C --     End of DbgFolder::dfdr_wpFindViewItem
+02:47:34pm> P044,T12 : xdebug_folder.c,1271 : 0x12E421C ++     DbgFolder::dfdr_wpFindViewItem
+02:47:34pm> P044,T12 : xdebug_folder.c,1256 : 0x12E421C ++         DbgFolder::dfdr_wpFindUseItem
+02:47:34pm> P044,T12 : xdebug_folder.c, 456 : 0x12E421C ++             DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 460 : 0x12E421C --             End of DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 481 : 0x12E421C ++             DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 486 : 0x12E421C --             End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 468 : 0x12E421C ++             DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 472 : 0x12E421C --             End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c,1261 : 0x12E421C --         End of DbgFolder::dfdr_wpFindUseItem
+02:47:34pm> P044,T12 : xdebug_folder.c,1277 : 0x12E421C --     End of DbgFolder::dfdr_wpFindViewItem
+02:47:34pm> P044,T12 : xdebug_folder.c, 818 : 0x12E421C ++     DbgFolder::dfdr_wpFindTaskRec
+02:47:34pm> P044,T12 : xdebug_folder.c, 481 : 0x12E421C ++         DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 486 : 0x12E421C --         End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 468 : 0x12E421C ++         DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 472 : 0x12E421C --         End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:34pm> P044,T12 : xdebug_folder.c, 824 :         -- wpFindTaskRec parent is done;
+02:47:34pm> P044,T12 : xdebug_folder.c, 853 : 0x12E421C ++         DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T12 : xdebug_folder.c, 857 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T12 : found pTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:34pm> P044,T12 : wpsh.c,1549 : Index: 0
+02:47:34pm> P044,T12 : wpsh.c,1550 :     useCount: 1
+02:47:34pm> P044,T12 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:34pm> P044,T12 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:34pm> P044,T12 : wpsh.c,1553 :     xOrigin: 167
+02:47:34pm> P044,T12 : wpsh.c,1554 :     yOrigin: 191
+02:47:34pm> P044,T12 : wpsh.c,1557 :     pszTitle: 0xA7162C (DebugFolder)
+02:47:34pm> P044,T12 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:34pm> P044,T12 : wpsh.c,1559 :     keepAssocs: 0
+02:47:34pm> P044,T12 : wpsh.c,1560 :     pReserved: 0x0
+02:47:34pm> P044,T12 : xdebug_folder.c, 828 : 0x12E421C --     End of DbgFolder::dfdr_wpFindTaskRec
+
+            // name clash dlg pops up
+
+02:47:34pm> P044,T12 : xdebug_folder.c, 637 : 0x12E421C ++     DbgFolder::dfdr_wpConfirmObjectTitle
+02:47:34pm> P044,T12 : xdebug_folder.c,1701 : 0x12E421C ++         DbgFolder::dfdr_wpQueryFilename
+02:47:34pm> P044,T12 : xdebug_folder.c,1707 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryFilename
+02:47:34pm> P044,T12 : xdebug_folder.c,1701 : 0x12E421C ++         DbgFolder::dfdr_wpQueryFilename
+02:47:34pm> P044,T12 : xdebug_folder.c, 923 : 0x12E421C ++             DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T12 : xdebug_folder.c, 927 : 0x12E421C --             End of DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T12 : xdebug_folder.c,1707 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryFilename
+02:47:34pm> P044,T12 : xdebug_folder.c, 853 : 0x12E421C ++         DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T12 : xdebug_folder.c, 857 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryTitle
+02:47:34pm> P044,T12 : xdebug_folder.c, 923 : 0x12E421C ++         DbgFolder::dfdr_wpQueryFolder
+02:47:34pm> P044,T12 : xdebug_folder.c, 927 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 646 : 0x12E421C --     End of DbgFolder::dfdr_wpConfirmObjectTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 656 : 0x12E421C ++     DbgFolder::dfdr_wpCreateFromTemplate
+02:47:37pm> P044,T12 : xdebug_folder.c, 818 : 0x12E421C ++         DbgFolder::dfdr_wpFindTaskRec
+02:47:37pm> P044,T12 : xdebug_folder.c, 481 : 0x12E421C ++             DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 486 : 0x12E421C --             End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 468 : 0x12E421C ++             DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 472 : 0x12E421C --             End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 824 :         -- wpFindTaskRec parent is done;
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0x12E421C ++             DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0x12E421C --             End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : found pTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:37pm> P044,T12 : wpsh.c,1549 : Index: 0
+02:47:37pm> P044,T12 : wpsh.c,1550 :     useCount: 1
+02:47:37pm> P044,T12 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:37pm> P044,T12 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:37pm> P044,T12 : wpsh.c,1553 :     xOrigin: 167
+02:47:37pm> P044,T12 : wpsh.c,1554 :     yOrigin: 191
+02:47:37pm> P044,T12 : wpsh.c,1557 :     pszTitle: 0xB0F7D8 (DebugFolder:1)
+02:47:37pm> P044,T12 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:37pm> P044,T12 : wpsh.c,1559 :     keepAssocs: 0
+02:47:37pm> P044,T12 : wpsh.c,1560 :     pReserved: 0x0
+02:47:37pm> P044,T12 : xdebug_folder.c, 828 : 0x12E421C --         End of DbgFolder::dfdr_wpFindTaskRec
+02:47:37pm> P044,T12 : xdebug_folder.c, 818 : 0x12E421C ++         DbgFolder::dfdr_wpFindTaskRec
+02:47:37pm> P044,T12 : xdebug_folder.c, 481 : 0x12E421C ++             DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 486 : 0x12E421C --             End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 468 : 0x12E421C ++             DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 472 : 0x12E421C --             End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 824 :         -- wpFindTaskRec parent is done;
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0x12E421C ++             DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0x12E421C --             End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : found pTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:37pm> P044,T12 : wpsh.c,1549 : Index: 0
+02:47:37pm> P044,T12 : wpsh.c,1550 :     useCount: 1
+02:47:37pm> P044,T12 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:37pm> P044,T12 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:37pm> P044,T12 : wpsh.c,1553 :     xOrigin: 167
+02:47:37pm> P044,T12 : wpsh.c,1554 :     yOrigin: 191
+02:47:37pm> P044,T12 : wpsh.c,1557 :     pszTitle: 0xB0F7D8 (DebugFolder:1)
+02:47:37pm> P044,T12 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:37pm> P044,T12 : wpsh.c,1559 :     keepAssocs: 0
+02:47:37pm> P044,T12 : wpsh.c,1560 :     pReserved: 0x0
+02:47:37pm> P044,T12 : xdebug_folder.c, 828 : 0x12E421C --         End of DbgFolder::dfdr_wpFindTaskRec
+02:47:37pm> P044,T12 : xdebug_folder.c, 518 : 0x12E421C ++         DbgFolder::dfdr_wpSaveState
+02:47:37pm> P044,T12 : xdebug_folder.c, 522 : 0x12E421C --         End of DbgFolder::dfdr_wpSaveState
+02:47:37pm> P044,T12 : xdebug_folder.c,1368 :             x: -1
+02:47:37pm> P044,T12 : xdebug_folder.c,1369 :             y: -1
+02:47:37pm> P044,T12 : xdebug_folder.c, 326 : 0xA6534C ++ DbgFolder::dfdr_wpObjectReady
+02:47:37pm> P044,T12 : xdebug_folder.c, 329 :            OR_REFERENCE set
+02:47:37pm> P044,T12 : xdebug_folder.c,1926 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFldrFlags
+02:47:37pm> P044,T12 : xdebug_folder.c,1930 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFldrFlags
+02:47:37pm> P044,T12 : xdebug_folder.c, 333 : 0xA6534C -- End of DbgFolder::dfdr_wpObjectReady
+02:47:37pm> P044,T12 : xdebug_folder.c,1454 : 0x12E421C ++         DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1458 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1701 : 0x12E421C ++         DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0x12E421C ++             DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0x12E421C --             End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c,1707 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c,1701 : 0xA6534C ++ DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c,1707 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0xA6534C ++ DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c,1701 : 0xA6534C ++ DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c,1707 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c,1454 : 0x12E421C ++         DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1458 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1442 : 0xA6534C ++ DbgFolder::dfdr_wpSetAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1446 : 0xA6534C -- End of DbgFolder::dfdr_wpSetAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1430 : 0x12E421C ++         DbgFolder::dfdr_wpQueryType
+02:47:37pm> P044,T12 : xdebug_folder.c,1434 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryType
+02:47:37pm> P044,T12 : xdebug_folder.c,1417 : 0xA6534C ++ DbgFolder::dfdr_wpSetType
+02:47:37pm> P044,T12 : xdebug_folder.c,1701 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0xA6534C ++         DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0xA6534C --         End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c,1707 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c,1422 : 0xA6534C -- End of DbgFolder::dfdr_wpSetType
+02:47:37pm> P044,T12 : xdebug_folder.c,1728 : 0xA6534C ++ DbgFolder::dfdr_wpQueryDateInfo
+02:47:37pm> P044,T12 : xdebug_folder.c,1733 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryDateInfo
+02:47:37pm> P044,T12 : xdebug_folder.c,1538 : 0xA6534C ++ DbgFolder::dfdr_wpSetDateInfo
+02:47:37pm> P044,T12 : xdebug_folder.c,1543 : 0xA6534C -- End of DbgFolder::dfdr_wpSetDateInfo
+02:47:37pm> P044,T12 : xdebug_folder.c,1513 : 0x12E421C ++         DbgFolder::dfdr_wpQueryFileSize
+02:47:37pm> P044,T12 : xdebug_folder.c,1517 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryFileSize
+02:47:37pm> P044,T12 : xdebug_folder.c,1525 : 0x12E421C ++         DbgFolder::dfdr_wpQueryEASize
+02:47:37pm> P044,T12 : xdebug_folder.c,1701 : 0x12E421C ++             DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0x12E421C ++                 DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0x12E421C --                 End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c,1707 : 0x12E421C --             End of DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c,1529 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryEASize
+02:47:37pm> P044,T12 : xdebug_folder.c,1553 : 0xA6534C ++ DbgFolder::dfdr_wpSetFileSizeInfo
+02:47:37pm> P044,T12 : xdebug_folder.c, 610 : 0xA6534C ++     DbgFolder::dfdr_wpCnrRefreshDetails
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0xA6534C ++         DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0xA6534C --         End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 481 : 0xA6534C ++         DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 486 : 0xA6534C --         End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 468 : 0xA6534C ++         DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 472 : 0xA6534C --         End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 613 : 0xA6534C --     End of DbgFolder::dfdr_wpCnrRefreshDetails
+02:47:37pm> P044,T12 : xdebug_folder.c,1559 : 0xA6534C -- End of DbgFolder::dfdr_wpSetFileSizeInfo
+02:47:37pm> P044,T12 : xdebug_folder.c, 877 : 0x12E421C ++         DbgFolder::dfdr_wpQueryStyle
+02:47:37pm> P044,T12 : xdebug_folder.c,1454 : 0x12E421C ++             DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1458 : 0x12E421C --             End of DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c, 881 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryStyle
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0x12E421C ++         DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0x12E421C ++         DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0x12E421C --         End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c,1581 : 0xA6534C ++ DbgFolder::dfdr_wpQueryRefreshFlags
+02:47:37pm> P044,T12 : xdebug_folder.c,1586 :             refresh flags: 0x0
+02:47:37pm> P044,T12 : xdebug_folder.c,1588 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryRefreshFlags
+02:47:37pm> P044,T12 : xdebug_folder.c,1701 : 0xA6534C ++ DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 923 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c, 927 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFolder
+02:47:37pm> P044,T12 : xdebug_folder.c,1707 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryFilename
+02:47:37pm> P044,T12 : xdebug_folder.c, 877 : 0xA6534C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:37pm> P044,T12 : xdebug_folder.c,1454 : 0xA6534C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1458 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c, 881 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:37pm> P044,T12 : xdebug_folder.c,1323 : 0xA6534C ++ DbgFolder::dfdr_wpQueryIcon
+02:47:37pm> P044,T12 : xdebug_folder.c,1327 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryIcon
+02:47:37pm> P044,T12 : xdebug_folder.c, 891 : 0xA6534C ++ DbgFolder::dfdr_wpModifyStyle
+02:47:37pm> P044,T12 : xdebug_folder.c, 897 : 0xA6534C -- End of DbgFolder::dfdr_wpModifyStyle
+02:47:37pm> P044,T12 : xdebug_folder.c,1442 : 0xA6534C ++ DbgFolder::dfdr_wpSetAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1446 : 0xA6534C -- End of DbgFolder::dfdr_wpSetAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1417 : 0xA6534C ++ DbgFolder::dfdr_wpSetType
+02:47:37pm> P044,T12 : xdebug_folder.c,1422 : 0xA6534C -- End of DbgFolder::dfdr_wpSetType
+02:47:37pm> P044,T12 : xdebug_folder.c,1538 : 0xA6534C ++ DbgFolder::dfdr_wpSetDateInfo
+02:47:37pm> P044,T12 : xdebug_folder.c,1543 : 0xA6534C -- End of DbgFolder::dfdr_wpSetDateInfo
+02:47:37pm> P044,T12 : xdebug_folder.c,1553 : 0xA6534C ++ DbgFolder::dfdr_wpSetFileSizeInfo
+02:47:37pm> P044,T12 : xdebug_folder.c, 610 : 0xA6534C ++     DbgFolder::dfdr_wpCnrRefreshDetails
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0xA6534C ++         DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0xA6534C --         End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 481 : 0xA6534C ++         DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 486 : 0xA6534C --         End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 468 : 0xA6534C ++         DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 472 : 0xA6534C --         End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 613 : 0xA6534C --     End of DbgFolder::dfdr_wpCnrRefreshDetails
+02:47:37pm> P044,T12 : xdebug_folder.c,1559 : 0xA6534C -- End of DbgFolder::dfdr_wpSetFileSizeInfo
+02:47:37pm> P044,T12 : xdebug_folder.c, 877 : 0xA6534C ++ DbgFolder::dfdr_wpQueryStyle
+02:47:37pm> P044,T12 : xdebug_folder.c,1454 : 0xA6534C ++     DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c,1458 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryAttr
+02:47:37pm> P044,T12 : xdebug_folder.c, 881 : 0xA6534C -- End of DbgFolder::dfdr_wpQueryStyle
+02:47:37pm> P044,T12 : xdebug_folder.c, 610 : 0xA6534C ++ DbgFolder::dfdr_wpCnrRefreshDetails
+02:47:37pm> P044,T12 : xdebug_folder.c, 853 : 0xA6534C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 857 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T12 : xdebug_folder.c, 481 : 0xA6534C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 486 : 0xA6534C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 468 : 0xA6534C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 472 : 0xA6534C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T12 : xdebug_folder.c, 613 : 0xA6534C -- End of DbgFolder::dfdr_wpCnrRefreshDetails
+02:47:37pm> P044,T12 : xdebug_folder.c, 662 : 0x12E421C --     End of DbgFolder::dfdr_wpCreateFromTemplate
+02:47:37pm> P044,T12 : xdebug_folder.c, 423 : 0x12E421C ++     DbgFolder::dfdr_wpQueryError
+02:47:37pm> P044,T12 : xdebug_folder.c, 427 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryError
+02:47:37pm> P044,T12 : xdebug_folder.c,1109 : 0x12E421C -- End of DbgFolder::dfdr_wpMenuItemSelected
+02:47:37pm> P044,T1 : xdebug_folder.c, 481 : 0x12E421C ++ DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 486 : 0x12E421C -- End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 468 : 0x12E421C ++ DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 472 : 0x12E421C -- End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 786 : 0x12E421C ++ DbgFolder::dfdr_wpSetTaskRec
+02:47:37pm> P044,T1 : xdebug_folder.c, 790 :         pTaskRecNew pre:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x12E421C (DebugFolder)
+02:47:37pm> P044,T1 : wpsh.c,1567 :     pTaskRec is NULL
+02:47:37pm> P044,T1 : xdebug_folder.c, 792 :         pTaskRecOld pre:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:37pm> P044,T1 : wpsh.c,1549 : Index: 0
+02:47:37pm> P044,T1 : wpsh.c,1550 :     useCount: 2
+02:47:37pm> P044,T1 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:37pm> P044,T1 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:37pm> P044,T1 : wpsh.c,1553 :     xOrigin: 167
+02:47:37pm> P044,T1 : wpsh.c,1554 :     yOrigin: 191
+02:47:37pm> P044,T1 : wpsh.c,1557 :     pszTitle: 0xB0F7D8 (xø°)
+02:47:37pm> P044,T1 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:37pm> P044,T1 : wpsh.c,1559 :     keepAssocs: 0
+02:47:37pm> P044,T1 : wpsh.c,1560 :     pReserved: 0x0
+02:47:37pm> P044,T1 : xdebug_folder.c, 794 :         ++ Now calling parent
+02:47:37pm> P044,T1 : xdebug_folder.c, 481 : 0x12E421C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 486 : 0x12E421C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c,1256 : 0x12E421C ++     DbgFolder::dfdr_wpFindUseItem
+02:47:37pm> P044,T1 : xdebug_folder.c, 456 : 0x12E421C ++         DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 460 : 0x12E421C --         End of DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c,1261 : 0x12E421C --     End of DbgFolder::dfdr_wpFindUseItem
+02:47:37pm> P044,T1 : xdebug_folder.c, 468 : 0x12E421C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 472 : 0x12E421C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 802 :         -- parent is done;
+02:47:37pm> P044,T1 : xdebug_folder.c, 804 :         pTaskRecNew post:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0x12E421C (DebugFolder)
+02:47:37pm> P044,T1 : wpsh.c,1567 :     pTaskRec is NULL
+02:47:37pm> P044,T1 : xdebug_folder.c, 806 :         pTaskRecOld post:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0x12E421C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0x12E421C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0xA65E5C for obj 0x12E421C (DebugFolder)
+02:47:37pm> P044,T1 : wpsh.c,1549 : Index: 0
+02:47:37pm> P044,T1 : wpsh.c,1550 :     useCount: 1
+02:47:37pm> P044,T1 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:37pm> P044,T1 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:37pm> P044,T1 : wpsh.c,1553 :     xOrigin: 167
+02:47:37pm> P044,T1 : wpsh.c,1554 :     yOrigin: 191
+02:47:37pm> P044,T1 : wpsh.c,1557 :     pszTitle: 0xB0F7D8 (xø°)
+02:47:37pm> P044,T1 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:37pm> P044,T1 : wpsh.c,1559 :     keepAssocs: 0
+02:47:37pm> P044,T1 : wpsh.c,1560 :     pReserved: 0x0
+02:47:37pm> P044,T1 : xdebug_folder.c, 810 : 0x12E421C -- End of DbgFolder::dfdr_wpSetTaskRec
+02:47:37pm> P044,T1 : xdebug_folder.c, 481 : 0xA6534C ++ DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 486 : 0xA6534C -- End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 468 : 0xA6534C ++ DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 472 : 0xA6534C -- End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 786 : 0xA6534C ++ DbgFolder::dfdr_wpSetTaskRec
+02:47:37pm> P044,T1 : xdebug_folder.c, 790 :         pTaskRecNew pre:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0xA6534C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0xA6534C (DebugFolder:1)
+02:47:37pm> P044,T1 : wpsh.c,1567 :     pTaskRec is NULL
+02:47:37pm> P044,T1 : xdebug_folder.c, 792 :         pTaskRecOld pre:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0xA6534C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0xA65E5C for obj 0xA6534C (DebugFolder:1)
+02:47:37pm> P044,T1 : wpsh.c,1549 : Index: 0
+02:47:37pm> P044,T1 : wpsh.c,1550 :     useCount: 1
+02:47:37pm> P044,T1 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:37pm> P044,T1 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:37pm> P044,T1 : wpsh.c,1553 :     xOrigin: 167
+02:47:37pm> P044,T1 : wpsh.c,1554 :     yOrigin: 191
+02:47:37pm> P044,T1 : wpsh.c,1557 :     pszTitle: 0xB0F7D8 (xø°)
+02:47:37pm> P044,T1 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:37pm> P044,T1 : wpsh.c,1559 :     keepAssocs: 0
+02:47:37pm> P044,T1 : wpsh.c,1560 :     pReserved: 0x0
+02:47:37pm> P044,T1 : xdebug_folder.c, 794 :         ++ Now calling parent
+02:47:37pm> P044,T1 : xdebug_folder.c, 481 : 0xA6534C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 486 : 0xA6534C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c,1256 : 0xA6534C ++     DbgFolder::dfdr_wpFindUseItem
+02:47:37pm> P044,T1 : xdebug_folder.c, 456 : 0xA6534C ++         DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 460 : 0xA6534C --         End of DbgFolder::dfdr_wpAssertObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c,1261 : 0xA6534C --     End of DbgFolder::dfdr_wpFindUseItem
+02:47:37pm> P044,T1 : xdebug_folder.c, 468 : 0xA6534C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 472 : 0xA6534C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 802 :         -- parent is done;
+02:47:37pm> P044,T1 : xdebug_folder.c, 804 :         pTaskRecNew post:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0xA6534C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0x0 for obj 0xA6534C (DebugFolder:1)
+02:47:37pm> P044,T1 : wpsh.c,1567 :     pTaskRec is NULL
+02:47:37pm> P044,T1 : xdebug_folder.c, 806 :         pTaskRecOld post:
+02:47:37pm> P044,T1 : xdebug_folder.c, 853 : 0xA6534C ++     DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : xdebug_folder.c, 857 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryTitle
+02:47:37pm> P044,T1 : ddf_wpSetTaskRec: dumping task rec 0xA65E5C for obj 0xA6534C (DebugFolder:1)
+02:47:37pm> P044,T1 : wpsh.c,1549 : Index: 0
+02:47:37pm> P044,T1 : wpsh.c,1550 :     useCount: 0
+02:47:37pm> P044,T1 : wpsh.c,1551 :     pStdDlg: 0xA655D4
+02:47:37pm> P044,T1 : wpsh.c,1552 :     folder: 0x12F8948 (F:\Desktop)
+02:47:37pm> P044,T1 : wpsh.c,1553 :     xOrigin: 167
+02:47:37pm> P044,T1 : wpsh.c,1554 :     yOrigin: 191
+02:47:37pm> P044,T1 : wpsh.c,1557 :     pszTitle: 0xB0F7D8 (xø°)
+02:47:37pm> P044,T1 : wpsh.c,1558 :     posAfterRecord: 0x0
+02:47:37pm> P044,T1 : wpsh.c,1559 :     keepAssocs: 0
+02:47:37pm> P044,T1 : wpsh.c,1560 :     pReserved: 0x0
+02:47:37pm> P044,T1 : xdebug_folder.c, 810 : 0xA6534C -- End of DbgFolder::dfdr_wpSetTaskRec
+02:47:37pm> P044,T1 : xdebug_folder.c, 481 : 0x12E421C ++ DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 486 : 0x12E421C -- End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 468 : 0x12E421C ++ DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:37pm> P044,T1 : xdebug_folder.c, 472 : 0x12E421C -- End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:42pm> P044,T10 : xdebug_folder.c, 481 : 0xA6534C ++ DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:42pm> P044,T10 : xdebug_folder.c, 486 : 0xA6534C -- End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:42pm> P044,T10 : xdebug_folder.c, 434 : 0xA6534C ++ DbgFolder::dfdr_wpLockObject
+02:47:42pm> P044,T10 : xdebug_folder.c, 437 : 0xA6534C -- End of DbgFolder::dfdr_wpLockObject
+02:47:43pm> P044,T10 : xdebug_folder.c, 494 : 0xA6534C ++ DbgFolder::dfdr_wpSaveImmediate
+02:47:43pm> P044,T10 : xdebug_folder.c, 481 : 0xA6534C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 486 : 0xA6534C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c,1701 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFilename
+02:47:43pm> P044,T10 : xdebug_folder.c, 923 : 0xA6534C ++         DbgFolder::dfdr_wpQueryFolder
+02:47:43pm> P044,T10 : xdebug_folder.c, 927 : 0xA6534C --         End of DbgFolder::dfdr_wpQueryFolder
+02:47:43pm> P044,T10 : xdebug_folder.c,1707 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFilename
+02:47:43pm> P044,T10 : xdebug_folder.c, 518 : 0xA6534C ++     DbgFolder::dfdr_wpSaveState
+02:47:43pm> P044,T10 : xdebug_folder.c, 522 : 0xA6534C --     End of DbgFolder::dfdr_wpSaveState
+02:47:43pm> P044,T10 : xdebug_folder.c, 481 : 0xA6534C ++     DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 486 : 0xA6534C --     End of DbgFolder::dfdr_wpRequestObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 468 : 0xA6534C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 472 : 0xA6534C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 468 : 0xA6534C ++     DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 472 : 0xA6534C --     End of DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 498 : 0xA6534C -- End of DbgFolder::dfdr_wpSaveImmediate
+02:47:43pm> P044,T10 : xdebug_folder.c, 444 : 0xA6534C ++ DbgFolder::dfdr_wpUnlockObject
+02:47:43pm> P044,T10 : xdebug_folder.c, 923 : 0xA6534C ++     DbgFolder::dfdr_wpQueryFolder
+02:47:43pm> P044,T10 : xdebug_folder.c, 927 : 0xA6534C --     End of DbgFolder::dfdr_wpQueryFolder
+02:47:43pm> P044,T10 : xdebug_folder.c, 448 : 0xA6534C -- End of DbgFolder::dfdr_wpUnlockObject
+02:47:43pm> P044,T10 : xdebug_folder.c, 468 : 0xA6534C ++ DbgFolder::dfdr_wpReleaseObjectMutexSem
+02:47:43pm> P044,T10 : xdebug_folder.c, 472 : 0xA6534C -- End of DbgFolder::dfdr_wpReleaseObjectMutexSem
