@@ -51,6 +51,7 @@ EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
+# If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(EXE_OUTPUTDIR)\xwpdaemn.obj \
        $(EXE_OUTPUTDIR)\pgmg_control.obj \
        $(EXE_OUTPUTDIR)\pgmg_move.obj \
@@ -63,6 +64,7 @@ OBJS = $(EXE_OUTPUTDIR)\xwpdaemn.obj \
 # Otherwise, we call the main makefile, which will again call ourselves later.
 all:   \
 !ifndef MAINMAKERUNNING
+# we're not being called from main makefile: start main makefile
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
@@ -86,6 +88,7 @@ MYOWNINC = $(INC)\hook
 .c.{$(EXE_OUTPUTDIR)}.obj:
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
+# precompiled headers disabled:
     $(CC_EXE_MT) -I$(INCLUDE) /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c
 !else
     $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(EXE_OUTPUTDIR)\$(@B).obj $(@B).c

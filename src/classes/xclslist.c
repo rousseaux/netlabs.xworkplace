@@ -47,16 +47,20 @@
  *              (This is only mentioned in an obiter dictum in
  *              WPSGUIDE.)
  *
- *          c)  wpViewObject will call XWPClassList::wpOpen, if
- *              a new view is necessary.
- *              So in wpOpen, we create the PM windows which
+ *          c)  The standard wpViewObject (which is not overridden)
+ *              will call XWPClassList::wpOpen, if a new view needs
+ *              to be opened.
+ *              So we override wpOpen to create the PM windows which
  *              are necessary for our open view. This is where
  *              standard PM programming comes in (see 2) below).
+ *              To do this, XWPClassList::wpOpen calls cllCreateClassListView.
  *
  *              For WPS objects, there's additional work
  *              required to have the object's "use list" maintained.
+ *              This requires calling wpAddToObjUseList and wpRegisterView.
  *              The view is added when WM_CREATE is received
- *              by fnwpClassListClient and removed upon WM_DESTROY.
+ *              by fnwpClassListClient and removed upon WM_DESTROY
+ *              (wpDeleteFromObjUseList).
  *
  *          d)  Also, XWPClassList::wpQueryDefaultView needs to return
  *              our new view to support double-clicking on the object.
@@ -65,7 +69,7 @@
  *              never open concurrent views of the object. We
  *              therefore also remove the "Window" page from
  *              the settings notebook by overriding
- *              wpAddObjectWindowPage.
+ *              XWPClassList::wpAddObjectWindowPage.
  *
  *      2)  Secondly, this is a working example of "split windows",
  *          which PM does not have built-in support for. All the
@@ -370,8 +374,6 @@ SOM_Scope ULONG  SOMLINK xwlist_wpQueryDefaultView(XWPClassList *somSelf)
     XWPClassListMethodDebug("XWPClassList","xwlist_wpQueryDefaultView");
 
     return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENCLASSLIST);
-
-    /* return (XWPClassList_parent_WPAbstract_wpQueryDefaultView(somSelf)); */
 }
 
 /*
@@ -404,6 +406,7 @@ SOM_Scope BOOL  SOMLINK xwlist_wpQueryDefaultHelp(XWPClassList *somSelf,
  *      determines that a new view needs to be opened.
  *      We need to support the new "Class list view" here.
  *
+ *      The implementation for this is in cllCreateClassListView.
  *      See fnwpClassListClient for an overview of the
  *      window hierarchy which is created from this method.
  */
@@ -446,7 +449,7 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 }
 
 /*
- * @@wpAddObjectWindowPage:
+ *@@ wpAddObjectWindowPage:
  *      this instance method normally adds the "Standard Options"
  *      page to the settings notebook (that's what the WPS
  *      reference calls it; it's actually the "Window" page).
@@ -562,8 +565,5 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryIconData(M_XWPClassList *somSelf,
     }
 
     return (sizeof(ICONINFO));
-
-    /* return (M_XWPClassList_parent_M_WPAbstract_wpclsQueryIconData(somSelf,
-                                                                  pIconInfo)); */
 }
 

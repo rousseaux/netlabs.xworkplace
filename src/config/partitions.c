@@ -313,6 +313,7 @@ VOID RearrangeCharts(HWND hwndClient,           // in: partition client window
  *      child of the client.
  *
  *@@added V0.9.2 (2000-02-29) [umoeller]
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed accelerator char
  */
 
 MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -339,12 +340,19 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
             ULONG           ul;
             PPRESPARAMS     ppp = NULL;
             CHAR            szFont[] = "9.WarpSans Bold";
+            CHAR            szTitle[200];
             LONG            lBackColor = CLR_WHITE;
+            PSZ             p = 0;
 
+            // V0.9.5 (2000-09-20) [pr] remove accelerator char
+            strcpy(szTitle, pNLSStrings->pszOpenPartitions);
+            p = strchr(szTitle, '~');
+            if (p)
+                strcpy(p, p+1);
             // register this view
             _wpRegisterView(pCData->somSelf,
                             hwndFrame,
-                            pNLSStrings->pszOpenPartitions);
+                            szTitle);
 
             // now add the view to the object's use list;
             // this use list is used by wpViewObject and

@@ -15,10 +15,12 @@
  *
  *      --  The status bar's window proc (fdr_fnwpStatusBar) is in folder.c.
  *
- *      --  When selections change in a folder view (i.e. fdr_fnwpSubclassedFolderFrame
- *          receives CN_EMPHASIS notification), fdr_fnwpStatusBar is notified,
- *          which in turn calls stbComposeText, the main entry point to the
- *          mess in this file.
+ *      --  When selections change in a folder view (i.e.
+ *          fdr_fnwpSubclassedFolderFrame receives CN_EMPHASIS
+ *          notification), fdr_fnwpStatusBar is posted an STBM_UPDATESTATUSBAR
+ *          message, which in turn calls XFolder::xwpUpdateStatusBar,
+ *          which normally calls stbComposeText in turn (the main entry
+ *          point to the mess in this file).
  *
  *      Function prefix for this file:
  *      --  stb*
@@ -87,7 +89,6 @@
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
-#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -110,6 +111,7 @@
 #include <wpdisk.h>                     // WPDisk
 #include <wppgm.h>                      // WPProgram
 #include <wpshadow.h>                   // WPShadow
+#include <wpshdir.h>                    // WPSharedDir // V0.9.5 (2000-09-20) [pr]
 
 // finally, our own header file
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -182,6 +184,7 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
  *
  *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
  *@@changed V0.9.0 [umoeller]: now returning FALSE upon errors
+ *@@changed V0.9.5 (2000-09-20) [pr]: WPSharedDir has WPDisk status bar
  */
 
 BOOL stbSetClassMnemonics(SOMClass *pClassObject,
@@ -217,21 +220,10 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     }
 
     // no WPUrl or WPUrl not installed: continue
-    if (_somDescendedFrom(pClassObject, _WPFileSystem))
-    {
-        // provoke a reload of the settings
-        // in stbQueryClassMnemonics
-        G_szWPFileSystemStatusBarMnemonics[0] = '\0';
-
-        // set the class mnemonics in OS2.INI; if
-        // pszText == NULL, the key will be deleted,
-        // and stbQueryClassMnemonics will use
-        // the default value
-        return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
-                                      pszText));
-    }
-    else if (_somDescendedFrom(pClassObject, _WPDisk))
+    if (   (_somDescendedFrom(pClassObject, _WPDisk))
+           // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
+        || (_somDescendedFrom(pClassObject, _WPSharedDir))
+       )
     {
         // provoke a reload of the settings
         // in stbQueryClassMnemonics
@@ -243,6 +235,20 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // the default value
         return (PrfWriteProfileString(HINI_USERPROFILE,
                                       INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPDISK,
+                                      pszText));
+    }
+    else if (_somDescendedFrom(pClassObject, _WPFileSystem))
+    {
+        // provoke a reload of the settings
+        // in stbQueryClassMnemonics
+        G_szWPFileSystemStatusBarMnemonics[0] = '\0';
+
+        // set the class mnemonics in OS2.INI; if
+        // pszText == NULL, the key will be deleted,
+        // and stbQueryClassMnemonics will use
+        // the default value
+        return (PrfWriteProfileString(HINI_USERPROFILE,
+                                      INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
                                       pszText));
     }
     else if (_somDescendedFrom(pClassObject, _WPProgram))
@@ -296,6 +302,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
  *@@changed V0.8.5 [umoeller]: fixed problem when WPProgram was replaced
  *@@changed V0.9.0 [umoeller]: function prototype changed to return PSZ instead of ULONG
  *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
+ *@@changed V0.9.5 (2000-09-20) [pr]: WPSharedDir has WPDisk status bar
  */
 
 PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of selected object
@@ -330,26 +337,10 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
             return (pszReturn);
         }
 
-    if (_somDescendedFrom(pClassObject, _WPFileSystem))
-    {
-        if (G_szWPFileSystemStatusBarMnemonics[0] == '\0')
-            // load string if this is the first time
-            if (PrfQueryProfileString(HINI_USERPROFILE,
-                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
-                        NULL, &(G_szWPFileSystemStatusBarMnemonics),
-                        sizeof(G_szWPFileSystemStatusBarMnemonics))
-                    == 0)
-                // string not found in profile: load default from NLS resources
-                WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
-                              cmnQueryNLSModuleHandle(FALSE),
-                              ID_XSSI_SBTEXTWPDATAFILE,
-                              sizeof(G_szWPFileSystemStatusBarMnemonics),
-                              G_szWPFileSystemStatusBarMnemonics);
-
-        pszReturn = G_szWPFileSystemStatusBarMnemonics;
-    }
-    //
-    else if (_somDescendedFrom(pClassObject, _WPDisk))
+    if (    (_somDescendedFrom(pClassObject, _WPDisk))
+            // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
+         || (_somDescendedFrom(pClassObject, _WPSharedDir))
+       )
     {
         if (G_szWPDiskStatusBarMnemonics[0] == '\0')
             // load string if this is the first time
@@ -367,6 +358,24 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
                               G_szWPDiskStatusBarMnemonics);
 
         pszReturn = G_szWPDiskStatusBarMnemonics;
+    }
+    else if (_somDescendedFrom(pClassObject, _WPFileSystem))
+    {
+        if (G_szWPFileSystemStatusBarMnemonics[0] == '\0')
+            // load string if this is the first time
+            if (PrfQueryProfileString(HINI_USERPROFILE,
+                        INIAPP_XWORKPLACE, INIKEY_SBTEXT_WPFILESYSTEM,
+                        NULL, &(G_szWPFileSystemStatusBarMnemonics),
+                        sizeof(G_szWPFileSystemStatusBarMnemonics))
+                    == 0)
+                // string not found in profile: load default from NLS resources
+                WinLoadString(WinQueryAnchorBlock(HWND_DESKTOP),
+                              cmnQueryNLSModuleHandle(FALSE),
+                              ID_XSSI_SBTEXTWPDATAFILE,
+                              sizeof(G_szWPFileSystemStatusBarMnemonics),
+                              G_szWPFileSystemStatusBarMnemonics);
+
+        pszReturn = G_szWPFileSystemStatusBarMnemonics;
     }
     //
     else if (_somDescendedFrom(pClassObject, _WPProgram))  // fixed V0.85
@@ -439,6 +448,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *      This returns the number of keys that were translated.
  *
  *@@changed V0.9.0 [umoeller]: now using _WPDisk instead of _XFldDisk
+ *@@changed V0.9.5 (2000-09-20) [pr]: WPSharedDir has WPDisk status bar
  */
 
 ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
@@ -496,122 +506,14 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         }
 
     /*
-     * WPFileSystem:
-     *
-     */
-
-    if (_somIsA(pObject, _WPFileSystem))
-    {
-        /* single-object status bar text mnemonics understood by WPFileSystem
-           (in addition to those introduced by XFldObject):
-
-             $r      object's real name
-
-             $y      object type (.TYPE EA)
-             $D      object creation date
-             $T      object creation time
-             $a      object attributes
-
-             $Eb     EA size in bytes
-             $Ek     EA size in kBytes
-             $EK     EA size in KBytes
-         */
-
-        if (p = strstr(*ppszText, "\ty")) // attribs
-        {
-            PSZ p2 = NULL;
-            p2 = _wpQueryType(pObject);
-            xstrrpl(ppszText, 0, "\ty", (p2) ? p2 : "?", 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\tD"))  // date
-        {
-            FILEFINDBUF4 ffb4;
-            ULONG ulDateFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iDate", 0);
-            CHAR szDateSep[10];
-            PrfQueryProfileString(HINI_USER,
-                                  "PM_National", "sDate", "/",
-                                  szDateSep,
-                                  sizeof(szDateSep)-1);
-            strcpy(szTemp, "?");
-            _wpQueryDateInfo(pObject, &ffb4);
-            strhFileDate(szTemp, &(ffb4.fdateLastWrite), ulDateFormat, szDateSep[0]);
-            xstrrpl(ppszText, 0, "\tD", szTemp, 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\tT"))  // time
-        {
-            FILEFINDBUF4 ffb4;
-            ULONG ulTimeFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iTime", 0);
-            CHAR szTimeSep[10];
-            PrfQueryProfileString(HINI_USER,
-                                  "PM_National", "sTime", ":",
-                                  szTimeSep,
-                                  sizeof(szTimeSep)-1);
-
-            strcpy(szTemp, "?");
-            _wpQueryDateInfo(pObject, &ffb4);
-            strhFileTime(szTemp, &(ffb4.ftimeLastWrite), ulTimeFormat, szTimeSep[0]);
-            xstrrpl(ppszText, 0, "\tT", szTemp, 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\ta")) // attribs
-        {
-            ULONG fAttr = _wpQueryAttr(pObject);
-            szTemp[0] = (fAttr & FILE_ARCHIVED) ? 'A' : 'a';
-            szTemp[1] = (fAttr & FILE_HIDDEN  ) ? 'H' : 'h';
-            szTemp[2] = (fAttr & FILE_READONLY) ? 'R' : 'r';
-            szTemp[3] = (fAttr & FILE_SYSTEM  ) ? 'S' : 's';
-            szTemp[4] = '\0';
-            xstrrpl(ppszText, 0, "\ta", szTemp, 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\tEb")) // easize
-        {
-            ULONG ulEASize;
-            ulEASize = _wpQueryEASize(pObject);
-            strhThousandsDouble(szTemp, ulEASize, cThousands);
-            xstrrpl(ppszText, 0, "\tEb", szTemp, 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\tEk"))
-        {
-            ULONG ulEASize;
-            ulEASize = _wpQueryEASize(pObject);
-            strhThousandsDouble(szTemp, ((ulEASize+500)/1000), cThousands);
-            xstrrpl(ppszText, 0, "\tEk", szTemp, 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\tEK"))
-        {
-            ULONG ulEASize;
-            ulEASize = _wpQueryEASize(pObject);
-            strhThousandsDouble(szTemp, ((ulEASize+512)/1024), cThousands);
-            xstrrpl(ppszText, 0, "\tEK", szTemp, 0);
-            ulrc++;
-        }
-
-        if (p = strstr(*ppszText, "\tr")) // real name
-        {
-            strcpy(szTemp, "?");
-            _wpQueryFilename(pObject, szTemp, FALSE);
-            xstrrpl(ppszText, 0, "\tr", szTemp, 0);
-            ulrc++;
-        }
-    }
-
-    /*
      * WPDisk:
      *
      */
 
-    else if (_somIsA(pObject, _WPDisk))
+    if (    (_somIsA(pObject, _WPDisk))
+            // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
+         || (_somIsA(pObject, _WPSharedDir))
+       )
     {
         ULONG ulLogicalDrive = -1;
 
@@ -759,6 +661,117 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                 xstrrpl(ppszText, 0, "\tF", szBuffer, 0);
             else
                 xstrrpl(ppszText, 0, "\tF", "?", 0);
+            ulrc++;
+        }
+    }
+
+    /*
+     * WPFileSystem:
+     *
+     */
+
+    else if (_somIsA(pObject, _WPFileSystem))
+    {
+        /* single-object status bar text mnemonics understood by WPFileSystem
+           (in addition to those introduced by XFldObject):
+
+             $r      object's real name
+
+             $y      object type (.TYPE EA)
+             $D      object creation date
+             $T      object creation time
+             $a      object attributes
+
+             $Eb     EA size in bytes
+             $Ek     EA size in kBytes
+             $EK     EA size in KBytes
+         */
+
+        if (p = strstr(*ppszText, "\ty")) // attribs
+        {
+            PSZ p2 = NULL;
+            p2 = _wpQueryType(pObject);
+            xstrrpl(ppszText, 0, "\ty", (p2) ? p2 : "?", 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\tD"))  // date
+        {
+            FILEFINDBUF4 ffb4;
+            ULONG ulDateFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iDate", 0);
+            CHAR szDateSep[10];
+            PrfQueryProfileString(HINI_USER,
+                                  "PM_National", "sDate", "/",
+                                  szDateSep,
+                                  sizeof(szDateSep)-1);
+            strcpy(szTemp, "?");
+            _wpQueryDateInfo(pObject, &ffb4);
+            strhFileDate(szTemp, &(ffb4.fdateLastWrite), ulDateFormat, szDateSep[0]);
+            xstrrpl(ppszText, 0, "\tD", szTemp, 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\tT"))  // time
+        {
+            FILEFINDBUF4 ffb4;
+            ULONG ulTimeFormat = PrfQueryProfileInt(HINI_USER, "PM_National", "iTime", 0);
+            CHAR szTimeSep[10];
+            PrfQueryProfileString(HINI_USER,
+                                  "PM_National", "sTime", ":",
+                                  szTimeSep,
+                                  sizeof(szTimeSep)-1);
+
+            strcpy(szTemp, "?");
+            _wpQueryDateInfo(pObject, &ffb4);
+            strhFileTime(szTemp, &(ffb4.ftimeLastWrite), ulTimeFormat, szTimeSep[0]);
+            xstrrpl(ppszText, 0, "\tT", szTemp, 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\ta")) // attribs
+        {
+            ULONG fAttr = _wpQueryAttr(pObject);
+            szTemp[0] = (fAttr & FILE_ARCHIVED) ? 'A' : 'a';
+            szTemp[1] = (fAttr & FILE_HIDDEN  ) ? 'H' : 'h';
+            szTemp[2] = (fAttr & FILE_READONLY) ? 'R' : 'r';
+            szTemp[3] = (fAttr & FILE_SYSTEM  ) ? 'S' : 's';
+            szTemp[4] = '\0';
+            xstrrpl(ppszText, 0, "\ta", szTemp, 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\tEb")) // easize
+        {
+            ULONG ulEASize;
+            ulEASize = _wpQueryEASize(pObject);
+            strhThousandsDouble(szTemp, ulEASize, cThousands);
+            xstrrpl(ppszText, 0, "\tEb", szTemp, 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\tEk"))
+        {
+            ULONG ulEASize;
+            ulEASize = _wpQueryEASize(pObject);
+            strhThousandsDouble(szTemp, ((ulEASize+500)/1000), cThousands);
+            xstrrpl(ppszText, 0, "\tEk", szTemp, 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\tEK"))
+        {
+            ULONG ulEASize;
+            ulEASize = _wpQueryEASize(pObject);
+            strhThousandsDouble(szTemp, ((ulEASize+512)/1024), cThousands);
+            xstrrpl(ppszText, 0, "\tEK", szTemp, 0);
+            ulrc++;
+        }
+
+        if (p = strstr(*ppszText, "\tr")) // real name
+        {
+            strcpy(szTemp, "?");
+            _wpQueryFilename(pObject, szTemp, FALSE);
+            xstrrpl(ppszText, 0, "\tr", szTemp, 0);
             ulrc++;
         }
     }
@@ -959,7 +972,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     CHAR        *p2;
 
     // get thousands separator from "Country" object
-    CHAR        cThousands = prfhQueryProfileChar(HINI_USER, "PM_National", "sThousand", ','),
+    CHAR        cThousands = cmnQueryThousandsSeparator(),
                 szTemp[300];
 
     // go thru all the selected objects in the container

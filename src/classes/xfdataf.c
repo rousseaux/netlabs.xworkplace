@@ -180,121 +180,6 @@ SOM_Scope void  SOMLINK xfdataf_wpObjectReady(XFldDataFile *somSelf,
 }
 
 /*
- *@@wpAddFile1Page:
- *      this normally adds the first "File" page to
- *      the file's settings notebook; if allowed,
- *      we will replace this with our own version,
- *      which combines the three "File" pages into
- *      one single page.
- *
- *      XFolder and XFldDataFile share the same
- *      notebook callbacks for this page, since we
- *      have no class replacement for WPFileSystem.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile1Page(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile1Page");
-
-    if (pGlobalSettings->fReplaceFilePage)
-    {
-        // page 2
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
-        pcnbp->ulPageID = SP_FILE2;
-        // pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFilePage;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
-
-        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
-        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
-
-        ntbInsertPage(pcnbp);
-
-        // page 1
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
-        pcnbp->ulPageID = SP_FILE1;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFilePage;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
-
-        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
-        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
-
-        return (ntbInsertPage(pcnbp));
-    }
-    else
-        return (XFldDataFile_parent_WPDataFile_wpAddFile1Page(somSelf,
-                                                          hwndNotebook));
-}
-
-/*
- *@@wpAddFile2Page:
- *      this normally adds the second "File" page to
- *      the file's settings notebook; since we
- *      combine the three "File" pages into one,
- *      we'll remove this page, if allowed.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile2Page(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile2Page");
-
-    if (pGlobalSettings->fReplaceFilePage)
-        return (SETTINGS_PAGE_REMOVED);
-    else
-        return (XFldDataFile_parent_WPDataFile_wpAddFile2Page(somSelf,
-                                                          hwndNotebook));
-}
-
-/*
- *@@wpAddFile3Page:
- *      this normally adds the second "File" page to
- *      the file's settings notebook; since we
- *      combine the three "File" pages into one,
- *      we'll remove this page, if allowed.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile3Page(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile3Page");
-
-    if (pGlobalSettings->fReplaceFilePage)
-        return (SETTINGS_PAGE_REMOVED);
-    else
-        return (XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
-                                                          hwndNotebook));
-}
-
-/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.
@@ -472,6 +357,91 @@ SOM_Scope BOOL  SOMLINK xfdataf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
         // else: none of our menu items, call default
         return (XFldDataFile_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
                                                                  MenuId));
+}
+
+/*
+ *@@ wpAddFile1Page:
+ *      this normally adds the first "File" page to
+ *      the file's settings notebook; if allowed,
+ *      we will replace this with our own version,
+ *      which combines the three "File" pages into
+ *      one single page.
+ *
+ *      We cannot override this in XWPFileSystem because
+ *      WPFolder overrides this too.
+ *
+ *@@added V0.9.0
+ */
+
+SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile1Page(XFldDataFile *somSelf,
+                                                HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile1Page");
+
+    if (pGlobalSettings->fReplaceFilePage)
+    {
+        return (fsysInsertFilePages(somSelf,
+                                    hwndNotebook));
+    }
+    else
+        return (XFldDataFile_parent_WPDataFile_wpAddFile1Page(somSelf,
+                                                              hwndNotebook));
+}
+
+/*
+ *@@ wpAddFile2Page:
+ *      this normally adds the second "File" page to
+ *      the file's settings notebook; since we
+ *      combine the three "File" pages into one,
+ *      we'll remove this page, if allowed.
+ *
+ *      We cannot override this in XWPFileSystem because
+ *      WPFolder overrides this too.
+ *
+ *@@added V0.9.0
+ */
+
+SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile2Page(XFldDataFile *somSelf,
+                                                HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile2Page");
+
+    if (pGlobalSettings->fReplaceFilePage)
+        return (SETTINGS_PAGE_REMOVED);
+    else
+        return (XFldDataFile_parent_WPDataFile_wpAddFile2Page(somSelf,
+                                                              hwndNotebook));
+}
+
+/*
+ *@@ wpAddFile3Page:
+ *      this normally adds the second "File" page to
+ *      the file's settings notebook; since we
+ *      combine the three "File" pages into one,
+ *      we'll remove this page, if allowed.
+ *
+ *      We cannot override this in XWPFileSystem because
+ *      WPFolder overrides this too.
+ *
+ *@@added V0.9.0
+ */
+
+SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile3Page(XFldDataFile *somSelf,
+                                                HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile3Page");
+
+    if (pGlobalSettings->fReplaceFilePage)
+        return (SETTINGS_PAGE_REMOVED);
+    else
+        return (XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
+                                                              hwndNotebook));
 }
 
 /*

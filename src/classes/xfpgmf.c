@@ -91,6 +91,8 @@
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
+#include <wpcmdf.h>                     // WPCommandFile
+
 /* ******************************************************************
  *                                                                  *
  *   here come the XFldProgramFile instance methods                 *
@@ -653,6 +655,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
  *      additional information from the executable module.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.5 (2000-08-27) [umoeller]: now skipping for WPCommandFiles
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf,
@@ -662,27 +665,31 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramSessionPage");
 
-    if (pGlobalSettings->fReplaceFilePage)
+    // insert "Module" settings page, but not for command files
+    if (!_somIsA(somSelf, _WPCommandFile))
     {
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        if (pGlobalSettings->fReplaceFilePage)
+        {
+            PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        // insert "Module" page
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszModulePage;
-        pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
-        // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
-        // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
-        pcnbp->ulPageID = SP_PROG_DETAILS;
-        pcnbp->pfncbInitPage    = fsysProgramInitPage;
-        ntbInsertPage(pcnbp);
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            // insert "Module" page
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = pNLSStrings->pszModulePage;
+            pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
+            // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
+            // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
+            pcnbp->ulPageID = SP_PROG_DETAILS;
+            pcnbp->pfncbInitPage    = fsysProgramInitPage;
+            ntbInsertPage(pcnbp);
+        }
     }
 
     return (XFldProgramFile_parent_WPProgramFile_wpAddProgramSessionPage(somSelf,

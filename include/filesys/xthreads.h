@@ -110,9 +110,8 @@
 
     // #define FIM_DESKTOPPOPULATED        (WM_USER+130)
 
-    #define FIM_DESKTOPREADY            (WM_USER+130)
-            // re-added V0.9.3 (2000-04-26) [umoeller]; this was removed from
-            // the Worker thread with V0.9.0
+    #define FIM_DESKTOPPOPULATED        (WM_USER+130)
+        // changed V0.9.5 (2000-08-26) [umoeller]
 
     #define FIM_RECREATECONFIGFOLDER    (WM_USER+131)
 

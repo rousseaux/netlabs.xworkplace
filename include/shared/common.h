@@ -162,6 +162,7 @@
     #define XFOLDER_WPSID           "<XWP_WPS>"
     #define XFOLDER_KERNELID        "<XWP_KERNEL>"
     #define XFOLDER_SCREENID        "<XWP_SCREEN>"
+    #define XFOLDER_MEDIAID         "<XWP_MEDIA>"
 
     #define XFOLDER_CLASSLISTID     "<XWP_CLASSLIST>"
     #define XFOLDER_TRASHCANID      "<XWP_TRASHCAN>"
@@ -293,6 +294,8 @@
     #define ID_XFH_SELECTSOME                90     // V0.9.4: changed this to have it assigned a fixed no. finally
     #define ID_XFH_VIEW_MENU_ITEMS           91     // V0.9.4: added for XFolder "View" submenu items
     #define ID_XSH_DRIVER_HPFS386            92     // V0.9.5: HPFS386 driver dialog help
+
+    #define ID_XSH_XWPMEDIA                  93     // V0.9.5: XWPMedia main panel
 
     /********************************************************************
      *                                                                  *
@@ -791,6 +794,16 @@
 
         ULONG       ulStartupInitialDelay;
                         // XFldStartup: initial delay
+
+    /* XWorkplace 0.9.5 */
+        BYTE        fReplaceHandles;
+                        // XWPSetup: replace handles management?
+        BYTE        bSaveINIS;
+                        // XShutdown: save-INIs method:
+                        // -- 0: new method (xprf* APIs)
+                        // -- 1: old method (Prf* APIs)
+                        // -- 2: do not save
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -917,7 +930,7 @@
                 pszSettings,
                 pszSettingsNotebook,
                 pszAttributes,
-                pszAttrArchived,
+                pszAttrArchive,
                 pszAttrSystem,
                 pszAttrHidden,
                 pszAttrReadOnly,
@@ -1092,8 +1105,12 @@
                 pszFopsTrueDelete,
                 pszFopsEmptyingTrashCan,
 
-                pszIconPage;        // added V0.9.4 (2000-08-03) [umoeller]
+                pszIconPage,        // added V0.9.4 (2000-08-03) [umoeller]
 
+                // XShutdown INI save strings V0.9.5 (2000-08-16) [umoeller]
+                pszXSDSaveInisNew,
+                pszXSDSaveInisOld,
+                pszXSDSaveInisNone;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1217,6 +1234,8 @@
     HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload);
 
     PNLSSTRINGS cmnQueryNLSStrings(VOID);
+
+    CHAR cmnQueryThousandsSeparator(VOID);
 
     BOOL cmnDescribeKey(PSZ pszBuf,
                         USHORT usFlags,

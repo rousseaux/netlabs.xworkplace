@@ -416,6 +416,7 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
  *@@changed V0.9.3 (2000-04-11) [umoeller]: now returning BOOL
  *@@changed V0.9.3 (2000-04-25) [umoeller]: deleting empty TRASH directories finally works
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ *@@changed V0.9.5 (2000-08-25) [umoeller]: object count was wrong
  */
 
 BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _XWPTrashObject (for speed)
@@ -423,13 +424,13 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
                                     WPFolder *pTrashDir,     // in: trash directory to examine
                                     PULONG pulObjectCount)   // out: object count (req.)
 {
-    BOOL        brc = TRUE,
+    BOOL        brc = FALSE,
                 fTrashDirSemOwned = FALSE;
     WPObject    *pObject;
-    ULONG       ulObjectCount = 0;
 
     LINKLIST    llEmptyDirs;        // list of WPFolder's which are to be freed
                                     // because they're empty
+    ULONG       ulTrashObjectCountSub = 0;
 
     if (!pXWPTrashObjectClass)
         // error
@@ -446,6 +447,8 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
         // populate
         if (wpshCheckIfPopulated(pTrashDir))
         {
+            // populated:
+
             // request semaphore for that trash dir
             // to protect the contents list
             fTrashDirSemOwned = !_wpRequestObjectMutexSem(pTrashDir, 4000);
@@ -455,88 +458,87 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
                 somTD_WPFolder_wpQueryContent rslv_wpQueryContent
                         = SOM_Resolve(pTrashDir, WPFolder, wpQueryContent);
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("    fTrashDirSemOwned = %d", fTrashDirSemOwned));
-                #endif
-
-                for (   pObject = rslv_wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
-                        (pObject);
-                        pObject = rslv_wpQueryContent(pTrashDir, pObject, (ULONG)QC_NEXT)
-                    )
+                if (rslv_wpQueryContent)
                 {
-                    BOOL    fAddTrashObject = TRUE;
-                    if (_somIsA(pObject, _WPFolder))
+                    for (   pObject = rslv_wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
+                            (pObject);
+                            pObject = rslv_wpQueryContent(pTrashDir, pObject, (ULONG)QC_NEXT)
+                        )
                     {
-                        // another folder found:
-                        // check the attributes if it's one of the
-                        // \TRASH subdirectories added by the trashcan
-                        // or maybe a "real" WPS folder that had been
-                        // deleted
-                        CHAR    szFolderPath[2*CCHMAXPATH] = "";
-                        ULONG   cbFolderPath = sizeof(szFolderPath);
-                        ULONG   ulAttrs = 0;
-                        if (_wpQueryRealName(pObject,
-                                             szFolderPath,
-                                             &cbFolderPath,
-                                             TRUE))
-                            if (doshQueryPathAttr(szFolderPath, &ulAttrs) == NO_ERROR)
-                                if (ulAttrs & FILE_HIDDEN)
-                                {
-                                    // hidden directory: this is a trash directory,
-                                    // so recurse!
-                                    ULONG ulTrashObjectCountSub = 0;
-
-                                    #ifdef DEBUG_TRASHCAN
-                                        _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
-                                    #endif
-
-                                    if (trshAddTrashObjectsForTrashDir(pXWPTrashObjectClass,
-                                                                       pTrashCan,
-                                                                       pObject, // new trash dir
-                                                                       &ulTrashObjectCountSub))
-                                        // success:
-                                        ulObjectCount += ulTrashObjectCountSub;
-                                    else
-                                        brc = FALSE;
-
-                                    #ifdef DEBUG_TRASHCAN
-                                    _Pmpf(("      Got %d objects (%d total) for %s",
-                                            ulTrashObjectCountSub, ulObjectCount,
-                                            _wpQueryTitle(pObject)));
-                                    #endif
-
-                                    if (ulTrashObjectCountSub == 0)
+                        BOOL    fAddTrashObject = TRUE;
+                        if (_somIsA(pObject, _WPFolder))
+                        {
+                            // another folder found:
+                            // check the attributes if it's one of the
+                            // \TRASH subdirectories added by the trashcan
+                            // or maybe a "real" WPS folder that had been
+                            // deleted
+                            CHAR    szFolderPath[2*CCHMAXPATH] = "";
+                            ULONG   cbFolderPath = sizeof(szFolderPath);
+                            ULONG   ulAttrs = 0;
+                            if (_wpQueryRealName(pObject,
+                                                 szFolderPath,
+                                                 &cbFolderPath,
+                                                 TRUE))
+                                if (doshQueryPathAttr(szFolderPath, &ulAttrs) == NO_ERROR)
+                                    if (ulAttrs & FILE_HIDDEN)
                                     {
-                                        // no objects found in this trash folder
-                                        // or subfolders (if any):
-                                        // delete this folder, it's useless,
-                                        // but we can only do this outside the wpQueryContent
-                                        // loop, so delay this
-                                        lstAppendItem(&llEmptyDirs,
-                                                      pObject); // the empty WPFolder
+                                        // hidden directory: this is a trash directory,
+                                        // so recurse!
+
+                                        #ifdef DEBUG_TRASHCAN
+                                            _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
+                                        #endif
+
+                                        brc = trshAddTrashObjectsForTrashDir(pXWPTrashObjectClass,
+                                                                           pTrashCan,
+                                                                           pObject, // new trash dir
+                                                                           &ulTrashObjectCountSub);
+
+                                        #ifdef DEBUG_TRASHCAN
+                                            _Pmpf(("    Recursion returned %d objects", ulTrashObjectCountSub));
+                                        #endif
+
+                                        if (ulTrashObjectCountSub == 0)
+                                        {
+                                            // no objects found in this trash folder
+                                            // or subfolders (if any):
+                                            // delete this folder, it's useless,
+                                            // but we can only do this outside the wpQueryContent
+                                            // loop, so delay this
+                                            lstAppendItem(&llEmptyDirs,
+                                                          pObject); // the empty WPFolder
+
+                                            #ifdef DEBUG_TRASHCAN
+                                                _Pmpf(("    Adding %s to dirs 2be deleted",
+                                                        _wpQueryTitle(pObject)));
+                                            #endif
+                                        }
+
+                                        // don't create a trash object for this directory...
+                                        fAddTrashObject = FALSE;
                                     }
+                        }
 
-                                    // don't create a trash object for this directory...
-                                    fAddTrashObject = FALSE;
-                                }
-                    }
+                        if (fAddTrashObject)
+                        {
+                            // non-folder or folder which is not hidden:
+                            // add to trashcan!
+                            #ifdef DEBUG_TRASHCAN
+                                _Pmpf(("    Adding %s...",
+                                            _wpQueryTitle(pObject)));
+                            #endif
 
-                    if (fAddTrashObject)
-                    {
-                        // non-folder or folder which is not hidden:
-                        // add to trashcan!
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("    Adding %s, _XWPTrashObject: 0x%lX",
-                                        _wpQueryTitle(pObject),
-                                        pXWPTrashObjectClass));
-                        #endif
+                            trshCreateTrashObject(pXWPTrashObjectClass,
+                                                  pTrashCan,
+                                                  pObject);  // related object
+                            (*pulObjectCount)++;
 
-                        trshCreateTrashObject(pXWPTrashObjectClass,
-                                              pTrashCan,
-                                              pObject);  // related object
-                        ulObjectCount++;
-                    }
-                } // end for (   pObject = _wpQueryContent(...
+                            _Pmpf(("    *pulObjectCount is now %d",
+                                   (*pulObjectCount)));
+                        }
+                    } // end for (   pObject = _wpQueryContent(...
+                }
             } // end if (fTrashDirSemOwned)
             else
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -558,10 +560,7 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
         fTrashDirSemOwned = FALSE;
     }
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("  End of AddTrashObjectsForTrashDir for %s;", _wpQueryTitle(pTrashDir)));
-        _Pmpf(("    returning %d objects ", ulObjectCount));
-    #endif
+    *pulObjectCount += ulTrashObjectCountSub;
 
     // OK, now that we're done running thru the subdirectories,
     // delete the empty ones before returning to the caller
@@ -572,8 +571,8 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
             WPFolder *pFolder = (WPFolder*)pDirNode->pItemData;
 
             #ifdef DEBUG_TRASHCAN
-            _Pmpf(("    Freeing empty folder %s",
-                    _wpQueryTitle(pFolder)));
+                _Pmpf(("    Freeing empty folder %s",
+                        _wpQueryTitle(pFolder)));
             #endif
 
             _wpFree(pFolder);
@@ -584,8 +583,10 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
         lstClear(&llEmptyDirs);
     }
 
-
-    *pulObjectCount = ulObjectCount;
+    #ifdef DEBUG_TRASHCAN
+        _Pmpf(("  End of AddTrashObjectsForTrashDir for %s;", _wpQueryTitle(pTrashDir)));
+        _Pmpf(("              returning %d objects ", (*pulObjectCount)));
+    #endif
 
     return (brc);
 }
@@ -603,6 +604,8 @@ BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // i
  *
  *@@added V0.9.1 (2000-01-31) [umoeller]
  *@@changed V0.9.1 (2000-02-04) [umoeller]: added status bar updates while populating
+ *@@changed V0.9.5 (2000-08-25) [umoeller]: now deleting empty trash dirs
+ *@@changed V0.9.5 (2000-08-27) [umoeller]: fixed object counts
  */
 
 BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
@@ -651,7 +654,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                     sprintf(szTrashDir, "%c:\\Trash",
                             cDrive);
                     #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("  wpPopulate: Getting trash dir %s", szTrashDir));
+                        _Pmpf(("  trshPopulateFirstTime: Getting trash dir %s", szTrashDir));
                     #endif
 
                     // first check if that directory exists using CP functions;
@@ -672,6 +675,20 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                                                            pTrashDir,   // initial trash dir;
                                                            &ulObjectCount);
                                    // this routine will recurse
+
+                            #ifdef DEBUG_TRASHCAN
+                                _Pmpf(("trshPopulateFirstTime: got %d objects for %s", ulObjectCount, szTrashDir));
+                            #endif
+
+                            if (ulObjectCount == 0)
+                            {
+                                #ifdef DEBUG_TRASHCAN
+                                    _Pmpf(("    is empty, deleting!"));
+                                #endif
+
+                                // no trash objects found:
+                                _wpFree(pTrashDir);
+                            }
                         }
                     }
                 }
@@ -884,6 +901,8 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
  *      implementation for XWPTrashObject::xwpRestoreFromTrashCan.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V0.9.5 (2000-08-24) [umoeller]: dragging objects made them undeletable; fixed.
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed deletion data in related object
  */
 
 BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
@@ -894,7 +913,7 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
 
     TRY_LOUD(excpt1, NULL)
     {
-        do
+        do  // for breaks only
         {
             if (_pRelatedObject)
             {
@@ -957,11 +976,21 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
                                                 pTargetFolder2))
                     {
                         // successfully moved:
-                        // destroy the trash object
+                        // V0.9.5 (2000-09-20) [pr]
+                        // clear original object's deletion data
+                        _xwpSetDeletion(_pRelatedObject, FALSE);
+
                         if (pTaskRecSelf)
+                        {
+                            // unset task records V0.9.5 (2000-08-24) [umoeller]
                             _wpSetTaskRec(pTrashObject,
                                           NULL,     // new task rec
                                           pTaskRecSelf); // old task rec
+                            _wpSetTaskRec(_pRelatedObject,
+                                          NULL,     // new task rec
+                                          pTaskRecSelf); // old task rec
+                        }
+                        // destroy the trash object
                         brc = _wpFree(pTrashObject);
                     }
                 } // end if (pTargetFolder2)

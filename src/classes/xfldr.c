@@ -2224,259 +2224,6 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 }
 
 /*
- *@@ wpAddObjectGeneralPage2:
- *      this WPObject instance method adds the "Animation icon"
- *      page to an object's settings notebook.
- *      For folders, we'll insert the object's "Internals" page
- *      here (now called "Object" page).
- *
- *      For folders, this is not done by XFldObject::wpAddObjectGeneralPage
- *      because otherwise the "Object" page would be between
- *      the two icon pages.
- *
- *@@added V0.9.2 (2000-02-27) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
-                                                    HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddObjectGeneralPage2");
-
-    if (pGlobalSettings->AddObjectPage)
-        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
-
-    return (XFolder_parent_WPFolder_wpAddObjectGeneralPage2(somSelf,
-                                                            hwndNotebook));
-}
-
-/*
- *@@ wpAddFile1Page:
- *      this normally adds the first "File" page to
- *      the folder's settings notebook; if allowed,
- *      we will replace this with our own version,
- *      which combines the three "File" pages into
- *      one single page.
- *
- *      XFolder and XFldDataFile share the same
- *      notebook callbacks for this page, since we
- *      have no class replacement for WPFileSystem.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
-                                           HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddFile1Page");
-
-    if (pGlobalSettings->fReplaceFilePage)
-    {
-        // page 2
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
-        pcnbp->ulPageID = SP_FILE2;
-        // pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFilePage;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
-
-        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
-        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
-
-        ntbInsertPage(pcnbp);
-
-        // page 1
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
-        pcnbp->ulPageID = SP_FILE1;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = pNLSStrings->pszFilePage;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
-
-        pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
-        pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
-
-        return (ntbInsertPage(pcnbp));
-    }
-    else
-        return (XFolder_parent_WPFolder_wpAddFile1Page(somSelf, hwndNotebook));
-}
-
-/*
- *@@ wpAddFile2Page:
- *      this normally adds the second "File" page to
- *      the folder's settings notebook; since we
- *      combine the three "File" pages into one,
- *      we'll remove this page, if allowed.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
-                                           HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddFile2Page");
-
-    if (pGlobalSettings->fReplaceFilePage)
-        return (SETTINGS_PAGE_REMOVED);
-    else
-        return (XFolder_parent_WPFolder_wpAddFile2Page(somSelf, hwndNotebook));
-}
-
-/*
- *@@ wpAddFile3Page:
- *      this normally adds the second "File" page to
- *      the folder's settings notebook; since we
- *      combine the three "File" pages into one,
- *      we'll remove this page, if allowed.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
-                                           HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddFile3Page");
-
-    if (pGlobalSettings->fReplaceFilePage)
-        return (SETTINGS_PAGE_REMOVED);
-    else
-        return (XFolder_parent_WPFolder_wpAddFile3Page(somSelf, hwndNotebook));
-}
-
-/*
- *@@ wpAddFolderBackgroundPage:
- *      this normally adds the  "Background" page to
- *      the folder's settings notebook. We now use
- *      this method to add the "XFolder" page right
- *      before that by calling XFolder::xwpAddXFolderPages.
- *
- *      This has been changed with V0.9.0 so that the
- *      "XFolder" page no longer sits at the front of
- *      the settings notebook, but together with the
- *      other folder settings pages.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpAddFolderBackgroundPage(XFolder *somSelf,
-                                                      HWND hwndNotebook)
-{
-    BOOL    brc;
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddFolderBackgroundPage");
-
-    brc = XFolder_parent_WPFolder_wpAddFolderBackgroundPage(somSelf,
-                                                            hwndNotebook);
-    if (brc)
-        _xwpAddXFolderPages(somSelf, hwndNotebook);
-
-    return (brc);
-}
-
-/*
- *@@ wpAddFolderSortPage:
- *      this normally adds the "Sort" page to the folder
- *      settings notebook; if allowed, we will replace this
- *      by the new XFolder version of it.
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
-                                                   HWND hwndNotebook)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddFolderSortPage");
-
-    if (pGlobalSettings->ExtFolderSort)
-    {
-        // extended sorting enabled:
-        // check whether the "sort class" of the folder
-        // is WPFileSystem (which is the default); only
-        // then replace the "Sort" page with ours. Some
-        // WPS extensions define their own Details views,
-        // and we don't want to mess with that
-        if (_wpQueryFldrSortClass(somSelf) == _WPFileSystem)
-        {
-            PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = pNLSStrings->pszSort;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
-
-            // mark this page as "instance", because both
-            // the instance settings notebook and the
-            // "Workplace Shell" object use the same
-            // callbacks
-            pcnbp->ulPageID = SP_FLDRSORT_FLDR;
-
-            pcnbp->pfncbInitPage    = fdrSortInitPage;
-            pcnbp->pfncbItemChanged = fdrSortItemChanged;
-
-            ntbInsertPage(pcnbp);
-
-            return (SETTINGS_PAGE_REMOVED);
-        }
-    }
-
-    return (XFolder_parent_WPFolder_wpAddFolderSortPage(somSelf,
-                                                        hwndNotebook));
-}
-
-/*
- *@@ wpAddSettingsPages:
- *      this WPObject instance method gets called by the WPS
- *      when the Settings view is opened to have all the
- *      settings page inserted into hwndNotebook.
- *
- *      This call xwpAddXFolderPages.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpAddSettingsPages(XFolder *somSelf,
-                                                 HWND hwndNotebook)
-{
-    BOOL            rc;
-    // PAGEINFO        pi;
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpAddSettingsPages");
-
-    rc = (XFolder_parent_WPFolder_wpAddSettingsPages(somSelf,
-                                                     hwndNotebook));
-
-    /* if (rc)
-        rc = _xwpAddXFolderPages(somSelf, hwndNotebook); */
-
-    return (rc);
-}
-
-/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.
@@ -2484,6 +2231,8 @@ SOM_Scope BOOL  SOMLINK xf_wpAddSettingsPages(XFolder *somSelf,
  *
  *      This removes default menu entries according to the
  *      global menu settings.
+ *
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
  */
 
 SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
@@ -2508,7 +2257,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     // if object has been deleted already (ie. is in trashcan),
     // remove delete
     if (_xwpQueryDeletion(somSelf, NULL, NULL))
-        ulMenuFilter &~ CTXT_DELETE;
+        ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
     // now suppress default menu items according to
     // Global Settings;
@@ -2939,6 +2688,229 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf, ULONG ulView,
     xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
 
     return rc;
+}
+
+/*
+ *@@ wpAddObjectGeneralPage2:
+ *      this WPObject instance method adds the "Animation icon"
+ *      page to an object's settings notebook.
+ *      For folders, we'll insert the object's "Internals" page
+ *      here (now called "Object" page).
+ *
+ *      For folders, this is not done by XFldObject::wpAddObjectGeneralPage
+ *      because otherwise the "Object" page would be between
+ *      the two icon pages.
+ *
+ *@@added V0.9.2 (2000-02-27) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
+                                                    HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddObjectGeneralPage2");
+
+    if (pGlobalSettings->AddObjectPage)
+        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+
+    return (XFolder_parent_WPFolder_wpAddObjectGeneralPage2(somSelf,
+                                                            hwndNotebook));
+}
+
+/*
+ *@@ wpAddFile1Page:
+ *      this normally adds the first "File" page to
+ *      the file's settings notebook; if allowed,
+ *      we will replace this with our own version,
+ *      which combines the three "File" pages into
+ *      one single page.
+ *
+ *      We cannot override this in XWPFileSystem because
+ *      WPFolder overrides this too.
+ *
+ *@@added V0.9.0
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
+                                           HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddFile1Page");
+
+    if (pGlobalSettings->fReplaceFilePage)
+    {
+        return (fsysInsertFilePages(somSelf,
+                                    hwndNotebook));
+    }
+    else
+        return (XFolder_parent_WPFolder_wpAddFile1Page(somSelf, hwndNotebook));
+}
+
+/*
+ *@@ wpAddFile2Page:
+ *      this normally adds the second "File" page to
+ *      the file's settings notebook; since we
+ *      combine the three "File" pages into one,
+ *      we'll remove this page, if allowed.
+ *
+ *      We cannot override this in XWPFileSystem because
+ *      WPFolder overrides this too.
+ *
+ *@@added V0.9.0
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
+                                           HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddFile2Page");
+
+    if (pGlobalSettings->fReplaceFilePage)
+        return (SETTINGS_PAGE_REMOVED);
+    else
+        return (XFolder_parent_WPFolder_wpAddFile2Page(somSelf, hwndNotebook));
+}
+
+/*
+ *@@ wpAddFile3Page:
+ *      this normally adds the second "File" page to
+ *      the file's settings notebook; since we
+ *      combine the three "File" pages into one,
+ *      we'll remove this page, if allowed.
+ *
+ *      We cannot override this in XWPFileSystem because
+ *      WPFolder overrides this too.
+ *
+ *@@added V0.9.0
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
+                                           HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddFile3Page");
+
+    if (pGlobalSettings->fReplaceFilePage)
+        return (SETTINGS_PAGE_REMOVED);
+    else
+        return (XFolder_parent_WPFolder_wpAddFile3Page(somSelf, hwndNotebook));
+}
+
+/*
+ *@@ wpAddFolderBackgroundPage:
+ *      this normally adds the  "Background" page to
+ *      the folder's settings notebook. We now use
+ *      this method to add the "XFolder" page right
+ *      before that by calling XFolder::xwpAddXFolderPages.
+ *
+ *      This has been changed with V0.9.0 so that the
+ *      "XFolder" page no longer sits at the front of
+ *      the settings notebook, but together with the
+ *      other folder settings pages.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddFolderBackgroundPage(XFolder *somSelf,
+                                                      HWND hwndNotebook)
+{
+    BOOL    brc;
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddFolderBackgroundPage");
+
+    brc = XFolder_parent_WPFolder_wpAddFolderBackgroundPage(somSelf,
+                                                            hwndNotebook);
+    if (brc)
+        _xwpAddXFolderPages(somSelf, hwndNotebook);
+
+    return (brc);
+}
+
+/*
+ *@@ wpAddFolderSortPage:
+ *      this normally adds the "Sort" page to the folder
+ *      settings notebook; if allowed, we will replace this
+ *      by the new XFolder version of it.
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
+                                                   HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddFolderSortPage");
+
+    if (pGlobalSettings->ExtFolderSort)
+    {
+        // extended sorting enabled:
+        // check whether the "sort class" of the folder
+        // is WPFileSystem (which is the default); only
+        // then replace the "Sort" page with ours. Some
+        // WPS extensions define their own Details views,
+        // and we don't want to mess with that
+        if (_wpQueryFldrSortClass(somSelf) == _WPFileSystem)
+        {
+            PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = pNLSStrings->pszSort;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDRSORT;
+
+            // mark this page as "instance", because both
+            // the instance settings notebook and the
+            // "Workplace Shell" object use the same
+            // callbacks
+            pcnbp->ulPageID = SP_FLDRSORT_FLDR;
+
+            pcnbp->pfncbInitPage    = fdrSortInitPage;
+            pcnbp->pfncbItemChanged = fdrSortItemChanged;
+
+            ntbInsertPage(pcnbp);
+
+            return (SETTINGS_PAGE_REMOVED);
+        }
+    }
+
+    return (XFolder_parent_WPFolder_wpAddFolderSortPage(somSelf,
+                                                        hwndNotebook));
+}
+
+/*
+ *@@ wpAddSettingsPages:
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      This call xwpAddXFolderPages.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpAddSettingsPages(XFolder *somSelf,
+                                                 HWND hwndNotebook)
+{
+    BOOL            rc;
+    // PAGEINFO        pi;
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddSettingsPages");
+
+    rc = (XFolder_parent_WPFolder_wpAddSettingsPages(somSelf,
+                                                     hwndNotebook));
+
+    /* if (rc)
+        rc = _xwpAddXFolderPages(somSelf, hwndNotebook); */
+
+    return (rc);
 }
 
 /*

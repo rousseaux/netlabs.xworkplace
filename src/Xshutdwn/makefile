@@ -50,6 +50,7 @@ ALL_OBJ1 = $(OUTPUTDIR)\xshutdwn.obj
 
 all: \
 !ifndef MAINMAKERUNNING
+# we're not being called from main makefile: start main makefile
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else

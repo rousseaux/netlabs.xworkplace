@@ -517,6 +517,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
  *      populating and display the correct total size instead.
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: added "populating..." support
+ *@@changed V0.9.5 (2000-08-24) [umoeller]: fixed NLS thousands separator
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
@@ -537,11 +538,13 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
     {
         CHAR    szNum1[100],
                 szNum2[100];
+        // get thousands separator from "Country" object
+        CHAR    cThousands = cmnQueryThousandsSeparator();
         // not populating:
         sprintf(szText,
                 pNLSStrings->pszStbObjCount, // "Total size of all objects: %s bytes",
-                strhThousandsDouble(szNum1, _ulTrashObjectCount, '.'),
-                strhThousandsDouble(szNum2, _dSizeOfAllObjects, '.'));
+                strhThousandsDouble(szNum1, _ulTrashObjectCount, cThousands),
+                strhThousandsDouble(szNum2, _dSizeOfAllObjects, cThousands));
     }
 
     WinSetWindowText(hwndStatusBar, szText);

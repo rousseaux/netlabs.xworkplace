@@ -388,24 +388,25 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     {
         if (ptib->tib_ptib2)
         {
-
             // find out which thread trapped
+            tid = ptib->tib_ptib2->tib2_ultid;
+
             fprintf(file,
                 "Crashing thread:\n    TID 0x%lX (%d) ",
-                ptib->tib_ptib2->tib2_ultid,        // hex
-                ptib->tib_ptib2->tib2_ultid);       // dec
+                tid,        // hex
+                tid);       // dec
 
-            if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiWorkerThread))
+            if (tid == thrQueryID(&pKernelGlobals->tiWorkerThread))
                 fprintf(file, " (XWorkplace Worker thread)");
-            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiSpeedyThread))
+            else if (tid == thrQueryID(&pKernelGlobals->tiSpeedyThread))
                 fprintf(file, " (XWorkplace Speedy thread)");
-            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiFileThread))
+            else if (tid == thrQueryID(&pKernelGlobals->tiFileThread))
                 fprintf(file, " (XWorkplace File thread)");
-            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiUpdateThread))
+            else if (tid == thrQueryID(&pKernelGlobals->tiUpdateThread))
                 fprintf(file, " (XWorkplace Update thread)");
-            else if (ptib->tib_ptib2->tib2_ultid == thrQueryID(pKernelGlobals->ptiShutdownThread))
+            else if (tid == thrQueryID(&pKernelGlobals->tiShutdownThread))
                 fprintf(file, " (XWorkplace Shutdown thread)");
-            else if (ptib->tib_ptib2->tib2_ultid == pKernelGlobals->tidWorkplaceThread)
+            else if (tid == pKernelGlobals->tidWorkplaceThread)
                 fprintf(file, " (PMSHELL's Workplace thread)");
             else
                 fprintf(file, " (unknown thread)");
@@ -425,19 +426,19 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
 
     fprintf(file,  "    PMSHELL Workplace thread ID: 0x%lX\n", pKernelGlobals->tidWorkplaceThread);
 
-    if (tid = thrQueryID(pKernelGlobals->ptiWorkerThread))
+    if (tid = thrQueryID(&pKernelGlobals->tiWorkerThread))
         fprintf(file,  "    XWorkplace Worker thread ID: 0x%lX (%d)\n", tid, tid);
 
-    if (tid = thrQueryID(pKernelGlobals->ptiSpeedyThread))
+    if (tid = thrQueryID(&pKernelGlobals->tiSpeedyThread))
         fprintf(file,  "    XWorkplace Speedy thread ID: 0x%lX (%d)\n", tid, tid);
 
-    if (tid = thrQueryID(pKernelGlobals->ptiFileThread))
+    if (tid = thrQueryID(&pKernelGlobals->tiFileThread))
         fprintf(file,  "    XWorkplace File thread ID: 0x%lX (%d)\n", tid, tid);
 
-    if (tid = thrQueryID(pKernelGlobals->ptiShutdownThread))
+    if (tid = thrQueryID(&pKernelGlobals->tiShutdownThread))
         fprintf(file,  "    XWorkplace Shutdown thread ID: 0x%lX (%d)\n", tid, tid);
 
-    if (tid = thrQueryID(pKernelGlobals->ptiUpdateThread))
+    if (tid = thrQueryID(&pKernelGlobals->tiUpdateThread))
         fprintf(file,  "    XWorkplace Update thread ID: 0x%lX (%d)\n", tid, tid);
 
     tid = krnQueryLock();
@@ -526,7 +527,7 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
 /*
  *@@ krnNeed2ProcessStartupFolder:
  *      this returns TRUE if the startup folder needs to
- *      be processed.
+ *      be processed. See krnSetProcessStartupFolder.
  *
  *@@changed V0.9.0 [umoeller]: completely rewritten; now using DAEMONSHARED shared memory.
  */
@@ -635,10 +636,11 @@ VOID krn_T1M_DaemonReady(VOID)
                 // notify daemon of Desktop window;
                 // this is still NULLHANDLE if we're
                 // currently starting the WPS
+                HWND hwndActiveDesktop = cmnQueryActiveDesktopHWND();
                 _Pmpf(("  Posting XDM_DESKTOPREADY (0x%lX)",
-                        G_KernelGlobals.hwndActiveDesktop));
+                        hwndActiveDesktop));
                 krnPostDaemonMsg(XDM_DESKTOPREADY,
-                                 (MPARAM)G_KernelGlobals.hwndActiveDesktop,
+                                 (MPARAM)hwndActiveDesktop,
                                  (MPARAM)0);
 
                 _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
@@ -1694,7 +1696,13 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
  *                                                                  *
  ********************************************************************/
 
-PSZ     apszXFolderKeys[]
+/*
+ *@@ G_apszXFolderKeys:
+ *      XFolder INI keys to be copied when upgrading
+ *      from XFolder to XWorkplace.
+ */
+
+PSZ G_apszXFolderKeys[]
         = {
                 INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
                 INIKEY_ACCELERATORS    , // "Accelerators"
@@ -1717,6 +1725,7 @@ PSZ     apszXFolderKeys[]
                 INIKEY_BOOTMGR         , // "RebootTo"
                 INIKEY_AUTOCLOSE        // "AutoClose"
           };
+
 /*
  *@@ krnShowStartupDlgs:
  *      this gets called from krnInitializeXWorkplace
@@ -1778,12 +1787,12 @@ VOID krnShowStartupDlgs(VOID)
                 // copy keys from "XFolder" to "XWorkplace"
                 ULONG   ul;
                 for (ul = 0;
-                     ul < sizeof(apszXFolderKeys) / sizeof(PSZ);
+                     ul < sizeof(G_apszXFolderKeys) / sizeof(PSZ);
                      ul++)
                 {
                     prfhCopyKey(HINI_USER,
                                 INIAPP_OLDXFOLDER,      // source
-                                apszXFolderKeys[ul],
+                                G_apszXFolderKeys[ul],
                                 HINI_USER,
                                 INIAPP_XWORKPLACE);
                 }
@@ -1998,7 +2007,7 @@ VOID krnInitializeXWorkplace(VOID)
         // if shift is pressed, show "Panic" dialog
         krnShowStartupDlgs();
 
-        // create main object window
+        // create thread-1 object window
         WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
                          WNDCLASS_THREAD1OBJECT,    // class name
                          (PFNWP)krn_fnwpThread1Object,    // Window procedure
@@ -2049,7 +2058,7 @@ VOID krnInitializeXWorkplace(VOID)
     {
         // check for the DAEMONSHARED structure, which
         // is used for communication between the daemon
-        // and XFLDR.DLL.
+        // and XFLDR.DLL (see src/Daemon/xwpdaemn.c).
         // We take advantage of the fact that OS/2 keeps
         // reference of the processes which allocate or
         // request access to a block of shared memory.

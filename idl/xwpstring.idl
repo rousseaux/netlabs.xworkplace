@@ -89,7 +89,7 @@ interface XWPString : WPAbstract
     BOOL        fConfirm;           // display confirmation box before
                                     // invoking setup string?
 
-    PVOID       ptiSetupThread;     // PTHREADINFO of setup thread
+    PVOID       pvSetupThread;      // PTHREADINFO of setup thread
 
     /*
      * WPAbstract methods overridden by XWPString:

@@ -15,7 +15,7 @@ Troubleshooting
 is not outdated, and that the <CODE>HELPERS_BASE</CODE> environment variable points
 to the WarpIN sources root directory.
 
-<P><LI>If you get something like <B>"File XWPDAEMN.EXE is in use",</B> the
+<P><LI>If you get something like <B>"File XWPDAEMN.EXE/XWPHOOK.DLL is in use",</B> the
 XWorkplace hook DLL is currently loaded and running. While all other executables
 are automatically unlocked and replaced by the makefiles even while they're running,
 this cannot be done with the daemon, which is using the XWorkplace hook DLL,
@@ -29,6 +29,15 @@ comes up otherwise).
 
 <P>Warning: If you don't restart the daemon before restarting the WPS, the XWorkplace
 startup folder will get processed again after the WPS restart.
+
+<P><LI>If you get unknown definitions or unresolved externals during compiling/linking,
+make sure that the WarpIN and XWorkplace sources have the same code levels. I tend
+to change the <A HREF="src1_5helpers.html">helpers</A> code from time to time.
+
+<P><LI>If you get really strange compilation errors, VAC might have gotten confused
+with precompiled headers. Delete all <CODE>.PCH</CODE> files in your TEMP directory,
+or comment out the <CODE>PRECH</CODE> line in <CODE>setup.in</CODE> to disable
+precompiled headers altogether.
 
 <P><LI>If you <B>cannot install XWorkplace</B> after the build, you have probably built
 the debug version, but the PMPRINTF DLLs are not on your LIBPATH.

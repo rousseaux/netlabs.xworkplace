@@ -1950,7 +1950,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                             pNLSStrings->pszAttributes, 0,
         // "archived" item, checked or not according to file-system attributes
                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_ARCHIVED),
-                            pNLSStrings->pszAttrArchived, MIS_TEXT,
+                            pNLSStrings->pszAttrArchive, MIS_TEXT,
                                 ((ulAttr & FILE_ARCHIVED) ? MIA_CHECKED : 0));
         // "read-only" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu, MIT_END,

@@ -75,11 +75,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.4"
+#define XFOLDER_VERSION        "0.9.5"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.4"
+#define MINIMUM_NLS_VERSION    "0.9.5"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -363,6 +363,7 @@
 #define ID_XSDI_DTL_HOTKEY_TXT          723
 #define ID_XSDI_DTL_CLEAR               724
 #define ID_XSDI_DTL_SETUP_ENTRY         725
+#define ID_XSDI_DTL_SET                 726
 
 // "File" page replacement (XFolder, XFldDataFile, V0.9.0)
 #define ID_XSD_FILESPAGE1               730
@@ -788,7 +789,7 @@
 
 // XFldDesktop "Shutdown" page (V0.9.0)
 #define ID_XSD_DTP_SHUTDOWN             2125
-#define ID_SDDI_ENABLED                 2126
+// #define ID_SDDI_ENABLED                 2126
 #define ID_SDDI_REBOOT                  2127
 #define ID_SDDI_ANIMATE_SHUTDOWN        2128
 #define ID_SDDI_ANIMATE_REBOOT          2129
@@ -815,19 +816,22 @@
 #define ID_SDDI_APMSYS                  2147
 #define ID_SDDI_APMSYS_TXT              2148
 
+#define ID_SDDI_SAVEINIS_TXT            2149
+#define ID_SDDI_SAVEINIS_LIST           2150
+
 // XFldDesktop "Archives" replacement page (V0.9.0)
-#define ID_XSD_DTP_ARCHIVES             2150
-#define ID_XSDI_ARC_ENABLE              2151
-#define ID_XSDI_ARC_ALWAYS              2152
-#define ID_XSDI_ARC_NEXT                2153
-#define ID_XSDI_ARC_INI                 2154
-#define ID_XSDI_ARC_INI_SPIN            2155
-#define ID_XSDI_ARC_INI_SPINTXT1        2156
-#define ID_XSDI_ARC_DAYS                2157
-#define ID_XSDI_ARC_DAYS_SPIN           2158
-#define ID_XSDI_ARC_DAYS_SPINTXT1       2159
-#define ID_XSDI_ARC_SHOWSTATUS          2160
-#define ID_XSDI_ARC_ARCHIVES_SPIN       2161
+#define ID_XSD_DTP_ARCHIVES             2155
+#define ID_XSDI_ARC_ENABLE              2156
+#define ID_XSDI_ARC_ALWAYS              2157
+#define ID_XSDI_ARC_NEXT                2158
+#define ID_XSDI_ARC_INI                 2159
+#define ID_XSDI_ARC_INI_SPIN            2160
+#define ID_XSDI_ARC_INI_SPINTXT1        2161
+#define ID_XSDI_ARC_DAYS                2162
+#define ID_XSDI_ARC_DAYS_SPIN           2163
+#define ID_XSDI_ARC_DAYS_SPINTXT1       2164
+#define ID_XSDI_ARC_SHOWSTATUS          2165
+#define ID_XSDI_ARC_ARCHIVES_SPIN       2166
 
 // "extended reboot" / "auto-close" dlg items
 #define ID_XSD_REBOOTEXT                2170
@@ -1378,7 +1382,7 @@
 #define ID_XFSI_SETTINGS                5831
 #define ID_XFSI_SETTINGSNOTEBOOK        5832
 #define ID_XFSI_ATTRIBUTES              5833
-#define ID_XFSI_ATTR_ARCHIVED           5834
+#define ID_XFSI_ATTR_ARCHIVE            5834
 #define ID_XFSI_ATTR_SYSTEM             5835
 #define ID_XFSI_ATTR_HIDDEN             5836
 #define ID_XFSI_ATTR_READONLY           5837
@@ -1532,6 +1536,10 @@
 
 #define ID_XSSI_ICONPAGE                5943
 
+#define ID_XSSI_XSD_SAVEINIS_NEW        5944
+#define ID_XSSI_XSD_SAVEINIS_OLD        5945
+#define ID_XSSI_XSD_SAVEINIS_NONE       5946
+
 /******************************************
  *  Features on XWPSetup "Features" page  *
  ******************************************/
@@ -1566,6 +1574,7 @@
 #define ID_XCSI_REPLDRIVENOTREADY       6044
 #define ID_XCSI_XWPTRASHCAN             6045
 #define ID_XCSI_REPLACEDELETE           6046
+#define ID_XCSI_REPLHANDLES             6047
 
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
 #define ID_XCSI_XWPHOOK                 6051

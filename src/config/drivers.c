@@ -102,7 +102,7 @@
  *                                                                  *
  ********************************************************************/
 
-PTHREADINFO         G_ptiDriversThread = NULL;
+THREADINFO          G_tiDriversThread = {0};
 PCREATENOTEBOOKPAGE G_pcnbpDrivers = NULL;
 
 /* ******************************************************************
@@ -255,9 +255,10 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                 APIRET      arc = NO_ERROR;
 
                 // insert driver into cnr:
-                PDRIVERRECORD precc = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
-                                                                        sizeof(DRIVERRECORD),
-                                                                        1);
+                PDRIVERRECORD precc
+                    = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
+                                                      sizeof(DRIVERRECORD),
+                                                      1);
 
                 // extract full file name
                 PSZ pEODriver = strchr(szRestOfLine, ' ');
@@ -344,6 +345,26 @@ void InsertDrivers(HWND hwndCnr,              // in: container
             pSpecNode = pSpecNode->pNext;
         } // end while (pSpecNode)
     } // end if (pszConfigSys)
+}
+
+/*
+ *@@ FreeDriverSpec:
+ *
+ *@@added V0.9.5 (2000-08-30) [umoeller]
+ */
+
+VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
+{
+    if (pSpecThis->pszKeyword)
+        free(pSpecThis->pszKeyword);
+    if (pSpecThis->pszFilename)
+        free(pSpecThis->pszFilename);
+    if (pSpecThis->pszDescription)
+        free(pSpecThis->pszDescription);
+    if (pSpecThis->pszVersion)
+        free(pSpecThis->pszVersion);
+
+    free (pSpecThis);
 }
 
 /*
@@ -533,97 +554,85 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
  *      this may take several seconds, we rather not block
  *      the user interface, but do this in a second thread.
  *
+ *      This thread is created with a PM message queue.
+ *
  *@@added V0.9.1 (2000-02-11) [umoeller]
  */
 
 void _Optlink fntDriversThread(PTHREADINFO pti)
 {
-    HAB     habDriversThread;
-    HMQ     hmqDriversThread;
+    HWND            hwndDriversCnr = WinWindowFromID(G_pcnbpDrivers->hwndDlgPage,
+                                                     ID_OSDI_DRIVR_CNR);
+    PSZ             pszConfigSys = NULL;
+    PDRIVERRECORD   preccRoot = 0;
+                    // precc = 0;
+    PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-    // create msg queue
-    if (habDriversThread = WinInitialize(0))
+    // set wait pointer; this is handled by notebook.c
+    G_pcnbpDrivers->fShowWaitPointer = TRUE;
+
+    // clear container
+    WinSendMsg(hwndDriversCnr,
+               CM_REMOVERECORD,
+               (MPARAM)0,
+               MPFROM2SHORT(0, // all records
+                            CMA_FREE | CMA_INVALIDATE));
+
+    // create root record; freed automatically
+    preccRoot = (PDRIVERRECORD)cnrhAllocRecords(hwndDriversCnr,
+                                                sizeof(DRIVERRECORD),
+                                                1);
+    cnrhInsertRecords(hwndDriversCnr,
+                      NULL,  // parent
+                      (PRECORDCORE)preccRoot,
+                      TRUE, // invalidate
+                      pNLSStrings->pszDriverCategories,
+                      CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
+                      1);
+
+    // load CONFIG.SYS text; freed below
+    if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
+        DebugBox(HWND_DESKTOP,
+                 pKernelGlobals->szConfigSys,
+                 "XFolder was unable to open the CONFIG.SYS file.");
+    else
     {
-        if (hmqDriversThread = WinCreateMsgQueue(habDriversThread, 4000))
+        // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
+        CHAR    szDriverSpecsFilename[CCHMAXPATH];
+        PSZ     pszDriverSpecsFile = NULL;
+
+        cmnQueryXFolderBasePath(szDriverSpecsFilename);
+        sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
+                "\\help\\drvrs%s.txt",
+                cmnQueryLanguageCode());
+
+        // load drivers.txt file; freed below
+        if (doshReadTextFile(szDriverSpecsFilename,
+                             &pszDriverSpecsFile)
+                != NO_ERROR)
+            DebugBox(HWND_DESKTOP,
+                     szDriverSpecsFilename,
+                     "XWorkplace was unable to open the driver specs file.");
+        else
         {
-            HWND            hwndDriversCnr = WinWindowFromID(G_pcnbpDrivers->hwndDlgPage,
-                                                             ID_OSDI_DRIVR_CNR);
-            PSZ             pszConfigSys = NULL;
-            PDRIVERRECORD   preccRoot = 0;
-                            // precc = 0;
-            PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-            PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+            // drivers file successfully loaded:
+            // parse file
+            G_pcnbpDrivers->pUser = InsertDriverCategories(hwndDriversCnr,
+                                                           preccRoot,
+                                                           pszConfigSys,
+                                                           pszDriverSpecsFile);
+                // this returns a PLINKLIST containing LINKLIST's
+                // containing DRIVERSPEC's...
 
-            // set wait pointer; this is handled by notebook.c
-            G_pcnbpDrivers->fShowWaitPointer = TRUE;
-
-            // clear container
-            WinSendMsg(hwndDriversCnr,
-                       CM_REMOVERECORD,
-                       (MPARAM)0,
-                       MPFROM2SHORT(0, // all records
-                                    CMA_FREE | CMA_INVALIDATE));
-
-            // create root record; freed automatically
-            preccRoot = (PDRIVERRECORD)cnrhAllocRecords(hwndDriversCnr,
-                                                        sizeof(DRIVERRECORD),
-                                                        1);
-            cnrhInsertRecords(hwndDriversCnr,
-                              NULL,  // parent
-                              (PRECORDCORE)preccRoot,
-                              TRUE, // invalidate
-                              pNLSStrings->pszDriverCategories,
-                              CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
-                              1);
-
-            // load CONFIG.SYS text; freed below
-            if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
-                DebugBox(HWND_DESKTOP,
-                         pKernelGlobals->szConfigSys,
-                         "XFolder was unable to open the CONFIG.SYS file.");
-            else
-            {
-                // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
-                CHAR    szDriverSpecsFilename[CCHMAXPATH];
-                PSZ     pszDriverSpecsFile = NULL;
-
-                cmnQueryXFolderBasePath(szDriverSpecsFilename);
-                sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
-                        "\\help\\drvrs%s.txt",
-                        cmnQueryLanguageCode());
-
-                // load drivers.txt file; freed below
-                if (doshReadTextFile(szDriverSpecsFilename,
-                                     &pszDriverSpecsFile)
-                        != NO_ERROR)
-                    DebugBox(HWND_DESKTOP,
-                             szDriverSpecsFilename,
-                             "XWorkplace was unable to open the driver specs file.");
-                else
-                {
-                    // drivers file successfully loaded:
-                    // parse file
-                    G_pcnbpDrivers->pUser = InsertDriverCategories(hwndDriversCnr,
-                                                                   preccRoot,
-                                                                   pszConfigSys,
-                                                                   pszDriverSpecsFile);
-                        // this returns a PLINKLIST containing LINKLIST's
-                        // containing DRIVERSPEC's...
-
-                    free(pszDriverSpecsFile);
-                }
-
-                free(pszConfigSys);
-            }
-
-            G_pcnbpDrivers->fShowWaitPointer = FALSE;
+            free(pszDriverSpecsFile);
         }
+
+        free(pszConfigSys);
     }
 
-    WinDestroyMsgQueue(hmqDriversThread);
-    hmqDriversThread = NULLHANDLE;
-    WinTerminate(habDriversThread);
-    habDriversThread = NULLHANDLE;
+    G_pcnbpDrivers->fShowWaitPointer = FALSE;
+
     G_pcnbpDrivers = NULL;
 }
 
@@ -698,13 +707,13 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
     {
         // set data: create drivers thread, which inserts
         // the drivers tree
-        if (!thrQueryID(G_ptiDriversThread))
+        if (!thrQueryID(&G_tiDriversThread))
         {
             G_pcnbpDrivers = pcnbp;
-            thrCreate(&G_ptiDriversThread,
+            thrCreate(&G_tiDriversThread,
                       fntDriversThread,
                       NULL, // running flag
-                      0,        // no msgq
+                      THRF_PMMSGQUEUE,        // msgq
                       0);
         }
     }
@@ -728,16 +737,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         PDRIVERSPEC pSpecThis = (PDRIVERSPEC)pSpecNode->pItemData;
                         if (pSpecThis)
                         {
-                            if (pSpecThis->pszKeyword)
-                                free(pSpecThis->pszKeyword);
-                            if (pSpecThis->pszFilename)
-                                free(pSpecThis->pszFilename);
-                            if (pSpecThis->pszDescription)
-                                free(pSpecThis->pszDescription);
-                            if (pSpecThis->pszVersion)
-                                free(pSpecThis->pszVersion);
-
-                            free (pSpecThis);
+                            FreeDriverSpec(pSpecThis);
                         }
 
                         pSpecNode = pSpecNode->pNext;

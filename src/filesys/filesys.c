@@ -717,6 +717,57 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
     return (0);
 }
 
+/*
+ *@@ fsysInsertFilePages:
+ *      shared code between XFldDataFile and XFolder
+ *      to insert the new "File" pages if this is
+ *      enabled. This gets called from the respective
+ *      wpAddFile1Page methods.
+ *
+ *@@added V0.9.5 (2000-08-14) [umoeller]
+ */
+
+ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, really
+                          HWND hwndNotebook)    // in: from wpAddFile1Page
+{
+    // page 2
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
+    pcnbp->ulPageID = SP_FILE2;
+    pcnbp->pszName = pNLSStrings->pszFilePage;
+    pcnbp->fEnumerate = TRUE;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
+
+    pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
+    pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
+
+    ntbInsertPage(pcnbp);
+
+    // page 1
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
+    pcnbp->ulPageID = SP_FILE1;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszFilePage;
+    pcnbp->fEnumerate = TRUE;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
+
+    pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
+    pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
+
+    return (ntbInsertPage(pcnbp));
+}
+
 /* ******************************************************************
  *                                                                  *
  *   XFldProgramFile notebook callbacks (notebook.c)                *

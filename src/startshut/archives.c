@@ -48,7 +48,16 @@
 
 /*
  *@@todo:
- *
+ *  csm:
+         Ok, no guarantee, but this is what I found out:
+             Offset 0xCF: (int32)    "Dateien bei jedem Systemstart aktivieren"
+                                         (0 = off, 1 = on/selected)
+             Offset 0xD9: (int32)    "Anzeige der Optionen bei jedem Neustart"
+                                         (0 = off, 2 = on/selected)
+             Offset 0xDD: (int32)    "Zeitsperre fuer Anzeigen der Optionen"
+                                         (0 to 999)
+         The rest of the file I don't know (besides the path
+         beginning at offset 0x06, 200 bytes long)
  */
 
 /*

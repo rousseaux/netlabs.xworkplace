@@ -261,7 +261,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                    szShutdown,
                                    MIS_TEXT,
                                    // disable if Shutdown is currently running
-                                   (   (thrQueryID(pKernelGlobals->ptiShutdownThread)
+                                   (   (thrQueryID(&pKernelGlobals->tiShutdownThread)
                                     || (pKernelGlobals->fShutdownRunning)
                                    )
                                        ? MIA_DISABLED
@@ -293,7 +293,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            pNLSStrings->pszRestartWPS,
                            MIS_TEXT,
                            // disable if Shutdown is currently running
-                           (   (thrQueryID(pKernelGlobals->ptiShutdownThread)
+                           (   (thrQueryID(&pKernelGlobals->tiShutdownThread)
                             || (pKernelGlobals->fShutdownRunning)
                            )
                                ? MIA_DISABLED

@@ -1,6 +1,6 @@
 #
 # makefile:
-#       makefile for src/main directory.
+#       makefile for src/classes directory.
 #       For use with IBM NMAKE, which comes with the IBM compilers,
 #       the Developer's Toolkit, and the DDK.
 #
@@ -48,6 +48,7 @@ OUTPUTDIR = ..\..\bin
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
+# If you add a new source, add the corresponding .OBJ file here.
 OBJS = \
 !ifdef ANIMATED_MOUSE_POINTERS
        $(OUTPUTDIR)\anand.obj \
@@ -70,6 +71,7 @@ OBJS = \
        $(OUTPUTDIR)\xfwps.obj \
        $(OUTPUTDIR)\xtrash.obj \
        $(OUTPUTDIR)\xtrashobj.obj \
+       $(OUTPUTDIR)\xwpfsys.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
        $(OUTPUTDIR)\xwpmedia.obj \
        $(OUTPUTDIR)\xwpmouse.obj \
@@ -84,6 +86,7 @@ OBJS = \
 # Otherwise, we call the main makefile, which will again call ourselves later.
 all:   \
 !ifndef MAINMAKERUNNING
+# we're not being called from main makefile: start main makefile
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
@@ -114,6 +117,7 @@ callmainmake:
 .c.{$(OUTPUTDIR)}.obj:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
+# precompiled headers disabled:
         $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
         $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
@@ -285,6 +289,13 @@ $(OUTPUTDIR)\xtrashobj.obj: \
             $(INC)\filesys\trash.h \
             $(@B).c \
             $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
+
+$(OUTPUTDIR)\xwpfsys.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\notebook.h \
+            $(INC)\filesys\fhandles.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpkeybd.obj: \
             $(INC)\setup.h \

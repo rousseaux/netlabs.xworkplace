@@ -315,6 +315,8 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
  *
  *      We remove default entries for disks according to the
  *      global menu settings.
+ *
+ *@@changed V0.9.5 (2000-09-18) [umoeller]: now removing "Create another" always
  */
 
 SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
@@ -330,7 +332,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
                                                      ulFlags,
                                                      hwndCnr,
                                                      fMultiSelect)
-        & ~(pGlobalSettings->DefaultMenuItems)
+        & ~( pGlobalSettings->DefaultMenuItems | CTXT_NEW )
         );
 }
 

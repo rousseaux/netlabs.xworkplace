@@ -1,6 +1,6 @@
 #
 # makefile:
-#       makefile for src/main directory.
+#       makefile for src/filesys directory.
 #       For use with IBM NMAKE, which comes with the IBM compilers,
 #       the Developer's Toolkit, and the DDK.
 #
@@ -48,11 +48,13 @@ OUTPUTDIR = ..\..\bin
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
+# If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\disk.obj \
        $(OUTPUTDIR)\fdrhotky.obj \
        $(OUTPUTDIR)\fdrnotebooks.obj \
        $(OUTPUTDIR)\fdrsubclass.obj \
+       $(OUTPUTDIR)\fhandles.obj \
        $(OUTPUTDIR)\fileops.obj \
        $(OUTPUTDIR)\filesys.obj \
        $(OUTPUTDIR)\filetype.obj \
@@ -62,7 +64,6 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\menus.obj \
        $(OUTPUTDIR)\object.obj \
        $(OUTPUTDIR)\statbars.obj \
-#$(OUTPUTDIR)\sounddll.obj \
        $(OUTPUTDIR)\trash.obj \
        $(OUTPUTDIR)\xthreads.obj
 
@@ -72,6 +73,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
 # Otherwise, we call the main makefile, which will again call ourselves later.
 all:   \
 !ifndef MAINMAKERUNNING
+# we're not being called from main makefile: start main makefile
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
@@ -102,6 +104,7 @@ callmainmake:
 .c.{$(OUTPUTDIR)}.obj:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
+# precompiled headers disabled:
         $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
         $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
@@ -123,13 +126,6 @@ MYOWNINC = $(INC)\filesys
 # you can enforce a complete recompile of XWorkplace if you update
 # that file (just save it once).
 
-# Here follow the .OBJs for the SOM/WPS classes. Each class needs to be
-# recompiled when its SOM header files change (due to SOM recompilation)
-# or when other headers (in MAIN or HELPERS) have changed.
-
-# XWorkplace "library" .OBJ files used by several classes.
-# Source code is here in SRC\MAIN.
-
 $(OUTPUTDIR)\desktop.obj: \
     $(INC)\setup.h \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\gpih.h \
@@ -143,7 +139,7 @@ $(OUTPUTDIR)\desktop.obj: \
 
 $(OUTPUTDIR)\disk.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h \
     $(INC)\classes\xfdisk.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -177,6 +173,11 @@ $(OUTPUTDIR)\fdrsubclass.obj: \
     $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h \
         $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
     $(@B).c $(INC)\filesys\folder.h
+
+$(OUTPUTDIR)\fhandles.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\except.h $(HLPINC)\wphandle.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\fileops.obj: \
     $(INC)\setup.h \
@@ -261,7 +262,7 @@ $(OUTPUTDIR)\object.obj: \
 
 $(OUTPUTDIR)\statbars.obj: \
      $(INC)\setup.h \
-     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+     $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\stringh.h \
         $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfobj.ih \
      $(INC)\dlgids.h \

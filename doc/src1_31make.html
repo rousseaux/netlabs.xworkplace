@@ -9,50 +9,49 @@ Making (Building) XWorkplace
 With V0.9.0, the make process has been completely redesigned to allow
 for easier extension of XWorkplace and for the Netlabs CVS server.
 
-<P>If you wish to build the whole XWorkplace thing including the NLS DLLs
-and the INF and HLP files, please follow the steps in README.TXT in the
-main directory. I have added more information about
-<A HREF="src1_32env.html">environment variables</A> to this file also.
+<P><B>Notes:</B>
 
-<P>A complete build including NLS (<CODE>nmake -a really_all</CODE>)
-currently (99-11-29) takes 4:19 minutes on my PII-400, 128 MB RAM.
+<UL><LI>You will need to set a number of
+<A HREF="src1_32env.html">environment variables</A> before building will work.
 
-</OL><B>Debug code.</B> Depending on whether the <CODE>XWPDEBUG</CODE> environment
-variable is set (in <CODE>MAKE.CMD</CODE> or <CODE>SETUP.IN</CODE> or somewhere else),
-XWorkplace will be compiled with debug code or not. See the
-<A HREF="src1_32env.html">next page</A> for details.
+<P><LI>Because <CODE>XFLDR.DLL</CODE> is locked while the WPS is running, you
+should <CODE>SET RUNWORKPLACE=[bootdrv]:\OS2\CMD.EXE</CODE> in CONFIG.SYS.
+This will cause an OS/2 window to come up instead of the WPS after bootup.
+Type <CODE>pmshell</CODE> then to start the WPS.
+<P>You can also choose to have the makefiles unlock executables which are in use
+automatically. See <A HREF="src1_32env.html">"Environment variables"</A> for
+details.
 
-<P><B>Makefiles.</B> Each directory now has its own makefile. All makefiles were
-written for IBM NMAKE. I don't know if these will work with other make utilities.
+<P><LI>The main <CODE>makefile</CODE> includes <CODE>setup.in</CODE> for compiler
+and linker setup. If you use environment variables, there's normally no need to
+modify that file.
 
-<P><B>Replacing in-use files.</B> You can rebuild XWorkplace even while the WPS is up
-and XWorkplace is installed. The makefiles will automatically unlock DLLs which
-are currently in use. After the rebuild, restart the WPS to make it use the newly
-built DLLs. To do this, simply set XWP_UNLOCK_MODULES=YES before running the main
-makefile.
+<P><LI>Make sure you have at least 60 MB of free space in your TEMP directory. This
+is needed for precompiled headers.
 
-<P><B>Note:</B> This environment variable has been added with V0.9.3 because with
-Warp 4 FP13, unlocking WPS modules hangs the WPS after the next WPS restart. If the
-environment variable is not set, modules are <I>not</I> unlocked now. So only set
-the variable if you're not running Warp 4 FP13. I guess this behaviour will be the
-same with Warp Server for e-business (Aurora).
+<P><LI>Put the .EXE and .CMD files from <CODE>TOOLS\</CODE> somewhere on your
+PATH. These are used by the makefiles. Or add the tools
+directory to your path.
 
-<P>The exception to this is <CODE>XWPDAEMN.EXE</CODE>, which is not unlocked.
-This is intentional.
-Unlocking an executable which has registered a system hook
-(which becomes part of every PM process on the system)
-will _never_ release the DLL containing the hook again, so you'd have to
-reboot to use the new DLL.
-So if you get an error during the build process which says "XWPDAEMN.EXE is in use",
-kill <CODE>XWPDAEMON.EXE</CODE> using some process killer, which will properly
-unload the hooks, and try building again.
+</UL><P><B>Starting the build process.</B> Open an OS/2 command window. Change to the
+main XWP directory. Type <CODE>nmake</CODE> or <CODE>nmake really_all</CODE>.
+Take a look at the main <CODE>makefile</CODE> for additional targets.
 
-<P><B>Rebuilding the whole thing.</B> If you want to make sure that all C files
-are <I>re</I>compiled, use <CODE>NMAKE -A</CODE> on the main makefile.
-Alternatively, you can open and save <CODE>include/setup.h</CODE> to make
+<P>To have all the environment set properly, you can modify <CODE>MAKE.CMD</CODE>
+and call that one instead, which invokes <CODE>nmake</CODE> in turn.
+
+<P><B>Rebuilding the whole thing.</B> To rebuild everything, you have three
+options:
+
+<UL><LI>Use <CODE>NMAKE -A</CODE> on the main makefile. This will even re-invoke
+the SOM compiler on all <CODE>.IDL</CODE> files.
+
+<P><LI>Delete the entire <CODE>bin\</CODE> tree.
+
+<P><LI>Open and save (or touch) <CODE>include/setup.h</CODE> to make
 it newer than the target files. This is
 #include'd in all XWorkplace C files, and the makefiles' inference
 rules will then enforce recompilation of <I>all</I> C files.
-<BR>
+</UL>
 </BODY>
 </HTML>

@@ -167,13 +167,14 @@ BOOL hifEnableHook(BOOL fEnable)
                            (MPARAM)(fEnable),
                            0))
             {
+                HWND hwndActiveDesktop = cmnQueryActiveDesktopHWND();
                 _Pmpf(("  Posting XDM_DESKTOPREADY (0x%lX)",
-                        pKernelGlobals->hwndActiveDesktop));
+                        hwndActiveDesktop));
                 // hook installed:
                 brc = TRUE;
                 // tell the daemon about the Desktop window
                 krnPostDaemonMsg(XDM_DESKTOPREADY,
-                                 (MPARAM)pKernelGlobals->hwndActiveDesktop,
+                                 (MPARAM)hwndActiveDesktop,
                                  (MPARAM)0);
             }
             // else: hook not installed

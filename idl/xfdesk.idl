@@ -87,14 +87,11 @@ interface XFldDesktop : WPDesktop
      *
      */
 
-    wpInitData: override;
-
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
 
     wpMenuItemSelected: override;
 
-    wpOpen: override;
     wpPopulate: override;
 
     wpAddDesktopArcRest1Page: override;

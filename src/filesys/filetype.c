@@ -1487,6 +1487,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             BEGIN_CNRINFO()
             {
                 cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT);
+                cnrhSetTreeIndent(15);
                 cnrhSetSortFunc(fnCompareName);
             } END_CNRINFO(hwndCnr);
 

@@ -948,8 +948,8 @@ VOID LoadNLSData(HAB habDesktop,
             &(pNLSStrings->pszSettingsNotebook));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTRIBUTES,
             &(pNLSStrings->pszAttributes));
-    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_ARCHIVED,
-            &(pNLSStrings->pszAttrArchived));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_ARCHIVE,
+            &(pNLSStrings->pszAttrArchive));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_SYSTEM,
             &(pNLSStrings->pszAttrSystem));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XFSI_ATTR_HIDDEN,
@@ -1209,6 +1209,14 @@ VOID LoadNLSData(HAB habDesktop,
 
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_ICONPAGE,
             &(pNLSStrings->pszIconPage));
+
+    // INI save methods V0.9.5 (2000-08-16) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_SAVEINIS_NEW,
+            &(pNLSStrings->pszXSDSaveInisNew));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_SAVEINIS_OLD,
+            &(pNLSStrings->pszXSDSaveInisOld));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XSD_SAVEINIS_NONE,
+            &(pNLSStrings->pszXSDSaveInisNone));
 }
 
 /*
@@ -1394,6 +1402,23 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
 
     return (G_pNLSStringsGlobal);
 }
+
+/*
+ *@@ cmnQueryThousandsSeparator:
+ *      returns the character which has been set as
+ *      the thousands separator in the "Country" object.
+ *
+ *@@added V0.9.5 (2000-08-24) [umoeller]
+ */
+
+CHAR cmnQueryThousandsSeparator(VOID)
+{
+    return (prfhQueryProfileChar(HINI_USER,
+                                 "PM_National",
+                                 "sThousand",
+                                 '.'));
+}
+
 
 /*
  *@@ cmnDescribeKey:
@@ -1958,6 +1983,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         case SP_DTP_SHUTDOWN:
             G_pGlobalSettings->ulXShutdownFlags = // changed V0.9.0
                 XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN;
+            G_pGlobalSettings->bSaveINIS = 0; // new method, V0.9.5 (2000-08-16) [umoeller]
         break;
 
         case SP_DTP_ARCHIVES:  // all new with V0.9.0
@@ -1989,6 +2015,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             G_pGlobalSettings->fExtAssocs = 0;
             G_pGlobalSettings->CleanupINIs = 0;
+            G_pGlobalSettings->fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
             G_pGlobalSettings->fReplFileExists = 0;
             G_pGlobalSettings->fReplDriveNotReady = 0;
             G_pGlobalSettings->fTrashDelete = 0;
@@ -2498,9 +2525,7 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
             {
                 WinQueryWindowRect(hwndStatic, &rcl);         // get window dimensions
                 // rcl.yTop = 1000;
-                memcpy(&rcl2, &rcl, sizeof(rcl));
-
-                winhDrawFormattedText(hps,
+             winhDrawFormattedText(hps,
                                       &rcl,
                                       pszText,
                                       DT_LEFT | DT_TOP | DT_QUERYEXTENT);
@@ -3199,5 +3224,4 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
     return (mrc);
 }
-
 

@@ -94,15 +94,15 @@ interface XFldDataFile : WPDataFile
     wpUnInitData: override;
     wpObjectReady: override;
 
-    wpAddFile1Page: override;
-    wpAddFile2Page: override;
-    wpAddFile3Page: override;
-
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpDisplayMenu: override;
 
     wpMenuItemHelpSelected: override;
+
+    wpAddFile1Page: override;
+    wpAddFile2Page: override;
+    wpAddFile3Page: override;
 
     wpQueryAssociatedFileIcon: override;
     wpQueryAssociatedProgram: override;

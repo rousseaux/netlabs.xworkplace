@@ -111,7 +111,7 @@
  *                                                                  *
  ********************************************************************/
 
-HWND    G_hwndFirstOpenDesktop = NULLHANDLE;
+BOOL    G_DesktopPopulated = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -316,24 +316,6 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
 }
 
 /*
- *@@ wpInitData:
- *      this WPObject instance method gets called when the
- *      object is being initialized (on wake-up or creation).
- *      We initialize our additional instance data here.
- *      Always call the parent method first.
- */
-
-SOM_Scope void  SOMLINK xfdesk_wpInitData(XFldDesktop *somSelf)
-{
-    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
-    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpInitData");
-
-    // _fDesktopOpen = FALSE;
-
-    XFldDesktop_parent_WPDesktop_wpInitData(somSelf);
-}
-
-/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.
@@ -445,58 +427,13 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
 }
 
 /*
- *@@ wpOpen:
- *
- *@@added V0.9.3 (2000-04-26) [umoeller]
- */
-
-SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf,
-                                      HWND hwndCnr,
-                                      ULONG ulView,
-                                      ULONG param)
-{
-    HWND hwnd = NULLHANDLE;
-    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
-    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpOpen");
-
-    hwnd = XFldDesktop_parent_WPDesktop_wpOpen(somSelf, hwndCnr,
-                                               ulView, param);
-
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("XFldDesktop::wpOpen: checking whether Worker thread needs notify"));
-    #endif
-
-    if (hwnd)
-        if (G_hwndFirstOpenDesktop == NULLHANDLE)
-        {
-            // first call:
-            G_hwndFirstOpenDesktop = hwnd;
-
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("XFldDesktop::wpOpen: posting FIM_DESKTOPREADY"));
-            #endif
-            xthrPostFileMsg(FIM_DESKTOPREADY,
-                            (MPARAM)somSelf,
-                            (MPARAM)hwnd);
-            // the worker thread will now loop until the Desktop
-            // is populated also
-        }
-
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("    End of XFldDesktop::wpOpen"));
-    #endif
-
-    return (hwnd);
-}
-
-/*
  *@@ wpPopulate:
  *      this instance method populates a folder, in this case, the
  *      Desktop. After the active Desktop has been populated at
  *      WPS startup, we'll post a message to the Worker thread to
  *      initiate all the XWorkplace startup processing.
  *
- *@@changed V0.9.0 [umoeller]: this was previously done in wpOpen
+ *@@changed V0.9.5 (2000-08-26) [umoeller]: this was previously done in wpOpen
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
@@ -513,19 +450,29 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
     #endif
 
     brc = XFldDesktop_parent_WPDesktop_wpPopulate(somSelf,
-                                                    ulReserved,
-                                                    pszPath,
-                                                    fFoldersOnly);
+                                                  ulReserved,
+                                                  pszPath,
+                                                  fFoldersOnly);
 
-    /* if (!_fDesktopOpen)
+    #ifdef DEBUG_STARTUP
+        _Pmpf(("XFldDesktop::wpPopulate: checking whether Worker thread needs notify"));
+    #endif
+
+    if (!G_DesktopPopulated)
         if (_wpIsCurrentDesktop(somSelf))
         {
-            _fDesktopOpen = TRUE;
-            // notify file thread to start processing
+            // first call:
+            G_DesktopPopulated = TRUE;
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("  posting FIM_DESKTOPPOPULATED"));
+            #endif
             xthrPostFileMsg(FIM_DESKTOPPOPULATED,
                             (MPARAM)somSelf,
-                            MPNULL);
-        } */
+                            0);
+            // the worker thread will now loop until the Desktop
+            // is populated also
+        }
 
     #ifdef DEBUG_STARTUP
         _Pmpf(("End of XFldDesktop::wpPopulate"));

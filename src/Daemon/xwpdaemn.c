@@ -231,7 +231,7 @@ SWP             G_swpPgmgFrame = {0};
 
 BOOL            G_bConfigChanged = FALSE;
 
-PTHREADINFO     G_ptiMoveThread = 0;
+THREADINFO      G_tiMoveThread = {0};
 
 #define IOCTL_CDROMDISK             0x80
 #define CDROMDISK_DEVICESTATUS      0x60
@@ -457,7 +457,7 @@ BOOL dmnStartPageMage(VOID)
             pgmwScanAllWindows();
 
             _Pmpf(("  starting Move thread"));
-            thrCreate(&G_ptiMoveThread,
+            thrCreate(&G_tiMoveThread,
                       fntMoveQueueThread,
                       NULL, // running flag
                       THRF_WAIT | THRF_PMMSGQUEUE,    // PM msgq
@@ -1026,6 +1026,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
  *      or from XFLDR.DLL for daemon/hook configuration.
  *
  *@@changed V0.9.3 (2000-04-12) [umoeller]: added exception handling
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed sliding focus bug
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1270,8 +1271,10 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 }
                 else
                     // immediately
-                    ProcessSlidingFocus(S_hwndUnderMouse,
-                                        S_hwnd2Activate);
+                    // V0.9.5 (2000-09-20)[pr] sliding focus bug
+                    if (S_hwnd2Activate)
+                        ProcessSlidingFocus(S_hwndUnderMouse,
+                                            S_hwnd2Activate);
             break;
 
             /*

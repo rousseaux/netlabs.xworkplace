@@ -210,7 +210,7 @@ VOID xthrResetWorkerThreadPriority(VOID)
     DosSetPriority(PRTYS_THREAD,
                    ulPrty,
                    ulDelta,
-                   thrQueryID(pKernelGlobals->ptiWorkerThread));
+                   thrQueryID(&pKernelGlobals->tiWorkerThread));
 }
 
 /*
@@ -261,7 +261,7 @@ BOOL xthrPostWorkerMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     BOOL rc = FALSE;
     PCKERNELGLOBALS pcKernelGlobals = krnQueryGlobals();
 
-    if (thrQueryID(pcKernelGlobals->ptiWorkerThread))
+    if (thrQueryID(&pcKernelGlobals->tiWorkerThread))
     {
         if (pcKernelGlobals->hwndWorkerObject)
         {
@@ -1210,7 +1210,7 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     if (pKernelGlobals)
-        if (thrQueryID(pKernelGlobals->ptiFileThread))
+        if (thrQueryID(&pKernelGlobals->tiFileThread))
         {
             if (pKernelGlobals->hwndFileObject)
             {
@@ -1384,8 +1384,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
     switch (msg)
     {
         /*
-         *@@ FIM_DESKTOPREADY:
-         *      this msg is posted by XFldDesktop::wpOpen;
+         *@@ FIM_DESKTOPPOPULATED:
+         *      this msg is posted by XFldDesktop::wpPopulate;
          *      we will now go for the XWorkplace startup
          *      processing.
          *
@@ -1395,32 +1395,32 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *
          *@@added V0.9.3 (2000-04-26) [umoeller]
          *@@changed V0.9.4 (2000-08-02) [umoeller]: initial delay now configurable
+         *@@changed V0.9.5 (2000-08-26) [umoeller]: reverted to populate from open...
          */
 
-        case FIM_DESKTOPREADY:
+        case FIM_DESKTOPPOPULATED:
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            HWND    hwndActiveDesktop = (HWND)mp2;
 
             #ifdef DEBUG_STARTUP
-                _Pmpf(("fnwpFileObject: got WOM_DESKTOPREADY"));
+                _Pmpf(("fnwpFileObject: got FIM_DESKTOPPOPULATED"));
             #endif
 
-            if ((_wpQueryFldrFlags((WPFolder*)mp1)
+            /* if ((_wpQueryFldrFlags((WPFolder*)mp1)
                         & FOI_POPULATEDWITHALL) == 0)
             {
                 #ifdef DEBUG_STARTUP
-                    _Pmpf(("    Desktop not populated yet, reposting WOM_DESKTOPREADY"));
+                    _Pmpf(("    Desktop not populated yet, reposting FIM_DESKTOPPOPULATED"));
                 #endif
 
                 DosSleep(100);
                 // if Desktop is not populated yet, post this
                 // msg again
 
-                WinPostMsg(hwndObject, FIM_DESKTOPREADY, mp1, mp2);
+                WinPostMsg(hwndObject, FIM_DESKTOPPOPULATED, mp1, mp2);
                 // do not continue
                 break;
-            }
+            } */
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Desktop populated, sleep(1000)"));
@@ -1431,14 +1431,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             winhSleep(WinQueryAnchorBlock(hwndObject),
                       pGlobalSettings->ulStartupInitialDelay);
 
-            // hwndActiveDesktop = cmnQueryActiveDesktopHWND();
-
-            {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                pKernelGlobals->hwndActiveDesktop = hwndActiveDesktop;
-                krnUnlockGlobals();
-            }
-
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting XDM_DESKTOPREADY (0x%lX) to daemon",
                         hwndActiveDesktop));
@@ -1446,7 +1438,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             // notify daemon of WPS desktop window handle
             krnPostDaemonMsg(XDM_DESKTOPREADY,
-                             (MPARAM)hwndActiveDesktop,
+                             (MPARAM)cmnQueryActiveDesktopHWND(),
                              (MPARAM)0);
 
             #ifdef DEBUG_STARTUP
@@ -1968,7 +1960,7 @@ BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     BOOL rc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-    if (thrQueryID(pKernelGlobals->ptiSpeedyThread))
+    if (thrQueryID(&pKernelGlobals->tiSpeedyThread))
         if (pKernelGlobals->hwndSpeedyObject)
             rc = WinPostMsg(pKernelGlobals->hwndSpeedyObject,
                             msg,
@@ -2383,7 +2375,7 @@ BOOL xthrStartThreads(VOID)
     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (thrQueryID(pKernelGlobals->ptiWorkerThread) == NULLHANDLE)
+    if (thrQueryID(&pKernelGlobals->tiWorkerThread) == NULLHANDLE)
     {
         PTIB        ptib;
         PPIB        ppib;
@@ -2494,20 +2486,20 @@ BOOL xthrStartThreads(VOID)
         {
             // threads not disabled:
             pKernelGlobals->ulWorkerMsgCount = 0;
-            thrCreate(&(pKernelGlobals->ptiWorkerThread),
+            thrCreate(&pKernelGlobals->tiWorkerThread,
                       fntWorkerThread,
                       NULL, // running flag
                       0,    // no msgq
                       0);
 
-            thrCreate(&(pKernelGlobals->ptiSpeedyThread),
+            thrCreate(&pKernelGlobals->tiSpeedyThread,
                       fntSpeedyThread,
                       NULL, // running flag
                       0,    // no msgq
                       0);
         }
 
-        thrCreate(&(pKernelGlobals->ptiFileThread),
+        thrCreate(&pKernelGlobals->tiFileThread,
                   fntFileThread,
                   NULL, // running flag
                   0,    // no msgq

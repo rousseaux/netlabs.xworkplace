@@ -751,10 +751,6 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
                 pHotkeyFound = FindHotkeyFromLBSel(WinQueryWindow(hwndEdit, QW_PARENT),
                                              &usCommand);
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("List box index: %d", i));
-                #endif
-
                 if (pHotkeyFound == NULL)
                 {
                     // no hotkey defined yet: append a new one

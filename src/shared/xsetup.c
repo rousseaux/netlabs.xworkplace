@@ -178,6 +178,7 @@ FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -242,6 +243,7 @@ STANDARDOBJECT  G_WPSObjects[] = {
                                     XFOLDER_WPSID, "XFldWPS", "", 200, 0,
                                     XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
                                     XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
+                                    XFOLDER_MEDIAID, "XWPMedia", "", 204, 0,
                                     XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
 
                                     XFOLDER_CONFIGID, "WPFolder",
@@ -364,6 +366,7 @@ typedef struct _XWPCLASSES
             fXFldSystem,
             fXFldWPS,
             fXWPScreen,
+            fXWPMedia,
             fXFldStartup,
             fXFldShutdown,
             fXWPClassList,
@@ -375,7 +378,7 @@ typedef struct _XWPCLASSES
 } XWPCLASSES, *PXWPCLASSES;
 
 // array of tools to be subclassed for tooltips
-USHORT usClassesToolIDs[] =
+USHORT G_usClassesToolIDs[] =
     {
         ID_XCDI_XWPCLS_XFLDOBJECT,
         ID_XCDI_XWPCLS_XFOLDER,
@@ -399,6 +402,9 @@ USHORT usClassesToolIDs[] =
         ID_XCDI_XWPCLS_XWPSCREEN,
         ID_XCDI_XWPCLS_XWPSTRING,
 
+        // new items with V0.9.5
+        ID_XCDI_XWPCLS_XWPMEDIA,
+
         DID_OK,
         DID_CANCEL
     };
@@ -409,6 +415,7 @@ USHORT usClassesToolIDs[] =
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: added generic fonts support
  *@@changed V0.9.3 (2000-04-26) [umoeller]: added new classes
+ *@@changed V0.9.5 (2000-08-23) [umoeller]: XWPMedia wasn't working, fixed
  */
 
 MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -454,6 +461,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             pxwpc->fXFldSystem = (winhQueryWPSClass(pObjClass, "XFldSystem") != 0);
             pxwpc->fXFldWPS = (winhQueryWPSClass(pObjClass, "XFldWPS") != 0);
             pxwpc->fXWPScreen = (winhQueryWPSClass(pObjClass, "XWPScreen") != 0);
+            pxwpc->fXWPMedia  = (winhQueryWPSClass(pObjClass, "XWPMedia") != 0);
             pxwpc->fXFldStartup = (winhQueryWPSClass(pObjClass, "XFldStartup") != 0);
             pxwpc->fXFldShutdown = (winhQueryWPSClass(pObjClass, "XFldShutdown") != 0);
             pxwpc->fXWPClassList = (winhQueryWPSClass(pObjClass, "XWPClassList") != 0);
@@ -482,6 +490,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSYSTEM, pxwpc->fXFldSystem);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDWPS, pxwpc->fXFldWPS);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSCREEN, pxwpc->fXWPScreen);
+            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPMEDIA, pxwpc->fXWPMedia);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, pxwpc->fXFldStartup);
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN, pxwpc->fXFldShutdown),
             winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST, pxwpc->fXWPClassList);
@@ -522,10 +531,10 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 ti.hinst = NULLHANDLE;
                 ti.lpszText = LPSTR_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 for (ul = 0;
-                     ul < (sizeof(usClassesToolIDs) / sizeof(usClassesToolIDs[0]));
+                     ul < (sizeof(G_usClassesToolIDs) / sizeof(G_usClassesToolIDs[0]));
                      ul++)
                 {
-                    hwndCtl = WinWindowFromID(hwndDlg, usClassesToolIDs[ul]);
+                    hwndCtl = WinWindowFromID(hwndDlg, G_usClassesToolIDs[ul]);
                     if (hwndCtl)
                     {
                         // add tool to tooltip control
@@ -606,6 +615,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 pxwpcNew->fXFldSystem = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSYSTEM);
                 pxwpcNew->fXFldWPS = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDWPS);
                 pxwpcNew->fXWPScreen = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSCREEN);
+                pxwpcNew->fXWPMedia = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPMEDIA);
                 pxwpcNew->fXFldStartup = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP);
                 pxwpcNew->fXFldShutdown = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN);
                 pxwpcNew->fXWPClassList = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST);
@@ -783,6 +793,13 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 else if ((pxwpcNew->fXWPScreen) && (!pxwpcOld->fXWPScreen))
                     // register
                     xstrcat(&pszReg, "XWPScreen\n");
+
+                if ((pxwpcOld->fXWPMedia) && (!pxwpcNew->fXWPMedia))
+                    // deregister XWPMedia
+                    xstrcat(&pszDereg, "XWPMedia\n");
+                else if ((pxwpcNew->fXWPMedia) && (!pxwpcOld->fXWPMedia))
+                    // register
+                    xstrcat(&pszReg, "XWPMedia\n");
 
                 if ((pxwpcOld->fXFldStartup) && (!pxwpcNew->fXFldStartup))
                     // deregister XFldStartup
@@ -1365,6 +1382,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->fExtAssocs);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 pGlobalSettings->CleanupINIs);
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLHANDLES,
+                pGlobalSettings->fReplaceHandles);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLFILEEXISTS,
                 pGlobalSettings->fReplFileExists);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
@@ -1447,6 +1466,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          fShowClassesSetup = FALSE,
          fShowWarnExtAssocs = FALSE,
          fShowWarnPageMage = FALSE,
+         fShowWarnXShutdown = FALSE,
          fUpdateMouseMovementPage = FALSE;
     signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
                 cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
@@ -1568,6 +1588,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // update "Desktop" menu page
             ntbUpdateVisiblePage(NULL,   // all somSelf's
                                  SP_DTP_MENUITEMS);
+            if (ulExtra)
+                // show warning at the bottom (outside the
+                // mutex section)
+                fShowWarnXShutdown = TRUE;
         break;
 
         case ID_XCSI_EXTASSOCS:
@@ -1594,6 +1618,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_CLEANUPINIS:
             pGlobalSettings->CleanupINIs = ulExtra;
+        break;
+
+        case ID_XCSI_REPLHANDLES:
+            pGlobalSettings->fReplaceHandles = ulExtra;
         break;
 
         case ID_XCSI_XWPTRASHCAN:
@@ -1644,6 +1672,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
             pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
+            pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
             pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
             pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
             // trash can ### V0.9.4 (2000-06-05) [umoeller]
@@ -1706,6 +1735,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                       "XWorkplace",
                       "Warning: PageMage is still extremely unstable.",
                       MB_OK);
+    else if (fShowWarnXShutdown)
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148,       // "XWorkplace Setup"
+                         190,
+                         MB_OK);
     else if (cAskSoundsInstallMsg != -1)
     {
         if (cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -1882,6 +1916,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pMsg += sprintf(pMsg, "pXFldSystem: 0x%lX\n", pKernelGlobals->pXFldSystem);
             pMsg += sprintf(pMsg, "pXFldWPS: 0x%lX\n", pKernelGlobals->pXFldWPS);
             pMsg += sprintf(pMsg, "pXWPScreen: 0x%lX\n", pKernelGlobals->pXWPScreen);
+            pMsg += sprintf(pMsg, "pXWPMedia: 0x%lX\n", pKernelGlobals->pXWPMedia);
             pMsg += sprintf(pMsg, "pXFldStartup: 0x%lX\n", pKernelGlobals->pXFldStartup);
             pMsg += sprintf(pMsg, "pXFldShutdown: 0x%lX\n", pKernelGlobals->pXFldShutdown);
             pMsg += sprintf(pMsg, "pXWPClassList: 0x%lX\n", pKernelGlobals->pXWPClassList);
@@ -2171,7 +2206,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                            FALSE);  // unsigned
 
         // Worker thread status
-        tid = thrQueryID(pKernelGlobals->ptiWorkerThread);
+        tid = thrQueryID(&pKernelGlobals->tiWorkerThread);
         sprintf(szTemp, "TID 0x%lX, prty 0x%04lX, %d msgs",
                 tid,
                 prc16QueryThreadPriority(ppib->pib_ulpid, tid),
@@ -2180,7 +2215,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           szTemp);
 
         // File thread status
-        tid = thrQueryID(pKernelGlobals->ptiFileThread);
+        tid = thrQueryID(&pKernelGlobals->tiFileThread);
         sprintf(szTemp, "TID 0x%lX, prty 0x%04lX",
                 tid,
                 prc16QueryThreadPriority(ppib->pib_ulpid, tid));
@@ -2192,7 +2227,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                         szTemp);
 
         // Quick thread status
-        tid = thrQueryID(pKernelGlobals->ptiSpeedyThread);
+        tid = thrQueryID(&pKernelGlobals->tiSpeedyThread);
         sprintf(szTemp, "TID 0x%lX, prty 0x%04lX",
                 tid,
                 prc16QueryThreadPriority(ppib->pib_ulpid, tid));

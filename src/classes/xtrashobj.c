@@ -330,8 +330,10 @@ SOM_Scope ULONG  SOMLINK xtro_xwpQueryRelatedSize(XWPTrashObject *somSelf)
 /*
  *@@ xwpValidateTrashObject:
  *      this performs all kinds of checks on the trash
- *      object and its related object. If any errors
- *      are found, a value != NO_ERROR is returned and
+ *      object and its related object and returns an APIRET
+ *      with the result.
+ *
+ *      If any errors are found, a value != NO_ERROR is returned and
  *      the trash object destroys itself by calling wpFree().
  *
  *      Return values:
@@ -340,7 +342,7 @@ SOM_Scope ULONG  SOMLINK xtro_xwpQueryRelatedSize(XWPTrashObject *somSelf)
  *      --  ERROR_FILE_NOT_FOUND: related object no longer exists
  */
 
-SOM_Scope APIRET  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
+SOM_Scope ULONG  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
 {
     APIRET  arc = NO_ERROR;
 

@@ -53,6 +53,7 @@ interface XWPMouse : WPMouse
   implementation {
 
     releaseorder: xwpAddMouseMovementPage,
+                  xwpAddMouseMappings2Page,
                   xwpAddAnimatedMousePointerPage;
 
     /*

@@ -206,7 +206,7 @@ typedef struct _CLASSLISTCLIENTDATA
     HWND                hwndMethodInfoDlg;  // bottom right child of hwndSplitRight
     LINKLIST            llCnrStrings;       // linked list of container strings which must be free()'d
     PMETHODINFO         pMethodInfo;        // method info for currently selected class (classlist.h)
-    PTHREADINFO         ptiMethodCollectThread; // temporary thread for creating method info
+    THREADINFO          tiMethodCollectThread; // temporary thread for creating method info
 } CLASSLISTCLIENTDATA, *PCLASSLISTCLIENTDATA;
 
 /*
@@ -732,7 +732,7 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
 
             // class object exists:
             // start thread for collecting method info
-            thrCreate(&pClientData->ptiMethodCollectThread,
+            thrCreate(&pClientData->tiMethodCollectThread,
                       cll_fntMethodCollectThread,
                       NULL, // running flag
                       0,    // no msgq
@@ -1374,12 +1374,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             if (pClientData)
             {
                 // wait for method thread to terminate
-                thrWait(pClientData->ptiMethodCollectThread);
-                if (pClientData->ptiMethodCollectThread)
-                {
-                    free(pClientData->ptiMethodCollectThread);
-                    pClientData->ptiMethodCollectThread = NULL;
-                }
+                thrWait(&pClientData->tiMethodCollectThread);
 
                 // remove this window from the object's use list
                 _wpDeleteFromObjUseList(pClientData->somSelf,
@@ -1418,6 +1413,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  *      sets up, and shows that class's context menu.
  *
  *@@added V0.9.1 (99-12-28) [umoeller]
+ *@@changed V0.9.5 (2000-08-26) [umoeller]: orphaned classes had "Deregister" disabled; fixed
  */
 
 VOID ShowClassContextMenu(HWND hwndDlg,
@@ -1432,7 +1428,7 @@ VOID ShowClassContextMenu(HWND hwndDlg,
     {
         BOOL fAllowDeregister = TRUE;
         BOOL fAllowCreateObjects = TRUE;
-        BOOL fIsWPSClass = FALSE;
+        BOOL fIsWPSClass = TRUE;        // V0.9.5 (2000-08-26) [umoeller]
 
         if (pscd->preccSource->pwps->pClassObject)
             fIsWPSClass = _somDescendedFrom(pscd->preccSource->pwps->pClassObject, _WPObject);
@@ -1448,7 +1444,9 @@ VOID ShowClassContextMenu(HWND hwndDlg,
             || (!fIsWPSClass)
                        // no WPS class:
            )
+        {
             fAllowDeregister = FALSE;
+        }
 
         if (pszClassInfo)
         {
@@ -1567,6 +1565,7 @@ BOOL fFillingCnr = FALSE;
  *      "disabled" (i.e. replaced) classes.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
  */
 
 MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2189,7 +2188,8 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case WM_SYSCOMMAND:
-                WinPostMsg(WinQueryWindow(hwndDlg, QW_OWNER),
+                WinPostMsg(WinQueryWindow(pClassTreeCnrData->pClientData->hwndClient,
+                                          QW_PARENT),
                            msg, mp1, mp2);
             break;
 
@@ -2270,6 +2270,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
  *      dialog window and reposition the subcontrols.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
  */
 
 MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2352,7 +2353,8 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
          */
 
         case WM_SYSCOMMAND:
-            WinPostMsg(WinQueryWindow(hwndDlg, QW_OWNER),
+            WinPostMsg(WinQueryWindow(pClassInfoData->pClientData->hwndClient,
+                                      QW_PARENT),
                        msg, mp1, mp2);
         break;
 
@@ -2395,6 +2397,7 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
  *@@ fnwpMethodInfoDlg:
  *
  *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
+ *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
  */
 
 MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2732,7 +2735,8 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case WM_SYSCOMMAND:
-            WinPostMsg(WinQueryWindow(hwndDlg, QW_OWNER),
+            WinPostMsg(WinQueryWindow(pMethodInfoData->pClientData->hwndClient,
+                                      QW_PARENT),
                        msg, mp1, mp2);
         break;
 
@@ -3039,6 +3043,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
  *      the subwindows are created and linked.
  *
  *@@changed V0.9.3 (2000-04-02) [umoeller]: moved wpRegisterView etc. here
+ *@@changed V0.9.5 (2000-09-18) [umoeller]: fixed view title
  */
 
 HWND cllCreateClassListView(WPObject *somSelf,
@@ -3097,6 +3102,10 @@ HWND cllCreateClassListView(WPObject *somSelf,
         if (hwndFrame)
         {
             PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+            // view title: we remove "~" later
+            PSZ             pszViewTitle = strdup(pNLSStrings->pszOpenClassList),
+                            p = NULL;
+
             // get client data window pointer; this has been allocated
             // by WM_CREATE in fnwpClassListClient
             PCLASSLISTCLIENTDATA pClientData
@@ -3129,13 +3138,19 @@ HWND cllCreateClassListView(WPObject *somSelf,
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "_wpAddToObjUseList failed.");
 
+            // create view title: remove ~ char
+            p = strchr(pszViewTitle, '~');
+            if (p)
+                // found: remove that
+                strcpy(p, p+1);
+
             // register this view; I've moved this here from WM_CREATE
             // in cllCreateClassListView because apparently this doesn't
             // work right if the window has not been fully created
             _wpRegisterView(somSelf,
                             hwndFrame,
-                            pNLSStrings->pszOpenClassList); // view title
-
+                            pszViewTitle); // view title
+            free(pszViewTitle);
         }
     }
     CATCH(excpt1) { } END_CATCH();

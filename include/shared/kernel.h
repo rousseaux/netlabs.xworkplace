@@ -159,7 +159,7 @@
             PVOID               pDaemonShared;
                     // ptr to DAEMONSHARED structure
 
-            HWND                hwndActiveDesktop;
+            // HWND                hwndActiveDesktop;
                     // currently active Desktop HWND; this is != NULLHANDLE
                     // after the Desktop has been populated
 
@@ -180,7 +180,7 @@
              *      this thread is always running.
              */
 
-            PTHREADINFO         ptiWorkerThread;
+            THREADINFO          tiWorkerThread;
             HWND                hwndWorkerObject;
 
             ULONG               ulWorkerMsgCount;
@@ -213,7 +213,7 @@
              *      this thread is always running.
              */
 
-            PTHREADINFO         ptiSpeedyThread;
+            THREADINFO          tiSpeedyThread;
             HWND                hwndSpeedyObject;
 
             /*
@@ -222,7 +222,7 @@
              *      but with regular priority.
              */
 
-            PTHREADINFO         ptiFileThread;
+            THREADINFO          tiFileThread;
             HWND                hwndFileObject;
 
             /*
@@ -231,8 +231,8 @@
              *      while XShutdown is in progress.
              */
 
-            PTHREADINFO         ptiShutdownThread,
-                                ptiUpdateThread;
+            THREADINFO          tiShutdownThread,
+                                tiUpdateThread;
 
             BOOL                fShutdownRunning;
 

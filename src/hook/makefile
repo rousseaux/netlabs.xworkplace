@@ -51,6 +51,7 @@ EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
+# If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(BASE_OUTPUTDIR)\xwphook.obj
 
 # The main target:
@@ -59,6 +60,7 @@ OBJS = $(BASE_OUTPUTDIR)\xwphook.obj
 # Otherwise, we call the main makefile, which will again call ourselves later.
 all:   \
 !ifndef MAINMAKERUNNING
+# we're not being called from main makefile: start main makefile
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
@@ -82,6 +84,7 @@ MYOWNINC = $(INC)\hook
 .c.{$(BASE_OUTPUTDIR)}.obj:
     @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
+# precompiled headers disabled:
     $(CC_DLL) -I$(INCLUDE) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
 !else
     $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c

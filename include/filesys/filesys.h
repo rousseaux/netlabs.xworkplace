@@ -49,6 +49,9 @@
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
 
+        ULONG fsysInsertFilePages(WPObject *somSelf,
+                                  HWND hwndNotebook);
+
     /* ******************************************************************
      *                                                                  *
      *   XFldProgramFile notebook callbacks (notebook.c)                *

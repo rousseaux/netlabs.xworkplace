@@ -119,8 +119,8 @@
  *                                                                  *
  ********************************************************************/
 
-PTHREADINFO     G_ptiInsertDevices = NULL,
-                G_ptiInsertCodecs = NULL;
+THREADINFO      G_tiInsertDevices = {0},
+                G_tiInsertCodecs = {0};
 
 /* ******************************************************************
  *                                                                  *
@@ -291,7 +291,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        thrCreate(&G_ptiInsertDevices,
+        thrCreate(&G_tiInsertDevices,
                   fntInsertDevices,
                   NULL, // running flag
                   THRF_PMMSGQUEUE,
@@ -303,7 +303,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         if (pcnbp->pUser)
             xmmFreeDevices(pcnbp->pUser);
         pcnbp->pUser = NULL;
-        thrFree(&G_ptiInsertDevices);
+        thrFree(&G_tiInsertDevices);
     }
 }
 
@@ -605,7 +605,7 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        thrCreate(&G_ptiInsertCodecs,
+        thrCreate(&G_tiInsertCodecs,
                   fntInsertIOProcs,
                   NULL, // running flag
                   THRF_PMMSGQUEUE,
@@ -835,7 +835,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        thrCreate(&G_ptiInsertCodecs,
+        thrCreate(&G_tiInsertCodecs,
                   fntInsertCodecs,
                   NULL, // running flag
                   THRF_PMMSGQUEUE,
@@ -947,6 +947,8 @@ SOM_Scope ULONG  SOMLINK xwmm_wpFilterPopupMenu(XWPMedia *somSelf,
  *      We must return TRUE to report successful completion.
  *
  *      We'll display some help for the XWPMedia class.
+ *
+ *@@changed V0.9.5 (2000-08-24) [umoeller]: finally working now
  */
 
 SOM_Scope BOOL  SOMLINK xwmm_wpQueryDefaultHelp(XWPMedia *somSelf,
@@ -956,9 +958,9 @@ SOM_Scope BOOL  SOMLINK xwmm_wpQueryDefaultHelp(XWPMedia *somSelf,
     /* XWPMediaData *somThis = XWPMediaGetData(somSelf); */
     XWPMediaMethodDebug("XWPMedia","xwmm_wpQueryDefaultHelp");
 
-    return (XWPMedia_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
-                                                          pHelpPanelId,
-                                                          HelpLibrary));
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_XWPMEDIA;
+    return (TRUE);
 }
 
 /*
@@ -1074,7 +1076,7 @@ SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)
     /* M_XWPMediaData *somThis = M_XWPMediaGetData(somSelf); */
     M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQueryTitle");
 
-    return ("XWorkplace Multimedia");
+    return ("Multimedia");
 }
 
 /*

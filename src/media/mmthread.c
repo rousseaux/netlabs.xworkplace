@@ -105,7 +105,7 @@ ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
 USHORT      G_usSoundDeviceID = 0;
 ULONG       G_ulVolumeTemp = 0;
 
-PTHREADINFO G_ptiMediaThread = 0;
+THREADINFO  G_tiMediaThread = {0};
 
 const char *WNDCLASS_MEDIAOBJECT = "XWPMediaThread";
 
@@ -612,7 +612,7 @@ BOOL xmmInit(VOID)
             G_ulMMPM2Working = MMSTAT_IMPORTSFAILED;
 
     if (G_ulMMPM2Working == MMSTAT_WORKING)
-        thrCreate(&G_ptiMediaThread,
+        thrCreate(&G_tiMediaThread,
                   xmm_fntMediaThread,
                   NULL, // running flag
                   0,    // no msgq
@@ -671,7 +671,7 @@ ULONG xmmQueryStatus(VOID)
 BOOL xmmPostMediaMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     BOOL rc = FALSE;
-    if (thrQueryID(G_ptiMediaThread))
+    if (thrQueryID(&G_tiMediaThread))
     {
         if (G_hwndMediaObject)
             if (G_ulMMPM2Working == MMSTAT_WORKING)

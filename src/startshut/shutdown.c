@@ -204,7 +204,7 @@ BOOL xsdInitiateShutdown(VOID)
     {
         PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
         if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(pKernelGlobals->ptiShutdownThread))
+             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
            )
             // shutdown thread already running: return!
             fStartShutdown = FALSE;
@@ -276,7 +276,7 @@ BOOL xsdInitiateShutdown(VOID)
         {
             // everything OK: create shutdown thread,
             // which will handle the rest
-            thrCreate(&(pKernelGlobals->ptiShutdownThread),
+            thrCreate(&(pKernelGlobals->tiShutdownThread),
                         fntShutdownThread,
                         NULL, // running flag
                         0,    // no msgq
@@ -317,7 +317,7 @@ BOOL xsdInitiateRestartWPS(VOID)
     {
         PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
         if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(pKernelGlobals->ptiShutdownThread))
+             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
            )
             // shutdown thread already running: return!
             fStartShutdown = FALSE;
@@ -357,7 +357,7 @@ BOOL xsdInitiateRestartWPS(VOID)
         {
             // everything OK: create shutdown thread,
             // which will handle the rest
-            thrCreate(&(pKernelGlobals->ptiShutdownThread),
+            thrCreate(&(pKernelGlobals->tiShutdownThread),
                         fntShutdownThread,
                         NULL, // running flag
                         0,    // no msgq
@@ -399,7 +399,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
     {
         PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
         if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(pKernelGlobals->ptiShutdownThread))
+             || (thrQueryID(&pKernelGlobals->tiShutdownThread))
            )
             // shutdown thread already running: return!
             fStartShutdown = FALSE;
@@ -446,7 +446,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
         {
             // everything OK: create shutdown thread,
             // which will handle the rest
-            thrCreate(&(pKernelGlobals->ptiShutdownThread),
+            thrCreate(&(pKernelGlobals->tiShutdownThread),
                         fntShutdownThread,
                         NULL, // running flag
                         0,    // no msgq
@@ -626,10 +626,14 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         APIRET      arc = NO_ERROR;
+        HWND        hwndINICombo = NULLHANDLE;
+        ULONG       ul;
         PEXECUTABLE pExec;
         CHAR    szAPMVersion[30];
         CHAR    szAPMSysFile[CCHMAXPATH];
+
         sprintf(szAPMVersion, "APM %s", apmQueryVersion());
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);
         sprintf(szAPMSysFile,
@@ -656,6 +660,23 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             }
 
             doshExecClose(pExec);
+        }
+
+        hwndINICombo = WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST);
+        for (ul = 0;
+             ul < 3;
+             ul++)
+        {
+            PSZ psz = 0;
+            switch (ul)
+            {
+                case 0: psz = pNLSStrings->pszXSDSaveInisNew; break;
+                case 1: psz = pNLSStrings->pszXSDSaveInisOld; break;
+                case 2: psz = pNLSStrings->pszXSDSaveInisNone; break;
+            }
+            WinInsertLboxItem(hwndINICombo,
+                              ul,
+                              psz);
         }
     }
 
@@ -684,6 +705,11 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             (pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
             (pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
+                          LM_SELECTITEM,
+                          (MPARAM)(pGlobalSettings->bSaveINIS),
+                          (MPARAM)TRUE);        // select
     }
 
     if (flFlags & CBI_ENABLE)
@@ -700,7 +726,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  && (pGlobalSettings->NoWorkerThread == 0)
                 );
 
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
+        // WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
 
@@ -725,6 +751,9 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
 
         if (WinQueryObject(XFOLDER_SHUTDOWNID))
             // shutdown folder exists already: disable button
@@ -796,6 +825,18 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_SDDI_LOG:
             ulFlag = XSD_LOG;
         break;
+
+        case ID_SDDI_SAVEINIS_LIST:
+        {
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+            ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
+                                                LM_QUERYSELECTION,
+                                                MPFROMSHORT(LIT_FIRST),
+                                                0);
+            if (ul >= 0 && ul <= 2)
+                pGlobalSettings->bSaveINIS = ul;
+            cmnUnlockGlobalSettings();
+        break; }
 
         // Reboot Actions (Desktop page 1)
         case ID_SDDI_REBOOTEXT:
@@ -3355,10 +3396,10 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                 // get rid of the Update thread;
                 // this got closed by xsd_fnwpShutdown normally,
                 // but with exceptions, this might not have happened
-                if (thrQueryID(pKernelGlobals->ptiUpdateThread))
+                if (thrQueryID(&pKernelGlobals->tiUpdateThread))
                 {
                     xsdLog("  Closing Update thread...\n");
-                    thrFree(&(pKernelGlobals->ptiUpdateThread)); // fixed V0.9.0
+                    thrFree(&(pKernelGlobals->tiUpdateThread)); // fixed V0.9.0
                     xsdLog("  Update thread closed.\n");
                 }
 
@@ -3839,17 +3880,17 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
             {
                 PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                if (thrQueryID(pKernelGlobals->ptiUpdateThread) == NULLHANDLE)
+                if (thrQueryID(&pKernelGlobals->tiUpdateThread) == NULLHANDLE)
                 {
                     // first call; this one's called twice!
-                    thrCreate(&(pKernelGlobals->ptiUpdateThread),
+                    thrCreate(&(pKernelGlobals->tiUpdateThread),
                               xsd_fntUpdateThread,
                               NULL, // running flag
                               0,    // no msgq
                               NULLHANDLE);
 
                     xsdLog("    Update thread started, tid: 0x%lX\n",
-                           thrQueryID(pKernelGlobals->ptiUpdateThread));
+                           thrQueryID(&pKernelGlobals->tiUpdateThread));
                 }
                 krnUnlockGlobals();
             }
@@ -4462,16 +4503,16 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                     // close the Update thread to prevent it from interfering
                     // with what we're doing now
-                    if (thrQueryID(pKernelGlobals->ptiUpdateThread))
+                    if (thrQueryID(&pKernelGlobals->tiUpdateThread))
                     {
                         #ifdef DEBUG_SHUTDOWN
                             WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
                                               "Waiting for the Update thread to end...");
                         #endif
                         xsdLog("    xsd_fnwpShutdown: Closing Update thread, tid: 0x%lX...\n",
-                               thrQueryID(pKernelGlobals->ptiUpdateThread));
+                               thrQueryID(&pKernelGlobals->tiUpdateThread));
 
-                        thrFree(&(pKernelGlobals->ptiUpdateThread));  // close and wait
+                        thrFree(&(pKernelGlobals->tiUpdateThread));  // close and wait
                         xsdLog("    xsd_fnwpShutdown: Update thread closed.\n");
                     }
 
@@ -4624,6 +4665,7 @@ VOID xsdFinishShutdown(HAB hab)
     ULONG       ulShutdownFunc2 = 0;
     HPS         hpsScreen = NULLHANDLE;
     APIRET      arc = NO_ERROR;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (G_psdParams->optAnimate)
         // hps for animation later
@@ -4631,16 +4673,41 @@ VOID xsdFinishShutdown(HAB hab)
 
     // enforce saving of INIs
     WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
-            G_pNLSStrings->pszSDSavingProfiles);
+                      G_pNLSStrings->pszSDSavingProfiles);
 
-    xsdLog("Saving INIs...\n");
+    switch (pGlobalSettings->bSaveINIS)
+    {
+        case 2:         // do nothing:
+            xsdLog("Saving INIs has been disabled, skipping.\n");
+        break;
 
-    arc = xprfSaveINIs(G_habShutdownThread,
-                       xsd_fnSaveINIsProgress,
-                       WinWindowFromID(G_hwndShutdownStatus, ID_SDDI_PROGRESSBAR));
+        case 1:     // old method:
+            xsdLog("Saving INIs, old method (prfhSaveINIs)...\n");
+            arc = prfhSaveINIs(G_habShutdownThread, G_fileShutdownLog,
+                               (PFNWP)fncbUpdateINIStatus,
+                                   // callback function for updating the progress bar
+                               WinWindowFromID(G_hwndShutdownStatus, ID_SDDI_PROGRESSBAR),
+                                   // status window handle passed to callback
+                               WM_UPDATEPROGRESSBAR,
+                                   // message passed to callback
+                               (PFNWP)fncbSaveINIError);
+                                   // callback for errors
+            xsdLog("Done with prfhSaveINIs.\n");
+        break;
+
+        default:    // includes 0, new method
+            xsdLog("Saving INIs, new method (xprfSaveINIs)...\n");
+
+            arc = xprfSaveINIs(G_habShutdownThread,
+                               xsd_fnSaveINIsProgress,
+                               WinWindowFromID(G_hwndShutdownStatus, ID_SDDI_PROGRESSBAR));
+            xsdLog("Done with xprfSaveINIs.\n");
+        break;
+    }
+
     if (arc != NO_ERROR)
     {
-        xsdLog("xprfSaveINIs returned error %d.\n", arc);
+        xsdLog("--- Error %d was reported!\n", arc);
 
         // error occured: ask whether to restart the WPS
         if (cmnMessageBoxMsg(G_hwndShutdownStatus, 110, 111, MB_YESNO)
@@ -4651,31 +4718,6 @@ VOID xsdFinishShutdown(HAB hab)
                     // doesn't return
         }
     }
-    else
-        xsdLog("Done saving INIs, no errors.\n");
-
-    /* if (prfhSaveINIs(G_habShutdownThread, G_fileShutdownLog,
-                     (PFNWP)fncbUpdateINIStatus,
-                         // callback function for updating the progress bar
-                     WinWindowFromID(G_hwndShutdownStatus, ID_SDDI_PROGRESSBAR),
-                         // status window handle passed to callback
-                     WM_UPDATEPROGRESSBAR,
-                         // message passed to callback
-                     (PFNWP)fncbSaveINIError)
-                         // callback for errors
-                 != NO_ERROR)
-    {
-        xsdLog("prfhSaveINIs returned an error.\n");
-
-        // error occured: ask whether to restart the WPS
-        if (cmnMessageBoxMsg(G_hwndShutdownStatus, 110, 111, MB_YESNO)
-                    == MBID_YES)
-        {
-            xsdLog("User requested to restart WPS.\n");
-            xsdRestartWPS(G_habShutdownThread);
-                    // doesn't return
-        }
-    } */
 
     xsdLog("Now preparing shutdown...\n");
 
@@ -5103,10 +5145,10 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
                 WinCancelShutdown(hmqUpdateThread, TRUE);
 
                 // wait until main shutdown window is up
-                while ( (G_hwndMain == 0) && (!(pKernelGlobals->ptiUpdateThread->fExit)) )
+                while ( (G_hwndMain == 0) && (!(pKernelGlobals->tiUpdateThread.fExit)) )
                     DosSleep(100);
 
-                while (!(pKernelGlobals->ptiUpdateThread->fExit))
+                while (!(pKernelGlobals->tiUpdateThread.fExit))
                 {
                     // this is the first loop: we arrive here every time
                     // the task list has changed */
@@ -5123,10 +5165,10 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
                     // now wait until Shutdown thread is done updating its
                     // list; it then posts an event semaphore
                     while (     (!fUpdated)
-                            &&  (!(pKernelGlobals->ptiUpdateThread->fExit))
+                            &&  (!(pKernelGlobals->tiUpdateThread.fExit))
                           )
                     {
-                        if (pKernelGlobals->ptiUpdateThread->fExit)
+                        if (pKernelGlobals->tiUpdateThread.fExit)
                         {
                             // we're supposed to exit:
                             fUpdated = TRUE;
@@ -5155,7 +5197,7 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
                     #endif
 
                     while (     (ulTestItemCount == ulShutItemCount)
-                             && (!(pKernelGlobals->ptiUpdateThread->fExit))
+                             && (!(pKernelGlobals->tiUpdateThread.fExit))
                           )
                     {
                         // this is the second loop: we stay in here until the
@@ -5183,7 +5225,7 @@ void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
                             fSemOwned = FALSE;
                         }
 
-                        if (!(pKernelGlobals->ptiUpdateThread->fExit))
+                        if (!(pKernelGlobals->tiUpdateThread.fExit))
                             DosSleep(100);
                     } // end while; loop until either the Shutdown thread has set the
                       // Exit flag or the list has changed

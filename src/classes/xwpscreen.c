@@ -311,18 +311,32 @@ SOM_Scope void  SOMLINK xwpscrM_wpclsInitData(M_XWPScreen *somSelf)
  *      opened, i.e. no window pos has been stored
  *      yet, the WPS will use this size, to avoid
  *      truncated settings pages.
+ *
+ *@@added V0.9.5 (2000-08-26) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
                                                            PSIZEL pSizl)
 {
+    BOOL brc = FALSE;
     /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
     M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQuerySettingsPageSize");
 
-    pSizl->cx = 275;       // size of "Object" page
-    pSizl->cy = 130;       // size of "Object" page
+    brc = M_XWPScreen_parent_M_WPSystem_wpclsQuerySettingsPageSize(somSelf,
+                                                                   pSizl);
+    if (brc)
+    {
+        LONG lCompCY = 160;     // this is the height of the "PageMage General" page
+                                // which seems to be the largest
+        if (doshIsWarp4())
+            // on Warp 4, reduce again, because we're moving
+            // the notebook buttons to the bottom
+            lCompCY -= WARP4_NOTEBOOK_OFFSET;
+        if (pSizl->cy < lCompCY)
+            pSizl->cy = lCompCY;
+    }
 
-    return (TRUE);
+    return (brc);
 }
 
 /*

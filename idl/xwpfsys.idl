@@ -1,14 +1,14 @@
 
 /*
- * xfdisk.idl:
+ * xwpfsys.idl:
  *      SOM interface description file for the following
  *      XWorkplace classes (in this order):
- *          XFldDisk
+ *          XWPFileSystem
  *      and the respective metaclasses.
  *
- *      See src\classes\xfdisk.c for details.
+ *      See src\classes\xwpfsys.c for details.
  *
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -20,73 +20,70 @@
  *      GNU General Public License for more details.
  */
 
-#include <wpdisk.idl>           // this is SOM for WPDisk
+#include <wpdataf.idl>          // this is SOM for WPFileSystem
 
 /*
-   CLASS: XFldDisk
+   CLASS: XWPFileSystem
 
    CLASS HIERARCHY:
 
        SOMObject
          ÀÄÄ WPObject = XFldObject
-               ÀÄÄ WPAbstract
-                     ÀÄÄ WPDisk
-                           ÀÄÄ XFldDisk
+               ÀÄÄ WPFileSystem
+                     ÀÄÄ  XWPFileSystem
 */
 
-interface M_XFldDisk;            // forward reference to metaclass
+interface M_XWPFileSystem;            // forward reference to metaclass
 
-interface XFldDisk : WPDisk
+interface XWPFileSystem : WPFileSystem
 {
 
     /*
-     * New instance methods for XFldDisk:
+     * New instance methods for XWPFileSystem:
      *
      */
 
+    HOBJECT xwpQueryHandle(in BOOL fCreate);
+
 #ifdef __SOMIDL__
   implementation {
+
+    releaseorder: xwpQueryHandle;
 
     /*
      * Class Modifiers:
      *
      */
 
-    externalprefix = xfdisk_;
-    externalstem = xfdisk;
+    externalprefix = xfs_;
+    externalstem = xfs;
     majorversion = 1;
     minorversion = 1;
-    filestem = xfdisk;           //# specifies the filestem for sc-generated files
-    metaclass = M_XFldDisk;
+    filestem = xwpfsys;           //# specifies the filestem for sc-generated files
+    metaclass = M_XWPFileSystem;
     dllname = "xfldr.dll";
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
-     * Internal instance variables for XFldDisk:
+     * Internal instance variables for XWPFileSystem:
      *
      */
 
-    USHORT  usMMDeviceID;
+    ULONG       ulHandle;
 
     /*
-     * WPDisk methods overridden by XFldDisk:
+     * The following is forced into the .H file:
+     *
+     */
+
+    /*
+     * WPFileSystem methods overridden by XWPFileSystem:
      *
      */
 
     wpInitData: override;
+    wpUnInitData: override;
     wpObjectReady: override;
-
-    wpSetup: override;
-
-    wpAddDiskDetailsPage: override;
-
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
-
-    wpViewObject: override;
-    wpOpen: override;
 
 #ifdef __PRIVATE__
 
@@ -102,13 +99,8 @@ interface XFldDisk : WPDisk
 //# ---------------------
 //#
 
-interface M_XFldDisk : M_WPDisk
+interface M_XWPFileSystem : M_WPFileSystem
 {
-
-    /*
-     * New class methods for M_XFldDisk:
-     *
-     */
 
 #ifdef __SOMIDL__
   implementation {
@@ -118,26 +110,27 @@ interface M_XFldDisk : M_WPDisk
      *
      */
 
-    externalprefix = xfdiskM_;
-    externalstem = xfdiskM;
-    functionprefix = xfdiskM_;
+    externalprefix = xfsM_;
+    externalstem = xfM;
+    functionprefix = xfM_;
     majorversion = 1;
     minorversion = 1;
-    filestem = xfdisk;           //# specifies the filestem for sc-generated files
+    filestem = xwpfsys;           //# specifies the filestem for sc-generated files
     dllname = "xfldr.dll";
     callstyle = oidl;
 
     /*
-     * Internal class variables for M_XFldDisk:
+     * Internal class variables for M_XWPFileSystem:
      *
      */
 
     /*
-     * M_WPDisk methods overridden by M_XFldDisk:
+     * M_WPFileSystem methods overridden by M_XWPFileSystem:
      *
      */
 
     wpclsInitData: override;
+
   };
 #endif /* __SOMIDL__ */
 };

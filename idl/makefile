@@ -57,6 +57,7 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xfwps.h \
      $(OUTPUTDIR)\xtrash.h \
      $(OUTPUTDIR)\xtrashobj.h \
+     $(OUTPUTDIR)\xwpfsys.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmedia.h \
      $(OUTPUTDIR)\xwpmouse.h \
@@ -128,6 +129,8 @@ $(OUTPUTDIR)\xfwps.h:            $(@B).idl
 $(OUTPUTDIR)\xtrash.h:           $(@B).idl
 
 $(OUTPUTDIR)\xtrashobj.h:        $(@B).idl
+
+$(OUTPUTDIR)\xwpfsys.h:          $(@B).idl
 
 $(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
 

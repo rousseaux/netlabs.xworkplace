@@ -154,6 +154,7 @@
  *
  *@@added V0.9.1 (99-11-29) [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added IBM1S506.ADD support
+ *@@changed V0.9.5 (2000-08-10) [umoeller]: added HPFS386 support
  */
 
 VOID drvConfigSupported(PDRIVERSPEC pSpec)
@@ -2553,5 +2554,3 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 
     return (mrc);
 }
-
-

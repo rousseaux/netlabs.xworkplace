@@ -156,6 +156,12 @@ typedef struct _XFOBJWINDATA
     // V0.9.3 (2000-04-19) [umoeller]
     PFUNCTIONKEY    paFuncKeys;
     ULONG           cFuncKeys;
+
+    // hotkeys
+    // V0.9.5 (2000-08-20) [umoeller]
+    USHORT ucScanCode;
+    USHORT usFlags;
+    USHORT usKeyCode;
 } XFOBJWINDATA, *PXFOBJWINDATA;
 
 #define WM_FILLCNR      (WM_USER+1)
@@ -735,6 +741,7 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
  *@@changed V0.9.3 (2000-04-19) [umoeller]: added function key support
  *@@changed V0.9.4 (2000-07-11) [umoeller]: CN_HELP didn't work
  *@@changed V0.9.4 (2000-08-03) [umoeller]: improved hotkey display
+ *@@changed V0.9.5 (2000-08-20) [umoeller]: added "Set" button
  */
 
 MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -754,6 +761,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                                            ID_XSDI_DTL_HOTKEY);
 
             pWinData = (PXFOBJWINDATA)_wpAllocMem((SOMAny*)mp2, sizeof(XFOBJWINDATA), NULL);
+            memset(pWinData, 0, sizeof(XFOBJWINDATA));
             WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
 
             // somSelf is given to us in mp2 (see pCreateParams
@@ -777,6 +785,9 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                 BOOL f = hifXWPHookReady();
                 WinEnableWindow(hwndHotkeyEntryField, f);
                 WinEnableControl(hwndDlg, ID_XSDI_DTL_HOTKEY_TXT, f);
+                WinEnableControl(hwndDlg, ID_XSDI_DTL_CLEAR, f);
+                WinEnableControl(hwndDlg, ID_XSDI_DTL_SET,
+                                    FALSE); // always disable
             }
 
             // make Warp 4 notebook buttons and move controls
@@ -1064,14 +1075,18 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                         if (fStore)
                         {
-                            // store hotkey for object;
+                            // store hotkey for object,
+                            // which can then be set using the "Set" button
                             // we'll now pass the scan code, which is
                             // used by the hook
-                            objSetObjectHotkey(pWinData->somSelf,
-                                               usFlags,
-                                               phkn->ucScanCode,
-                                               phkn->usKeyCode);
-                            // have entry field display that (comctl.c)
+                            pWinData->ucScanCode = phkn->ucScanCode;
+                            pWinData->usFlags = usFlags;
+                            pWinData->usKeyCode = phkn->usKeyCode;
+
+                            // enable "Set" button
+                            WinEnableControl(hwndDlg, ID_XSDI_DTL_SET,  TRUE);
+
+                            // and have entry field display that (comctl.c)
                         }
                         else
                         {
@@ -1118,6 +1133,25 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                     WinSetPointer(HWND_DESKTOP, hptrOld);
                 break; }
+
+                /*
+                 * ID_XSDI_DTL_SET:
+                 *      "Set hotkey" button
+                 */
+
+                case ID_XSDI_DTL_SET:
+                    // remove hotkey
+                    _xwpSetObjectHotkey(pWinData->somSelf,
+                                        pWinData->usFlags,
+                                        pWinData->ucScanCode,
+                                        pWinData->usKeyCode);
+                    WinEnableControl(hwndDlg, ID_XSDI_DTL_SET, FALSE);
+                    /* _xwpSetObjectHotkey(pWinData->somSelf,
+                                        0, 0, 0);   // remove flags
+                    WinSetWindowText(WinWindowFromID(hwndDlg,
+                                                     ID_XSDI_DTL_HOTKEY),
+                                     (cmnQueryNLSStrings())->pszNotDefined); */
+                break;
 
                 /*
                  * ID_XSDI_DTL_CLEAR:
@@ -1235,6 +1269,9 @@ BOOL objQueryObjectHotkey(WPObject *somSelf,
 /*
  *@@ objSetObjectHotkey:
  *      implementation for XFldObject::xwpSetObjectHotkey.
+ *
+ *@@changed V0.9.5 (2000-08-20) [umoeller]: fixed "set first hotkey" bug, which hung the system
+ *@@changed V0.9.5 (2000-08-20) [umoeller]: added more error checking
  */
 
 BOOL objSetObjectHotkey(WPObject *somSelf,
@@ -1242,158 +1279,183 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                         UCHAR ucScanCode,
                         USHORT usKeyCode)
 {
-    PGLOBALHOTKEY   pHotkeys;
-    ULONG           cHotkeys = 0;
     BOOL            brc = FALSE;
     HOBJECT         hobjSelf = _wpQueryHandle(somSelf);
 
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-    TRY_LOUD(excpt1, NULL)
+    if (hobjSelf)
     {
-        #ifdef DEBUG_KEYS
-            _Pmpf(("Entering xwpSetObjectHotkey usFlags = 0x%lX, usKeyCode = 0x%lX",
-                    usFlags, usKeyCode));
-        #endif
-
-        pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
-
-        #ifdef DEBUG_KEYS
-            _Pmpf(("  hifQueryObjectHotkeys returned 0x%lX, %d items",
-                    pHotkeys, cHotkeys));
-        #endif
-
-        if (pHotkeys)
+        TRY_LOUD(excpt1, NULL)
         {
-            // hotkeys list exists:
-            // check if we have a hotkey for this object already
-            PGLOBALHOTKEY pHotkeyThis = objFindHotkey(pHotkeys,
-                                                      cHotkeys,
-                                                      _wpQueryHandle(somSelf));
+            PGLOBALHOTKEY   pHotkeys;
+            ULONG           cHotkeys = 0;
+            #ifdef DEBUG_KEYS
+                _Pmpf(("Entering xwpSetObjectHotkey usFlags = 0x%lX, usKeyCode = 0x%lX",
+                        usFlags, usKeyCode));
+            #endif
 
-            if ((usFlags == 0) && (usKeyCode == 0))
+            pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
+
+            #ifdef DEBUG_KEYS
+                _Pmpf(("  hifQueryObjectHotkeys returned 0x%lX, %d items",
+                        pHotkeys, cHotkeys));
+            #endif
+
+            if (pHotkeys)
             {
-                // "delete hotkey" mode:
-                if (pHotkeyThis)
+                // hotkeys list exists:
+
+                PGLOBALHOTKEY pHotkeyThis = NULL;
+
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("  Checking for existence hobj 0x%lX", hobjSelf));
+                #endif
+                // check if we have a hotkey for this object already
+                pHotkeyThis = objFindHotkey(pHotkeys,
+                                            cHotkeys,
+                                            hobjSelf);
+
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("  objFindHotkey returned PGLOBALHOTKEY 0x%lX", pHotkeyThis));
+                #endif
+
+                // what does the caller want?
+                if ((usFlags == 0) && (usKeyCode == 0))
                 {
-                    // found (already exists): delete
-                    // by copying the following item(s)
-                    // in the array over the current one
-                    ULONG   ulpofs = 0,
-                            uliofs = 0;
-                    ulpofs = ((PBYTE)pHotkeyThis - (PBYTE)pHotkeys);
-
                     #ifdef DEBUG_KEYS
-                        _Pmpf(("  pHotkeyThis - pHotkeys: 0x%lX", ulpofs));
+                        _Pmpf(("  'delete hotkey' mode:"));
                     #endif
 
-                    uliofs = (ulpofs / sizeof(GLOBALHOTKEY));
-                                // 0 for first, 1 for second, ...
-
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("  Deleting existing hotkey @ ofs %d", uliofs));
-                    #endif
-
-                    if (uliofs < (cHotkeys - 1))
+                    // "delete hotkey" mode:
+                    if (pHotkeyThis)
                     {
-                        ULONG cb = (cHotkeys - uliofs - 1) * sizeof(GLOBALHOTKEY);
+                        // found (already exists): delete
+                        // by copying the following item(s)
+                        // in the array over the current one
+                        ULONG   ulpofs = 0,
+                                uliofs = 0;
+                        ulpofs = ((PBYTE)pHotkeyThis - (PBYTE)pHotkeys);
 
                         #ifdef DEBUG_KEYS
-                            _Pmpf(("  Copying 0x%lX to 0x%lX, %d bytes (%d per item)",
-                                    pHotkeyThis + 1, pHotkeyThis,
-                                    cb, sizeof(GLOBALHOTKEY)));
+                            _Pmpf(("  pHotkeyThis - pHotkeys: 0x%lX", ulpofs));
                         #endif
 
-                        // not last item:
-                        memcpy(pHotkeyThis,
-                               pHotkeyThis + 1,
-                               cb);
-                    }
+                        uliofs = (ulpofs / sizeof(GLOBALHOTKEY));
+                                    // 0 for first, 1 for second, ...
 
-                    brc = hifSetObjectHotkeys(pHotkeys, cHotkeys-1);
-                }
-                // else: does not exist, so it can't be deleted either
-            }
-            else
-            {
-                // "set hotkey" mode:
-                if (pHotkeyThis)
-                {
-                    // found (already exists): overwrite
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("  Overwriting existing hotkey"));
-                    #endif
+                        #ifdef DEBUG_KEYS
+                            _Pmpf(("  Deleting existing hotkey @ ofs %d", uliofs));
+                        #endif
 
-                    if (    (pHotkeyThis->usFlags != usFlags)
-                         || (pHotkeyThis->usKeyCode != usKeyCode)
-                       )
-                    {
-                        pHotkeyThis->usFlags = usFlags;
-                        pHotkeyThis->ucScanCode = ucScanCode;
-                        pHotkeyThis->usKeyCode = usKeyCode;
-                        pHotkeyThis->ulHandle = hobjSelf;
-                        // set new objects list, which is the modified old list
-                        brc = hifSetObjectHotkeys(pHotkeys, cHotkeys);
+                        if (uliofs < (cHotkeys - 1))
+                        {
+                            ULONG cb = (cHotkeys - uliofs - 1) * sizeof(GLOBALHOTKEY);
+
+                            #ifdef DEBUG_KEYS
+                                _Pmpf(("  Copying 0x%lX to 0x%lX, %d bytes (%d per item)",
+                                        pHotkeyThis + 1, pHotkeyThis,
+                                        cb, sizeof(GLOBALHOTKEY)));
+                            #endif
+
+                            // not last item:
+                            memcpy(pHotkeyThis,
+                                   pHotkeyThis + 1,
+                                   cb);
+                        }
+
+                        brc = hifSetObjectHotkeys(pHotkeys, cHotkeys-1);
                     }
+                    // else: does not exist, so it can't be deleted either
                 }
                 else
                 {
-                    // not found: append new item after copying
-                    // the entire list
-                    PGLOBALHOTKEY pHotkeysNew = (PGLOBALHOTKEY)malloc(sizeof(GLOBALHOTKEY)
-                                                                        * (cHotkeys+1));
+                    // "set hotkey" mode:
+
                     #ifdef DEBUG_KEYS
-                        _Pmpf(("  Appending new hotkey"));
+                        _Pmpf(("  'set hotkey' mode:"));
                     #endif
 
-                    if (pHotkeysNew)
+                    if (pHotkeyThis)
                     {
-                        PGLOBALHOTKEY pNewItem = pHotkeysNew + cHotkeys;
-                        // copy old array
-                        memcpy(pHotkeysNew, pHotkeys, sizeof(GLOBALHOTKEY) * cHotkeys);
-                        // append new item
-                        pNewItem->usFlags = usFlags;
-                        pNewItem->ucScanCode = ucScanCode;
-                        pNewItem->usKeyCode = usKeyCode;
-                        pNewItem->ulHandle = hobjSelf;
-                        brc = hifSetObjectHotkeys(pHotkeysNew, cHotkeys+1);
-                        free(pHotkeysNew);
+                        // found (already exists): overwrite
+                        #ifdef DEBUG_KEYS
+                            _Pmpf(("  Overwriting existing hotkey"));
+                        #endif
+
+                        if (    (pHotkeyThis->usFlags != usFlags)
+                             || (pHotkeyThis->usKeyCode != usKeyCode)
+                             || (pHotkeyThis->ucScanCode != ucScanCode)
+                           )
+                        {
+                            pHotkeyThis->usFlags = usFlags;
+                            pHotkeyThis->ucScanCode = ucScanCode;
+                            pHotkeyThis->usKeyCode = usKeyCode;
+                            pHotkeyThis->ulHandle = hobjSelf;
+                            // set new objects list, which is the modified old list
+                            brc = hifSetObjectHotkeys(pHotkeys, cHotkeys);
+                        }
+                    }
+                    else
+                    {
+                        // not found: append new item after copying
+                        // the entire list
+                        PGLOBALHOTKEY pHotkeysNew = (PGLOBALHOTKEY)malloc(sizeof(GLOBALHOTKEY)
+                                                                            * (cHotkeys+1));
+                        #ifdef DEBUG_KEYS
+                            _Pmpf(("  Appending new hotkey"));
+                        #endif
+
+                        if (pHotkeysNew)
+                        {
+                            PGLOBALHOTKEY pNewItem = pHotkeysNew + cHotkeys;
+                            // copy old array
+                            memcpy(pHotkeysNew, pHotkeys, sizeof(GLOBALHOTKEY) * cHotkeys);
+                            // append new item
+                            pNewItem->usFlags = usFlags;
+                            pNewItem->ucScanCode = ucScanCode;
+                            pNewItem->usKeyCode = usKeyCode;
+                            pNewItem->ulHandle = hobjSelf;
+                            brc = hifSetObjectHotkeys(pHotkeysNew, cHotkeys+1);
+                            free(pHotkeysNew);
+                        }
                     }
                 }
-            }
 
-            hifFreeObjectHotkeys(pHotkeys);
-        }
-        else
-        {
-            // hotkey list doesn't exist yet:
-            if ((usFlags != 0) && (usKeyCode != 0))
+                hifFreeObjectHotkeys(pHotkeys);
+            } // end if (pHotkeys)
+            else
             {
-                // "set hotkey" mode:
-                GLOBALHOTKEY HotkeyNew;
+                // hotkey list doesn't exist yet:
+                if ((usFlags != 0) && (usKeyCode != 0))
+                {
+                    // "set hotkey" mode:
+                    GLOBALHOTKEY HotkeyNew = {0};
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  Creating single new hotkey"));
-                #endif
+                    #ifdef DEBUG_KEYS
+                        _Pmpf(("  Creating single new hotkey"));
+                    #endif
 
-                HotkeyNew.usFlags = usFlags;
-                HotkeyNew.usKeyCode = usKeyCode;
-                HotkeyNew.ulHandle = hobjSelf;
-                brc = hifSetObjectHotkeys(&HotkeyNew,
-                                          1);     // one item only
+                    HotkeyNew.usFlags = usFlags;
+                    HotkeyNew.ucScanCode = ucScanCode; // V0.9.5 (2000-08-20) [umoeller]
+                    HotkeyNew.usKeyCode = usKeyCode;
+                    HotkeyNew.ulHandle = hobjSelf;
+                    brc = hifSetObjectHotkeys(&HotkeyNew,
+                                              1);     // one item only
+                }
+                // else "delete hotkey" mode: do nothing
             }
-            // else "delete hotkey" mode: do nothing
         }
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
+        CATCH(excpt1)
+        {
+        } END_CATCH();
 
-    if (brc)
-        // updated: update the "Hotkeys" settings page
-        // in XWPKeyboard, if it's open
-        ntbUpdateVisiblePage(NULL,      // any somSelf
-                             SP_KEYB_OBJHOTKEYS);
+        if (brc)
+            // updated: update the "Hotkeys" settings page
+            // in XWPKeyboard, if it's open
+            ntbUpdateVisiblePage(NULL,      // any somSelf
+                                 SP_KEYB_OBJHOTKEYS);
+    } // end if (hobjSelf)
 
     #ifdef DEBUG_KEYS
         _Pmpf(("Leaving xwpSetObjectHotkey"));
@@ -1506,6 +1568,7 @@ VOID CheckStyle(PSZ *ppsz,       // in: string for xstrcat
  *
  *@@added V0.9.1 (2000-01-16) [umoeller]
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added NOCOPY, NODELETE etc.
+ *@@changed V0.9.5 (2000-08-26) [umoeller]: added DEFAULTVIEW=RUNNING; fixed class default view
  */
 
 ULONG objQuerySetup(WPObject *somSelf,
@@ -1545,9 +1608,13 @@ ULONG objQuerySetup(WPObject *somSelf,
 
     // DEFAULTVIEW
     if (_pWPObjectData)
+    {
+        ULONG ulClassDefaultView = _wpclsQueryDefaultView(_somGetClass(somSelf));
+
         if (    (_pWPObjectData->lDefaultView != 0x67)      // default view for folders
              && (_pWPObjectData->lDefaultView != 0x1000)    // default view for data files
              && (_pWPObjectData->lDefaultView != -1)        // OPEN_DEFAULT
+             && (_pWPObjectData->lDefaultView != ulClassDefaultView) // OPEN_DEFAULT
            )
         {
             switch (_pWPObjectData->lDefaultView)
@@ -1568,6 +1635,10 @@ ULONG objQuerySetup(WPObject *somSelf,
                     xstrcat(&pszTemp, "DEFAULTVIEW=DETAILS;");
                 break;
 
+                case OPEN_RUNNING:
+                    xstrcat(&pszTemp, "DEFAULTVIEW=RUNNING;");
+                break;
+
                 case OPEN_DEFAULT:
                     // ignore
                 break;
@@ -1581,6 +1652,7 @@ ULONG objQuerySetup(WPObject *somSelf,
                 break; }
             }
         }
+    }
 
     // HELPLIBRARY
 

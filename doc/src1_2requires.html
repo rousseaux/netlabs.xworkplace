@@ -9,9 +9,9 @@ Required Tools
 
 <UL><LI><B>Compiler.</B> With V0.80, I have switched to IBM VisualAge C++ 3.0
 to develop XWorkplace.
-I have not adjusted the code to work with EMX/GCC yet. We did this for the
-WarpIN sources, and this is turns out to be a constant hassle. If you care
-to make the code work with EMX, go ahead...
+I have not adjusted the code to work with EMX/GCC or Watcom. We did this for the
+WarpIN sources and EMX, and this is turns out to be a constant hassle. If you care
+to make the code work other compilers, go ahead...
 <P>For VAC++ 3.0, <B>fixpak 8</B> is strongly recommended, because the original crashes
 frequently with the complex SOM header files.
 <P>I'm not perfectly sure whether I'm using IBM-specific language extensions.
@@ -29,16 +29,21 @@ EMX, you'll need the toolkit headers).
 <P>The Warp 3 toolkit is sufficient. XWorkplace does some tricks for Warp 4 too,
 but does it even though I don't have the Warp 4 toolkit. <CODE>;-)</CODE>
 
+<P><LI>IBM NMAKE is our make utily.
+NMAKE comes with the IBM compilers and is now also publicly
+available with the IBM Device Driver Development Kit (DDK),
+available from <A HREF="http://service.boulder.ibm.com/ddk/">http://service.boulder.ibm.com/ddk/</A>.
+It's behind the "Build tools ZIP file" button (tools.zip).
+You will need to register first, but other than that, the
+thing is free.
+
 <P><LI>You need the <B>WarpIN source code</B> also because XWorkplace uses a lot
 of shared code from that package as well. There's no way to compile without that
 code, so download the most current WarpIN source package as well (or check it out
 from the CVS tree).
 
-<P><LI>All the .C files have lots of debugging code which can conditionally be
-compiled using certain #define's in <CODE>include\setup.h</CODE>. That file
-is <CODE>#include</CODE>'d from all XWorkplace source files.
-<P>All that debugging code is only enabled if you set the XWPDEBUG environment
-variable when building XWorkplace. Only if you enable the debugging code,
+<P><LI>If you enable debugging code by setting the XWPDEBUG environment
+variable,
 you need the full <B>PMPRINTF package by Dennis Bareis.</B>
 <P>
 Check the <A HREF="src1_880debug.html">"Debugging"</A> section for details.

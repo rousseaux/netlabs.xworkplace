@@ -54,7 +54,7 @@ interface XWPTrashObject : WPTransient
                                   in ULONG ulNewSize,
                                   in XWPTrashCan pTrashCan);
     ULONG xwpQueryRelatedSize();
-    APIRET xwpValidateTrashObject();
+    ULONG xwpValidateTrashObject();
     BOOL xwpRestoreFromTrashCan(in WPFolder pTargetFolder);
 
 #ifdef __SOMIDL__

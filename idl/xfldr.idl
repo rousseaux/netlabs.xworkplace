@@ -363,17 +363,6 @@ interface XFolder : WPFolder
     wpRestoreString: override;
     wpRestoreData: override;
 
-    wpAddObjectGeneralPage2: override;
-
-    wpAddFile1Page: override;
-    wpAddFile2Page: override;
-    wpAddFile3Page: override;
-
-    wpAddFolderBackgroundPage: override;
-    wpAddFolderSortPage: override;
-
-    wpAddSettingsPages: override;
-
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
@@ -385,6 +374,17 @@ interface XFolder : WPFolder
     wpOpen: override;
     wpPopulate: override;
     wpRefresh: override;
+
+    wpAddObjectGeneralPage2: override;
+
+    wpAddFile1Page: override;
+    wpAddFile2Page: override;
+    wpAddFile3Page: override;
+
+    wpAddFolderBackgroundPage: override;
+    wpAddFolderSortPage: override;
+
+    wpAddSettingsPages: override;
 
     wpSetFldrFlags: override;
     wpQueryFldrFlags: override;

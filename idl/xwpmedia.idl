@@ -47,6 +47,8 @@ interface XWPMedia : WPAbstract
 #ifdef __SOMIDL__
   implementation {
 
+    releaseorder: xwpAddXWPMediaPages;
+
     /*
      * Class Modifiers:
      *

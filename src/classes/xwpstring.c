@@ -531,7 +531,7 @@ SOM_Scope void  SOMLINK xwstr_wpInitData(XWPString *somSelf)
     _pszSetupString = NULL;
     _hobjStatic = NULLHANDLE;
     _fConfirm = TRUE;
-    _ptiSetupThread = NULL;
+    _pvSetupThread = NULL;
 }
 
 /*
@@ -554,6 +554,12 @@ SOM_Scope void  SOMLINK xwstr_wpUnInitData(XWPString *somSelf)
     {
         free(_pszSetupString);
         _pszSetupString = NULL;
+    }
+
+    if (_pvSetupThread)
+    {
+        free(_pvSetupThread);
+        _pvSetupThread = NULL;
     }
 
     XWPString_parent_WPAbstract_wpUnInitData(somSelf);
@@ -824,15 +830,20 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf, HWND hwndCnr,
         BOOL brc = FALSE;
         if ((_hobjStatic) && (_pszSetupString))
         {
-            if (!thrQueryID(_ptiSetupThread))
-            {
-                thrCreate((PTHREADINFO*)(&_ptiSetupThread),
-                          xwstrfntSetupThread,
-                          NULL, // running flag
-                          THRF_PMMSGQUEUE,
-                          (ULONG)somSelf);
-                brc = TRUE;
-            }
+            if (_pvSetupThread == 0)
+                // first call: allocate memory
+                _pvSetupThread = malloc(sizeof(THREADINFO));
+
+            if (_pvSetupThread)
+                if (!thrQueryID((PTHREADINFO)_pvSetupThread))
+                {
+                    thrCreate((PTHREADINFO)_pvSetupThread,
+                              xwstrfntSetupThread,
+                              NULL, // running flag
+                              THRF_PMMSGQUEUE,
+                              (ULONG)somSelf);
+                    brc = TRUE;
+                }
         }
 
         if (!brc)

@@ -51,7 +51,6 @@
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
-#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
@@ -195,10 +194,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             CHAR            szVolumeLabel[20];
 
             // get thousands separator from "Country" object
-            CHAR            cThousands = prfhQueryProfileChar(HINI_USER,
-                                                              "PM_National",
-                                                              "sThousand",
-                                                              '.');
+            CHAR            cThousands = cmnQueryThousandsSeparator();
 
             if (doshQueryDiskLabel(ulLogicalDrive, &szVolumeLabel[0])
                     == NO_ERROR)

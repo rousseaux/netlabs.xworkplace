@@ -1767,9 +1767,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
             }
         }
 
-        if (   (fMouseMoved)            // has mouse really moved?
-            && (G_HookData.HookConfig.fSlidingFocus)  // sliding focus enabled?
-           )
+        if (fMouseMoved)            // has mouse really moved?
         {
             // OK:
             HWND    hwndDesktopChild = hwnd,
@@ -2127,6 +2125,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
  *      Based on code from WarpEnhancer, (C) Achim Hasenmller.
  *
  *@@added V0.9.1 (99-12-03) [umoeller]
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
  */
 
 VOID WMMouseMove_AutoHideMouse(VOID)
@@ -2149,11 +2148,12 @@ VOID WMMouseMove_AutoHideMouse(VOID)
     }
 
     // (re)start timer
-    G_HookData.idAutoHideTimer =
-        WinStartTimer(G_HookData.habDaemonObject,
-                      G_HookData.hwndDaemonObject,
-                      TIMERID_AUTOHIDEMOUSE,
-                      (G_HookData.HookConfig.ulAutoHideDelay + 1) * 1000);
+    if (G_HookData.HookConfig.fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
+        G_HookData.idAutoHideTimer =
+            WinStartTimer(G_HookData.habDaemonObject,
+                          G_HookData.hwndDaemonObject,
+                          TIMERID_AUTOHIDEMOUSE,
+                          (G_HookData.HookConfig.ulAutoHideDelay + 1) * 1000);
 }
 
 /*
@@ -2162,6 +2162,8 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *@@added V0.9.3 (2000-04-30) [umoeller]
  *@@changed V0.9.3 (2000-04-30) [umoeller]: pointer was hidden while MB3-dragging; fixed
  *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed sliding menus without mouse moving
+ *@@changed V0.9.5 (2000-08-22) [umoeller]: sliding focus was always on, working half way; fixed
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
  */
 
 BOOL WMMouseMove(PQMSG pqmsg)
@@ -2242,9 +2244,14 @@ BOOL WMMouseMove(PQMSG pqmsg)
                  *
                  */
 
-                WMMouseMove_SlidingFocus(pqmsg->hwnd,
-                                         fGlobalMouseMoved,
-                                         szClassUnderMouse);
+                if (G_HookData.HookConfig.fSlidingFocus)
+                {
+                    // sliding focus enabled?
+                    // V0.9.5 (2000-08-22) [umoeller]
+                    WMMouseMove_SlidingFocus(pqmsg->hwnd,
+                                             fGlobalMouseMoved,
+                                             szClassUnderMouse);
+                }
 
                 if (fGlobalMouseMoved)
                 {
@@ -2341,7 +2348,8 @@ BOOL WMMouseMove(PQMSG pqmsg)
          *
          */
 
-        if (G_HookData.HookConfig.fAutoHideMouse)
+        // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
+        // if (G_HookData.HookConfig.fAutoHideMouse)
             WMMouseMove_AutoHideMouse();
     }
 

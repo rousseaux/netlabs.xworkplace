@@ -116,7 +116,7 @@
             // #define DEBUG_LANGCODES
 
         // the following will printf folder/global hotkey info
-            // #define DEBUG_KEYS
+            #define DEBUG_KEYS
 
         // the following displays XWorkplace memory usage in the
         // "Object internals" of the Desktop settings; this

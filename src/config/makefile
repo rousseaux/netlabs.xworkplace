@@ -48,6 +48,7 @@ OUTPUTDIR = ..\..\bin
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
+# If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(OUTPUTDIR)\cfgsys.obj \
        $(OUTPUTDIR)\classlst.obj \
        $(OUTPUTDIR)\drivdlgs.obj \
@@ -63,6 +64,7 @@ OBJS = $(OUTPUTDIR)\cfgsys.obj \
 # Otherwise, we call the main makefile, which will again call ourselves later.
 all:   \
 !ifndef MAINMAKERUNNING
+# we're not being called from main makefile: start main makefile
     callmainmake
     @echo ----- Leaving $(MAKEDIR)
 !else
@@ -93,6 +95,7 @@ callmainmake:
 .c.{$(OUTPUTDIR)}.obj:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
+# precompiled headers disabled:
         $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
         $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c

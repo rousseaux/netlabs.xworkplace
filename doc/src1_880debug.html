@@ -38,15 +38,6 @@ recommend using this utility.
 strange double brackets, which are needed because macros don't accept
 variable parameter lists otherwise.
 
-<P><B>IMPORTANT NOTE:</B> If you #define any of the flags at the top of
-<CODE>include\setup.h</CODE>, <B>you must have the PMPRINTF DLLs somewhere on your
-LIBPATH,</B> or otherwise you'll spend days figuring out why XWorkplace is
-simply not working any more. (I had this recently after a reinstall
-of OS/2, after which the DLLs where gone.) That is, XWorkplace classes
-will not load at WPS startup, because the PMPRINTF imports cannot be
-resolved. Neither will registering XWorkplace classes succeed. And don't
-expect to get an error message other than FALSE. <CODE>:-(</CODE>
-
 <BR>
 </BODY>
 </HTML>

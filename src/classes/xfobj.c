@@ -208,7 +208,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
  *      XFldObject::xwpQueryDeletion.
  *
  *      If (fSet == TRUE),the object is assumed to have been moved to the
- *      invisble TRASH directory on the object's drive already.
+ *      invisible TRASH directory on the object's drive already.
  *
  *      The object's internal fields for deletion date and time will
  *      then be set to the current system date and time, and
@@ -415,7 +415,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *          idea that XFldObject is actually a parent class of all
  *          other WPS classes. You must manually resolve the SOM
  *          method pointer for the parent class of your class using
- *          wpshResolveForParent.
+ *          wpshResolveForParent. See the code sample below.
  *
  *      2.  You must call the parent method _after_ your implementation
  *          to make sure XFldObject gets called last, because the OBJECTID
@@ -798,6 +798,8 @@ SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
  *      This gets called before wpModifyPopupMenu.
  *
  *      We remove default entries according to global settings.
+ *
+ *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
  */
 
 SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
@@ -822,7 +824,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
     // if object has been deleted already (ie. is in trashcan),
     // remove delete
     if (_fDeleted)
-        ulMenuFilter &~ CTXT_DELETE;
+        ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
     // now suppress default menu items according to
     // Global Settings;
@@ -834,7 +836,9 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
             // first we add "Create another", because for
             // some reason it's always disabled if XFolder
             // is installed; I don't know why
-            | CTXT_CRANOTHER )
+            // V0.9.5 (2000-09-20) [pr] No it's not. This causes problems
+            // with objects wrongly having Create Another options.
+            /*| CTXT_CRANOTHER*/ ) // V0.9.5 (2000-09-20) [pr]
             // then disable items, this may include CTXT_CRANOTHER
             & ~(pGlobalSettings->DefaultMenuItems)
         );
