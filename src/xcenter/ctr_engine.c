@@ -846,8 +846,8 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                                         // we use WinGetPS in here
 {
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
-    HPS hps;
-
+    HPS     hps;
+    BOOL    fFree = FALSE;
     if (hpsPre)
         // presentation space given: use that
         hps = hpsPre;
@@ -856,6 +856,7 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
         // no presentation space given: get one
         hps = WinGetPS(pGlobals->hwndClient);
         gpihSwitchToRGB(hps);
+        fFree = TRUE;
     }
 
     if (hps)
@@ -930,6 +931,10 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                     WinReleasePS(hps);
             }
         }
+
+        if (fFree)
+            // allocated here:
+            WinReleasePS(hps);
     }
 }
 
