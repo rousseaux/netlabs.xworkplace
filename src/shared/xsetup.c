@@ -43,6 +43,7 @@
 #define INCL_DOSMODULEMGR
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
@@ -53,6 +54,10 @@
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
+#define INCL_WINSYS
+
+#define INCL_GPILOGCOLORTABLE
+#define INCL_GPIBITMAPS
 #include <os2.h>
 
 // C library headers
@@ -1194,15 +1199,145 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup "Features" page notebook callbacks (notebook.c)       *
- *                                                                  *
+ *
+ *   XWPSetup "Logo" page notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
+
+/*
+ *@@ XWPSETUPLOGODATA:
+ *      window data structure for XWPSetup "Logo" page.
+ *
+ *@@added V0.9.6 (2000-11-04) [umoeller]
+ */
+
+typedef struct _XWPSETUPLOGODATA
+{
+    HBITMAP     hbmLogo;
+    SIZEL       szlLogo;
+} XWPSETUPLOGODATA, *PXWPSETUPLOGODATA;
+
+/*
+ *@@ setLogoInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      XWPSetup "Logo" page.
+ *      Sets the controls on the page according to the
+ *      Global Settings.
+ *
+ *@@added V0.9.6 (2000-11-04) [umoeller]
+ */
+
+VOID setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                     ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        HPS hpsTemp = WinGetPS(pcnbp->hwndDlgPage);
+        if (hpsTemp)
+        {
+            PXWPSETUPLOGODATA pLogoData = malloc(sizeof(XWPSETUPLOGODATA));
+            if (pLogoData)
+            {
+                memset(pLogoData, 0, sizeof(XWPSETUPLOGODATA));
+                pcnbp->pUser = pLogoData;
+
+                pLogoData->hbmLogo = GpiLoadBitmap(hpsTemp,
+                                                   cmnQueryMainModuleHandle(),
+                                                   ID_XWPBIGLOGO,
+                                                   0, 0);   // no stretch;
+                if (pLogoData->hbmLogo)
+                {
+                    BITMAPINFOHEADER2 bmih2;
+                    bmih2.cbFix = sizeof(bmih2);
+                    if (GpiQueryBitmapInfoHeader(pLogoData->hbmLogo, &bmih2))
+                    {
+                        pLogoData->szlLogo.cx = bmih2.cx;
+                        pLogoData->szlLogo.cy = bmih2.cy;
+                    }
+                }
+
+                WinReleasePS(hpsTemp);
+            }
+        }
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pcnbp->pUser;
+        if (pLogoData)
+        {
+            GpiDeleteBitmap(pLogoData->hbmLogo);
+        }
+        // pLogoData is freed automatically
+    }
+}
+
+/*
+ *@@ setFeaturesMessages:
+ *      notebook callback function (notebook.c) for the
+ *      XWPSetup "Logo" page.
+ *      This gets really all the messages from the dlg.
+ *
+ *@@added V0.9.6 (2000-11-04) [umoeller]
+ */
+
+BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
+                     ULONG msg, MPARAM mp1, MPARAM mp2,
+                     MRESULT *pmrc)
+{
+    BOOL    brc = FALSE;
+
+    switch (msg)
+    {
+        case WM_PAINT:
+        {
+            PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pcnbp->pUser;
+            RECTL   rclDlg,
+                    rclPaint;
+            HPS     hps = WinBeginPaint(pcnbp->hwndDlgPage,
+                                        NULLHANDLE,
+                                        &rclPaint);
+            // switch to RGB
+            GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
+            WinFillRect(hps,
+                        &rclPaint,
+                        0x00CCCCCC); // 204, 204, 204 -> light gray; that's in the bitmap,
+                                     // and it's also the SYSCLR_DIALOGBACKGROUND,
+                                     // but just in case the user changed it...
+            WinQueryWindowRect(pcnbp->hwndDlgPage,
+                               &rclDlg);
+            if (pLogoData)
+            {
+                POINTL ptl;
+                // center bitmap:
+                ptl.x       =   ((rclDlg.xRight - rclDlg.xLeft)
+                                  - pLogoData->szlLogo.cx) / 2;
+                ptl.y       =   ((rclDlg.yTop - rclDlg.yBottom)
+                                  - pLogoData->szlLogo.cy) / 2;
+                WinDrawBitmap(hps,
+                              pLogoData->hbmLogo,
+                              NULL,
+                              &ptl,
+                              0, 0, DBM_NORMAL);
+            }
+            WinReleasePS(hps);
+            brc = TRUE;
+        break; }
+    }
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   XWPSetup "Features" page notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*
  *@@ setFeaturesInitPage:
  *      notebook callback function (notebook.c) for the
- *      XWPSetup "File Operations" page.
+ *      XWPSetup "Features" page.
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
@@ -1457,7 +1592,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 /*
  *@@ setFeaturesChanged:
  *      notebook callback function (notebook.c) for the
- *      XWPSetup "File Operations" page.
+ *      XWPSetup "Features" page.
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: added global hotkeys flag
@@ -1800,7 +1935,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 /*
  *@@ setFeaturesMessages:
  *      notebook callback function (notebook.c) for the
- *      XWPSetup "File Operations" page.
+ *      XWPSetup "Features" page.
  *      This gets really all the messages from the dlg.
  *
  *@@added V0.9.1 (99-11-30) [umoeller]

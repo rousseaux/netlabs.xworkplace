@@ -35,6 +35,13 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
+        VOID setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                             ULONG flFlags);
+
+        BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
+                             ULONG msg, MPARAM mp1, MPARAM mp2,
+                             MRESULT *pmrc);
+
         VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG flFlags);
 

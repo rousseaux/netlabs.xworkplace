@@ -929,6 +929,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
  *@@changed V0.9.3 (2000-04-08) [umoeller]: added cnr error return code check
  *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
  *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrrpl
+ *@@changed V0.9.6 (2000-10-30) [pr]: fixed container item counts
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -964,16 +965,20 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
     XSTRING     strText;
 
-    CNRINFO     CnrInfo;
+    // CNRINFO     CnrInfo;
     PMINIRECORDCORE pmrcSelected, pmrc2;
     ULONG       ulSelectedCount = 0,
                 ulSizeSelected = 0,
-                ulSizeTotal = 0;
+                ulSizeTotal = 0,
+                ulCount = 0;
+    USHORT      cmd;
     WPObject    *pObject = NULL,
                 *pObject2 = NULL;
     PSZ         p;
     CHAR        *p2;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    PRECORDCORE pRecCore;
 
     // get thousands separator from "Country" object
     CHAR        cThousands = cmnQueryThousandsSeparator(),
@@ -1077,10 +1082,26 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     }
 
     // query total object count (CnrInfo.cRecords)
-    WinSendMsg(hwndCnr,
+    /* WinSendMsg(hwndCnr,
                CM_QUERYCNRINFO,
                (MPARAM)(&CnrInfo),
-               (MPARAM)(sizeof(CnrInfo)));
+               (MPARAM)(sizeof(CnrInfo))); */
+     // query total visible object count
+     // V0.9.6 (2000-10-30) [pr]
+     for (pRecCore = NULL, cmd = CMA_FIRST;
+          ;
+          cmd = CMA_NEXT)
+     {
+         pRecCore = WinSendMsg(hwndCnr,
+                               CM_QUERYRECORD,
+                               (MPARAM) pRecCore,
+                               MPFROM2SHORT(cmd, CMA_ITEMORDER));
+         if (pRecCore == NULL || (ULONG) pRecCore == -1)
+             break;
+
+         if (!(pRecCore->flRecordAttr & CRA_FILTERED))
+             ulCount++;
+     }
 
     // if we have a "total size" query, also sum up the size of
     // the whole folder into ulSizeTotal, which will be handled
@@ -1112,19 +1133,19 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         } while (pmrc2);
 
         #ifdef DEBUG_STATUSBARS
-            _Pmpf(("  Result: %d", ulSizeTotal));
+            _Pmpf(("  Result: %u", ulSizeTotal));
         #endif
     }
 
     if (p = strstr(strText.psz, "\tc")) // selected objs count
     {
-        sprintf(szTemp, "%d", ulSelectedCount);
+        sprintf(szTemp, "%u", ulSelectedCount);
         xstrcrpl(&strText, 0, "\tc", szTemp, 0);
     }
 
     if (p = strstr(strText.psz, "\tC")) // total obj count
     {
-        sprintf(szTemp, "%d", CnrInfo.cRecords);
+        sprintf(szTemp, "%u", ulCount);
         xstrcrpl(&strText, 0, "\tC", szTemp, 0);
     }
 
@@ -1232,13 +1253,22 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         xstrcrpl(&strText, 0, "\tSM", szTemp, 0);
     }
 
-    // now translate remaining '\t' characters back into
-    // '$' characters; this might happen if the user actually
-    // wanted to see a '$' character displayed
-    while (p2 = strchr(strText.psz, '\t'))
-        *p2 = '$';
+    if (strText.ulLength)
+    {
+        // we have something:
 
-    return (strText.psz);
+        // now translate remaining '\t' characters back into
+        // '$' characters; this might happen if the user actually
+        // wanted to see a '$' character displayed
+        while (p2 = strchr(strText.psz, '\t'))
+            *p2 = '$';
+
+        return (strText.psz);
+    }
+
+    // else:
+    xstrClear(&strText);
+    return (NULL);
 }
 
 /* ******************************************************************

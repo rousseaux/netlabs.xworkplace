@@ -108,7 +108,8 @@ PageMage:
     -- mb2 can move desktop
     -- window creation/destroy/activation not recognized sometimes
     >I'm using xworkplace 0.95 and find that the os/2 enhanced
-    >editor, EPM, acts as a sticky app in PageMage, even
+    >editor, EPM, acts as a sticky app in PageMage
+    -- current desktop is sometimes out of bounds at startup -- limit checks
 
 hook:
     >there is a little bug with the settings notebook of the mouse - movement 2.

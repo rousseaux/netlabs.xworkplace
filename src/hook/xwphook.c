@@ -497,80 +497,42 @@ VOID HiliteMenuItem(HWND hwndMenu,
  *@@ SelectMenuItem:
  *      this gets called to implement the "sliding menu" feature.
  *
- *      Based on code from ProgramCommander (C) Roman Stangl.
- *
  *@@added V0.9.2 (2000-02-26) [umoeller]
+ *@@changed V0.9.6 (2000-10-29) [pr]: fixed submenu behavior
  */
 
 VOID SelectMenuItem(HWND hwndMenu,
                     SHORT sItemIndex)
 {
     MENUITEM    menuitemCurrent;
+    USHORT      usSelItem;
 
     // query the current menuentry's menuitem structure
     if (WinSendMsg(hwndMenu,
                    MM_QUERYITEM,
-                   MPFROM2SHORT(sItemIndex,
-                                FALSE),
+                   MPFROM2SHORT(sItemIndex, FALSE),
                    MPFROMP(&menuitemCurrent)))
     {
-        SHORT   sItemIdentity;
-        HWND    hwndSubMenu;
+        // If it's a submenu and the item we are trying to select is
+        // already selected, then deselect it first - this prevents problems
+        // with multiple cascading menus.
+        if (menuitemCurrent.afStyle & MIS_SUBMENU)
+        {
+            usSelItem = (USHORT) WinSendMsg(hwndMenu,
+                                            MM_QUERYSELITEMID,
+                                            MPFROM2SHORT(0, FALSE),
+                                            MPVOID);
+            if (usSelItem == sItemIndex)
+                WinSendMsg(hwndMenu,
+                           MM_SELECTITEM,
+                           MPFROM2SHORT(MIT_NONE, FALSE),
+                           MPFROM2SHORT(0, FALSE));
+        }
 
-        // select the menuentry just below the mouse pointer. If the
-        // item is a submenu, then the first item is selected too
-        // (unfortunately!, which displays conditionally cascaded
-        // submenus and I found no way to prevent/undo this except
-        // for not selecting such submenus at all, which would be somewhat
-        // inconsistent for the user)
         WinSendMsg(hwndMenu,
                    MM_SELECTITEM,
-                   MPFROM2SHORT(sItemIndex,
-                                FALSE), // no search submenus
-                   MPFROM2SHORT(0,
-                                FALSE));
-
-        // if the menuentry is a submenu, then we may have to select
-        // the first menuentry of the submenu too
-        while (menuitemCurrent.afStyle & MIS_SUBMENU)
-        {
-            static ULONG ulQuerySuccess;
-            static HWND  hwndLastMenu = NULLHANDLE;
-
-            // get the identity of the first menuentry in the submenu;
-            // exit iteration if an error is returned (e.g. empty
-            // submenu)
-            hwndLastMenu = hwndSubMenu = menuitemCurrent.hwndSubMenu;
-
-            sItemIdentity  = (SHORT)WinSendMsg(hwndSubMenu,
-                                               MM_ITEMIDFROMPOSITION,
-                                               MPFROMSHORT(0),
-                                               NULL);
-            if (sItemIdentity == MIT_ERROR)
-                break;
-
-            // get the first menuentry of the current submenu, to
-            // again select its first menuentry recursively
-            ulQuerySuccess = (ULONG) WinSendMsg(hwndSubMenu,
-                                                MM_QUERYITEM,
-                                                MPFROM2SHORT(sItemIdentity,
-                                                             FALSE),
-                                                MPFROMP(&menuitemCurrent));
-            hwndLastMenu = menuitemCurrent.hwndSubMenu;
-
-            // select the submenu's first menuentry
-            WinSendMsg(hwndSubMenu,
-                       MM_SELECTITEM,
-                       MPFROM2SHORT(sItemIdentity,
-                                    FALSE),
-                       MPFROM2SHORT(0, FALSE));
-            // If the user selected that we should not recursively cascade
-            // further into submenus, then simply don't do that. Unfortunately
-            // sometimes 2 levels are selected, this is a unexplainable PM
-            // behaviour for me
-            // if ((!(HookParameters.ulStatusFlag2 & CASCADEMENU)) || (ulQuerySuccess == FALSE))
-                break;
-        }
+                   MPFROM2SHORT(sItemIndex, FALSE),
+                   MPFROM2SHORT(0, FALSE));
     }
 }
 

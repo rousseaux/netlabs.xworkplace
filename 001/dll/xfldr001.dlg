@@ -2473,23 +2473,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XCD_FEATURES LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XCD_FEATURES, 0, 0, 220, 142, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_XCDI_CONTAINER, 14, 42, 190, 86, CCS_SINGLESEL |
-                        WS_GROUP
-        GROUPBOX        "Global XWorkplace features", ID_XFDI_CNR_GROUPTITLE,
-                        6, 38, 205, 100, NOT WS_GROUP
-        PUSHBUTTON      "Setup ~XWorkplace classes...", ID_XCDI_SETUP, 5, 24,
-                        205, 12
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XFD_CONTAINERPAGE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XFD_CONTAINERPAGE, 0, 0, 254, 146, NOT FS_DLGBORDER |
@@ -2764,8 +2747,8 @@ BEGIN
                         CTLDATA 12, 0, 31, 0, 5, 0
         CTEXT           "Text", ID_XSDI_MOUSE_MENUDELAY_TXT2, 156, 58, 30,
                         12, DT_VCENTER | NOT WS_GROUP
-        AUTOCHECKBOX    "~Conditional cascade sensitivity", ID_XSDI_MOUSE_CONDCASCADE, 22, 50,
-                        164, 10
+        AUTOCHECKBOX    "~Conditional cascade sensitivity",
+                        ID_XSDI_MOUSE_CONDCASCADE, 22, 50, 164, 10
         AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22,
                         42, 164, 10
         PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
@@ -2782,5 +2765,29 @@ BEGIN
                         CTLDATA 12, 0, 60, 0, 1, 0
         CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 162, 20, 28, 12,
                         DT_VCENTER | DT_MNEMONIC
+    END
+END
+
+DLGTEMPLATE ID_XCD_FEATURES LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XCD_FEATURES, 0, 0, 220, 142, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_XCDI_CONTAINER, 14, 42, 190, 86, CCS_SINGLESEL |
+                        WS_GROUP
+        GROUPBOX        "Global XWorkplace features", ID_XFDI_CNR_GROUPTITLE,
+                        6, 38, 205, 100, NOT WS_GROUP
+        PUSHBUTTON      "Setup ~XWorkplace classes...", ID_XCDI_SETUP, 5, 24,
+                        205, 12
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
+        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XCD_FIRST LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XCD_FIRST, 0, 0, 220, 142, NOT FS_DLGBORDER | WS_VISIBLE
+    BEGIN
     END
 END

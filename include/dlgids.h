@@ -117,6 +117,8 @@
 
 #define ID_XFLDRBITMAP         130
 
+#define ID_XWPBIGLOGO          131
+
 /******************************************
  * generics                        < 100  *
  ******************************************/
@@ -461,6 +463,10 @@
 #define ID_XCD_FEATURES                 1120
 #define ID_XCDI_CONTAINER               1140
 #define ID_XCDI_SETUP                   1141
+
+// XWPSetup first page V0.9.6 (2000-11-04) [umoeller]
+#define ID_XCD_FIRST                    1150
+
 
 // XWPSetup "File operations" page (V0.9.0)
 // #define ID_XCD_FILEOPS                  1150

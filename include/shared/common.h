@@ -409,6 +409,7 @@
     #define SP_SETUP_FEATURES       31      // new with V0.9.0
     #define SP_SETUP_PARANOIA       32      // new with V0.9.0
     #define SP_SETUP_OBJECTS        33      // new with V0.9.0
+    #define SP_SETUP_XWPLOGO        34      // new with V0.9.6 (2000-11-04) [umoeller]
 
     // 4) "Sort" pages both in folder notebooks and
     //    "Workplace Shell"

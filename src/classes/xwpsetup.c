@@ -125,6 +125,8 @@ MPARAM G_ampFeaturesPage[] =
  *@@ xwpAddXWPSetupPages:
  *      this actually adds the new pages into the
  *      "XWorkplace Configuration" notebook.
+ *
+ *@@changed V0.9.6 (2000-11-04) [umoeller]: added logo on top
  */
 
 SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
@@ -203,6 +205,23 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->pfncbInitPage    = setFeaturesInitPage;
     pcnbp->pfncbItemChanged = setFeaturesItemChanged;
     pcnbp->pfncbMessage = setFeaturesMessages;
+    ntbInsertPage(pcnbp);
+
+    // insert logo page  V0.9.6 (2000-11-04) [umoeller]
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndDlg;
+    pcnbp->hmod = savehmod;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = "XWorkplace";
+    pcnbp->ulDlgID = ID_XCD_FIRST;
+    // pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
+    pcnbp->ulPageID = SP_SETUP_XWPLOGO;
+    // pcnbp->pampControlFlags = G_ampFeaturesPage;
+    // pcnbp->cControlFlags = sizeof(G_ampFeaturesPage) / sizeof(G_ampFeaturesPage[0]);
+    pcnbp->pfncbInitPage    = setLogoInitPage;
+    pcnbp->pfncbMessage = setLogoMessages;
 
     return (ntbInsertPage(pcnbp));
 }

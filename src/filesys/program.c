@@ -507,6 +507,7 @@ BOOL DisplayParamsPrompt(PXSTRING pstrParamsNew,
  *      pressed "Cancel".
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V0.9.6 (2000-11-04) [umoeller]: fixed null string search
  */
 
 BOOL progSetupArgs(const char *pcszParams,
@@ -526,18 +527,18 @@ BOOL progSetupArgs(const char *pcszParams,
 
     xstrInit(&strParamsNew, 200);
 
-    if (pcszParams)
+    // copy existing params into new buffer
+    // so we can search and replace;
+    // note that this is frequently ""
+    xstrcpy(&strParamsNew, pcszParams);
+
+    if (strParamsNew.ulLength) // fixed V0.9.6 (2000-11-04) [umoeller]
     {
         // program object has standard parameters:
-        // note that this is frequently ""
 
         PSZ     p = 0;
         BOOL    fFirstLoop = FALSE;
         CHAR    szTemp[CCHMAXPATH];
-
-        // copy existing params into new buffer
-        // so we can search and replace
-        xstrcpy(&strParamsNew, pcszParams);
 
         //  "%**P": drive and path information without the last backslash (\).
         fFirstLoop = TRUE;
