@@ -89,7 +89,7 @@
  ********************************************************************/
 
 // default font folder
-static XWPFontFolder *G_pDefaultFontFolder = NULL;
+// static XWPFontFolder *G_pDefaultFontFolder = NULL;
 
 /* ******************************************************************
  *
@@ -144,7 +144,7 @@ SOM_Scope BOOL  SOMLINK fon_xwpProcessObjectCommand(XWPFontFolder *somSelf,
                                                     WPObject* pFirstObject,
                                                     ULONG ulSelectionFlags)
 {
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpProcessObjectCommand");
 
     return (fonProcessObjectCommand(somSelf,
@@ -220,7 +220,7 @@ SOM_Scope void  SOMLINK fon_wpInitData(XWPFontFolder *somSelf)
 
 SOM_Scope void  SOMLINK fon_wpUnInitData(XWPFontFolder *somSelf)
 {
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpUnInitData");
 
     XWPFontFolder_parent_WPFolder_wpUnInitData(somSelf);
@@ -246,41 +246,6 @@ SOM_Scope BOOL  SOMLINK fon_wpQueryDefaultHelp(XWPFontFolder *somSelf,
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_FONTFOLDER;
     return (TRUE);
-}
-
-/*
- *@@ wpOpen:
- *      this WPObject instance method gets called when
- *      a new view needs to be opened. Normally, this
- *      gets called after wpViewObject has scanned the
- *      object's USEITEMs and has determined that a new
- *      view is needed.
- *
- *      This _normally_ runs on thread 1 of the WPS, but
- *      this is not always the case. If this gets called
- *      in response to a menu selection from the "Open"
- *      submenu or a double-click in the folder, this runs
- *      on the thread of the folder (which _normally_ is
- *      thread 1). However, if this results from WinOpenObject
- *      or an OPEN setup string, this will not be on thread 1.
- *
- *      We do the regular folder open first. After that,
- *      if icon, details, or tree view were opened, we call
- *      fonFillWithFonts to create all the instances of
- *      XWPFontObject in the font folder, but only on the
- *      first open.
- */
-
-SOM_Scope HWND  SOMLINK fon_wpOpen(XWPFontFolder *somSelf, HWND hwndCnr,
-                                   ULONG ulView, ULONG param)
-{
-    HWND hwndNew;
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
-    XWPFontFolderMethodDebug("XWPFontFolder","fon_wpOpen");
-
-    hwndNew = XWPFontFolder_parent_WPFolder_wpOpen(somSelf, hwndCnr,
-                                                   ulView, param);
-    return (hwndNew);
 }
 
 /*
@@ -382,7 +347,7 @@ SOM_Scope MRESULT  SOMLINK fon_wpDragOver(XWPFontFolder *somSelf,
                                           HWND hwndCnr,
                                           PDRAGINFO pdrgInfo)
 {
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpDragOver");
 
     return (fonDragOver(somSelf, pdrgInfo));
@@ -401,7 +366,7 @@ SOM_Scope MRESULT  SOMLINK fon_wpDrop(XWPFontFolder *somSelf,
                                       PDRAGINFO pdrgInfo,
                                       PDRAGITEM pdrgItem)
 {
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpDrop");
 
     return (fonDrop(somSelf, pdrgInfo));
@@ -421,7 +386,7 @@ SOM_Scope BOOL  SOMLINK fon_wpAddSettingsPages(XWPFontFolder *somSelf,
 {
     BOOL brc = FALSE;
 
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpAddSettingsPages");
 
     brc = XWPFontFolder_parent_WPFolder_wpAddSettingsPages(somSelf,

@@ -13,6 +13,8 @@ is, that the name of the key is language dependent.
 --  Win32 icon support (shell32\shell32_main.c in odin)
     user32\oslibres.cpp, OSLibWinCreatePointer
 
+--  "Create program object" menu item
+
 XCenter:
     -- XCenter run command: history log
     --  more options for winlist... button size, minimize behavior.

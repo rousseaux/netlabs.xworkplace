@@ -34,6 +34,9 @@ IMPORTS
     DOS16GETINFOSEG = DOSCALLS.8
 
 EXPORTS
+    apmhOpen
+    apmhReadStatus
+    apmhClose
     cfgQuerySwapperSize
     cmnGetString
     cmnQueryDefaultFont
@@ -59,6 +62,7 @@ EXPORTS
     drv_memicmp
     drv_sprintf
     drv_strtok
+    dskQueryInfo
     gpihBox
     gpihCreateBitmap
     gpihCreateMemPS
@@ -67,6 +71,7 @@ EXPORTS
     gpihDraw3DFrame
     gpihManipulateRGB
     gpihSwitchToRGB
+    krnQueryDaemonObject
     lstAppendItem
     lstClear
     lstCountItems
@@ -87,6 +92,8 @@ EXPORTS
     winhAdjustDlgItemSpinData
     winhCenterWindow
     winhFree
+    winhInsertMenuItem
+    winhInsertSubmenu
     winhMergeIntoSubMenu
     winhQueryPresColor
     winhQuerySwitchList
@@ -95,6 +102,7 @@ EXPORTS
     winhSetSliderTicks
     winhSetWindowFont
     xstrcat
+    xstrcatc
     xstrcpy
     xstrClear
     xstrInit

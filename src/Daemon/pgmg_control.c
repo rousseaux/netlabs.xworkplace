@@ -235,8 +235,8 @@ BOOL pgmcCreateMainControlWnd(VOID)
             // SWP     swpPager;
 
             // shortcuts to global pagemage config
-            PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
-            PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+            // PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
+            // PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
             // set frame icon
             WinSendMsg(G_pHookData->hwndPageMageFrame,
@@ -918,11 +918,11 @@ VOID TrackWithinPager(HWND hwnd,
 VOID ClientCreate(HWND hwnd,
                   PPAGEMAGECLIENTDATA pClientData)
 {
-    SIZEL           szlMem;
+    // SIZEL           szlMem;
 
     // shortcuts to global pagemage config
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
-    PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
+    // PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
 
     G_ptlCurrPos.x = (pPageMageConfig->ptlStartDesktop.x - 1)
                       * G_szlEachDesktopReal.cx;
@@ -1161,7 +1161,7 @@ MRESULT ClientButtonClick(HWND hwnd,
                           ULONG msg,
                           MPARAM mp1)
 {
-    ULONG       ulRequest;
+    // ULONG       ulRequest;
     ULONG       ulMsg = PGOM_CLICK2ACTIVATE;
     LONG        lMouseX = SHORT1FROMMP(mp1),
                 lMouseY = SHORT2FROMMP(mp1);

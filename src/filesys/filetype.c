@@ -738,7 +738,7 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
 
     if (ftypLockCaches())
     {
-        ULONG   cbAssocData = 0;
+        // ULONG   cbAssocData = 0;
 
         PSZ     pszType2 = pszType0,
                 pszParentForType = 0;
@@ -3079,7 +3079,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // new file type...
                         // PCNREDITDATA->cbText has the memory that the cnr
                         // needs to copy the string now.
-                        PFILETYPERECORD pRecord = (PFILETYPERECORD)pced->pRecord;
+                        // PFILETYPERECORD pRecord = (PFILETYPERECORD)pced->pRecord;
                         if (    (pced->cbText)
                              && (*(pced->ppszText))
                              && (strlen(*(pced->ppszText)))

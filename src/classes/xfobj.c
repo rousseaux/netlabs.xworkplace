@@ -122,9 +122,6 @@
  *                                                                  *
  ********************************************************************/
 
-// "XFldObject" key for wpRestoreData etc.
-static const char* G_pcszXFldObject = "XFldObject";
-
 // global variable whether XWorkplace is initialized yet
 static BOOL        G_fXWorkplaceInitialized = FALSE;
 
@@ -1241,7 +1238,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveDeferred(XFldObject *somSelf)
 
 SOM_Scope BOOL  SOMLINK xfobj_wpSaveImmediate(XFldObject *somSelf)
 {
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpSaveImmediate");
 
     objRemoveFromDirtyList(somSelf);
@@ -1390,7 +1387,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
                                                          hwndCnr,
                                                          fMultiSelect);
     #ifdef DEBUG_MENUS
-        _Pmpf(("XFldObject::wpFilterPopupMenu: ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
+        _Pmpf((__FUNCTION__ ": ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
                 ulMenuFilter, ((ulMenuFilter) & CTXT_CRANOTHER)));
     #endif
 
@@ -1818,7 +1815,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
 SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
                                         ULONG fConfirmations)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpDelete");
 
@@ -1848,7 +1845,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpAddToObjUseList(XFldObject *somSelf,
+/* SOM_Scope BOOL  SOMLINK xfobj_wpAddToObjUseList(XFldObject *somSelf,
                                                 PUSEITEM pUseItem)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
@@ -1878,7 +1875,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpAddToObjUseList(XFldObject *somSelf,
 
     return (XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
                                                          pUseItem));
-}
+} */
 
 /*
  *@@ wpDeleteFromObjUseList:
@@ -1891,7 +1888,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpAddToObjUseList(XFldObject *somSelf,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfobj_wpDeleteFromObjUseList(XFldObject *somSelf,
+/* SOM_Scope BOOL  SOMLINK xfobj_wpDeleteFromObjUseList(XFldObject *somSelf,
                                                      PUSEITEM pUseItem)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
@@ -1921,6 +1918,56 @@ SOM_Scope BOOL  SOMLINK xfobj_wpDeleteFromObjUseList(XFldObject *somSelf,
 
     return (XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
                                                               pUseItem));
+} */
+
+
+/*
+ *@@ wpCnrSetEmphasis:
+ *      this WPObject method changes the emphasis flags of
+ *      the object's MINIRECORDCORE (and updates all views
+ *      where this object is inserted).
+ *
+ *      We override this method to be able to intercept the
+ *      CRA_INUSE emphasis in case the object is currently
+ *      used in an XCenter object button widget, which then
+ *      needs to be repainted.
+ *
+ *      With V0.9.13, I tried overriding
+ *      wpAddTo/DeleteFromObjectUseList, which didn't quite
+ *      work.
+ *
+ *@@added V0.9.14 (2001-07-30) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
+                                               ULONG ulEmphasisAttr,
+                                               BOOL fTurnOn)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpCnrSetEmphasis");
+
+    if (    (ulEmphasisAttr & CRA_INUSE)
+         && (_pvllWidgetNotifies)
+       )
+    {
+        // we have windows that requested notifications:
+        // go thru list
+        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
+        while (pNode)
+        {
+            HWND hwnd = (HWND)pNode->pItemData;
+            WinPostMsg(hwnd,
+                       WM_CONTROL,
+                       MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                    XN_INUSECHANGED),
+                       (MPARAM)somSelf);
+            pNode = pNode->pNext;
+        }
+    }
+
+    return (XFldObject_parent_WPObject_wpCnrSetEmphasis(somSelf,
+                                                        ulEmphasisAttr,
+                                                        fTurnOn));
 }
 
 
@@ -1981,7 +2028,7 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
     // M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf);
     // M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsInitData");
     #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("M_XFldObject::xfobjM_wpclsInitData for class %s",
+        _Pmpf((__FUNCTION__ " for class %s",
                     _somGetName(somSelf) ));
     #endif
 

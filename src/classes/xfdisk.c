@@ -103,9 +103,6 @@
  *
  ********************************************************************/
 
-// key for wpRestoreData etc.
-static const char*  G_pcszXFldDisk = "XFldDisk";
-
 /* ******************************************************************
  *                                                                  *
  *   here come the XFldDisk instance methods                        *

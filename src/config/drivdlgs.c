@@ -275,7 +275,7 @@ BOOL drvLoadPlugins(HAB hab)
             {
                 // widget classes not loaded yet (or have been released again):
 
-                HMODULE         hmodXFLDR = cmnQueryMainCodeModuleHandle();
+                // HMODULE         hmodXFLDR = cmnQueryMainCodeModuleHandle();
 
                 // built-in widget classes:
                 APIRET          arc = NO_ERROR;
@@ -1063,7 +1063,7 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 case DID_OK:
                 {
                     // recompose params string
-                    CHAR    szTemp[100];
+                    // CHAR    szTemp[100];
                     PSZ     pszTemp = NULL;
                     pddd->szParams[0] = 0;
 

@@ -186,8 +186,10 @@ interface XFldObject : WPObject
     wpConfirmObjectTitle: override;
     wpDelete: override;
 
-    wpAddToObjUseList: override;
-    wpDeleteFromObjUseList: override;
+    wpCnrSetEmphasis: override;
+
+//#    wpAddToObjUseList: override;
+//#    wpDeleteFromObjUseList: override;
 
 #ifdef __PRIVATE__
 

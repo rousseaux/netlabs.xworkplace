@@ -810,7 +810,7 @@ VOID pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
 
         if (pcnbp->pUser == 0)
         {
-            ULONG ul = 0;
+            // ULONG ul = 0;
 
             // first call: create PAGEMAGECONFIG
             // structure;

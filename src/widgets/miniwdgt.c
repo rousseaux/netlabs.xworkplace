@@ -482,8 +482,7 @@ ULONG EXPENTRY WgtInitModule(HAB hab,               // XCenter's anchor block
                              PXCENTERWIDGETCLASS *ppaClasses,
                              PSZ pszErrorMsg)       // if 0 is returned, 500 bytes of error msg
 {
-    ULONG   ulrc = 0,
-            ul = 0;
+    ULONG   ulrc = 0;
 
     // register our PM window class
     if (!WinRegisterClass(hab,

@@ -116,7 +116,7 @@ static BOOL    G_fReplaceHandles = FALSE;
 SOM_Scope HOBJECT  SOMLINK xfs_xwpQueryHandle(XWPFileSystem *somSelf,
                                               BOOL fCreate)
 {
-    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_xwpQueryHandle");
 
     /* Return statement to be customized: */
@@ -152,7 +152,7 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
 
 SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
 {
-    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpUnInitData");
 
     XWPFileSystem_parent_WPFileSystem_wpUnInitData(somSelf);
@@ -173,7 +173,7 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
 SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,
                                           ULONG ulCode, WPObject* refObject)
 {
-    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpObjectReady");
 
     XWPFileSystem_parent_WPFileSystem_wpObjectReady(somSelf,
@@ -255,7 +255,7 @@ BOOL _System xfs_wpDestroyObject(XWPFileSystem *somSelf)
 
 SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsInitData");
 

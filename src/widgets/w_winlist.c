@@ -408,6 +408,8 @@ VOID WwgtClearSetup(PWINLISTSETUP pSetup)
  *
  *      NOTE: It is assumed that pSetup is zeroed
  *      out. We do not clean up previous data here.
+ *
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
 VOID WwgtScanSetup(const char *pcszSetupString,
@@ -416,9 +418,8 @@ VOID WwgtScanSetup(const char *pcszSetupString,
     PSZ p;
 
     // background color
-    p = pctrScanSetupString(pcszSetupString,
-                            "BGNDCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "BGNDCOL"))
     {
         pSetup->lcolBackground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -428,9 +429,8 @@ VOID WwgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // text color:
-    p = pctrScanSetupString(pcszSetupString,
-                            "TEXTCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "TEXTCOL"))
     {
         pSetup->lcolForeground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -441,9 +441,8 @@ VOID WwgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = pctrScanSetupString(pcszSetupString,
-                            "FONT");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FONT"))
     {
         pSetup->pszFont = strdup(p);
         pctrFreeSetupValue(p);
@@ -452,9 +451,8 @@ VOID WwgtScanSetup(const char *pcszSetupString,
 
     // filters:
     plstInit(&pSetup->llFilters, TRUE);
-    p = pctrScanSetupString(pcszSetupString,
-                            "FILTERS");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FILTERS"))
     {
         PSZ pFilter = p;
         PSZ pSep = 0;
@@ -471,6 +469,8 @@ VOID WwgtScanSetup(const char *pcszSetupString,
             if (pSep)
                 pFilter += (strlen(pFilter) + ulSeparatorLength);
         } while (pSep);
+
+        pctrFreeSetupValue(p);      // V0.9.14 (2001-08-01) [umoeller]
     }
 }
 
@@ -485,7 +485,7 @@ VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                    PWINLISTSETUP pSetup)
 {
     CHAR    szTemp[100];
-    PSZ     psz = 0;
+    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
@@ -789,7 +789,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                                        sizeof(szFilter),
                                                        szFilter))
                                 {
-                                    SHORT sSel;
+                                    // SHORT sSel;
                                     WinInsertLboxItem(hwndFiltersLB,
                                                       LIT_SORTASCENDING,
                                                       szFilter);
@@ -1054,87 +1054,6 @@ BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
     }
     return (brc);
 }
-
-/*
- *@@ SuperQuerySwitchList:
- *      calls winhQuerySwitchList and hacks the entries
- *      so that we know about what to display right.
- *
- *      Returns a new SWBLOCK or NULL on errors.
- *
- *      Gets called from ScanSwitchList and UpdateSwitchList.
- *
- *@@added V0.9.7 (2001-01-03) [umoeller]
- */
-
-/* PSWBLOCK SuperQuerySwitchList(HAB hab,          // in: pPrivate->pWidget->habWidget
-                              PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
-                              HWND hwndXCenterFrame,  // in: pPrivate->pWidget->pGlobals->hwndFrame
-                              PULONG pcShow)    // out: count of visible swentries
-{
-    ULONG ul = 0;
-    PSWBLOCK pswBlock = pwinhQuerySwitchList(hab);
-                        // calls WinQuerySwitchList
-
-    *pcShow = 0;
-
-    if (pswBlock)
-    {
-        // we must mark the last valid item to paint
-        // so that the paint routines can make it a bit wider
-        PSWCNTRL    pCtrlLast2Paint = NULL;
-
-        // now go filter and get icons
-        for (ul = 0;
-             ul < pswBlock->cswentry;
-             ul++)
-        {
-            PSWCNTRL pCtrlThis = &pswBlock->aswentry[ul].swctl;
-
-            // now set up the fbJump field, which we use
-            // for our own display flags... ugly, but this
-            // saves us from reallocating a second array
-            // for our own data
-            if (pCtrlThis->fbJump & SWL_JUMPABLE)
-                pCtrlThis->fbJump = WLF_JUMPABLE;
-            else
-                pCtrlThis->fbJump = 0;
-
-            // apply filter
-            if (!IsCtrlFiltered(pllFilters, hwndXCenterFrame, pCtrlThis))
-            {
-                // item will be painted:
-                // mark it so (hack field)
-                pCtrlThis->fbJump |= WLF_SHOWBUTTON;
-
-                // store button index (hack field)
-                // and raise it for next one (will
-                // also be count in the end)
-                pCtrlThis->uchVisibility = (*pcShow)++;
-                        // this is a ULONG, so we're safe... who came
-                        // up with this naming, IBM?
-
-                // remember this item; we must mark
-                // the last valid button for painting!
-                pCtrlLast2Paint = pCtrlThis;
-                // get its icon
-                pCtrlThis->hwndIcon = (HWND)WinSendMsg(pCtrlThis->hwnd,
-                                                       WM_QUERYICON, 0, 0);
-                    // can be NULLHANDLE
-            }
-            else
-                // not to be shown:
-                pCtrlThis->uchVisibility = -1;
-        }
-
-        if (pCtrlLast2Paint)
-            // we had at least one button:
-            // mark the last one
-            pCtrlLast2Paint->fbJump |= WLF_LASTBUTTON;
-    } // if (pswBlock)
-
-    return (pswBlock);
-} */
 
 /*
  *@@ FindSwitchNodeFromHWND:
@@ -1452,7 +1371,7 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
     // colors for borders
     LONG    lLeft,
             lRight;
-    LONG    xText = 0;
+    // LONG    xText = 0;
     ULONG   cShow = plstCountItems(&pPrivate->llSwitchEntries);
 
     const XCENTERGLOBALS *pGlobals = pPrivate->pWidget->pGlobals;
@@ -1584,7 +1503,7 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                   HPS hps,
                   PRECTL prclSubclient)       // in: max available space (exclusive)
 {
-    ULONG   ul = 0;
+    // ULONG   ul = 0;
 
     LONG    lcolBackground = pPrivate->Setup.lcolBackground;
 
@@ -1769,7 +1688,7 @@ MRESULT WwgtCreate(HWND hwnd,
                    PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;
-    PSZ p;
+    // PSZ p;
     PWINLISTPRIVATE pPrivate = malloc(sizeof(WINLISTPRIVATE));
     memset(pPrivate, 0, sizeof(WINLISTPRIVATE));
     // link the two together
@@ -2232,164 +2151,163 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWINLISTPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWINLISTPRIVATE)pWidget->pUser)
+       )
     {
-        PWINLISTPRIVATE pPrivate = (PWINLISTPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        if (pWidget->hwndContextMenu)
         {
-            if (pWidget->hwndContextMenu)
+            POINTL  ptlScreen,
+                    ptlWidget;
+            RECTL   rclSubclient;
+            PSWCNTRL pCtlUnderMouse = NULL;
+
+            WinQueryPointerPos(HWND_DESKTOP, &ptlScreen);
+            // convert to widget coords
+            memcpy(&ptlWidget, &ptlScreen, sizeof(ptlWidget));
+            WinMapWindowPoints(HWND_DESKTOP,        // from
+                               hwnd,                // to (widget)
+                               &ptlWidget,
+                               1);
+
+            if (!pPrivate->hwndContextMenuHacked)
             {
-                POINTL  ptlScreen,
-                        ptlWidget;
-                RECTL   rclSubclient;
-                PSWCNTRL pCtlUnderMouse = NULL;
+                // first call:
+                // hack the context menu given to us
+                HackContextMenu(pPrivate);
+            } // if (!pPrivate->fContextMenuHacked)
 
-                WinQueryPointerPos(HWND_DESKTOP, &ptlScreen);
-                // convert to widget coords
-                memcpy(&ptlWidget, &ptlScreen, sizeof(ptlWidget));
-                WinMapWindowPoints(HWND_DESKTOP,        // from
-                                   hwnd,                // to (widget)
-                                   &ptlWidget,
-                                   1);
+            GetPaintableRect(pPrivate, &rclSubclient);
+            pCtlUnderMouse = FindCtrlFromPoint(pPrivate,
+                                               &ptlWidget,
+                                               &rclSubclient);
+            pPrivate->hwndContextMenuShowing = NULLHANDLE;
+            if (pCtlUnderMouse)
+            {
+                // draw source emphasis
+                // ULONG ulStyle;
+                HWND hwndSysMenu;
+                BOOL fEnableRestore = FALSE,
+                     fEnableMove = FALSE,
+                     fEnableSize = FALSE,
+                     fEnableMinimize = FALSE,
+                     fEnableMaximize = FALSE,
+                     fEnableHide = FALSE,
+                     fEnableKill = FALSE;
+                // PPIB ppib;
+                // PTIB ptib;
+                CHAR szKillText[60] = "~Kill process";
 
-                if (!pPrivate->hwndContextMenuHacked)
+                HPS hps = WinGetPS(hwnd);
+                if (hps)
                 {
-                    // first call:
-                    // hack the context menu given to us
-                    HackContextMenu(pPrivate);
-                } // if (!pPrivate->fContextMenuHacked)
-
-                GetPaintableRect(pPrivate, &rclSubclient);
-                pCtlUnderMouse = FindCtrlFromPoint(pPrivate,
-                                                   &ptlWidget,
-                                                   &rclSubclient);
-                pPrivate->hwndContextMenuShowing = NULLHANDLE;
-                if (pCtlUnderMouse)
-                {
-                    // draw source emphasis
-                    // ULONG ulStyle;
-                    HWND hwndSysMenu;
-                    BOOL fEnableRestore = FALSE,
-                         fEnableMove = FALSE,
-                         fEnableSize = FALSE,
-                         fEnableMinimize = FALSE,
-                         fEnableMaximize = FALSE,
-                         fEnableHide = FALSE,
-                         fEnableKill = FALSE;
-                    PPIB ppib;
-                    PTIB ptib;
-                    CHAR szKillText[60] = "~Kill process";
-
-                    HPS hps = WinGetPS(hwnd);
-                    if (hps)
-                    {
-                        pgpihSwitchToRGB(hps);
-                        pPrivate->pCtrlSourceEmphasis = pCtlUnderMouse;
-                        pPrivate->pCtrlMenu = pCtlUnderMouse;
-                        DrawOneCtrl(pPrivate,
-                                    hps,
-                                    &rclSubclient,
-                                    pCtlUnderMouse,
-                                    WinQueryActiveWindow(HWND_DESKTOP),
-                                    NULL);
-                        WinReleasePS(hps);
-                    }
-
-                    // enable items...
-                    // we do a mixture of copying the state from the item's
-                    // system menu and from querying the window's style. This
-                    // is kinda sick, but we have the following limitations:
-                    // -- There is no easy cross-process way of getting the
-                    //    frame control flags to find out whether the frame
-                    //    actually has minimize and maximize buttons in the
-                    //    first place.
-                    // -- We can't enumerate the frame controls either because
-                    //    the minimize and maximize button(s) are a single control
-                    //    which always has the same ID (FID_MINMAX), and we don't
-                    //    know what it looks like.
-                    // -- In general, the system menu has the correct items
-                    //    enabled (SC_MINIMIZE and SC_MAXIMIZE). Howver, these
-                    //    items are only refreshed when the sysmenu is made
-                    //    visible... so we have to query QWL_STYLE as well.
-                    hwndSysMenu = WinWindowFromID(pCtlUnderMouse->hwnd, FID_SYSMENU);
-                    if (hwndSysMenu)
-                    {
-                        ULONG ulStyle = WinQueryWindowULong(pCtlUnderMouse->hwnd,
-                                                            QWL_STYLE);
-                        if (    (ulStyle & (WS_MINIMIZED | WS_MAXIMIZED))
-                             || ((ulStyle & WS_VISIBLE) == 0)
-                           )
-                            fEnableRestore = TRUE;
-
-                        fEnableMove     = IsEnabled(hwndSysMenu, SC_MOVE    );
-                        fEnableSize     = IsEnabled(hwndSysMenu, SC_SIZE    );
-
-                        if ((ulStyle & WS_MINIMIZED) == 0)
-                            fEnableMinimize = IsEnabled(hwndSysMenu, SC_MINIMIZE);
-                        if ((ulStyle & WS_MAXIMIZED) == 0)
-                            fEnableMaximize = IsEnabled(hwndSysMenu, SC_MAXIMIZE);
-
-                        if ((ulStyle & WS_VISIBLE))
-                            fEnableHide     = IsEnabled(hwndSysMenu, SC_HIDE);
-                    }
-
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1000,     // restore
-                                      fEnableRestore);
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1001,     // move
-                                      fEnableMove);
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1002,     // size
-                                      fEnableSize);
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1003,     // minimize
-                                      fEnableMinimize);
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1004,     // maximize
-                                      fEnableMaximize);
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1005,     // hide
-                                      fEnableHide);
-
-                    // enable "kill process" only if this is not the WPS
-                    if (pCtlUnderMouse->idProcess != pdoshMyPID())
-                    {
-                        // not WPS:
-                        fEnableKill = TRUE;
-                        sprintf(szKillText,
-                                "~Kill process (PID 0x%lX)",
-                                pCtlUnderMouse->idProcess);
-                    }
-
-                    WinSetMenuItemText(pPrivate->hwndContextMenuHacked,
-                                       1009,
-                                       szKillText);
-                    WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
-                                      1009,
-                                      fEnableKill);
-
-                    if (WinPopupMenu(HWND_DESKTOP,
-                                     hwnd,
-                                     pPrivate->hwndContextMenuHacked,
-                                     ptlScreen.x,
-                                     ptlScreen.y,
-                                     0,
-                                     PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
-                                        | PU_MOUSEBUTTON2 | PU_KEYBOARD))
-                        pPrivate->hwndContextMenuShowing = pPrivate->hwndContextMenuHacked;
-
-
-                    mrc = (MPARAM)TRUE;
+                    pgpihSwitchToRGB(hps);
+                    pPrivate->pCtrlSourceEmphasis = pCtlUnderMouse;
+                    pPrivate->pCtrlMenu = pCtlUnderMouse;
+                    DrawOneCtrl(pPrivate,
+                                hps,
+                                &rclSubclient,
+                                pCtlUnderMouse,
+                                WinQueryActiveWindow(HWND_DESKTOP),
+                                NULL);
+                    WinReleasePS(hps);
                 }
-                else
-                    // no control under mouse:
-                    // call default
-                    mrc = pWidget->pfnwpDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
 
-            } // if (pWidget->hwndContextMenu)
-        }
+                // enable items...
+                // we do a mixture of copying the state from the item's
+                // system menu and from querying the window's style. This
+                // is kinda sick, but we have the following limitations:
+                // -- There is no easy cross-process way of getting the
+                //    frame control flags to find out whether the frame
+                //    actually has minimize and maximize buttons in the
+                //    first place.
+                // -- We can't enumerate the frame controls either because
+                //    the minimize and maximize button(s) are a single control
+                //    which always has the same ID (FID_MINMAX), and we don't
+                //    know what it looks like.
+                // -- In general, the system menu has the correct items
+                //    enabled (SC_MINIMIZE and SC_MAXIMIZE). Howver, these
+                //    items are only refreshed when the sysmenu is made
+                //    visible... so we have to query QWL_STYLE as well.
+                hwndSysMenu = WinWindowFromID(pCtlUnderMouse->hwnd, FID_SYSMENU);
+                if (hwndSysMenu)
+                {
+                    ULONG ulStyle = WinQueryWindowULong(pCtlUnderMouse->hwnd,
+                                                        QWL_STYLE);
+                    if (    (ulStyle & (WS_MINIMIZED | WS_MAXIMIZED))
+                         || ((ulStyle & WS_VISIBLE) == 0)
+                       )
+                        fEnableRestore = TRUE;
+
+                    fEnableMove     = IsEnabled(hwndSysMenu, SC_MOVE    );
+                    fEnableSize     = IsEnabled(hwndSysMenu, SC_SIZE    );
+
+                    if ((ulStyle & WS_MINIMIZED) == 0)
+                        fEnableMinimize = IsEnabled(hwndSysMenu, SC_MINIMIZE);
+                    if ((ulStyle & WS_MAXIMIZED) == 0)
+                        fEnableMaximize = IsEnabled(hwndSysMenu, SC_MAXIMIZE);
+
+                    if ((ulStyle & WS_VISIBLE))
+                        fEnableHide     = IsEnabled(hwndSysMenu, SC_HIDE);
+                }
+
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1000,     // restore
+                                  fEnableRestore);
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1001,     // move
+                                  fEnableMove);
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1002,     // size
+                                  fEnableSize);
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1003,     // minimize
+                                  fEnableMinimize);
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1004,     // maximize
+                                  fEnableMaximize);
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1005,     // hide
+                                  fEnableHide);
+
+                // enable "kill process" only if this is not the WPS
+                if (pCtlUnderMouse->idProcess != pdoshMyPID())
+                {
+                    // not WPS:
+                    fEnableKill = TRUE;
+                    sprintf(szKillText,
+                            "~Kill process (PID 0x%lX)",
+                            pCtlUnderMouse->idProcess);
+                }
+
+                WinSetMenuItemText(pPrivate->hwndContextMenuHacked,
+                                   1009,
+                                   szKillText);
+                WinEnableMenuItem(pPrivate->hwndContextMenuHacked,
+                                  1009,
+                                  fEnableKill);
+
+                if (WinPopupMenu(HWND_DESKTOP,
+                                 hwnd,
+                                 pPrivate->hwndContextMenuHacked,
+                                 ptlScreen.x,
+                                 ptlScreen.y,
+                                 0,
+                                 PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
+                                    | PU_MOUSEBUTTON2 | PU_KEYBOARD))
+                    pPrivate->hwndContextMenuShowing = pPrivate->hwndContextMenuHacked;
+
+
+                mrc = (MPARAM)TRUE;
+            }
+            else
+                // no control under mouse:
+                // call default
+                mrc = pWidget->pfnwpDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
+
+        } // if (pWidget->hwndContextMenu)
     }
 
     return (mrc);

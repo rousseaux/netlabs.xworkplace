@@ -78,6 +78,7 @@
 
 #define INCL_GPIPRIMITIVES
 #define INCL_GPILOGCOLORTABLE
+#define INCL_GPILCIDS
 #define INCL_GPIREGIONS
 #include <os2.h>
 
@@ -96,12 +97,14 @@
 #endif
 
 // headers in /helpers
+#include "helpers\apmh.h"               // Advanced Power Management helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\prfh.h"               // INI file helper routines;
                                         // this include is required for some
                                         // of the structures in shared\center.h
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
@@ -111,9 +114,14 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
-#include "startshut\apm.h"            // APM power-off for XShutdown
+#include "filesys\disk.h"               // XFldDisk implementation
+
+#include "hook\xwphook.h"               // hook and daemon definitions
+
+// #include "startshut\apm.h"              // APM power-off for XShutdown
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -128,6 +136,7 @@
 #define MWGT_MEMORY             3
 #define MWGT_TIME               4
 #define MWGT_POWER              5       // V0.9.12 (2001-05-26) [umoeller]
+#define MWGT_DISKFREE           6       // V0.9.14 (2001-08-01) [umoeller]
 
 APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
@@ -178,6 +187,14 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     "Battery power monitor",
                     WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
+                },
+                {
+                    WNDCLASS_WIDGET_MONITORS,
+                    MWGT_DISKFREE,
+                    "DiskFreeCondensed",
+                    "Diskfree (condensed)",
+                    WGTF_TOOLTIP | WGTF_TRAYABLE | WGTF_SIZEABLE,
+                    NULL        // no settings dlg
                 }
             };
 
@@ -205,6 +222,10 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
  */
 
 // resolved function pointers from XFLDR.DLL
+PAPMHOPEN papmhOpen = NULL;
+PAPMHREADSTATUS papmhReadStatus = NULL;
+PAPMHCLOSE papmhClose = NULL;
+
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 PCMNQUERYMAINRESMODULEHANDLE pcmnQueryMainResModuleHandle = NULL;
@@ -213,8 +234,12 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
+PDSKQUERYINFO pdskQueryInfo = NULL;
+
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
+
+PKRNQUERYDAEMONOBJECT pkrnQueryDaemonObject = NULL;
 
 PSTRHDATETIME pstrhDateTime = NULL;
 PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
@@ -223,138 +248,57 @@ PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
 PWINHFREE pwinhFree = NULL;
+PWINHINSERTMENUITEM pwinhInsertMenuItem = NULL;
+PWINHINSERTSUBMENU pwinhInsertSubmenu = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 
 PXSTRCAT pxstrcat = NULL;
+PXSTRCATC pxstrcatc = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
 RESOLVEFUNCTION G_aImports[] =
     {
+        "apmhOpen", (PFN*)&papmhOpen,
+        "apmhReadStatus", (PFN*)&papmhReadStatus,
+        "apmhClose", (PFN*)&papmhClose,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "dskQueryInfo", (PFN*)&pdskQueryInfo,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
+        "krnQueryDaemonObject", (PFN*)&pkrnQueryDaemonObject,
         "strhDateTime", (PFN*)&pstrhDateTime,
         "strhThousandsULong", (PFN*)&pstrhThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhFree", (PFN*)&pwinhFree,
+        "winhInsertMenuItem", (PFN*)&pwinhInsertMenuItem,
+        "winhInsertSubmenu", (PFN*)&pwinhInsertSubmenu,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
         "xstrcat", (PFN*)&pxstrcat,
+        "xstrcatc", (PFN*)&pxstrcatc,
         "xstrClear", (PFN*)&pxstrClear,
         "xstrInit", (PFN*)&pxstrInit
     };
 
 /* ******************************************************************
  *
- *   APM definitions (from DDK)
- *
- ********************************************************************/
-
-/*---------------------------------------------------------------------------*
- * Category 12 (Power Management) IOCtl Function Codes                       *
- *---------------------------------------------------------------------------*/
-
-#define APMGIO_Category           12    // Generic IOCtl Category for APM.
-
-#define APMGIO_SendEvent        0x40    // Function Codes.
-#define APMGIO_SetEventSem      0x41
-#define APMGIO_ConfirmEvent     0x42    // 0x42 is UNDOCUMENTED.
-#define APMGIO_BroadcastEvent   0x43    // 0x43 is UNDOCUMENTED.
-#define APMGIO_RegDaemonThread  0x44    // 0x44 is UNDOCUMENTED.
-#define APMGIO_OEMFunction      0x45
-#define APMGIO_QueryStatus      0x60
-#define APMGIO_QueryEvent       0x61
-#define APMGIO_QueryInfo        0x62
-#define APMGIO_QueryState       0x63
-
-#pragma pack(1)
-
-/*---------------------------------------------------------------------------*
- * Function 0x60, Query Power Status                                         *
- * Reference MS/Intel APM specification for interpretation of status codes.  *
- *---------------------------------------------------------------------------*/
-
-typedef struct _APMGIO_QSTATUS_PPKT {           // Parameter Packet.
-
-  USHORT ParmLength;    // Length, in bytes, of the Parm Packet.
-  USHORT Flags;         // Output:  Flags.
-  UCHAR  ACStatus;
-                        // Output:  0x00 if not on AC,
-                        //          0x01 if AC,
-                        //          0x02 if on backup power,
-                        //          0xFF if unknown
-  UCHAR  BatteryStatus;
-                        // Output:  0x00 if battery high,
-                        //          0x01 if battery low,
-                        //          0x02 if battery critically low,
-                        //          0x03 if battery charging
-                        //          0xFF if unknown
-  UCHAR  BatteryLife;
-                        // Output:  Battery power life (as percentage)
-  UCHAR  BatteryTimeForm;
-                        // Output:
-                        //          0x00 if format is seconds,
-                        //          0x01 if format is minutes,
-                        //          0xFF if unknown
-  USHORT BatteryTime;   // Output:  Remaining battery time.
-  UCHAR  BatteryFlags;  // Output:  Battery status flags
-
-} APMGIO_QSTATUS_PPKT, *NPAPMGIO_QSTATUS_PPKT, FAR *PAPMGIO_QSTATUS_PPKT;
-
-typedef struct _APMGIO_10_QSTATUS_PPKT {        // Parameter Packet for
-                                                // APM 1.0 interface
-  USHORT ParmLength;    // Length, in bytes, of the Parm Packet.
-  USHORT Flags;         // Output:  Flags.
-  UCHAR  ACStatus;      // Output:  AC line power status.
-  UCHAR  BatteryStatus; // Output:  Battery power status
-  UCHAR  BatteryLife;   // Output:  Battery power status
-
-} APMGIO_10_QSTATUS_PPKT;
-
-// Error return codes.
-#define GIOERR_PowerNoError             0
-#define GIOERR_PowerBadSubId            1
-#define GIOERR_PowerBadReserved         2
-#define GIOERR_PowerBadDevId            3
-#define GIOERR_PowerBadPwrState         4
-#define GIOERR_PowerSemAlreadySetup     5
-#define GIOERR_PowerBadFlags            6
-#define GIOERR_PowerBadSemHandle        7
-#define GIOERR_PowerBadLength           8
-#define GIOERR_PowerDisabled            9
-#define GIOERR_PowerNoEventQueue       10
-#define GIOERR_PowerTooManyQueues      11
-#define GIOERR_PowerBiosError          12
-#define GIOERR_PowerBadSemaphore       13
-#define GIOERR_PowerQueueOverflow      14
-#define GIOERR_PowerStateChangeReject  15
-#define GIOERR_PowerNotSupported       16
-#define GIOERR_PowerDisengaged         17
-#define GIOERR_PowerHighestErrCode     17
-
-typedef struct _APMGIO_DPKT {
-
-  USHORT ReturnCode;
-
-} APMGIO_DPKT, *NPAPMGIO_DPKT, FAR *PAPMGIO_DPKT;
-
-#pragma pack()
-
-/* ******************************************************************
- *
  *   Private widget instance data
  *
  ********************************************************************/
+
+#define DFFL_REPAINT            0x0001
+#define DFFL_FLASH              0x0002
+#define DFFL_BACKGROUND         0x0004
 
 /*
  *@@ MONITORSETUP:
@@ -375,6 +319,17 @@ typedef struct _MONITORSETUP
     PSZ         pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
+
+    ULONG           cxCurrent,
+                    cyCurrent;
+
+    /*
+     *  disks to monitor (if MWGT_DISKFREE)
+     *
+     */
+
+    PSZ             pszDisks;       // array of plain drive letters to monitor
+
 } MONITORSETUP, *PMONITORSETUP;
 
 /*
@@ -399,33 +354,50 @@ typedef struct _MONITORPRIVATE
                 // -- MWGT_SWAPPER: swap monitor widget
                 // -- MWGT_MEMORY: memory monitor widget;
                 // -- MWGT_POWER: power monitor widget;
+                // -- MWGT_DISKFREE: condensed diskfree widget
                 // this is copied from the widget class on WM_CREATE
-
-    ULONG           cxCurrent,
-                    cyCurrent;
 
     MONITORSETUP    Setup;
             // widget settings that correspond to a setup string
 
-    ULONG           ulTimerID;              // if != NULLHANDLE, update timer is running
+    ULONG           ulTimerID;      // if != NULLHANDLE, update timer is running
 
-    HFILE           hfAPMSys;               // APM.SYS driver handle, if open
-    APIRET          arcAPM;                 // error code if APM.SYS open failed
+    /*
+     *  date/time (for MWGT_DATE, MWGT_TIME)
+     *
+     */
 
-    ULONG           ulBatteryStatus;
-                // copy of APM battery status, that is:
-                        // Output:  0x00 if battery high,
-                        //          0x01 if battery low,
-                        //          0x02 if battery critically low,
-                        //          0x03 if battery charging
-                        //          0xFF if unknown
-    ULONG           ulBatteryLife;
-                // current battery life as percentage
+    CHAR            szDateTime[200];
+
+    /*
+     *  APM data (if MWGT_POWER)
+     *
+     */
+
+    APIRET          arcAPM;         // error code if APM.SYS open failed
+
+    PAPM            pApm;           // APM status data
 
     HPOINTER        hptrAC,         // "AC" icon
                     hptrBattery;    // "battery" icon
 
-    CHAR            szDateTime[200];
+    /*
+     *  diskfree data (if MWGT_DISKFREE)
+     *
+     */
+
+    PLONG           palKBs;          // array of 26 LONG values for the
+                                     // disks being monitored; only those
+                                     // values are valid for which a corresponding
+                                     // drive letter exists in Setup
+
+    PULONG          paulFlags;       // array of 26 ULONGs;
+                                     // one ULONG of DFFL_* flags for each disk
+
+    PLONG           palXPoses;       // array of 26 LONG values for the
+                                     // X positions of each disk display (speed)
+
+    BOOL            fContextMenuHacked;
 
 } MONITORPRIVATE, *PMONITORPRIVATE;
 
@@ -459,6 +431,12 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
             free(pSetup->pszFont);
             pSetup->pszFont = NULL;
         }
+
+        if (pSetup->pszDisks)
+        {
+            free(pSetup->pszDisks);
+            pSetup->pszDisks = NULL;
+        }
     }
 }
 
@@ -473,13 +451,13 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
  */
 
 VOID MwgtScanSetup(const char *pcszSetupString,
-                   PMONITORSETUP pSetup)
+                   PMONITORSETUP pSetup,
+                   BOOL fIsDiskfree)
 {
     PSZ p;
     // background color
-    p = pctrScanSetupString(pcszSetupString,
-                            "BGNDCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "BGNDCOL"))
     {
         pSetup->lcolBackground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -489,9 +467,8 @@ VOID MwgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // text color:
-    p = pctrScanSetupString(pcszSetupString,
-                            "TEXTCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "TEXTCOL"))
     {
         pSetup->lcolForeground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -502,14 +479,36 @@ VOID MwgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = pctrScanSetupString(pcszSetupString,
-                            "FONT");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FONT"))
     {
         pSetup->pszFont = strdup(p);
         pctrFreeSetupValue(p);
     }
     // else: leave this field null
+
+    if (fIsDiskfree)
+    {
+        // disks to monitor:
+        if (p = pctrScanSetupString(pcszSetupString,
+                                    "DISKS"))
+        {
+            pSetup->pszDisks = strdup(p);
+            pctrFreeSetupValue(p);
+        }
+        else
+            pSetup->pszDisks = strdup("F");     // @@todo
+
+        // width
+        if (p = pctrScanSetupString(pcszSetupString,
+                                    "WIDTH"))
+        {
+            pSetup->cxCurrent = atoi(p);
+            pctrFreeSetupValue(p);
+        }
+        else
+            pSetup->cxCurrent = 100;
+    }
 }
 
 /*
@@ -522,10 +521,11 @@ VOID MwgtScanSetup(const char *pcszSetupString,
  */
 
 VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   PMONITORSETUP pSetup)
+                   PMONITORSETUP pSetup,
+                   BOOL fIsDiskfree)
 {
     CHAR    szTemp[100];
-    PSZ     psz = 0;
+    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
@@ -543,6 +543,41 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                 pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
+
+    if (fIsDiskfree)
+    {
+        sprintf(szTemp, "WIDTH=%d;",
+                pSetup->cxCurrent);
+        pxstrcat(pstrSetup, szTemp, 0);
+
+        sprintf(szTemp, "DISKS=%s",
+                pSetup->pszDisks);
+        pxstrcat(pstrSetup, szTemp, 0);
+    }
+}
+
+/*
+ *@@ MwgtSaveSetupAndSend:
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID MwgtSaveSetupAndSend(HWND hwnd,
+                          PMONITORPRIVATE pPrivate)
+{
+    XSTRING strSetup;
+    MwgtSaveSetup(&strSetup,
+                  &pPrivate->Setup,
+                  (pPrivate->ulType == MWGT_DISKFREE));
+    if (strSetup.ulLength)
+        // changed V0.9.13 (2001-06-21) [umoeller]:
+        // post it to parent instead of fixed XCenter client
+        // to make this trayable
+        WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
+                   XCM_SAVESETUP,
+                   (MPARAM)hwnd,
+                   (MPARAM)strSetup.psz);
+    pxstrClear(&strSetup);
 }
 
 /* ******************************************************************
@@ -555,58 +590,75 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 /* ******************************************************************
  *
- *   APM monitor
+ *   Helpers
  *
  ********************************************************************/
 
 /*
- *@@ ApmIOCtl:
+ *@@ UpdateDiskMonitors:
+ *      notifies XWPDAEMN.EXE of the new disks to
+ *      be monitored.
  *
- *@@added V0.9.12 (2001-05-26) [umoeller]
+ *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
-APIRET ApmIOCtl(HFILE hfAPMSys,
-                ULONG ulFunction,
-                PVOID pvParamPck,
-                ULONG cbParamPck)
+BOOL UpdateDiskMonitors(HWND hwnd,
+                        PMONITORPRIVATE pPrivate)
 {
-    APIRET          arc;
-    APMGIO_DPKT     DataPacket;
-    ULONG           ulRetSize = sizeof(DataPacket);
-    DataPacket.ReturnCode = GIOERR_PowerNoError;
-    if (!(arc = DosDevIOCtl(hfAPMSys,
-                            APMGIO_Category,
-                            ulFunction,
-                            pvParamPck, cbParamPck, &cbParamPck,
-                            &DataPacket, sizeof(DataPacket), &ulRetSize)))
-        if (DataPacket.ReturnCode)
-            arc = DataPacket.ReturnCode | 10000;
+    HWND    hwndDaemon;
+    PID     pidDaemon;
+    TID     tidDaemon;
 
-    return (arc);
-}
+    ULONG   cDisks;
 
-/*
- *@@ ReadNewAPMValue:
- *
- *@@added V0.9.12 (2001-05-26) [umoeller]
- */
-
-VOID ReadNewAPMValue(PMONITORPRIVATE pPrivate)
-{
-    if ((!pPrivate->arcAPM) && (pPrivate->hfAPMSys))
+    if (    (cDisks = strlen(pPrivate->Setup.pszDisks))
+         && (hwndDaemon = pkrnQueryDaemonObject())
+         && (WinQueryWindowProcess(hwndDaemon,
+                                   &pidDaemon,
+                                   &tidDaemon))
+       )
     {
-        APMGIO_QSTATUS_PPKT  PowerStatus;
-        PowerStatus.ParmLength = sizeof(PowerStatus);
+        PADDDISKWATCH pAddDiskWatch;
 
-        if (!(pPrivate->arcAPM = ApmIOCtl(pPrivate->hfAPMSys,
-                                          APMGIO_QueryStatus,
-                                          &PowerStatus,
-                                          PowerStatus.ParmLength)))
+        // remove all existing disk watches
+        WinSendMsg(hwndDaemon,
+                   XDM_REMOVEDISKWATCH,
+                   (MPARAM)hwnd,
+                   (MPARAM)-1);     // all watches
+
+        if (    (!DosAllocSharedMem((PPVOID)&pAddDiskWatch,
+                                    NULL,
+                                    sizeof(ADDDISKWATCH),
+                                    PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE))
+             && (!DosGiveSharedMem(pAddDiskWatch,
+                                   pidDaemon,
+                                   PAG_READ))
+            )
         {
-            pPrivate->ulBatteryStatus = PowerStatus.BatteryStatus;
-            pPrivate->ulBatteryLife = PowerStatus.BatteryLife;
+            ULONG ul;
+
+            _Pmpf((__FUNCTION__ ": gave 0x%lX to pid 0x%lX", pAddDiskWatch, pidDaemon));
+
+            ZERO(pAddDiskWatch);
+            pAddDiskWatch->hwndNotify = hwnd;
+            pAddDiskWatch->ulMessage = WM_USER;
+
+            for (ul = 0;
+                 ul < cDisks;
+                 ul++)
+            {
+                pAddDiskWatch->ulLogicalDrive = pPrivate->Setup.pszDisks[ul] - 'A' + 1;
+                WinSendMsg(hwndDaemon,
+                           XDM_ADDDISKWATCH,
+                           (MPARAM)pAddDiskWatch,
+                           0);
+            }
+
+            DosFreeMem(pAddDiskWatch);
         }
     }
+
+    return (FALSE);
 }
 
 /* ******************************************************************
@@ -633,7 +685,7 @@ MRESULT MwgtCreate(HWND hwnd,
     MRESULT mrc = 0;        // continue window creation
     ULONG ulUpdateFreq = 1000;
 
-    PSZ p;
+    // PSZ p;
 
     PMONITORPRIVATE pPrivate = malloc(sizeof(MONITORPRIVATE));
     memset(pPrivate, 0, sizeof(MONITORPRIVATE));
@@ -646,12 +698,13 @@ MRESULT MwgtCreate(HWND hwnd,
     if (pWidget->pWidgetClass)
         pPrivate->ulType = pWidget->pWidgetClass->ulExtra;
 
-    pPrivate->cxCurrent = 10;          // we'll resize ourselves later
-    pPrivate->cyCurrent = 10;
+    pPrivate->Setup.cxCurrent = 10;          // we'll resize ourselves later
+    pPrivate->Setup.cyCurrent = 10;
 
     // initialize binary setup structure from setup string
     MwgtScanSetup(pWidget->pcszSetupString,
-                  &pPrivate->Setup);
+                  &pPrivate->Setup,
+                  (pPrivate->ulType == MWGT_DISKFREE));
 
     // set window font (this affects all the cached presentation
     // spaces we use)
@@ -685,52 +738,17 @@ MRESULT MwgtCreate(HWND hwnd,
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_POWER_MAIN;
             ulUpdateFreq = 10 * 1000;       // once per minute
 
-            // open APM.SYS
-            pPrivate->arcAPM = DosOpen("\\DEV\\APM$",
-                                       &pPrivate->hfAPMSys,
-                                       &ulAction,
-                                       0,
-                                       FILE_NORMAL,
-                                       OPEN_ACTION_OPEN_IF_EXISTS,
-                                       OPEN_FLAGS_FAIL_ON_ERROR
-                                            | OPEN_SHARE_DENYNONE
-                                            | OPEN_ACCESS_READWRITE,
-                                       NULL);
-            if (!pPrivate->arcAPM)
+            if (!(pPrivate->arcAPM = papmhOpen(&pPrivate->pApm)))
             {
-                GETPOWERINFO    getpowerinfo;
-                ULONG           ulAPMRc = NO_ERROR;
-                ULONG           ulPacketSize = sizeof(getpowerinfo),
-                                ulDataSize = sizeof(ulAPMRc);
-                // query version of APM-BIOS and APM driver
-                memset(&getpowerinfo, 0, sizeof(getpowerinfo));
-                getpowerinfo.usParmLength = sizeof(getpowerinfo);
-
-                if (!(pPrivate->arcAPM = ApmIOCtl(pPrivate->hfAPMSys,
-                                                  POWER_GETPOWERINFO,
-                                                  &getpowerinfo,
-                                                  getpowerinfo.usParmLength)))
+                if (pPrivate->pApm->usLowestAPMVersion < 0x101)  // version 1.1 or above
+                    pPrivate->arcAPM = -1;
+                else
                 {
-                    // swap lower-byte(major vers.) to higher-byte(minor vers.)
-                    USHORT usBIOSVersion =     (getpowerinfo.usBIOSVersion & 0xff) << 8
-                                             | (getpowerinfo.usBIOSVersion >> 8);
-                    USHORT usDriverVersion =   (getpowerinfo.usDriverVersion & 0xff) << 8
-                                             | (getpowerinfo.usDriverVersion >> 8);
-
-                    // set general APM version to lower
-                    USHORT usLowestAPMVersion = (usBIOSVersion < usDriverVersion)
-                                                 ? usBIOSVersion : usDriverVersion;
-
-                    if (usLowestAPMVersion < 0x101)  // version 1.1 or above
-                        // not 1.2 or higher:
-                        pPrivate->arcAPM = -1;
-                    else
+                    // no error at all:
+                    // read first value, because next update
+                    // won't be before 1 minute from now
+                    if (!(pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm)))
                     {
-                        // no error at all:
-                        // read first value, because next update
-                        // won't be before 1 minute from now
-                        ReadNewAPMValue(pPrivate);
-
                         // and load the icons
                         pPrivate->hptrAC = WinLoadPointer(HWND_DESKTOP,
                                                           pcmnQueryMainResModuleHandle(),
@@ -739,7 +757,7 @@ MRESULT MwgtCreate(HWND hwnd,
                                                                pcmnQueryMainResModuleHandle(),
                                                                ID_POWER_BATTERY);
 
-                        pPrivate->cyCurrent = pWidget->pGlobals->cxMiniIcon + 2;
+                        pPrivate->Setup.cyCurrent = pWidget->pGlobals->cxMiniIcon + 2;
                     }
                 }
             }
@@ -747,6 +765,26 @@ MRESULT MwgtCreate(HWND hwnd,
             if (pPrivate->arcAPM)
                 ulUpdateFreq = 0;
         }
+        break;
+
+        case MWGT_DISKFREE:
+            ulUpdateFreq = 0;           // no timer here
+
+            pWidget->ulHelpPanelID = ID_XSH_WIDGET_DISKFREE_COND;
+
+            // allocate new array of LONGs for the KB values
+            pPrivate->palKBs = malloc(sizeof(LONG) * 27);
+            memset(pPrivate->palKBs, 0, sizeof(LONG) * 27);
+
+            pPrivate->paulFlags = malloc(sizeof(ULONG) * 27);
+            memset(pPrivate->paulFlags, 0, sizeof(ULONG) * 27);
+
+            pPrivate->palXPoses = malloc(sizeof(LONG) * 27);
+            memset(pPrivate->palXPoses, 0, sizeof(LONG) * 27);
+
+            // tell XWPDaemon about ourselves
+            UpdateDiskMonitors(hwnd,
+                               pPrivate);
         break;
     }
 
@@ -795,8 +833,8 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     case XN_QUERYSIZE:
                     {
                         PSIZEL pszl = (PSIZEL)mp2;
-                        pszl->cx = pPrivate->cxCurrent;
-                        pszl->cy = pPrivate->cyCurrent;
+                        pszl->cx = pPrivate->Setup.cxCurrent;
+                        pszl->cy = pPrivate->Setup.cyCurrent;
                         brc = TRUE;
                     }
                     break;
@@ -840,6 +878,10 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         case MWGT_POWER:
                             pttt->pszText = "Battery power";
                         break;
+
+                        case MWGT_DISKFREE:
+                            pttt->pszText = "Free space on disks";
+                        break;
                     }
 
                     pttt->ulFormat = TTFMT_PSZ;
@@ -849,6 +891,206 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
     } // end if (pPrivate)
 
     return (brc);
+}
+
+/*
+ *@@ PaintDiskfree:
+ *      called from MwgtPaint for diskfree type only.
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID PaintDiskfree(HWND hwnd,
+                   PMONITORPRIVATE pPrivate,
+                   PCOUNTRYSETTINGS pCountrySettings,
+                   PRECTL prclWin,          // exclusive!
+                   HPS hps,
+                   BOOL fPaintAll)
+{
+    FONTMETRICS fm;
+
+    LONG    lcolHatch = RGBCOL_BLACK,
+            lcolBackground = pPrivate->Setup.lcolBackground;
+
+    #define GET_BLUE(lcol)  *( ((PBYTE)(&(lcol))) )
+    #define GET_GREEN(lcol) *( ((PBYTE)(&(lcol))) + 1 )
+    #define GET_RED(lcol)   *( ((PBYTE)(&(lcol))) + 2 )
+
+    #define MAKE_RGB(r, g, b) (LONG)((BYTE)(b)) + (((LONG)((BYTE)(g))) << 8) + (((LONG)((BYTE)(r))) << 16)
+
+    lcolHatch = MAKE_RGB(   255 - GET_RED(lcolBackground),
+                            255 - GET_GREEN(lcolBackground),
+                            255 - GET_BLUE(lcolBackground)
+                        );
+
+    GpiQueryFontMetrics(hps,
+                        sizeof(fm),
+                        &fm);
+
+    // make rclWin inclusive
+    (prclWin->xRight)--;
+    (prclWin->yTop)--;
+
+    GpiIntersectClipRectangle(hps,
+                              prclWin);
+
+    if (pPrivate->Setup.pszDisks)
+    {
+        ULONG cDisks = strlen(pPrivate->Setup.pszDisks),
+              ul;
+        CHAR szTemp2[50];
+
+        POINTL ptl,
+               ptlNow;
+        ptl.x = prclWin->xLeft;
+        ptl.y =   prclWin->yBottom
+                + (   (prclWin->yTop - prclWin->yBottom)
+                    // - (fm.lMaxAscender)
+                  ) / 2;
+        GpiMove(hps, &ptl);
+
+        GpiSetTextAlignment(hps,
+                            TA_LEFT,
+                            TA_HALF);
+
+        GpiSetColor(hps,
+                    pPrivate->Setup.lcolForeground);
+        GpiSetBackColor(hps,
+                        pPrivate->Setup.lcolBackground);
+
+        for (ul = 0;
+             ul < cDisks;
+             ul++)
+        {
+            CHAR c = pPrivate->Setup.pszDisks[ul];
+            if ((c > 'A') && (c <= 'Z'))
+            {
+                ULONG ulOfs = c - 'A' + 1;
+
+                if (    (fPaintAll)
+                     || ((pPrivate->paulFlags[ulOfs] & DFFL_REPAINT) != 0)
+                   )
+                {
+                    ULONG ulLength;
+                    LONG l = pPrivate->palKBs[ulOfs];
+
+                    if (l >= 0)
+                    {
+                        CHAR szTemp3[50];
+                        sprintf(szTemp2,
+                                "%c:%sM ",
+                                // drive letter:
+                                c,
+                                // free KB:
+                                pstrhThousandsULong(szTemp3,
+                                                    (l + 512) / 1024,
+                                                    pCountrySettings->cThousands));
+                    }
+                    else
+                        // error:
+                        sprintf(szTemp2,
+                                "%c: E%d ",
+                                // drive letter:
+                                c,
+                                // error (negative):
+                                -l);
+
+                    ulLength = strlen(szTemp2);
+
+                    if (!fPaintAll)
+                        GpiSetBackMix(hps, BM_OVERPAINT);
+
+                    if (pPrivate->paulFlags[ulOfs] & (DFFL_FLASH | DFFL_BACKGROUND))
+                    {
+                        POINTL      aptlText[TXTBOX_COUNT];
+                        POINTL      ptlRect,
+                                    ptlNow2;
+                        // flash the thing:
+                        GpiQueryTextBox(hps,
+                                        ulLength,
+                                        szTemp2,
+                                        TXTBOX_COUNT,
+                                        aptlText);
+                        GpiQueryCurrentPosition(hps, &ptlNow2);
+                        if (fPaintAll)
+                            ptlRect.x = ptlNow2.x - 3;
+                        else
+                            ptlRect.x = pPrivate->palXPoses[ulOfs] - 3;
+                        ptlRect.y = prclWin->yBottom;
+
+                        GpiMove(hps, &ptlRect);
+
+                        ptlRect.x += aptlText[TXTBOX_TOPRIGHT].x;
+                        ptlRect.y = prclWin->yTop;
+
+                        if (pPrivate->paulFlags[ulOfs] & DFFL_FLASH)
+                        {
+                            // flash, but not background:
+                            GpiSetPattern(hps, PATSYM_DIAG1);
+                            GpiSetColor(hps,
+                                        lcolHatch);
+                        }
+                        else
+                            GpiSetColor(hps,
+                                        pPrivate->Setup.lcolBackground);
+
+                        GpiBox(hps,
+                               DRO_FILL,
+                               &ptlRect,
+                               0,
+                               0);
+
+                        GpiMove(hps, &ptlNow2);
+
+                        GpiSetColor(hps,
+                                    pPrivate->Setup.lcolForeground);
+
+                        if (!fPaintAll)
+                            GpiSetBackMix(hps, BM_LEAVEALONE);
+
+                        // unset background flag, if this was set
+                        pPrivate->paulFlags[ulOfs] &= ~DFFL_BACKGROUND;
+
+                        GpiSetPattern(hps, PATSYM_DEFAULT);
+                    }
+
+                    /*
+                    GpiSetBackColor(hps,
+                                    ((pPrivate->paulFlags[ulOfs] & DFFL_FLASH) != 0)
+                                        ? RGBCOL_RED
+                                        : pPrivate->Setup.lcolBackground);
+                       */
+
+                    // if we're not painting all,
+                    // we must manually set the xpos now
+                    if (!fPaintAll)
+                    {
+                        ptl.x = pPrivate->palXPoses[ulOfs];
+                                    // this was stored in a previous run
+                        GpiMove(hps,
+                                &ptl);
+                    }
+
+                    GpiCharString(hps,
+                                  ulLength,
+                                  szTemp2);
+
+                    // unset repaint flag
+                    pPrivate->paulFlags[ulOfs] &= ~DFFL_REPAINT;
+
+                    {
+                        CHAR c2 = pPrivate->Setup.pszDisks[ul+1];
+                        if ((c2 > 'A') && (c2 <= 'Z'))
+                        {
+                            GpiQueryCurrentPosition(hps,
+                                                    &ptlNow);
+                            pPrivate->palXPoses[c2 - 'A' + 1] = ptlNow.x;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /*
@@ -871,7 +1113,9 @@ VOID MwgtPaint(HWND hwnd,
     CHAR        szPaint[400] = "";
     ULONG       ulPaintLen = 0;
     POINTL      aptlText[TXTBOX_COUNT];
-    ULONG       ulExtraWidth = 0;
+    ULONG       ulExtraWidth = 0;           // for battery icon only
+
+    BOOL        fSharedPaint = TRUE;
 
     // country settings from XCenter globals
     // (what a pointer)
@@ -932,8 +1176,8 @@ VOID MwgtPaint(HWND hwnd,
 
         case MWGT_MEMORY:
         {
-            ULONG ulMem = 0,
-                  ulLogicalSwapDrive = 8;
+            ULONG ulMem = 0;
+               //    ulLogicalSwapDrive = 8;
             if (Dos16MemAvail(&ulMem) == NO_ERROR)
             {
                 pstrhThousandsULong(szPaint,
@@ -956,7 +1200,7 @@ VOID MwgtPaint(HWND hwnd,
             {
                 // APM is OK:
                 const char *pcsz = NULL;
-                switch (pPrivate->ulBatteryStatus)
+                switch (pPrivate->pApm->ulBatteryStatus)
                 {
                     case 0x00: pcsz = "High"; break;
                     case 0x01: pcsz = "Low"; break;
@@ -969,14 +1213,14 @@ VOID MwgtPaint(HWND hwnd,
                 {
                     ULONG cxMiniIcon = pPrivate->pWidget->pGlobals->cxMiniIcon;
 
-                    sprintf(szPaint, "%d%%", pPrivate->ulBatteryLife);
+                    sprintf(szPaint, "%d%%", pPrivate->pApm->ulBatteryLife);
 
                     WinDrawPointer(hps,
                                    0,
                                    (    (rclWin.yTop - rclWin.yBottom)
                                       - cxMiniIcon
                                    ) / 2,
-                                   (pPrivate->ulBatteryStatus == 3)
+                                   (pPrivate->pApm->ulBatteryStatus == 3)
                                         ? pPrivate->hptrAC
                                         : pPrivate->hptrBattery,
                                    DP_MINI);
@@ -986,39 +1230,182 @@ VOID MwgtPaint(HWND hwnd,
                 }
             }
         break;
+
+        case MWGT_DISKFREE:
+            _Pmpf((__FUNCTION__ ": calling PaintDiskfree"));
+            PaintDiskfree(hwnd,
+                          pPrivate,
+                          pCountrySettings,
+                          &rclWin,
+                          hps,
+                          fDrawFrame);        // paint all?
+            fSharedPaint = FALSE;
+        break;
     }
 
-    ulPaintLen = strlen(szPaint);
-    GpiQueryTextBox(hps,
-                    ulPaintLen,
-                    szPaint,
-                    TXTBOX_COUNT,
-                    aptlText);
-    if (    abs((aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth) + 4 - rclWin.xRight)
-            > 4
+    // fSharedPaint is true for all except diskfree V0.9.14 (2001-08-01) [umoeller]
+    if (fSharedPaint)
+    {
+        ulPaintLen = strlen(szPaint);
+        GpiQueryTextBox(hps,
+                        ulPaintLen,
+                        szPaint,
+                        TXTBOX_COUNT,
+                        aptlText);
+        if (    abs((aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth) + 4 - rclWin.xRight)
+                > 4
+           )
+        {
+            // we need more space: tell XCenter client
+            pPrivate->Setup.cxCurrent = (aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth + 2*ulBorder + 4);
+            WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
+                       XCM_SETWIDGETSIZE,
+                       (MPARAM)hwnd,
+                       (MPARAM)pPrivate->Setup.cxCurrent
+                      );
+        }
+        else
+        {
+            // sufficient space:
+            GpiSetBackMix(hps, BM_OVERPAINT);
+            rclWin.xLeft += ulExtraWidth;
+            WinDrawText(hps,
+                        ulPaintLen,
+                        szPaint,
+                        &rclWin,
+                        pPrivate->Setup.lcolForeground,
+                        pPrivate->Setup.lcolBackground,
+                        DT_CENTER | DT_VCENTER);
+        }
+    }
+}
+
+/*
+ *@@ ForceRepaint:
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID ForceRepaint(PMONITORPRIVATE pPrivate)
+{
+    HWND hwnd = pPrivate->pWidget->hwndWidget;
+    HPS hps = WinGetPS(hwnd);
+    if (hps)
+    {
+        _Pmpf((__FUNCTION__ ": calling MwgtPaint"));
+        MwgtPaint(hwnd,
+                  pPrivate,
+                  hps,
+                  FALSE);   // text only
+
+        WinReleasePS(hps);
+    } // end if (pPrivate)
+}
+
+/*
+ *@@ MwgtTimer:
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
+{
+    USHORT usTimerID = (USHORT)mp1;
+
+    PMONITORPRIVATE pPrivate;
+    if (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+    {
+        if (usTimerID == 1)
+        {
+            _Pmpf((__FUNCTION__ ": timer 1"));
+            if (    (pPrivate->ulType == MWGT_POWER)
+                 && (pPrivate->pApm)
+                 && (!pPrivate->arcAPM)
+               )
+                pPrivate->arcAPM = papmhReadStatus(pPrivate->pApm);
+
+            ForceRepaint(pPrivate);
+        }
+        else if ((usTimerID > 2000) && (usTimerID <= 2026))
+        {
+            // diskfree flag timer:
+            ULONG ulLogicalDrive = usTimerID - 2000;
+            pPrivate->paulFlags[ulLogicalDrive] |= (DFFL_REPAINT | DFFL_BACKGROUND);
+            pPrivate->paulFlags[ulLogicalDrive] &= ~DFFL_FLASH;
+
+            ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
+                           pWidget->hwndWidget,
+                           usTimerID);
+
+            ForceRepaint(pPrivate);
+        }
+        else
+            pWidget->pfnwpDefWidgetProc(pWidget->hwndWidget, WM_TIMER, mp1, mp2);
+    }
+}
+
+/*
+ *@@ UpdateLogicalDrive:
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID UpdateLogicalDrive(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
+{
+    if ((ULONG)mp1 < 27)
+    {
+        PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
+
+        _Pmpf((__FUNCTION__ ": drive %d", (ULONG)mp1));
+
+        // if the item is not already flashed, flash it now
+        if (!(pPrivate->paulFlags[(ULONG)mp1] & DFFL_FLASH))
+        {
+            if (pPrivate->palKBs[(ULONG)mp1])
+                // not first call:
+                // flash the rectangle
+                pPrivate->paulFlags[(ULONG)mp1] |= (DFFL_FLASH | DFFL_REPAINT);
+
+            pPrivate->palKBs[(ULONG)mp1] = (LONG)mp2;
+
+            ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+                            pWidget->hwndWidget,
+                            2000 + (ULONG)mp1,
+                            1000);
+
+            ForceRepaint(pPrivate);
+        }
+    }
+}
+
+/*
+ *@@ MwgtWindowPosChanged:
+ *      implementation for WM_WINDOWPOSCHANGED.
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID MwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PXCENTERWIDGET pWidget;
+    PMONITORPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+         && (pPrivate->ulType == MWGT_DISKFREE)
        )
     {
-        // we need more space: tell XCenter client
-        pPrivate->cxCurrent = (aptlText[TXTBOX_TOPRIGHT].x + ulExtraWidth + 2*ulBorder + 4);
-        WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
-                   XCM_SETWIDGETSIZE,
-                   (MPARAM)hwnd,
-                   (MPARAM)pPrivate->cxCurrent
-                  );
-    }
-    else
-    {
-        // sufficient space:
-        GpiSetBackMix(hps, BM_OVERPAINT);
-        rclWin.xLeft += ulExtraWidth;
-        WinDrawText(hps,
-                    ulPaintLen,
-                    szPaint,
-                    &rclWin,
-                    pPrivate->Setup.lcolForeground,
-                    pPrivate->Setup.lcolBackground,
-                    DT_CENTER | DT_VCENTER);
-    }
+        PSWP pswpNew = (PSWP)mp1,
+             pswpOld = pswpNew + 1;
+        if (pswpNew->fl & SWP_SIZE)
+        {
+            // window was resized:
+            pPrivate->Setup.cxCurrent = pswpNew->cx;
+            MwgtSaveSetupAndSend(hwnd,
+                                 pPrivate);
+
+            WinInvalidateRect(hwnd, NULL, FALSE);
+        } // end if (pswpNew->fl & SWP_SIZE)
+    } // end if (pPrivate)
 }
 
 /*
@@ -1077,20 +1464,10 @@ VOID MwgtPresParamChanged(HWND hwnd,
 
         if (fInvalidate)
         {
-            XSTRING strSetup;
+
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            MwgtSaveSetup(&strSetup,
-                          &pPrivate->Setup);
-            if (strSetup.ulLength)
-                // changed V0.9.13 (2001-06-21) [umoeller]:
-                // post it to parent instead of fixed XCenter client
-                // to make this trayable
-                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
-                           XCM_SAVESETUP,
-                           (MPARAM)hwnd,
-                           (MPARAM)strSetup.psz);
-            pxstrClear(&strSetup);
+            MwgtSaveSetupAndSend(hwnd, pPrivate);
         }
     } // end if (pPrivate)
 }
@@ -1143,9 +1520,201 @@ VOID MwgtButton1DblClick(HWND hwnd,
 }
 
 /*
+ *@@ HackContextMenu:
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID HackContextMenu(PMONITORPRIVATE pPrivate)
+{
+    XDISKINFO aDiskInfos[26];
+    if (pdskQueryInfo(aDiskInfos,
+                      -1))           // all disks
+    {
+        HWND hwndSubmenu;
+        SHORT s = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
+                                    MM_ITEMPOSITIONFROMID,
+                                    MPFROM2SHORT(ID_CRMI_PROPERTIES,
+                                                 FALSE),
+                                    0);
+
+        if (hwndSubmenu = pwinhInsertSubmenu(pPrivate->pWidget->hwndContextMenu,
+                                             s + 2,
+                                             1999,
+                                             "Drives",
+                                             MIS_TEXT,
+                                             0, NULL, 0, 0))
+        {
+            ULONG ul;
+            for (ul = 0;
+                 ul < 26;
+                 ul++)
+            {
+                PXDISKINFO pThis = &aDiskInfos[ul];
+                if (pThis->flType & DFL_FIXED)
+                {
+                    // fixed drive:
+                    CHAR szText[10];
+                    ULONG afAttr = 0;
+                    sprintf(szText, "%c:", pThis->cDriveLetter);
+                    if (    (pPrivate->Setup.pszDisks)
+                         && (strchr(pPrivate->Setup.pszDisks, pThis->cDriveLetter))
+                       )
+                        afAttr |= MIA_CHECKED;
+
+                    pwinhInsertMenuItem(hwndSubmenu,
+                                        MIT_END,
+                                        2000 + pThis->cLogicalDrive,
+                                        szText,
+                                        MIS_TEXT,
+                                        afAttr);
+                }
+            }
+
+            pwinhInsertMenuItem(pPrivate->pWidget->hwndContextMenu,
+                                s + 3,
+                                0,
+                                "",
+                                MIS_SEPARATOR,
+                                0);
+
+            pPrivate->fContextMenuHacked = TRUE;
+        }
+    }
+}
+
+/*
+ *@@ MwgtContextMenu:
+ *      implementation for WM_CONTEXTMENU.
+ *
+ *      We override the default behavior of the standard
+ *      widget window proc for the diskfree widget.
+ *
+ *@@added V0.9.8 (2001-01-10) [umoeller]
+ */
+
+MRESULT MwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PXCENTERWIDGET pWidget;
+    PMONITORPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
+    {
+        if (    (pPrivate->ulType == MWGT_DISKFREE)
+             && (pWidget->hwndContextMenu)
+             && (!pPrivate->fContextMenuHacked)
+           )
+        {
+            // first call for diskfree:
+            // hack the context menu given to us
+            HackContextMenu(pPrivate);
+        }
+
+        return (pWidget->pfnwpDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2));
+    }
+
+    return 0;
+}
+
+/*
+ *@@ MwgtMenuSelect:
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+MRESULT MwgtMenuSelect(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PXCENTERWIDGET pWidget;
+    PMONITORPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
+    {
+        USHORT usItem = SHORT1FROMMP(mp1);
+        if (    (pPrivate->ulType == MWGT_DISKFREE)
+                // one of the drive letter items?
+             && (usItem >= 2000)
+             && (usItem <= 2026)
+           )
+        {
+            if (SHORT2FROMMP(mp1) == TRUE)      // WM_COMMAND to be posted:
+            {
+                ULONG ulLogicalDrive = usItem - 2000;
+
+                // recompose the string of drive letters to
+                // be monitored...
+                CHAR szNew[30],
+                     szNew2[30];
+                PSZ pTarget = szNew2;
+                ULONG ul;
+                BOOL fInList = FALSE;
+
+                memset(szNew, 0, sizeof(szNew));
+
+                if (pPrivate->Setup.pszDisks)
+                {
+                    for (ul = 1;
+                         ul < 27;
+                         ul++)
+                    {
+                        if (strchr(pPrivate->Setup.pszDisks,
+                                   ul + 'A' - 1))
+                        {
+                            if (ul == ulLogicalDrive)
+                                fInList = TRUE;
+                                // drop it
+                            else
+                                szNew[ul] = 1;
+                        }
+                    }
+
+                    free(pPrivate->Setup.pszDisks);
+                    pPrivate->Setup.pszDisks = NULL;
+                }
+
+                if (!fInList)
+                    szNew[ulLogicalDrive] = 1;
+
+                for (ul = 1;
+                     ul < 27;
+                     ul++)
+                {
+                    if (szNew[ul])
+                        *pTarget++ = ul + 'A' - 1;
+                }
+                *pTarget = '\0';
+
+                if (szNew2[0])
+                    pPrivate->Setup.pszDisks = strdup(szNew2);
+
+                WinCheckMenuItem((HWND)mp2,
+                                 usItem,
+                                 !fInList);
+
+                UpdateDiskMonitors(hwnd,
+                                   pPrivate);
+
+                MwgtSaveSetupAndSend(hwnd, pPrivate);
+
+                // full repaint
+                WinInvalidateRect(hwnd, NULL, FALSE);
+
+                return (MRESULT)FALSE;
+            }
+        }
+
+        return (pWidget->pfnwpDefWidgetProc(hwnd, WM_MENUSELECT, mp1, mp2));
+    }
+
+    return 0;
+}
+
+/*
  *@@ MwgtDestroy:
  *
  *@@added V0.9.12 (2001-05-26) [umoeller]
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
 VOID MwgtDestroy(PXCENTERWIDGET pWidget)
@@ -1158,13 +1727,20 @@ VOID MwgtDestroy(PXCENTERWIDGET pWidget)
                            pWidget->hwndWidget,
                            pPrivate->ulTimerID);
 
-        if (pPrivate->hfAPMSys)
-            DosClose(pPrivate->hfAPMSys);
+        if (pPrivate->pApm)
+            papmhClose(&pPrivate->pApm);
 
         if (pPrivate->hptrAC)
             WinDestroyPointer(pPrivate->hptrAC);
         if (pPrivate->hptrBattery)
             WinDestroyPointer(pPrivate->hptrBattery);
+
+        MwgtFreeSetup(&pPrivate->Setup);        // V0.9.14 (2001-08-01) [umoeller]
+
+        if (pPrivate->palKBs)
+            free(pPrivate->palKBs);
+        if (pPrivate->paulFlags)
+            free(pPrivate->paulFlags);
 
         free(pPrivate);
     } // end if (pPrivate)
@@ -1186,6 +1762,7 @@ VOID MwgtDestroy(PXCENTERWIDGET pWidget)
  *
  *      -- available-memory monitor.
  *
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: added diskfree widget
  */
 
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1261,28 +1838,28 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_TIMER:
-        {
-            HPS hps = WinGetPS(hwnd);
-            if (hps)
-            {
-                // get widget data and its button data from QWL_USER
-                PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-                if (pPrivate)
-                {
-                    if (    (pPrivate->ulType == MWGT_POWER)
-                         && (pPrivate->hfAPMSys)
-                       )
-                        ReadNewAPMValue(pPrivate);
+            MwgtTimer(pWidget, mp1, mp2);
+        break;
 
-                    MwgtPaint(hwnd,
-                              pPrivate,
-                              hps,
-                              FALSE);   // text only
-                } // end if (pPrivate)
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *      on window resize, allocate new bitmap.
+         */
 
-                WinReleasePS(hps);
-            }
-        break; }
+        case WM_WINDOWPOSCHANGED:
+            MwgtWindowPosChanged(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_PRESPARAMCHANGED:
+         *
+         */
+
+        case WM_PRESPARAMCHANGED:
+            if (pWidget)
+                // this gets sent before this is set!
+                MwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
+        break;
 
         /*
          *@@ WM_BUTTON1DBLCLK:
@@ -1296,14 +1873,40 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
         break;
 
         /*
-         * WM_PRESPARAMCHANGED:
-         *
+         * WM_CONTEXTMENU:
+         *      modify standard context menu behavior.
          */
 
-        case WM_PRESPARAMCHANGED:
-            if (pWidget)
-                // this gets sent before this is set!
-                MwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
+        case WM_CONTEXTMENU:
+            mrc = MwgtContextMenu(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_MENUSELECT:
+         *      intercept items for diskfree widget
+         *      and do not dismiss.
+         */
+
+        case WM_MENUSELECT:
+            mrc = MwgtMenuSelect(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_USER:
+         *      this message value is given to XWPDaemon
+         *      if we're operating in diskfree mode and
+         *      thus gets posted from xwpdaemon when a
+         *      diskfree value changes.
+         *
+         *      Parameters:
+         *
+         *      --  ULONG mp1: ulLogicalDrive which changed.
+         *
+         *      --  ULONG mp2: new free space on the disk in KB.
+         */
+
+        case WM_USER:
+            UpdateLogicalDrive(pWidget, mp1, mp2);
         break;
 
         /*

@@ -232,7 +232,7 @@ VOID ButtonPaint2(PFLATBUTTONDATA pfbd,
 {
     RECTL       rclButton,
                 rclIcon;
-    LONG        lSaved = 0;
+    // LONG        lSaved = 0;
 
     WinQueryWindowRect(pfbd->hwnd, &rclButton);
             // exclusive, top right is the same as window cx/cy
@@ -357,7 +357,7 @@ VOID ButtonPresParamChanged(HWND hwnd, MPARAM mp1)
     {
         ULONG ulAttrChanged = (ULONG)mp1;
         BOOL fInvalidate = TRUE;
-        ULONG ul;
+        // ULONG ul;
 
         switch (ulAttrChanged)
         {
@@ -699,8 +699,8 @@ VOID PaintTrack(PCDPLAYWINDATA pWinData,
     CHAR    szTrack[10];
     ULONG   flText = DT_CENTER | DT_VCENTER;
 
-    ULONG   cx = pWinData->rclClient.xRight - pWinData->rclClient.xLeft,
-            cy = pWinData->rclClient.yTop - pWinData->rclClient.yBottom;
+    ULONG   cx = pWinData->rclClient.xRight - pWinData->rclClient.xLeft;
+       //      cy = pWinData->rclClient.yTop - pWinData->rclClient.yBottom;
 
     rcl.xLeft = pWinData->rclClient.xLeft;
     rcl.yBottom = pWinData->yTrackNTime;
@@ -742,8 +742,8 @@ VOID PaintTime(PCDPLAYWINDATA pWinData,
     CHAR    szTime[10];
     ULONG   flText = DT_CENTER | DT_VCENTER;
 
-    ULONG   cx = pWinData->rclClient.xRight - pWinData->rclClient.xLeft,
-            cy = pWinData->rclClient.yTop - pWinData->rclClient.yBottom;
+    ULONG   cx = pWinData->rclClient.xRight - pWinData->rclClient.xLeft;
+//             cy = pWinData->rclClient.yTop - pWinData->rclClient.yBottom;
 
     rcl.xLeft = pWinData->rclClient.xLeft + (cx / 3) + 5;
     rcl.yBottom = pWinData->yTrackNTime;
@@ -787,7 +787,7 @@ VOID CDPaint(HWND hwnd)
     if (hps)
     {
         RECTL   rclWin;
-        ULONG   ul = 0;
+        // ULONG   ul = 0;
 
         gpihSwitchToRGB(hps);
 
@@ -835,7 +835,7 @@ MRESULT CDContextMenu(HWND hwnd, MPARAM mp1)
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
     POINTL          ptlPopup;
-    HPS             hps;
+    // HPS             hps;
 
     ptlPopup.x = SHORT1FROMMP(mp1);
     ptlPopup.y = SHORT2FROMMP(mp1);
@@ -916,7 +916,7 @@ VOID CDPresParamChanged(HWND hwnd, MPARAM mp1)
     XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
     ULONG ulAttrChanged = (ULONG)mp1;
     BOOL fInvalidate = TRUE;
-    ULONG ul;
+    // ULONG ul;
 
     switch (ulAttrChanged)
     {

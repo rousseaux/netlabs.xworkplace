@@ -71,6 +71,8 @@
 #define INCL_DOSERRORS
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+#define INCL_WINMENUS
+#define INCL_WINPOINTERS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
@@ -84,9 +86,11 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -240,6 +244,29 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
 }
 
 /*
+ *@@ ResolveWPUrl:
+ *      if called for the first time, sets G_WPUrl
+ *      to either the WPUrl class object or NULL
+ *      if the class doesn't exist (Warp 3).
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID ResolveWPUrl(VOID)
+{
+    if (G_WPUrl == (SOMClass*)-1)
+    {
+        // WPUrl class object not queried yet: do it now
+        somId    somidWPUrl = somIdFromString("WPUrl");
+        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
+        // _WPUrl now either points to the WPUrl class object
+        // or is NULL if the class is not installed (Warp 3!).
+        // In this case, the object will be treated as a regular
+        // file-system object.
+    }
+}
+
+/*
  *@@ stbSetClassMnemonics:
  *      this changes the status bar mnemonics for "single object"
  *      info for objects of this class and subclasses to
@@ -266,16 +293,7 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
 BOOL stbSetClassMnemonics(SOMClass *pClassObject,
                           PSZ pszText)
 {
-    if (G_WPUrl == (SOMClass*)-1)
-    {
-        // WPUrl class object not queried yet: do it now
-        somId    somidWPUrl = somIdFromString("WPUrl");
-        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
-        // _WPUrl now either points to the WPUrl class object
-        // or is NULL if the class is not installed (Warp 3!).
-        // In this case, the object will be treated as a regular
-        // file-system object.
-    }
+    ResolveWPUrl();
 
     if (G_WPUrl)
     {
@@ -1381,7 +1399,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
     // get country settings from "Country" object
     PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
-    CHAR        cThousands = pcs->cThousands,
+    CHAR        // cThousands = pcs->cThousands,
                 szTemp[300];
 
     // pre-resolve class pointers for speed V0.9.11 (2001-04-22) [umoeller]
@@ -1752,18 +1770,36 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
  *                                                                  *
  ********************************************************************/
 
-CHAR                    szSBTextNoneSelBackup[CCHMAXMNEMONICS],
-                        szSBText1SelBackup[CCHMAXMNEMONICS],
-                        szSBTextMultiSelBackup[CCHMAXMNEMONICS],
-                        szSBClassSelected[256];
-SOMClass                *pSBClassObjectSelected = NULL;
-somId                   somidClassSelected;
+/*
+ *@@ STATUSBARPAGEDATA:
+ *      data for status bar pages while they're open.
+ *
+ *      Finally turned this into a heap structure
+ *      with V0.9.14 to get rid of the global variables.
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+typedef struct _STATUSBARPAGEDATA
+{
+    CHAR                    szSBTextNoneSelBackup[CCHMAXMNEMONICS],
+                            szSBText1SelBackup[CCHMAXMNEMONICS],
+                            szSBTextMultiSelBackup[CCHMAXMNEMONICS],
+                            szSBClassSelected[256];
+    SOMClass                *pSBClassObjectSelected;
+    somId                   somidClassSelected;
+
+    HWND                    hwndKeysMenu;
+                // if != NULLHANDLE, the menu for the last
+                // "Keys" button pressed
+    ULONG                   ulLastKeysID;
+
+} STATUSBARPAGEDATA, *PSTATUSBARPAGEDATA;
 
 // struct passed to callbacks
 typedef struct _STATUSBARSELECTCLASS
 {
     HWND            hwndOKButton;
-    // PNLSSTRINGS     pNLSStrings;
 } STATUSBARSELECTCLASS, *PSTATUSBARSELECTCLASS;
 
 /*
@@ -1855,7 +1891,7 @@ MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
                                                MPARAM mphwndInfo)
 {
     PWPSLISTITEM pwps = (PWPSLISTITEM)mpwps;
-    PSTATUSBARSELECTCLASS psbsc = (PSTATUSBARSELECTCLASS)ulpsbsc;
+    // PSTATUSBARSELECTCLASS psbsc = (PSTATUSBARSELECTCLASS)ulpsbsc;
     CHAR szInfo[2000];
     MRESULT mrc = (MPARAM)FALSE;
     PSZ pszClassTitle;
@@ -2094,28 +2130,37 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: added "Dereference shadows"
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
+ *@@changed V0.9.14 (2001-07-31) [umoeller]: added "Keys" buttons support
  */
 
 VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pcnbp->pUser2;
 
     if (flFlags & CBI_INIT)
     {
+
+
         if (pcnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            pcnbp->pUser = NEW(GLOBALSETTINGS);
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+
+            pcnbp->pUser2
+            = psbpd
+                = NEW(STATUSBARPAGEDATA);
+            ZERO(psbpd);
         }
 
-        strcpy(szSBTextNoneSelBackup,
+        strcpy(psbpd->szSBTextNoneSelBackup,
                cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
-        strcpy(szSBTextMultiSelBackup,
+        strcpy(psbpd->szSBTextMultiSelBackup,
                cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
         // status bar settings page: get last selected
         // class from INIs (for single-object mode)
@@ -2123,25 +2168,35 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PrfQueryProfileString(HINI_USER,
                               (PSZ)INIAPP_XWORKPLACE,
                               (PSZ)INIKEY_SB_LASTCLASS,
-                              "XFldObject",     // default
-                              szSBClassSelected, sizeof(szSBClassSelected));
-        if (pSBClassObjectSelected == NULL)
+                              (PSZ)G_pcszXFldObject,     // "XFldObject", default
+                              psbpd->szSBClassSelected,
+                              sizeof(psbpd->szSBClassSelected));
+        if (psbpd->pSBClassObjectSelected == NULL)
         {
-            somidClassSelected = somIdFromString(szSBClassSelected);
-            if (somidClassSelected)
+            psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
+            if (psbpd->somidClassSelected)
                 // get pointer to class object (e.g. M_WPObject)
-                pSBClassObjectSelected = _somFindClass(SOMClassMgrObject, somidClassSelected, 0, 0);
+                psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
+                                                              psbpd->somidClassSelected,
+                                                              0,
+                                                              0);
         }
-        if (pSBClassObjectSelected)
-            strcpy(szSBText1SelBackup, stbQueryClassMnemonics(pSBClassObjectSelected));
+        if (psbpd->pSBClassObjectSelected)
+            strcpy(psbpd->szSBText1SelBackup,
+                   stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
+
+        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SBKEYSNONESEL), 0, 0);
+        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SBKEYS1SEL), 0, 0);
+        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SBKEYSMULTISEL), 0, 0);
+
     }
 
     if (flFlags & CBI_SET)
     {
-        // CHAR    szTemp[CCHMAXMNEMONICS];
-
         // current class
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XSDI_SBCURCLASS,
+                          psbpd->szSBClassSelected);
 
         // no-object mode
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTNONESEL,
@@ -2158,18 +2213,20 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           EM_SETTEXTLIMIT,
                           (MPARAM)(CCHMAXMNEMONICS-1),
                           MPNULL);
-        if (pSBClassObjectSelected == NULL)
+        if (psbpd->pSBClassObjectSelected == NULL)
         {
-            somidClassSelected = somIdFromString(szSBClassSelected);
-            if (somidClassSelected)
+            psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
+            if (psbpd->somidClassSelected)
                 // get pointer to class object (e.g. M_WPObject)
-                pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                       somidClassSelected, 0, 0);
+                psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
+                                                              psbpd->somidClassSelected,
+                                                              0,
+                                                              0);
         }
-        if (pSBClassObjectSelected)
+        if (psbpd->pSBClassObjectSelected)
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_SBTEXT1SEL,
-                              stbQueryClassMnemonics(pSBClassObjectSelected));
+                              stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
 
         // dereference shadows
         winhSetDlgItemChecked(pcnbp->hwndDlgPage,
@@ -2194,11 +2251,252 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     }
 
     if (flFlags & CBI_DESTROY)
-        if (pSBClassObjectSelected)
+    {
+        if (psbpd)
         {
-            SOMFree(somidClassSelected);
-            pSBClassObjectSelected = NULL;
+            if (psbpd->pSBClassObjectSelected)
+            {
+                SOMFree(psbpd->somidClassSelected);
+                psbpd->pSBClassObjectSelected = NULL;
+            }
+
+            if (psbpd->hwndKeysMenu)
+                WinDestroyWindow(psbpd->hwndKeysMenu),
+
+            free(psbpd);
+
+            pcnbp->pUser2 = NULL;
         }
+    }
+}
+
+/*
+ *@@ KEYARRAYITEM:
+ *      specifies one status bar mnemonic
+ *      to be inserted into a "Keys" menu.
+ *
+ *      If the first character oc pcszKey is '@',
+ *      we insert a submenu with the format
+ *      specifiers.
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+typedef struct _KEYARRAYITEM
+{
+    ULONG       ulItemID;               // menu item ID (hard-coded)
+    const char  *pcszKey;               // actual mnemonic (e.g. "$C")
+    ULONG       ulDescription;          // string ID for description
+} KEYARRAYITEM, *PKEYARRAYITEM;
+
+KEYARRAYITEM G_aFormatSubKeys[] =
+    {
+        1, "b", ID_XSSI_SBMNC_1,       // "in bytes"
+        2, "k", ID_XSSI_SBMNC_2,       // "in kBytes"
+        3, "K", ID_XSSI_SBMNC_3,       // "in KBytes"
+        4, "m", ID_XSSI_SBMNC_4,       // "in mBytes"
+        5, "M", ID_XSSI_SBMNC_5,       // "in MBytes"
+        6, "a", ID_XSSI_SBMNC_6,       // "in bytes/kBytes/mBytes/gBytes"
+        7, "A", ID_XSSI_SBMNC_7       // "in bytes/KBytes/MBytes/GBytes"
+    },
+
+    G_aAllModeKeys[] =
+    {
+        31000, "$c", ID_XSSI_SBMNC_000,       // "no. of selected objects"
+        31001, "$C", ID_XSSI_SBMNC_001,       // "total object count"
+
+        31010, "@$f", ID_XSSI_SBMNC_010,       // "free space on drive"
+        31020, "@$z", ID_XSSI_SBMNC_020,       // "total size of drive"
+        31030, "@$s", ID_XSSI_SBMNC_030,       // "size of selected objects in bytes"
+        31040, "@$S", ID_XSSI_SBMNC_040       // "size of folder content in bytes"
+    },
+
+    G_a1ObjectCommonKeys[] =
+    {
+        31100, "$t", ID_XSSI_SBMNC_100,       // "object title"
+        31110, "$w", ID_XSSI_SBMNC_110,       // "WPS class default title"
+        31120, "$W", ID_XSSI_SBMNC_120       // "WPS class name"
+    },
+
+    G_a1ObjectWPDiskKeys[] =
+    {
+        31200, "$F", ID_XSSI_SBMNC_200,       // "file system type (HPFS, FAT, CDFS, ...)"
+
+        31210, "$L", ID_XSSI_SBMNC_210,       // "drive label"
+
+        // skipping "free space on drive in bytes" which is redefined
+
+        31220, "@$z", ID_XSSI_SBMNC_220       // "total space on drive in bytes"
+    },
+
+    G_a1ObjectWPFileSystemKeys[] =
+    {
+        31300, "$r", ID_XSSI_SBMNC_300,       // "object's real name"
+
+        31310, "$y", ID_XSSI_SBMNC_310,       // "object type (.TYPE EA)"
+        31320, "$D", ID_XSSI_SBMNC_320,       // "object creation date"
+        31330, "$T", ID_XSSI_SBMNC_330,       // "object creation time"
+        31340, "$a", ID_XSSI_SBMNC_340,       // "object attributes"
+
+        31350, "$Eb", ID_XSSI_SBMNC_350,       // "EA size in bytes"
+        31360, "$Ek", ID_XSSI_SBMNC_360,       // "EA size in kBytes"
+        31370, "$EK", ID_XSSI_SBMNC_370,       // "EA size in KBytes"
+        31380, "$Ea", ID_XSSI_SBMNC_380,       // "EA size in bytes/kBytes"
+        31390, "$EA", ID_XSSI_SBMNC_390       // "EA size in bytes/KBytes"
+    },
+
+    G_a1ObjectWPUrlKeys[] =
+    {
+        31400, "$U", ID_XSSI_SBMNC_400       // "URL"
+    },
+
+    G_a1ObjectWPProgramKeys[] =
+    {
+        31500, "$p", ID_XSSI_SBMNC_500,       // "executable program file"
+        31510, "$P", ID_XSSI_SBMNC_510,       // "parameter list"
+        31520, "$d", ID_XSSI_SBMNC_520       // "working directory"
+    };
+
+/*
+ *@@ InsertKeysIntoMenu:
+ *      helper for building the "Keys" menu button menus.
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID InsertKeysIntoMenu(HWND hwndMenu,
+                        PKEYARRAYITEM paKeys,
+                        ULONG cKeys,
+                        BOOL fSeparatorBefore)
+{
+    ULONG ul;
+    XSTRING str;
+    xstrInit(&str, 100);
+
+    if (fSeparatorBefore)
+        winhInsertMenuSeparator(hwndMenu,
+                                MIT_END,
+                                0);
+
+    for (ul = 0;
+         ul < cKeys;
+         ul++)
+    {
+        xstrcpy(&str, cmnGetString(paKeys[ul].ulDescription), 0);
+
+        // if the first char is '@', build a submenu
+        // with the various format characters
+        if (*(paKeys[ul].pcszKey) == '@')
+        {
+            HWND hwndSubmenu = winhInsertSubmenu(hwndMenu,
+                                                 MIT_END,
+                                                 paKeys[ul].ulItemID,
+                                                 str.psz,
+                                                 MIS_TEXT,
+                                                 0, NULL, 0, 0);
+            ULONG ul2;
+            for (ul2 = 0;
+                 ul2 < ARRAYITEMCOUNT(G_aFormatSubKeys);
+                 ul2++)
+            {
+                xstrcpy(&str, cmnGetString(G_aFormatSubKeys[ul2].ulDescription), 0);
+                xstrcatc(&str, '\t');
+                xstrcat(&str, paKeys[ul].pcszKey + 1, 0);
+                xstrcat(&str, G_aFormatSubKeys[ul2].pcszKey, 0);
+
+                winhInsertMenuItem(hwndSubmenu,
+                                   MIT_END,
+                                   G_aFormatSubKeys[ul2].ulItemID
+                                        + paKeys[ul].ulItemID,
+                                   str.psz,
+                                   MIS_TEXT,
+                                   0);
+            }
+        }
+        else
+        {
+            // first character is not '@':
+            // simply insert as such
+            xstrcatc(&str, '\t');
+            xstrcat(&str, paKeys[ul].pcszKey, 0);
+
+            winhInsertMenuItem(hwndMenu,
+                               MIT_END,
+                               paKeys[ul].ulItemID,
+                               str.psz,
+                               MIS_TEXT,
+                               0);
+        }
+    }
+
+    xstrClear(&str);
+}
+
+/*
+ *@@ CreateKeysMenu:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
+                       ULONG ulItemID)
+{
+    HPOINTER hptrOld = winhSetWaitPointer();
+
+    if (psbpd->hwndKeysMenu)
+        WinDestroyWindow(psbpd->hwndKeysMenu);
+
+    // different button or first call:
+    // build menu then
+    psbpd->hwndKeysMenu = WinCreateMenu(HWND_DESKTOP, NULL);
+
+    InsertKeysIntoMenu(psbpd->hwndKeysMenu,
+                       G_aAllModeKeys,
+                       ARRAYITEMCOUNT(G_aAllModeKeys),
+                       FALSE);
+    if (ulItemID == ID_XSDI_SBKEYS1SEL)
+    {
+        InsertKeysIntoMenu(psbpd->hwndKeysMenu,
+                           G_a1ObjectCommonKeys,
+                           ARRAYITEMCOUNT(G_a1ObjectCommonKeys),
+                           TRUE);
+
+        if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
+                              _WPFileSystem))
+        {
+            InsertKeysIntoMenu(psbpd->hwndKeysMenu,
+                               G_a1ObjectWPFileSystemKeys,
+                               ARRAYITEMCOUNT(G_a1ObjectWPFileSystemKeys),
+                               TRUE);
+
+            ResolveWPUrl();
+            if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
+                                  G_WPUrl))
+                InsertKeysIntoMenu(psbpd->hwndKeysMenu,
+                                   G_a1ObjectWPUrlKeys,
+                                   ARRAYITEMCOUNT(G_a1ObjectWPUrlKeys),
+                                   TRUE);
+        }
+        else if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
+                                   _WPProgram))
+                InsertKeysIntoMenu(psbpd->hwndKeysMenu,
+                                   G_a1ObjectWPProgramKeys,
+                                   ARRAYITEMCOUNT(G_a1ObjectWPProgramKeys),
+                                   TRUE);
+        else if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
+                                   _WPDisk))
+                InsertKeysIntoMenu(psbpd->hwndKeysMenu,
+                                   G_a1ObjectWPDiskKeys,
+                                   ARRAYITEMCOUNT(G_a1ObjectWPDiskKeys),
+                                   TRUE);
+    }
+
+    // store what we had so we can reuse the menu
+    psbpd->ulLastKeysID = ulItemID;
+
+    WinSetPointer(HWND_DESKTOP, hptrOld);
+
+    return (MRESULT)psbpd->hwndKeysMenu;
 }
 
 /*
@@ -2212,6 +2510,8 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.0 [umoeller]: added "Dereference shadows"
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
+ *@@changed V0.9.14 (2001-07-31) [umoeller]: added "Keys" buttons support
+ *@@changed V0.9.14 (2001-07-31) [umoeller]: "Undo" didn't undo everything, fixed
  */
 
 MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2219,43 +2519,27 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
 {
-    MRESULT mrc = (MPARAM)0;
-    BOOL fSave = TRUE;
-    CHAR szDummy[CCHMAXMNEMONICS];
+    MRESULT     mrc = (MPARAM)0;
+    BOOL        fSave = TRUE,
+                fReadEFs = FALSE;           // read codes from entry fields?
+                                            // V0.9.14 (2001-07-31) [umoeller]
+    CHAR        szDummy[CCHMAXMNEMONICS];
+    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pcnbp->pUser2;
 
     switch (ulItemID)
     {
         case ID_XSDI_SBTEXTNONESEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
-            {
-                WinQueryDlgItemText(pcnbp->hwndDlgPage,
-                                    ID_XSDI_SBTEXTNONESEL,
-                                    sizeof(szDummy)-1, szDummy);
-                cmnSetStatusBarSetting(SBS_TEXTNONESEL, szDummy);
-
-                if (pSBClassObjectSelected == NULL)
-                {
-                    somidClassSelected = somIdFromString(szSBClassSelected);
-
-                    if (somidClassSelected)
-                        // get pointer to class object (e.g. M_WPObject)
-                        pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                               somidClassSelected, 0, 0);
-                }
-            }
+                fReadEFs = TRUE;
+            else
+                fSave = FALSE;
         break;
 
         case ID_XSDI_SBTEXT1SEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
-            {
-                if (pSBClassObjectSelected)
-                {
-                    WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,
-                                        sizeof(szDummy)-1, szDummy);
-                    stbSetClassMnemonics(pSBClassObjectSelected,
-                                         szDummy);
-                }
-            }
+                fReadEFs = TRUE;
+            else
+                fSave = FALSE;
         break;
 
         case ID_XSDI_DEREFSHADOWS_SINGLE:    // added V0.9.0
@@ -2270,11 +2554,9 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_SBTEXTMULTISEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
-            {
-                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTMULTISEL,
-                                    sizeof(szDummy)-1, szDummy);
-                cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
-            }
+                fReadEFs = TRUE;
+            else
+                fSave = FALSE;
         break;
 
         case ID_XSDI_DEREFSHADOWS_MULTIPLE:    // added V0.9.5 (2000-10-07) [umoeller]
@@ -2303,7 +2585,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             scd.pszIntroText = szIntroText;
             scd.pszRootClass = "WPObject";
             scd.pszOrphans = NULL;
-            strcpy(scd.szClassSelected, szSBClassSelected);
+            strcpy(scd.szClassSelected, psbpd->szSBClassSelected);
 
             // these callback funcs are defined way more below
             scd.pfnwpReturnAttrForClass = fncbWPSStatusBarReturnClassAttr;
@@ -2322,16 +2604,18 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      &scd)
                           == DID_OK)
             {
-                strcpy(szSBClassSelected, scd.szClassSelected);
-                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBCURCLASS, szSBClassSelected);
+                strcpy(psbpd->szSBClassSelected, scd.szClassSelected);
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                  ID_XSDI_SBCURCLASS,
+                                  psbpd->szSBClassSelected);
                 PrfWriteProfileString(HINI_USER,
                                       (PSZ)INIAPP_XWORKPLACE,
                                       (PSZ)INIKEY_SB_LASTCLASS,
-                                      szSBClassSelected);
-                if (pSBClassObjectSelected)
+                                      psbpd->szSBClassSelected);
+                if (psbpd->pSBClassObjectSelected)
                 {
-                    SOMFree(somidClassSelected);
-                    pSBClassObjectSelected = NULL;
+                    SOMFree(psbpd->somidClassSelected);
+                    psbpd->pSBClassObjectSelected = NULL;
                     // this will provoke the following func to re-read
                     // the class's status bar mnemonics
                 }
@@ -2340,34 +2624,51 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
 
                 // refresh the "Undo" data for this
-                strcpy(szSBText1SelBackup,
-                       stbQueryClassMnemonics(pSBClassObjectSelected));
+                strcpy(psbpd->szSBText1SelBackup,
+                       stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
 
             }
         break; }
 
+        // "Keys" buttons next to entry field
+        // V0.9.14 (2001-07-31) [umoeller]
+        case ID_XSDI_SBKEYSNONESEL:
+        case ID_XSDI_SBKEYS1SEL:
+        case ID_XSDI_SBKEYSMULTISEL:
+            mrc = CreateKeysMenu(psbpd,
+                                 ulItemID);
+        break;
+
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // PGLOBALSETTINGS pGSBackup = (PGLOBALSETTINGS)(pcnbp->pUser);
+            GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
             // and restore the settings for this page
-            cmnSetStatusBarSetting(SBS_TEXTNONESEL,
-                                   szSBTextNoneSelBackup);
-            cmnSetStatusBarSetting(SBS_TEXTMULTISEL,
-                                   szSBTextMultiSelBackup);
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            pGlobalSettings->bDereferenceShadows = pGSBackup->bDereferenceShadows;
+                        // V0.9.14 (2001-07-31) [umoeller]
+            cmnUnlockGlobalSettings();
 
-            if (pSBClassObjectSelected == NULL)
+            cmnSetStatusBarSetting(SBS_TEXTNONESEL,
+                                   psbpd->szSBTextNoneSelBackup);
+            cmnSetStatusBarSetting(SBS_TEXTMULTISEL,
+                                   psbpd->szSBTextMultiSelBackup);
+
+            if (!psbpd->pSBClassObjectSelected)
             {
-                somidClassSelected = somIdFromString(szSBClassSelected);
-                if (somidClassSelected)
+                psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
+                if (psbpd->somidClassSelected)
                     // get pointer to class object (e.g. M_WPObject)
-                    pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                           somidClassSelected, 0, 0);
+                    psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
+                                                                  psbpd->somidClassSelected,
+                                                                  0,
+                                                                  0);
             }
-            if (pSBClassObjectSelected)
-                stbSetClassMnemonics(pSBClassObjectSelected,
-                                     szSBText1SelBackup);
+
+            if (psbpd->pSBClassObjectSelected)
+                stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
+                                     psbpd->szSBText1SelBackup);
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2378,18 +2679,27 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // WPS startup)
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);  // load default
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL); // load default
 
-            if (pSBClassObjectSelected == NULL)
+            pGlobalSettings->bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
+                        // V0.9.14 (2001-07-31) [umoeller]
+            cmnUnlockGlobalSettings();
+
+            if (!psbpd->pSBClassObjectSelected)
             {
-                somidClassSelected = somIdFromString(szSBClassSelected);
-                if (somidClassSelected)
+                psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
+                if (psbpd->somidClassSelected)
                     // get pointer to class object (e.g. M_WPObject)
-                    pSBClassObjectSelected = _somFindClass(SOMClassMgrObject, somidClassSelected, 0, 0);
+                    psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
+                                                                  psbpd->somidClassSelected,
+                                                                  0,
+                                                                  0);
             }
-            if (pSBClassObjectSelected)
-                stbSetClassMnemonics(pSBClassObjectSelected,
+            if (psbpd->pSBClassObjectSelected)
+                stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
                                      NULL);  // load default
 
             // update the display by calling the INIT callback
@@ -2397,12 +2707,141 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break; }
 
         default:
+        {
             fSave = FALSE;
+
+            if (ulItemID >= 31000)
+            {
+                // one of the menu item IDs from the "Keys" menu:
+                // look up the item in the menu we built then
+                PSZ psz = NULL;
+                if (    (psbpd->hwndKeysMenu)
+                     && (psz = winhQueryMenuItemText(psbpd->hwndKeysMenu,
+                                                     ulItemID))
+                   )
+                {
+                    // alright, now we got the menu item text...
+                    // find the tab character, after which is the
+                    // key we need to insert
+                    const char *p;
+                    if (p = strchr(psz, '\t'))
+                    {
+                        // p points to the key to insert now...
+                        // find the entry field to insert into,
+                        // this can come in for any of the three
+                        // buttons
+
+                        ULONG ulEFID = 0;
+                        switch (psbpd->ulLastKeysID)
+                        {
+                            case ID_XSDI_SBKEYSNONESEL:
+                                ulEFID = ID_XSDI_SBTEXTNONESEL;
+                            break;
+
+                            case ID_XSDI_SBKEYS1SEL:
+                                ulEFID = ID_XSDI_SBTEXT1SEL;
+                            break;
+
+                            case ID_XSDI_SBKEYSMULTISEL:
+                                ulEFID = ID_XSDI_SBTEXTMULTISEL;
+                            break;
+                        }
+
+                        if (ulEFID)
+                        {
+                            HWND hwndEF = WinWindowFromID(pcnbp->hwndDlgPage,
+                                                          ulEFID);
+                            MRESULT mr = WinSendMsg(hwndEF,
+                                                    EM_QUERYSEL,
+                                                    0,
+                                                    0);
+                            SHORT s1 = SHORT1FROMMR(mr),
+                                  s2 = SHORT2FROMMR(mr);
+
+                            PSZ pszOld;
+
+                            if (pszOld = winhQueryWindowText(hwndEF))
+                            {
+                                XSTRING strNew;
+                                ULONG   ulNewLength = strlen(p + 1);
+
+                                xstrInitSet(&strNew, pszOld);
+
+                                xstrrpl(&strNew,
+                                        // first char to replace:
+                                        s1,
+                                        // no. of chars to replace:
+                                        s2 - s1,
+                                        // string to replace chars with:
+                                        p + 1,
+                                        ulNewLength);
+
+                                WinSetWindowText(hwndEF,
+                                                 strNew.psz);
+
+                                WinSendMsg(hwndEF,
+                                           EM_SETSEL,
+                                           MPFROM2SHORT(s1,
+                                                        s1 + ulNewLength),
+                                           0);
+
+                                WinSetFocus(HWND_DESKTOP, hwndEF);
+
+                                xstrClear(&strNew);
+
+                                fSave = TRUE;
+                                fReadEFs = TRUE;
+                            }
+                        }
+                    }
+
+                    free(psz);
+                }
+            }
+        }
     }
 
     if (fSave)
     {
+        if (fReadEFs)
+        {
+            // "none selected" codes:
+
+            WinQueryDlgItemText(pcnbp->hwndDlgPage,
+                                ID_XSDI_SBTEXTNONESEL,
+                                sizeof(szDummy)-1, szDummy);
+            cmnSetStatusBarSetting(SBS_TEXTNONESEL, szDummy);
+
+            if (psbpd->pSBClassObjectSelected == NULL)
+            {
+                psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
+
+                if (psbpd->somidClassSelected)
+                    // get pointer to class object (e.g. M_WPObject)
+                    psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
+                                                                  psbpd->somidClassSelected,
+                                                                  0,
+                                                                  0);
+            }
+
+            // "one selected" codes:
+
+            if (psbpd->pSBClassObjectSelected)
+            {
+                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,
+                                    sizeof(szDummy)-1, szDummy);
+                stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
+                                     szDummy);
+            }
+
+            // "multiple selected" codes:
+            WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTMULTISEL,
+                                sizeof(szDummy)-1, szDummy);
+            cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
+        }
+
         cmnStoreGlobalSettings();
+
         // have the Worker thread update the
         // status bars for all currently open
         // folders

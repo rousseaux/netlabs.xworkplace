@@ -558,7 +558,7 @@ BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
         if (WinProcessDlg(hwndDlg) == DID_OK)
         {
             CHAR    szNew[300] = "";
-            ULONG   ulOfs = 0;
+            // ULONG   ulOfs = 0;
             WinQueryWindowText(hwndEntryField,
                                sizeof(szNew),
                                szNew);

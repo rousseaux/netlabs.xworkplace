@@ -1112,7 +1112,7 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
 
 BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
 {
-    HWND        hwndFrame = NULLHANDLE;
+    // HWND        hwndFrame = NULLHANDLE;
     BOOL        brc = FALSE;
 
     WPSHLOCKSTRUCT Lock;
@@ -1928,7 +1928,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
             {
                 TRY_LOUD(excpt1)
                 {
-                    XFolderData *somThis = XFolderGetData(psbd->somSelf);
+                    // XFolderData *somThis = XFolderGetData(psbd->somSelf);
 
                     // stop timer (it's just for one shot)
                     WinStopTimer(psbd->habStatusBar, // anchor block,

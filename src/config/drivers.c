@@ -597,7 +597,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
     PDRIVERRECORD   preccRoot = 0;
                     // precc = 0;
     // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+    // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     // set wait pointer; this is handled by notebook.c
     pcnbpDrivers->fShowWaitPointer = TRUE;
@@ -713,8 +713,8 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
     if (flFlags & CBI_INIT)
     {
         HWND hwndTextView;
-        SWP  swpMLE;
-        XTEXTVIEWCDATA xtxCData;
+        // SWP  swpMLE;
+        // XTEXTVIEWCDATA xtxCData;
         PDRIVERPAGEDATA pPageData = 0;
 
         // load the driver dialog definitions
@@ -1117,7 +1117,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_OSDI_DRIVR_APPLYTHIS:
         {
             PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
-            PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
+            // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
             CHAR szNewParams[500];
             CHAR szNewLine[1500];
             WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_DRIVR_PARAMS,

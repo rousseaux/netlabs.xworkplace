@@ -48,6 +48,7 @@
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINSTATICS
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
@@ -68,10 +69,12 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
@@ -213,7 +216,7 @@ static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
 typedef struct _STANDARDOBJECT
 {
     const char  **ppcszDefaultID;   // e.g. <WP_DRIVES>;
-    const char  *pcszObjectClass;   // e.g. "WPDrives"
+    const char  **ppcszObjectClass;   // e.g. "WPDrives"
     const char  *pcszLocation;      // e.g. "<WP_CONFIG>"
     const char  *pcszSetupString;   // e.g. "DETAILSFONT=..."; if present, _always_
                                     // put a semicolon at the end, because "OBJECTID=xxx"
@@ -228,81 +231,83 @@ typedef struct _STANDARDOBJECT
 
 // array of objects for "Standard WPS objects" menu button
 static STANDARDOBJECT
-    G_WPSObjects[] = {
-            &WPOBJID_KEYB, "WPKeyboard", "<WP_CONFIG>", "", 100, 0,
-            &WPOBJID_MOUSE, "WPMouse", "<WP_CONFIG>", "", 101, 0,
-            &WPOBJID_CNTRY, "WPCountry", "<WP_CONFIG>", "", 102, 0,
-            &WPOBJID_SOUND, "WPSound", "<WP_CONFIG>", "", 103, 0,
-            &WPOBJID_SYSTEM, "WPSystem", "<WP_CONFIG>",
+    G_WPSObjects[] =
+    {
+            &WPOBJID_KEYB, &G_pcszWPKeyboard, "<WP_CONFIG>", "", 100, 0,
+            &WPOBJID_MOUSE, &G_pcszWPMouse, "<WP_CONFIG>", "", 101, 0,
+            &WPOBJID_CNTRY, &G_pcszWPCountry, "<WP_CONFIG>", "", 102, 0,
+            &WPOBJID_SOUND, &G_pcszWPSound, "<WP_CONFIG>", "", 103, 0,
+            &WPOBJID_SYSTEM, &G_pcszWPSystem, "<WP_CONFIG>",
                     "HELPPANEL=9259;", 104, 0, // V0.9.9
-            &WPOBJID_POWER, "WPPower", "<WP_CONFIG>", "", 105, 0,
-            &WPOBJID_WINCFG, "WPWinConfig", "<WP_CONFIG>", "", 106, 0,
+            &WPOBJID_POWER, &G_pcszWPPower, "<WP_CONFIG>", "", 105, 0,
+            &WPOBJID_WINCFG, &G_pcszWPWinConfig, "<WP_CONFIG>", "", 106, 0,
 
-            &WPOBJID_HIRESCLRPAL, "WPColorPalette", "<WP_CONFIG>",
+            &WPOBJID_HIRESCLRPAL, &G_pcszWPColorPalette, "<WP_CONFIG>",
                     "NODELETETE=YES;AUTOSETUP=HIRES;", 110, 0,
-            &WPOBJID_LORESCLRPAL, "WPColorPalette", "<WP_CONFIG>",
+            &WPOBJID_LORESCLRPAL, &G_pcszWPColorPalette, "<WP_CONFIG>",
                     "NODELETETE=YES;AUTOSETUP=LORES;", 111, 0,
-            &WPOBJID_FNTPAL, "WPFontPalette", "<WP_CONFIG>",
+            &WPOBJID_FNTPAL, &G_pcszWPFontPalette, "<WP_CONFIG>",
                     "NODELETE=YES;", 112, 0,
-            &WPOBJID_SCHPAL96, "WPSchemePalette", "<WP_CONFIG>",
+            &WPOBJID_SCHPAL96, &G_pcszWPSchemePalette, "<WP_CONFIG>",
                     "NODELETE=YES;AUTOSETUP=YES;", 113, 0,
 
-            &WPOBJID_LAUNCHPAD, "WPLaunchPad", "<WP_OS2SYS>", "", 120, 0,
-            &WPOBJID_WARPCENTER, "SmartCenter", "<WP_OS2SYS>", "", 121, 0,
+            &WPOBJID_LAUNCHPAD, &G_pcszWPLaunchPad, "<WP_OS2SYS>", "", 120, 0,
+            &WPOBJID_WARPCENTER, &G_pcszSmartCenter, "<WP_OS2SYS>", "", 121, 0,
 
-            &WPOBJID_SPOOL, "WPSpool", "<WP_CONFIG>", "", 130, 0,
-            &WPOBJID_VIEWER, "WPMinWinViewer", "<WP_OS2SYS>",
+            &WPOBJID_SPOOL, &G_pcszWPSpool, "<WP_CONFIG>", "", 130, 0,
+            &WPOBJID_VIEWER, &G_pcszWPMinWinViewer, "<WP_OS2SYS>",
                     "ALWAYSSORT=YES;", 131, 0,
-            &WPOBJID_SHRED, "WPShredder", "<WP_DESKTOP>", "", 132, 0,
-            &WPOBJID_CLOCK, "WPClock", "<WP_CONFIG>", "", 133, 0,
+            &WPOBJID_SHRED, &G_pcszWPShredder, "<WP_DESKTOP>", "", 132, 0,
+            &WPOBJID_CLOCK, &G_pcszWPClock, "<WP_CONFIG>", "", 133, 0,
 
-            &WPOBJID_START, "WPStartup", "<WP_OS2SYS>",
+            &WPOBJID_START, &G_pcszWPStartup, "<WP_OS2SYS>",
                     "HELPPANEL=8002;NODELETE=YES;", 140, 0,
-            &WPOBJID_TEMPS, "WPTemplates", "<WP_OS2SYS>",
+            &WPOBJID_TEMPS, &G_pcszWPTemplates, "<WP_OS2SYS>",
                     "HELPPANEL=15680;NODELETE=YES;", 141, 0,
-            &WPOBJID_DRIVES, "WPDrives", "<WP_CONNECTIONSFOLDER>",
+            &WPOBJID_DRIVES, &G_pcszWPDrives, "<WP_CONNECTIONSFOLDER>",
                     "ALWAYSSORT=YES;NODELETE=YES;DEFAULTVIEW=ICON;", 142, 0
     },
 
 // array of objects for "XWorkplace objects" menu button
-    G_XWPObjects[] = {
-            &XFOLDER_WPSID, "XFldWPS", "<WP_CONFIG>",
+    G_XWPObjects[] =
+    {
+            &XFOLDER_WPSID, &G_pcszXFldWPS, "<WP_CONFIG>",
                     "",
                     200, 0,
-            &XFOLDER_KERNELID, "XFldSystem", "<WP_CONFIG>",
+            &XFOLDER_KERNELID, &G_pcszXFldSystem, "<WP_CONFIG>",
                     "",
                     201, 0,
-            &XFOLDER_SCREENID, "XWPScreen", "<WP_CONFIG>",
+            &XFOLDER_SCREENID, &G_pcszXWPScreen, "<WP_CONFIG>",
                     "",
                     203, 0,
-            &XFOLDER_MEDIAID, "XWPMedia", "<WP_CONFIG>",
+            &XFOLDER_MEDIAID, &G_pcszXWPMedia, "<WP_CONFIG>",
                     "",
                     204, 0,
-            &XFOLDER_CLASSLISTID, "XWPClassList", "<WP_CONFIG>",
+            &XFOLDER_CLASSLISTID, &G_pcszXWPClassList, "<WP_CONFIG>",
                     "",
                     202, 0,
 
-            &XFOLDER_CONFIGID, "WPFolder", "<XWP_MAINFLDR>",
+            &XFOLDER_CONFIGID, &G_pcszWPFolder, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     210, 0,
-            &XFOLDER_STARTUPID, "XFldStartup", "<XWP_MAINFLDR>",
+            &XFOLDER_STARTUPID, &G_pcszXFldStartup, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     211, 0,
-            &XFOLDER_SHUTDOWNID, "XFldShutdown", "<XWP_MAINFLDR>",
+            &XFOLDER_SHUTDOWNID, &G_pcszXFldShutdown, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     212, 0,
-            &XFOLDER_FONTFOLDERID, "XWPFontFolder", "<WP_CONFIG>", // V0.9.9
+            &XFOLDER_FONTFOLDERID, &G_pcszXWPFontFolder, "<WP_CONFIG>", // V0.9.9
                     "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;",  // added SORTCLASS V0.9.9 (2001-04-07) [umoeller]
                     213, 0,
 
-            &XFOLDER_TRASHCANID, "XWPTrashCan", "<WP_DESKTOP>",
+            &XFOLDER_TRASHCANID, &G_pcszXWPTrashCan, "<WP_DESKTOP>",
                     "DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;",
                     220, 0,
-            &XFOLDER_STRINGTPLID, "XWPString", "<XWP_MAINFLDR>", // V0.9.9
+            &XFOLDER_STRINGTPLID, &G_pcszXWPString, "<XWP_MAINFLDR>", // V0.9.9
                     "TEMPLATE=YES;",
                     221, 0,
 
-            &XFOLDER_XCENTERID, "XCenter", "<XWP_MAINFLDR>",
+            &XFOLDER_XCENTERID, &G_pcszXCenter, "<XWP_MAINFLDR>",
                     "",
                     230, 0
     };
@@ -388,6 +393,30 @@ VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
  *                                                                  *
  ********************************************************************/
 
+typedef const char  ***REQ;
+
+/*
+ *@@ XWPCLASSITEM:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+typedef struct _XWPCLASSITEM
+{
+    const char  **ppcszClassName;           // XWorkplace class name (e.g. "XWPProgram");
+                                            // ptr to global string in common.h
+    const char  **ppcszReplacesClass;       // if this replaces a class (e.g. "WPProgram"),
+                                            // ptr to global string in common.h
+
+    REQ         pRequirements;           // ptr to an array of const char** ptrs
+                                            // if this class requires other
+                                            // classes to be installed; NULL otherwise
+    ULONG       cRequirements;              // count of items in that array or 0
+
+    ULONG       ulToolTipID;                // TMF msg ID for tooltip or 0
+
+} XWPCLASSITEM, *PXWPCLASSITEM;
+
 /*
  *@@ XWPCLASSES:
  *      structure used for fnwpXWorkplaceClasses
@@ -396,71 +425,673 @@ VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
 
 typedef struct _XWPCLASSES
 {
-    // class replacements
-    BOOL    fXFldObject,
-            fXFolder,
-            fXFldDisk,
-            fXFldDesktop,
-            fXFldDataFile,
-            fXFldProgramFile,
-            fXWPSound,
-            fXWPMouse,
-            fXWPKeyboard,
-    // new classes
-            fXWPSetup,
-            fXFldSystem,
-            fXFldWPS,
-            fXWPScreen,
-            fXWPMedia,
-            fXFldStartup,
-            fXFldShutdown,
-            fXWPClassList,
-            fXWPTrashCan,
-            fXWPString,
-            fXCenter,
-            fXWPFonts;
-
     HWND    hwndTooltip;
     PSZ     pszTooltipString;
 } XWPCLASSES, *PXWPCLASSES;
 
-// array of tools to be subclassed for tooltips
-static USHORT G_usClassesToolIDs[] =
+/*
+ *@@ RegisterArray:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID RegisterArray(HWND hwndDlg,
+                   HWND hwndTooltip,
+                   PTOOLINFO pti,
+                   ULONG ulFirstID,
+                   PBYTE pObjClass,
+                   PXWPCLASSITEM paClasses,
+                   ULONG cClasses)
+{
+    ULONG ul;
+    for (ul = 0;
+         ul < cClasses;
+         ul++)
     {
-        ID_XCDI_XWPCLS_XFLDOBJECT,
-        ID_XCDI_XWPCLS_XFOLDER,
-        ID_XCDI_XWPCLS_XFLDDISK,
-        ID_XCDI_XWPCLS_XFLDDESKTOP,
-        ID_XCDI_XWPCLS_XFLDDATAFILE,
-        ID_XCDI_XWPCLS_XFLDPROGRAMFILE,
-        ID_XCDI_XWPCLS_XWPSOUND,
-        ID_XCDI_XWPCLS_XWPMOUSE,
-        ID_XCDI_XWPCLS_XWPKEYBOARD,
+        PXWPCLASSITEM pThis = &paClasses[ul];
+        HWND hwndCtl;
+        if (hwndCtl = WinWindowFromID(hwndDlg, ulFirstID + ul))
+        {
+            // add tool to tooltip control
+            pti->hwndTool = hwndCtl;
+            WinSendMsg(hwndTooltip,
+                       TTM_ADDTOOL,
+                       (MPARAM)0,
+                       pti);
+        }
+        winhSetDlgItemChecked(hwndDlg,
+                              ulFirstID + ul,
+                              (winhQueryWPSClass(pObjClass,
+                                                 *(pThis->ppcszClassName))
+                                    != 0));
+    }
+}
 
-        ID_XCDI_XWPCLS_XWPSETUP,
-        ID_XCDI_XWPCLS_XFLDSYSTEM,
-        ID_XCDI_XWPCLS_XFLDWPS,
-        ID_XCDI_XWPCLS_XFLDSTARTUP,
-        ID_XCDI_XWPCLS_XFLDSHUTDOWN,
-        ID_XCDI_XWPCLS_XWPCLASSLIST,
-        ID_XCDI_XWPCLS_XWPTRASHCAN,
+/* DLGTEMPLATE ID_XCD_XWPINSTALLEDCLASSES LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Installed XWorkplace Classes", ID_XCD_XWPINSTALLEDCLASSES, 26,
+            12, 258, 216, , FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        GROUPBOX        "Class replacements", -1, 4, 130, 245, 85, NOT
+                        WS_GROUP
+        AUTOCHECKBOX    "XFldObject (for all WPS objects)",
+                        ID_XCDI_XWPCLS_XFLDOBJECT, 10, 198, 170, 8,
+                        WS_DISABLED
+        AUTOCHECKBOX    "X~Folder (for all folders)", ID_XCDI_XWPCLS_XFOLDER,
+                        10, 190, 170, 8
+        AUTOCHECKBOX    "XFld~Disk (for disk objects)",
+                        ID_XCDI_XWPCLS_XFLDDISK, 20, 182, 170, 8
+        AUTOCHECKBOX    "XFldDes~ktop (Desktop)", ID_XCDI_XWPCLS_XFLDDESKTOP,
+                        10, 174, 170, 8
+        AUTOCHECKBOX    "XFldDa~taFile (all physical files)",
+                        ID_XCDI_XWPCLS_XFLDDATAFILE, 10, 166, 170, 8
+        AUTOCHECKBOX    "XFld~ProgramFile (executable files)",
+                        ID_XCDI_XWPCLS_XFLDPROGRAMFILE, 10, 158, 170, 8
+        AUTOCHECKBOX    "~XWPSound (enhanced ""Sound"" settings object)",
+                        ID_XCDI_XWPCLS_XWPSOUND, 10, 150, 210, 8
+        AUTOCHECKBOX    "XWPMouse (e~nhanced ""Mouse"" settings object)",
+                        ID_XCDI_XWPCLS_XWPMOUSE, 10, 142, 210, 8
+        AUTOCHECKBOX    "XWPKey~board (enhanced ""Keyboard"" settings object"
+                        ")", ID_XCDI_XWPCLS_XWPKEYBOARD, 10, 134, 210, 8
+        GROUPBOX        "New classes", -1, 4, 20, 245, 108, NOT WS_GROUP
+        AUTOCHECKBOX    "XWPSetup (""XWorkplace Setup"" settings object)",
+                        ID_XCDI_XWPCLS_XWPSETUP, 10, 112, 235, 8,
+                        WS_DISABLED
+        AUTOCHECKBOX    "XFldS~ystem (""OS/2 Kernel"" settings object)",
+                        ID_XCDI_XWPCLS_XFLDSYSTEM, 10, 104, 230, 8
+        AUTOCHECKBOX    "XFld~WPS (""Workplace Shell"" settings object)",
+                        ID_XCDI_XWPCLS_XFLDWPS, 10, 96, 230, 8
+        AUTOCHECKBOX    "XWPScr~een (""Screen"" settings object)",
+                        ID_XCDI_XWPCLS_XWPSCREEN, 10, 88, 230, 8
+        AUTOCHECKBOX    "XWP~Media (Multimedia settings)",
+                        ID_XCDI_XWPCLS_XWPMEDIA, 10, 80, 230, 8
+        AUTOCHECKBOX    "XFldStart~up (new Startup folder)",
+                        ID_XCDI_XWPCLS_XFLDSTARTUP, 10, 72, 170, 8
+        AUTOCHECKBOX    "XFld~Shutdown (Shutdown folder)",
+                        ID_XCDI_XWPCLS_XFLDSHUTDOWN, 10, 64, 170, 8
+        AUTOCHECKBOX    "XWPClass~List (WPS Class List object)",
+                        ID_XCDI_XWPCLS_XWPCLASSLIST, 10, 56, 170, 8
+        AUTOCHECKBOX    "XWPT~rashCan/XWPTrashObject (trash can)",
+                        ID_XCDI_XWPCLS_XWPTRASHCAN, 10, 48, 235, 8
+        AUTOCHECKBOX    "XWPStr~ing (Setup-strings-as-object class)",
+                        ID_XCDI_XWPCLS_XWPSTRING, 10, 40, 230, 8
+        AUTOCHECKBOX    "XCenter (system control b~ar)",
+                        ID_XCDI_XWPCLS_XCENTER, 10, 32, 230, 8
+        AUTOCHECKBOX    "XWPFontFolder/XWPFontFile/XWPFontOb~ject (fonts)",
+                        ID_XCDI_XWPCLS_XWPFONTS, 10, 24, 230, 8
+        DEFPUSHBUTTON   "~OK...", DID_OK, 5, 4, 75, 12
+        PUSHBUTTON      "~Cancel", DID_CANCEL, 90, 4, 75, 12
+        PUSHBUTTON      "~Help", DID_HELP, 175, 4, 75, 12, BS_HELP
+    END
+END */
 
-        // new items with V0.9.3 (2000-04-26) [umoeller]
-        ID_XCDI_XWPCLS_XWPSCREEN,
-        ID_XCDI_XWPCLS_XWPSTRING,
-
-        // new items with V0.9.5
-        ID_XCDI_XWPCLS_XWPMEDIA,
-
-        // new items with V0.9.7
-        ID_XCDI_XWPCLS_XCENTER,
-
-        // new items with V0.9.10
-        ID_XCDI_XWPCLS_XWPFONTS,
-
-        DID_OK,
-        DID_CANCEL
+const char **G_RequirementsXFldStartupShutdown[] =
+    {
+        &G_pcszXFldDesktop,
+        &G_pcszXFolder
     };
+
+const char **G_RequirementsXWPTrashCan[] =
+    {
+        &G_pcszXFolder,
+        &G_pcszXWPTrashObject
+    };
+
+const char **G_RequirementsXWPFontFolder[] =
+    {
+        &G_pcszXFolder,
+        &G_pcszXWPFontObject,
+        &G_pcszXWPFontFile
+    };
+
+const char **G_RequiresXFolderOnly[] =
+    {
+        &G_pcszXFolder
+    };
+
+/*
+ *@@ G_aClasses:
+ *      the static array of all classes that XWorkplace
+ *      is made of.
+ *
+ *      This was redone with V0.9.14. All information that
+ *      the "Classes" dialog knows about is now contained
+ *      in this one array. The dialog is now dynamically
+ *      formatted so adding or removing classes is very
+ *      easy now... just change this array.
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+static XWPCLASSITEM G_aClasses[] =
+    {
+        // class replacements
+        &G_pcszXFldObject, &G_pcszWPObject,
+            (REQ)-1, 0,
+            1251,
+        &G_pcszXFolder, &G_pcszWPFolder,
+            NULL, 0,
+            1252,
+        &G_pcszXFldDisk, &G_pcszWPDisk,
+            G_RequiresXFolderOnly, ARRAYITEMCOUNT(G_RequiresXFolderOnly),
+            1253,
+        &G_pcszXFldDesktop, &G_pcszWPDesktop,
+            G_RequiresXFolderOnly, ARRAYITEMCOUNT(G_RequiresXFolderOnly),
+            1254,
+        &G_pcszXFldDataFile, &G_pcszWPDataFile,
+            NULL, 0,
+            1255,
+        &G_pcszXWPProgram, &G_pcszWPProgram,
+            NULL, 0,
+            0,      // @@todo
+        &G_pcszXFldProgramFile, &G_pcszWPProgramFile,
+            NULL, 0,
+            1256,
+        &G_pcszXWPSound, &G_pcszWPSound,
+            NULL, 0,
+            1257,
+        &G_pcszXWPMouse, &G_pcszWPMouse,
+            NULL, 0,
+            1258,
+        &G_pcszXWPKeyboard, &G_pcszWPKeyboard,
+            NULL, 0,
+            1259,
+
+        // new classes
+        &G_pcszXWPSetup, NULL,
+            (REQ)-1, 0,
+            1260,
+        &G_pcszXFldSystem, NULL,
+            NULL, 0,
+            1261,
+        &G_pcszXFldWPS, NULL,
+            (REQ)-1, 0,
+            1262,
+        &G_pcszXWPScreen, NULL,
+            NULL, 0,
+            1267,
+        &G_pcszXWPMedia, NULL,
+            NULL, 0,
+            1269,
+        &G_pcszXFldStartup, NULL,
+            G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
+            1263,
+        &G_pcszXFldShutdown, NULL,
+            G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
+            1264,
+
+        &G_pcszXWPClassList, NULL,
+            NULL, 0,
+            1265,
+        &G_pcszXWPTrashCan, NULL,
+            G_RequirementsXWPTrashCan, ARRAYITEMCOUNT(G_RequirementsXWPTrashCan),
+            1266,
+        &G_pcszXWPTrashObject, NULL,
+            G_RequiresXFolderOnly, ARRAYITEMCOUNT(G_RequiresXFolderOnly),
+            1266,
+        &G_pcszXWPString, NULL,
+            NULL, 0,
+            1268,
+        &G_pcszXCenter, NULL,
+            NULL, 0,
+            1270,
+        &G_pcszXWPFontFolder, NULL,
+            G_RequirementsXWPFontFolder, ARRAYITEMCOUNT(G_RequirementsXWPFontFolder),
+            1271,
+        &G_pcszXWPFontFile, NULL,
+            NULL, 0,
+            1271,
+        &G_pcszXWPFontObject, NULL,
+            NULL, 0,
+            1271
+    };
+
+#define ID_CLASSES_FIRST         1000
+
+/*
+ *@@ HandleEnableItems:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID HandleEnableItems(HWND hwndDlg)
+{
+    HPOINTER    hptrOld = winhSetWaitPointer();
+    PBYTE pObjClass = winhQueryWPSClassList();
+    PBOOL pafDisables = malloc(sizeof(BOOL) * ARRAYITEMCOUNT(G_aClasses));
+    ULONG ul;
+
+    memset(pafDisables, 0, sizeof(BOOL) * ARRAYITEMCOUNT(G_aClasses));
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(G_aClasses);
+         ul++)
+    {
+        // if the class is installed and requires others,
+        // disable that other class
+        PXWPCLASSITEM pThis = &G_aClasses[ul];
+        if (    (pThis->pRequirements)
+             && (winhIsDlgItemChecked(hwndDlg,
+                                      ID_CLASSES_FIRST + ul))
+           )
+        {
+            if (pThis->pRequirements == (REQ)-1)
+                pafDisables[ul] = TRUE;
+            else
+            {
+                // go thru the requirements
+                ULONG ulR;
+                for (ulR = 0;
+                     ulR < pThis->cRequirements;
+                     ulR++)
+                {
+                    const char *pcszRequirementThis = *(pThis->pRequirements[ulR]);
+
+                    // go find that class in the array
+                    ULONG ul2;
+                    for (ul2 = 0;
+                         ul2 < ARRAYITEMCOUNT(G_aClasses);
+                         ul2++)
+                    {
+                        if (!strcmp(*(G_aClasses[ul2].ppcszClassName),
+                                    pcszRequirementThis))
+                        {
+                            pafDisables[ul2] = TRUE;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(G_aClasses);
+         ul++)
+    {
+        WinEnableControl(hwndDlg,
+                         ID_CLASSES_FIRST + ul,
+                         !(pafDisables[ul]));
+        if (pafDisables[ul])
+            winhSetDlgItemChecked(hwndDlg,
+                                  ID_CLASSES_FIRST + ul,
+                                  TRUE);
+    }
+
+    free(pObjClass);
+    free(pafDisables);
+    WinSetPointer(HWND_DESKTOP, hptrOld);
+}
+
+/*
+ *@@ HandleTooltip:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID HandleTooltip(HWND hwndDlg,
+                   MPARAM mp2)
+{
+    PXWPCLASSES     pxwpc = WinQueryWindowPtr(hwndDlg, QWL_USER);
+    PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+    CHAR    szHelpString[3000] = "";
+    ULONG   ulDlgID = WinQueryWindowUShort(pttt->hwndTool,
+                                           QWS_ID);
+    LONG lIndex = ulDlgID - ID_CLASSES_FIRST;
+    ULONG   ulWritten = 0;
+    APIRET  arc = 0;
+
+    if (pxwpc->pszTooltipString)
+        free(pxwpc->pszTooltipString);
+
+    if (    (lIndex >= 0)
+         && (lIndex < ARRAYITEMCOUNT(G_aClasses))
+       )
+    {
+        ULONG ulID;
+        if (ulID = G_aClasses[lIndex].ulToolTipID)
+        {
+            CHAR    szMessageID[200];
+            const char *pszMessageFile = cmnQueryMessageFile();
+
+            sprintf(szMessageID,
+                    "XWPCLS_%04d",
+                    ulID);
+            arc = tmfGetMessageExt(NULL,                   // pTable
+                                   0,                      // cTable
+                                   szHelpString,           // pbBuffer
+                                   sizeof(szHelpString),   // cbBuffer
+                                   szMessageID,            // pszMessageName
+                                   (PSZ)pszMessageFile,         // pszFile
+                                   &ulWritten);
+            if (arc != NO_ERROR)
+            {
+                sprintf(szHelpString,
+                        "No help item found for \"%s\" in \"%s\". "
+                        "TOOLTIPTEXT.hdr.idFrom: 0x%lX ulID: 0x%lX tmfGetMessage rc: %d",
+                        szMessageID,
+                        pszMessageFile,
+                        pttt->hwndTool,
+                        ulID,
+                        arc);
+            }
+        }
+        else
+            strcpy(szHelpString, "No help available yet.");
+    }
+    else
+        sprintf(szHelpString, "Invalid index %d", lIndex);
+
+    pxwpc->pszTooltipString = strdup(szHelpString);
+
+    pttt->ulFormat = TTFMT_PSZ;
+    pttt->pszText = pxwpc->pszTooltipString;
+}
+
+/*
+ *@@ HandleOKButton:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+BOOL HandleOKButton(HWND hwndDlg)
+{
+    BOOL            fDismiss = TRUE;
+    XSTRING         strDereg,
+                    strReg,
+                    strReplace,
+                    strUnreplace;
+    BOOL            fDereg = FALSE,
+                    fReg = FALSE;
+
+    PBYTE           pObjClass = winhQueryWPSClassList();
+
+    ULONG           ul = 0;
+
+    xstrInit(&strDereg, 0);
+    xstrInit(&strReg, 0);
+    xstrInit(&strReplace, 0);
+    xstrInit(&strUnreplace, 0);
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(G_aClasses);
+         ul++)
+    {
+        PXWPCLASSITEM pThis = &G_aClasses[ul];
+        const char *pcszClassName = *(pThis->ppcszClassName);
+        BOOL fChecked = winhIsDlgItemChecked(hwndDlg,
+                                             ID_CLASSES_FIRST + ul);
+        BOOL fInstalled = (winhQueryWPSClass(pObjClass,
+                                             pcszClassName)
+                                != 0);
+        if (fChecked && !fInstalled)
+        {
+            // register
+            xstrcat(&strReg, pcszClassName, 0);
+            xstrcatc(&strReg, '\n');
+
+            if (pThis->ppcszReplacesClass)
+            {
+                // replace
+                xstrcat(&strReplace, *(pThis->ppcszReplacesClass), 0);
+                xstrcatc(&strReplace, ' ');
+                xstrcat(&strReplace, pcszClassName, 0);
+                xstrcatc(&strReplace, '\n');
+                        // "WPObject XFldObject\n"
+            }
+        }
+        else if (!fChecked && fInstalled)
+        {
+            // deregister
+            xstrcat(&strDereg, pcszClassName, 0);
+            xstrcatc(&strDereg, '\n');
+
+            if (pThis->ppcszReplacesClass)
+            {
+                // replace
+                xstrcat(&strUnreplace, *(pThis->ppcszReplacesClass), 0);
+                xstrcatc(&strUnreplace, ' ');
+                xstrcat(&strUnreplace, pcszClassName, 0);
+                xstrcatc(&strUnreplace, '\n');
+                        // "WPObject XFldObject\n"
+            }
+        }
+    }
+
+    // check if we have anything to do
+    fReg = (strReg.ulLength != 0);
+    fDereg = (strDereg.ulLength != 0);
+
+    if ((fReg) || (fDereg))
+    {
+        // OK, class selections have changed:
+        XSTRING         strMessage;
+        CHAR            szTemp[1000];
+
+        xstrInit(&strMessage, 100);
+        // compose confirmation string
+        cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                      142); // "You have made the following changes to the XWorkplace class setup:"
+        xstrcpy(&strMessage, szTemp, 0);
+        xstrcatc(&strMessage, '\n');
+        if (fReg)
+        {
+            xstrcat(&strMessage, "\n", 0);
+            cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                          143); // "Register the following classes:"
+            xstrcat(&strMessage, szTemp, 0);
+            xstrcat(&strMessage, "\n\n", 0);
+            xstrcats(&strMessage, &strReg);
+            if (strReplace.ulLength)
+            {
+                xstrcatc(&strMessage, '\n');
+                cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                              144); // "Replace the following classes:"
+                xstrcat(&strMessage, szTemp, 0);
+                xstrcat(&strMessage, "\n\n", 0);
+                xstrcats(&strMessage, &strReplace);
+            }
+        }
+        if (fDereg)
+        {
+            xstrcatc(&strMessage, '\n');
+            cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                          145); // "Deregister the following classes:"
+            xstrcat(&strMessage, szTemp, 0);
+            xstrcat(&strMessage, "\n\n", 0);
+            xstrcats(&strMessage, &strDereg);
+            if (strUnreplace.ulLength)
+            {
+                xstrcatc(&strMessage, '\n');
+                cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                              146); // "Undo the following class replacements:"
+                xstrcat(&strMessage, szTemp, 0);
+                xstrcat(&strMessage, "\n\n", 0);
+                xstrcats(&strMessage, &strUnreplace);
+            }
+        }
+        xstrcatc(&strMessage, '\n');
+        cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
+                      147); // "Are you sure you want to do this?"
+        xstrcat(&strMessage, szTemp, 0);
+
+        // confirm class list changes
+        if (cmnMessageBox(hwndDlg,
+                          "XWorkplace Setup",
+                          strMessage.psz,
+                          MB_YESNO) == MBID_YES)
+        {
+            // "Yes" pressed: go!!
+            PSZ         p = NULL;
+            XSTRING     strFailing;
+            HPOINTER    hptrOld = winhSetWaitPointer();
+
+            xstrInit(&strFailing, 0);
+
+            // unreplace classes
+            p = strUnreplace.psz;
+            if (p)
+                while (*p)
+                {
+                    // string components: "OldClass NewClass\n"
+                    PSZ     pSpace = strchr(p, ' '),
+                            pEOL = strchr(pSpace, '\n');
+                    if ((pSpace) && (pEOL))
+                    {
+                        PSZ     pszReplacedClass = strhSubstr(p, pSpace),
+                                pszReplacementClass = strhSubstr(pSpace + 1, pEOL);
+                        if ((pszReplacedClass) && (pszReplacementClass))
+                        {
+                            if (!WinReplaceObjectClass(pszReplacedClass,
+                                                       pszReplacementClass,
+                                                       FALSE))  // unreplace!
+                            {
+                                // error: append to string list
+                                xstrcat(&strFailing, pszReplacedClass, 0);
+                                xstrcatc(&strFailing, '\n');
+                            }
+                        }
+                        if (pszReplacedClass)
+                            free(pszReplacedClass);
+                        if (pszReplacementClass)
+                            free(pszReplacementClass);
+                    }
+                    else
+                        break;
+
+                    p = pEOL + 1;
+                }
+
+            // deregister classes
+            p = strDereg.psz;
+            if (p)
+                while (*p)
+                {
+                    PSZ     pEOL = strchr(p, '\n');
+                    if (pEOL)
+                    {
+                        PSZ     pszClass = strhSubstr(p, pEOL);
+                        if (pszClass)
+                        {
+                            if (!WinDeregisterObjectClass(pszClass))
+                            {
+                                // error: append to string list
+                                xstrcat(&strFailing, pszClass, 0);
+                                xstrcatc(&strFailing, '\n');
+                            }
+                            free(pszClass);
+                        }
+                    }
+                    else
+                        break;
+
+                    p = pEOL + 1;
+                }
+
+            // register new classes
+            p = strReg.psz;
+            if (p)
+                while (*p)
+                {
+                    APIRET  arc = NO_ERROR;
+                    CHAR    szRegisterError[300];
+
+                    PSZ     pEOL = strchr(p, '\n');
+                    if (pEOL)
+                    {
+                        PSZ     pszClass = strhSubstr(p, pEOL);
+                        if (pszClass)
+                        {
+                            arc = winhRegisterClass(pszClass,
+                                                    cmnQueryMainModuleFilename(),
+                                                            // XFolder module
+                                                    szRegisterError,
+                                                    sizeof(szRegisterError));
+                            if (arc != NO_ERROR)
+                            {
+                                // error: append to string list
+                                xstrcat(&strFailing, pszClass, 0);
+                                xstrcatc(&strFailing, '\n');
+                            }
+                            free(pszClass);
+                        }
+                    }
+                    else
+                        break;
+
+                    p = pEOL + 1;
+                }
+
+            // replace classes
+            p = strReplace.psz;
+            if (p)
+                while (*p)
+                {
+                    // string components: "OldClass NewClass\n"
+                    PSZ     pSpace = strchr(p, ' '),
+                            pEOL = strchr(pSpace, '\n');
+                    if ((pSpace) && (pEOL))
+                    {
+                        PSZ     pszReplacedClass = strhSubstr(p, pSpace),
+                                pszReplacementClass = strhSubstr(pSpace + 1, pEOL);
+                        if ((pszReplacedClass) && (pszReplacementClass))
+                        {
+                            if (!WinReplaceObjectClass(pszReplacedClass,
+                                                       pszReplacementClass,
+                                                       TRUE))  // replace!
+                            {
+                                // error: append to string list
+                                xstrcat(&strFailing, pszReplacedClass, 0);
+                                xstrcatc(&strFailing, '\n');
+                            }
+                        }
+                        if (pszReplacedClass)
+                            free(pszReplacedClass);
+                        if (pszReplacementClass)
+                            free(pszReplacementClass);
+                    }
+                    else
+                        break;
+
+                    p = pEOL + 1;
+                }
+
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+
+            // errors?
+            if (strFailing.ulLength)
+            {
+                cmnMessageBoxMsgExt(hwndDlg,
+                                    148, // "XWorkplace Setup",
+                                    &strFailing.psz, 1,
+                                    149,  // "errors... %1"
+                                    MB_OK);
+            }
+            else
+                cmnMessageBoxMsg(hwndDlg,
+                                 148, // "XWorkplace Setup",
+                                 150, // "restart WPS"
+                                 MB_OK);
+
+            xstrClear(&strFailing); // V0.9.14 (2001-07-31) [umoeller]
+        }
+        else
+            // "No" pressed:
+            fDismiss = FALSE;
+
+        xstrClear(&strMessage); // V0.9.14 (2001-07-31) [umoeller]
+
+    } // end if ((fReg) || (fDereg))
+
+    xstrClear(&strDereg);
+    xstrClear(&strReg);
+    xstrClear(&strReplace);
+    xstrClear(&strUnreplace);
+
+    free(pObjClass);
+
+    return (fDismiss);
+}
 
 /*
  * fnwpXWorkplaceClasses:
@@ -486,82 +1117,23 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
         case WM_INITDLG:
         {
             PBYTE           pObjClass;
+            // ULONG           ul;
+            HPOINTER    hptrOld = winhSetWaitPointer();
 
             // allocate two XWPCLASSES structures and store them in
             // QWL_USER; initially, both structures will be the same,
             // but only the second one will be altered
-            PXWPCLASSES     pxwpc = (PXWPCLASSES)malloc(2*sizeof(XWPCLASSES));
-            memset(pxwpc, 0, 2*sizeof(XWPCLASSES));
+            PXWPCLASSES     pxwpc = NEW(XWPCLASSES);
+            ZERO(pxwpc);
             WinSetWindowPtr(hwndDlg, QWL_USER, pxwpc);
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
-            // load WPS class list
-            pObjClass = winhQueryWPSClassList();
-
-            // query class replacements
-            pxwpc->fXFldObject = (winhQueryWPSClass(pObjClass, "XFldObject") != 0);
-            pxwpc->fXFolder = (winhQueryWPSClass(pObjClass, "XFolder") != 0);
-            pxwpc->fXFldDisk = (winhQueryWPSClass(pObjClass, "XFldDisk") != 0);
-            pxwpc->fXFldDesktop = (winhQueryWPSClass(pObjClass, "XFldDesktop") != 0);
-            pxwpc->fXFldDataFile = (winhQueryWPSClass(pObjClass, "XFldDataFile") != 0);
-            pxwpc->fXFldProgramFile = (winhQueryWPSClass(pObjClass, "XFldProgramFile") != 0);
-            pxwpc->fXWPSound = (winhQueryWPSClass(pObjClass, "XWPSound") != 0);
-            pxwpc->fXWPMouse = (winhQueryWPSClass(pObjClass, "XWPMouse") != 0);
-            pxwpc->fXWPKeyboard = (winhQueryWPSClass(pObjClass, "XWPKeyboard") != 0);
-
-            // query new classes
-            pxwpc->fXWPSetup = (winhQueryWPSClass(pObjClass, "XWPSetup") != 0);
-            pxwpc->fXFldSystem = (winhQueryWPSClass(pObjClass, "XFldSystem") != 0);
-            pxwpc->fXFldWPS = (winhQueryWPSClass(pObjClass, "XFldWPS") != 0);
-            pxwpc->fXWPScreen = (winhQueryWPSClass(pObjClass, "XWPScreen") != 0);
-            pxwpc->fXWPMedia  = (winhQueryWPSClass(pObjClass, "XWPMedia") != 0);
-            pxwpc->fXFldStartup = (winhQueryWPSClass(pObjClass, "XFldStartup") != 0);
-            pxwpc->fXFldShutdown = (winhQueryWPSClass(pObjClass, "XFldShutdown") != 0);
-            pxwpc->fXWPClassList = (winhQueryWPSClass(pObjClass, "XWPClassList") != 0);
-            pxwpc->fXWPTrashCan = (     (winhQueryWPSClass(pObjClass, "XWPTrashCan") != 0)
-                                     && (winhQueryWPSClass(pObjClass, "XWPTrashObject") != 0)
-                                  );
-            pxwpc->fXWPString = (winhQueryWPSClass(pObjClass, "XWPString") != 0);
-            pxwpc->fXCenter = (winhQueryWPSClass(pObjClass, "XCenter") != 0);
-            pxwpc->fXWPFonts = (   (winhQueryWPSClass(pObjClass, "XWPFontFolder") != 0)
-                                && (winhQueryWPSClass(pObjClass, "XWPFontFile") != 0)
-                                && (winhQueryWPSClass(pObjClass, "XWPFontObject") != 0)
-                               );
-
-            // copy first structure to second one
-            memcpy(pxwpc + 1, pxwpc, sizeof(XWPCLASSES));
-
-            // set controls accordingly:
-            // class replacements
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDOBJECT, pxwpc->fXFldObject);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFOLDER, pxwpc->fXFolder);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, pxwpc->fXFldDisk);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDESKTOP, pxwpc->fXFldDesktop);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDATAFILE, pxwpc->fXFldDataFile);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDPROGRAMFILE, pxwpc->fXFldProgramFile);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSOUND, pxwpc->fXWPSound);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPMOUSE, pxwpc->fXWPMouse);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPKEYBOARD, pxwpc->fXWPKeyboard);
-
-            // new classes
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSETUP, pxwpc->fXWPSetup);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSYSTEM, pxwpc->fXFldSystem);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDWPS, pxwpc->fXFldWPS);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSCREEN, pxwpc->fXWPScreen);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPMEDIA, pxwpc->fXWPMedia);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, pxwpc->fXFldStartup);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN, pxwpc->fXFldShutdown),
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST, pxwpc->fXWPClassList);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN, pxwpc->fXWPTrashCan);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING, pxwpc->fXWPString);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XCENTER, pxwpc->fXCenter);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPFONTS, pxwpc->fXWPFonts);
-
             cmnSetControlsFont(hwndDlg, 0, 5000);
                     // added V0.9.3 (2000-04-26) [umoeller]
 
-            free(pObjClass);
+            // load WPS class list
+            pObjClass = winhQueryWPSClassList();
 
             // register tooltip class
             ctlRegisterTooltip(WinQueryAnchorBlock(hwndDlg));
@@ -584,26 +1156,18 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 // add tools (i.e. controls of the dialog)
                 // according to the usToolIDs array
                 TOOLINFO    ti = {0};
-                HWND        hwndCtl;
-                ULONG       ul;
+                // HWND        hwndCtl;
                 ti.ulFlags = TTF_CENTER_X_ON_TOOL | TTF_POS_Y_BELOW_TOOL | TTF_SUBCLASS;
                 ti.hwndToolOwner = hwndDlg;
                 ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
-                for (ul = 0;
-                     ul < (sizeof(G_usClassesToolIDs) / sizeof(G_usClassesToolIDs[0]));
-                     ul++)
-                {
-                    hwndCtl = WinWindowFromID(hwndDlg, G_usClassesToolIDs[ul]);
-                    if (hwndCtl)
-                    {
-                        // add tool to tooltip control
-                        ti.hwndTool = hwndCtl;
-                        WinSendMsg(pxwpc->hwndTooltip,
-                                   TTM_ADDTOOL,
-                                   (MPARAM)0,
-                                   &ti);
-                    }
-                }
+
+                RegisterArray(hwndDlg,
+                              pxwpc->hwndTooltip,
+                              &ti,
+                              ID_CLASSES_FIRST,
+                              pObjClass,
+                              G_aClasses,
+                              ARRAYITEMCOUNT(G_aClasses));
 
                 // set timers
                 WinSendMsg(pxwpc->hwndTooltip,
@@ -612,8 +1176,14 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                            (MPARAM)(20*1000));        // 20 secs for autopop (hide)
             }
 
+
+            free(pObjClass);
+
             WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
-        break; }
+
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+        }
+        break;
 
         /*
          * XM_ENABLEITEMS:
@@ -621,21 +1191,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
          */
 
         case XM_ENABLEITEMS:
-        {
-            BOOL fXFolder = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFOLDER);
-            BOOL fXFldDesktop = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDESKTOP);
-
-            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
-            // winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK, fXFolder);
-
-            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
-            // winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP, fXFolder);
-
-            winhEnableDlgItem(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
-                                fXFolder && fXFldDesktop);
-            winhSetDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN,
-                                fXFolder && fXFldDesktop);
-        break; }
+            HandleEnableItems(hwndDlg);
+        break;
 
         /*
          * WM_COMMAND:
@@ -647,519 +1204,14 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             BOOL    fDismiss = TRUE;
 
             if ((USHORT)mp1 == DID_OK)
-            {
                 // "OK" button pressed:
-                PXWPCLASSES     pxwpcOld = WinQueryWindowPtr(hwndDlg, QWL_USER),
-                                pxwpcNew = pxwpcOld + 1;
-                                    // we had allocated two structures above
-                XSTRING         strDereg,
-                                strReg,
-                                strReplace,
-                                strUnreplace;
-                BOOL            fDereg = FALSE,
-                                fReg = FALSE;
-
-                xstrInit(&strDereg, 0);
-                xstrInit(&strReg, 0);
-                xstrInit(&strReplace, 0);
-                xstrInit(&strUnreplace, 0);
-
-                // get new selections into second structure
-                pxwpcNew->fXFldObject = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDOBJECT);
-                pxwpcNew->fXFolder = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFOLDER);
-                pxwpcNew->fXFldDisk = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDISK);
-                pxwpcNew->fXFldDesktop = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDESKTOP);
-                pxwpcNew->fXFldDataFile = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDDATAFILE);
-                pxwpcNew->fXFldProgramFile = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDPROGRAMFILE);
-                pxwpcNew->fXWPSound = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSOUND);
-                pxwpcNew->fXWPMouse = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPMOUSE);
-                pxwpcNew->fXWPKeyboard = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPKEYBOARD);
-
-                pxwpcNew->fXWPSetup = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSETUP);
-                pxwpcNew->fXFldSystem = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSYSTEM);
-                pxwpcNew->fXFldWPS = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDWPS);
-                pxwpcNew->fXWPScreen = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSCREEN);
-                pxwpcNew->fXWPMedia = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPMEDIA);
-                pxwpcNew->fXFldStartup = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSTARTUP);
-                pxwpcNew->fXFldShutdown = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XFLDSHUTDOWN);
-                pxwpcNew->fXWPClassList = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPCLASSLIST);
-                pxwpcNew->fXWPTrashCan = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPTRASHCAN);
-                pxwpcNew->fXWPString = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPSTRING);
-                pxwpcNew->fXCenter = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XCENTER);
-                pxwpcNew->fXWPFonts = winhIsDlgItemChecked(hwndDlg, ID_XCDI_XWPCLS_XWPFONTS);
-
-                // compare old and new selections:
-                // if we have a difference, add the class name
-                // to the respective string to (de)register
-
-                if ((pxwpcOld->fXFldObject) && (!pxwpcNew->fXFldObject))
-                {
-                    // deregister XFldObject
-                    xstrcat(&strDereg, "XFldObject\n", 0);
-                    // unreplace XFldObject
-                    xstrcat(&strUnreplace, "WPObject XFldObject\n", 0);
-                }
-                else if ((pxwpcNew->fXFldObject) && (!pxwpcOld->fXFldObject))
-                {
-                    // register
-                    xstrcat(&strReg, "XFldObject\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPObject XFldObject\n", 0);
-                }
-
-                if ((pxwpcOld->fXFolder) && (!pxwpcNew->fXFolder))
-                {
-                    // deregister XFolder
-                    xstrcat(&strDereg, "XFolder\n", 0);
-                    // unreplace XFolder
-                    xstrcat(&strUnreplace, "WPFolder XFolder\n", 0);
-                }
-                else if ((pxwpcNew->fXFolder) && (!pxwpcOld->fXFolder))
-                {
-                    // register
-                    xstrcat(&strReg, "XFolder\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPFolder XFolder\n", 0);
-                }
-
-                if ((pxwpcOld->fXFldDisk) && (!pxwpcNew->fXFldDisk))
-                {
-                    // deregister XFldDisk
-                    xstrcat(&strDereg, "XFldDisk\n", 0);
-                    // unreplace XFldDisk
-                    xstrcat(&strUnreplace, "WPDisk XFldDisk\n", 0);
-                }
-                else if ((pxwpcNew->fXFldDisk) && (!pxwpcOld->fXFldDisk))
-                {
-                    // register
-                    xstrcat(&strReg, "XFldDisk\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPDisk XFldDisk\n", 0);
-                }
-
-                if ((pxwpcOld->fXFldDesktop) && (!pxwpcNew->fXFldDesktop))
-                {
-                    // deregister XFldDesktop
-                    xstrcat(&strDereg, "XFldDesktop\n", 0);
-                    // unreplace XFldDesktop
-                    xstrcat(&strUnreplace, "WPDesktop XFldDesktop\n", 0);
-                }
-                else if ((pxwpcNew->fXFldDesktop) && (!pxwpcOld->fXFldDesktop))
-                {
-                    // register
-                    xstrcat(&strReg, "XFldDesktop\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPDesktop XFldDesktop\n", 0);
-                }
-
-                if ((pxwpcOld->fXFldDataFile) && (!pxwpcNew->fXFldDataFile))
-                {
-                    // deregister XFldDataFile
-                    xstrcat(&strDereg, "XFldDataFile\n", 0);
-                    // unreplace XFldDataFile
-                    xstrcat(&strUnreplace, "WPDataFile XFldDataFile\n", 0);
-                }
-                else if ((pxwpcNew->fXFldDataFile) && (!pxwpcOld->fXFldDataFile))
-                {
-                    // register
-                    xstrcat(&strReg, "XFldDataFile\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPDataFile XFldDataFile\n", 0);
-                }
-
-                if ((pxwpcOld->fXFldProgramFile) && (!pxwpcNew->fXFldProgramFile))
-                {
-                    // deregister XFldProgramFile
-                    xstrcat(&strDereg, "XFldProgramFile\n", 0);
-                    // unreplace XFldProgramFile
-                    xstrcat(&strUnreplace, "WPProgramFile XFldProgramFile\n", 0);
-                }
-                else if ((pxwpcNew->fXFldProgramFile) && (!pxwpcOld->fXFldProgramFile))
-                {
-                    // register
-                    xstrcat(&strReg, "XFldProgramFile\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPProgramFile XFldProgramFile\n", 0);
-                }
-
-                if ((pxwpcOld->fXWPSound) && (!pxwpcNew->fXWPSound))
-                {
-                    // deregister XWPSound
-                    xstrcat(&strDereg, "XWPSound\n", 0);
-                    // unreplace XWPSound
-                    xstrcat(&strUnreplace, "WPSound XWPSound\n", 0);
-                }
-                else if ((pxwpcNew->fXWPSound) && (!pxwpcOld->fXWPSound))
-                {
-                    // register
-                    xstrcat(&strReg, "XWPSound\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPSound XWPSound\n", 0);
-                }
-
-                if ((pxwpcOld->fXWPMouse) && (!pxwpcNew->fXWPMouse))
-                {
-                    // deregister XWPMouse
-                    xstrcat(&strDereg, "XWPMouse\n", 0);
-                    // unreplace XWPMouse
-                    xstrcat(&strUnreplace, "WPMouse XWPMouse\n", 0);
-                }
-                else if ((pxwpcNew->fXWPMouse) && (!pxwpcOld->fXWPMouse))
-                {
-                    // register
-                    xstrcat(&strReg, "XWPMouse\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPMouse XWPMouse\n", 0);
-                }
-
-                if ((pxwpcOld->fXWPKeyboard) && (!pxwpcNew->fXWPKeyboard))
-                {
-                    // deregister XWPKeyboard
-                    xstrcat(&strDereg, "XWPKeyboard\n", 0);
-                    // unreplace XWPKeyboard
-                    xstrcat(&strUnreplace, "WPKeyboard XWPKeyboard\n", 0);
-                }
-                else if ((pxwpcNew->fXWPKeyboard) && (!pxwpcOld->fXWPKeyboard))
-                {
-                    // register
-                    xstrcat(&strReg, "XWPKeyboard\n", 0);
-                    // replace
-                    xstrcat(&strReplace, "WPKeyboard XWPKeyboard\n", 0);
-                }
-
-                /*
-                 * new classes (no replacements):
-                 *
-                 */
-
-                if ((pxwpcOld->fXWPSetup) && (!pxwpcNew->fXWPSetup))
-                    // deregister XWPSetup
-                    xstrcat(&strDereg, "XWPSetup\n", 0);
-                else if ((pxwpcNew->fXWPSetup) && (!pxwpcOld->fXWPSetup))
-                    // register
-                    xstrcat(&strReg, "XWPSetup\n", 0);
-
-                if ((pxwpcOld->fXFldSystem) && (!pxwpcNew->fXFldSystem))
-                    // deregister XFldSystem
-                    xstrcat(&strDereg, "XFldSystem\n", 0);
-                else if ((pxwpcNew->fXFldSystem) && (!pxwpcOld->fXFldSystem))
-                    // register
-                    xstrcat(&strReg, "XFldSystem\n", 0);
-
-                if ((pxwpcOld->fXFldWPS) && (!pxwpcNew->fXFldWPS))
-                    // deregister XFldWPS
-                    xstrcat(&strDereg, "XFldWPS\n", 0);
-                else if ((pxwpcNew->fXFldWPS) && (!pxwpcOld->fXFldWPS))
-                    // register
-                    xstrcat(&strReg, "XFldWPS\n", 0);
-
-                if ((pxwpcOld->fXWPScreen) && (!pxwpcNew->fXWPScreen))
-                    // deregister XWPScreen
-                    xstrcat(&strDereg, "XWPScreen\n", 0);
-                else if ((pxwpcNew->fXWPScreen) && (!pxwpcOld->fXWPScreen))
-                    // register
-                    xstrcat(&strReg, "XWPScreen\n", 0);
-
-                if ((pxwpcOld->fXWPMedia) && (!pxwpcNew->fXWPMedia))
-                    // deregister XWPMedia
-                    xstrcat(&strDereg, "XWPMedia\n", 0);
-                else if ((pxwpcNew->fXWPMedia) && (!pxwpcOld->fXWPMedia))
-                    // register
-                    xstrcat(&strReg, "XWPMedia\n", 0);
-
-                if ((pxwpcOld->fXFldStartup) && (!pxwpcNew->fXFldStartup))
-                    // deregister XFldStartup
-                    xstrcat(&strDereg, "XFldStartup\n", 0);
-                else if ((pxwpcNew->fXFldStartup) && (!pxwpcOld->fXFldStartup))
-                    // register
-                    xstrcat(&strReg, "XFldStartup\n", 0);
-
-                if ((pxwpcOld->fXFldShutdown) && (!pxwpcNew->fXFldShutdown))
-                    // deregister XFldShutdown
-                    xstrcat(&strDereg, "XFldShutdown\n", 0);
-                else if ((pxwpcNew->fXFldShutdown) && (!pxwpcOld->fXFldShutdown))
-                    // register
-                    xstrcat(&strReg, "XFldShutdown\n", 0);
-
-                if ((pxwpcOld->fXWPClassList) && (!pxwpcNew->fXWPClassList))
-                    // deregister XWPClassList
-                    xstrcat(&strDereg, "XWPClassList\n", 0);
-                else if ((pxwpcNew->fXWPClassList) && (!pxwpcOld->fXWPClassList))
-                    // register
-                    xstrcat(&strReg, "XWPClassList\n", 0);
-
-                if ((pxwpcOld->fXWPTrashCan) && (!pxwpcNew->fXWPTrashCan))
-                {
-                    // deregister XWPTrashCan
-                    xstrcat(&strDereg, "XWPTrashCan\n", 0);
-                    // deregister XWPTrashObject
-                    xstrcat(&strDereg, "XWPTrashObject\n", 0);
-                }
-                else if ((pxwpcNew->fXWPTrashCan) && (!pxwpcOld->fXWPTrashCan))
-                {
-                    xstrcat(&strReg, "XWPTrashCan\n", 0);
-                    xstrcat(&strReg, "XWPTrashObject\n", 0);
-                }
-
-                if ((pxwpcOld->fXWPString) && (!pxwpcNew->fXWPString))
-                    // deregister XWPString
-                    xstrcat(&strDereg, "XWPString\n", 0);
-                else if ((pxwpcNew->fXWPString) && (!pxwpcOld->fXWPString))
-                    // register
-                    xstrcat(&strReg, "XWPString\n", 0);
-
-                if ((pxwpcOld->fXCenter) && (!pxwpcNew->fXCenter))
-                    // deregister XCenter
-                    xstrcat(&strDereg, "XCenter\n", 0);
-                else if ((pxwpcNew->fXCenter) && (!pxwpcOld->fXCenter))
-                    // register
-                    xstrcat(&strReg, "XCenter\n", 0);
-
-                if ((pxwpcOld->fXWPFonts) && (!pxwpcNew->fXWPFonts))
-                {
-                    // deregister XWPFontFolder
-                    xstrcat(&strDereg, "XWPFontFolder\n", 0);
-                    // deregister XWPFontFile
-                    xstrcat(&strDereg, "XWPFontFile\n", 0);
-                    // deregister XWPFontObject
-                    xstrcat(&strDereg, "XWPFontObject\n", 0);
-                }
-                else if ((pxwpcNew->fXWPFonts) && (!pxwpcOld->fXWPFonts))
-                {
-                    xstrcat(&strReg, "XWPFontFolder\n", 0);
-                    xstrcat(&strReg, "XWPFontFile\n", 0);
-                    xstrcat(&strReg, "XWPFontObject\n", 0);
-                }
-
-                // check if we have anything to do
-                fReg = (strReg.ulLength != 0);
-                fDereg = (strDereg.ulLength != 0);
-
-                if ((fReg) || (fDereg))
-                {
-                    // OK, class selections have changed:
-                    XSTRING         strMessage;
-                    CHAR            szTemp[1000];
-
-                    xstrInit(&strMessage, 100);
-                    // compose confirmation string
-                    cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
-                                  142); // "You have made the following changes to the XWorkplace class setup:"
-                    xstrcpy(&strMessage, szTemp, 0);
-                    xstrcatc(&strMessage, '\n');
-                    if (fReg)
-                    {
-                        xstrcat(&strMessage, "\n", 0);
-                        cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
-                                      143); // "Register the following classes:"
-                        xstrcat(&strMessage, szTemp, 0);
-                        xstrcat(&strMessage, "\n\n", 0);
-                        xstrcat(&strMessage, strReg.psz, strReg.ulLength);
-                        if (strReplace.ulLength)
-                        {
-                            xstrcatc(&strMessage, '\n');
-                            cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
-                                          144); // "Replace the following classes:"
-                            xstrcat(&strMessage, szTemp, 0);
-                            xstrcat(&strMessage, "\n\n", 0);
-                            xstrcat(&strMessage, strReplace.psz, strReplace.ulLength);
-                        }
-                    }
-                    if (fDereg)
-                    {
-                        xstrcatc(&strMessage, '\n');
-                        cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
-                                      145); // "Deregister the following classes:"
-                        xstrcat(&strMessage, szTemp, 0);
-                        xstrcat(&strMessage, "\n\n", 0);
-                        xstrcat(&strMessage, strDereg.psz, strDereg.ulLength);
-                        if (strUnreplace.ulLength)
-                        {
-                            xstrcatc(&strMessage, '\n');
-                            cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
-                                          146); // "Undo the following class replacements:"
-                            xstrcat(&strMessage, szTemp, 0);
-                            xstrcat(&strMessage, "\n\n", 0);
-                            xstrcat(&strMessage, strUnreplace.psz, strUnreplace.ulLength);
-                        }
-                    }
-                    xstrcatc(&strMessage, '\n');
-                    cmnGetMessage(NULL, 0, szTemp, sizeof(szTemp),
-                                  147); // "Are you sure you want to do this?"
-                    xstrcat(&strMessage, szTemp, 0);
-
-                    // confirm class list changes
-                    if (cmnMessageBox(hwndDlg,
-                                      "XWorkplace Setup",
-                                      strMessage.psz,
-                                      MB_YESNO) == MBID_YES)
-                    {
-                        // "Yes" pressed: go!!
-                        PSZ         p = NULL;
-                        XSTRING     strFailing;
-                        HPOINTER    hptrOld = winhSetWaitPointer();
-
-                        xstrInit(&strFailing, 0);
-
-                        // unreplace classes
-                        p = strUnreplace.psz;
-                        if (p)
-                            while (*p)
-                            {
-                                // string components: "OldClass NewClass\n"
-                                PSZ     pSpace = strchr(p, ' '),
-                                        pEOL = strchr(pSpace, '\n');
-                                if ((pSpace) && (pEOL))
-                                {
-                                    PSZ     pszReplacedClass = strhSubstr(p, pSpace),
-                                            pszReplacementClass = strhSubstr(pSpace + 1, pEOL);
-                                    if ((pszReplacedClass) && (pszReplacementClass))
-                                    {
-                                        if (!WinReplaceObjectClass(pszReplacedClass,
-                                                                   pszReplacementClass,
-                                                                   FALSE))  // unreplace!
-                                        {
-                                            // error: append to string list
-                                            xstrcat(&strFailing, pszReplacedClass, 0);
-                                            xstrcatc(&strFailing, '\n');
-                                        }
-                                    }
-                                    if (pszReplacedClass)
-                                        free(pszReplacedClass);
-                                    if (pszReplacementClass)
-                                        free(pszReplacementClass);
-                                }
-                                else
-                                    break;
-
-                                p = pEOL + 1;
-                            }
-
-                        // deregister classes
-                        p = strDereg.psz;
-                        if (p)
-                            while (*p)
-                            {
-                                PSZ     pEOL = strchr(p, '\n');
-                                if (pEOL)
-                                {
-                                    PSZ     pszClass = strhSubstr(p, pEOL);
-                                    if (pszClass)
-                                    {
-                                        if (!WinDeregisterObjectClass(pszClass))
-                                        {
-                                            // error: append to string list
-                                            xstrcat(&strFailing, pszClass, 0);
-                                            xstrcatc(&strFailing, '\n');
-                                        }
-                                        free(pszClass);
-                                    }
-                                }
-                                else
-                                    break;
-
-                                p = pEOL + 1;
-                            }
-
-                        // register new classes
-                        p = strReg.psz;
-                        if (p)
-                            while (*p)
-                            {
-                                APIRET  arc = NO_ERROR;
-                                CHAR    szRegisterError[300];
-
-                                PSZ     pEOL = strchr(p, '\n');
-                                if (pEOL)
-                                {
-                                    PSZ     pszClass = strhSubstr(p, pEOL);
-                                    if (pszClass)
-                                    {
-                                        arc = winhRegisterClass(pszClass,
-                                                                cmnQueryMainModuleFilename(),
-                                                                        // XFolder module
-                                                                szRegisterError,
-                                                                sizeof(szRegisterError));
-                                        if (arc != NO_ERROR)
-                                        {
-                                            // error: append to string list
-                                            xstrcat(&strFailing, pszClass, 0);
-                                            xstrcatc(&strFailing, '\n');
-                                        }
-                                        free(pszClass);
-                                    }
-                                }
-                                else
-                                    break;
-
-                                p = pEOL + 1;
-                            }
-
-                        // replace classes
-                        p = strReplace.psz;
-                        if (p)
-                            while (*p)
-                            {
-                                // string components: "OldClass NewClass\n"
-                                PSZ     pSpace = strchr(p, ' '),
-                                        pEOL = strchr(pSpace, '\n');
-                                if ((pSpace) && (pEOL))
-                                {
-                                    PSZ     pszReplacedClass = strhSubstr(p, pSpace),
-                                            pszReplacementClass = strhSubstr(pSpace + 1, pEOL);
-                                    if ((pszReplacedClass) && (pszReplacementClass))
-                                    {
-                                        if (!WinReplaceObjectClass(pszReplacedClass,
-                                                                   pszReplacementClass,
-                                                                   TRUE))  // replace!
-                                        {
-                                            // error: append to string list
-                                            xstrcat(&strFailing, pszReplacedClass, 0);
-                                            xstrcatc(&strFailing, '\n');
-                                        }
-                                    }
-                                    if (pszReplacedClass)
-                                        free(pszReplacedClass);
-                                    if (pszReplacementClass)
-                                        free(pszReplacementClass);
-                                }
-                                else
-                                    break;
-
-                                p = pEOL + 1;
-                            }
-
-                        WinSetPointer(HWND_DESKTOP, hptrOld);
-
-                        // errors?
-                        if (strFailing.ulLength)
-                        {
-                            cmnMessageBoxMsgExt(hwndDlg,
-                                                148, // "XWorkplace Setup",
-                                                &strFailing.psz, 1,
-                                                149,  // "errors... %1"
-                                                MB_OK);
-                        }
-                        else
-                            cmnMessageBoxMsg(hwndDlg,
-                                             148, // "XWorkplace Setup",
-                                             150, // "restart WPS"
-                                             MB_OK);
-                    }
-                    else
-                        // "No" pressed:
-                        fDismiss = FALSE;
-
-                    xstrClear(&strMessage);
-                    xstrClear(&strReg);
-                    xstrClear(&strDereg);
-                } // end if ((fReg) || (fDereg))
-            } // end if ((USHORT)mp1 == DID_OK)
+                fDismiss = HandleOKButton(hwndDlg);
 
             if (fDismiss)
                 // dismiss dialog
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -1180,63 +1232,16 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             {
                 if (usNotifyCode == TTN_NEEDTEXT)
                 {
-                    PXWPCLASSES     pxwpcOld = WinQueryWindowPtr(hwndDlg, QWL_USER);
-                                    // pxwpcNew = pxwpcOld + 1;
-                    PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                    CHAR    szMessageID[200];
-                    CHAR    szHelpString[3000];
-                    const char *pszMessageFile = cmnQueryMessageFile();
-                    ULONG   ulID = WinQueryWindowUShort(pttt->hwndTool,
-                                                        QWS_ID);
-                    ULONG   ulWritten = 0;
-                    APIRET  arc = 0;
-
-                    if (pxwpcOld->pszTooltipString)
-                        free(pxwpcOld->pszTooltipString);
-
-                    sprintf(szMessageID,
-                            "XWPCLS_%04d",
-                            ulID);
-                    arc = tmfGetMessageExt(NULL,                   // pTable
-                                           0,                      // cTable
-                                           szHelpString,           // pbBuffer
-                                           sizeof(szHelpString),   // cbBuffer
-                                           szMessageID,            // pszMessageName
-                                           (PSZ)pszMessageFile,         // pszFile
-                                           &ulWritten);
-                    if (arc != NO_ERROR)
-                    {
-                        sprintf(szHelpString, "No help item found for \"%s\" "
-                                              " in \"%s\". "
-                                              "TOOLTIPTEXT.hdr.idFrom: 0x%lX "
-                                              "ulID: 0x%lX "
-                                              "tmfGetMessage rc: %d",
-                                              szMessageID,
-                                              pszMessageFile,
-                                              pttt->hwndTool,
-                                              ulID,
-                                              arc);
-                    }
-
-                    pxwpcOld->pszTooltipString = strdup(szHelpString);
-
-                    pttt->ulFormat = TTFMT_PSZ;
-                    pttt->pszText = pxwpcOld->pszTooltipString;
+                    HandleTooltip(hwndDlg,
+                                  mp2);
                 }
             }
             else if (usNotifyCode == BN_CLICKED)
             {
-                switch (usItemID)      // usID
-                {
-                    // "XFolder" item checked/unchecked: update others
-                    case ID_XCDI_XWPCLS_XFOLDER:
-                    case ID_XCDI_XWPCLS_XFLDDESKTOP:
-                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
-                    break;
-                }
-
+                WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_HELP:
@@ -1244,10 +1249,9 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
          */
 
         case WM_HELP:
-        {
             cmnDisplayHelp(NULL,        // active desktop
                            ID_XSH_XWP_CLASSESDLG);
-        break; }
+        break;
 
         /*
          * WM_DESTROY:
@@ -1265,13 +1269,244 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             // free two XWPCLASSES structures
             free(pxwpcOld);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
 
     return (mrc);
+}
+
+/*
+ *@@ AppendClassesGroup:
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID AppendClassesGroup(CONTROLDEF *pOneClass,
+                        CONTROLDEF **ppControlDefThis,
+                        DLGHITEM **ppDlgItemThis,
+                        BOOL fReplacements)
+{
+    ULONG ul;
+
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(G_aClasses);
+         ul++)
+    {
+        if (    (fReplacements && G_aClasses[ul].ppcszReplacesClass)
+             || (!fReplacements && !G_aClasses[ul].ppcszReplacesClass)
+           )
+        {
+            (*ppDlgItemThis)->Type = TYPE_START_NEW_ROW;
+            (*ppDlgItemThis)->ulData = ROW_VALIGN_CENTER;
+            (*ppDlgItemThis)++;
+
+            // fill the controldef
+            memcpy(*ppControlDefThis,
+                   pOneClass,
+                   sizeof(CONTROLDEF));
+            (*ppControlDefThis)->pcszText = *(G_aClasses[ul].ppcszClassName);
+            (*ppControlDefThis)->usID = ID_CLASSES_FIRST + ul;
+
+            // and append the controldef
+            (*ppDlgItemThis)->Type = TYPE_CONTROL_DEF;
+            (*ppDlgItemThis)->ulData = (ULONG)(*ppControlDefThis);
+            (*ppDlgItemThis)++;
+            (*ppControlDefThis)++;
+        }
+    }
+}
+
+/*
+ *@@ ShowClassesDlg:
+ *      displays the "XWorkplace classes" dialog.
+ *
+ *      This has been completely rewritten with V0.9.14
+ *      to use dynamic dialog formatting now.
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ */
+
+VOID ShowClassesDlg(HWND hwndOwner)
+{
+    TRY_LOUD(excpt1)
+    {
+        HWND hwndDlg = NULLHANDLE;
+        APIRET arc;
+
+        CONTROLDEF
+                    OKButton = {
+                                WC_BUTTON,
+                                NULL,
+                                WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
+                                DID_OK,
+                                CTL_COMMON_FONT,
+                                0,
+                                { 100, 30 },    // size
+                                5               // spacing
+                             },
+                    CancelButton = {
+                                WC_BUTTON,
+                                NULL,
+                                WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+                                DID_CANCEL,
+                                CTL_COMMON_FONT,
+                                0,
+                                { 100, 30 },    // size
+                                5               // spacing
+                             },
+                    HelpButton = {
+                                WC_BUTTON,
+                                NULL,
+                                WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_HELP,
+                                DID_HELP,
+                                CTL_COMMON_FONT,
+                                0,
+                                { 100, 30 },    // size
+                                5               // spacing
+                             },
+                    ReplGroup = {
+                                 WC_STATIC,
+                                     "Class replacements",
+                                     WS_VISIBLE | WS_TABSTOP
+                                         | SS_GROUPBOX | DT_MNEMONIC,
+                                     -1,
+                                 CTL_COMMON_FONT,
+                                 0,
+                                 { -1, -1 },       // size
+                                 0               // spacing
+                            },
+                    NewGroup = {
+                                 WC_STATIC,
+                                     "New classes",
+                                     WS_VISIBLE | WS_TABSTOP
+                                         | SS_GROUPBOX | DT_MNEMONIC,
+                                     -1,
+                                 CTL_COMMON_FONT,
+                                 0,
+                                 { -1, -1 },       // size
+                                 0               // spacing
+                            },
+                    OneClass = {
+                                WC_BUTTON,
+                                    NULL,      // text, to be replaced
+                                    WS_VISIBLE | WS_TABSTOP
+                                        | BS_AUTOCHECKBOX,
+                                    0,              // ID, to be replaced
+                                CTL_COMMON_FONT,
+                                0,
+                                { -1, -1 },       // size
+                                0               // spacing
+                             };
+        DLGHITEM
+            DlgTemplateFront[] =
+            {
+                START_TABLE,
+                    START_ROW(ROW_VALIGN_TOP),
+                        START_GROUP_TABLE(&ReplGroup)
+            },
+
+            // here the class replacements are inserted
+
+            DlgTemplateMiddle[] =
+            {
+                        END_TABLE,
+                        START_GROUP_TABLE(&NewGroup)
+            },
+
+            // here the new classes are inserted
+
+            DlgTemplateTail[] =
+            {
+                        END_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&OKButton),
+                        CONTROL_DEF(&CancelButton),
+                        CONTROL_DEF(&HelpButton),
+                END_TABLE
+            };
+
+        CONTROLDEF  *paControlDefs = malloc(   (ARRAYITEMCOUNT(G_aClasses) + 2)
+                                             * sizeof(CONTROLDEF)),
+                    *pControlDefThis = paControlDefs;
+        ULONG       cDlgItems =   ARRAYITEMCOUNT(DlgTemplateFront)
+                                + ARRAYITEMCOUNT(DlgTemplateMiddle)
+                                + ARRAYITEMCOUNT(DlgTemplateTail)
+                                  // we need 2 extra items for START_GROUP_TABLE
+                                  // for replacements and new classes each
+                                // + 4
+                                  // for each class, we need a START_ROW(0)
+                                  // plus a check box, i.e. 2 per class
+                                + 2 * ARRAYITEMCOUNT(G_aClasses);
+        DLGHITEM    *paDlgItems = malloc(sizeof(DLGHITEM) * cDlgItems),
+                    *pDlgItemThis = paDlgItems;
+        ULONG       ul;
+
+        // copy front
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(DlgTemplateFront);
+             ul++)
+        {
+            memcpy(pDlgItemThis, &DlgTemplateFront[ul], sizeof(DLGHITEM));
+            pDlgItemThis++;
+        }
+
+        // now go create the items for the class replacements
+        AppendClassesGroup(&OneClass,
+                           &pControlDefThis,
+                           &pDlgItemThis,
+                           TRUE);
+
+        // copy separator (middle)
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(DlgTemplateMiddle);
+             ul++)
+        {
+            memcpy(pDlgItemThis, &DlgTemplateMiddle[ul], sizeof(DLGHITEM));
+            pDlgItemThis++;
+        }
+
+        // and for the new classes
+        AppendClassesGroup(&OneClass,
+                           &pControlDefThis,
+                           &pDlgItemThis,
+                           FALSE);
+
+        // copy tail
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(DlgTemplateTail);
+             ul++)
+        {
+            memcpy(pDlgItemThis, &DlgTemplateTail[ul], sizeof(DLGHITEM));
+            pDlgItemThis++;
+        }
+
+        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+        HelpButton.pcszText = cmnGetString(ID_XSSI_DLG_HELP);
+
+        if (!(arc = dlghCreateDlg(&hwndDlg,
+                                  hwndOwner,
+                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                  fnwpXWorkplaceClasses,
+                                  "XWorkplace Classes",     // @@todo localize
+                                  paDlgItems,
+                                  cDlgItems,
+                                  NULL,
+                                  cmnQueryDefaultFont())))
+        {
+            winhCenterWindow(hwndDlg);
+            WinProcessDlg(hwndDlg);
+            WinDestroyWindow(hwndDlg);
+        }
+
+        free(paDlgItems);
+        free(paControlDefs);
+    }
+    CATCH(excpt1) {} END_CATCH();
 }
 
 /* ******************************************************************
@@ -1407,7 +1642,8 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
             }
             WinReleasePS(hps);
             brc = TRUE;
-        break; }
+        }
+        break;
     }
 
     return (brc);
@@ -1713,6 +1949,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-03-27) [umoeller]: adjusted for notebook.c change with CHECKBOXRECORDCORE notifications
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed very broken Undo, Default, Setup Classes
  *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
+ *@@changed V0.9.14 (2001-07-31) [umoeller]: "Classes" dlg mostly rewritten
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1777,7 +2014,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // re-enable controls on this page
                     ulUpdateFlags = CBI_SET | CBI_ENABLE;
                 }
-            break; }
+            }
+            break;
 
             case ID_XCSI_REPLACEFILEPAGE:
                 pGlobalSettings->fReplaceFilePage = precc->usCheckState;
@@ -1981,7 +2219,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             krnEnableReplaceRefresh(pFeaturesData->bReplaceRefresh);
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -2000,7 +2239,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             krnEnableReplaceRefresh(0);
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
-        break; }
+        }
+        break;
     }
 
     // now unlock the global settings for the following
@@ -2014,7 +2254,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (fShowClassesSetup)
     {
         // "classes" dialog to be shown (classes button):
-        HWND hwndClassesDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+        ShowClassesDlg(pcnbp->hwndFrame);
+        /* HWND hwndClassesDlg = WinLoadDlg(HWND_DESKTOP,     // parent
                                          pcnbp->hwndFrame,  // owner
                                          fnwpXWorkplaceClasses,
                                          cmnQueryNLSModuleHandle(FALSE),
@@ -2022,7 +2263,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          NULL);
         winhCenterWindow(hwndClassesDlg);
         WinProcessDlg(hwndClassesDlg);
-        WinDestroyWindow(hwndClassesDlg);
+        WinDestroyWindow(hwndClassesDlg); */
     }
     else if (fShowHookInstalled)
         // "hook installed" msg
@@ -2449,15 +2690,15 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         HMODULE         hmodNLS = cmnQueryNLSModuleHandle(FALSE);
         CHAR            szXFolderBasePath[CCHMAXPATH],
-                        szSearchMask[2*CCHMAXPATH],
-                        szTemp[200];
+                        szSearchMask[2*CCHMAXPATH];
+                        // szTemp[200];
         HDIR            hdirFindHandle = HDIR_SYSTEM;
         FILEFINDBUF3    FindBuffer     = {0};      // Returned from FindFirst/Next
         ULONG           ulResultBufLen = sizeof(FILEFINDBUF3);
         ULONG           ulFindCount    = 1;        // Look for 1 file at a time
         APIRET          rc             = NO_ERROR; // Return code
 
-        PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+        // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
         HAB             hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
 
@@ -2515,8 +2756,8 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             if (rc != NO_ERROR)
                 winhDebugBox(pcnbp->hwndFrame,
-                         "XFolder",
-                         "XFolder was unable to find any National Language Support DLLs. You need to re-install XFolder.");
+                             "XWorkplace",
+                             "XWorkplace was unable to find any National Language Support DLLs. You need to re-install XWorkplace.");
             else
             {
                 // no error:
@@ -2552,9 +2793,8 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
                 rc = DosFindClose(hdirFindHandle);    // close our find handle
                 if (rc != NO_ERROR)
-                    winhDebugBox(pcnbp->hwndFrame,
-                             "XFolder",
-                             "DosFindClose error");
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "DosFindClose error");
 
                 #ifdef DEBUG_LANGCODES
                     _Pmpf(("  Selecting: %s", cmnQueryLanguageCode()));
@@ -2662,7 +2902,8 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
                 } // end if (strcmp(szOldLanguageCode, szLanguageCode) != 0)
             } // end if (usNotifyCode == LN_SELECT)
-        break; }
+        }
+        break;
     }
 
     return ((MPARAM)-1);
@@ -2685,7 +2926,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PTIB            ptib;
     PPIB            ppib;
-    TID             tid;
+    // TID             tid;
 
     CHAR            szTemp[200];
 
@@ -2834,7 +3075,8 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
             WPObject *pObjLocation;
 
             // get class's class object
-            somId       somidThis = somIdFromString((PSZ)pso2->pcszObjectClass);
+            PSZ         pszClassName = (PSZ)*(pso2->ppcszObjectClass);
+            somId       somidThis = somIdFromString(pszClassName);
             SOMClass    *pClassObject = _somFindClass(SOMClassMgrObject, somidThis, 0, 0);
 
             sprintf(szSetupString, "%sOBJECTID=%s",
@@ -2847,7 +3089,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
             if (apsz[0] == NULL)
                 // title not found: use class name then
-                apsz[0] = (PSZ)pso2->pcszObjectClass;
+                apsz[0] = pszClassName;
 
             pcszLocation = pso2->pcszLocation;
             strcpy(szLocationPath, pcszLocation);
@@ -2871,7 +3113,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                                     MB_YESNO)
                          == MBID_YES)
             {
-                HOBJECT hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,  // class
+                HOBJECT hobj = WinCreateObject(pszClassName,
                                                apsz[0],                     // title
                                                szSetupString,               // setup
                                                (PSZ)pcszLocation,           // location
@@ -2937,7 +3179,8 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
         xstrset(&strMenuItemText, winhQueryMenuItemText(hwndMenu,
                                                         pso2->usMenuID));
         xstrcat(&strMenuItemText, " (", 0);
-        xstrcat(&strMenuItemText, pso2->pcszObjectClass, 0);
+        if (pso2->ppcszObjectClass)
+            xstrcat(&strMenuItemText, *(pso2->ppcszObjectClass), 0);
 
         if (pso2->pExists)
         {
@@ -3029,7 +3272,8 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    sizeof(G_WPSObjects) / sizeof(STANDARDOBJECT)); // array item count
             mrc = (MRESULT)hwndMenu;
             WinSetPointer(HWND_DESKTOP, hptrOld);
-        break; }
+        }
+        break;
 
         /*
          * ID_XCD_OBJECTS_XWORKPLACE:
@@ -3047,7 +3291,8 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    sizeof(G_XWPObjects) / sizeof(STANDARDOBJECT)); // array item count
             mrc = (MRESULT)hwndMenu;
             WinSetPointer(HWND_DESKTOP, hptrOld);
-        break; }
+        }
+        break;
 
         /*
          * ID_XCD_OBJECTS_CONFIGFOLDER:
@@ -3241,7 +3486,8 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 xthrResetWorkerThreadPriority();
             }
-        break; }
+        }
+        break;
 
         case ID_XCDI_WORKERPRTY_BEEP:
             pGlobalSettings->fWorkerPriorityBeep = ulExtra;
@@ -3267,7 +3513,8 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
         {
@@ -3279,7 +3526,8 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;

@@ -42,6 +42,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
+#define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
@@ -89,9 +90,6 @@
  *   Global variables
  *
  ********************************************************************/
-
-// class name for wpSaveState/wpRestoreState
-static const char           *G_pcszXCenter = "XCenter";
 
 /* ******************************************************************
  *
@@ -328,7 +326,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
             XCenterData *somThis = XCenterGetData(somSelf);
 
             // temporary buffer for building the setup string
-            CHAR szTemp[100];
+            // CHAR szTemp[100];
             XSTRING strTemp;
             PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
             PLISTNODE pNode;
@@ -383,7 +381,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                         // characters that must be encoded
                         // CHAR    achEncode[] = ;
 
-                        ULONG   ul = 0;
+                        // ULONG   ul = 0;
 
                         // copy widget setup string to temporary buffer
                         // for encoding... this has "=" and ";"
@@ -740,6 +738,167 @@ BOOL ctrpRestoreState(XCenter *somSelf)
 
     return (brc);
 }
+
+/*
+ *@@ ctrpSaveToFile:
+ *      write the widget settings to a file, and sets its .TYPE
+ *      attribute to DRT_WIDGET.
+ *
+ *      Returns TRUE if the operation was successful.
+ *
+ *@@added V0.9.14 (2001-07-30) [lafaix]
+ */
+
+BOOL ctrpSaveToFile(PCSZ pszDest,
+                    PCSZ pszClass,
+                    PCSZ pszSetup)
+{
+    HFILE     hf;
+    ULONG     ulAction;
+    EAOP2     eaop2;
+    PFEA2LIST pfea2l;
+    #pragma pack(1)
+    struct
+    {
+        CHAR   ach[6];
+        USHORT usValType,
+               usValLen;
+        CHAR   achVal[16];
+    } val;
+    #pragma pack()
+    BOOL      brc = FALSE;
+
+    if (DosOpen((PSZ)pszDest,
+                &hf,
+                &ulAction,
+                0L,
+                0,
+                FILE_OPEN|OPEN_ACTION_CREATE_IF_NEW,
+                OPEN_ACCESS_WRITEONLY|OPEN_SHARE_DENYREADWRITE,
+                0) == NO_ERROR)
+    {
+        // Adding a "Widget settings" .TYPE EA
+        if ((pfea2l = (PFEA2LIST) malloc(sizeof(FEA2LIST)+sizeof(val))))
+        {
+            pfea2l->cbList = sizeof(FEA2LIST)+sizeof(val);
+            pfea2l->list[0].oNextEntryOffset = 0;
+            pfea2l->list[0].fEA = 0;
+            pfea2l->list[0].cbName = 5;
+            pfea2l->list[0].cbValue = 20;
+            strcpy(val.ach, ".TYPE");
+            val.usValType = EAT_ASCII;
+            val.usValLen = 15; // strlen(DRT_WIDGET)
+            strcpy(val.achVal, DRT_WIDGET);
+            memcpy(pfea2l->list[0].szName, &val, sizeof(val));
+            eaop2.fpFEA2List = pfea2l;
+
+            if (DosSetFileInfo(hf,
+                               FIL_QUERYEASIZE,
+                               &eaop2,
+                               sizeof(eaop2)) == NO_ERROR)
+            {
+                // create the file content:
+
+                if (    // first, the widget class name
+                        (DosWrite(hf,
+                                  (PVOID)pszClass,
+                                  strlen(pszClass),
+                                  &ulAction) == NO_ERROR)
+                        // then, a CR/LF marker
+                     && (DosWrite(hf,
+                                  "\r\n",
+                                  2,
+                                  &ulAction) == NO_ERROR)
+                        // and the setup string
+                     && (DosWrite(hf,
+                                  (PVOID)pszSetup,
+                                  strlen(pszSetup),
+                                  &ulAction) == NO_ERROR)
+                   )
+                    brc = TRUE;
+            }
+
+            free(pfea2l);
+        } // end if ((pfea2l = (PFEA2LIST) malloc(...)))
+
+        DosClose(hf);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ ctrpReadFromFile:
+ *      returns a packed representation of the widget.
+ *
+ *      If not NULL, ppszSetup contains the widget class name,
+ *      followed by a '\r\n' pair, and followed by the widget
+ *      setup string.
+ *
+ *      It is the responsability of the caller to free the
+ *      memory block pointed to by ppszSetup.
+ *
+ *      Returns TRUE if the operation was successful (in this case,
+ *      *ppszSetup points to the data).  Returns FALSE otherwise (in
+ *      this case, *ppszSetup is NULL).
+ *
+ *@@added V0.9.14 (2001-07-30) [lafaix]
+ */
+
+BOOL ctrpReadFromFile(PCSZ pszSource,
+                      PSZ *ppszSetup)
+{
+    HFILE       hf;
+    ULONG       ulAction;
+    FILESTATUS3 fs3 = {0};
+    PSZ         pszBuff = NULL;
+    BOOL        brc = FALSE;
+
+    if (DosOpen((PSZ)pszSource,
+                &hf,
+                &ulAction,
+                0L,
+                0,
+                FILE_OPEN,
+                OPEN_ACCESS_READONLY|OPEN_SHARE_DENYWRITE,
+                0) == NO_ERROR)
+    {
+        // we will read the file in just one block,
+        // so we must know its size
+        if (DosQueryFileInfo(hf,
+                             FIL_STANDARD,
+                             &fs3,
+                             sizeof(fs3)) == NO_ERROR)
+        {
+            pszBuff = malloc(fs3.cbFile+1);
+            if (pszBuff)
+            {
+                if (DosRead(hf,
+                            pszBuff,
+                            fs3.cbFile,
+                            &ulAction) == NO_ERROR)
+                {
+                    pszBuff[fs3.cbFile] = 0;
+                    brc = TRUE;
+                }
+                else
+                {
+                    // an error occured while reading data; we must free
+                    // our buffer so that no memory leaks
+                    free(pszBuff);
+                    pszBuff = NULL;
+                }
+            }
+        }
+
+        DosClose(hf);
+    }
+
+    *ppszSetup = pszBuff;
+
+    return (brc);
+}
+
 
 /* ******************************************************************
  *
@@ -1133,8 +1292,8 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     MRESULT     mrc = 0;
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
-    BOOL        fSave = TRUE,
-                fDisplayStyleChanged = FALSE;
+    BOOL        fSave = TRUE;
+                // fDisplayStyleChanged = FALSE;
     LONG        lSliderIndex;
     ULONG       ulDisplayFlagChanged = 0;
 
@@ -1264,6 +1423,10 @@ typedef struct _WIDGETRECORD
             // index of widget if it's a root widget;
             // otherwise (subwidget in some tray), this is -1
 
+    ULONG           ulParentIndex,
+                    ulTrayIndex,
+                    ulSubwidgetIndex;
+
     PSZ             pszIndex;           // points to szIndex
     CHAR            szIndex[40];
 
@@ -1271,6 +1434,90 @@ typedef struct _WIDGETRECORD
             // widget's setup string; points into instance data, do not free!
 
 } WIDGETRECORD, *PWIDGETRECORD;
+
+PFNWP G_pfnwpWidgetsCnr = NULL;
+
+/*
+ *@@ fnwpWidgetsCnr:
+ *      subclassed window proc for the widgets container.  Handles
+ *      DM_RENDER and DM_DISCARDOBJECT messages.
+ *
+ *@@added V0.9.14 (2001-07-29) [lafaix]
+ */
+
+MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
+                                ULONG msg,
+                                MPARAM mp1,
+                                MPARAM mp2)
+{
+    switch (msg)
+    {
+        case DM_RENDER:
+        {
+            PDRAGTRANSFER pdt = (PDRAGTRANSFER)mp1;
+
+            if (DrgVerifyRMF(pdt->pditem, "DRM_OS2FILE", NULL))
+            {
+                CHAR          ach[CCHMAXPATH];
+                PWIDGETRECORD pwr = (PWIDGETRECORD)pdt->pditem->ulItemID;
+                BOOL          bSuccess;
+
+                DrgQueryStrName(pdt->hstrRenderToName,
+                                CCHMAXPATH,
+                                ach);
+
+                bSuccess = ctrpSaveToFile(ach,
+                                          pwr->recc.pszIcon,
+                                          pwr->pcszSetupString);
+
+                WinPostMsg(pdt->hwndClient,
+                           DM_RENDERCOMPLETE,
+                           MPFROMP(pdt),
+                           (bSuccess) ? MPFROMSHORT(DMFL_RENDEROK)
+                                      : MPFROMSHORT(DMFL_RENDERFAIL));
+
+                return (MRESULT)TRUE;
+            }
+            else
+                return (FALSE);
+        }
+
+    /* ??? This part does not work.  DM_DISCARDOBJECT is only received
+       ??? ONCE per session.  I have absolutely no idea why.  Will check
+       ??? anther day. // @@todo
+       ??? V0.9.14 (2001-07-30) [lafaix]
+    */
+
+        case DM_DISCARDOBJECT:
+        {
+            PDRAGINFO pdi;
+            PDRAGITEM pditem;
+            PWIDGETRECORD prec;
+            PCREATENOTEBOOKPAGE pcnbp;
+
+            if (    (pdi = (PDRAGINFO)mp1)
+                 && (pditem = DrgQueryDragitemPtr(pdi, 0))
+                 && (prec = (PWIDGETRECORD)pditem->ulItemID)
+                 && (pcnbp = (PCREATENOTEBOOKPAGE)WinQueryWindowULong(hwndCnr, QWL_USER))
+               )
+            {
+                if (prec->ulRootIndex != -1)        // @@todo
+                    _xwpRemoveWidget(pcnbp->somSelf,
+                                     prec->ulRootIndex);
+                          // this saves the instance data
+                          // and updates the view
+                          // and also calls the init callback
+                          // to update the settings page!
+
+                return (MRESULT)DRR_SOURCE;
+            }
+            else
+                _Pmpf(("DM_DISCARDOBJECT NULL"));
+        }
+    }
+
+    return (G_pfnwpWidgetsCnr(hwndCnr, msg, mp1, mp2));
+}
 
 /*
  *@@ InsertWidgetSetting:
@@ -1280,7 +1527,8 @@ typedef struct _WIDGETRECORD
 
 PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
                                   PPRIVATEWIDGETSETTING pSetting,
-                                  ULONG ulRootIndex,
+                                  ULONG ulRootIndex,    // in: if -1, this is a subwidget;
+                                                        // otherwise the widget index
                                   ULONG ulParentIndex,
                                   ULONG ulTrayIndex,
                                   ULONG ulSubwidgetIndex)
@@ -1289,6 +1537,9 @@ PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
                                                               sizeof(WIDGETRECORD),
                                                               1);
     preccThis->ulRootIndex = ulRootIndex;
+    preccThis->ulParentIndex = ulParentIndex;
+    preccThis->ulTrayIndex = ulTrayIndex;
+    preccThis->ulSubwidgetIndex = ulSubwidgetIndex;
     if (ulRootIndex == -1)
     {
         // subwidget:
@@ -1336,7 +1587,7 @@ PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
 VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    // XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
 
     if (flFlags & CBI_INIT)
     {
@@ -1381,6 +1632,17 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         } END_CNRINFO(hwndCnr);
 
         ctrpLoadClasses();
+
+        // we must subclass the widgets container, so that we can handle
+        // the DM_DISCARDOBJECT and DM_RENDER msgs
+        // V0.9.14 (2001-07-29) [lafaix]
+        G_pfnwpWidgetsCnr = WinSubclassWindow(hwndCnr, fnwpWidgetsCnr);
+
+        // we also need a copy of pcnbp, so that we can easily handle
+        // DM_DISCARDOBJECT without having to climb up the window
+        // hierarchy
+        // V0.9.14 (2001-07-30) [lafaix]
+        WinSetWindowULong(hwndCnr, QWL_USER, (ULONG)pcnbp);
     }
 
     if (flFlags & CBI_SET)
@@ -1413,10 +1675,10 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                     PLISTNODE pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgets);
                     while (pSubwidgetNode)
                     {
-                        PTRAYSUBWIDGET pSubwidget = (PTRAYSUBWIDGET)pSubwidgetNode->pItemData;
+                        PPRIVATEWIDGETSETTING pSubwidget = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData;
 
                         InsertWidgetSetting(hwndCnr,
-                                            &pSubwidget->Setting,
+                                            pSubwidget,
                                             -1,     // non-root
                                             ulIndex,
                                             ulTray,
@@ -1458,7 +1720,8 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 // one container)
 #define WIDGET_RMF_MECH     "DRM_XWPXCENTERWIDGET"
 #define WIDGET_RMF_FORMAT   "DRF_XWPWIDGETRECORD"
-#define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ")x(" WIDGET_RMF_FORMAT ")"
+// #define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ")x(" WIDGET_RMF_FORMAT ")"
+#define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ",DRM_OS2FILE,DRM_DISCARD)x(" WIDGET_RMF_FORMAT ")"
 
 static PWIDGETRECORD G_precDragged = NULL,
                      G_precAfter = NULL;
@@ -1471,6 +1734,7 @@ static PWIDGETRECORD G_precDragged = NULL,
  *
  *@@added V0.9.9 (2001-03-09) [umoeller]
  *@@changed V0.9.12 (2001-05-08) [lafaix]: fixed problems if widget class not found
+ *@@changed V0.9.14 (2001-07-29) [lafaix]: now handles widget settings files dnd
  */
 
 MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1478,7 +1742,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    // XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
 
     switch (ulItemID)
     {
@@ -1508,7 +1772,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              pcdi->pRecord,
                                              usNotifyCode,
                                              WIDGET_PRIVATE_RMF,
-                                             DO_MOVEABLE);
+                                             DO_COPYABLE | DO_MOVEABLE); // DO_MOVEABLE);
                         }
                 break; }
 
@@ -1552,62 +1816,90 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // get access to the drag'n'drop structures
                     if (DrgAccessDraginfo(pcdi->pDragInfo))
                     {
-                        if (
-                                // accept no more than one single item at a time;
-                                // we cannot move more than one file type
-                                (pcdi->pDragInfo->cditem != 1)
-                                // make sure that we only accept drops from ourselves,
-                                // not from other windows
-                             || (pcdi->pDragInfo->hwndSource
-                                        != pcnbp->hwndControl)
-                            )
-                        {
+                        if (pcdi->pDragInfo->cditem != 1)
                             usIndicator = DOR_NEVERDROP;
-                        }
                         else
                         {
-                            // OK, we have exactly one item:
+                            // we must accept the drop if (1) this is a file
+                            // whose type is DRT_WIDGET, or (2) this a widget
+                            // from ourselves
                             PDRAGITEM pdrgItem = NULL;
 
-                            if (    (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
-                                      || (pcdi->pDragInfo->usOperation == DO_MOVE)
-                                    )
-                                    // do not allow drag upon whitespace,
+                            if (    // do not allow drag upon whitespace,
                                     // but only between records
-                                 && (pcdi->pRecord)
+                                    (pcdi->pRecord)
                                  && (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
                                )
                             {
-                                PWIDGETRECORD precDragged = (PWIDGETRECORD)pdrgItem->ulItemID;
-
-                                G_precAfter = NULL;
-                                // check target record...
-                                if (   (pcdi->pRecord == (PRECORDCORE)CMA_FIRST)
-                                    || (pcdi->pRecord == (PRECORDCORE)CMA_LAST)
+                                if (    (DrgVerifyRMF(pdrgItem, "DRM_OS2FILE", NULL))
+                                     && (DrgVerifyType(pdrgItem, DRT_WIDGET))
                                    )
-                                    // store record after which to insert
-                                    G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
-                                // do not allow dropping after
-                                // disabled records
-                                else if ((pcdi->pRecord->flRecordAttr & CRA_DISABLED) == 0)
-                                    // store record after which to insert
-                                    G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
-
-                                if (G_precAfter)
                                 {
-                                    if (    ((PWIDGETRECORD)pcdi->pRecord  // target recc
-                                              != precDragged) // source recc
-                                         && (DrgVerifyRMF(pdrgItem,
-                                                          WIDGET_RMF_MECH,
-                                                          WIDGET_RMF_FORMAT))
+                                    // this is case (1)
+                                    G_precAfter = NULL;
+                                    // check target record...
+                                    if (    (pcdi->pRecord == (PRECORDCORE)CMA_FIRST)
+                                         || (pcdi->pRecord == (PRECORDCORE)CMA_LAST)
                                        )
                                     {
-                                        // allow drop:
-                                        // store record being dragged
-                                        G_precDragged = precDragged;
-                                        // G_precAfter already set
+                                        // store record after which to insert
+                                        G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
+                                    }
+                                    // do not allow dropping after
+                                    // disabled records
+                                    else if (!(pcdi->pRecord->flRecordAttr & CRA_DISABLED))
+                                        // store record after which to insert
+                                        G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
+
+                                    if (G_precAfter)
+                                    {
                                         usIndicator = DOR_DROP;
-                                        usOp = DO_MOVE;
+                                        usOp = DO_COPY;
+                                    }
+                                }
+                                else
+                                if (pcdi->pDragInfo->hwndSource != pcnbp->hwndControl)
+                                    // neither case (1) nor (2)
+                                    usIndicator = DOR_NEVERDROP;
+                                else
+                                {
+                                    // this is case (2)
+                                    if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
+                                         || (pcdi->pDragInfo->usOperation == DO_MOVE)
+                                       )
+                                    {
+                                        PWIDGETRECORD precDragged = (PWIDGETRECORD)pdrgItem->ulItemID;
+
+                                        G_precAfter = NULL;
+                                        // check target record...
+                                        if (   (pcdi->pRecord == (PRECORDCORE)CMA_FIRST)
+                                            || (pcdi->pRecord == (PRECORDCORE)CMA_LAST)
+                                           )
+                                            // store record after which to insert
+                                            G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
+                                        // do not allow dropping after
+                                        // disabled records
+                                        else if ((pcdi->pRecord->flRecordAttr & CRA_DISABLED) == 0)
+                                            // store record after which to insert
+                                            G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
+
+                                        if (G_precAfter)
+                                        {
+                                            if (    ((PWIDGETRECORD)pcdi->pRecord  // target recc
+                                                      != precDragged) // source recc
+                                                 && (DrgVerifyRMF(pdrgItem,
+                                                                  WIDGET_RMF_MECH,
+                                                                  WIDGET_RMF_FORMAT))
+                                               )
+                                            {
+                                                // allow drop:
+                                                // store record being dragged
+                                                G_precDragged = precDragged;
+                                                // G_precAfter already set
+                                                usIndicator = DOR_DROP;
+                                                usOp = DO_MOVE;
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1665,6 +1957,94 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     // to update the settings page!
                         }
                         G_precDragged = NULL;
+                    }
+                    else
+                    // it was not an internal widget drag; it could be a
+                    // widget settings file drop, though.  Lets check.
+                    {
+                        PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
+
+                        if (DrgAccessDraginfo(pcdi->pDragInfo))
+                        {
+                            PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0);
+
+                            if (    (pdrgItem)
+                                 && (G_precAfter)
+                                 && (DrgVerifyRMF(pdrgItem, "DRM_OS2FILE", NULL))
+                                 && (DrgVerifyType(pdrgItem, DRT_WIDGET))
+                               )
+                            {
+                                // that was it.  We must create a new widget
+                                // here.
+                                CHAR        achCnr[CCHMAXPATH],
+                                            achSrc[CCHMAXPATH];
+                                PSZ         pszBuff;
+
+                                // the dnd part guaranties the following
+                                // will not overflow
+                                DrgQueryStrName(pdrgItem->hstrContainerName,
+                                                CCHMAXPATH,
+                                                achCnr);
+                                DrgQueryStrName(pdrgItem->hstrSourceName,
+                                                CCHMAXPATH,
+                                                achSrc);
+
+                                if ((strlen(achCnr)+strlen(achSrc)) < (CCHMAXPATH-1))
+                                {
+                                    CHAR achAll[CCHMAXPATH];
+
+                                    strcpy(achAll, achCnr);
+                                    strcat(achAll, achSrc);
+
+                                    ctrpReadFromFile(achAll, &pszBuff);
+
+                                    if (pszBuff)
+                                    {
+                                        PSZ pszSetupString = strstr(pszBuff, "\r\n");
+
+                                        if (pszSetupString)
+                                        {
+                                            // it looks like it is a valid
+                                            // widget settings data
+                                            ULONG ulIndex = -2;
+
+                                            if (G_precAfter == (PWIDGETRECORD)CMA_FIRST)
+                                            {
+                                                // copy before index 0
+                                                ulIndex = 0;
+                                            }
+                                            else if (G_precAfter == (PWIDGETRECORD)CMA_LAST)
+                                            {
+                                                // shouldn't happen
+                                                DosBeep(100, 100);
+                                            }
+                                            else
+                                            {
+                                                // we get the record _before_ the draggee
+                                                // (CN_DRAGAFTER), but xwpMoveWidget wants
+                                                // the index of the widget _before_ which the
+                                                // widget should be inserted:
+                                                ulIndex = G_precAfter->ulRootIndex + 1;
+                                            }
+                                            if (ulIndex != -2)
+                                            {
+                                                *pszSetupString = 0;
+                                                pszSetupString += 2;
+
+                                                _xwpInsertWidget(pcnbp->somSelf,
+                                                                 ulIndex,
+                                                                 pszBuff,
+                                                                 pszSetupString);
+                                            }
+                                        }
+
+                                        free(pszBuff);
+                                    }
+                                }
+                            }
+
+                            DrgFreeDraginfo(pcdi->pDragInfo);
+                        }
                     }
                 break; }
 
@@ -1748,9 +2128,18 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
                 if (prec->ulRootIndex != -1)
+                    // root widget:
                     ctrpShowSettingsDlg(pcnbp->somSelf,
                                         pcnbp->hwndDlgPage, // owner
+                                        -1,
+                                        0,
                                         prec->ulRootIndex);
+                else
+                    ctrpShowSettingsDlg(pcnbp->somSelf,
+                                        pcnbp->hwndDlgPage, // owner
+                                        prec->ulParentIndex,
+                                        prec->ulTrayIndex,
+                                        prec->ulSubwidgetIndex);
             }
         break; }
 
@@ -1814,7 +2203,7 @@ typedef struct _XCLASSRECORD
 VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    // XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
 
     if (flFlags & CBI_INIT)
     {

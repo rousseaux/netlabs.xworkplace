@@ -111,6 +111,7 @@
 // XWorkplace implementation headers
 #include "bldlevel.h"                   // XWorkplace build level definitions
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#define INCLUDE_COMMON_PRIVATE
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -171,6 +172,7 @@ int _CRT_init(void);
 // linked, as is the case with XFolder.
 void _CRT_term(void);
 
+#if 0
 /********************************************************************
  *
  *   INI keys
@@ -186,6 +188,8 @@ void _CRT_term(void);
  *  they were really constant).
  *
  *  These have been moved here with V0.9.7 (2001-01-17) [umoeller]
+ *  and converted to DECLARE_STRING macros with
+ *  V0.9.14 V0.9.14 (2001-07-31) [umoeller].
  */
 
 /*
@@ -375,6 +379,41 @@ const char      *XFOLDER_USERGUIDE       = "<XWP_REF>";
 
 /********************************************************************
  *
+ *   XWorkplace class names V0.9.14 (2001-07-31) [umoeller]
+ *
+ ********************************************************************/
+
+const char *G_pcszXFldObject = "XFldObject";
+const char *G_pcszXFolder = "XFolder";
+const char *G_pcszXFldDisk = "XFldDisk";
+const char *G_pcszXFldDesktop = "XFldDesktop";
+const char *G_pcszXFldDataFile = "XFldDataFile";
+const char *G_pcszXFldProgramFile = "XFldProgramFile";
+const char *G_pcszXWPSound = "XWPSound";
+const char *G_pcszXWPMouse = "XWPMouse";
+const char *G_pcszXWPKeyboard = "XWPKeyboard";
+
+const char *G_pcszXWPSetup = "XWPSetup";
+const char *G_pcszXFldSystem = "XFldSystem";
+const char *G_pcszXFldWPS = "XFldWPS";
+const char *G_pcszXWPScreen = "XWPScreen";
+const char *G_pcszXWPMedia = "XWPMedia";
+const char *G_pcszXFldStartup = "XFldStartup";
+const char *G_pcszXFldShutdown = "XFldShutdown";
+const char *G_pcszXWPClassList = "XWPClassList";
+const char *G_pcszXWPTrashCan = "XWPTrashCan";
+const char *G_pcszXWPTrashObject = "XWPTrashObject";
+const char *G_pcszXWPString = "XWPString";
+const char *G_pcszXCenter = "XCenter";
+const char *G_pcszXWPFontFolder = "XWPFontFolder";
+const char *G_pcszXWPFontFile = "XWPFontFile";
+const char *G_pcszXWPFontObject = "XWPFontObject";
+
+// @@todo
+const char *G_pcszXWPProgram = "XWPProgram";
+
+/********************************************************************
+ *
  *   Thread object windows
  *
  ********************************************************************/
@@ -387,6 +426,8 @@ const char      *WNDCLASS_FILEOBJECT           = "XWPFileObject";
 const char      *WNDCLASS_THREAD1OBJECT        = "XWPThread1Object";
 const char      *WNDCLASS_SUPPLOBJECT          = "XWPSupplFolderObject";
 const char      *WNDCLASS_APIOBJECT            = "XWPAPIObject";
+
+#endif // #if 0
 
 /* ******************************************************************
  *
@@ -2374,7 +2415,7 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
                       PVOID somThis)         // in: instance's somThis pointer
 {
     ULONG   ul = 0;
-    CHAR    szTemp[100];
+    // CHAR    szTemp[100];
 
     for (ul = 0;
          ul < cSettings;
@@ -2987,11 +3028,11 @@ ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
 BOOL cmnTrashCanReady(VOID)
 {
     BOOL brc = FALSE;
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+    // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     M_XWPTrashCan *pTrashCanClass = _XWPTrashCan;
     if (pTrashCanClass)
     {
-        if (_xwpclsQueryDefaultTrashCan(_XWPTrashCan))
+        if (_xwpclsQueryDefaultTrashCan(pTrashCanClass))
             brc = TRUE;
     }
 
@@ -3021,12 +3062,12 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
     if (fEnable)
     {
         // enable:
-        M_XWPTrashCan       *pXWPTrashCanClass = _XWPTrashCan;
+        // M_XWPTrashCan       *pXWPTrashCanClass = _XWPTrashCan;
 
         BOOL    fCreateObject = FALSE;
 
-        if (    (!winhIsClassRegistered("XWPTrashCan"))
-             || (!winhIsClassRegistered("XWPTrashObject"))
+        if (    (!winhIsClassRegistered(G_pcszXWPTrashCan))
+             || (!winhIsClassRegistered(G_pcszXWPTrashObject))
            )
         {
             // classes not registered yet:
@@ -3036,13 +3077,13 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
                                  MB_YESNO)
                     == MBID_YES)
             {
-                CHAR szRegisterError[500];
+                // CHAR szRegisterError[500];
 
                 HPOINTER hptrOld = winhSetWaitPointer();
 
-                if (WinRegisterObjectClass("XWPTrashCan",
+                if (WinRegisterObjectClass((PSZ)G_pcszXWPTrashCan,
                                            (PSZ)cmnQueryMainModuleFilename()))
-                    if (WinRegisterObjectClass("XWPTrashObject",
+                    if (WinRegisterObjectClass((PSZ)G_pcszXWPTrashObject,
                                                (PSZ)cmnQueryMainModuleFilename()))
                     {
                         fCreateObject = TRUE;
@@ -3064,7 +3105,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
         if (fCreateObject)
         {
-            XWPTrashCan *pDefaultTrashCan = NULL;
+            // XWPTrashCan *pDefaultTrashCan = NULL;
 
             if (NULLHANDLE == WinQueryObject((PSZ)XFOLDER_TRASHCANID))
             {
@@ -3112,8 +3153,8 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
                 XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
                 if (pDefaultTrashCan)
                     _wpFree(pDefaultTrashCan);
-                WinDeregisterObjectClass("XWPTrashCan");
-                WinDeregisterObjectClass("XWPTrashObject");
+                WinDeregisterObjectClass((PSZ)G_pcszXWPTrashCan);
+                WinDeregisterObjectClass((PSZ)G_pcszXWPTrashObject);
 
                 cmnMessageBoxMsg(hwndOwner,
                                  148,       // XWPSetup
@@ -3258,7 +3299,7 @@ BOOL cmnPlaySystemSound(USHORT usIndex)
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (pGlobalSettings->fXSystemSounds)    // V0.9.3 (2000-04-10) [umoeller]
     {
-        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+        // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
         // check if the XWPMedia subsystem is working
         if (xmmQueryStatus() == MMSTAT_WORKING)
@@ -3644,28 +3685,37 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed parameters
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed entry field lengths
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added return value
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed parameter handling which was ignored
  */
 
-HAPP cmnRunCommandLine(HWND hwndOwner,
-                       const char *pcszStartupDir)
+HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
+                       const char *pcszStartupDir)  // in: startup dir or NULL
 {
     HAPP happ = NULLHANDLE;
-    HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,
-                              hwndOwner,
-                              fnwpRunCommandLine,
-                              cmnQueryNLSModuleHandle(FALSE),
-                              ID_XFD_RUN,
-                              NULL);
-    if (hwndDlg)
+
+    HWND hwndDlg;
+
+    if (!hwndOwner)
+        hwndOwner = cmnQueryActiveDesktopHWND();
+
+    if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
+                             hwndOwner,
+                             fnwpRunCommandLine,
+                             cmnQueryNLSModuleHandle(FALSE),
+                             ID_XFD_RUN,
+                             NULL))
     {
         HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
                 hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
         winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
         winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
+        WinSetWindowText(hwndStartup, pcszStartupDir);
 
         cmnSetControlsFont(hwndDlg, 1, 10000);
         winhEnableDlgItem(hwndDlg, DID_OK, FALSE);
         winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
+
+        // go!
         if (WinProcessDlg(hwndDlg) == DID_OK)
         {
             PSZ pszCommand = winhQueryWindowText(hwndCommand);

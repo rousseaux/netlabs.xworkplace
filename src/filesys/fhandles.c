@@ -150,7 +150,7 @@ PNODE   G_NodeHashTable[65536];
 BOOL fhdlLockHandles(ULONG ulTimeout)
 {
     BOOL    brc = TRUE;
-    BOOL    fSemOwned = FALSE;
+    // BOOL    fSemOwned = FALSE;
 
     if (G_hmtxHandles == NULLHANDLE)
     {

@@ -419,6 +419,26 @@
     // added V0.9.12 (2001-05-12) [umoeller]
     #define XDM_RECOVERWINDOWS      (WM_USER + 416)
 
+    #define XDM_ADDDISKWATCH        (WM_USER + 417)
+
+    /*
+     *@@ ADDDISKWATCH:
+     *      struct used with XDM_ADDDISKWATCH.
+     *
+     *@@added V0.9.14 (2001-08-01) [umoeller]
+     */
+
+    typedef struct _ADDDISKWATCH
+    {
+        ULONG           ulLogicalDrive;         // disk to be monitored
+        HWND            hwndNotify;             // window to be notified on change
+        ULONG           ulMessage;              // message to be posted to window
+    } ADDDISKWATCH, *PADDDISKWATCH;
+
+    #define XDM_REMOVEDISKWATCH     (WM_USER + 418)
+
+    #define XDM_QUERYDISKS          (WM_USER + 419)
+
 #endif
 
 

@@ -198,7 +198,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
                                           PULONG pulIgnoreSubsequent)
                                                             // out: ignore subsequent errors of the same type
 {
-    FOPSRET frc = NO_ERROR;
+    // FOPSRET frc = NO_ERROR;
     CHAR    szMsg[1000];
     PSZ     apsz[5] = {0};
     ULONG   cpsz = 0,
@@ -1139,8 +1139,8 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
 {
     FOPSRET     frc = NO_ERROR;
     HFILETASKLIST hftl = NULLHANDLE;
-    PLISTNODE   pNode = NULL;
-    ULONG       cObjects = 0;
+    // PLISTNODE   pNode = NULL;
+    // ULONG       cObjects = 0;
 
     // create task list for the desired task
     hftl = fopsCreateFileTaskList(XFT_POPULATE,

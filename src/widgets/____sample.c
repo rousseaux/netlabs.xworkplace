@@ -322,9 +322,8 @@ VOID WgtScanSetup(const char *pcszSetupString,
     PSZ p;
 
     // background color
-    p = pctrScanSetupString(pcszSetupString,
-                            "BGNDCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "BGNDCOL"))
     {
         pSetup->lcolBackground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -334,9 +333,8 @@ VOID WgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // text color:
-    p = pctrScanSetupString(pcszSetupString,
-                            "TEXTCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "TEXTCOL"))
     {
         pSetup->lcolForeground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -347,9 +345,8 @@ VOID WgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = pctrScanSetupString(pcszSetupString,
-                            "FONT");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FONT"))
     {
         pSetup->pszFont = strdup(p);
         pctrFreeSetupValue(p);
@@ -368,7 +365,7 @@ VOID WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
                   PSAMPLESETUP pSetup)
 {
     CHAR    szTemp[100];
-    PSZ     psz = 0;
+    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
@@ -427,7 +424,7 @@ MRESULT WgtCreate(HWND hwnd,
                   PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;
-    PSZ p;
+    // PSZ p;
     PSAMPLEPRIVATE pPrivate = malloc(sizeof(SAMPLEPRIVATE));
     memset(pPrivate, 0, sizeof(SAMPLEPRIVATE));
     // link the two together

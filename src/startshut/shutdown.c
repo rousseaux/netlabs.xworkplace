@@ -265,7 +265,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
     TRY_LOUD(excpt1)
     {
-        BOOL        fCanEmptyTrashCan = FALSE;
+        // BOOL        fCanEmptyTrashCan = FALSE;
         HMODULE     hmodResource = cmnQueryNLSModuleHandle(FALSE);
         ULONG       ulKeyLength;
         PSZ         p = NULL,
@@ -636,7 +636,7 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
 {
     USHORT  usInvalid = 0;
     PSZ     pINI, p;
-    BOOL    fValid = TRUE;
+    // BOOL    fValid = TRUE;
     ULONG   ulItemCount = lstCountItems(pllItems);
 
     // store data in INI
@@ -1551,7 +1551,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                         // found our one:
                                         // insert into entry field
                                         CHAR szItem[20];
-                                        CHAR szCommand[100];
+                                        // CHAR szCommand[100];
                                         ULONG ul = 0;
 
                                         // strip trailing spaces
@@ -1959,7 +1959,7 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
 BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 {
     BOOL                fStartShutdown = TRUE;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdpNew = NULL;
 
     PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
@@ -2303,7 +2303,8 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;"
                 "OBJECTID=%s;",
                 XFOLDER_SHUTDOWNID);
-            if (hObj = WinCreateObject("XFldShutdown", "XFolder Shutdown",
+            if (hObj = WinCreateObject((PSZ)G_pcszXFldShutdown,
+                                       "XFolder Shutdown",
                                        szSetup,
                                        (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))
@@ -2403,8 +2404,8 @@ void xsdLog(FILE *File,
         va_list vargs;
 
         DATETIME dt;
-        CHAR szTemp[2000];
-        ULONG   cbWritten;
+        // CHAR szTemp[2000];
+        // ULONG   cbWritten;
         DosGetDateTime(&dt);
         fprintf(File, "Time: %02d:%02d:%02d.%02d ",
                 dt.hours, dt.minutes, dt.seconds, dt.hundredths);
@@ -3203,7 +3204,7 @@ void xsdBuildShutList(PSHUTDOWNDATA pShutdownData,
                     ulBufSize  = 0;            // Size of buffer for information
 
     HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    CHAR            szSwUpperTitle[100];
+    // CHAR            szSwUpperTitle[100];
     WPObject        *pObj;
     BOOL            Append;
     // BOOL            fWarpCenterFound = FALSE;
@@ -3557,7 +3558,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     FILE            *LogFile = NULL;
 
     // exception-occured flag
-    BOOL fExceptionOccured = FALSE;
+    // BOOL fExceptionOccured = FALSE;
 
     // allocate shutdown data V0.9.9 (2001-03-07) [umoeller]
     PSHUTDOWNDATA pShutdownData = (PSHUTDOWNDATA)malloc(sizeof(SHUTDOWNDATA));
@@ -3628,7 +3629,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     {
         SWCNTRL     swctl;
         HSWITCH     hswitch;
-        ULONG       ulKeyLength = 0,
+        ULONG       // ulKeyLength = 0,
                     ulAutoCloseItemsFound = 0;
         HPOINTER    hptrShutdown = WinLoadPointer(HWND_DESKTOP, pShutdownData->hmodResource,
                                                   ID_SDICON);
@@ -4061,7 +4062,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     {
         // exception occured:
         krnUnlockGlobals();     // just to make sure
-        fExceptionOccured = TRUE;
+        // fExceptionOccured = TRUE;
 
         if (pszErrMsg == NULL)
         {
@@ -4111,7 +4112,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
            __FUNCTION__ ": Entering cleanup...\n");
 
     {
-        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
+        // PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         // check for whether we're owning semaphores;
         // if we do (e.g. after an exception), release them now
         if (pShutdownData->fShutdownSemOwned)
@@ -4139,7 +4140,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             xsdLog(LogFile, "  Update thread closed.\n");
         }
 
-        krnUnlockGlobals();
+        // krnUnlockGlobals();
     }
 
     xsdLog(LogFile, "  Closing semaphores...\n");
@@ -5154,11 +5155,12 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
 
 VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 {
-    // change the mouse pointer to wait state
-    HPOINTER    hptrOld = winhSetWaitPointer();
-    ULONG       ulShutdownFunc2 = 0;
+    // ULONG       ulShutdownFunc2 = 0;
     APIRET      arc = NO_ERROR;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    // change the mouse pointer to wait state
+    winhSetWaitPointer();
 
     // enforce saving of INIs
     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
@@ -5648,7 +5650,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
             ULONG           ulShutItemCount = 0,
                             ulTestItemCount = 0;
             BOOL            fUpdated = FALSE;
-            PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+            // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
             WinCancelShutdown(hmqUpdateThread, TRUE);
 

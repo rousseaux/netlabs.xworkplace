@@ -487,7 +487,7 @@ SOM_Scope void  SOMLINK xtro_wpUnInitData(XWPTrashObject *somSelf)
 SOM_Scope BOOL  SOMLINK xtro_wpSetupOnce(XWPTrashObject *somSelf,
                                          PSZ pszSetupString)
 {
-    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpSetupOnce");
 
     // call parent first
@@ -783,7 +783,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpQueryDefaultHelp(XWPTrashObject *somSelf,
 SOM_Scope BOOL  SOMLINK xtro_wpMoveObject(XWPTrashObject *somSelf,
                                           WPFolder* Folder)
 {
-    PTASKREC pTaskRec;
+    // PTASKREC pTaskRec;
 
     // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMoveObject");

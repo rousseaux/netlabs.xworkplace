@@ -377,9 +377,9 @@ BOOL hifObjectHotkeysEnabled(VOID)
 
 VOID hifEnableObjectHotkeys(BOOL fEnable)
 {
-    BOOL    brc = FALSE;
+    // BOOL    brc = FALSE;
     HOOKCONFIG  HookConfig;
-    ULONG       cb = sizeof(HookConfig);
+    // ULONG       cb = sizeof(HookConfig);
     hifLoadHookConfig(&HookConfig);
     HookConfig.fGlobalHotkeys = fEnable;
     // write back to OS2.INI and notify hook
@@ -1108,7 +1108,7 @@ MRESULT EXPENTRY hif_fnwpSubclassedFuncKeyEF(HWND hwndEdit,
 
             USHORT usFlags    = SHORT1FROMMP(mp1);
             UCHAR  ucScanCode = CHAR4FROMMP(mp1);
-            USHORT usch       = SHORT1FROMMP(mp2);
+            // USHORT usch       = SHORT1FROMMP(mp2);
             USHORT usvk       = SHORT2FROMMP(mp2);
 
             if (
@@ -2436,8 +2436,8 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
     if (flFlags & CBI_ENABLE)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP,
                           winhIsDlgItemChecked(pcnbp->hwndDlgPage,

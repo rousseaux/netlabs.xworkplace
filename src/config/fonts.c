@@ -103,8 +103,8 @@
 
 static const char   *G_pcszFontsApp = "PM_Fonts";
 
-static BOOL         G_fCreateFontObjectsThreadRunning = FALSE;
-static THREADINFO   G_ptiCreateFontObjects = {0};
+// static BOOL         G_fCreateFontObjectsThreadRunning = FALSE;
+// static THREADINFO   G_ptiCreateFontObjects = {0};
 
 #define WC_XWPFONTOBJ_SAMPLE     "XWPFontSampleClient"
 static BOOL         G_fFontSampleClassRegistered = FALSE;
@@ -185,8 +185,8 @@ APIRET fonGetFontDescription(HAB hab,
                              PSZ pszFamily,             // out: font's family
                              PSZ pszFace)               // out: font's face name
 {
-    LONG    cFonts = 0,
-            lBufLen = 0;
+    LONG    cFonts = 0;
+            // lBufLen = 0;
     PFFDESCS pffd = NULL;
 
     APIRET arc = doshQueryPathAttr(pcszFilename, NULL);
@@ -552,7 +552,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
     TRY_LOUD(excpt1)
     {
         XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
-        ULONG ulIndex = 0;
+        // ULONG ulIndex = 0;
         HAB hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
                             // how can we get the HAB of the populate thread?!?
 
@@ -1743,7 +1743,7 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+        // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
 
         if (!G_fFontSampleClassRegistered)
         {

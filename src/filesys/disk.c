@@ -40,6 +40,7 @@
  */
 
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSDEVIOCTL
 #define INCL_DOSERRORS
 
 #define INCL_WINPOINTERS
@@ -61,9 +62,8 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+#include "xfldr.ih"
 #include "xfdisk.ih"
-#pragma hdrstop
-#include "xfldr.h"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -72,12 +72,17 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 
+#include "hook\xwphook.h"               // hook and daemon definitions
+
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
+
+#pragma hdrstop
 
 /* ******************************************************************
  *                                                                  *
@@ -161,6 +166,81 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
     } while (mbrc == MBID_RETRY);
 
     return (pRootFolder);
+}
+
+/*
+ *@@ dskQueryInfo:
+ *      queries information about one disk or
+ *      all disks on the system.
+ *
+ *      This operates in two modes:
+ *
+ *      --  If ulLogicalDrive specifies a valud
+ *          logical drive no. (1 == a, 2 == B etc.),
+ *          paDiskInfos is expected to point to a
+ *          single DISKINFO structure which receives
+ *          information about the specified disk.
+ *
+ *      --  If ulLogicalDrive is -1, paDiskinfos
+ *          is expected to point to an array of
+ *          26 DISKINFO structures, which receive
+ *          information about _all_ drives on the
+ *          system.
+ *
+ *      Returns TRUE if the call succeeded.
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
+                  ULONG ulLogicalDrive)
+{
+    BOOL    brc = FALSE;
+
+    HWND    hwndDaemon;
+    PID     pidDaemon;
+    TID     tidDaemon;
+    ULONG   cb;
+
+    if (ulLogicalDrive == -1)
+        cb = sizeof(XDISKINFO) * 26;
+    else
+        cb = sizeof(XDISKINFO);
+
+    _Pmpf((__FUNCTION__ ": allocating %d bytes shared", cb));
+
+    if (    (hwndDaemon = krnQueryDaemonObject())
+         && (WinQueryWindowProcess(hwndDaemon,
+                                   &pidDaemon,
+                                   &tidDaemon))
+       )
+    {
+        PXDISKINFO pShared;
+        if (    (!DosAllocSharedMem((PPVOID)&pShared,
+                                    NULL,
+                                    cb,
+                                    PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE))
+             && (!DosGiveSharedMem(pShared,
+                                   pidDaemon,
+                                   PAG_READ | PAG_WRITE))
+            )
+        {
+            _Pmpf(("   pShared is 0x%lX", pShared));
+
+            if (brc = (BOOL)WinSendMsg(hwndDaemon,
+                                       XDM_QUERYDISKS,
+                                       (MPARAM)ulLogicalDrive,
+                                       (MPARAM)pShared))
+            {
+                // copy back
+                memcpy(paDiskInfos, pShared, cb);
+            }
+
+            DosFreeMem(pShared);
+        }
+    }
+
+    return (brc);
 }
 
 /* ******************************************************************

@@ -375,6 +375,10 @@
 #define ID_XSDI_DEREFSHADOWS_SINGLE     586     // new V0.9.5 (2000-10-07) [umoeller]
 #define ID_XSDI_DEREFSHADOWS_MULTIPLE   587     // new V0.9.5 (2000-10-07) [umoeller]
 
+#define ID_XSDI_SBKEYSNONESEL           595
+#define ID_XSDI_SBKEYS1SEL              596
+#define ID_XSDI_SBKEYSMULTISEL          597
+
 // extended "sort" page
 #define ID_XSD_SETTINGS_FLDRSORT        590
 #define ID_XSDI_ALWAYSSORT              591
@@ -382,6 +386,8 @@
 // #define ID_XSDI_REPLACESORT      675    // removed (V0.9.0)
 // #define ID_XSDI_SORTTEXT                593      // removed V0.9.12 (2001-05-19) [umoeller]
 #define ID_XSDI_SORTFOLDERSFIRST        594     // added V0.9.12 (2001-05-19) [umoeller]
+
+// 595-597 used above
 
 // "File types" page (new with V0.9.0)
 #define ID_XSD_FILETYPES                600     // "File types" page in XFldWPS (V0.9.0)
@@ -587,7 +593,8 @@
 #define ID_XFDI_LOGOBITMAP              1190
 
 // "Installed XWorkplace Classes" dlg
-#define ID_XCD_XWPINSTALLEDCLASSES      1250
+// all removed V0.9.14 (2001-07-31) [umoeller]
+/* #define ID_XCD_XWPINSTALLEDCLASSES      1250
 
 #define ID_XCDI_XWPCLS_XFLDOBJECT       1251
 #define ID_XCDI_XWPCLS_XFOLDER          1252
@@ -619,6 +626,7 @@
 
 // new classes with V0.9.10
 #define ID_XCDI_XWPCLS_XWPFONTS         1271
+*/
 
 /******************************************
  * XWPScreen ("Screen", PageMage) >= 1400 *
@@ -1950,6 +1958,45 @@
 
 #define ID_CRSI_ENTERNEWTRAY            6191           // "Please enter a name for the tray to be created:"
 #define ID_CRSI_ENTERRENAMETRAY         6192           // "Please enter a new name for this tray:"
+
+/******************************************
+ *  string IDs for status bar mnemonics
+ *  (all new with V0.9.14)
+ ******************************************/
+
+#define ID_XSSI_SBMNC_1             7000         // "in bytes"
+#define ID_XSSI_SBMNC_2             7001         // "in kBytes"
+#define ID_XSSI_SBMNC_3             7002         // "in KBytes"
+#define ID_XSSI_SBMNC_4             7003         // "in mBytes"
+#define ID_XSSI_SBMNC_5             7004         // "in MBytes"
+#define ID_XSSI_SBMNC_6             7005         // "in bytes/kBytes/mBytes/gBytes"
+#define ID_XSSI_SBMNC_7             7006         // "in bytes/KBytes/MBytes/GBytes"
+#define ID_XSSI_SBMNC_000           7007         // "no. of selected objects"
+#define ID_XSSI_SBMNC_001           7008         // "total object count"
+#define ID_XSSI_SBMNC_010           7009         // "free space on drive"
+#define ID_XSSI_SBMNC_020           7010         // "total size of drive"
+#define ID_XSSI_SBMNC_030           7011         // "size of selected objects in bytes"
+#define ID_XSSI_SBMNC_040           7012         // "size of folder content in bytes"
+#define ID_XSSI_SBMNC_100           7013         // "object title"
+#define ID_XSSI_SBMNC_110           7014         // "WPS class default title"
+#define ID_XSSI_SBMNC_120           7015         // "WPS class name"
+#define ID_XSSI_SBMNC_200           7016         // "file system type (HPFS, FAT, CDFS, ...)"
+#define ID_XSSI_SBMNC_210           7017         // "drive label"
+#define ID_XSSI_SBMNC_220           7018         // "total space on drive in bytes"
+#define ID_XSSI_SBMNC_300           7019         // "object's real name"
+#define ID_XSSI_SBMNC_310           7020         // "object type (.TYPE EA)"
+#define ID_XSSI_SBMNC_320           7021         // "object creation date"
+#define ID_XSSI_SBMNC_330           7022         // "object creation time"
+#define ID_XSSI_SBMNC_340           7023         // "object attributes"
+#define ID_XSSI_SBMNC_350           7024         // "EA size in bytes"
+#define ID_XSSI_SBMNC_360           7025         // "EA size in kBytes"
+#define ID_XSSI_SBMNC_370           7026         // "EA size in KBytes"
+#define ID_XSSI_SBMNC_380           7027         // "EA size in bytes/kBytes"
+#define ID_XSSI_SBMNC_390           7028         // "EA size in bytes/KBytes"
+#define ID_XSSI_SBMNC_400           7029         // "URL"
+#define ID_XSSI_SBMNC_500           7030         // "executable program file"
+#define ID_XSSI_SBMNC_510           7031         // "parameter list"
+#define ID_XSSI_SBMNC_520           7032         // "working directory"
 
 /******************************************
  *          Treesize                      *

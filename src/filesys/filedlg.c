@@ -630,7 +630,7 @@ MRESULT EXPENTRY fnwpComboSubclass(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             if (pcd)
             {
                 USHORT usFlags    = SHORT1FROMMP(mp1);
-                USHORT usch       = SHORT1FROMMP(mp2);
+                // USHORT usch       = SHORT1FROMMP(mp2);
                 USHORT usvk       = SHORT2FROMMP(mp2);
 
                 if ((usFlags & KC_KEYUP) == 0)
@@ -1283,7 +1283,7 @@ VOID InsertFirstChild(HWND hwndMainClient,              // in: wnd to send XM_IN
             if (fFolderLocked)
             {
                 WPObject    *pObject;
-                POINTL      ptlIcon = {0, 0};
+                // POINTL      ptlIcon = {0, 0};
                 somTD_WPFolder_wpQueryContent rslv_wpQueryContent
                         = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
                                                                         NULL,
@@ -1320,7 +1320,7 @@ VOID InsertFirstChild(HWND hwndMainClient,              // in: wnd to send XM_IN
             // first subfolder in here
             HDIR          hdir = HDIR_CREATE;
             FILEFINDBUF3  ffb3     = {0};
-            ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
+            // ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
             ULONG         ulFindCount    = 1;        // look for 1 file at a time
             APIRET        arc            = NO_ERROR;
 
@@ -1444,7 +1444,7 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
             if (fFolderLocked)
             {
                 WPObject    *pObject;
-                POINTL      ptlIcon = {0, 0};
+                // POINTL      ptlIcon = {0, 0};
                 somTD_WPFolder_wpQueryContent rslv_wpQueryContent
                         = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
                                                                         NULL,
@@ -2799,7 +2799,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                          ul < pioa->cObjects;
                          ul++)
                     {
-                        BOOL fAppend = FALSE;
+                        // BOOL fAppend = FALSE;
                         WPObject *pobjThis = pioa->papObjects[ul];
 
                         PMINIRECORDCORE prec;
@@ -2838,7 +2838,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                          ul < pioa->cObjects;
                          ul++)
                     {
-                        BOOL fAppend = FALSE;
+                        // BOOL fAppend = FALSE;
                         WPObject *pobjThis = pioa->papObjects[ul];
 
                         // lock the object!! we must make sure
@@ -3278,8 +3278,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
     TRY_LOUD(excpt1)
     {
         CHAR        szCurDir[CCHMAXPATH] = "";
-        ULONG       cbCurDir;
-        APIRET      arc;
+        // ULONG       cbCurDir;
+        // APIRET      arc;
         PSZ         pszDlgTitle;
 
         ULONG       flInitialParse = 0;
@@ -3431,7 +3431,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                        "Cannot get drives folder.");
             else
             {
-                PLISTNODE pNode;
+                // PLISTNODE pNode;
                 BOOL fExit = FALSE;
                 PMINIRECORDCORE pDrivesRec;
                 POINTL ptlIcon = {0, 0};

@@ -115,6 +115,7 @@
  *      start XShutdown now, if needed.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: added SHOWRUNDLG
  */
 
 BOOL dtpSetup(WPDesktop *somSelf,
@@ -242,6 +243,22 @@ BOOL dtpSetup(WPDesktop *somSelf,
             } while (pszToken = strtok(NULL, ", "));
 
         brc = xsdInitiateShutdownExt(&xsd);
+    }
+
+    // V0.9.14 (2001-07-28) [umoeller]
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pcszSetupString,
+                           "SHOWRUNDLG",
+                           szValue,
+                           &cbValue))
+    {
+        PSZ pszStartup = NULL;
+        if (strcmp(szValue, "DEFAULT"))         // boot drive
+            pszStartup = szValue;
+        brc = (cmnRunCommandLine(NULLHANDLE,           // active desktop
+                                 pszStartup)
+                    != NULLHANDLE);
     }
 
     /* if (_wpScanSetupString(somSelf,
@@ -1243,7 +1260,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;"
                     "OBJECTID=%s;",
                     XFOLDER_STARTUPID);
-                if (hObj = WinCreateObject("XFldStartup", "XWorkplace Startup",
+                if (hObj = WinCreateObject((PSZ)G_pcszXFldStartup,
+                                           "XWorkplace Startup",
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))

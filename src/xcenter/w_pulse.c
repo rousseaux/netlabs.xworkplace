@@ -243,9 +243,8 @@ VOID PwgtScanSetup(const char *pcszSetupString,
     PSZ p;
 
     // width
-    p = ctrScanSetupString(pcszSetupString,
-                           "WIDTH");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "WIDTH"))
     {
         pSetup->cx = atoi(p);
         ctrFreeSetupValue(p);
@@ -254,9 +253,8 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         pSetup->cx = 200;
 
     // background color
-    p = ctrScanSetupString(pcszSetupString,
-                           "BGNDCOL");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "BGNDCOL"))
     {
         pSetup->lcolBackground = ctrParseColorString(p);
         ctrFreeSetupValue(p);
@@ -265,9 +263,8 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // graph color:
-    p = ctrScanSetupString(pcszSetupString,
-                           "GRPHCOL");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "GRPHCOL"))
     {
         pSetup->lcolGraph = ctrParseColorString(p);
         ctrFreeSetupValue(p);
@@ -276,9 +273,8 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         pSetup->lcolGraph = RGBCOL_DARKCYAN; // RGBCOL_BLUE;
 
     // graph color: (interrupt load)
-    p = ctrScanSetupString(pcszSetupString,
-                           "GRPHINTRCOL");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "GRPHINTRCOL"))
     {
         pSetup->lcolGraphIntr = ctrParseColorString(p);
         ctrFreeSetupValue(p);
@@ -288,9 +284,8 @@ VOID PwgtScanSetup(const char *pcszSetupString,
 
 
     // text color:
-    p = ctrScanSetupString(pcszSetupString,
-                           "TEXTCOL");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "TEXTCOL"))
     {
         pSetup->lcolText = ctrParseColorString(p);
         ctrFreeSetupValue(p);
@@ -301,9 +296,8 @@ VOID PwgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = ctrScanSetupString(pcszSetupString,
-                           "FONT");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "FONT"))
     {
         pSetup->pszFont = strdup(p);
         ctrFreeSetupValue(p);
@@ -322,7 +316,7 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                    PPULSESETUP pSetup)
 {
     CHAR    szTemp[100];
-    PSZ     psz = 0;
+    // PSZ     psz = 0;
     xstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "WIDTH=%d;",
@@ -600,8 +594,8 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;        // continue window creation
 
-    PSZ     p = NULL;
-    APIRET  arc = NO_ERROR;
+    // PSZ     p = NULL;
+    // APIRET  arc = NO_ERROR;
 
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
     PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
@@ -1140,7 +1134,7 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                 // e.g. ulnewClientCX = 100
                                 //      pPrivate->cLoads = 200
                                 // drop the first items
-                                ULONG ul = 0;
+                                // ULONG ul = 0;
                                 memcpy(palNewLoads,
                                        &pPrivate->palLoads[pPrivate->cLoads - ulNewClientCX],
                                        ulNewClientCX * sizeof(LONG));
@@ -1172,7 +1166,7 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                     // e.g. ulnewClientCX = 100
                                     //      pPrivate->cLoads = 200
                                     // drop the first items
-                                    ULONG ul = 0;
+                                    // ULONG ul = 0;
                                     memcpy(palNewIntrs,
                                            &pPrivate->palIntrs[pPrivate->cLoads - ulNewClientCX],
                                            ulNewClientCX * sizeof(LONG));
@@ -1306,6 +1300,7 @@ VOID PwgtPresParamChanged(HWND hwnd,
  *      implementation for WM_DESTROY.
  *
  *@@changed V0.9.9 (2001-02-06) [umoeller]: fixed call to doshPerfClose
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed three memory leaks
  */
 
 VOID PwgtDestroy(HWND hwnd)
@@ -1336,6 +1331,13 @@ VOID PwgtDestroy(HWND hwnd)
 
         if (pPrivate->pPerfData)
             doshPerfClose(&pPrivate->pPerfData);
+
+        if (pPrivate->palLoads)
+            free(pPrivate->palLoads);       // V0.9.14 (2001-08-01) [umoeller]
+        if (pPrivate->palIntrs)
+            free(pPrivate->palIntrs);       // V0.9.14 (2001-08-01) [umoeller]
+
+        PwgtClearSetup(&pPrivate->Setup);   // V0.9.14 (2001-08-01) [umoeller]
 
         // do not destroy pPrivate->hdcWin, it is
         // destroyed automatically

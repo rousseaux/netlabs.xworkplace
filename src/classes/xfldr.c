@@ -163,9 +163,6 @@
 
 static XFolder      *G_pConfigFolder = NULL;
 
-// "XFolder" key for wpRestoreData etc.
-static const char*  G_pcszXFolder = "XFolder";
-
 // roots of linked lists for favorite/quick-open folders
 // these hold plain WPObject pointers, no auto-free
 OBJECTLIST          G_llFavoriteFolders = {0},
@@ -1478,7 +1475,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
         // were we copied?
         if (ulCode & OR_REFERENCE)
         {
-            XFolderData *somThat = XFolderGetData(refObject);
+            // XFolderData *somThat = XFolderGetData(refObject);
             // yes: fix the instance data which SOM has done
             // a flat binary copy on... V0.9.7 (2000-12-13) [umoeller]
             _pfnResolvedUpdateStatusBar = NULL;
@@ -1569,9 +1566,9 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
 {
     BOOL        brc;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HOBJECT     hObj = NULLHANDLE;
-    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // HOBJECT     hObj = NULLHANDLE;
+    // XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
 
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpFree");
@@ -2329,7 +2326,7 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
                                          ULONG ulReserved)
 {
     HWND hwndMenu;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
@@ -3445,7 +3442,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
 
 SOM_Scope ULONG  SOMLINK xf_wpDelete(XFolder *somSelf, ULONG fConfirmations)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDelete");
 

@@ -755,7 +755,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
-        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+        // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
         HPOINTER hptrOld = winhSetWaitPointer();
 
@@ -1745,7 +1745,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_APPLY:
         {
-            PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
+            // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
             // have the user confirm this
             if (cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
                                  100, 101,

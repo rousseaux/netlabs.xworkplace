@@ -136,14 +136,35 @@
                                       ULONG ulY);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Global variables in xwpdaemn.c                                 *
-     *                                                                  *
+     *
+     *   Drive monitors
+     *
+     ********************************************************************/
+
+    BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,
+                               HWND hwndNotify,
+                               ULONG ulMessage);
+
+    #ifdef THREADS_HEADER_INCLUDED
+        void _Optlink fntDiskWatch(PTHREADINFO ptiMyself);
+    #endif
+
+    BOOL dmnQueryDisks(ULONG ulLogicalDrive,
+                       MPARAM mpDiskInfos);
+
+    /* ******************************************************************
+     *
+     *   Global variables in xwpdaemn.c
+     *
      ********************************************************************/
 
     ULONG               G_pidDaemon;
     extern HAB          G_habDaemon;
-    extern PHOOKDATA    G_pHookData;
+
+    #ifdef HOOK_PRIVATE_HEADER_INCLUDED
+        extern PHOOKDATA    G_pHookData;
+    #endif
+
     extern PXWPGLOBALSHARED G_pXwpGlobalShared;
 
     extern HPOINTER     G_hptrDaemon;

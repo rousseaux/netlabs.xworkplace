@@ -31,8 +31,10 @@
  *          If errors occur during processing, your error callback
  *          will get called again, but this time, processing aborts.
  *
- *      The file-operations top layer (fops_top.c) implements proper
- *      callbacks for progress and error reports.
+ *      The file-operations top layer (fops_top.c) is simply a
+ *      wrapper around the top layer, implementing APIs for
+ *      building certain file lists and also callbacks for
+ *      GUI progress dialog support.
  *
  *      This file has been separated from fileops.c with
  *      V0.9.4 (2000-07-27) [umoeller].
@@ -777,7 +779,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
             else
             {
                 ULONG           ulMainFolderPathLen = strlen(szMainFolderPath);
-                M_WPFileSystem  *pWPFileSystem = _WPFileSystem;
+                // M_WPFileSystem  *pWPFileSystem = _WPFileSystem;
 
                 CHAR            szSearchMask[CCHMAXPATH];
                 FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next

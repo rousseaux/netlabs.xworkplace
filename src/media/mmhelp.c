@@ -303,7 +303,7 @@ VOID xmmCleanup(VOID)
                 // V0.9.7 (2000-12-21) [umoeller]
                 // V0.9.12 (2001-05-27) [umoeller]: bull, this was removed already
 
-            pNode = pNode->pNext;
+            pNode = pNext;
         }
 
         xmmUnlockDevicesList();
@@ -902,7 +902,7 @@ ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
     {
         if ((pPlayer) && (pPlayer->usDeviceID))
         {
-            ULONG ulNewTrack = 0;
+            // ULONG ulNewTrack = 0;
 
             if (    (pPlayer->ulStatus != MCI_MODE_PAUSE)
                  && (pPlayer->ulStatus != MCI_MODE_PLAY)

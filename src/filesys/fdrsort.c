@@ -447,7 +447,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
 
             // cast pointer to WPFolder-internal sort data
             // PWPSSORTINFO psi = (PWPSSORTINFO)_pFolderSortInfo;
-            SHORT sDefID;
+            // SHORT sDefID;
 
             // we'll insert sort by "class" and "extension"
             // behind sort by "type", so find that item first
@@ -1309,7 +1309,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                                                                  : _lDefSortCrit)
                                            : NULL;
             CNRINFO         CnrInfo = {0};
-            BOOL            Update = FALSE;
+            // BOOL            Update = FALSE;
 
             cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
@@ -1342,7 +1342,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                             _Pmpf(( "  Setting CCS_AUTOPOSITION"));
                         #endif
                         WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle | CCS_AUTOPOSITION));
-                        Update = TRUE;
+                        // Update = TRUE;
                     }
                 }
                 else
@@ -1354,7 +1354,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                             _Pmpf(( "  Clearing CCS_AUTOPOSITION"));
                         #endif
                         WinSetWindowULong(hwndCnr, QWL_STYLE, (ulStyle & (~CCS_AUTOPOSITION)));
-                        Update = TRUE;
+                        // Update = TRUE;
                     }
                 }
             }

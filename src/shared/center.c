@@ -451,36 +451,35 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
     BOOL brc = FALSE;
     // get pointer to structure on stack in ShowSettingsDlg;
     // this identifies the setting...
-    PWGTSETTINGSTEMP pSettingsTemp = (PWGTSETTINGSTEMP)hSetting;
-    if (pSettingsTemp)
+    PWGTSETTINGSTEMP pSettingsTemp;
+    PPRIVATEWIDGETSETTING pSetting;
+    if (    (pSettingsTemp = (PWGTSETTINGSTEMP)hSetting)
+         && (pSetting = pSettingsTemp->pSetting)
+       )
     {
-        PPRIVATEWIDGETSETTING pSetting = pSettingsTemp->pSetting;
-        if (pSetting)
+        // change setup string in the settings structure
+        if (pSetting->Public.pszSetupString)
+            // we already had a setup string:
+            free(pSetting->Public.pszSetupString);
+
+        pSetting->Public.pszSetupString = strhdup(pcszNewSetupString);
+                    // can be NULL
+
+        brc = TRUE;
+
+        // do we have an open view?
+        if (pSettingsTemp->pWidget)
         {
-            // change setup string in the settings structure
-            if (pSetting->Public.pszSetupString)
-                // we already had a setup string:
-                free(pSetting->Public.pszSetupString);
-
-            pSetting->Public.pszSetupString = strhdup(pcszNewSetupString);
-                        // can be NULL
-
-            brc = TRUE;
-
-            // do we have an open view?
-            if (pSettingsTemp->pWidget)
-            {
-                // yes:
-                // send notification
-                WinSendMsg(pSettingsTemp->pWidget->hwndWidget,
-                           WM_CONTROL,
-                           MPFROM2SHORT(ID_XCENTER_CLIENT,
-                                        XN_SETUPCHANGED),
-                           (MPARAM)pSetting->Public.pszSetupString);
-            }
-
-            _wpSaveDeferred(pSettingsTemp->somSelf);
+            // yes:
+            // send notification
+            WinSendMsg(pSettingsTemp->pWidget->hwndWidget,
+                       WM_CONTROL,
+                       MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                    XN_SETUPCHANGED),
+                       (MPARAM)pSetting->Public.pszSetupString);
         }
+
+        _wpSaveDeferred(pSettingsTemp->somSelf);
     }
 
     return (brc);
@@ -812,75 +811,103 @@ VOID DwgtMenuEnd(HWND hwnd,
 VOID DwgtCommand(HWND hwnd,
                  USHORT usCmd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET  pWidget;
+    HWND            hwndClient;
+    PXCENTERWINDATA pXCenterData;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (hwndClient = pWidget->pGlobals->hwndClient)
+         && (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER))
+       )
     {
-        HWND hwndClient = pWidget->pGlobals->hwndClient;
-        PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-        if (pWidget)
+        switch (usCmd)
         {
-            switch (usCmd)
+            case ID_CRMI_PROPERTIES:
             {
-                case ID_CRMI_PROPERTIES:
-                    // widget has a settings dialog:
+                // widget has a settings dialog:
+                // PPRIVATEWIDGETVIEW pOwningTray = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTray;
+                ULONG ulTrayWidgetIndex = 0,
+                      ulTrayIndex = 0,
+                      ulWidgetIndex = 0;
+                if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                 pWidget->hwndWidget,
+                                                 &ulTrayWidgetIndex,
+                                                 &ulTrayIndex,
+                                                 &ulWidgetIndex))
+                /* if (pOwningTray)
+                {
+                    // this is a subwidget in a tray:
+
+                }
+                else */
+                {
                     // have the widget show it with the XCenter frame
                     // as its owner
                     ctrpShowSettingsDlg(pXCenterData->somSelf,
                                         pXCenterData->Globals.hwndFrame,    // owner
-                                        ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                                     pWidget->hwndWidget));
+                                        ulTrayWidgetIndex,
+                                        ulTrayIndex,
+                                        ulWidgetIndex);
                             // adjusted V0.9.11 (2001-04-25) [umoeller]
-                break;
-
-                case ID_CRMI_HELP:
-                    if (    (pWidget->pcszHelpLibrary)
-                         && (pWidget->ulHelpPanelID)
-                       )
-                    {
-                        // widget has specified help itself:
-                        _wpDisplayHelp(pXCenterData->somSelf,
-                                       pWidget->ulHelpPanelID,
-                                       (PSZ)pWidget->pcszHelpLibrary);
-                    }
-                    else
-                    {
-                        // use XCenter help
-                        ULONG ulPanel;
-                        CHAR szHelp[CCHMAXPATH];
-                        if (_wpQueryDefaultHelp(pXCenterData->somSelf,
-                                                &ulPanel,
-                                                szHelp))
-                            _wpDisplayHelp(pXCenterData->somSelf,
-                                           ulPanel,
-                                           szHelp);
-                    }
-                break;
-
-                /*
-                 * ID_CRMI_REMOVEWGT:
-                 *      "remove widget" menu item.
-                 */
-
-                case ID_CRMI_REMOVEWGT:
-                {
-                    PWIDGETVIEWSTATE pOwningTray = ((PWIDGETVIEWSTATE)pWidget)->pOwningTray;
-                    if (pOwningTray)
-                    {
-                        // this widget resides in a tray:
-                        WinSendMsg(pOwningTray->Widget.hwndWidget,
-                                   XCM_REMOVESUBWIDGET,
-                                   (MPARAM)pWidget,     // ptr is same as PWIDGETVIEWSTATE
-                                   0);
-                    }
-                    else
-                    {
-                        ULONG ulMyIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                                       hwnd);
-                        _xwpRemoveWidget(pXCenterData->somSelf,
-                                         ulMyIndex);
-                    }
-                break; }
+                            // V0.9.14 (2001-08-01) [umoeller]
+                }
             }
+            break;
+
+            case ID_CRMI_HELP:
+                if (    (pWidget->pcszHelpLibrary)
+                     && (pWidget->ulHelpPanelID)
+                   )
+                {
+                    // widget has specified help itself:
+                    _wpDisplayHelp(pXCenterData->somSelf,
+                                   pWidget->ulHelpPanelID,
+                                   (PSZ)pWidget->pcszHelpLibrary);
+                }
+                else
+                {
+                    // use XCenter help
+                    ULONG ulPanel;
+                    CHAR szHelp[CCHMAXPATH];
+                    if (_wpQueryDefaultHelp(pXCenterData->somSelf,
+                                            &ulPanel,
+                                            szHelp))
+                        _wpDisplayHelp(pXCenterData->somSelf,
+                                       ulPanel,
+                                       szHelp);
+                }
+            break;
+
+            /*
+             * ID_CRMI_REMOVEWGT:
+             *      "remove widget" menu item.
+             */
+
+            case ID_CRMI_REMOVEWGT:
+            {
+                PPRIVATEWIDGETVIEW pOwningTray = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTray;
+                if (pOwningTray)
+                {
+                    // this widget resides in a tray:
+                    WinSendMsg(pOwningTray->Widget.hwndWidget,
+                               XCM_REMOVESUBWIDGET,
+                               (MPARAM)pWidget,     // ptr is same as PPRIVATEWIDGETVIEW
+                               0);
+                }
+                else
+                {
+                    ULONG ulTrayWidgetIndex = 0,
+                          ulTrayIndex = 0,
+                          ulWidgetIndex = 0;
+                    if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                     hwnd,
+                                                     &ulTrayWidgetIndex,
+                                                     &ulTrayIndex,
+                                                     &ulWidgetIndex))
+                        _xwpRemoveWidget(pXCenterData->somSelf,
+                                         ulWidgetIndex);
+                }
+            break; }
         }
     }
 }
@@ -908,7 +935,7 @@ MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
  *@@ DwgtDestroy:
  *      implementation for WM_DESTROY in ctrDefWidgetProc.
  *
- *      This also frees the XCENTERWIDGET/WIDGETVIEWSTATE
+ *      This also frees the XCENTERWIDGET/PRIVATEWIDGETVIEW
  *      that was allocated by ctrpCreateWidgetWindow.
  *
  *      If the widget is a "root" widget, the XCENTERWIDGET
@@ -941,9 +968,9 @@ VOID DwgtDestroy(HWND hwnd)
                     // remove the widget from the list of open
                     // views in the XCenter, but only if this is
                     // not part of a tray;
-                    // XCENTERWIDGET is first member in WIDGETVIEWSTATE,
+                    // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
                     // so this typecast works
-                    PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pWidget;
+                    PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pWidget;
                     if (!pView->pOwningTray)
                         if (!lstRemoveItem(&pXCenterData->llWidgets,
                                            pView))
@@ -989,6 +1016,90 @@ VOID DwgtDestroy(HWND hwnd)
             wpshUnlockObject(&Lock);
         }
     }
+}
+
+/*
+ *@@ DwgtRender:
+ *      implementation for DM_RENDER in ctrDefWidgetProc.
+ *
+ *      To be able to save the widget setting string, we first must
+ *      query it.
+ *
+ *@@added V0.9.14 (2001-07-31) [lafaix]
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: didn't work for tray subwidgets, fixed
+ */
+
+BOOL DwgtRender(HWND hwnd,
+                PDRAGTRANSFER pdt)
+{
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    BOOL           brc = FALSE;
+
+    if (    (pWidget)
+         && (DrgVerifyRMF(pdt->pditem, "DRM_OS2FILE", NULL))
+       )
+    {
+        HWND hwndClient = pWidget->pGlobals->hwndClient;
+        PXCENTERWINDATA pXCenterData
+            = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
+                                                 QWL_USER);
+
+        if (pXCenterData)
+        {
+            XCenter        *somSelf = pXCenterData->somSelf;
+            WPSHLOCKSTRUCT Lock;
+
+            if (wpshLockObject(&Lock,
+                               somSelf))
+            {
+                /* PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
+                ULONG       ulIndex = ctrpQueryWidgetIndexFromHWND(somSelf,
+                                                                   hwnd);
+                PPRIVATEWIDGETSETTING pSetting = lstItemFromIndex(pllWidgets,
+                                                                  ulIndex);
+
+                if (pSetting) */
+
+                // replaced this V0.9.14 (2001-08-01) [umoeller]
+                ULONG ulTrayWidgetIndex = 0,
+                      ulTrayIndex = 0,
+                      ulWidgetIndex = 0;
+                PPRIVATEWIDGETSETTING pSetting;
+                if (    (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                      pWidget->hwndWidget,
+                                                      &ulTrayWidgetIndex,
+                                                      &ulTrayIndex,
+                                                      &ulWidgetIndex))
+                     && (pSetting = ctrpFindWidgetSetting(pXCenterData->somSelf,
+                                                          ulTrayWidgetIndex,
+                                                          ulTrayIndex,
+                                                          ulWidgetIndex,
+                                                          NULL))
+                   )
+                {
+                    CHAR ach[CCHMAXPATH];
+
+                    DrgQueryStrName(pdt->hstrRenderToName,
+                                    CCHMAXPATH,
+                                    ach);
+
+                    brc = ctrpSaveToFile(ach,
+                                         pWidget->pcszWidgetClass,
+                                         pSetting->Public.pszSetupString);
+
+                    WinPostMsg(pdt->hwndClient,
+                               DM_RENDERCOMPLETE,
+                               MPFROMP(pdt),
+                               (brc) ? MPFROMSHORT(DMFL_RENDEROK)
+                                     : MPFROMSHORT(DMFL_RENDERFAIL));
+
+                } // end if (pSetting)
+            }
+
+            wpshUnlockObject(&Lock);
+        } // end if (pXCenterData)
+    }
+    return (brc);
 }
 
 /*
@@ -1043,6 +1154,24 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_BEGINDRAG:
             DwgtBeginDrag(hwnd, mp1);
+        break;
+
+        /*
+         * DM_RENDER:
+         *
+         */
+
+        case DM_RENDER:
+            mrc = (MRESULT)DwgtRender(hwnd, (PDRAGTRANSFER)mp1);
+        break;
+
+        /*
+         * DM_DISCARDOBJECT:
+         *
+         */
+
+        case DM_DISCARDOBJECT:
+            DwgtCommand(hwnd, ID_CRMI_REMOVEWGT);
         break;
 
         /*

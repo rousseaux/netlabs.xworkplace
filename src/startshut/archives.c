@@ -207,7 +207,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         for (ul = 0; ul < PERCENTAGES_COUNT; ul++)
         {
             float dTemp;
-            CHAR szTempx[100];
+            // CHAR szTempx[100];
             // convert current array item to float
             sscanf(G_apszPercentages[ul], "%f", &dTemp);
 
@@ -547,7 +547,7 @@ APIRET arcSetArchiveByte(UCHAR byte,        // in: byte to write
                          LONG offset)
 {
     APIRET arc = NO_ERROR;
-    ULONG ulAttr;
+    // ULONG ulAttr;
     // file is always write protected, so disable this
     // before writing
     if (!(arc = doshSetPathAttr(G_szArcBaseFilename,
@@ -657,11 +657,11 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
     if (G_ArcSettings.ulArcFlags & ARCF_ENABLED)
     {
         HWND    hwndStatus = NULLHANDLE;
-        BOOL    fShowWindow = TRUE;
+        // BOOL    fShowWindow = TRUE;
         XSTRING strMsg;
 
         CHAR    lRestoredArchiveNumber = 0;
-        BOOL    fWasJustRestored = FALSE;
+        // BOOL    fWasJustRestored = FALSE;
 
         xstrInit(&strMsg, 300);
 

@@ -173,8 +173,8 @@
 
 static BOOL    G_fIsWarp4 = FALSE;
 
-static HWND    G_hwndTemplateFrame = NULLHANDLE;
-static POINTL  G_ptlTemplateMousePos = {0};
+// static HWND    G_hwndTemplateFrame = NULLHANDLE;
+// static POINTL  G_ptlTemplateMousePos = {0};
 
 // linked list for config folder content:
 static HMTX        G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
@@ -1607,9 +1607,8 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
                                 }
                             }
                             else
-                                winhDebugBox(HWND_DESKTOP,
-                                         "XFolder",
-                                         "Unable to open clipboard.");
+                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                       "Unable to open clipboard.");
                         }
                         if (ParamsChanged)
                             pProgDetails->pszParameters = szNewParams;
@@ -1644,9 +1643,8 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
                 if (StartupChanged || ParamsChanged || TitleChanged)
                     if (!_wpSetProgDetails(pProgram, pProgDetails))
                     {
-                        winhDebugBox(HWND_DESKTOP,
-                                 "XFolder",
-                                 "Unable to set new startup directory.");
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Unable to set new startup directory.");
                         brc = FALSE;
                     }
 

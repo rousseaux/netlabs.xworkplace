@@ -863,13 +863,14 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     case WM_DRAWITEM:
                     {
                         CHAR    szClassName[5];
-                        ULONG   ulClassCode = 0;
+                        // ULONG   ulClassCode = 0;
 
                         HWND hwndControl = WinWindowFromID(hwndDlg,
                                                            (USHORT)mp1); // has the control ID
 
                         if (WinQueryClassName(hwndControl,
-                                              sizeof(szClassName), szClassName))
+                                              sizeof(szClassName),
+                                              szClassName))
                         {
                             if (memcmp(szClassName, "#37", 4) == 0)
                                 // container:

@@ -52,6 +52,9 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// headers in /helpers
+#include "helpers\apmh.h"               // Advanced Power Management helpers
+
 // XWorkplace implementation headers
 #include "startshut\apm.h"            // APM power-off for XShutdown
 

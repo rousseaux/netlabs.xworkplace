@@ -1444,10 +1444,10 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
 
 void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 {
-    HWND                hwndDesktopJustOpened = (HWND)ptiMyself->ulData;
+    // HWND                hwndDesktopJustOpened = (HWND)ptiMyself->ulData;
     PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    CHAR                szDesktopDir[CCHMAXPATH];
+    // CHAR                szDesktopDir[CCHMAXPATH];
 
     // sleep a little while more
     // V0.9.4 (2000-08-02) [umoeller]
@@ -1834,7 +1834,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         case FIM_DESKTOPPOPULATED:
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             PKERNELGLOBALS pKernelGlobals = NULL;
 
             #ifdef DEBUG_STARTUP
@@ -2507,7 +2507,6 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
-    BOOL                  fTrapped = FALSE;
 
     TRY_LOUD(excpt1)
     {
@@ -2576,7 +2575,6 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
         }
 
         // disable sounds
-        fTrapped = TRUE;
     } END_CATCH();
 
     {
@@ -2591,11 +2589,6 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
         G_hmqSpeedyThread = NULLHANDLE;
         WinTerminate(G_habSpeedyThread);
         G_habSpeedyThread = NULLHANDLE;
-
-        /* if (fTrapped)
-            pKernelGlobals->ulMMPM2Working = MMSTAT_CRASHED;
-        else
-            pKernelGlobals->ulMMPM2Working = MMSTAT_UNKNOWN; */
 
         krnUnlockGlobals();
     }
@@ -2624,8 +2617,8 @@ BOOL xthrStartThreads(FILE *DumpFile)
     {
         if (thrQueryID(&G_tiWorkerThread) == NULLHANDLE)
         {
-            APIRET      arc;
-            CHAR szSoundDLL[CCHMAXPATH] = "";
+            // APIRET      arc;
+            // CHAR szSoundDLL[CCHMAXPATH] = "";
 
             // store the thread ID of the calling thread;
             // this should always be 1

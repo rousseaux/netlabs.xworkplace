@@ -102,7 +102,7 @@ interface XWPFontFolder : WPFolder
 
     wpQueryDefaultHelp: override;
 
-    wpOpen: override;
+//#    wpOpen: override;
     wpPopulate: override;
 
     wpDeleteContents: override;

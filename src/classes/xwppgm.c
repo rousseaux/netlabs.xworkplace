@@ -104,8 +104,6 @@
  *
  ********************************************************************/
 
-const char *G_pcszXWPProgram = "XWPProgram";
-
 /* ******************************************************************
  *
  *   XWPProgram instance methods
@@ -299,7 +297,7 @@ SOM_Scope void  SOMLINK xpgm_wpUnInitData(XWPProgram *somSelf)
 SOM_Scope BOOL  SOMLINK xpgm_wpSaveState(XWPProgram *somSelf)
 {
     BOOL brc;
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    // XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpgm_wpSaveState");
 
     brc = XWPProgram_parent_WPProgram_wpSaveState(somSelf);
@@ -320,7 +318,7 @@ SOM_Scope BOOL  SOMLINK xpgm_wpRestoreState(XWPProgram *somSelf,
                                             ULONG ulReserved)
 {
     BOOL brc;
-    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    // XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpgm_wpRestoreState");
 
     brc = XWPProgram_parent_WPProgram_wpRestoreState(somSelf,

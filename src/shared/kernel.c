@@ -147,10 +147,10 @@
 static HMTX             G_hmtxCommonLock = NULLHANDLE;
 
 // "Quick open" dlg status (thread-1 object wnd)
-static ULONG            G_ulQuickOpenNow = 0,
-                        G_ulQuickOpenMax = 0;
-static HWND             G_hwndQuickStatus = NULLHANDLE;
-static BOOL             G_fQuickOpenCancelled = FALSE;
+// static ULONG            G_ulQuickOpenNow = 0,
+   //                      G_ulQuickOpenMax = 0;
+// static HWND             G_hwndQuickStatus = NULLHANDLE;
+// static BOOL             G_fQuickOpenCancelled = FALSE;
 
 // flags passed with mp1 of XDM_PAGEMAGECONFIG
 static ULONG            G_PageMageConfigFlags = 0;
@@ -626,20 +626,16 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
 }
 
 /*
- *@@ krnPostDaemonMsg:
- *      this posts a message to the XWorkplace
- *      Daemon (XWPDAEMN.EXE). Returns TRUE if
- *      successful.
+ *@@ krnQueryDaemonObject:
+ *      returns the window handle of the object window
+ *      in XWPDAEMN.EXE or NULLHANDLE if the daemon
+ *      is no longer running for some reason.
  *
- *      If FALSE is returned, the daemon is probably
- *      not running.
- *
- *@@added V0.9.0 [umoeller]
+ *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
-BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
+HWND krnQueryDaemonObject(VOID)
 {
-    BOOL brc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     if (pKernelGlobals)
     {
@@ -654,8 +650,30 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
             else
-                brc = WinPostMsg(pXwpGlobalShared->hwndDaemonObject, msg, mp1, mp2);
+                return (pXwpGlobalShared->hwndDaemonObject);
     }
+
+    return (NULLHANDLE);
+}
+
+/*
+ *@@ krnPostDaemonMsg:
+ *      this posts a message to the XWorkplace
+ *      Daemon (XWPDAEMN.EXE). Returns TRUE if
+ *      successful.
+ *
+ *      If FALSE is returned, the daemon is probably
+ *      not running.
+ *
+ *@@added V0.9.0 [umoeller]
+ */
+
+BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    BOOL brc = FALSE;
+    HWND hwnd;
+    if (hwnd = krnQueryDaemonObject())
+        brc = WinPostMsg(hwnd, msg, mp1, mp2);
 
     return (brc);
 }
@@ -1695,7 +1713,7 @@ ULONG WaitForApp(const char *pcszTitle,
         // know the app is done.
         HAB     hab = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
         QMSG    qmsg;
-        ULONG   ulXFixReturnCode = 0;
+        // ULONG   ulXFixReturnCode = 0;
         while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
         {
             if (    (qmsg.msg == WM_APPTERMINATENOTIFY)
@@ -2052,7 +2070,7 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
                          ul < pProcess->usThreads;
                          ul++, pThread++ )
                     {
-                        CHAR    sz[100];
+                        // CHAR    sz[100];
                         HENUM   henum;
                         HWND    hwndThis;
                         fprintf(DumpFile,
@@ -2403,7 +2421,7 @@ VOID krnInitializeXWorkplace(VOID)
 
         if (arc != NO_ERROR)
         {
-            BOOL    fDaemonStarted = FALSE;
+            // BOOL    fDaemonStarted = FALSE;
 
             // shared mem does not exist:
             // --> daemon not running; probably first WPS
@@ -2475,9 +2493,9 @@ VOID krnInitializeXWorkplace(VOID)
                                 pd.pszExecutable,
                                 G_KernelGlobals.happDaemon);
 
-                    if (G_KernelGlobals.happDaemon)
+                    /* if (!G_KernelGlobals.happDaemon)
                         // success:
-                        fDaemonStarted = TRUE;
+                        fDaemonStarted = TRUE; */
                 }
             } // end if DosAllocSharedMem
 

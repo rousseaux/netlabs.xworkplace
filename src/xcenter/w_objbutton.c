@@ -218,9 +218,8 @@ VOID OwgtScanSetup(const char *pcszSetupString,
                    POBJBUTTONSETUP pSetup)
 {
     PSZ p;
-    p = ctrScanSetupString(pcszSetupString,
-                           "OBJECTHANDLE");
-    if (p)
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "OBJECTHANDLE"))
     {
         // scan hex object handle
         pSetup->hobj = strtol(p, NULL, 16);
@@ -241,7 +240,7 @@ VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                    POBJBUTTONSETUP pSetup)
 {
     CHAR    szTemp[100];
-    xstrInit(pstrSetup, 40);
+    xstrInit(pstrSetup, 100);
 
     if (pSetup->hobj)
     {
@@ -503,7 +502,7 @@ VOID OwgtPaintButton(HWND hwnd)
            )
         {
             const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
-            RECTL           rclWin;
+            // RECTL           rclWin;
             ULONG           fl = XBF_BACKGROUND;        // paint background
             XBUTTONDATA     xbd;
 
@@ -1146,7 +1145,7 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
             if (pPrivate->pobjButton)
             {
-                SHORT sIndex;
+                // SHORT sIndex;
                 POINTL ptl;
                 HWND hmenuTemp;
                 ptl.x = SHORT1FROMMP(mp1);

@@ -227,6 +227,7 @@ $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_winscan.obj
 # this includes PGMGDMNOBJS.
 DMNOBJS = \
 $(XWP_OUTPUT_ROOT)\exe_mt\xwpdaemn.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\drivemonitor.obj \
 $(PGMGDMNOBJS) \
 $(XWP_OUTPUT_ROOT)\exe_mt\debug.obj \
 $(XWP_OUTPUT_ROOT)\exe_mt\gpih.obj \

@@ -851,7 +851,7 @@ MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
 {
     PWPSLISTITEM        pwps = (PWPSLISTITEM)mpwps;
     // PSELECTCLASSDATA    pscd = (PSELECTCLASSDATA)ulscd;
-    PRECORDCORE         preccParent = NULL;
+    // PRECORDCORE         preccParent = NULL;
 
     USHORT              usAttr = CRA_RECORDREADONLY
                                     | CRA_COLLAPSED;
@@ -1192,7 +1192,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             SPLITBARCDATA   sbcd;
             // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
-            HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
+            // HWND            hwndFrame = WinQueryWindow(hwndClient, QW_PARENT);
             HAB             hab = WinQueryAnchorBlock(hwndClient);
 
             // now add the view to the object's use list;
@@ -1605,6 +1605,7 @@ BOOL fFillingCnr = FALSE;
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
+ *@@changed V0.9.14 (2001-07-31) [umoeller]: extra confirmation for XWP* classes was missing, fixed
  */
 
 MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2010,8 +2011,13 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                     break;
                                 }
 
-                                if (strncmp(pscd->preccSource->pwps->pszClassName,
-                                                "XFld", 4) == 0) {
+                                if (    (strncmp(pscd->preccSource->pwps->pszClassName,
+                                                 "XFld", 4) == 0)
+                                     || (strncmp(pscd->preccSource->pwps->pszClassName,
+                                                 "XWP", 4) == 0)
+                                        // V0.9.14 (2001-07-31) [umoeller]
+                                   )
+                                {
                                     // XFolder class
                                     if (cmnMessageBoxMsgExt(hwndDlg,
                                                 116,

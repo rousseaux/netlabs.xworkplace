@@ -111,9 +111,6 @@
  *                                                                  *
  ********************************************************************/
 
-// "XFldStartup" key for wpRestoreData etc.
-static const char*  G_pcszXFldStartup = "XFldStartup";
-
 // roots of linked lists for XStartup folders
 // these hold plain WPObject pointers, no auto-free
 OBJECTLIST          G_llSavedStartupFolders = {0};
@@ -259,7 +256,7 @@ SOM_Scope void  SOMLINK xfstup_wpObjectReady(XFldStartup *somSelf,
 
 SOM_Scope BOOL  SOMLINK xfstup_wpFree(XFldStartup *somSelf)
 {
-    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    // XFldStartupData *somThis = XFldStartupGetData(somSelf);
     XFldStartupMethodDebug("XFldStartup","xfstup_wpFree");
 
     // remove from the linked list

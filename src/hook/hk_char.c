@@ -268,7 +268,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
     // UCHAR  ucRepeat   = CHAR3FROMMP(mp1);
     UCHAR  ucScanCode = CHAR4FROMMP(pqmsg->mp1);
     USHORT usch       = SHORT1FROMMP(pqmsg->mp2);
-    USHORT usvk       = SHORT2FROMMP(pqmsg->mp2);
+    // USHORT usvk       = SHORT2FROMMP(pqmsg->mp2);
 
     // request access to the hotkeys mutex:
     // first we need to open it, because this

@@ -163,9 +163,6 @@
  *                                                                  *
  ********************************************************************/
 
-// "XWPClassList" key for wpRestoreData etc.
-const char *pcszXWPClassList = "XWPClassList";
-
 /* ******************************************************************
  *                                                                  *
  *   XWPClassList Instance Methods                                  *
@@ -252,10 +249,10 @@ SOM_Scope BOOL  SOMLINK xwlist_wpSaveState(XWPClassList *somSelf)
 
     XWPClassList_parent_WPAbstract_wpSaveState(somSelf);
 
-    _wpSaveLong(somSelf, (PSZ)pcszXWPClassList, 1, (ULONG)_fShowSOMObject);
-    _wpSaveLong(somSelf, (PSZ)pcszXWPClassList, 2, (ULONG)_fShowMethods);
-    _wpSaveLong(somSelf, (PSZ)pcszXWPClassList, 3, (ULONG)_ulSortID);
-    _wpSaveLong(somSelf, (PSZ)pcszXWPClassList, 4, (ULONG)_ulMethodsRadioB);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXWPClassList, 1, (ULONG)_fShowSOMObject);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXWPClassList, 2, (ULONG)_fShowMethods);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXWPClassList, 3, (ULONG)_ulSortID);
+    _wpSaveLong(somSelf, (PSZ)G_pcszXWPClassList, 4, (ULONG)_ulMethodsRadioB);
 
     return (TRUE);
 }
@@ -276,13 +273,13 @@ SOM_Scope BOOL  SOMLINK xwlist_wpRestoreState(XWPClassList *somSelf,
 
     XWPClassList_parent_WPAbstract_wpRestoreState(somSelf, ulReserved);
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXWPClassList, 1, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPClassList, 1, &ul))
         _fShowSOMObject = ul;
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXWPClassList, 2, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPClassList, 2, &ul))
         _fShowMethods = ul;
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXWPClassList, 3, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPClassList, 3, &ul))
         _ulSortID = ul;
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXWPClassList, 4, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXWPClassList, 4, &ul))
         _ulMethodsRadioB = ul;
 
     return (TRUE);

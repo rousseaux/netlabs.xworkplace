@@ -672,7 +672,7 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
     {
         CHAR        szDescription[100];
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        BOOL        fIsFolder = _somIsA(somSelf, _WPFolder),
+        BOOL        // fIsFolder = _somIsA(somSelf, _WPFolder),
                     fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
 
         if (!fCnrWhitespace)
@@ -790,7 +790,7 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
     {
         case WM_CHAR:
         {
-            USHORT usCommand;
+            // USHORT usCommand;
             USHORT usKeyCode;
             USHORT usFlags    = SHORT1FROMMP(mp1);
             USHORT usch       = SHORT1FROMMP(mp2);
@@ -928,9 +928,8 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               G_szLBEntries[i])
                      == 0)
             {
-                winhDebugBox(pcnbp->hwndFrame,
-                         "XFolder",
-                         "Unable to load strings.");
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to load strings.");
                 break;
             }
         }

@@ -118,7 +118,7 @@ static const char *G_pszCDPlayer = "XMMCDPlayer";
 SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryStatus(XMMCDPlayer *somSelf)
 {
     ULONG ulrc = 0;
-    XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf);
+    // XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf);
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_xwpCDQueryStatus");
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
@@ -289,7 +289,7 @@ SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryCurrentTrack(XMMCDPlayer *somSelf)
     {
         TRY_LOUD(excpt1)
         {
-            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
+            // PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
 
             if (_pvPlayer)
             {
@@ -534,7 +534,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
     ULONG   cbValue;
     CHAR    szValue[300];
 
-    XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf);
+    // XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf);
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpSetup");
 
     brc = XMMCDPlayer_parent_WPAbstract_wpSetup(somSelf, pszSetupString);

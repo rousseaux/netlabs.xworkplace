@@ -913,7 +913,7 @@ VOID pgmmRecoverAllWindows(VOID)
     ULONG       usIdx,
                 usIdx2;
     CHAR        szClassName[PGMG_TEXTLEN];
-    BOOL        bResult;
+    // BOOL        bResult;
 
     usIdx = 0;
     henum = WinBeginEnumWindows(HWND_DESKTOP);
@@ -968,7 +968,6 @@ VOID pgmmRecoverAllWindows(VOID)
         pswpThis->hwndInsertBehind = HWND_TOP;
     }
 
-    bResult = WinSetMultWindowPos(NULLHANDLE, swpTemp, usIdx);
-
+    /* bResult =  */ WinSetMultWindowPos(NULLHANDLE, swpTemp, usIdx);
 }
 

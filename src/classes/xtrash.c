@@ -360,7 +360,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
 SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
                                               ULONG ulNewSize)
 {
-    BOOL    fTrashCanLocked = FALSE;
+    // BOOL    fTrashCanLocked = FALSE;
     WPSHLOCKSTRUCT Lock;
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSize");
@@ -420,7 +420,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
 
     if (wpshLockObject(&Lock, somSelf))
     {
-        ULONG    ulIconID = 0;
+        // ULONG    ulIconID = 0;
         BOOL     fTrashFilled = FALSE;
 
         if (_ulTrashObjectCount)
@@ -551,7 +551,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpProcessObjectCommand(XWPTrashCan *somSelf,
                                                      WPObject* pFirstObject,
                                                      ULONG ulSelectionFlags)
 {
-    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpProcessObjectCommand");
 
     return (trshProcessObjectCommand(somSelf,
@@ -770,7 +770,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)
 
     if (_ulTrashObjectCount != 0)
         _wpSaveLong(somSelf,
-                    "XWPTrashCan", 1,
+                    (PSZ)G_pcszXWPTrashCan,
+                    1,
                     (ULONG)_ulTrashObjectCount);
 
     // save dirty mappings back to the trash directories
@@ -798,7 +799,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRestoreState(XWPTrashCan *somSelf,
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpRestoreState");
 
     if (_wpRestoreLong(somSelf,
-                       "XWPTrashCan", 1,
+                       (PSZ)G_pcszXWPTrashCan,
+                       1,
                        &ul))
         _ulTrashObjectCount = ul;
     else
@@ -1306,7 +1308,7 @@ SOM_Scope MRESULT  SOMLINK xtrc_wpDragOver(XWPTrashCan *somSelf,
                                            HWND hwndCnr,
                                            PDRAGINFO pdrgInfo)
 {
-    MRESULT     mrc;
+    // MRESULT     mrc;
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDragOver");
@@ -1437,7 +1439,7 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddFolderView2Page(XWPTrashCan *somSelf,
 SOM_Scope BOOL  SOMLINK xtrc_wpAddSettingsPages(XWPTrashCan *somSelf,
                                                 HWND hwndNotebook)
 {
-    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddSettingsPages");
 
     XWPTrashCan_parent_WPFolder_wpAddSettingsPages(somSelf, hwndNotebook);

@@ -168,7 +168,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
 
-    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddModulePage");
 
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -274,8 +274,10 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
         // not queried yet:
 
         // get program object data
-        if ((_wpQueryProgDetails(somSelf, (PPROGDETAILS)NULL, &ulSize))) {
-            if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL) {
+        if ((_wpQueryProgDetails(somSelf, (PPROGDETAILS)NULL, &ulSize)))
+        {
+            if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
+            {
                 if ((_wpQueryProgDetails(somSelf, pProgDetails, &ulSize)))
                 {
                     // we base our assumptions on what OS/2 thinks
@@ -335,9 +337,10 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
                             if (_wpQueryFilename(somSelf, szProgramFile, TRUE))
                             {
                                 // no type available: get it ourselves
-                                arc = appQueryAppType(szProgramFile,
-                                                      &_ulDosAppType,
-                                                      &_ulAppType);
+                                if (arc = appQueryAppType(szProgramFile,
+                                                          &_ulDosAppType,
+                                                          &_ulAppType))
+                                    _ulAppType = 0;
                             }
                         break; }
 

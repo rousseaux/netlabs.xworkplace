@@ -578,7 +578,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
                      PBOOL pfNeedSave)       // out: set to TRUE if drives are dirty now
                                              // and wpSaveDeferred must be invoked on the trash can
 {
-    BOOL fDirty = FALSE;
+    // BOOL fDirty = FALSE;
 
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))

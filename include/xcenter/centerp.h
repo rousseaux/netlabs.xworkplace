@@ -91,6 +91,8 @@
 
     #ifdef LINKLIST_HEADER_INCLUDED
 
+        typedef struct _TRAYSETTING *PTRAYSETTING;
+
         /*
          *@@ PRIVATEWIDGETSETTING:
          *      private wrapper around XCENTERWIDGETSETTING
@@ -121,6 +123,17 @@
                         // public definition, has widget
                         // class and setup string
 
+            PTRAYSETTING            pOwningTray;
+                        // if this != NULL, this is a subwidget
+                        // setting and this contains the owning
+                        // tray;
+                        // otherwise this is NULL
+
+            ULONG                   ulCurrentTray;
+                        // for tray widgets only: the current tray
+                        // or -1 if no tray is currently active
+                        // V0.9.14 (2001-08-01) [umoeller]
+
             PLINKLIST               pllTraySettings;
                         // for tray widgets only: linked list of
                         // TRAYSETTING structures with the tray
@@ -142,9 +155,10 @@
         {
             PSZ         pszTrayName;    // tray name (malloc'd)
 
-            LINKLIST    llSubwidgets;   // linked list of TRAYSUBWIDGET structs, no auto-free
+            LINKLIST    llSubwidgets;   // linked list of PRIVATEWIDGETSETTING structs,
+                                        // no auto-free
 
-        } TRAYSETTING, *PTRAYSETTING;
+        } TRAYSETTING;
 
         /*
          *@@ TRAYSUBWIDGET:
@@ -152,7 +166,7 @@
          *      list of these exists in TRAYSETTING.
          */
 
-        typedef struct _TRAYSUBWIDGET
+        /* typedef struct _TRAYSUBWIDGET
         {
             PTRAYSETTING pOwningTray;       // tray which owns this subwidget,
                                             // always valid
@@ -163,7 +177,7 @@
         } TRAYSUBWIDGET, *PTRAYSUBWIDGET;
 
         /*
-         *@@ WIDGETVIEWSTATE:
+         *@@ PRIVATEWIDGETVIEW:
          *      private structure stored in the XCenter's
          *      XCENTERWINDATA.llWidgets list for each
          *      open widget.
@@ -183,7 +197,7 @@
          *@@added V0.9.7 (2000-12-14) [umoeller]
          */
 
-        typedef struct _WIDGETVIEWSTATE
+        typedef struct _PRIVATEWIDGETVIEW
         {
             XCENTERWIDGET   Widget;
                         // widget's public data; this must be
@@ -209,7 +223,7 @@
                         // widget, if Widget.fSizeable == TRUE;
                         // otherwise this is 0
 
-            struct _WIDGETVIEWSTATE *pOwningTray;
+            struct _PRIVATEWIDGETVIEW *pOwningTray;
                         // NULL if this widget is a direct child
                         // of the XCenter client; otherwise this
                         // has a pointer to the tray widget which
@@ -218,13 +232,13 @@
 
             PLINKLIST        pllSubwidgetViews;
                         // if this is a tray widget, linked list of
-                        // WIDGETVIEWSTATE structures containing
+                        // PRIVATEWIDGETVIEW structures containing
                         // the subwidget views for the current tray,
                         // similar to XCenter's own list
                         // (invisible trays never have subwidget views)
                         // V0.9.13 (2001-06-23) [umoeller]
 
-        } WIDGETVIEWSTATE, *PWIDGETVIEWSTATE;
+        } PRIVATEWIDGETVIEW, *PPRIVATEWIDGETVIEW;
 
         /*
          *@@ XCENTERWINDATA:
@@ -259,7 +273,7 @@
             XCENTERGLOBALS      Globals;            // public data; a ptr to this is stored in
                                                     // each created XCENTERWIDGET
 
-            LINKLIST            llWidgets;          // linked list of PXCENTERWIDGETVIEW pointers;
+            LINKLIST            llWidgets;          // linked list of PPRIVATEWIDGETVIEW pointers;
                                                     // list is not auto-free (ctrpCreateXCenterView)
 
             PFNWP               pfnwpFrameOrig;     // original frame window proc (subclassed)
@@ -311,7 +325,7 @@
             PXCENTERWIDGET          pWidget;
                         // if != NULL, ptr to open widget view
 
-            ULONG                   ulIndex;
+            // ULONG                   ulIndex;
                         // index of the widget for which settings dlg is
                         // shown
         } WGTSETTINGSTEMP, *PWGTSETTINGSTEMP;
@@ -373,7 +387,9 @@
 
         VOID ctrpShowSettingsDlg(XCenter *somSelf,
                                  HWND hwndOwner,
-                                 ULONG ulIndex);
+                                 ULONG ulTrayWidgetIndex,
+                                 ULONG ulTrayIndex,
+                                 ULONG ulWidgetIndex);
 
     /* ******************************************************************
      *
@@ -386,11 +402,12 @@
         // sure that we can only do d'n'd within this
         // one container)
         #define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"
-        #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ")x(DRF_UNKNOWN)"
+        // #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ")x(DRF_UNKNOWN)"
+        #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ",DRM_OS2FILE,DRM_DISCARD)x(DRF_UNKNOWN)"
 
         VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                               BOOL fRemove,
-                              PWIDGETVIEWSTATE pWidget,
+                              PPRIVATEWIDGETVIEW pWidget,
                               HWND hwnd,
                               HPS hpsPre);
 
@@ -413,8 +430,8 @@
      *
      ********************************************************************/
 
-        PWIDGETVIEWSTATE ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,
-                                                PWIDGETVIEWSTATE pOwningTray,
+        PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,
+                                                PPRIVATEWIDGETVIEW pOwningTray,
                                                 PLINKLIST pllWidgetViews,
                                                 PPRIVATEWIDGETSETTING pSetting,
                                                 ULONG ulIndex);
@@ -456,12 +473,18 @@
         BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
                                      ULONG ulIndex);
 
-        PTRAYSUBWIDGET XWPENTRY ctrpCreateWidgetSetting(PTRAYSETTING pTray,
-                                                        const char *pcszWidgetClass,
-                                                        const char *pcszSetupString,
-                                                        ULONG ulIndex);
+        PPRIVATEWIDGETSETTING XWPENTRY ctrpFindWidgetSetting(XCenter *somSelf,
+                                                             ULONG ulTrayWidgetIndex,
+                                                             ULONG ulTrayIndex,
+                                                             ULONG ulWidgetIndex,
+                                                             PXCENTERWIDGET *ppViewData);
 
-        BOOL XWPENTRY ctrpDeleteWidgetSetting(PTRAYSUBWIDGET pSubwidget);
+        PPRIVATEWIDGETSETTING XWPENTRY ctrpCreateWidgetSetting(PTRAYSETTING pTray,
+                                                               const char *pcszWidgetClass,
+                                                               const char *pcszSetupString,
+                                                               ULONG ulIndex);
+
+        BOOL XWPENTRY ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget);
 
     #endif
 
@@ -487,7 +510,10 @@
     #ifdef SOM_XCenter_h
 
         ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
-                                           HWND hwnd);
+                                           HWND hwndWidget,
+                                           PULONG pulTrayWidgetIndex,
+                                           PULONG pulTrayIndex,
+                                           PULONG pulWidgetIndex);
 
         VOID ctrpFreeWidgets(XCenter *somSelf);
 
@@ -582,7 +608,7 @@
      *
      *      Parameters:
      *
-     *      -- PWIDGETVIEWSTATE mp1: widget to be destroyed.
+     *      -- PPRIVATEWIDGETVIEW mp1: widget to be destroyed.
      *
      *      -- mp2: reserved, must be 0.
      *
@@ -629,6 +655,27 @@
 
     #define XCM_CREATEOBJECTBUTTON      (WM_USER + 7)
 
+    /*
+     *@@ XCM_CREATEWIDGETINTRAY:
+     *      sent to a tray widget by the engine's d'n'd
+     *      code if a widget should be created in the current
+     *      tray.
+     *
+     *      Parameters:
+     *
+     *      -- PSZ mp1: extended setup string for new widget.
+     *         It contains the widget class name, followed by
+     *         a \r\n pair, and the (possibly empty) setup
+     *         string.
+     *
+     *      -- ULONG mp2: index where to insert (-1
+     *         for rightmost).
+     *
+     *@@added V0.9.14 (2001-07-31) [lafaix]
+     */
+
+    #define XCM_CREATEWIDGETINTRAY      (WM_USER + 8)
+
     /* ******************************************************************
      *
      *   XCenter setup set (ctr_notebook.c)
@@ -651,6 +698,11 @@
         BOOL ctrpSaveState(XCenter *somSelf);
 
     #endif
+
+    #define DRT_WIDGET "Widget settings"
+
+    BOOL ctrpSaveToFile(PCSZ pszDest, PCSZ pszClass, PCSZ pszSetup);
+    BOOL ctrpReadFromFile(PCSZ pszSource, PSZ *ppszSetup);
 
     /* ******************************************************************
      *

@@ -1017,7 +1017,7 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
     CHAR    szProposeTitle[CCHMAXPATH] = "????",
             szExistingFilename[CCHMAXPATH],
             szTemp[500];
-    ULONG   ulDlgReturn = 0,
+    ULONG   // ulDlgReturn = 0,
             ulLastFocusID = 0,
             ulLastDot = 0;
     HWND    hwndConfirm;

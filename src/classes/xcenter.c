@@ -309,7 +309,6 @@ SOM_Scope BOOL  SOMLINK xctr_xwpInsertWidget(XCenter *somSelf,
 SOM_Scope BOOL  SOMLINK xctr_xwpRemoveWidget(XCenter *somSelf,
                                              ULONG ulIndex)
 {
-    BOOL brc = FALSE;
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpRemoveWidget");
 
@@ -338,7 +337,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
                                            ULONG ulIndex2Move,
                                            ULONG ulBeforeIndex)
 {
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpMoveWidget");
 
     return (ctrpMoveWidget(somSelf, ulIndex2Move, ulBeforeIndex));
@@ -356,7 +355,6 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
 SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
                                             ULONG ulClass, long lDelta)
 {
-    BOOL brc = FALSE;
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpSetPriority");
 
@@ -537,7 +535,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
                                                ULONG iPosition)
 {
     BOOL brc;
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpModifyPopupMenu");
 
     brc = XCenter_parent_WPAbstract_wpModifyPopupMenu(somSelf,
@@ -659,7 +657,6 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
     else
     {
         // other view (probably settings):
-        BOOL fRedirect = FALSE;
 
         // make sure we don't open the other views on the XCenter
         // view thread... this causes problems in various situations
@@ -703,7 +700,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
 {
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSwitchTo");
 
     // check if we should switch to the existing XCenter view
@@ -765,7 +762,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
 
 SOM_Scope BOOL  SOMLINK xctr_wpClose(XCenter *somSelf)
 {
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpClose");
 
     if (XCenter_parent_WPAbstract_wpClose(somSelf))
@@ -883,7 +880,7 @@ SOM_Scope PSZ  SOMLINK xctrM_wpclsQueryTitle(M_XCenter *somSelf)
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryTitle");
 
-    return ("XCenter");
+    return ((PSZ)G_pcszXCenter);
 }
 
 /*

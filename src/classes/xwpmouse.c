@@ -373,11 +373,11 @@ SOM_Scope BOOL  SOMLINK xms_wpSaveState(XWPMouse *somSelf)
             _pszCurrentSettings = pszSettings;
 
             // jetzt speichern
-            _wpSaveString(somSelf, "XWPMouse", 1, pszSettings);
+            _wpSaveString(somSelf, G_pcszXWPMouse, 1, pszSettings);
             if (getAnimationInitDelay() != getDefaultAnimationInitDelay())
-                _wpSaveLong(somSelf, "XWPMouse", 2, getAnimationInitDelay());
+                _wpSaveLong(somSelf, G_pcszXWPMouse, 2, getAnimationInitDelay());
             else
-                _wpSaveLong(somSelf, "XWPMouse", 2, -1);
+                _wpSaveLong(somSelf, G_pcszXWPMouse, 2, -1);
 
         }
         while (FALSE);
@@ -412,7 +412,7 @@ SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
         do
         {
             // numerischen Wert fÅr Animtion Init delay holen
-            if (    (!_wpRestoreLong(somSelf, "XWPMouse", 2, &ulAnimationInitDelay))
+            if (    (!_wpRestoreLong(somSelf, G_pcszXWPMouse, 2, &ulAnimationInitDelay))
                  || (ulAnimationInitDelay == -1)
                )
                 ulAnimationInitDelay = getDefaultAnimationInitDelay();
@@ -420,7 +420,7 @@ SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
             setAnimationInitDelay(ulAnimationInitDelay);
 
             // benîtigte LÑnge abfragen
-            if (!_wpRestoreString(somSelf, "XWPMouse", 1, NULL, &ulMaxLen))
+            if (!_wpRestoreString(somSelf, G_pcszXWPMouse, 1, NULL, &ulMaxLen))
                 break;
 
             if (ulMaxLen == 0)
@@ -432,7 +432,7 @@ SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
                 break;
 
             // Settings holen
-            _wpRestoreString(somSelf, "XWPMouse", 1, pszSettings, &ulMaxLen);
+            _wpRestoreString(somSelf, G_pcszXWPMouse, 1, pszSettings, &ulMaxLen);
             // DEBUGMSG("SOM: restored settings" NEWLINE, 0);
             // DEBUGMSG("SOM: %s" NEWLINE, pszSettings);
 
@@ -521,7 +521,7 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseCometPage(XWPMouse *somSelf,
 SOM_Scope ULONG  SOMLINK xms_wpAddMousePtrPage(XWPMouse *somSelf,
                                                HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
     XWPMouseMethodDebug("XWPMouse","xms_wpAddMousePtrPage");
 

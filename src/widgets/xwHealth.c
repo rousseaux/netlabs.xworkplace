@@ -356,9 +356,8 @@ VOID MwgtScanSetup(const char *pcszSetupString,
 {
     PSZ p;
     // background color
-    p = pctrScanSetupString(pcszSetupString,
-                            "BGNDCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "BGNDCOL"))
     {
         pSetup->lcolBackground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -368,9 +367,8 @@ VOID MwgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // text color:
-    p = pctrScanSetupString(pcszSetupString,
-                            "TEXTCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "TEXTCOL"))
     {
         pSetup->lcolForeground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -381,9 +379,8 @@ VOID MwgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = pctrScanSetupString(pcszSetupString,
-                            "FONT");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FONT"))
     {
         pSetup->pszFont = strdup(p);
         pctrFreeSetupValue(p);
@@ -391,9 +388,8 @@ VOID MwgtScanSetup(const char *pcszSetupString,
     // else: leave this field null
 
     // Health view string
-    p = pctrScanSetupString(pcszSetupString,
-                            "HEALTHVSTR");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "HEALTHVSTR"))
     {
         pSetup->pszViewString = strdup(p);
         pctrFreeSetupValue(p);
@@ -422,7 +418,7 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,  // out: setup string (is cleared first)
                    PMONITORSETUP pSetup)
 {
     CHAR szTemp[400];
-    PSZ psz = 0;
+    // PSZ psz = 0;
 
     pxstrInit(pstrSetup, 400);
     sprintf(szTemp, "BGNDCOL=%06lX;", pSetup->lcolBackground);
@@ -454,13 +450,13 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
 {
     if(szPaint && szViewString)
     {
-        CHAR identifier;
+        // CHAR identifier;
         CHAR stringValue[500];
         unsigned int number;
         double t[10];
         int f[10];
         double v[10];
-        int i,j;
+        int i, j;
         szPaint[0]=(char)0;
         for(i=0;i<10;i++)
         {
@@ -698,7 +694,7 @@ MRESULT MwgtCreate(HWND hwnd,
 {
     MRESULT mrc = 0;            // continue window creation
 
-    PSZ p;
+    // PSZ p;
     PHEALTHPRIVATE pPrivate = malloc(sizeof(HEALTHPRIVATE));
 
     memset(pPrivate, 0, sizeof(HEALTHPRIVATE));
@@ -801,18 +797,18 @@ VOID MwgtPaint(HWND hwnd, PHEALTHPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
     RECTL rclWin;
     ULONG ulBorder = 1;
     CHAR szPaint[900] = "";
-    CHAR szValue[200];
+    // CHAR szValue[200];
     ULONG ulPaintLen = 0;
     POINTL aptlText[TXTBOX_COUNT];
     INT i;
-    double dvalue;
-    INT ivalue;
+    // double dvalue;
+    // INT ivalue;
     LONG lcol = pPrivate->Setup.lcolBackground;
 
     // country settings from XCenter globals
     // (what a pointer)
-    PCOUNTRYSETTINGS pCountrySettings
-        = (PCOUNTRYSETTINGS) pPrivate->pWidget->pGlobals->pCountrySettings;
+    // PCOUNTRYSETTINGS pCountrySettings
+       //  = (PCOUNTRYSETTINGS) pPrivate->pWidget->pGlobals->pCountrySettings;
 
     // now paint button frame
     WinQueryWindowRect(hwnd, &rclWin);

@@ -1692,7 +1692,7 @@ WPObject* wpshCreateFromTemplate(HAB hab,
         {
             HWND            hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
             CNRINFO         CnrInfo;
-            CHAR            szTitle[CCHMAXPATH];
+            // CHAR            szTitle[CCHMAXPATH];
 
             if (hwndCnr)
                 cnrhQueryCnrInfo(hwndCnr, &CnrInfo);

@@ -57,6 +57,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -91,7 +92,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[]
           WNDCLASS_WIDGET_SAMPLE,     // PM window class name
           0,                          // additional flag, not used here
           "DiskfreeWidget",           // internal widget class name
-          "Diskfree",                 // widget class name displayed to user
+          "Diskfree (WarpCenter style)",                 // widget class name displayed to user
           WGTF_TRAYABLE,
           WgtShowSettingsDlg          // our settings dialog
       };
@@ -331,9 +332,8 @@ void WgtScanSetup(const char *pcszSetupString,
     PSZ p;
 
     // background color
-    p = pctrScanSetupString(pcszSetupString,
-                            "BGNDCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "BGNDCOL"))
     {
         pSetup->lcolBackground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -343,9 +343,8 @@ void WgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // text color:
-    p = pctrScanSetupString(pcszSetupString,
-                            "TEXTCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "TEXTCOL"))
     {
         pSetup->lcolForeground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -356,9 +355,8 @@ void WgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = pctrScanSetupString(pcszSetupString,
-                            "FONT");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FONT"))
     {
         pSetup->pszFont = strdup(p);
         pctrFreeSetupValue(p);
@@ -370,9 +368,8 @@ void WgtScanSetup(const char *pcszSetupString,
     ////////////////////////////////////////////////////////////////
 
     // view:  *..multi-view | otherwise..single-view where setup-string is drive-letter
-    p = pctrScanSetupString(pcszSetupString,
-                            "VIEW");
-    if(p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "VIEW"))
     {
         pSetup->chDrive = ValidateDrive(*p);  // V0.9.11 (2001-04-19) [pr]: Validate drive letter
         pctrFreeSetupValue(p);
@@ -382,9 +379,8 @@ void WgtScanSetup(const char *pcszSetupString,
 
 
     // different 'show-styles'
-    p = pctrScanSetupString(pcszSetupString,
-                            "SHOW");
-    if(p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "SHOW"))
     {
         pSetup->lShow = atol(p);
         pctrFreeSetupValue(p);
@@ -404,7 +400,7 @@ void WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
                   PSAMPLESETUP pSetup)
 {
     CHAR    szTemp[100];
-    PSZ     psz = 0;
+    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "BGNDCOL=%06lX;",
@@ -593,7 +589,6 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
     return(mrc);
 }
 
-
 /*
  *@@ WwgtShowSettingsDlg:
  *      this displays the winlist widget's settings
@@ -672,7 +667,7 @@ MRESULT WgtCreate(HWND hwnd,
 {
     MRESULT mrc = 0;
     HMODULE hmodRes = pcmnQueryMainResModuleHandle(); // V0.9.11 (2001-04-18) [umoeller]
-    PSZ p;
+    // PSZ p;
     PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)malloc(sizeof(DISKFREEPRIVATE));
     memset(pPrivate, 0, sizeof(DISKFREEPRIVATE));
     // link the two together
@@ -730,6 +725,8 @@ MRESULT WgtCreate(HWND hwnd,
                                           hwnd,
                                           1,
                                           5000);
+
+    pWidget->ulHelpPanelID = ID_XSH_WIDGET_DISKFREE_WC;
 
     return (mrc);
 }
@@ -852,82 +849,78 @@ void WgtPaint(HWND hwnd,
 
             // draw border
             if(pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
-             {
-              ULONG ulBorder=1;
-              RECTL rcl2;
+            {
+                 ULONG ulBorder=1;
+                 RECTL rcl2;
 
 
-              memcpy(&rcl2, &rclWin, sizeof(RECTL));
-              rcl2.xRight--;
-              rcl2.yTop--;
+                 memcpy(&rcl2, &rclWin, sizeof(RECTL));
+                 rcl2.xRight--;
+                 rcl2.yTop--;
 
-              pgpihDraw3DFrame(hps,
-                               &rcl2,
-                               ulBorder,
-                               pPrivate->pWidget->pGlobals->lcol3DDark,
-                               pPrivate->pWidget->pGlobals->lcol3DLight);
+                 pgpihDraw3DFrame(hps,
+                                  &rcl2,
+                                  ulBorder,
+                                  pPrivate->pWidget->pGlobals->lcol3DDark,
+                                  pPrivate->pWidget->pGlobals->lcol3DLight);
 
-              rclWin.xLeft += ulBorder;
-              rclWin.yBottom += ulBorder;
-              rclWin.xRight -= ulBorder;
-              rclWin.yTop -= ulBorder;
-             }
-
-
+                 rclWin.xLeft += ulBorder;
+                 rclWin.yBottom += ulBorder;
+                 rclWin.xRight -= ulBorder;
+                 rclWin.yTop -= ulBorder;
+            }
 
             // calculate percent
             dPercentFree=pPrivate->dAktDriveFree*100/pPrivate->dAktDriveSize;
 
             if(pPrivate->Setup.chDrive=='*') // == multi-view-clickable
-             {
-              // draw drive-icon
-              WinStretchPointer(hps,
-                                rclWin.xLeft+3,
-                                (rclWin.yTop-rclWin.yBottom-11)/2+1,
-                                21,
-                                11,
-                                pPrivate->hptrDrives[pPrivate->bFSIcon],
-                                DP_NORMAL);
-                                                           // pPrivate->dAktDriveSize/1024/1024...100%
-              // print drive-data                             pPrivate->dAktDriveFree/1024/1024...x%
-              // V0.9.11 (2001-04-19) [pr]: Fixed show drive type
-              if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
-                sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
-                                                                pPrivate->szAktDriveType,
-                                                                pPrivate->dAktDriveFree/1024/1024,
-                                                                dPercentFree);
-              else
-                sprintf(szText, "%c:  %.fMB (%.f%%) free", pPrivate->chAktDrive,
-                                                           pPrivate->dAktDriveFree/1024/1024,
-                                                           dPercentFree);
+            {
+                // draw drive-icon
+                WinStretchPointer(hps,
+                                  rclWin.xLeft+3,
+                                  (rclWin.yTop-rclWin.yBottom-11)/2+1,
+                                  21,
+                                  11,
+                                  pPrivate->hptrDrives[pPrivate->bFSIcon],
+                                  DP_NORMAL);
+                                                             // pPrivate->dAktDriveSize/1024/1024...100%
+                // print drive-data                             pPrivate->dAktDriveFree/1024/1024...x%
+                // V0.9.11 (2001-04-19) [pr]: Fixed show drive type
+                if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
+                  sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                                                                  pPrivate->szAktDriveType,
+                                                                  pPrivate->dAktDriveFree/1024/1024,
+                                                                  dPercentFree);
+                else
+                  sprintf(szText, "%c:  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                                                             pPrivate->dAktDriveFree/1024/1024,
+                                                             dPercentFree);
 
-              bxCorr=30;
-             }
+                bxCorr=30;
+            }
             else
-             {
-              // draw drive-icon
-              WinStretchPointer(hps,
-                                rclWin.xLeft,
-                                (rclWin.yTop-rclWin.yBottom-11)/2+1,
-                                21,
-                                11,
-                                pPrivate->hptrDrives[pPrivate->bFSIcon],
-                                DP_NORMAL);
+            {
+                // draw drive-icon
+                WinStretchPointer(hps,
+                                  rclWin.xLeft,
+                                  (rclWin.yTop-rclWin.yBottom-11)/2+1,
+                                  21,
+                                  11,
+                                  pPrivate->hptrDrives[pPrivate->bFSIcon],
+                                  DP_NORMAL);
 
-              if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
-                sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
-                                                   pPrivate->szAktDriveType,
-                                                   pPrivate->dAktDriveFree/1024/1024);
-              else
-                sprintf(szText, "%c:  %.fMB", pPrivate->chAktDrive,
-                                              pPrivate->dAktDriveFree/1024/1024);
+                if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
+                  sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
+                                                     pPrivate->szAktDriveType,
+                                                     pPrivate->dAktDriveFree/1024/1024);
+                else
+                  sprintf(szText, "%c:  %.fMB", pPrivate->chAktDrive,
+                                                pPrivate->dAktDriveFree/1024/1024);
 
-              bxCorr=24;
+                bxCorr=24;
 
-              //rclWin.xLeft+=24;
-             }
-
-
+                //rclWin.xLeft+=24;
+            }
 
             // now check if we have enough space
             GpiQueryTextBox(hps,
@@ -937,28 +930,28 @@ void WgtPaint(HWND hwnd,
                             aptlText);
 
             if(((aptlText[TXTBOX_TOPRIGHT].x+bxCorr) > (rclWin.xRight+2)) || pPrivate->lCX==10)
-             {
-              // we need more space: tell XCenter client
-              pPrivate->lCX = (aptlText[TXTBOX_TOPRIGHT].x + bxCorr+6);
+            {
+                // we need more space: tell XCenter client
+                pPrivate->lCX = (aptlText[TXTBOX_TOPRIGHT].x + bxCorr+6);
 
-              WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
-                         XCM_SETWIDGETSIZE,
-                         (MPARAM)hwnd,
-                         (MPARAM)pPrivate->lCX);
-             }
+                WinPostMsg(WinQueryWindow(hwnd, QW_PARENT),
+                             XCM_SETWIDGETSIZE,
+                             (MPARAM)hwnd,
+                             (MPARAM)pPrivate->lCX);
+            }
             else
-             {
-              // sufficient space:
-              rclWin.xLeft+=bxCorr;
+            {
+                // sufficient space:
+                rclWin.xLeft+=bxCorr;
 
-              WinDrawText(hps,
-                          strlen(szText),
-                          szText,
-                          &rclWin,
-                          pPrivate->Setup.lcolForeground,
-                          pPrivate->Setup.lcolBackground,
-                          DT_LEFT| DT_VCENTER);
-             }
+                WinDrawText(hps,
+                            strlen(szText),
+                            szText,
+                            &rclWin,
+                            pPrivate->Setup.lcolForeground,
+                            pPrivate->Setup.lcolBackground,
+                            DT_LEFT| DT_VCENTER);
+            }
         }
         WinEndPaint(hps);  // V0.9.11 (2001-04-19) [pr]: Moved to correct place
     }

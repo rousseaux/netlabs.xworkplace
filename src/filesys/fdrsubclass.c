@@ -330,7 +330,7 @@ PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
                                         // in: the "real" object; for XFolder, this is == somSelf,
                                         // for XFldDisk, this is the disk object (needed for object handles)
 {
-    BOOL fSemOwned = FALSE;
+    // BOOL fSemOwned = FALSE;
     PSUBCLASSEDFOLDERVIEW psliNew = 0;
 
     psliNew = malloc(sizeof(SUBCLASSEDFOLDERVIEW));

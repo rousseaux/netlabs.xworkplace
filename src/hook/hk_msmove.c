@@ -163,7 +163,7 @@ VOID SelectMenuItem(HWND hwndMenu,
                     BOOL bOpen)         // open submenu (if any) ?
 {
     MENUITEM    menuitemCurrent;
-    USHORT      usSelItem;
+    // USHORT      usSelItem;
 
     #ifndef MM_QUERYITEMBYPOS
         #define MM_QUERYITEMBYPOS 0x01f3

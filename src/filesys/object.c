@@ -615,6 +615,7 @@ BOOL WriteObjectsList(POBJECTLIST pll,
  *@@changed V0.9.9 (2001-01-29) [lafaix]: wrong object set, fixed
  *@@changed V0.9.9 (2001-03-19) [pr]: lock/unlock objects on the lists
  *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
+ *@@changed V0.9.14 (2001-07-31) [umoeller]: fixed confusing code
  */
 
 BOOL objAddToList(WPObject *somSelf,
@@ -631,9 +632,9 @@ BOOL objAddToList(WPObject *somSelf,
         fSemOwned = LockObjectsList();
         if (fSemOwned)
         {
-            PLISTNODE   pNode = 0;
-            WPObject    *pobj,
-                        *pobjFound = NULL;
+            PLISTNODE   pNode = 0,
+                        pNodeFound = 0;
+            WPObject    *pobj;
 
             if (!pll->fLoaded)
                 // if the list has not yet been built
@@ -650,7 +651,7 @@ BOOL objAddToList(WPObject *somSelf,
 
                 if (pobj == somSelf)
                 {
-                    pobjFound = pobj;
+                    pNodeFound = pNode;
                     break;
                 }
 
@@ -660,7 +661,7 @@ BOOL objAddToList(WPObject *somSelf,
             if (fInsert)
             {
                 // insert mode:
-                if (!pobjFound)
+                if (!pNodeFound)
                 {
                     // lock object to stop it going dormant
                     _wpLockObject(somSelf);
@@ -680,16 +681,16 @@ BOOL objAddToList(WPObject *somSelf,
             else
             {
                 // remove mode:
-                if (pobjFound)
+                if (pNodeFound)
                 {
-                    lstRemoveItem(&pll->ll,
-                                  pobjFound);
+                    lstRemoveNode(&pll->ll,
+                                  pNodeFound);
                     // unlock object to allow it to go dormant
                     _wpUnlockObject(somSelf);
 
                     if (ulListFlag)
                         // unset list notify flag
-                        _xwpModifyListNotify(pobj,
+                        _xwpModifyListNotify(somSelf,
                                              0,                 // clear
                                              ulListFlag);       // mask
 
@@ -1157,6 +1158,7 @@ VOID UnlockDirtyList(VOID)
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
  *@@changed V0.9.11 (2001-04-18) [umoeller]: added OBJLIST_DIRTYLIST list flag
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
 BOOL objAddToDirtyList(WPObject *pobj)
@@ -1205,6 +1207,9 @@ BOOL objAddToDirtyList(WPObject *pobj)
                                              OBJLIST_DIRTYLIST,
                                              OBJLIST_DIRTYLIST);
                     }
+                    else
+                        free(pNode);        // V0.9.14 (2001-08-01) [umoeller]
+
                     // else
                         // already on list:
                         // _Pmpf((__FUNCTION__ ": DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
@@ -1974,7 +1979,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
              pUseItem = _wpFindUseItem(pObject, USAGE_OPENVIEW, pUseItem))
         {
             PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem+1);
-            ULONG       ulSLIIndex = 0;
+            // ULONG       ulSLIIndex = 0;
             switch (pViewItem->view)
             {
                 case OPEN_SETTINGS: strcpy(szTemp1, "Settings"); break;
@@ -2267,7 +2272,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
         case XM_SETTINGS2DLG:
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             HPOINTER hptrOld = winhSetWaitPointer();
 
             USHORT      usFlags,
@@ -2594,7 +2599,7 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                 case DID_REFRESH:
                 {
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                     HPOINTER hptrOld = winhSetWaitPointer();
                     WinSendMsg(pWinData->hwndCnr,
                                CM_REMOVERECORD,
@@ -3528,8 +3533,8 @@ ULONG WriteOutObjectSetup(FILE *RexxFile,
         TRY_LOUD(excpt1)
         {
             // rule out certain stupid special folder classes
-            if (    strcmp(pszTrueClassName, "XWPFontFolder")
-                 && strcmp(pszTrueClassName, "XWPTrashCan")
+            if (    strcmp(pszTrueClassName, G_pcszXWPFontFolder)
+                 && strcmp(pszTrueClassName, G_pcszXWPTrashCan)
                  && strcmp(pszTrueClassName, "WPMinWinViewer")
                  && strcmp(pszTrueClassName, "WPHwManager")
                  && strcmp(pszTrueClassName, "WPTemplates")

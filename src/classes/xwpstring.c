@@ -126,8 +126,6 @@
  *                                                                  *
  ********************************************************************/
 
-static const char *G_pcszXWPString = "XWPString";
-
 /*
  *@@ INVOKESETUPSTRING:
  *      structure passed to xwstrfntSetupThread to
@@ -1200,7 +1198,7 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemSelected(XWPString *somSelf,
 {
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XWPStringData *somThis = XWPStringGetData(somSelf);
+    // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemSelected");
 
     if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
@@ -1270,7 +1268,7 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
 {
     HWND hwnd = NULLHANDLE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XWPStringData *somThis = XWPStringGetData(somSelf);
+    // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpOpen");
 
     if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))

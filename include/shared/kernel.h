@@ -290,6 +290,10 @@
 
     BOOL krnNeed2ProcessStartupFolder(VOID);
 
+    HWND APIENTRY krnQueryDaemonObject(VOID);
+    typedef HWND APIENTRY KRNQUERYDAEMONOBJECT(VOID);
+    typedef KRNQUERYDAEMONOBJECT *PKRNQUERYDAEMONOBJECT;
+
     BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************

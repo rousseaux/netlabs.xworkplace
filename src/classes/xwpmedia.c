@@ -802,7 +802,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
                             PSZ pszCodecName = malloc(cb + 1); // null term.
                             if (pszCodecName)
                             {
-                                LONG lWritten;
+                                // LONG lWritten;
                                 if (G_mmioQueryCODECName(&cifi,
                                                          pszCodecName,
                                                          &cb) // excluding null term.

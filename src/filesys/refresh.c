@@ -587,7 +587,7 @@ BOOL PumpNotifications(VOID)
 
 VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
 {
-    QMSG qmsg;
+    // QMSG qmsg;
     ULONG   ulWaitTime = 1000;
 
     WinCancelShutdown(ptiMyself->hmq, TRUE);
@@ -686,7 +686,7 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
     if (pNotify)
     {
         // hack the folder's instance data directly...
-        XFolderData *somThat = XFolderGetData(pNotify->pFolder);
+        // XFolderData *somThat = XFolderGetData(pNotify->pFolder);
 
         BYTE        bActionThis = pNotify->CNInfo.bAction;
         BYTE        bOpposite = 0;
@@ -1109,15 +1109,15 @@ VOID _Optlink refr_fntFindFolder(PTHREADINFO ptiMyself)
     WinCancelShutdown(ptiMyself->hmq, TRUE);
 
     G_hwndFindFolder = WinCreateWindow(HWND_OBJECT,
-                                         WC_STATIC,
-                                         "XWPFindFolder",
-                                         0,
-                                         0, 0, 0, 0,
-                                         NULLHANDLE,
-                                         HWND_BOTTOM,
-                                         0,
-                                         NULL,
-                                         NULL);
+                                       WC_STATIC,
+                                       "XWPFindFolder",
+                                       0,
+                                       0, 0, 0, 0,
+                                       NULLHANDLE,
+                                       HWND_BOTTOM,
+                                       0,
+                                       NULL,
+                                       NULL);
     WinSubclassWindow(G_hwndFindFolder,
                       fnwpFindFolder);
 

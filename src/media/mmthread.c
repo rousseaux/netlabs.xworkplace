@@ -165,6 +165,45 @@ RESOLVEFUNCTION G_aResolveFromMMIO[] =
  ********************************************************************/
 
 /*
+ *@@ ThreadPlaySystemSound:
+ *      implementation for XMM_PLAYSYSTEMSOUND to
+ *      reduce stack allocation.
+ *
+ *@@added V0.9.14 (2001-08-01) [umoeller]
+ */
+
+VOID ThreadPlaySystemSound(HWND hwndObject,
+                           MPARAM mp1)
+{
+    CHAR    szDescr[CCHMAXPATH];
+    ULONG   ulVolume;
+    CHAR    szFile[CCHMAXPATH];
+
+    #ifdef DEBUG_SOUNDS
+        _Pmpf(( "XMM_PLAYSYSTEMSOUND index %d", mp1));
+    #endif
+
+    // get system sound from MMPM.INI
+    if (sndQuerySystemSound(G_habMediaThread,
+                            (USHORT)mp1,
+                            szDescr,
+                            szFile,
+                            &ulVolume))
+    {
+        // OK, sound file found in MMPM.INI:
+        #ifdef DEBUG_SOUNDS
+            _Pmpf(( "  posting Sound %d == %s, %s", mp1, szDescr, pszFile ));
+        #endif
+
+        // play!
+        WinPostMsg(hwndObject,
+                   XMM_PLAYSOUND,
+                   (MPARAM)strdup(szFile),      // will be free'd in XMM_PLAYSOUND
+                   (MPARAM)ulVolume);
+    }
+}
+
+/*
  *@@ xmm_fnwpMediaObject:
  *      window procedure for the Media thread
  *      (xmm_fntMediaThread) object window.
@@ -172,6 +211,7 @@ RESOLVEFUNCTION G_aResolveFromMMIO[] =
  *@@added V0.9.3 (2000-04-25) [umoeller]
  *@@changed V0.9.7 (2000-12-20) [umoeller]: removed XMM_CDPLAYER
  *@@changed V0.9.13 (2001-06-19) [umoeller]: fixed Win-OS/2 sound refusal
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
 MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -190,39 +230,8 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
          */
 
         case XMM_PLAYSYSTEMSOUND:
-        {
-            CHAR    szDescr[CCHMAXPATH];
-            ULONG   ulVolume;
-            // allocate mem for sound file; this will
-            // be freed in QM_PLAYSOUND below
-            PSZ     pszFile = malloc(CCHMAXPATH);
-
-            #ifdef DEBUG_SOUNDS
-                _Pmpf(( "XMM_PLAYSYSTEMSOUND index %d", mp1));
-            #endif
-
-            // get system sound from MMPM.INI
-            if (sndQuerySystemSound(G_habMediaThread,
-                                    (USHORT)mp1,
-                                    szDescr,
-                                    pszFile,
-                                    &ulVolume))
-            {
-                // OK, sound file found in MMPM.INI:
-                #ifdef DEBUG_SOUNDS
-                    _Pmpf(( "  posting Sound %d == %s, %s", mp1, szDescr, pszFile ));
-                #endif
-
-                // play!
-                WinPostMsg(hwndObject,
-                           XMM_PLAYSOUND,
-                           (MPARAM)pszFile,
-                           (MPARAM)ulVolume);
-            }
-            else
-                // any error: do nothing
-                free(pszFile);
-        }
+            ThreadPlaySystemSound(hwndObject,
+                                  mp1);
         break;
 
         /*
@@ -290,6 +299,8 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                         #endif
                     }
                 }
+                else
+                    free((PSZ)mp1);     // V0.9.14 (2001-08-01) [umoeller]
             }
         }
         break;
@@ -363,8 +374,8 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
         case MM_MCINOTIFY:
         {
             USHORT  usNotifyCode = SHORT1FROMMP(mp1),
-                    usDeviceID = SHORT1FROMMP(mp2),
-                    usMessage = SHORT2FROMMP(mp2);
+                    usDeviceID = SHORT1FROMMP(mp2);
+                    // usMessage = SHORT2FROMMP(mp2);
 
             if (    (G_usSoundDeviceID)
                  && (usDeviceID == G_usSoundDeviceID)
@@ -404,7 +415,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
 void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
-    PSZ                   pszErrMsg = NULL;
+    // PSZ                   pszErrMsg = NULL;
     BOOL                  fTrapped = FALSE;
 
     TRY_LOUD(excpt1)

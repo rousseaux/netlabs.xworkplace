@@ -154,6 +154,7 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSDEVICES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -466,7 +467,7 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
        )
     {
         // PageMage running:
-        ULONG   ulRequest;
+        // ULONG   ulRequest;
         // save page mage frame
         HWND    hwndPageMageFrame = G_pHookData->hwndPageMageFrame;
 
@@ -1103,6 +1104,102 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         switch (msg)
         {
             /*
+             * WM_TIMER:
+             *
+             */
+
+            case WM_TIMER:
+                switch ((ULONG)mp1)
+                {
+                    /*
+                     * TIMERID_SLIDINGFOCUS:
+                     *
+                     */
+
+                    case TIMERID_SLIDINGFOCUS:
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     (ULONG)mp1);   // timer ID
+                        G_ulSlidingFocusTimer = NULLHANDLE;
+
+                        ProcessSlidingFocus(S_hwndUnderMouse,
+                                            S_hwnd2Activate);
+                    break;
+
+                    /*
+                     * TIMERID_SLIDINGMENU:
+                     *      started from XDM_SLIDINGMENU.
+                     */
+
+                    case TIMERID_SLIDINGMENU:
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     (ULONG)mp1);   // timer ID
+                        G_ulSlidingMenuTimer = NULLHANDLE;
+
+                        // post a special WM_MOUSEMOVE message;
+                        // see WMMouseMove_SlidingMenus in xwphook.c
+                        // for how this works
+                        WinPostMsg(G_pHookData->hwndMenuUnderMouse,
+                                   WM_MOUSEMOVE,
+                                   G_SlidingMenuMp1Saved,
+                                        // MP1 which was saved in XDM_SLIDINGMENU
+                                        // to identify this msg in the hook
+                                   MPFROM2SHORT(HT_DELAYEDSLIDINGMENU,
+                                                KC_NONE));
+                    break;
+
+                    /*
+                     * TIMERID_MONITORDRIVE:
+                     *
+                     */
+
+                    /* case TIMERID_MONITORDRIVE:
+                        CheckRemoveableDrive();
+                    break; */
+
+                    /*
+                     * TIMERID_AUTOHIDEMOUSE:
+                     *
+                     */
+
+                    case TIMERID_AUTOHIDEMOUSE:
+                        WinStopTimer(G_habDaemon,
+                                     hwndObject,
+                                     (ULONG)mp1);   // timer ID
+
+                        G_pHookData->idAutoHideTimer = NULLHANDLE;
+
+                        WinShowPointer(HWND_DESKTOP, FALSE);
+                        G_pHookData->fMousePointerHidden = TRUE;
+                    break;
+
+                    /*
+                     * TIMERID_AUTOSCROLL:
+                     *      started from XDM_BEGINSCROLL and stopped from
+                     *      XDM_ENDSCROLL.
+                     *
+                     */
+
+                    case TIMERID_AUTOSCROLL:
+                        WinQueryPointerPos(HWND_DESKTOP, &G_ptlScrollCurrent);
+                        if (G_lScrollMode & HORZ)
+                            ProcessAutoScroll(&G_pHookData->SDXHorz,
+                                              -(G_ptlScrollOrigin.x - G_ptlScrollCurrent.x),
+                                              TRUE);
+                        if (G_lScrollMode & VERT)
+                            ProcessAutoScroll(&G_pHookData->SDYVert,
+                                              G_ptlScrollOrigin.y - G_ptlScrollCurrent.y,
+                                              FALSE);
+                        G_ulAutoScrollTick++;
+                    break;
+
+                    default:
+                        mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+                }
+            break;
+
+            /*
              *@@ XDM_HOOKINSTALL:
              *      this must be sent while the daemon
              *      is running to install or deinstall
@@ -1718,99 +1815,114 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             break; */
 
             /*
-             * WM_TIMER:
+             *@@ XDM_ADDDISKWATCH:
+             *      adds a logical disk to the list of
+             *      disks to be watched by the daemon.
              *
+             *      This must be sent, not posted, to
+             *      the daemon.
+             *
+             *      Parameters:
+             *
+             *      -- PADDDISKWATCH mp1: pointer to a
+             *         ADDDISKWATCH structure containing
+             *         information about the caller and
+             *         the disk to be watched.
+             *
+             *         Warning: If this message is sent
+             *         from another process, that struct
+             *         must be in shared memory.
+             *
+             *      -- mp2: not used, must be 0.
+             *
+             *      Returns TRUE if the disk was added
+             *      successfully.
+             *
+             *      After this has returned TRUE, ADDDISKWATCH.hwndNotify
+             *      will be posted ADDDISKWATCH.ulMessage every time
+             *      the free space on the disk changes. That message
+             *      will receive the following parameters:
+             *
+             *      --  ULONG mp1: ulLogicalDrive which changed.
+             *
+             *      --  ULONG mp2: new free space on the disk in KB.
+             *
+             *@@added V0.9.14 (2001-08-01) [umoeller]
              */
 
-            case WM_TIMER:
-                switch ((ULONG)mp1)
+            case XDM_ADDDISKWATCH:
+            {
+                PADDDISKWATCH p = (PADDDISKWATCH)mp1;
+                /* ULONG cb, fl;
+                if (    (!DosQueryMem(p,
+                                      &cb,
+                                      &fl))
+                     && (fl & PAG_READ)
+                   ) */
                 {
-                    /*
-                     * TIMERID_SLIDINGFOCUS:
-                     *
-                     */
-
-                    case TIMERID_SLIDINGFOCUS:
-                        WinStopTimer(G_habDaemon,
-                                     hwndObject,
-                                     (ULONG)mp1);   // timer ID
-                        G_ulSlidingFocusTimer = NULLHANDLE;
-
-                        ProcessSlidingFocus(S_hwndUnderMouse,
-                                            S_hwnd2Activate);
-                    break;
-
-                    /*
-                     * TIMERID_SLIDINGMENU:
-                     *      started from XDM_SLIDINGMENU.
-                     */
-
-                    case TIMERID_SLIDINGMENU:
-                        WinStopTimer(G_habDaemon,
-                                     hwndObject,
-                                     (ULONG)mp1);   // timer ID
-                        G_ulSlidingMenuTimer = NULLHANDLE;
-
-                        // post a special WM_MOUSEMOVE message;
-                        // see WMMouseMove_SlidingMenus in xwphook.c
-                        // for how this works
-                        WinPostMsg(G_pHookData->hwndMenuUnderMouse,
-                                   WM_MOUSEMOVE,
-                                   G_SlidingMenuMp1Saved,
-                                        // MP1 which was saved in XDM_SLIDINGMENU
-                                        // to identify this msg in the hook
-                                   MPFROM2SHORT(HT_DELAYEDSLIDINGMENU,
-                                                KC_NONE));
-                    break;
-
-                    /*
-                     * TIMERID_MONITORDRIVE:
-                     *
-                     */
-
-                    /* case TIMERID_MONITORDRIVE:
-                        CheckRemoveableDrive();
-                    break; */
-
-                    /*
-                     * TIMERID_AUTOHIDEMOUSE:
-                     *
-                     */
-
-                    case TIMERID_AUTOHIDEMOUSE:
-                        WinStopTimer(G_habDaemon,
-                                     hwndObject,
-                                     (ULONG)mp1);   // timer ID
-
-                        G_pHookData->idAutoHideTimer = NULLHANDLE;
-
-                        WinShowPointer(HWND_DESKTOP, FALSE);
-                        G_pHookData->fMousePointerHidden = TRUE;
-                    break;
-
-                    /*
-                     * TIMERID_AUTOSCROLL:
-                     *      started from XDM_BEGINSCROLL and stopped from
-                     *      XDM_ENDSCROLL.
-                     *
-                     */
-
-                    case TIMERID_AUTOSCROLL:
-                        WinQueryPointerPos(HWND_DESKTOP, &G_ptlScrollCurrent);
-                        if (G_lScrollMode & HORZ)
-                            ProcessAutoScroll(&G_pHookData->SDXHorz,
-                                              -(G_ptlScrollOrigin.x - G_ptlScrollCurrent.x),
-                                              TRUE);
-                        if (G_lScrollMode & VERT)
-                            ProcessAutoScroll(&G_pHookData->SDYVert,
-                                              G_ptlScrollOrigin.y - G_ptlScrollCurrent.y,
-                                              FALSE);
-                        G_ulAutoScrollTick++;
-                    break;
-
-                    default:
-                        mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+                    if (dmnAddDiskfreeMonitor(p->ulLogicalDrive,
+                                              p->hwndNotify,
+                                              p->ulMessage))
+                        mrc = (MPARAM)TRUE;
                 }
+            }
+            break;
+
+            /*
+             *@@ XDM_REMOVEDISKWATCH:
+             *      removes a disk watch again. The reverse
+             *      to XDM_ADDDISKWATCH.
+             *
+             *      Parameters:
+             *
+             *      -- HWND mp1: hwndNotify that was specified
+             *         with XDM_ADDDISKWATCH.
+             *
+             *      -- ULONG mp2: the logical drive for which
+             *         the disk watch is to be removed. If -1,
+             *         all watches for hwndNotify are removed.
+             *
+             *@@added V0.9.14 (2001-08-01) [umoeller]
+             */
+
+            case XDM_REMOVEDISKWATCH:
+                if (dmnAddDiskfreeMonitor((ULONG)mp2,   // log. drive, can be -1
+                                          (HWND)mp1,
+                                          -1))          // remove
+                    mrc = (MPARAM)TRUE;
+            break;
+
+            /*
+             *@@ XDM_QUERYDISKS:
+             *      checks one or all available disks on the system
+             *      and returns information about each of these.
+             *
+             *      Parameters:
+             *
+             *      -- ULONG mp1: logical drive to check, or -1
+             *         for all drives.
+             *
+             *      -- PXDISKINFO mp2: ptr to an XDISKINFO structure
+             *         (filesys\disk.h) receiving the information.
+             *         See XDISKINFO for details.
+             *
+             *         If mp1 is -1, this must point to an array of
+             *         26 XDISKINFO structures, each of which
+             *         receives information about one disk on the
+             *         system.
+             *
+             *         Warning: If this message is sent
+             *         from another process, that struct
+             *         or array must be in shared memory.
+             *
+             *      Returns TRUE on success.
+             *
+             *@@added V0.9.14 (2001-08-01) [umoeller]
+             */
+
+            case XDM_QUERYDISKS:
+                mrc = (MPARAM)dmnQueryDisks((ULONG)mp1,
+                                            mp2);
             break;
 
             default:
@@ -1951,6 +2063,9 @@ int main(int argc, char *argv[])
                          dmnExceptError,
                          TRUE);     // beeps
 
+        // disable hard errors V0.9.14 (2001-08-01) [umoeller]
+        DosError(FERR_DISABLEHARDERR | FERR_ENABLEEXCEPTION);
+
         // check security dummy parameter "-D"
         if (    (argc != 2)
              || (strcmp(argv[1], "-D"))
@@ -2051,7 +2166,17 @@ int main(int argc, char *argv[])
                 if (G_pXwpGlobalShared->hwndDaemonObject)
                 {
                     EXCEPTSTRUCT    TermExcptStruct = {0};
+                    THREADINFO      tiDiskWatch;
                     QMSG    qmsg;
+
+                    // create drive monitor thread
+                    // V0.9.14 (2001-08-01) [umoeller]
+                    thrCreate(&tiDiskWatch,
+                              fntDiskWatch,
+                              NULL,
+                              "DiskWatch",
+                              THRF_WAIT_EXPLICIT,
+                              0);
 
                     // post msg to XFLDR.DLL thread-1 object window
                     // that we're ready, which will in turn send

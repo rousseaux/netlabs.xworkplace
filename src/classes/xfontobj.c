@@ -340,11 +340,10 @@ SOM_Scope ULONG  SOMLINK fono_xwpQueryFontFileError(XWPFontObject *somSelf)
 
 SOM_Scope ULONG  SOMLINK fono_xwpValidateFont(XWPFontObject *somSelf)
 {
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpValidateFont");
 
-    /* Return statement to be customized: */
-    return 1;
+    return 1;           // @@todo
 }
 
 /*
@@ -422,7 +421,7 @@ SOM_Scope BOOL  SOMLINK fono_wpSetupOnce(XWPFontObject *somSelf,
     CHAR    szTemp[CCHMAXPATH];
     ULONG   cbTemp;
 
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpSetupOnce");
 
     brc = XWPFontObject_parent_WPTransient_wpSetupOnce(somSelf,
@@ -522,7 +521,7 @@ SOM_Scope ULONG  SOMLINK fono_wpFilterPopupMenu(XWPFontObject *somSelf,
                                                 HWND hwndCnr,
                                                 BOOL fMultiSelect)
 {
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpFilterPopupMenu");
 
     return (XWPFontObject_parent_WPTransient_wpFilterPopupMenu(somSelf,
@@ -603,7 +602,7 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemSelected(XWPFontObject *somSelf,
 SOM_Scope BOOL  SOMLINK fono_wpMenuItemHelpSelected(XWPFontObject *somSelf,
                                                     ULONG MenuId)
 {
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemHelpSelected");
 
     if (fonMenuItemHelpSelected(somSelf, MenuId))
@@ -644,7 +643,7 @@ SOM_Scope BOOL  SOMLINK fono_wpQueryDefaultHelp(XWPFontObject *somSelf,
                                                 PULONG pHelpPanelId,
                                                 PSZ HelpLibrary)
 {
-    XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
+    // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpQueryDefaultHelp");
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());

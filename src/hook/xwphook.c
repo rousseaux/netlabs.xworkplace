@@ -302,7 +302,7 @@ VOID InitializeGlobalsForHooks(VOID)
 
 HWND GetFrameWindow(HWND hwndTemp)
 {
-    CHAR    szClass[100];
+    // CHAR    szClass[100];
     HWND    hwndPrevious = NULLHANDLE;
     // climb up the parents tree until we get a frame
     while (    (hwndTemp)
@@ -419,7 +419,7 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
 
         if (G_HookData.hmodDLL)       // initialized by _DLL_InitTerm
         {
-            BOOL fSuccess = FALSE;
+            // BOOL fSuccess = FALSE;
 
             _Pmpf(("hookInit: hwndCaller = 0x%lX", hwndDaemonObject));
 

@@ -396,7 +396,7 @@ VOID pgmwScanAllWindows(VOID)
 
 VOID pgmwAppendNewWinInfo(HWND hwnd)
 {
-    USHORT usIdx;
+    // USHORT usIdx;
 
     if (pgmwLock())
     {
@@ -465,7 +465,7 @@ VOID pgmwDeleteWinInfo(HWND hwnd)
 
 VOID pgmwUpdateWinInfo(HWND hwnd)
 {
-    USHORT usIdx;
+    // USHORT usIdx;
 
     if (pgmwLock())
     {
@@ -501,11 +501,11 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
 BOOL pgmwWindowListRescan(VOID)
 {
     BOOL    brc = FALSE;
-    USHORT  usIdx = 0;
+    // USHORT  usIdx = 0;
 
     if (pgmwLock())
     {
-        LINKLIST    llDeferredDelete;
+        // LINKLIST    llDeferredDelete;
         PLISTNODE   pNode;
 
         pNode = lstQueryFirstNode(&G_llWinInfos);

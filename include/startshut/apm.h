@@ -8,6 +8,7 @@
  *      everything necessary for this.
  *
  *@@include #include <os2.h>
+ *@@include #include "helpers\apmh.h"
  *@@include #include "startshut\apm.h"
  */
 
@@ -29,39 +30,6 @@
 
 #ifndef APM_HEADER_INCLUDED
     #define APM_HEADER_INCLUDED
-
-    /*
-     * define constants and type for APM function
-     */
-
-    #define POWER_SUBID_ENABLE_APM                  0x0003
-    #define POWER_SUBID_SET_POWER_STATE             0x0006
-
-    #define POWER_DEVID_ALL_DEVICES                 0x0001
-
-    #define POWER_STATE_OFF                         0x0003
-
-    #define BIOSFLAG_APMSUPPORTED                   0x0008
-
-    #pragma pack(1)
-
-    typedef struct
-    {
-        USHORT  usSubID;
-        USHORT  usReserved;
-        USHORT  usData1;
-        USHORT  usData2;
-    } SENDPOWEREVENT;
-
-    typedef struct
-    {
-        USHORT  usParmLength;
-        USHORT  usBIOSFlags;
-        USHORT  usBIOSVersion;
-        USHORT  usDriverVersion;
-    } GETPOWERINFO;
-
-    #pragma pack()
 
     #define APM_UNKNOWN             0x00
     #define APM_OK                  0x01

@@ -134,7 +134,7 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        HAB         hab = WinQueryAnchorBlock(HWND_DESKTOP);
+        // HAB         hab = WinQueryAnchorBlock(HWND_DESKTOP);
         HWND        hwndClient = NULLHANDLE;
         ULONG       flCreate;                      // Window creation flags
         SWP         swpFrame;

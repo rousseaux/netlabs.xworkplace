@@ -392,6 +392,8 @@ VOID TwgtFreeSetup(PMONITORSETUP pSetup)
  *
  *      NOTE: It is assumed that pSetup is zeroed
  *      out. We do not clean up previous data here.
+ *
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed potential memory leak
  */
 
 VOID TwgtScanSetup(const char *pcszSetupString,
@@ -400,9 +402,8 @@ VOID TwgtScanSetup(const char *pcszSetupString,
     PSZ p;
 
     // width
-    p = pctrScanSetupString(pcszSetupString,
-                            "WIDTH");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "WIDTH"))
     {
         pSetup->cx = atoi(p);
         pctrFreeSetupValue(p);
@@ -411,9 +412,8 @@ VOID TwgtScanSetup(const char *pcszSetupString,
         pSetup->cx = 100;
 
     // background color
-    p = pctrScanSetupString(pcszSetupString,
-                            "BGNDCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "BGNDCOL"))
     {
         pSetup->lcolBackground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -423,9 +423,8 @@ VOID TwgtScanSetup(const char *pcszSetupString,
         pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
 
     // text color:
-    p = pctrScanSetupString(pcszSetupString,
-                            "TEXTCOL");
-    if (p)
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "TEXTCOL"))
     {
         pSetup->lcolForeground = pctrParseColorString(p);
         pctrFreeSetupValue(p);
@@ -436,16 +435,14 @@ VOID TwgtScanSetup(const char *pcszSetupString,
     // font:
     // we set the font presparam, which automatically
     // affects the cached presentation spaces
-    p = pctrScanSetupString(pcszSetupString,
-                            "FONT");
-    if ((p) && (strlen(p)))
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "FONT"))
     {
         pSetup->pszFont = strdup(p);
         pctrFreeSetupValue(p);
     }
     else
         pSetup->pszFont = strdup("4.System VIO");
-    // else: leave this field null
 
     pSetup->lcolSwapFree = RGBCOL_RED;
     pSetup->lcolSwap = RGBCOL_DARKPINK;
@@ -464,7 +461,7 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
                    PMONITORSETUP pSetup)
 {
     CHAR    szTemp[100];
-    PSZ     psz = 0;
+    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "WIDTH=%d;",
@@ -547,7 +544,7 @@ MRESULT TwgtCreate(HWND hwnd,
 {
     MRESULT mrc = 0;        // continue window creation
 
-    PSZ p;
+    // PSZ p;
 
     PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
     memset(pPrivate, 0, sizeof(WIDGETPRIVATE));
@@ -953,8 +950,8 @@ VOID TwgtPaint2(HWND hwnd,
     PMONITORSETUP pSetup = &pPrivate->Setup;
     RECTL       rclWin;
     ULONG       ulBorder = 1;
-    CHAR        szPaint[100] = "";
-    ULONG       ulPaintLen = 0;
+    // CHAR        szPaint[100] = "";
+    // ULONG       ulPaintLen = 0;
 
     // now paint button frame
     WinQueryWindowRect(hwnd,
@@ -1225,7 +1222,7 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         // e.g. ulnewClientCX = 100
                         //      pPrivate->cLoads = 200
                         // drop the first items
-                        ULONG ul = 0;
+                        // ULONG ul = 0;
                         memcpy(paNewSnapshots,
                                &pPrivate->paSnapshots[pPrivate->cSnapshots - ulNewClientCX],
                                ulNewClientCX * sizeof(SNAPSHOT));
@@ -1291,7 +1288,7 @@ VOID TwgtPresParamChanged(HWND hwnd,
 
             case PP_FONTNAMESIZE:
             {
-                HPS hps;
+                // HPS hps;
                 PSZ pszFont = 0;
                 if (pPrivate->Setup.pszFont)
                 {

@@ -990,8 +990,8 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     {
         CHAR            szFilename[CCHMAXPATH] = "";
 
-        ULONG           cbProgDetails = 0;
-        PPROGDETAILS    pProgDetails;
+        // ULONG           cbProgDetails = 0;
+        // PPROGDETAILS    pProgDetails;
 
         if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
         {
@@ -1295,7 +1295,7 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     if (flFlags & CBI_INIT)
     {
         XFIELDINFO xfi[2];
-        PFIELDINFO pfi = NULL;
+        // PFIELDINFO pfi = NULL;
         int        i = 0;
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -1309,7 +1309,7 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
-        pfi = cnrhSetFieldInfos(hwndCnr,
+        /* pfi = */ cnrhSetFieldInfos(hwndCnr,
                                 xfi,
                                 i,             // array item count
                                 TRUE,          // draw lines
@@ -1514,7 +1514,7 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     if (flFlags & CBI_INIT)
     {
         XFIELDINFO xfi[4];
-        PFIELDINFO pfi = NULL;
+        // PFIELDINFO pfi = NULL;
         int        i = 0;
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -1538,7 +1538,7 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
-        pfi = cnrhSetFieldInfos(hwndCnr,
+        /* pfi = */ cnrhSetFieldInfos(hwndCnr,
                                 xfi,
                                 i,             // array item count
                                 TRUE,          // draw lines
