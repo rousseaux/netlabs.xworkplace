@@ -16,6 +16,7 @@
 
     #define SHMEM_XWPGLOBAL          "\\SHAREMEM\\XWORKPLC\\DMNSHARE.DAT"
             // shared memory name of XWPGLOBALSHARED structure
+            // THIS NAME MUST NOT BE CHANGED, fafner relies on this
 
     /*
      *@@ XWPGLOBALSHARED:
@@ -83,10 +84,16 @@
         {
             HWND        hwndOwner;
                             // owner window for file dialog
+                            // (will be a different process)
 
             HWND        hwndNotify;
                             // notify window to receive WM_USER
                             // when file dialog is done
+                            // (created on caller's process)
+
+            PID         pidCaller;
+            TID         tidCaller;
+                            // PID and TID of thread which called WinFileDlg
 
             HWND        hwndReturn;
                             // return value of fdlgFileDlg

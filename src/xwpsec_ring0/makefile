@@ -94,7 +94,7 @@ AOBJS = \
     $(OUTPUTDIR)\sec32_pre_init_base.obj $(OUTPUTDIR)\sec32_devhlp32.obj
 
 COBJS =   \
-    $(OUTPUTDIR)\audit.obj                                   \
+#    $(OUTPUTDIR)\audit.obj                                   \
     $(OUTPUTDIR)\callb_close.obj                               \
     $(OUTPUTDIR)\callb_delete.obj                              \
     $(OUTPUTDIR)\callb_dirs.obj                                \
@@ -102,7 +102,7 @@ COBJS =   \
     $(OUTPUTDIR)\callb_find.obj                                \
     $(OUTPUTDIR)\callb_move.obj                                \
     $(OUTPUTDIR)\callb_open.obj                                \
-    $(OUTPUTDIR)\sec32_idc.obj                               \
+#    $(OUTPUTDIR)\sec32_idc.obj                               \
     $(OUTPUTDIR)\sec32_strategy.obj                          \
     $(OUTPUTDIR)\sec32_data.obj                              \
     $(OUTPUTDIR)\sec32_callbacks.obj                         \
@@ -114,7 +114,7 @@ COBJS =   \
     $(OUTPUTDIR)\strat_invalid.obj                           \
     $(OUTPUTDIR)\strat_shutdown.obj                          \
     $(OUTPUTDIR)\util_daemon.obj                             \
-    $(OUTPUTDIR)\util_log.obj                                \
+#    $(OUTPUTDIR)\util_log.obj                                \
     $(OUTPUTDIR)\util_misc.obj                               \
     $(OUTPUTDIR)\util_sem.obj
 
@@ -223,8 +223,14 @@ $(OUTPUTDIR)\sec32_end.obj
 $(DDKPATH)\lib\os2386p.lib
 $(DRIVERNAME).def
 <<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
         @cd $(MODULESDIR)
         mapsym $(DRIVERNAME).map
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
         @cd $(MYDIR)
         -copy $@             E:\os2
         -copy $(@:.sys=.sym) E:\os2

@@ -22,7 +22,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include <string.h>
 
@@ -44,7 +44,7 @@
  *      As with DosMove, this will only get called when
  *      source and dest are on same volume
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  *
  *@@added V0.9.2 (2000-03-13) [umoeller]
@@ -67,7 +67,7 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
             PXWPSECEVENTDATA_MOVE_PRE pMovePre
                 = &((PSECIOSHARED)G_pSecIOShared)->EventData.MovePre;
 
-            utilWriteLog("MOVE_PRE for \"%s\" -> \"%s\"\r\n", pszOldPath, pszNewPath);
+            // utilWriteLog("MOVE_PRE for \"%s\" -> \"%s\"\r\n", pszOldPath, pszNewPath);
             utilWriteLogInfo();
 
             // prepare data for daemon notify
@@ -120,7 +120,7 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
  *      the ISS of this event. We need this so that
  *      entries in the ACLDB can be updated.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  *
  *      Currently disabled. @@todo

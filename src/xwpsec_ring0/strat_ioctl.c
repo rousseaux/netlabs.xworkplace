@@ -64,7 +64,7 @@
 #include <os2.h>
 #include <builtin.h>
 
-#include <secure.h>
+// #include <secure.h>
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -332,9 +332,9 @@ int sec32_ioctl(PTR16 reqpkt)
         {
             // valid XWPSEC32 category:
 
-            if (G_ulLogSFN == 0)
+            /* if (G_ulLogSFN == 0)
                 // log file not opened yet:
-                utilOpenLog();
+                utilOpenLog(); */
 
             // check function
             switch (pRequest->func)
@@ -349,7 +349,7 @@ int sec32_ioctl(PTR16 reqpkt)
                  */
 
                 case XWPSECIO_REGISTER:
-                    utilWriteLog("sec32_ioctl XWPSECIO_REGISTER:\r\n");
+                    // utilWriteLog("sec32_ioctl XWPSECIO_REGISTER:\r\n");
                     utilWriteLogInfo();
 
                     status = RegisterDaemon(pRequest);
@@ -373,7 +373,7 @@ int sec32_ioctl(PTR16 reqpkt)
                  */
 
                 case XWPSECIO_DEREGISTER:
-                    utilWriteLog("sec32_ioctl XWPSECIO_DEREGISTER:\r\n");
+                    // utilWriteLog("sec32_ioctl XWPSECIO_DEREGISTER:\r\n");
                     utilWriteLogInfo();
 
                     // just in case we started blocking

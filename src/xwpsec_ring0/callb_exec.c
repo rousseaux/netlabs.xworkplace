@@ -22,7 +22,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include <string.h>
 
@@ -41,7 +41,7 @@
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 
@@ -112,7 +112,7 @@ ULONG LOADEROPEN(PSZ pszPath,
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 
@@ -178,7 +178,7 @@ ULONG GETMODULE(PSZ pszPath)
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 
@@ -248,7 +248,7 @@ ULONG EXECPGM(PSZ pszPath,
  *      This gets called from the OS/2 kernel to notify
  *      the ISS of this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 
@@ -276,7 +276,7 @@ VOID EXECPGM_POST(PSZ pszPath,
             PXWPSECEVENTDATA_EXECPGM_POST pExecPgmPost
                 = &((PSECIOSHARED)G_pSecIOShared)->EventData.ExecPgmPost;
 
-            utilWriteLog("EXECPGM_POST for \"%s\", new PID: 0x%lX\r\n", pszPath, NewPID);
+            // utilWriteLog("EXECPGM_POST for \"%s\", new PID: 0x%lX\r\n", pszPath, NewPID);
             utilWriteLogInfo();
 
             // prepare data for daemon notify

@@ -323,15 +323,10 @@ typedef struct _WINLISTPRIVATE
             // WinQuerySwitchList reuses the existing items so that
             // sometimes new items appear randomly in the middle.
 
-    // PSWBLOCK    pswBlock;
-            // current window list; this is returned from winhQuerySwitchList,
-            // which in turn calls WinQuerySwitchList.
-            // The interesting part is pswblock->asentry[].swctl,
-            // which contains the SWCNTRL structures:
             /*
               typedef struct _SWCNTRL {
                 HWND         hwnd;                   window handle
-                HWND         hwndIcon;               window-handle icon
+                HWND         hwndIcon;               window-handle icon --> hacked to contain frame icon
                 HPROGRAM     hprog;                  program handle
                 PID          idProcess;              process identity
                 ULONG        idSession;              session identity
@@ -342,19 +337,9 @@ typedef struct _WINLISTPRIVATE
               } SWCNTRL;
             */
 
-            // Note: For each entry, we hack the fbJump field to
-            // contain any combination of the following flags:
-            // -- WLF_SHOWBUTTON: show button for this entry
-            // -- WLF_LASTBUTTON: this is the last of the buttons
-            // -- WLF_JUMPABLE: copy of original fbJump flag
-            // -- WLF_VISIBLE: copy of original uchVisibility flag
-
-            // We also hack the uchVisbility field to contain
+            // Note that we hack the uchVisbility field to contain
             // the button index of the entry. We set this to -1
             // if no button is to be shown, just to make sure.
-
-    // ULONG       cShow;
-            // count of items which have WLF_SHOWBUTTON set
 
     PSWCNTRL    pCtrlActive,
             // ptr into pswBlock for last active window or NULL if none
@@ -1184,8 +1169,6 @@ PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
  *      -- SCANF_REDRAWALL: redraw all (items added or
  *         removed or icons or texts changed).
  *
- *      -- SCANF_REDRAWSOME:
- *
  *      -- 0: no repaint necessary.
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
@@ -1231,6 +1214,9 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                          && (pCtrlThis->bProgType == pCtrlInList->bProgType)
                        )
                     {
+                        HWND hwndIcon;
+                        BOOL fDirty = FALSE;
+
                         // OK, this list node is still in the switchlist:
                         // check if all the data is still valid
                         if (strcmp(pCtrlThis->szSwtitle, pCtrlInList->szSwtitle))
@@ -1239,10 +1225,24 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                             memcpy(pCtrlInList->szSwtitle,
                                    pCtrlThis->szSwtitle,
                                    sizeof(pCtrlThis->szSwtitle));
+                            fDirty = TRUE;
+                        }
+
+                        // check icon
+                        hwndIcon = (HWND)WinSendMsg(pCtrlInList->hwnd,
+                                                    WM_QUERYICON, 0, 0);
+                        if (hwndIcon != pCtrlInList->hwndIcon)
+                        {
+                            // icon changed:
+                            pCtrlInList->hwndIcon = hwndIcon;
+                            fDirty = TRUE;
+                        }
+
+                        if (fDirty)
+                        {
                             if (pllDirty)
                                 // caller wants dirty windows:
                                 plstAppendItem(pllDirty, pCtrlInList);
-
                             flReturn |= SCANF_REDRAWSOME;
                         }
 
@@ -1747,7 +1747,7 @@ VOID UpdateSwitchList(HWND hwnd,
 
     if (flRepaint & SCANF_REDRAWALL)
     {
-        // redraw all
+        // redraw all:
         HPS hps = WinGetPS(hwnd);
         if (hps)
         {
@@ -1764,6 +1764,7 @@ VOID UpdateSwitchList(HWND hwnd,
               && (plstCountItems(&llDirty))
             )
     {
+        // redraw only some: go thru list then
         HPS hps = WinGetPS(hwnd);
         if (hps)
         {
@@ -2078,6 +2079,8 @@ VOID WwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
 /*
  *@@ WwgtButton1Down:
  *      implementation for WM_BUTTON1DOWN.
+ *
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed minimized to maximized, which never worked
  */
 
 VOID WwgtButton1Down(HWND hwnd,
@@ -2112,11 +2115,27 @@ VOID WwgtButton1Down(HWND hwnd,
                     {
                         // window is hidden or minimized:
                         // restore and activate
-                        if (WinSetWindowPos(pCtrlClicked->hwnd,
+                        /* if (WinSetWindowPos(pCtrlClicked->hwnd,
                                             HWND_TOP,
                                             0, 0, 0, 0,
-                                            SWP_SHOW | SWP_RESTORE | SWP_ACTIVATE | SWP_ZORDER))
-                            fRedrawActive = TRUE;
+                                            SWP_SHOW | SWP_RESTORE | SWP_ACTIVATE | SWP_ZORDER)) */
+
+                        // the above never worked for maximized windows which
+                        // were minimized... the trick is to switch to the
+                        // program instead! V0.9.11 (2001-04-18) [umoeller]
+                        HSWITCH hsw = WinQuerySwitchHandle(pCtrlClicked->hwnd,
+                                                           pCtrlClicked->idProcess);
+                        if (hsw)
+                            if (!WinSwitchToProgram(hsw))   // this returns 0 on success... sigh
+                            {
+                                // OK, now we have the program active, but it's
+                                // probably in the background...
+                                WinSetWindowPos(pCtrlClicked->hwnd,
+                                                HWND_TOP,
+                                                0, 0, 0, 0,
+                                                SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
+                                fRedrawActive = TRUE;
+                            }
                     }
                     else
                     {

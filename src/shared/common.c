@@ -280,6 +280,10 @@ const char      *INIKEY_FONTSAMPLEHINTS  = "FontSampleHints";
 const char      *INIKEY_XSTARTUPFOLDERS  = "XStartupFolders";
 const char      *INIKEY_XSAVEDSTARTUPFOLDERS  = "XSavedStartupFolders";
 
+// file dialog V0.9.11 (2001-04-18) [umoeller]
+const char      *INIKEY_WNDPOSFILEDLG   = "WndPosFileDlg";
+const char      *INIKEY_FILEDLGSETTINGS = "FileDlgSettings";
+
 /*
  * file type hierarchies:
  *

@@ -2,7 +2,7 @@
 /*
  *@@sourcefile w_pulse.c:
  *      XCenter "Pulse" widget implementation.
- *      This is build into the XCenter and not in
+ *      This is built into the XCenter and not in
  *      a plugin DLL.
  *
  *      Function prefix for this file:
@@ -516,12 +516,6 @@ VOID PwgtUpdateGraph(HWND hwnd,
     gpihBox(pPrivate->hpsMem,
             DRO_FILL,
             &rclBmp);
-
-
-    // @@@PH
-    // Note: we've got to add the "load bars" of
-    // "CPU Load" and "CPU Interrupt Load" together rather
-    // than draw them overlapping.
 
     // go thru all values in the "Loads" LONG array
     for (ptl.x = 0;
@@ -1160,12 +1154,6 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         default:
-            {
-                PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-                if (!pWidget)
-                    _Pmpf((__FUNCTION__ ": msg 0x%lX (0x%lX, 0x%lX) came in before WM_CREATE",
-                                    msg, mp1, mp2));
-            }
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
     } // end switch(msg)
 

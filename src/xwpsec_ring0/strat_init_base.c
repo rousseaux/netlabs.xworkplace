@@ -21,7 +21,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include <string.h>
 
@@ -29,7 +29,7 @@
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\DevHlp32.h"
 #include "xwpsec32.sys\reqpkt32.h"
-#include "xwpsec32.sys\SecHlp.h"
+// #include "xwpsec32.sys\SecHlp.h"
 
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
@@ -60,8 +60,11 @@ extern char data32_end;
 extern void begin_code32(void);     // in sec32_start.asm
 extern int  begin_data32;           // in sec32_start.asm
 
-char banner[] = "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
-                "(C) Copyright 2000 Ulrich M”ller\r\n";
+char G_szBanner[]
+= "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
+  "(C) Copyright 2000-2001 Ulrich M”ller\r\n";
+
+char G_szNoSES[] = "XWPSEC32.SYS: SES driver not found. Cannot initialize.\r\n";
 
 #pragma pack(1)
 
@@ -90,10 +93,14 @@ PTR16          DevHelp2;
 // struct DevHelp32 DevHelp32 = {DEVHELP32_MAGIC, DEVHELP32_VERSION, };
     // mwdd32.sys DevHlp32 entry points
 
-struct SecExp_s SecurityExports = {SEC_EXPORT_MAJOR_VERSION , SEC_EXPORT_MINOR_VERSION , };
+/* struct SecExp_s SecurityExports
+    = {     SEC_EXPORT_MAJOR_VERSION,
+            SEC_EXPORT_MINOR_VERSION,
+            // ...
+      };
     // SecHlp kernel entry points
 
-struct SecurityHelpers SecHlp = {0, };
+struct SecurityHelpers SecHlp = {0, }; */
     // SecHlp sesdd32.sys entry points
 
 /* ******************************************************************
@@ -113,8 +120,8 @@ struct SecurityHelpers SecHlp = {0, };
 int FixMemory(void)
 {
     APIRET rc;
-    ULONG  PgCount;
-    char   lock[12];            // receives lock handle
+    ULONG  ulPgCount;
+    char   abLock[12];            // receives lock handle
 
     // lock DGROUP into physical memory
     rc = DevHlp32_VMLock(VMDHL_LONG          // lock for more than 2 seconds
@@ -125,8 +132,8 @@ int FixMemory(void)
                          &begin_data32,
                          (ULONG)(&data32_end) - (ULONG)(&begin_data32),
                          (void *)-1,
-                         __StackToFlat(lock),        // receives lock handle
-                         __StackToFlat(&PgCount));
+                         __StackToFlat(abLock),        // receives lock handle
+                         __StackToFlat(&ulPgCount));
 
     if (rc == NO_ERROR)
     {
@@ -138,8 +145,8 @@ int FixMemory(void)
                              // (ULONG)(&code32_end) - (ULONG)begin_code32,
                              (ULONG)(&code32_end) - (ULONG)(&begin_code32),
                              (void *)-1,
-                             __StackToFlat(lock),
-                             __StackToFlat(&PgCount));
+                             __StackToFlat(abLock),
+                             __StackToFlat(&ulPgCount));
         /* if (rc == NO_ERROR)
         {
             // allocate 2 GDT selectors to communicate with the control program
@@ -164,7 +171,7 @@ int FixMemory(void)
 /*
  *@@ InitSecurity:
  *      interfaces SES to pass our kernel hooks and
- *      get the security helpes.
+ *      get the security helpers.
  */
 
 int InitSecurity(VOID)
@@ -172,17 +179,15 @@ int InitSecurity(VOID)
     APIRET rc = NO_ERROR;
 
     // pass table of security hooks to kernel
-    if ((rc = DevHlp32_Security(DHSEC_SETIMPORT,
-                                &SecurityImports)) // in sec32_callbacks.c
-                == NO_ERROR)
+    if (!(rc = DevHlp32_Security(DHSEC_SETIMPORT,
+                                 &G_SecurityHooks))) // in sec32_callbacks.c
     {
         // retrieve security helpers
-        if ((rc = sec32_attach_ses((void *)&SecHlp)) == NO_ERROR)
+        /* if (!(rc = sec32_attach_ses((void *)&SecHlp)))
         {
             rc = DevHlp32_Security(DHSEC_GETEXPORT,
                                    &SecurityExports);
-
-        }
+        } */
     }
 
     return (rc);
@@ -221,13 +226,13 @@ int InitSecurity(VOID)
 
 int sec32_init_base(PTR16 reqpkt)
 {
-    int                     quiet = 0;
+    int                     fQuiet = 0;
     int                     status;
     int                     rc;
-    struct reqpkt_init      *request;
-    struct ddd32_parm_list  *cmd;
-    char                    *szParm;
-    unsigned short          tmpsel;
+    struct reqpkt_init      *pRequest;
+    struct ddd32_parm_list  *pCmd;
+    char                    *pszParm;
+    // unsigned short          usTempSel;
 
     /*
      * Initialize request status
@@ -247,15 +252,15 @@ int sec32_init_base(PTR16 reqpkt)
     else
     {
         // convert the 16:16 request packet pointer to FLAT
-        if ((rc = DevHlp32_VirtToLin(reqpkt, __StackToFlat(&request)))
+        if ((rc = DevHlp32_VirtToLin(reqpkt, __StackToFlat(&pRequest)))
                     != NO_ERROR)
             // error while thunking reqpkt:
             status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
         else
         {
             // convert the 16:16 command line pointer to FLAT
-            if ((rc = DevHlp32_VirtToLin(request->u.input.initarg,
-                                         __StackToFlat(&cmd)))
+            if ((rc = DevHlp32_VirtToLin(pRequest->u.input.initarg,
+                                         __StackToFlat(&pCmd)))
                         != NO_ERROR)
                 // error while thunking command line pointer
                 status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
@@ -263,14 +268,14 @@ int sec32_init_base(PTR16 reqpkt)
             {
                 PTR16   tmpparm;
                 // OK so far: process parameters
-                tmpparm.seg = request->u.input.initarg.seg;
-                tmpparm.ofs = cmd->cmd_line_args;
-                if ((rc = DevHlp32_VirtToLin(tmpparm, __StackToFlat(&szParm)))
+                tmpparm.seg = pRequest->u.input.initarg.seg;
+                tmpparm.ofs = pCmd->cmd_line_args;
+                if ((rc = DevHlp32_VirtToLin(tmpparm, __StackToFlat(&pszParm)))
                         == NO_ERROR)
                 {
                     char    *tmp;
-                    __strupr(szParm);
-                    for (tmp = __strpbrk(szParm, "-/");
+                    __strupr(pszParm);
+                    for (tmp = __strpbrk(pszParm, "-/");
                          tmp;
                          tmp = __strpbrk(tmp, "-/"))
                     {
@@ -280,12 +285,12 @@ int sec32_init_base(PTR16 reqpkt)
                         // -Q: quiet initialization?
                         if (strncmp(tmp, "Q", sizeof("Q") - 1) == 0)
                         {
-                            quiet = 1;
+                            fQuiet = 1;
                             continue;
                         }
 
                         // "-AL:logfile": audit log file specified?
-                        else if (strncmp(tmp, "AL", sizeof("AL") - 1) == 0)
+                        /* else if (strncmp(tmp, "AL", sizeof("AL") - 1) == 0)
                         {
                             if (*(tmp + 2) == ':')
                             {
@@ -295,7 +300,7 @@ int sec32_init_base(PTR16 reqpkt)
                                     *pTarget++ = *pSource++;
                                 *pTarget = 0;
                             }
-                        }
+                        } */
                     }
 
                     if ((rc = FixMemory()) != NO_ERROR)
@@ -307,8 +312,7 @@ int sec32_init_base(PTR16 reqpkt)
                         if ((rc = InitSecurity()) != NO_ERROR)
                         {
                             // error interfacing SES:
-                            #define MSG3 "XWPSEC32.SYS: error interfacing SES."
-                            DevHlp32_SaveMessage(MSG3, strlen(MSG3));
+                            DevHlp32_SaveMessage(G_szNoSES, strlen(G_szNoSES) + 1);
                             status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
                         }
                         else
@@ -317,25 +321,20 @@ int sec32_init_base(PTR16 reqpkt)
 
                             // OK, driver successfully initialized:
                             // if not "-Q", put out message
-                            if (!quiet)
+                            if (!fQuiet)
                             {
                                 // say hello
-                                DevHlp32_SaveMessage(banner,
-                                                     strlen(banner) + 1);
+                                DevHlp32_SaveMessage(G_szBanner,
+                                                     strlen(G_szBanner) + 1);
                                 // say log file name
-                                if (G_szLogFile[0])
+                                /* if (G_szLogFile[0])
                                 {
                                     _sprintf("  Audit log file is: \"%s\".\r\n",
                                              G_szLogFile);
                                     DevHlp32_SaveMessage(G_szScratchBuf,
                                                          strlen(G_szScratchBuf) + 1);
-                                }
+                                } */
                             }
-
-                            // and return end of code and end of data
-                            // to kernel so that init code can be released
-                            request->u.output.codeend = codeend;
-                            request->u.output.dataend = dataend;
                         }
                     }
                 }
@@ -343,6 +342,11 @@ int sec32_init_base(PTR16 reqpkt)
                     // error while thunking command line pointer:
                     status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
             }
+
+            // and return end of code and end of data
+            // to kernel so that init code can be released
+            pRequest->u.output.codeend = codeend;
+            pRequest->u.output.dataend = dataend;
         }
     }
     return (status | STDON);

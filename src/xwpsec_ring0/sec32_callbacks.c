@@ -30,7 +30,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -39,7 +39,7 @@
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
 
-struct SecImp_s SecurityImports =
+struct SecImp_s G_SecurityHooks =
 {
    SEC_IMPORT_MAJOR_VERSION,        // USHORT siVersionMajor;
    SEC_IMPORT_MINOR_VERSION,        // USHORT siVersionMinor;
@@ -319,6 +319,7 @@ struct SecImp_s SecurityImports =
    0                    // VOID (* CallType CONTROLKBDMONITORS) (ULONG  AuditRC,
                         //                                       ULONG  ActionCode,
                         //                                       ULONG  Status);
+
    /*
     *  End of SCS (SES) API audit hooks.
     */

@@ -51,20 +51,27 @@ i_initArgs      dd ?
 i_driveNum      db ?
 rpInitIn        ends
 
+; *****************************************************
+; *
+; *     DATA16
+; *
+; *****************************************************
+
 DATA16 segment
                 extrn data16_end : byte
         public device_header
 
-;*********************************************************************************************
-;************************* Device Driver Header **********************************************
-;*********************************************************************************************
+; *****************************************************
+; *      Device Driver Header
+; *****************************************************
 device_header   dd -1                           ; Pointer to next driver
-                dw 1100100110000000b            ; Device attributes
+;               dw 1100100110000000b            ; Device attributes
+                dw 1000100110000000b            ; Device attributes
 ;                  ||||| +-+   ||||
-;                  ||||| | |   |||+------------------ STDIN
-;                  ||||| | |   ||+------------------- STDOUT
-;                  ||||| | |   |+-------------------- NULL
-;                  ||||| | |   +--------------------- CLOCK
+;                  ||||| | |   |||+------------------ is STDIN
+;                  ||||| | |   ||+------------------- is STDOUT
+;                  ||||| | |   |+-------------------- is NULL
+;                  ||||| | |   +--------------------- is CLOCK
 ;                  ||||| | |
 ;                  ||||| | +------------------------+ (001) OS/2
 ;                  ||||| |                          | (010) DosDevIOCtl2 + SHUTDOWN
@@ -72,23 +79,31 @@ device_header   dd -1                           ; Pointer to next driver
 ;                  |||||
 ;                  ||||+----------------------------- OPEN/CLOSE (char) or Removable (blk)
 ;                  |||+------------------------------ Sharing support
-;                  ||+------------------------------- IBM
-;                  |+-------------------------------- IDC entry point
-;                  +--------------------------------- char/block device driver
+;                  ||+------------------------------- non-IBM block format (block only)
+;                  |+-------------------------------- IDC capability
+;                  +--------------------------------- device type bit: 0 = block, 1 = 1
 
                 dw offset CODE16:sec32_stub_strategy; Strategy routine entry point
-                dw offset CODE16:sec32_stub_IDC     ; IDC routine entry point
+;                dw offset CODE16:sec32_stub_IDC     ; IDC routine entry point
+                dw 0
+
                 db 'XWPSEC$ '                   ; Device name
                 db 8 dup (0)                    ; Reserved
                 dw 0000000000011011b            ; Level 3 device drive capabilities
 ;                             |||||
 ;                             ||||+------------------ DosDevIOCtl2 + Shutdown
-;                             |||+------------------- More than 16 MB support
+;                             |||+------------------- More than 16 MB support (char only)
 ;                             ||+-------------------- Parallel port driver
 ;                             |+--------------------- Adapter device driver
 ;                             +---------------------- InitComplete
                 dw 0000000000000000b
 DATA16 ends
+
+; *****************************************************
+; *
+; *     CODE16
+; *
+; *****************************************************
 
 CODE16 segment
         assume cs:CODE16, ds:DATA16
@@ -96,10 +111,15 @@ CODE16 segment
         extrn code16_end : byte
 
         public sec32_stub_strategy
-        public sec32_stub_IDC
+;        public sec32_stub_IDC
+
+;
+; sec32_stub_strategy:
+;       16-bit strategy routine, which calls
+;       the 32-bit version.
+;
 
 sec32_stub_strategy proc far
-;   int 3
         movzx eax, byte ptr es:[bx].reqCommand
         cmp eax, 0
         jz short @@error
@@ -107,7 +127,7 @@ sec32_stub_strategy proc far
         push bx                                 ; ofs reqpkt
         push eax                                ; command
         mov word ptr es:[bx].reqStatus, 0       ; updates the request status
-        call far ptr FLAT:SEC32_STRATEGY        ; 32 bits strategy entry point
+        call far ptr FLAT:SEC32_STRATEGY        ; 32 bits strategy entry point (sec32_strategy.c)
         mov word ptr es:[bx].reqStatus, ax      ; updates the request status
         retf
 
@@ -122,10 +142,10 @@ sec32_stub_strategy proc far
         retf
 sec32_stub_strategy endp
 
-sec32_stub_IDC proc far
-        call far ptr FLAT:SEC32_IDC
-        retf
-sec32_stub_IDC endp
+;sec32_stub_IDC proc far
+;        call far ptr FLAT:SEC32_IDC
+;        retf
+;sec32_stub_IDC endp
 
 ;*********************************************************************************************
 ;**************** Everything below this line will be unloaded after init *********************
@@ -140,7 +160,7 @@ ASSUME CS:FLAT, DS:FLAT, ES:FLAT
         public begin_code32
 
         extrn  SEC32_STRATEGY  : far
-        extrn  SEC32_IDC       : far
+;        extrn  SEC32_IDC       : far
 
 begin_code32:
 

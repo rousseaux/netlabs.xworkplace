@@ -40,10 +40,10 @@
  *
  ********************************************************************/
 
-ULONG    G_ulBufferLockCount = 0;
+ULONG           G_ulBufferLockCount = 0;
 
-extern BOOL    G_blockidCmdComplete = 0,
-               G_ulBlockCount = 0;
+extern BOOL     G_blockidCmdComplete = 0,
+                G_ulBlockCount = 0;
 
 /* ******************************************************************
  *
@@ -63,7 +63,7 @@ BOOL utilNeedsVerify(VOID)
     if (G_hevCallback)
     {
         // access control enabled by ring-3 daemon:
-        ULONG pid;
+        ULONG   pid;
         if (    (pid = utilGetTaskPID())
                 != 0)
         {

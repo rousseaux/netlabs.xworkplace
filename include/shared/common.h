@@ -112,6 +112,10 @@
     extern const char *INIKEY_XSTARTUPFOLDERS;
     extern const char *INIKEY_XSAVEDSTARTUPFOLDERS;
 
+    // added V0.9.11 (2001-04-18) [umoeller]
+    extern const char *INIKEY_WNDPOSFILEDLG;
+    extern const char *INIKEY_FILEDLGSETTINGS;
+
     extern const char *INIAPP_XWPFILETYPES;   // added V0.9.0
     extern const char *INIAPP_XWPFILEFILTERS; // added V0.9.0
 

@@ -22,7 +22,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include <string.h>
 
@@ -41,7 +41,7 @@
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  *
  *      This dummy implementation prevents ANY access to files
@@ -117,7 +117,7 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
  *@@ OPEN_POST:
  *      security callback for OPEN_POST.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  *
  *      Currently disabled. @@todo

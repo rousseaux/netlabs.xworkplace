@@ -22,7 +22,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include "xwpsec32.sys\types.h"
 #include "xwpsec32.sys\StackToFlat.h"
@@ -97,15 +97,15 @@ int sec32_open(PTR16 reqpkt)
                 G_open_count++;
 
                 // audit log file specified?
-                if (G_szLogFile[0])
+                /* if (G_szLogFile[0])
                 {
                     if (G_ulLogSFN == 0)
                         // log file not opened yet:
                         utilOpenLog();
 
-                    utilWriteLog("sec32_open:\r\n");
+                    // utilWriteLog("sec32_open:\r\n");
                     utilWriteLogInfo();
-                }
+                } */
             }
         }
     }

@@ -85,78 +85,51 @@ _SecHlpUISEPList ends
 
 CODE16 segment
 
-        ASSUME CS:CODE16, DS:DATA16, ES:FLAT
-        public code16_DevHlp32_SemClear
-code16_DevHlp32_SemClear:
-        call es:[DevHelp2]
-        jmp32 code32_DevHlp32_SemClear
-
-        ASSUME CS:CODE16, DS:DATA16, ES:FLAT
-        public code16_DevHlp32_SemRequest
-code16_DevHlp32_SemRequest:
-        call es:[DevHelp2]
-        jmp32 code32_DevHlp32_SemRequest
-
-        ASSUME CS:CODE16, DS:DATA16, ES:FLAT
-        public code16_DevHlp32_SemClearRam1
-code16_DevHlp32_SemClearRam1:
-        call es:[DevHelp2]
-        jmp32 code32_DevHlp32_SemClearRam1
-
-        ASSUME CS:CODE16, DS:DATA16, ES:FLAT
-        public code16_DevHlp32_SemRequestRam1
-code16_DevHlp32_SemRequestRam1:
-        call es:[DevHelp2]
-        jmp32 code32_DevHlp32_SemRequestRam1
-
-
-
-
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_AllocOneGDTSelector
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_AllocOneGDTSelector
 code16_DevHlp32_AllocOneGDTSelector:
         call [DevHelp2]
         jmp32 code32_DevHlp32_AllocOneGDTSelector
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_Beep
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_Beep
 code16_DevHlp32_Beep:
         call [DevHelp2]
         jmp32 code32_DevHlp32_Beep
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_AttachToDD
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_AttachToDD
 code16_DevHlp32_AttachToDD:
         call es:[DevHelp2]
         jmp32 code32_DevHlp32_AttachToDD
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_CloseEventSem
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_CloseEventSem
 code16_DevHlp32_CloseEventSem:
         call [DevHelp2]
         jmp32 code32_DevHlp32_CloseEventSem
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_EOI
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_EOI
 code16_DevHlp32_EOI:
         call [DevHelp2]
         jmp32 code32_DevHlp32_EOI
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_FreeGDTSelector
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_FreeGDTSelector
 code16_DevHlp32_FreeGDTSelector:
         call [DevHelp2]
         jmp32 code32_DevHlp32_FreeGDTSelector
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_GetDosVar
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_GetDosVar
 code16_DevHlp32_GetDosVar:
         call [DevHelp2]
         jmp32 code32_DevHlp32_GetDosVar
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_GetInfoSegs_1
-        public code16_DevHlp32_GetInfoSegs_2
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_GetInfoSegs_1
+public code16_DevHlp32_GetInfoSegs_2
 code16_DevHlp32_GetInfoSegs_1:
         call [DevHelp2]
         jmp32 code32_DevHlp32_GetInfoSegs_1
@@ -164,62 +137,62 @@ code16_DevHlp32_GetInfoSegs_2:
         call [DevHelp2]
         jmp32 code32_DevHlp32_GetInfoSegs_2
 
-        ASSUME CS:CODE16, DS:DATA16, ES:FLAT
-        public code16_DevHlp32_InternalError
+ASSUME CS:CODE16, DS:DATA16, ES:FLAT
+public code16_DevHlp32_InternalError
 code16_DevHlp32_InternalError:
         call es:[DevHelp2]
-    ;
-    ; We should never reach this point
-    ;
-    int 3
+        ;
+        ; We should never reach this point
+        ;
+        int 3
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_LinToPageList
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_LinToPageList
 code16_DevHlp32_LinToPageList:
         call [DevHelp2]
         jmp32 code32_DevHlp32_LinToPageList
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_OpenEventSem
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_OpenEventSem
 code16_DevHlp32_OpenEventSem:
         call [DevHelp2]
         jmp32 code32_DevHlp32_OpenEventSem
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_PageListToLin
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_PageListToLin
 code16_DevHlp32_PageListToLin:
         call [DevHelp2]
         jmp32 code32_DevHlp32_PageListToLin
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_PostEventSem
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_PostEventSem
 code16_DevHlp32_PostEventSem:
         call [DevHelp2]
         jmp32 code32_DevHlp32_PostEventSem
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_ProcBlock
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_ProcBlock
 code16_DevHlp32_ProcBlock:
         call [DevHelp2]
         jmp32 code32_DevHlp32_ProcBlock
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_ProcRun
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_ProcRun
 code16_DevHlp32_ProcRun:
         call [DevHelp2]
         jmp32 code32_DevHlp32_ProcRun
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_ResetEventSem
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_ResetEventSem
 code16_DevHlp32_ResetEventSem:
         call [DevHelp2]
         jmp32 code32_DevHlp32_ResetEventSem
 
-        ASSUME CS:CODE16, DS:FLAT, ES:FLAT
-        public code16_DevHlp32_SaveMessage_1
-        public code16_DevHlp32_SaveMessage_2
-        public code16_DevHlp32_SaveMessage_3
-        public code16_DevHlp32_SaveMessage_4
+ASSUME CS:CODE16, DS:FLAT, ES:FLAT
+public code16_DevHlp32_SaveMessage_1
+public code16_DevHlp32_SaveMessage_2
+public code16_DevHlp32_SaveMessage_3
+public code16_DevHlp32_SaveMessage_4
 code16_DevHlp32_SaveMessage_1:
         call [DevHelp2]
         jmp32 code32_DevHlp32_SaveMessage_1
@@ -233,88 +206,79 @@ code16_DevHlp32_SaveMessage_4:
         call [DevHelp2]
         jmp32 code32_DevHlp32_SaveMessage_4
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_Security
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_Security
 code16_DevHlp32_Security:
         call [DevHelp2]
         jmp32 code32_DevHlp32_Security
 
-        ASSUME CS:CODE16, DS:NOTHING, ES:FLAT
-        public code16_DevHlp32_setIRQ
+ASSUME CS:CODE16, DS:NOTHING, ES:FLAT
+public code16_DevHlp32_setIRQ
 code16_DevHlp32_setIRQ:
         call es:[DevHelp2]
         jmp32 code32_DevHlp32_setIRQ
 
-        ASSUME CS:CODE16, ES:FLAT
-        public code16_DevHlp32_UnSetIRQ
+ASSUME CS:CODE16, ES:FLAT
+public code16_DevHlp32_UnSetIRQ
 code16_DevHlp32_UnSetIRQ:
         call es:[DevHelp2]
         jmp32 code32_DevHlp32_UnSetIRQ
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VerifyAccess
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VerifyAccess
 code16_DevHlp32_VerifyAccess:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VerifyAccess
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VirtToLin
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VirtToLin
 code16_DevHlp32_VirtToLin:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VirtToLin
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VMAlloc
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VMAlloc
 code16_DevHlp32_VMAlloc:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VMAlloc
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VMFree
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VMFree
 code16_DevHlp32_VMFree:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VMFree
 
 ; added V0.9.5 (2000-09-27) [umoeller]
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VMGlobalToProcess
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VMGlobalToProcess
 code16_DevHlp32_VMGlobalToProcess:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VMGlobalToProcess
 
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VMLock
 code16_DevHlp32_VMLock:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VMLock
 
 ; added V0.9.5 (2000-09-27) [umoeller]
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VMProcessToGlobal
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VMProcessToGlobal
 code16_DevHlp32_VMProcessToGlobal:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VMProcessToGlobal
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_VMUnlock
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_VMUnlock
 code16_DevHlp32_VMUnlock:
         call [DevHelp2]
         jmp32 code32_DevHlp32_VMUnlock
 
-        ASSUME CS:CODE16, DS:FLAT
-        public code16_DevHlp32_Yield
+ASSUME CS:CODE16, DS:FLAT
+public code16_DevHlp32_Yield
 code16_DevHlp32_Yield:
         call [DevHelp2]
         jmp32 code32_DevHlp32_Yield
-
-        ASSUME CS:CODE16, DS:FLAT
-
-        public code16_sec32_attach_ses_1
-        public code16_sec32_attach_ses_2
-code16_sec32_attach_ses_1:
-        call es:[DevHelp2]
-        jmp far ptr FLAT:code32_sec32_attach_ses_1
-code16_sec32_attach_ses_2:
-        call dword ptr [ebp - 6]
-        jmp far ptr FLAT:code32_sec32_attach_ses_2
 
 CODE16 ends
 
@@ -335,8 +299,8 @@ DATA16 segment
     msg_ofs dw 0
     msg_seg dw ?
 
-    public ram_sem_1
-    ram_sem_1   dd 0
+;    public ram_sem_1
+;    ram_sem_1   dd 0
 DATA16 ends
 
 ;*********************************************************
@@ -347,142 +311,9 @@ DATA16 ends
 
 CODE32 segment
 
-
-
-
-
-
-
-
-; added V0.9.5 (2000-09-28) [umoeller]
-ASSUME CS:FLAT, DS:DATA16, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_SemClear
-        public        DevHlp32_SemClear
-
-;
-; int DH32ENTRY DevHlp32_SemClear( ULONG ulSemHandle /* ebp + 8  */
-;                                );
-;
-DevHlp32_SemClear proc near
-        push  ebx
-        push  ecx
-        push  edi
-        mov   bx, [esp + 8]              ; sem handle low
-        mov   ax, [esp + 10]             ; sem handle high
-        mov   dl, DevHlp_SemClear
-        jmp   far ptr code16_DevHlp32_SemClear
-code32_DevHlp32_SemClear:
-        jc short @@errorSemClear
-        mov eax, NO_ERROR
-@@errorSemClear:
-        pop   edi
-        pop   ecx
-        pop   ebx
-        ret
-DevHlp32_SemClear endp
-
-; added V0.9.5 (2000-09-28) [umoeller]
-ASSUME CS:FLAT, DS:DATA16, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_SemRequest
-        public        DevHlp32_SemRequest
-
-;
-; int DH32ENTRY DevHlp32_SemRequest( ULONG ulSemHandle /* ebp + 8  */
-;                                    ULONG ulSemTimeout /* ebp + 12  */
-;                                );
-;
-DevHlp32_SemRequest proc near
-        push  ebx
-        push  ecx
-        push  edi
-        mov   bx, [esp + 8]              ; sem handle low
-        mov   ax, [esp + 10]             ; sem handle high
-        mov   cx, [esp + 12]             ; sem timeout low
-        mov   di, [esp + 14]             ; sem timeout high
-        mov   dl, DevHlp_SemRequest
-        jmp   far ptr code16_DevHlp32_SemRequest
-code32_DevHlp32_SemRequest:
-        jc short @@errorSemRequest
-        mov eax, NO_ERROR
-@@errorSemRequest:
-        pop   edi
-        pop   ecx
-        pop   ebx
-        ret
-DevHlp32_SemRequest endp
-
-; added V0.9.5 (2000-09-28) [umoeller]
-ASSUME CS:FLAT, DS:DATA16, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_SemClearRam1
-        public        DevHlp32_SemClearRam1
-
-;
-; int DH32ENTRY DevHlp32_SemClearRam1();
-;
-DevHlp32_SemClearRam1 proc near
-        push  ebx
-        push  ecx
-        push  edi
-        mov   bx, offset DATA16:ram_sem_1         ; sem handle low
-        mov   ax, seg DATA16:ram_sem_1 ;ds                              ; sem handle high
-        mov   dl, DevHlp_SemClear
-        jmp   far ptr code16_DevHlp32_SemClearRam1
-code32_DevHlp32_SemClearRam1:
-        jc short @@errorSemClearRam1
-        mov eax, NO_ERROR
-@@errorSemClearRam1:
-        pop   edi
-        pop   ecx
-        pop   ebx
-        ret
-DevHlp32_SemClearRam1 endp
-
-; added V0.9.5 (2000-09-28) [umoeller]
-ASSUME CS:FLAT, DS:DATA16, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_SemRequestRam1
-        public        DevHlp32_SemRequestRam1
-
-;
-; int DH32ENTRY DevHlp32_SemRequestRam1( ULONG ulSemTimeout /* ebp + 8  */
-;                                );
-;
-DevHlp32_SemRequestRam1 proc near
-        push  ebx
-        push  ecx
-        push  edi
-        mov   bx, offset DATA16:ram_sem_1         ; sem handle low
-        mov   ax, seg DATA16:ram_sem_1 ;ds                              ; sem handle high
-        mov   cx, [esp + 8]             ; sem timeout low
-        mov   di, [esp + 10]             ; sem timeout high
-        mov   dl, DevHlp_SemRequest
-        jmp   far ptr code16_DevHlp32_SemRequestRam1
-code32_DevHlp32_SemRequestRam1:
-        jc short @@errorSemRequestRam1
-        mov eax, NO_ERROR
-@@errorSemRequestRam1:
-        pop   edi
-        pop   ecx
-        pop   ebx
-        ret
-DevHlp32_SemRequestRam1 endp
-
-
-
-
-
-
-
-
-
-
-
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-        public code32_DevHlp32_AllocOneGDTSelector
-        public        DevHlp32_AllocOneGDTSelector
+public code32_DevHlp32_AllocOneGDTSelector
+public        DevHlp32_AllocOneGDTSelector
 
 ;
 ; int DH32ENTRY DevHlp32_AllocOneGDTSelector(
@@ -518,9 +349,8 @@ code32_DevHlp32_AllocOneGDTSelector:
 DevHlp32_AllocOneGDTSelector endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_AttachToDD
-        public        DevHlp32_AttachToDD
+public code32_DevHlp32_AttachToDD
+public        DevHlp32_AttachToDD
 
 ;
 ; int _Optlink DevHlp32_AttachToDD(
@@ -551,9 +381,8 @@ DevHlp32_AttachToDD endp
 
 ; added V0.9.5 (2000-10-03) [umoeller]
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_Beep
-        public        DevHlp32_Beep
+public code32_DevHlp32_Beep
+public        DevHlp32_Beep
 
 ; int DH32ENTRY2 DevHlp32_Beep(
 ;                                ULONG           ulFreq,       /* ebp + 8  */
@@ -579,9 +408,8 @@ code32_DevHlp32_Beep:
 DevHlp32_Beep endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_CloseEventSem
-        public        DevHlp32_CloseEventSem
+public code32_DevHlp32_CloseEventSem
+public        DevHlp32_CloseEventSem
 
 ;
 ; int DH32ENTRY DevHlp32_CloseEventSem(
@@ -604,9 +432,8 @@ code32_DevHlp32_CloseEventSem:
 DevHlp32_CloseEventSem endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_EOI
-        public        DevHlp32_EOI
+public code32_DevHlp32_EOI
+public        DevHlp32_EOI
 
 ;
 ; int DH32ENTRY2 DevHlp32_EOI(
@@ -622,9 +449,8 @@ code32_DevHlp32_EOI:
 DevHlp32_EOI endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_FreeGDTSelector
-        public        DevHlp32_FreeGDTSelector
+public code32_DevHlp32_FreeGDTSelector
+public        DevHlp32_FreeGDTSelector
 
 ;
 ; int DH32ENTRY2 DevHlp32_FreeGDTSelector(
@@ -642,9 +468,8 @@ code32_DevHlp32_FreeGDTSelector:
 DevHlp32_FreeGDTSelector endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_GetDosVar
-        public        DevHlp32_GetDosVar
+public code32_DevHlp32_GetDosVar
+public        DevHlp32_GetDosVar
 
 ;
 ; int DH32ENTRY DevHlp32_GetDosVar(
@@ -678,11 +503,9 @@ code32_DevHlp32_GetDosVar:
 DevHlp32_GetDosVar endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public DevHlp32_GetInfoSegs
-
-        public code32_DevHlp32_GetInfoSegs_1
-        public code32_DevHlp32_GetInfoSegs_2
+public DevHlp32_GetInfoSegs
+public code32_DevHlp32_GetInfoSegs_1
+public code32_DevHlp32_GetInfoSegs_2
 
 ;
 ; int DH32ENTRY DevHlp32_GetInfoSegs(
@@ -735,8 +558,7 @@ code32_DevHlp32_GetInfoSegs_2:
 DevHlp32_GetInfoSegs endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public        DevHlp32_InternalError
+public        DevHlp32_InternalError
 
 ;
 ; void DH32ENTRY DevHlp32_InternalError(
@@ -770,9 +592,8 @@ DevHlp32_InternalError proc near
 DevHlp32_InternalError endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_LinToPageList
-        public        DevHlp32_LinToPageList
+public code32_DevHlp32_LinToPageList
+public        DevHlp32_LinToPageList
 
 ;
 ; int DH32ENTRY DevHlp32_LinToPageList(
@@ -810,9 +631,8 @@ code32_DevHlp32_LinToPageList:
 DevHlp32_LinToPageList endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_OpenEventSem
-        public        DevHlp32_OpenEventSem
+public code32_DevHlp32_OpenEventSem
+public        DevHlp32_OpenEventSem
 
 ;
 ; int DH32ENTRY DevHlp32_OpenEventSem(
@@ -835,9 +655,8 @@ code32_DevHlp32_OpenEventSem:
 DevHlp32_OpenEventSem endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_PageListToLin
-        public        DevHlp32_PageListToLin
+public code32_DevHlp32_PageListToLin
+public        DevHlp32_PageListToLin
 
 ;
 ; int DH32ENTRY DevHlp32_PageListToLin(
@@ -875,9 +694,8 @@ code32_DevHlp32_PageListToLin:
 DevHlp32_PageListToLin endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_PostEventSem
-        public        DevHlp32_PostEventSem
+public code32_DevHlp32_PostEventSem
+public        DevHlp32_PostEventSem
 
 ;
 ; int DH32ENTRY DevHlp32_PostEventSem(
@@ -900,9 +718,8 @@ code32_DevHlp32_PostEventSem:
 DevHlp32_PostEventSem endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_ProcBlock
-        public        DevHlp32_ProcBlock
+public code32_DevHlp32_ProcBlock
+public        DevHlp32_ProcBlock
 
 ;
 ; int DH32ENTRY DevHlp32_ProcBlock(
@@ -933,9 +750,8 @@ code32_DevHlp32_ProcBlock:
 DevHlp32_ProcBlock endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_ProcRun
-        public        DevHlp32_ProcRun
+public code32_DevHlp32_ProcRun
+public        DevHlp32_ProcRun
 
 ;
 ; int DH32ENTRY DevHlp32_ProcRun(
@@ -954,9 +770,8 @@ code32_DevHlp32_ProcRun:
 DevHlp32_ProcRun endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_ResetEventSem
-        public        DevHlp32_ResetEventSem
+public code32_DevHlp32_ResetEventSem
+public        DevHlp32_ResetEventSem
 
 ;
 ; int DH32ENTRY DevHlp32_ResetEventSem(
@@ -982,12 +797,12 @@ code32_DevHlp32_ResetEventSem:
 DevHlp32_ResetEventSem endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
+public        DevHlp32_SaveMessage
+public code32_DevHlp32_SaveMessage_1
+public code32_DevHlp32_SaveMessage_2
+public code32_DevHlp32_SaveMessage_3
+public code32_DevHlp32_SaveMessage_4
 
-        public        DevHlp32_SaveMessage
-        public code32_DevHlp32_SaveMessage_1
-        public code32_DevHlp32_SaveMessage_2
-        public code32_DevHlp32_SaveMessage_3
-        public code32_DevHlp32_SaveMessage_4
 ;
 ; int DH32ENTRY DevHlp32_SaveMessage(
 ;                                    char *msg,         /* ebp + 8  */
@@ -995,12 +810,12 @@ ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
 ;                                   );
 ;
 DevHlp32_SaveMessage proc near
-        enter 10, 0
-        push ds
-        push es
-        push ebx
-        push esi
-        push edi
+        enter   10, 0
+        push    ds
+        push    es
+        push    ebx
+        push    esi
+        push    edi
 ;
 ; ebp - 4  -> msg16  (dword)
 ; ebp - 6  -> nr     (word)
@@ -1011,69 +826,68 @@ DevHlp32_SaveMessage proc near
         ;
         ; rc = 0
         ;
-        mov word ptr [ebp - 10], 0
+        mov     word ptr [ebp - 10], 0
 
-        mov ax, seg DATA16
-        mov es, ax
-    ASSUME ES:DATA16
-        mov di, offset DATA16:msg_seg
-        mov ecx, 1                              ; one selector
-        mov dl, DevHlp_AllocGDTSelector
-        jmp far ptr code16_DevHlp32_SaveMessage_1
+        mov     ax, seg DATA16
+        mov     es, ax
+ASSUME ES:DATA16
+        mov     di, offset DATA16:msg_seg
+        mov     ecx, 1                              ; one selector
+        mov     dl, DevHlp_AllocGDTSelector
+        jmp     far ptr code16_DevHlp32_SaveMessage_1
 code32_DevHlp32_SaveMessage_1:
-        jc @@errorSaveMessage
+        jc      @@errorSaveMessage
 
-        mov ax, es:msg_seg                      ; sel
-        mov ebx, [ebp + 8]                      ; msg
-        mov ecx, [ebp + 12]                     ; len
-        mov dl, DevHlp_LinToGDTSelector
-        jmp far ptr code16_DevHlp32_SaveMessage_2
+        mov     ax, es:msg_seg                      ; sel
+        mov     ebx, [ebp + 8]                      ; msg
+        mov     ecx, [ebp + 12]                     ; len
+        mov     dl, DevHlp_LinToGDTSelector
+        jmp     far ptr code16_DevHlp32_SaveMessage_2
 code32_DevHlp32_SaveMessage_2:
-        mov [ebp - 10], ax                       ; rc
-        jc short @@error_2SaveMessage
+        mov     [ebp - 10], ax                       ; rc
+        jc      short @@error_2SaveMessage
 
-        mov ax, es               ; DATA16
-        mov bx, ds               ; FLAT
-        mov ds, ax
-        mov es, bx
-    ASSUME DS:DATA16, ES:FLAT
-        mov si, offset DATA16:msgid
-        xor bx, bx
-        mov dl, DevHlp_Save_Message
-        jmp far ptr code16_DevHlp32_SaveMessage_3
+        mov     ax, es               ; DATA16
+        mov     bx, ds               ; FLAT
+        mov     ds, ax
+        mov     es, bx
+ASSUME DS:DATA16, ES:FLAT
+        mov     si, offset DATA16:msgid
+        xor     bx, bx
+        mov     dl, DevHlp_Save_Message
+        jmp     far ptr code16_DevHlp32_SaveMessage_3
 code32_DevHlp32_SaveMessage_3:
-        jc @@error_2SaveMessage
-        mov [ebp - 10], ax                       ; rc
+        jc      @@error_2SaveMessage
+        mov     [ebp - 10], ax                       ; rc
 
 @@error_2SaveMessage:
-        mov ax, msg_seg
-        push es
-        pop ds                   ; FLAT
+        mov     ax, msg_seg
+        push    es
+        pop     ds                   ; FLAT
     ASSUME DS:FLAT, ES:FLAT
-        mov dl, DevHlp_FreeGDTSelector
-        jmp far ptr code16_DevHlp32_SaveMessage_4
+        mov     dl, DevHlp_FreeGDTSelector
+        jmp     far ptr code16_DevHlp32_SaveMessage_4
 code32_DevHlp32_SaveMessage_4:
-        jc @@errorSaveMessage
+        jc      @@errorSaveMessage
 
-        mov ax, [ebp - 10]                    ; rc
-        cmp ax, 0
-        jnz @@errorSaveMessage
+        mov     ax, [ebp - 10]                    ; rc
+        cmp     ax, 0
+        jnz     @@errorSaveMessage
 
 @@errorSaveMessage:
-        movzx eax, ax
-        pop edi
-        pop esi
-        pop ebx
-        pop es
-        pop ds
+        movzx   eax, ax
+        pop     edi
+        pop     esi
+        pop     ebx
+        pop     es
+        pop     ds
         leave
         ret
 DevHlp32_SaveMessage endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_Security
-        public        DevHlp32_Security
+public code32_DevHlp32_Security
+public        DevHlp32_Security
 
 ;
 ; int DH32ENTRY DevHlp32_Security(
@@ -1098,9 +912,8 @@ code32_DevHlp32_Security:
 DevHlp32_Security endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_setIRQ
-        public        DevHlp32_setIRQ
+public code32_DevHlp32_setIRQ
+public        DevHlp32_setIRQ
 
 ;
 ; int DH32ENTRY DevHlp32_setIRQ(
@@ -1133,9 +946,8 @@ code32_DevHlp32_setIRQ:
 DevHlp32_setIRQ endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_UnSetIRQ
-        public        DevHlp32_UnSetIRQ
+public code32_DevHlp32_UnSetIRQ
+public        DevHlp32_UnSetIRQ
 
 ;
 ; int DH32ENTRY DevHlp32_UnSetIRQ(
@@ -1144,26 +956,25 @@ ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
 ;                                );
 ;
 DevHlp32_UnSetIRQ proc near
-    enter 0, 0
-    push ds
-    push ebx
-    mov bx, [ebp + 8]
-    mov cx, [ebp + 12]
-    mov ds, cx
+        enter 0, 0
+        push ds
+        push ebx
+        mov bx, [ebp + 8]
+        mov cx, [ebp + 12]
+        mov ds, cx
         mov   dl, DevHlp_UnSetIRQ
         jmp far ptr code16_DevHlp32_UnSetIRQ
 code32_DevHlp32_UnSetIRQ:
-    xor eax, eax
-    pop ebx
-    pop ds
-    leave
+        xor eax, eax
+        pop ebx
+        pop ds
+        leave
         ret
 DevHlp32_UnSetIRQ endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VerifyAccess
-        public        DevHlp32_VerifyAccess
+public code32_DevHlp32_VerifyAccess
+public        DevHlp32_VerifyAccess
 
 ;
 ; int DH32ENTRY DevHlp32_VerifyAccess(
@@ -1199,9 +1010,8 @@ code32_DevHlp32_VerifyAccess:
 DevHlp32_VerifyAccess endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VirtToLin
-        public        DevHlp32_VirtToLin
+public code32_DevHlp32_VirtToLin
+public        DevHlp32_VirtToLin
 
 ;
 ; int DH32ENTRY DevHlp32_VirtToLin(
@@ -1232,9 +1042,8 @@ code32_DevHlp32_VirtToLin:
 DevHlp32_VirtToLin endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VMAlloc
-        public        DevHlp32_VMAlloc
+public code32_DevHlp32_VMAlloc
+public        DevHlp32_VMAlloc
 
 ;
 ; int DH32ENTRY DevHlp32_VMAlloc(
@@ -1269,9 +1078,8 @@ code32_DevHlp32_VMAlloc:
 DevHlp32_VMAlloc endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VMFree
-        public        DevHlp32_VMFree
+public code32_DevHlp32_VMFree
+public        DevHlp32_VMFree
 
 ;
 ; int _Optlink VMFree_32(
@@ -1286,9 +1094,8 @@ code32_DevHlp32_VMFree:
 DevHlp32_VMFree endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VMGlobalToProcess
-        public        DevHlp32_VMGlobalToProcess
+public code32_DevHlp32_VMGlobalToProcess
+public        DevHlp32_VMGlobalToProcess
 
 ;
 ; int _Optlink VMGlobalToProcess_32( ULONG ulFlags,          /* ebp + 8  */
@@ -1324,9 +1131,8 @@ code32_DevHlp32_VMGlobalToProcess:
 DevHlp32_VMGlobalToProcess endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VMLock
-        public        DevHlp32_VMLock
+public code32_DevHlp32_VMLock
+public        DevHlp32_VMLock
 
 ;
 ; int DH32ENTRY DevHlp32_VMLock(
@@ -1366,9 +1172,8 @@ code32_DevHlp32_VMLock:
 DevHlp32_VMLock endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VMProcessToGlobal
-        public        DevHlp32_VMProcessToGlobal
+public code32_DevHlp32_VMProcessToGlobal
+public        DevHlp32_VMProcessToGlobal
 
 ;
 ; int _Optlink VMProcessToGlobal_32( ULONG ulFlags,          /* ebp + 8  */
@@ -1382,17 +1187,17 @@ ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
 ;                                    ULONG Length,           /* ebp + 16 */
 ;                                    PLIN GlobalLinearAddr   /* ebp + 20 */
 ;                       );
-; This service converts an address in the current process address space to
-; an address in the system region of the global address space.
+;   This service converts an address in the current process address space to
+;   an address in the system region of the global address space.
 ;
-;  The address range must be on a page boundary and must not cross object
-;  boundaries.  This call copies the linear mapping from the process's address
-;  space to the system-shared address space.  This allows the physical
-;  device driver to access the data independent of the context of the
-;  current process. The following figure shows the mapping that is performed
-;  when a physical device driver calls VMProcessToGlobal.
+;   The address range must be on a page boundary and must not cross object
+;   boundaries.  This call copies the linear mapping from the process's address
+;   space to the system-shared address space.  This allows the physical
+;   device driver to access the data independent of the context of the
+;   current process. The following figure shows the mapping that is performed
+;   when a physical device driver calls VMProcessToGlobal.
 ;
-;  The following figure shows Mapping Performed by VMProcessToGlobal.
+;   The following figure shows Mapping Performed by VMProcessToGlobal.
 ;
 ;
 ;            Before                                       After
@@ -1470,9 +1275,8 @@ code32_DevHlp32_VMProcessToGlobal:
 DevHlp32_VMProcessToGlobal endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_VMUnlock
-        public        DevHlp32_VMUnlock
+public code32_DevHlp32_VMUnlock
+public        DevHlp32_VMUnlock
 
 ;
 ; int DH32ENTRY DevHlp32_VMUnlock(
@@ -1497,9 +1301,8 @@ code32_DevHlp32_VMUnlock:
 DevHlp32_VMUnlock endp
 
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT, SS:NOTHING
-
-        public code32_DevHlp32_Yield
-        public        DevHlp32_Yield
+public code32_DevHlp32_Yield
+public        DevHlp32_Yield
 
 ;
 ; void DH32ENTRY DevHlp32_Yield(void);
@@ -1510,76 +1313,6 @@ DevHlp32_Yield proc near
 code32_DevHlp32_Yield:
         ret
 DevHlp32_Yield endp
-
-ASSUME CS:FLAT, DS:FLAT, ES:FLAT
-
-        public code32_sec32_attach_ses_1
-        public code32_sec32_attach_ses_2
-        public        sec32_attach_ses
-
-;
-; int DH32ENTRY sec32_attach_ses(void *SecHlp);
-;
-sec32_attach_ses proc near
-        enter 20 + size _SecHlpUISEPList ,0
-;
-;ebp - 20 - size _SecHlpUISEPList tmp SecHlp
-;ebp - 20 (8 bytes) "sesdd32$"
-;ebp - 12 (12 bytes) ddtable
-;
-
-        push ds
-        push es
-        push ebx
-        push esi
-        push edi
-
-        ;
-        ; Try to attach to sesdd32.sys
-        ;
-        mov eax, ss
-        mov ds, eax
-        lea ebx, [ebp - 20]             ; offset ddname
-        lea edi, [ebp - 12]             ; offset ddtable
-        mov dl, DevHlp_AttachDD
-        mov [ebp - 20], dword ptr 'DSES'
-        mov [ebp - 16], dword ptr '$23D'
-        jmp far ptr code16_sec32_attach_ses_1
-code32_sec32_attach_ses_1:
-        mov ecx, es
-        mov ds, ecx
-        jc short @@errorattach_ses
-
-        ;
-        ; Calls SEDDD32.SYS to get SecHlp entry points
-        ;
-        mov eax, ss
-        mov ds, eax
-        lea esi, [ebp - 20 - size _SecHlpUISEPList]
-        push esi
-        jmp far ptr code16_sec32_attach_ses_2
-code32_sec32_attach_ses_2:
-        add esp, 4
-
-        ;
-        ; Copy returned entry points from stack to SecHelp
-        ;
-        mov edi, [ebp + 8]
-        mov ecx, size _SecHlpUISEPList / 4
-        cld
-        rep movsd
-
-        mov eax, NO_ERROR
-@@errorattach_ses:
-        movzx eax, ax
-        pop edi
-        pop esi
-        pop ebx
-        pop es
-        pop ds
-        leave
-        ret
-sec32_attach_ses endp
 
 CODE32 ends
 

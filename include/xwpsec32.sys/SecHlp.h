@@ -2,8 +2,8 @@
 // $Header$
 //
 
-// 32 bits OS/2 device driver and IFS support. Provides 32 bits kernel 
-// services (DevHelp) and utility functions to 32 bits OS/2 ring 0 code 
+// 32 bits OS/2 device driver and IFS support. Provides 32 bits kernel
+// services (DevHelp) and utility functions to 32 bits OS/2 ring 0 code
 // (device drivers and installable file system drivers).
 // Copyright (C) 1995, 1996, 1997  Matthieu WILLM (willm@ibm.net)
 //
@@ -24,9 +24,9 @@
 #ifndef __SecHlp_h
 #define __SecHlp_h
 
-#include <secure.h>
+// #include <secure.h>
 
-struct SecurityHelpers {
+/* struct SecurityHelpers {
     ULONG (*SecHlpQuerySubjectHandle)( PID, TID, ULONG, PHSUBJECT);
     ULONG (*SecHlpQuerySubjectInfo)( PID, TID, ULONG, PSUBJECTINFO);
     ULONG (*SecHlpQueryContextStatus)( PID, TID, PULONG);
@@ -116,6 +116,6 @@ INLINE ULONG CallType SecHlpFindNext(PFINDPARMS pParms) {
 }
 INLINE ULONG CallType SecHlpPathFromSFN(ULONG SFN) {
     return SecurityExports.SecHlpPathFromSFN(SFN);
-}
+} */
 
 #endif

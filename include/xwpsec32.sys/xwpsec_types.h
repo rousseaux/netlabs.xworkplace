@@ -23,9 +23,9 @@ extern int      G_open_count;
 extern ULONG    G_pidRing3Daemon;
 
 // stuff elsewhere
-extern CHAR     G_szLogFile[CCHMAXPATH];
+// extern CHAR     G_szLogFile[CCHMAXPATH];
 extern CHAR     G_szScratchBuf[1000];
-extern ULONG    G_ulLogSFN;
+// extern ULONG    G_ulLogSFN;
 extern struct   InfoSegGDT *G_pGDT;
 extern struct   InfoSegLDT *G_pLDT;
 

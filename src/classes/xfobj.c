@@ -1091,6 +1091,13 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
             _ulListNotify &= ~OBJLIST_HANDLESCACHE;
             objRemoveFromHandlesCache(somSelf);
         }
+
+        if (_ulListNotify & OBJLIST_DIRTYLIST)  // V0.9.11 (2001-04-18) [umoeller]
+        {
+            // _ulListNotify &= ~OBJLIST_DIRTYLIST;
+            objRemoveFromDirtyList(somSelf);
+                    // this unsets the flag
+        }
     }
 
     if (_pvllWidgetNotifies)

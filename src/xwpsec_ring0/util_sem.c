@@ -31,10 +31,18 @@
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\DevHlp32.h"
 #include "xwpsec32.sys\reqpkt32.h"
-#include "xwpsec32.sys\SecHlp.h"
+// #include "xwpsec32.sys\SecHlp.h"
 
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
+
+extern CHAR     G_szScratchBuf[1000] = "";
+        // generic temporary buffer for composing strings etc.
+
+// two global pointers to GDT and LDT info segs which can be used
+// with DevHlp32_GetInfoSegs to avoid stack thunking.
+extern struct InfoSegGDT *G_pGDT = 0;      // OS/2 global infoseg
+extern struct InfoSegLDT *G_pLDT = 0;      // OS/2 local  infoseg
 
 /*
  *@@ utilSemRequest:
@@ -131,6 +139,45 @@ VOID utilSemRelease(PULONG pulMutex)
     _enable();
 
     // DevHlp32_SemClearRam1();
+}
+
+/*
+ *@@ utilGetTaskPID:
+ *      returns the PID of the caller's process.
+ *      Valid at task time only.
+ *
+ *      Returns 0 on errors, the PID otherwise.
+ *
+ *@@added V0.9.4 (2000-07-03) [umoeller]
+ */
+
+unsigned long utilGetTaskPID(void)
+{
+    APIRET              arc = NO_ERROR;
+
+    arc = DevHlp32_GetInfoSegs(&G_pGDT, &G_pLDT);
+    if (arc == NO_ERROR)
+        return (G_pLDT->LIS_CurProcID);
+    else
+        return (0);
+
+    /* PTR16           p16Temp;
+
+    if (DevHlp32_GetDosVar(DHGETDOSV_LOCINFOSEG,
+                           __StackToFlat(&p16Temp),
+                           0)
+        == NO_ERROR)
+    {
+        // GetDosVar succeeded:
+        // p16Temp now is a 16:16 pointer, which we need to
+        // convert to flat first
+        struct InfoSegLDT *pInfoSecLDT = 0;
+        if (DevHlp32_VirtToLin(p16Temp, __StackToFlat(&pInfoSecLDT))
+                == NO_ERROR)
+            return (pInfoSecLDT->LIS_CurProcID);
+    }
+
+    return 0; */
 }
 
 

@@ -3476,6 +3476,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted auto-close list code to xsdLoadAutoCloseItems
  *@@changed V0.9.9 (2001-04-04) [umoeller]: moved all post-close stuff from xsd_fnwpShutdown here
  *@@changed V0.9.9 (2001-04-04) [umoeller]: rewrote "save WPS objects" to use dirty list from object.c
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed logoff
  */
 
 void _Optlink fntShutdownThread(PTHREADINFO pti)
@@ -3488,7 +3489,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
     BOOL fExceptionOccured = FALSE;
 
     // flag for whether restarting the WPS after all this
-    ULONG ulRestartWPS = 0;         // as in SHUTDOWNPARAMS.ulRestartWPS:
+    // ULONG ulRestartWPS = 0;         // as in SHUTDOWNPARAMS.ulRestartWPS:
                                     // 0 = no;
                                     // 1 = yes;
                                     // 2 = yes, do logoff also
@@ -4071,7 +4072,10 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
                         pShutdownData->ShutdownLogFile = NULL;
                     }
                     xsdRestartWPS(pShutdownData->habShutdownThread,
-                                  (ulRestartWPS == 2) ? TRUE : FALSE);  // fLogoff
+                                  (pShutdownData->sdParams.ulRestartWPS == 2)
+                                        ? TRUE
+                                        : FALSE);  // fLogoff
+                                    // V0.9.11 (2001-04-18) [umoeller]
                     // this will not return, I think
                 }
                 else
@@ -4085,7 +4089,7 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
 
                     if (pShutdownData->sdParams.optDebug)
                         // in debug mode, restart WPS
-                        ulRestartWPS = 1;     // V0.9.0
+                        pShutdownData->sdParams.ulRestartWPS = 1;     // V0.9.0
                 }
             } // end if (fAllWindowsClosed)
 

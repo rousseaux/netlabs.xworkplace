@@ -22,7 +22,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include <string.h>
 
@@ -41,7 +41,7 @@
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 
@@ -107,7 +107,7 @@ ULONG MAKEDIR(PSZ pszPath)
  *      This gets called from the OS/2 kernel to give
  *      the ISS a chance to authorize this event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 
@@ -177,7 +177,7 @@ ULONG CHANGEDIR(PSZ pszPath)
  *      for REMOVEDIR so we cannot find out whether REMOVEDIR
  *      failed and if not, remove the ACLDB entry.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  */
 

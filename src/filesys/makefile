@@ -199,9 +199,9 @@ $(OUTPUTDIR)\fhandles.obj: \
 
 $(OUTPUTDIR)\filedlg.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-            $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\threads.h \
-            $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
+    $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dialog.h $(HLPINC)\dosh.h \
+        $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h  $(HLPINC)\stringh.h \
+        $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xfdisk.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \

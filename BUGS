@@ -17,21 +17,8 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
---  Window list widget
-    Sometimes 'Hide' -> Switch to another desktop -> 'Restore'
-    won't move object, mainly folders are affected. But dragging
-    it to another desktop with PageMage window works every time.
-    Sometimes 'Hide' from Window list widget doesn't work.
-    (Could be that it happens only after WPS restart, not after
-    full reboot.) Closing this XCenter (while another one without
-    Window list keeps open) and opening it again helps.
---  Window list widget
-    Hide/Restore with clicking on Window list button never works
-    for folders. (I like it, in contrary to someone other from the
-    mailing list.)
---  When I activate a VIO window that was maximized before and then minimized, it
-    isn't maximized again. That's pretty annoying since I regularly use VIO windows
-    that have been enlarged with MODE CON1.
+shutdown:
+    wait for objs in shutdown folder doesn't work.
 
 --  In the "keyboard" object, looking at the "hotkeys" page I see an object
     associated with "LeftWin" key. This is one of 3 key mappings I defined

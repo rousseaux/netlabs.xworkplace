@@ -1144,6 +1144,7 @@ VOID UnlockDirtyList(VOID)
  *      list.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: added OBJLIST_DIRTYLIST list flag
  */
 
 BOOL objAddToDirtyList(WPObject *pobj)
@@ -1173,19 +1174,28 @@ BOOL objAddToDirtyList(WPObject *pobj)
                     if (brc)
                     {
                         G_ulDirtyListItemsCount++;
-                        _Pmpf((__FUNCTION__ ": added obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
-                        _Pmpf(("  now %d objs on list", G_ulDirtyListItemsCount ));
-                    }
-                    else
-                        // already on list:
-                        _Pmpf((__FUNCTION__ ": DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
+                        // _Pmpf((__FUNCTION__ ": added obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
+                        // _Pmpf(("  now %d objs on list", G_ulDirtyListItemsCount ));
 
-                    // note that we do not need an object list flag
-                    // here because the WPS automatically invokes
-                    // wpSaveImmediate on "dirty" objects during
-                    // wpMakeDormant processing; as a result,
-                    // objRemoveFromDirtyList will also get called
-                    // automatically when the object goes dormant
+                        // note that we do not need an object list flag
+                        // here because the WPS automatically invokes
+                        // wpSaveImmediate on "dirty" objects during
+                        // wpMakeDormant processing; as a result,
+                        // objRemoveFromDirtyList will also get called
+                        // automatically when the object goes dormant
+
+                        // WRONG... this is not true for WPAbstracts, and
+                        // we get tons of exceptions on XShutdown save-objects
+                        // then. V0.9.11 (2001-04-18) [umoeller]
+                        // so set list-notify flag so we can
+                        // kill this node, should the obj get deleted
+                        _xwpModifyListNotify(pobj,
+                                             OBJLIST_DIRTYLIST,
+                                             OBJLIST_DIRTYLIST);
+                    }
+                    // else
+                        // already on list:
+                        // _Pmpf((__FUNCTION__ ": DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
                 }
             }
         }
@@ -1217,6 +1227,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
  *      Returns TRUE if the object was found and removed.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.11 (2001-04-18) [umoeller]: added OBJLIST_DIRTYLIST list flag
  */
 
 BOOL objRemoveFromDirtyList(WPObject *pobj)
@@ -1239,9 +1250,14 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
                 free(pNode);
                 G_ulDirtyListItemsCount--;
 
-                _Pmpf((__FUNCTION__ ": removed obj 0x%lX, %d remaining",
+                /* _Pmpf((__FUNCTION__ ": removed obj 0x%lX, %d remaining",
                        pobj,
-                       G_ulDirtyListItemsCount ));
+                       G_ulDirtyListItemsCount )); */
+
+                // unset object's "dirty" list flag
+                _xwpModifyListNotify(pobj,
+                                     OBJLIST_DIRTYLIST,
+                                     0);
 
                 brc = TRUE;
             }

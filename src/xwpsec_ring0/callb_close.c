@@ -22,7 +22,7 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-#include <secure.h>
+// #include <secure.h>
 
 #include <string.h>
 
@@ -41,7 +41,7 @@
  *      This gets called from the OS/2 kernel to notify
  *      the ISS of a close event.
  *
- *      This callback is stored in SecurityImports in
+ *      This callback is stored in G_SecurityHooks in
  *      sec32_callbacks.c to hook the kernel.
  *
  *      Currently disabled. @@todo
